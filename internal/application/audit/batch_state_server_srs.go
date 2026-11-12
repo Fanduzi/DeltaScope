@@ -16,6 +16,7 @@ package audit
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
@@ -121,11 +122,13 @@ func (s *batchState) bindMySQLServer(ctx context.Context, statement spec.Stateme
 // bindMySQLSRS resolves the one SRID identity a spatial reference
 // system statement names and binds the provider's fact set — existence
 // plus the NAME/ORGANIZATION conflict witnesses and column dependencies
-// the request qualifies. The authored NAME/ORGANIZATION members are
-// string-literal spellings this round — never provable catalog
-// identities — so the statement path carries no conflict qualifiers and
-// those reads stay unissued; the SRID keeps the existence and
-// dependency reads independently provable. Resolver failures propagate.
+// the request qualifies. A DROP carries no conflict qualifiers —
+// conflict premises are not its contract; the CREATE family qualifies
+// its reads with the authored NAME / ORGANIZATION+IDENTIFIED BY
+// spellings the statement itself inserts into the unique keys
+// (T26-SRS-CREATE-PUBLICATION-01 frozen F-6). The SRID keeps the
+// existence and dependency reads independently provable. Resolver
+// failures propagate.
 func (s *batchState) bindMySQLSRS(ctx context.Context, statement spec.Statement) (*spec.SpatialReferenceSystemState, error) {
 	decl := statement.DDL.SpatialReference
 	bound := &spec.SpatialReferenceSystemState{SRID: decl.SRID}
@@ -146,6 +149,15 @@ func (s *batchState) bindMySQLSRS(ctx context.Context, statement spec.Statement)
 	}
 	if _, stale := s.srsExistenceStale[decl.SRID]; stale {
 		bound.UnreadReason = spec.MetadataUnreadBatchEffects
+		return bound, nil
+	}
+	// A present mint from an earlier CREATE-arm apply is the batch's
+	// proven presence — the write landed (or existed regardless for OR
+	// REPLACE), so the bound state reads present without a catalog
+	// round-trip (T26-SRS-CREATE-PUBLICATION-01 frozen F-8).
+	if s.srsExistencePresent[decl.SRID] {
+		bound.Read = true
+		bound.Exists = true
 		return bound, nil
 	}
 	// Ordered channel (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01):
@@ -172,10 +184,26 @@ func (s *batchState) bindMySQLSRS(ctx context.Context, statement spec.Statement)
 	if resolver == nil {
 		return bound, nil
 	}
-	snapshot, err := resolver(ctx, spec.ObjectLookupRequest{
+	lookup := spec.ObjectLookupRequest{
 		Type: "mysql_spatial_reference_system",
 		Name: decl.SRIDName(),
-	})
+	}
+	// The CREATE family qualifies its conflict reads with the authored
+	// NAME / ORGANIZATION+IDENTIFIED BY identities — the spellings the
+	// statement itself inserts into the unique keys (T26-SRS-CREATE-
+	// PUBLICATION-01 frozen F-6). A DROP still carries no qualifiers:
+	// conflict premises are not its contract.
+	if decl.Kind == spec.SRSKindCreate || decl.Kind == spec.SRSKindCreateOrReplace {
+		lookup.Qualifiers = map[string]string{}
+		if decl.Attrs.HasName {
+			lookup.Qualifiers[spec.ObjectLookupQualifierSRSName] = decl.Attrs.Name
+		}
+		if decl.Attrs.HasOrganization && decl.Attrs.HasIdentifiedBy {
+			lookup.Qualifiers[spec.ObjectLookupQualifierSRSOrg] = decl.Attrs.OrgName
+			lookup.Qualifiers[spec.ObjectLookupQualifierSRSOrgID] = strconv.FormatUint(uint64(decl.Attrs.OrgID), 10)
+		}
+	}
+	snapshot, err := resolver(ctx, lookup)
 	if err != nil {
 		return nil, err
 	}

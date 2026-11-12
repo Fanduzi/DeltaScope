@@ -44,6 +44,21 @@ type srsOrderedEntry struct {
 	barrier bool
 }
 
+// mintSRSExistenceStale is the shared write that marks an authored
+// SRID's existence answer invalid — a drop's unproven arm, a boundary
+// lifecycle write, and the create family's undischarged arms all mint
+// through it. The mint kills any earlier present mint for that SRID
+// (the write may have removed the row) and flips the ordered entry's
+// barrier — kept, never deleted, so first-producer provenance
+// survives.
+func (s *batchState) mintSRSExistenceStale(srid uint32) {
+	s.srsExistenceStale[srid] = struct{}{}
+	delete(s.srsExistencePresent, srid)
+	if entry := s.srsOrdered[srid]; entry != nil {
+		entry.barrier = true
+	}
+}
+
 // applySRSStatement is the SRS family's own apply on the audited path.
 // The shared adjudication already classified the arm — the own apply
 // never re-derives it: only the unproven arm (a drop whose drop may
@@ -69,7 +84,10 @@ func (s *batchState) applySRSStatement(statement spec.Statement) error {
 		bound = statement.Metadata.SpatialReference
 	}
 	if adjudication == nil {
-		return nil
+		// The CREATE family carries its own shared adjudication and
+		// own-apply contract — one kind's apply never reads the
+		// sibling's.
+		return s.applySRSCreateStatement(statement)
 	}
 	switch adjudication.Arm {
 	case spec.SRSDropArmAbsentRefused, spec.SRSDropArmAbsentNoop, spec.SRSDropArmAbsentConditional:
@@ -94,13 +112,54 @@ func (s *batchState) applySRSStatement(statement spec.Statement) error {
 			}
 		}
 	case spec.SRSDropArmUnproven:
-		s.srsExistenceStale[decl.SRID] = struct{}{}
-		// The stale mint shadows any earlier same-SRID absence entry —
-		// barrier flips, provenance kept (barrier ⇒ stale flag holds by
-		// construction: the same apply mints both).
-		if entry := s.srsOrdered[decl.SRID]; entry != nil {
-			entry.barrier = true
+		s.mintSRSExistenceStale(decl.SRID)
+	}
+	return nil
+}
+
+// applySRSCreateStatement is the CREATE family's own apply on the
+// audited path (T26-SRS-CREATE-PUBLICATION-01 frozen F-8). The shared
+// adjudication already classified the arm — the apply never re-derives
+// it:
+//
+//   - SRSCreateArmReplace mints the authored SRID's presence
+//     unconditionally — the object exists before the statement and
+//     exists after whatever the replacement does.
+//   - SRSCreateArmCreate mints presence only when the owed set is
+//     empty — every premise discharged. Any residual debt (an
+//     unresolved conflict premise is the common case) means the
+//     create may or may not have landed: the existence stale flag is
+//     the honest mark.
+//   - SRSCreateArmUnproven mints the existence stale flag — the create
+//     may have landed.
+//   - Every other arm writes nothing: refusals prove no write, the
+//     blocked arm shadows every premise, and the exists-noop arm
+//     never mutates (the object is already present in the catalog the
+//     next bind re-reads — nothing to mint).
+//
+// CREATE is never an ordered-channel producer and never mints or
+// rewrites a proven-absence entry — the DROP publication protocol is
+// untouched; only the barrier flip inside a stale mint shadows it.
+func (s *batchState) applySRSCreateStatement(statement spec.Statement) error {
+	decl := statement.DDL.SpatialReference
+	adjudication := (*spec.SRSCreateAdjudication)(nil)
+	if statement.Metadata != nil {
+		adjudication = statement.Metadata.SRSCreate
+	}
+	if adjudication == nil {
+		return nil
+	}
+	switch adjudication.Arm {
+	case spec.SRSCreateArmReplace:
+		s.srsExistencePresent[decl.SRID] = true
+	case spec.SRSCreateArmCreate:
+		if len(adjudication.Owed) == 0 {
+			s.srsExistencePresent[decl.SRID] = true
+		} else {
+			s.mintSRSExistenceStale(decl.SRID)
 		}
+	case spec.SRSCreateArmUnproven:
+		s.mintSRSExistenceStale(decl.SRID)
 	}
 	return nil
 }

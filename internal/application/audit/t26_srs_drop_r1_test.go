@@ -37,6 +37,13 @@ type srsSQLFixture struct {
 	qoVersion string            // select version() answer inside loadSRS — when set, diverges from version (the LoadInstanceFacts/observed banner)
 	srs       map[uint32]string // srid -> srs_name (existence rows)
 	deps      []srsDepRow
+	// nameOwners maps an SRS_NAME spelling to the SRID holding it —
+	// the CREATE family's name-conflict read witnesses
+	// (T26-SRS-CREATE-PUBLICATION-01).
+	nameOwners map[string]uint32
+	// orgOwners maps an "ORGANIZATION<ID>" pair to the SRID holding it —
+	// the org+id conflict read witnesses.
+	orgOwners map[string]uint32
 	servers   map[string]bool
 	queries   []string
 	failOn    map[string]error // query-substring -> sentinel
@@ -105,11 +112,33 @@ func (c *srsSQLConn) QueryContext(_ context.Context, query string, args []driver
 		}
 		return &srsSQLRows{cols: []string{"version()"}, rows: [][]driver.Value{{banner}}, closeErr: closeErr}, nil
 	case strings.Contains(query, "st_spatial_reference_systems"):
-		srid := args[0].Value.(int64)
-		if name, ok := c.fixture.srs[uint32(srid)]; ok {
-			return &srsSQLRows{cols: []string{"srs_id", "srs_name"}, rows: [][]driver.Value{{srid, name}}, closeErr: closeErr}, nil
+		switch {
+		case strings.Contains(query, "srs_name = ?"):
+			// NAME conflict read — args[0] is the authored name
+			// spelling (T26-SRS-CREATE-PUBLICATION-01).
+			name, _ := args[0].Value.(string)
+			var rows [][]driver.Value
+			if owner, ok := c.fixture.nameOwners[name]; ok {
+				rows = append(rows, []driver.Value{int64(owner)})
+			}
+			return &srsSQLRows{cols: []string{"srs_id"}, rows: rows, closeErr: closeErr}, nil
+		case strings.Contains(query, "organization = ?"):
+			// ORGANIZATION + ORGANIZATION_COORDSYS_ID conflict read —
+			// args[0]/args[1] are the authored pair.
+			org, _ := args[0].Value.(string)
+			id, _ := args[1].Value.(int64)
+			var rows [][]driver.Value
+			if owner, ok := c.fixture.orgOwners[fmt.Sprintf("%s%d", org, id)]; ok {
+				rows = append(rows, []driver.Value{int64(owner)})
+			}
+			return &srsSQLRows{cols: []string{"srs_id"}, rows: rows, closeErr: closeErr}, nil
+		default:
+			srid := args[0].Value.(int64)
+			if name, ok := c.fixture.srs[uint32(srid)]; ok {
+				return &srsSQLRows{cols: []string{"srs_id", "srs_name"}, rows: [][]driver.Value{{srid, name}}, closeErr: closeErr}, nil
+			}
+			return &srsSQLRows{cols: []string{"srs_id", "srs_name"}, closeErr: closeErr}, nil
 		}
-		return &srsSQLRows{cols: []string{"srs_id", "srs_name"}, closeErr: closeErr}, nil
 	case strings.Contains(query, "st_geometry_columns"):
 		srid := args[0].Value.(int64)
 		var rows [][]driver.Value
@@ -262,6 +291,36 @@ func (p *srsSQLProvider) loadSRS(ctx context.Context, dialect spec.Dialect, req 
 		state.Read = true
 		state.Absence = spec.MySQLSRSDropAuditedDomain(version)
 	}
+	// The conflict reads fire only on provable request identities —
+	// mirroring loadMySQLSRSObject: a qualifier-less request (DROP)
+	// never issues them. An empty answer is a fact with zero matched
+	// SRIDs, never a proven "no conflict".
+	if name := req.Qualifiers[spec.ObjectLookupQualifierSRSName]; strings.TrimSpace(name) != "" {
+		fact, err := p.srsConflictRead(ctx, `
+			select srs_id
+			from information_schema.st_spatial_reference_systems
+			where srs_name = ?
+		`, name)
+		if err != nil {
+			return nil, err
+		}
+		state.NameConflict = fact
+	}
+	if org := req.Qualifiers[spec.ObjectLookupQualifierSRSOrg]; strings.TrimSpace(org) != "" {
+		if idText := req.Qualifiers[spec.ObjectLookupQualifierSRSOrgID]; strings.TrimSpace(idText) != "" {
+			if orgID, parseErr := strconv.ParseUint(idText, 10, 32); parseErr == nil {
+				fact, err := p.srsConflictRead(ctx, `
+					select srs_id
+					from information_schema.st_spatial_reference_systems
+					where organization = ? and organization_coordsys_id = ?
+				`, org, int64(orgID))
+				if err != nil {
+					return nil, err
+				}
+				state.OrgConflict = fact
+			}
+		}
+	}
 	rows, err := p.db.QueryContext(ctx, `
 		select table_schema, table_name, column_name
 		from information_schema.st_geometry_columns
@@ -289,6 +348,36 @@ func (p *srsSQLProvider) loadSRS(ctx context.Context, dialect spec.Dialect, req 
 	}
 	state.Dependencies = fact
 	return snapshot, nil
+}
+
+// srsConflictRead mirrors loadMySQLSRSConflict — the shared
+// scan/iteration/close contract for the NAME and ORGANIZATION witness
+// reads. Errors propagate wrapped; a zero-row answer is a fact with
+// empty MatchedSRIDs, never a proven "no conflict".
+func (p *srsSQLProvider) srsConflictRead(ctx context.Context, query string, args ...any) (*spec.SRSConflictFact, error) {
+	rows, err := p.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("query mysql srs conflict read: %w", err)
+	}
+	fact := &spec.SRSConflictFact{}
+	for rows.Next() {
+		var id sql.NullInt64
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return nil, fmt.Errorf("scan mysql srs conflict witness: %w", err)
+		}
+		if id.Valid && id.Int64 >= 0 && id.Int64 <= 4294967295 {
+			fact.MatchedSRIDs = append(fact.MatchedSRIDs, uint32(id.Int64))
+		}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, fmt.Errorf("iterate mysql srs conflict witnesses: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, fmt.Errorf("close mysql srs conflict read: %w", err)
+	}
+	return fact, nil
 }
 
 // loadServer mirrors loadMySQLServerObject's existence read — enough
@@ -818,14 +907,20 @@ func TestT26SRSR1S1RepeatRefuses(t *testing.T) {
 	assertReads(t, provider, fixture, 1, 1, 1, 1, 0)
 }
 
-// E7.1: a boundary CREATE OR REPLACE mints existence stale — the later
-// same-SRID DROP blocks with zero reads.
+// E7.1: an audited CREATE OR REPLACE carrying unresolved premises
+// mints existence stale — the later same-SRID DROP blocks with zero
+// reads.
 func TestT26SRSR1BoundaryLifecycleMintsStale(t *testing.T) {
 	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36"}, nil)
 	enriched := enrichSRS(t, newSRSState(provider), provider,
-		"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 4326 DEFINITION 'x'; DROP SPATIAL REFERENCE SYSTEM 4326")
-	if enriched[0].Unsupported == nil || enriched[0].Unsupported.Reason != spec.UnsupportedUnauditedReason {
-		t.Fatalf("stmt1 unsupported=%+v want implementation boundary", enriched[0].Unsupported)
+		"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 4326 NAME 'r' DEFINITION 'x'; DROP SPATIAL REFERENCE SYSTEM 4326")
+	if enriched[0].Unsupported != nil {
+		t.Fatalf("stmt1 unsupported=%+v want nil — MySQL CREATE OR REPLACE is audited", enriched[0].Unsupported)
+	}
+	if enriched[0].Metadata == nil || enriched[0].Metadata.SRSCreate == nil ||
+		enriched[0].Metadata.SRSCreate.Arm != spec.SRSCreateArmCreate ||
+		len(enriched[0].Metadata.SRSCreate.Owed) == 0 {
+		t.Fatalf("stmt1 adj=%+v want create arm with owed premises (stale-minting write)", enriched[0].Metadata)
 	}
 	if arm := srsArm(t, enriched[1]); arm != spec.SRSDropArmBlocked {
 		t.Fatalf("stmt2 arm=%v want blocked", arm)
@@ -833,7 +928,7 @@ func TestT26SRSR1BoundaryLifecycleMintsStale(t *testing.T) {
 	if got := srsOwed(enriched[1]); len(got) != 1 || got[0] != spec.SRSFactBatchEffects {
 		t.Fatalf("stmt2 owed=%v want [B]", got)
 	}
-	assertReads(t, provider, fixture, 1, 1, 1, 1, 0)
+	assertReads(t, provider, fixture, 1, 2, 1, 1, 0)
 	result := evaluateEnriched(t, enriched)
 	if n := len(result.Statements[1].Findings); n != 1 || result.Statements[1].Findings[0].RuleID != "ddl.mysql.srs.drop.reserved" {
 		t.Fatalf("stmt2 findings=%+v want only the reserved co-fire", result.Statements[1].Findings)

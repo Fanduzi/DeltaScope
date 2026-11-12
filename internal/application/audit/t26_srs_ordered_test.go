@@ -392,14 +392,18 @@ func TestT26SRSOrderedBoundaryBeforeFirstDrop(t *testing.T) {
 	fx := opAbsentFixture(opGrantConsumable)
 	provider, state := paRealState(t, fx)
 	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
-		"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 100001 DEFINITION 'x';"+
+		"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 100001 NAME 'r' DEFINITION 'x';"+
 			"DROP SPATIAL REFERENCE SYSTEM 100001;")
-	if enriched[0].Unsupported == nil {
-		t.Fatal("stmt1 must carry the implementation boundary")
+	if enriched[0].Unsupported != nil {
+		t.Fatalf("stmt1 Unsupported=%+v want nil — MySQL CREATE OR REPLACE is audited", enriched[0].Unsupported)
+	}
+	if enriched[0].Metadata == nil || enriched[0].Metadata.SRSCreate == nil ||
+		enriched[0].Metadata.SRSCreate.Arm != spec.SRSCreateArmCreate {
+		t.Fatalf("stmt1 adj=%+v want audited create arm", enriched[0].Metadata)
 	}
 	adj := paAdj(t, enriched[1])
 	if adj.Arm != spec.SRSDropArmBlocked {
-		t.Fatalf("arm=%v want blocked — the boundary shadowed the batch", adj.Arm)
+		t.Fatalf("arm=%v want blocked — the create-with-debt shadowed the batch", adj.Arm)
 	}
 	if len(adj.Owed) != 1 || adj.Owed[0] != spec.SRSFactBatchEffects {
 		t.Fatalf("owed=%v want exactly [B]", adj.Owed)
@@ -407,7 +411,7 @@ func TestT26SRSOrderedBoundaryBeforeFirstDrop(t *testing.T) {
 	if len(state.SRSOrderedSRIDs()) != 0 {
 		t.Fatal("blocked never consumes or mints")
 	}
-	paSameStale(t, audit.BatchStateStaleSet(state), map[uint32]bool{100001: true}, "boundary minted authored stale")
+	paSameStale(t, audit.BatchStateStaleSet(state), map[uint32]bool{100001: true}, "create-with-debt minted authored stale")
 }
 
 // --- OP-3: privilege lifecycle on the channel ---------------------------
@@ -1111,33 +1115,35 @@ func opStmtVecs(provider *r3ProductProvider, fx *r3Fixture, state *audit.TestBat
 
 // OP-5: the six frozen invalidation rows /5a../5f.
 func TestT26SRSOrderedInvalidationRealChain(t *testing.T) {
-	// OP-5a: IF EXISTS producer → same-SRID CREATE boundary → plain tail.
-	// The boundary binds via the full path (ordered gate excludes
-	// Unsupported!=nil) and hits stmt1's memoized objectCache answer;
-	// its apply mints stale+barrier; the plain tail is blocked-B.
-	t.Run("OP-5a-boundary-barrier", func(t *testing.T) {
+	// OP-5a: IF EXISTS producer → same-SRID audited create-with-debt →
+	// plain tail. The create binds via the resolver path (ordered gate
+	// is DROP-only); its apply mints stale+barrier; the plain tail is
+	// blocked-B.
+	t.Run("OP-5a-create-barrier", func(t *testing.T) {
 		fx := opAbsentFixture(opGrantConsumable)
 		provider, state := paRealState(t, fx)
 		var vecs [][5]int
 		opStmtVecs(provider, fx, state, &vecs)
 		enriched := audit.EnrichSRSPrivForTest(t, state, provider,
 			"DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001;"+
-				"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 100001 DEFINITION 'x';"+
+				"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 100001 NAME 'r' DEFINITION 'x';"+
 				"DROP SPATIAL REFERENCE SYSTEM 100001;")
 		if arm := paAdj(t, enriched[0]).Arm; arm != spec.SRSDropArmAbsentNoop {
 			t.Fatalf("stmt1 arm=%v want absent_noop", arm)
 		}
+		if enriched[1].Metadata == nil || enriched[1].Metadata.SRSCreate == nil ||
+			enriched[1].Metadata.SRSCreate.Arm != spec.SRSCreateArmCreate {
+			t.Fatalf("stmt2 adj=%+v want audited create arm", enriched[1].Metadata)
+		}
 		if arm := paAdj(t, enriched[2]).Arm; arm != spec.SRSDropArmBlocked {
-			t.Fatalf("stmt3 arm=%v want blocked — the boundary write shadowed the entry", arm)
+			t.Fatalf("stmt3 arm=%v want blocked — the create-with-debt write shadowed the entry", arm)
 		}
 		if owed := paAdj(t, enriched[2]).Owed; len(owed) != 1 || owed[0] != spec.SRSFactBatchEffects {
 			t.Fatalf("stmt3 owed=%v want exactly [B]", owed)
 		}
-		// stmt2 served its bound state via the objectCache full-key hit:
-		// zero reads, yet Read+Absence populated.
 		bound2 := opSRS(t, enriched[1])
 		if !bound2.Read || bound2.Exists || !bound2.Absence {
-			t.Fatalf("stmt2 bound=%+v want the memoized catalog answer", bound2)
+			t.Fatalf("stmt2 bound=%+v want the proven-absent catalog answer", bound2)
 		}
 		entry := opEntry(t, state, 100001)
 		if !entry.Barrier || !entry.Absent || entry.SourceArm != spec.SRSDropArmAbsentNoop || entry.PublishedIdx != 0 {
@@ -1147,12 +1153,14 @@ func TestT26SRSOrderedInvalidationRealChain(t *testing.T) {
 		if len(vecs) != 3 {
 			t.Fatalf("vecs=%d want 3 applies", len(vecs))
 		}
-		// Per-statement attribution: stmt1 Δ(1,1,1,1); stmt2 Δ(0,0,0,0)
-		// cache-hit; stmt3 Δ(0,0,0,0) blocked before reads.
+		// Per-statement attribution: stmt1 Δ(1,1,1,1); stmt2 Δ(1,1,1,1,0)
+		// (its own resolver pass — the name qualifier gives a distinct
+		// objectCache key, so no memoized hit); stmt3 Δ(0,0,0,0,0)
+		// blocked before reads.
 		opWantDelta(t, "stmt1", vecs[0], [5]int{1, 1, 1, 1, 1})
-		opWantDelta(t, "stmt2", opDelta(vecs[0], vecs[1]), [5]int{0, 0, 0, 0, 0})
+		opWantDelta(t, "stmt2", opDelta(vecs[0], vecs[1]), [5]int{1, 1, 1, 1, 0})
 		opWantDelta(t, "stmt3", opDelta(vecs[1], vecs[2]), [5]int{0, 0, 0, 0, 0})
-		r3AssertReads(t, provider, fx, 1, 1, 1, 1, 1, -1)
+		r3AssertReads(t, provider, fx, 2, 2, 2, 2, 1, -1)
 	})
 
 	// OP-5b: two publishes then consume — sibling provenance preserved.
@@ -1619,15 +1627,17 @@ func TestT26SRSOrderedBoundaryFlipIsolation(t *testing.T) {
 	})
 	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
 		"DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001;"+
-			"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 100001 DEFINITION 'x';"+
+			"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 100001 NAME 'r' DEFINITION 'x';"+
 			"DROP SPATIAL REFERENCE SYSTEM 100001;")
 	if arm := paAdj(t, enriched[0]).Arm; arm != spec.SRSDropArmAbsentNoop {
 		t.Fatalf("stmt1 arm=%v want absent_noop (IE producer)", arm)
 	}
-	if enriched[1].Unsupported == nil {
-		t.Fatal("stmt2 must carry the CREATE implementation boundary")
+	if enriched[1].Unsupported != nil ||
+		enriched[1].Metadata == nil || enriched[1].Metadata.SRSCreate == nil ||
+		enriched[1].Metadata.SRSCreate.Arm != spec.SRSCreateArmCreate {
+		t.Fatalf("stmt2 adj=%+v want audited create arm — MySQL CREATE OR REPLACE is audited", enriched[1])
 	}
-	// The plain tail is blocked-B — the boundary shadowed the batch.
+	// The plain tail is blocked-B — the create-with-debt shadowed the batch.
 	adj3 := paAdj(t, enriched[2])
 	if adj3.Arm != spec.SRSDropArmBlocked {
 		t.Fatalf("stmt3 arm=%v want blocked", adj3.Arm)

@@ -285,9 +285,12 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			// version is. The statement's catalog reads still issue on
 			// the provider's own channel qualification below — the
 			// gate decides audit applicability, never read
-			// applicability.
+			// applicability. The CREATE family inherits the same
+			// catalog-domain gate verbatim (T26-SRS-CREATE-
+			// PUBLICATION-01 frozen F-2: the 8.0.4+ applicability basis
+			// is the existing provider contract, not a new CREATE
+			// fact).
 			if statements[i].DDL != nil && statements[i].DDL.SpatialReference != nil &&
-				statements[i].DDL.SpatialReference.Kind == spec.SRSKindDrop &&
 				statements[i].Unsupported == nil &&
 				!spec.MySQLSRSDropAuditedDomain(resolvedVersion) {
 				statements[i].Unsupported = &spec.UnsupportedDetail{
@@ -758,6 +761,18 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 				// EXECUTION-01).
 				adjudication := spec.AdjudicateSRSDrop(enriched[i].Metadata.SpatialReference, decl.SRID, state.srsDepsStale, state.srsDropPrivilegePremise(), decl.IfExists)
 				enriched[i].Metadata.SRSDrop = &adjudication
+			}
+			// The audited create family carries its own shared
+			// adjudication — the same one-truth contract as the drop
+			// slice, with CREATE's own privilege premise projection
+			// (T26-SRS-CREATE-PUBLICATION-01 frozen F-7: never the
+			// drop premise's semantic identity).
+			if decl := enriched[i].DDL.SpatialReference; (decl.Kind == spec.SRSKindCreate || decl.Kind == spec.SRSKindCreateOrReplace) && enriched[i].Unsupported == nil {
+				if enriched[i].Metadata == nil {
+					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
+				}
+				adjudication := spec.AdjudicateSRSCreate(enriched[i].Metadata.SpatialReference, decl, state.srsCreatePrivilegePremise())
+				enriched[i].Metadata.SRSCreate = &adjudication
 			}
 		}
 

@@ -74,6 +74,11 @@ type corpusFixtureMetadataProvider struct {
 	// answer plus the bounded st_geometry_columns dependency witnesses
 	// (T26-SRS-DROP-EXECUTION-01).
 	spatialReferences map[string]*spec.ObjectSnapshot
+	// spatialReferenceSeeds keeps the raw fixture objects so the
+	// CREATE conflict reads can synthesize NAME / ORGANIZATION+
+	// IDENTIFIED BY witness sets by scanning every seeded row against
+	// the request qualifiers (T26-SRS-CREATE-PUBLICATION-01).
+	spatialReferenceSeeds map[string]corpusSRSObject
 }
 
 func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataProvider {
@@ -158,8 +163,10 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 	}
 	if metadata.SpatialReferences != nil {
 		provider.spatialReferences = make(map[string]*spec.ObjectSnapshot, len(metadata.SpatialReferences))
+		provider.spatialReferenceSeeds = make(map[string]corpusSRSObject, len(metadata.SpatialReferences))
 		for key, object := range metadata.SpatialReferences {
 			provider.spatialReferences[strings.TrimSpace(key)] = corpusSRSToSnapshot(key, object)
+			provider.spatialReferenceSeeds[strings.TrimSpace(key)] = object
 		}
 	}
 	return provider
@@ -367,19 +374,84 @@ func (p *corpusFixtureMetadataProvider) LoadPlacementPolicies(context.Context, s
 	return p.placement, nil
 }
 
+// srsConflictFacts attaches the CREATE family's qualified conflict
+// reads to the resolved snapshot — the NAME and ORGANIZATION+
+// IDENTIFIED BY witness sets scanned across every seeded row. The
+// snapshot's SRS state is cloned first so per-request facts never
+// mutate the shared fixture answer; a qualifier-less request (DROP)
+// returns the snapshot untouched. A zero-match scan is a fact with
+// empty MatchedSRIDs — read, zero rows — never a proven "no conflict".
+func (p *corpusFixtureMetadataProvider) srsConflictFacts(snapshot *spec.ObjectSnapshot, request spec.ObjectLookupRequest) *spec.ObjectSnapshot {
+	nameQualifier := strings.TrimSpace(request.Qualifiers[spec.ObjectLookupQualifierSRSName])
+	orgQualifier := strings.TrimSpace(request.Qualifiers[spec.ObjectLookupQualifierSRSOrg])
+	orgIDQualifier := strings.TrimSpace(request.Qualifiers[spec.ObjectLookupQualifierSRSOrgID])
+	if nameQualifier == "" && (orgQualifier == "" || orgIDQualifier == "") {
+		return snapshot
+	}
+	var orgID uint64
+	var orgIDOK bool
+	if orgQualifier != "" && orgIDQualifier != "" {
+		orgID, orgIDOK = parseCorpusUint(orgIDQualifier)
+	}
+	var nameFact, orgFact *spec.SRSConflictFact
+	if nameQualifier != "" {
+		nameFact = &spec.SRSConflictFact{}
+	}
+	if orgQualifier != "" && orgIDQualifier != "" && orgIDOK {
+		orgFact = &spec.SRSConflictFact{}
+	}
+	for key, object := range p.spatialReferenceSeeds {
+		srid, ok := parseCorpusUint(key)
+		if !ok {
+			continue
+		}
+		if nameFact != nil && object.Name == nameQualifier {
+			nameFact.MatchedSRIDs = append(nameFact.MatchedSRIDs, uint32(srid))
+		}
+		if orgFact != nil && object.Organization == orgQualifier &&
+			object.OrganizationCoordsysID != nil && uint64(*object.OrganizationCoordsysID) == orgID {
+			orgFact.MatchedSRIDs = append(orgFact.MatchedSRIDs, uint32(srid))
+		}
+	}
+	if nameFact == nil && orgFact == nil {
+		return snapshot
+	}
+	out := *snapshot
+	state := &spec.SpatialReferenceSystemState{}
+	if snapshot.SpatialReference != nil {
+		*state = *snapshot.SpatialReference
+	}
+	if nameFact != nil {
+		state.NameConflict = nameFact
+	}
+	if orgFact != nil {
+		state.OrgConflict = orgFact
+	}
+	out.SpatialReference = state
+	return &out
+}
+
+// parseCorpusUint parses one fixture key — the decimal SRID spellings
+// the corpus uses.
+func parseCorpusUint(text string) (uint64, bool) {
+	n, err := strconv.ParseUint(strings.TrimSpace(text), 10, 32)
+	return n, err == nil
+}
+
 // ResolveObject serves the fixture's sequence object answers — keyed
 // `schema.name`. An unkeyed identity or a nil sequence map is unvouched,
 // never a silent absent; non-sequence lookups stay unavailable.
 func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
 	if request.Type == "mysql_spatial_reference_system" {
+		var snapshot *spec.ObjectSnapshot
 		if p.spatialReferences == nil {
-			return &spec.ObjectSnapshot{Schema: request.Schema, Type: request.Type, Name: request.Name, Status: spec.MetadataStatusUnavailable}, nil
+			snapshot = &spec.ObjectSnapshot{Schema: request.Schema, Type: request.Type, Name: request.Name, Status: spec.MetadataStatusUnavailable}
+		} else if seeded, ok := p.spatialReferences[strings.TrimSpace(request.Name)]; ok {
+			snapshot = seeded
+		} else {
+			snapshot = &spec.ObjectSnapshot{Schema: request.Schema, Type: request.Type, Name: request.Name, Status: spec.MetadataStatusUnavailable}
 		}
-		snapshot, ok := p.spatialReferences[strings.TrimSpace(request.Name)]
-		if !ok {
-			return &spec.ObjectSnapshot{Schema: request.Schema, Type: request.Type, Name: request.Name, Status: spec.MetadataStatusUnavailable}, nil
-		}
-		return snapshot, nil
+		return p.srsConflictFacts(snapshot, request), nil
 	}
 	if request.Type == "mysql_tablespace" {
 		if p.tablespaces == nil {

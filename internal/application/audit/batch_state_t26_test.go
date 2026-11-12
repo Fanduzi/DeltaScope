@@ -171,8 +171,10 @@ func TestT26ServerSpellingBindsUnproven(t *testing.T) {
 }
 
 // An SRID statement binds existence + the dependency read through the
-// same provable numeric identity — no conflict qualifiers ride along
-// from authored spellings.
+// same provable numeric identity. The audited CREATE family qualifies
+// its conflict reads with the authored NAME — the identity the
+// statement itself inserts into the unique key (frozen F-6); a
+// DROP still carries no qualifiers at all.
 func TestT26SRSBindsBySRID(t *testing.T) {
 	provider := &t26Provider{srs: map[uint32]bool{4326: true}}
 	enriched := enrichT26(t, "CREATE SPATIAL REFERENCE SYSTEM 4326 NAME 'WGS 84' DEFINITION 'x'", spec.DialectMySQL, provider)
@@ -180,14 +182,32 @@ func TestT26SRSBindsBySRID(t *testing.T) {
 	if state == nil || !state.Read || !state.Exists || state.SRID != 4326 {
 		t.Fatalf("srs state = %+v, want read+confirmed 4326", state)
 	}
-	if state.NameConflict != nil || state.OrgConflict != nil {
-		t.Fatalf("conflict reads must stay unissued for authored spellings: %+v / %+v", state.NameConflict, state.OrgConflict)
+	if len(provider.calls) != 1 || provider.calls[0].typ != "mysql_spatial_reference_system" || provider.calls[0].name != "4326" {
+		t.Fatalf("resolver calls = %+v, want one srs:4326", provider.calls)
+	}
+	if provider.calls[0].qualifiers[spec.ObjectLookupQualifierSRSName] != "WGS 84" {
+		t.Fatalf("the authored NAME must qualify the conflict read: %+v", provider.calls[0].qualifiers)
+	}
+	if provider.calls[0].qualifiers[spec.ObjectLookupQualifierSRSOrg] != "" ||
+		provider.calls[0].qualifiers[spec.ObjectLookupQualifierSRSOrgID] != "" {
+		t.Fatalf("no ORGANIZATION pair was authored — no org qualifier may ride along: %+v", provider.calls[0].qualifiers)
+	}
+}
+
+// The DROP family never qualifies — its contract has no conflict
+// premises, so no authored spelling rides the lookup.
+func TestT26SRSDropBindsUnqualified(t *testing.T) {
+	provider := &t26Provider{srs: map[uint32]bool{4326: true}}
+	enriched := enrichT26(t, "DROP SPATIAL REFERENCE SYSTEM 4326", spec.DialectMySQL, provider)
+	state := enriched[0].Metadata.SpatialReference
+	if state == nil || !state.Read || !state.Exists || state.SRID != 4326 {
+		t.Fatalf("srs state = %+v, want read+confirmed 4326", state)
 	}
 	if len(provider.calls) != 1 || provider.calls[0].typ != "mysql_spatial_reference_system" || provider.calls[0].name != "4326" {
 		t.Fatalf("resolver calls = %+v, want one srs:4326", provider.calls)
 	}
-	if provider.calls[0].qualifiers[spec.ObjectLookupQualifierSRSName] != "" || provider.calls[0].qualifiers[spec.ObjectLookupQualifierSRSOrg] != "" {
-		t.Fatalf("authored spellings must never populate provable qualifiers: %+v", provider.calls[0].qualifiers)
+	if len(provider.calls[0].qualifiers) != 0 {
+		t.Fatalf("a DROP binds no conflict qualifiers: %+v", provider.calls[0].qualifiers)
 	}
 }
 

@@ -147,11 +147,16 @@ type corpusMetadata struct {
 // system — status is the provenance answer; dependencies list the
 // visible geometry-column witnesses the catalog returned for the SRID
 // (a non-empty set is the positive witness the dependency refusal
-// consumes). Omit members to keep them unproven.
+// consumes); name/organization/organization_coordsys_id are the
+// unique-key identities the CREATE conflict reads match against
+// (T26-SRS-CREATE-PUBLICATION-01). Omit members to keep them unproven.
 type corpusSRSObject struct {
-	Status       string                `yaml:"status"`
-	Exists       *bool                 `yaml:"exists,omitempty"`
-	Dependencies []corpusSRSDependency `yaml:"dependencies,omitempty"`
+	Status                 string                `yaml:"status"`
+	Exists                 *bool                 `yaml:"exists,omitempty"`
+	Name                   string                `yaml:"name,omitempty"`
+	Organization           string                `yaml:"organization,omitempty"`
+	OrganizationCoordsysID *uint32               `yaml:"organization_coordsys_id,omitempty"`
+	Dependencies           []corpusSRSDependency `yaml:"dependencies,omitempty"`
 }
 
 // corpusSRSDependency is one visible dependent column witness.

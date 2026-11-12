@@ -163,6 +163,13 @@ type batchState struct {
 	// entry.barrier ⇒ srsExistenceStale[entry.srid]
 	// (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01).
 	srsOrdered map[uint32]*srsOrderedEntry
+	// srsExistencePresent records per-SRID proven-presence mints —
+	// the CREATE family's own-apply writes it on arms whose
+	// post-state is certainly present (OR REPLACE on a proven-present
+	// SRID — the object exists whatever the replacement does — and a
+	// fully-discharged create arm); a stale mint kills it
+	// (T26-SRS-CREATE-PUBLICATION-01 frozen F-8).
+	srsExistencePresent map[uint32]bool
 	// srsExistenceStale records per-SRID existence invalidation — a
 	// qualified unproven drop or any boundary SRS lifecycle write may
 	// have removed or replaced the catalog row, so a later same-SRID
@@ -255,6 +262,7 @@ func newBatchState(dialect spec.Dialect, schema string, provider MetadataProvide
 		mysqlResourceGroupEntries: make(map[string]*batchMySQLResourceGroupEntry),
 		tablespaceEntries:         make(map[string]*batchTablespaceEntry),
 		srsExistenceStale:         make(map[uint32]struct{}),
+		srsExistencePresent:       make(map[uint32]bool),
 		srsOrdered:                make(map[uint32]*srsOrderedEntry),
 	}
 }
@@ -514,14 +522,10 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 			// gated DROP may have written the catalog row, so a later
 			// same-SRID statement cannot consume a stale answer
 			// (T26-SRS-DROP-EXECUTION-01).
-			s.srsExistenceStale[statement.DDL.SpatialReference.SRID] = struct{}{}
-			// A boundary write also shadows the ordered channel: the
-			// existing same-SRID entry flips to barrier — kept, never
-			// deleted, so first-producer provenance survives
-			// (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01).
-			if entry := s.srsOrdered[statement.DDL.SpatialReference.SRID]; entry != nil {
-				entry.barrier = true
-			}
+			// The shared mint keeps the stale flag, the present mint,
+			// and the ordered barrier coherent (kept, never deleted,
+			// so first-producer provenance survives).
+			s.mintSRSExistenceStale(statement.DDL.SpatialReference.SRID)
 			return nil
 		}
 		if statement.DDL != nil && statement.DDL.Tablespace != nil {

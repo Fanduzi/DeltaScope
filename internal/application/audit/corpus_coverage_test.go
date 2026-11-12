@@ -139,7 +139,11 @@ func corpusRuleDialectTargets(ruleID string) []string {
 	// T26-SRS-DROP-EXECUTION-01: the audited MySQL DROP SPATIAL
 	// REFERENCE SYSTEM rules — under TiDB the whole SRS family is a
 	// vendor boundary and PostgreSQL never binds SRS declarations.
-	case "ddl.mysql.srs.drop.srid0", "ddl.mysql.srs.drop.dependency", "ddl.mysql.srs.drop.reserved":
+	case "ddl.mysql.srs.drop.srid0", "ddl.mysql.srs.drop.dependency", "ddl.mysql.srs.drop.reserved",
+		"ddl.mysql.srs.create.srid0", "ddl.mysql.srs.create.duplicate_attribute",
+		"ddl.mysql.srs.create.missing_attribute", "ddl.mysql.srs.create.existence",
+		"ddl.mysql.srs.create.exists_noop", "ddl.mysql.srs.create.name_conflict",
+		"ddl.mysql.srs.create.organization_conflict":
 		return []string{"mysql"}
 	}
 	if strings.HasPrefix(ruleID, "ddl.pg.") || isPostgreSQLOnlyRule(ruleID) {
@@ -453,7 +457,13 @@ func isDeferredCorpusCoverageRule(ruleID string) bool {
 		// matrix instead (docs/verification/t26-srs-drop-proven-absent-
 		// contract-01 PA-2/PA-10).
 		"ddl.mysql.srs.drop.absent",
-		"ddl.mysql.srs.drop.absent_noop":
+		"ddl.mysql.srs.drop.absent_noop",
+		// T26-SRS-CREATE-PUBLICATION-01: the notice fires only on a
+		// consumable privilege premise — an online request-level
+		// observation with a positive witness. The offline corpus has
+		// no privilege provider/mode fixture, so the rule can never
+		// fire there (same contract as srs.drop.privilege above).
+		"ddl.mysql.srs.create.privilege":
 		return true
 	default:
 		return false

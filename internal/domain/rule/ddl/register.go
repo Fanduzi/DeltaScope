@@ -368,6 +368,30 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDMySQLSRSDropAbsentNoop, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newMySQLSRSDropAbsentNoopRule(cfg)
 		}},
+		{ruleID: ruleIDMySQLSRSCreateSRID0, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLSRSCreateSRID0Rule(cfg)
+		}},
+		{ruleID: ruleIDMySQLSRSCreateDuplicateAttribute, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLSRSCreateDuplicateAttributeRule(cfg)
+		}},
+		{ruleID: ruleIDMySQLSRSCreateMissingAttribute, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLSRSCreateMissingAttributeRule(cfg)
+		}},
+		{ruleID: ruleIDMySQLSRSCreateExistence, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLSRSCreateExistenceRule(cfg)
+		}},
+		{ruleID: ruleIDMySQLSRSCreateExistsNoop, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLSRSCreateExistsNoopRule(cfg)
+		}},
+		{ruleID: ruleIDMySQLSRSCreateNameConflict, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLSRSCreateNameConflictRule(cfg)
+		}},
+		{ruleID: ruleIDMySQLSRSCreateOrgConflict, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLSRSCreateOrgConflictRule(cfg)
+		}},
+		{ruleID: ruleIDMySQLSRSCreatePrivilege, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLSRSCreatePrivilegeRule(cfg)
+		}},
 		{ruleID: ruleIDAlterAddIndexColumnsMaxCount, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterAddedIndexColumnsMaxCountRule(8, rule.LevelWarning, cfg)
 		}},

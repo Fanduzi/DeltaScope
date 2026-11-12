@@ -116,6 +116,11 @@ type Metadata struct {
 	// audited qualified DROP SPATIAL REFERENCE SYSTEM slice
 	// (T26-SRS-DROP-EXECUTION-01). Nil outside that slice.
 	SRSDrop *SRSDropAdjudication `json:"-"`
+	// SRSCreate carries the shared per-statement adjudication for the
+	// audited qualified CREATE [OR REPLACE] SPATIAL REFERENCE SYSTEM
+	// slice (T26-SRS-CREATE-PUBLICATION-01 frozen contract). Nil
+	// outside that slice.
+	SRSCreate *SRSCreateAdjudication `json:"-"`
 }
 
 // MetadataSchemaTarget is the ordered schema binding accessor rules use —

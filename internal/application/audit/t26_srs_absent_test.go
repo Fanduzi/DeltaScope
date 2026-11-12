@@ -345,48 +345,35 @@ func TestT26SRSAbsentDifferentSRIDRereads(t *testing.T) {
 	r3AssertReads(t, p, fx, 2, 2, 2, 2, 1, 1)
 }
 
-// PA-6c: a boundary CREATE OR REPLACE mints the authored SRID stale;
-// the same-batch DROP's bind short-circuits — B, zero extra reads.
+// PA-6c: an audited CREATE OR REPLACE carrying unresolved premises
+// mints the authored SRID stale; the same-batch DROP's bind
+// short-circuits — B, zero extra reads.
 func TestT26SRSAbsentBoundaryPrefixBlocks(t *testing.T) {
 	fx := r3PrivilegeFixture()
 	fx.srs = nil
 	p := r3Harness(t, fx)
 	result, err := r3PrivilegeRequest(t, p,
-		"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 100001 DEFINITION 'x';"+
+		"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 100001 NAME 'r' DEFINITION 'x';"+
 			"DROP SPATIAL REFERENCE SYSTEM 100001;")
-	// The boundary CREATE marks the batch Unsupported — reported as an
-	// error while the audited statements still project.
-	if !errors.Is(err, audit.ErrUnsupportedStatement) {
-		t.Fatalf("err=%v want ErrUnsupportedStatement", err)
+	if err != nil {
+		t.Fatalf("err=%v want nil — the audited create reports findings, not a boundary", err)
 	}
 	if len(result.Statements) != 2 {
 		t.Fatalf("statements=%d want 2", len(result.Statements))
 	}
-	// R4-C: the public Unsupported set is exactly ONE entry — the typed
-	// CREATE OR REPLACE implementation boundary — bound to statement
-	// index 0 (the prefix) and to the Feature literal the prefix
-	// actually carries (`create_spatial_reference_system`, the
-	// candidate's DDLOperationCreateSpatialReferenceSystem), with the
-	// frozen reason/boundary/object metadata.
-	if len(result.Unsupported) != 1 {
-		t.Fatalf("unsupported=%+v want exactly one typed boundary entry", result.Unsupported)
+	if len(result.Unsupported) != 0 {
+		t.Fatalf("unsupported=%+v want none — MySQL CREATE OR REPLACE is audited", result.Unsupported)
 	}
-	createBoundary := &result.Unsupported[0]
-	if createBoundary.Index != 0 ||
-		createBoundary.Feature != string(spec.DDLOperationCreateSpatialReferenceSystem) ||
-		createBoundary.Metadata["boundary"] != "implementation" {
-		t.Fatalf("create boundary=%+v want index=0/feature=create_spatial_reference_system/boundary=implementation", createBoundary)
-	}
-	if createBoundary.Reason != spec.UnsupportedUnauditedReason ||
-		createBoundary.Metadata["object"] != "spatial_reference_system" {
-		t.Fatalf("create boundary=%+v want unaudited/spatial_reference_system implementation boundary", createBoundary)
-	}
+	// The prefix is the audited create-with-debt row: the consumable
+	// privilege premise discharges as exactly one conditional-audit
+	// notice, and the unresolved conflict premise surfaces as a gap —
+	// no blocking finding.
 	stmt1 := result.Statements[0]
-	if len(stmt1.Findings) != 0 || len(stmt1.EvidenceGaps) != 0 {
-		t.Fatalf("stmt1 findings=%+v gaps=%+v want both empty on the boundary", stmt1.Findings, stmt1.EvidenceGaps)
+	if len(stmt1.Findings) != 1 || stmt1.Findings[0].RuleID != "ddl.mysql.srs.create.privilege" {
+		t.Fatalf("stmt1 findings=%+v want exactly the create.privilege conditional-audit notice", stmt1.Findings)
 	}
-	if stmt1.Coverage.Status != report.CoverageIncomplete {
-		t.Fatalf("stmt1 coverage=%v want incomplete — a boundary row is never fully covered", stmt1.Coverage.Status)
+	if len(stmt1.EvidenceGaps) == 0 {
+		t.Fatal("stmt1 gaps=0 want the unresolved conflict premise")
 	}
 	// The tail DROP is the audited B row — its [B] gap, no findings,
 	// and the read increments the contract froze.

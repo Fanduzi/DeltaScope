@@ -82,14 +82,21 @@ func TestT26SRSR2BoundaryDifferentSRIDRefuses(t *testing.T) {
 		deps:    []srsDepRow{{schema: "s", table: "t", column: "g", srid: 100001}},
 	}, nil)
 	enriched := enrichSRS(t, newSRSState(provider), provider,
-		"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 4326 DEFINITION 'x'; DROP SPATIAL REFERENCE SYSTEM 100001")
-	if enriched[0].Unsupported == nil {
-		t.Fatal("stmt1 must carry the implementation boundary")
+		"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 4326 NAME 'r' DEFINITION 'x'; DROP SPATIAL REFERENCE SYSTEM 100001")
+	if enriched[0].Unsupported != nil {
+		t.Fatalf("stmt1 Unsupported=%+v want nil — MySQL CREATE OR REPLACE is audited", enriched[0].Unsupported)
+	}
+	// The audited create takes its create arm with unresolved premises
+	// (conflict unknown + privilege unproven) and mints staleness only
+	// on its own SRID — stmt2 on 100001 is untouched.
+	if enriched[0].Metadata == nil || enriched[0].Metadata.SRSCreate == nil ||
+		enriched[0].Metadata.SRSCreate.Arm != spec.SRSCreateArmCreate {
+		t.Fatalf("stmt1 adj=%+v want audited create arm", enriched[0].Metadata)
 	}
 	if arm := srsArm(t, enriched[1]); arm != spec.SRSDropArmRefusedDependency {
-		t.Fatalf("stmt2 arm=%v want refused_dependency — the boundary write mints staleness only on SRID 4326", arm)
+		t.Fatalf("stmt2 arm=%v want refused_dependency — the create write mints staleness only on SRID 4326", arm)
 	}
-	assertReads(t, provider, fixture, 2, 2, 2, 2, 0)
+	assertReads(t, provider, fixture, 2, 3, 2, 2, 0)
 	result := evaluateEnriched(t, enriched)
 	if len(result.Statements[1].Findings) != 1 ||
 		result.Statements[1].Findings[0].RuleID != "ddl.mysql.srs.drop.dependency" {

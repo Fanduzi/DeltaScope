@@ -1,0 +1,13 @@
+name: mysql_srs_create_authored_rules
+dialect: mysql
+category: ddl
+metadata:
+  instance:
+    version: "8.0.46"
+expect:
+  parse_ok: true
+  findings:
+    include:
+      - ddl.mysql.srs.create.srid0
+      - ddl.mysql.srs.create.duplicate_attribute
+      - ddl.mysql.srs.create.missing_attribute

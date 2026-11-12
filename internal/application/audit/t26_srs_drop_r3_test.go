@@ -52,12 +52,20 @@ type r3Fixture struct {
 	version     string            // select version() banner (Qo)
 	discoverVer string            // 'version' row inside SHOW VARIABLES
 	srs         map[uint32]string // srid -> srs_name
-	deps        []r3DepRow
-	servers     map[string]bool
-	account     string
-	grants      []string
-	failOn      map[string]error
-	count       map[string]int
+	// nameOwners/orgOwners answer the CREATE conflict reads — the
+	// qualified `srs_name = ?` and `organization = ? +
+	// organization_coordsys_id = ?` queries. Each maps the authored
+	// identity to the OWNING srid (which may differ from the authored
+	// one); an absent key answers empty. orgOwners keys are
+	// "org|orgID".
+	nameOwners map[string]uint32
+	orgOwners  map[string]uint32
+	deps       []r3DepRow
+	servers    map[string]bool
+	account    string
+	grants     []string
+	failOn     map[string]error
+	count      map[string]int
 	// depsScript overrides deps per "deps"-kind query — the nth deps
 	// query (0-indexed, counting full-path AND direct-reader reads
 	// alike) serves depsScript[n] filtered by SRID; indices past the
@@ -86,6 +94,13 @@ func r3Classify(query string) string {
 		return "ver"
 	case strings.Contains(query, "st_geometry_columns"):
 		return "deps"
+	// The two CREATE conflict reads ride the same catalog table as the
+	// existence read — distinguish them by their WHERE clause so
+	// per-seam counts stay attributable.
+	case strings.Contains(query, "srs_name = ?"):
+		return "name"
+	case strings.Contains(query, "organization = ?"):
+		return "orgc"
 	case strings.Contains(query, "st_spatial_reference_systems"):
 		return "exist"
 	case strings.Contains(query, "mysql.servers"):
@@ -151,6 +166,20 @@ func (c *r3Conn) QueryContext(_ context.Context, query string, args []driver.Nam
 			return &r3Rows{cols: []string{"srs_id", "srs_name"}, rows: [][]driver.Value{{srid, name}}}, nil
 		}
 		return &r3Rows{cols: []string{"srs_id", "srs_name"}}, nil
+	case "name":
+		name, _ := args[0].Value.(string)
+		if owner, ok := c.fx.nameOwners[name]; ok {
+			return &r3Rows{cols: []string{"srs_id"}, rows: [][]driver.Value{{int64(owner)}}}, nil
+		}
+		return &r3Rows{cols: []string{"srs_id"}}, nil
+	case "orgc":
+		org, _ := args[0].Value.(string)
+		orgID, _ := args[1].Value.(int64)
+		key := fmt.Sprintf("%s|%d", org, orgID)
+		if owner, ok := c.fx.orgOwners[key]; ok {
+			return &r3Rows{cols: []string{"srs_id"}, rows: [][]driver.Value{{int64(owner)}}}, nil
+		}
+		return &r3Rows{cols: []string{"srs_id"}}, nil
 	case "deps":
 		srid := args[0].Value.(int64)
 		deps := c.fx.deps

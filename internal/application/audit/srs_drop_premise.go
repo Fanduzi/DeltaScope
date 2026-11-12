@@ -14,19 +14,19 @@ import (
 )
 
 // statementsNeedMySQLSRSPrivilege reports whether the batch names at
-// least one audited DROP SPATIAL REFERENCE SYSTEM — the SRS slice the
-// shared privilege observation additionally exists for. Only a
-// version-qualified statement triggers the read: the phase-2 version
-// gate already marked every out-of-domain drop Unsupported before this
-// gate evaluates, so the check stays final-qualification-only and a
-// boundary statement can never pull the loader (T26-SRS-DROP-
-// PRIVILEGE-CONTRACT-01). A blocked-arm statement still qualifies —
+// least one audited SRS lifecycle statement — the slices the shared
+// privilege observation additionally exists for: DROP (T26-SRS-DROP-
+// PRIVILEGE-CONTRACT-01) and the CREATE family (T26-SRS-CREATE-
+// PUBLICATION-01 frozen F-7). Only a version-qualified statement
+// triggers the read: the phase-2 version gate already marked every
+// out-of-domain statement Unsupported before this gate evaluates, so
+// the check stays final-qualification-only and a boundary statement
+// can never pull the loader. A blocked-arm statement still qualifies —
 // the batch-effects debt is a later adjudication answer, not a loader
 // exclusion.
 func statementsNeedMySQLSRSPrivilege(statements []spec.Statement) bool {
 	for _, statement := range statements {
 		if statement.DDL != nil && statement.DDL.SpatialReference != nil &&
-			statement.DDL.SpatialReference.Kind == spec.SRSKindDrop &&
 			statement.Unsupported == nil {
 			return true
 		}
@@ -50,4 +50,21 @@ func (s *batchState) srsDropPrivilegePremise() spec.SRSDropPrivilege {
 		return spec.SRSDropPrivilegeSuppressed
 	}
 	return spec.SRSDropPrivilegeConsumable
+}
+
+// srsCreatePrivilegePremise projects the request-level witness onto
+// this CREATE statement's own SRS premise — CREATE's independent
+// projection (T26-SRS-CREATE-PUBLICATION-01 frozen F-7): the same raw
+// SUPER observation and ordered scope supply it, but the projection
+// member and the owed token (srs.create.privilege) carry CREATE's own
+// semantic identity — a satisfied drop premise is never borrowed, and
+// neither is a sibling's projection.
+func (s *batchState) srsCreatePrivilegePremise() spec.SRSCreatePrivilege {
+	if !s.serverDropPrivilegeWitness {
+		return spec.SRSCreatePrivilegeUnproven
+	}
+	if s.serverPrivilegeScopeEnded {
+		return spec.SRSCreatePrivilegeSuppressed
+	}
+	return spec.SRSCreatePrivilegeConsumable
 }

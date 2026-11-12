@@ -693,31 +693,37 @@ func TestT26SRSAbsentBoundaryPrefixInternal(t *testing.T) {
 		contaminatedAt[i] = state.Contaminated()
 	})
 	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
-		"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 100001 DEFINITION 'x';"+
+		"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 100001 NAME 'r' DEFINITION 'x';"+
 			"DROP SPATIAL REFERENCE SYSTEM 100001;")
 	if len(enriched) != 2 {
 		t.Fatalf("enriched=%d want 2", len(enriched))
 	}
 
-	// Prefix: implementation boundary, no SRSDrop adjudication.
+	// Prefix: audited create — no Unsupported, an SRSCreate
+	// adjudication whose create arm still carries unresolved premises
+	// (conflict unknown + privilege unproven) so its own-apply mints
+	// authored staleness exactly like the old boundary lifecycle.
 	prefix := enriched[0]
-	if prefix.Unsupported == nil ||
-		prefix.Unsupported.Metadata["boundary"] != "implementation" ||
-		prefix.Unsupported.Metadata["object"] != "spatial_reference_system" ||
-		prefix.Unsupported.Reason != spec.UnsupportedUnauditedReason {
-		t.Fatalf("prefix unsupported=%+v want implementation/spatial_reference_system boundary", prefix.Unsupported)
+	if prefix.Unsupported != nil {
+		t.Fatalf("prefix unsupported=%+v want nil — MySQL CREATE OR REPLACE is audited", prefix.Unsupported)
 	}
-	if prefix.Metadata != nil && prefix.Metadata.SRSDrop != nil {
-		t.Fatalf("prefix carries an SRSDrop adjudication — boundary rows never adjudicate: %+v", prefix.Metadata.SRSDrop)
+	if prefix.Metadata == nil || prefix.Metadata.SRSCreate == nil ||
+		prefix.Metadata.SRSCreate.Arm != spec.SRSCreateArmCreate ||
+		len(prefix.Metadata.SRSCreate.Owed) == 0 {
+		t.Fatalf("prefix adj=%+v want audited create arm with owed premises", prefix.Metadata)
+	}
+	if prefix.Metadata.SRSDrop != nil {
+		t.Fatalf("prefix carries an SRSDrop adjudication — create rows never adjudicate as drop: %+v", prefix.Metadata.SRSDrop)
 	}
 	// Prefix own-apply: authored stale set exactly {100001}; no
-	// contamination (the boundary lifecycle write is the ONLY effect).
+	// contamination (the create-with-debt write is the ONLY effect).
 	paSameStale(t, staleAt[0], map[uint32]bool{100001: true}, "prefix apply")
 	if contaminatedAt[0] {
 		t.Fatal("prefix apply must not contaminate the batch — tracked facts provably stand")
 	}
-	// Prefix reads: the pre-state existence pass it issued before its
-	// boundary apply — measured, not inferred.
+	// Prefix reads: the existence+conflict+deps pass it issued before
+	// its own-apply — measured, not inferred. The name-conflict read
+	// counts under its own seam key, outside this five-dim vector.
 	if d := [5]int{readsAt[0][0] - base[0], readsAt[0][1] - base[1],
 		readsAt[0][2] - base[2], readsAt[0][3] - base[3], readsAt[0][4] - base[4]}; d != [5]int{1, 1, 1, 1, 1} {
 		t.Fatalf("prefix increment=%v want [1 1 1 1 1] — its single pass + the one-time load", d)

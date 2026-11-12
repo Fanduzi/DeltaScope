@@ -1,0 +1,22 @@
+name: mysql_srs_create_provider_rules
+dialect: mysql
+category: ddl
+metadata:
+  instance:
+    version: "8.0.46"
+  spatial_references:
+    "4326":
+      status: confirmed
+    "4327":
+      status: confirmed
+      name: taken
+      organization: EPSG
+      organization_coordsys_id: 1234
+expect:
+  parse_ok: true
+  findings:
+    include:
+      - ddl.mysql.srs.create.existence
+      - ddl.mysql.srs.create.exists_noop
+      - ddl.mysql.srs.create.name_conflict
+      - ddl.mysql.srs.create.organization_conflict

@@ -1214,6 +1214,46 @@ rules:
     level: notice
     params:
 
+  ddl.mysql.srs.create.srid0:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.mysql.srs.create.duplicate_attribute:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.mysql.srs.create.missing_attribute:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.mysql.srs.create.existence:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.mysql.srs.create.exists_noop:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.mysql.srs.create.name_conflict:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.mysql.srs.create.organization_conflict:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.mysql.srs.create.privilege:
+    enabled: true
+    level: notice
+    params:
+
   ddl.tidb.table.auto_random.valid:
     enabled: true
     level: blocker

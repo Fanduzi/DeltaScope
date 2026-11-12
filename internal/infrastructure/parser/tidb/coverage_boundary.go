@@ -83,22 +83,16 @@ func applyCoverageBoundary(dialect spec.Dialect, statement *spec.Statement, node
 		if statement.DDL.SpatialReference != nil {
 			// The MySQL spatial reference system family (T26/#105): on
 			// TiDB the whole family is not TiDB semantics — a vendor
-			// boundary, never a MySQL verdict. On MySQL a DROP enters
-			// the audited path pending the enrich-time version gate
-			// (T26-SRS-DROP-EXECUTION-01 — this parser-level check never
-			// sees the resolved version); CREATE and CREATE OR REPLACE
-			// stay the named implementation boundary.
+			// boundary, never a MySQL verdict. On MySQL every SRS kind
+			// enters the audited path pending the enrich-time version
+			// gate (T26-SRS-DROP-EXECUTION-01 and the
+			// T26-SRS-CREATE-PUBLICATION-01 frozen contract — this
+			// parser-level check never sees the resolved version).
 			if dialect == spec.DialectTiDB {
 				statement.Unsupported = &spec.UnsupportedDetail{
 					Feature:  string(statement.DDL.Operation),
 					Reason:   spec.UnsupportedVendorBoundaryReason,
 					Metadata: map[string]any{"boundary": "vendor"},
-				}
-			} else if statement.DDL.SpatialReference.Kind != spec.SRSKindDrop {
-				statement.Unsupported = &spec.UnsupportedDetail{
-					Feature:  string(statement.DDL.Operation),
-					Reason:   spec.UnsupportedUnauditedReason,
-					Metadata: map[string]any{"boundary": "implementation", "object": "spatial_reference_system"},
 				}
 			}
 			return
