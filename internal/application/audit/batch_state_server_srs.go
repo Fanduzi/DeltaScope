@@ -148,6 +148,26 @@ func (s *batchState) bindMySQLSRS(ctx context.Context, statement spec.Statement)
 		bound.UnreadReason = spec.MetadataUnreadBatchEffects
 		return bound, nil
 	}
+	// Ordered channel (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01):
+	// an audited drop consumes a batch-proven absence entry only while
+	// BOTH the active same-SRID entry and the deps-reader capability
+	// hold — the ordered branch commits (marker bound, deps-only read
+	// issued) or never happens; a barrier'd entry or a nil reader falls
+	// through to the existing full path untouched (the entry is not
+	// consumed, no OrderedAbsent is written). The deps-only response is
+	// the statement's fresh witness — the skipped existence read is
+	// never laundered into Read/Exists/Absence.
+	if s.orderedSRSDropEligible(statement) {
+		if entry := s.srsOrdered[decl.SRID]; entry != nil && entry.absent && !entry.barrier && s.srsDepsReader != nil {
+			deps, err := s.srsDepsReader(ctx, decl.SRID)
+			if err != nil {
+				return nil, err
+			}
+			bound.OrderedAbsent = true
+			bound.Dependencies = deps
+			return bound, nil
+		}
+	}
 	resolver := s.objectResolverFor(s.mysqlSRSResolver)
 	if resolver == nil {
 		return bound, nil
@@ -163,4 +183,21 @@ func (s *batchState) bindMySQLSRS(ctx context.Context, statement spec.Statement)
 		return snapshot.SpatialReference, nil
 	}
 	return bound, nil
+}
+
+// orderedSRSDropEligible is the ordered channel's admission gate —
+// bindMySQLSRS serves every MySQL SRS declaration (audited drops AND
+// boundary writes), so ordered consumption is gated by an explicit
+// predicate evaluated inside the bind: MySQL dialect, a drop kind, no
+// unsupported marker, and the already-bound resolvedVersion inside the
+// audited domain. A statement failing any conjunct never reaches the
+// ordered lookup and takes the pre-existing resolver path unchanged;
+// no new SRID-0 or boundary pre-read short-circuit is introduced
+// (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01 contract §4.1).
+func (s *batchState) orderedSRSDropEligible(statement spec.Statement) bool {
+	decl := statement.DDL.SpatialReference
+	return s.dialect == spec.DialectMySQL &&
+		decl.Kind == spec.SRSKindDrop &&
+		statement.Unsupported == nil &&
+		spec.MySQLSRSDropAuditedDomain(s.resolvedVersion)
 }

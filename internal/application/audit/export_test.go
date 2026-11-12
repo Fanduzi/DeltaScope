@@ -9,6 +9,7 @@ package audit
 // (T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01 R2-B1).
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
@@ -30,6 +31,19 @@ func NewTestBatchState(provider MetadataProvider) *batchState {
 func EnrichSRSPrivForTest(t *testing.T, state *batchState, provider MetadataProvider, sqlText string) []spec.Statement {
 	t.Helper()
 	return enrichSRSPriv(t, state, provider, sqlText)
+}
+
+// EnrichSRSPrivErrForTest is the error-returning twin of
+// EnrichSRSPrivForTest — the OP-4c ordered-reader error row asserts
+// the propagated sentinel instead of t.Fatalf (R: no adjudication
+// runs on the failing statement).
+func EnrichSRSPrivErrForTest(t *testing.T, state *batchState, provider MetadataProvider, sqlText string) ([]spec.Statement, error) {
+	t.Helper()
+	statements, failures := parseT26(t, sqlText)
+	return state.enrichStatements(context.Background(),
+		&MetadataRequest{Schema: "golden", Provider: provider,
+			PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession},
+		statements, failures, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
 }
 
 // EvaluateEnrichedForTest mirrors evaluateEnriched — the real rule
@@ -82,4 +96,44 @@ func (s *batchState) SetAfterApplyObserve(fn func(int, *spec.Statement)) {
 // never read applicability.
 func (s *batchState) SeedResolvedVersion(version *spec.VersionIdentity) {
 	s.resolvedVersion = version
+}
+
+// SRSOrderedEntryView is a deep-copy read-out of one ordered-channel
+// entry's provenance — the OP rows assert mint/keep/barrier through
+// this independent view, never the live pointer
+// (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01).
+type SRSOrderedEntryView struct {
+	SRID         uint32
+	Absent       bool
+	SourceArm    spec.SRSDropArm
+	OwnPrivilege spec.SRSDropPrivilege
+	PublishedIdx int
+	Barrier      bool
+}
+
+// SRSOrderedEntry returns a copy of the entry for srid — (view,false)
+// means no entry exists.
+func (s *batchState) SRSOrderedEntry(srid uint32) (SRSOrderedEntryView, bool) {
+	entry, ok := s.srsOrdered[srid]
+	if !ok {
+		return SRSOrderedEntryView{}, false
+	}
+	return SRSOrderedEntryView{
+		SRID:         entry.srid,
+		Absent:       entry.absent,
+		SourceArm:    entry.sourceArm,
+		OwnPrivilege: entry.ownPrivilege,
+		PublishedIdx: entry.publishedIdx,
+		Barrier:      entry.barrier,
+	}, true
+}
+
+// SRSOrderedSRIDs returns the channel's live key set — exact-set
+// sibling-isolation assertions (OP-8c) consume it.
+func (s *batchState) SRSOrderedSRIDs() []uint32 {
+	ids := make([]uint32, 0, len(s.srsOrdered))
+	for id := range s.srsOrdered {
+		ids = append(ids, id)
+	}
+	return ids
 }

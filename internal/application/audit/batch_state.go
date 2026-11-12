@@ -140,6 +140,29 @@ type batchState struct {
 	// lookup for the MySQL spatial reference system family (T26/#105
 	// provider round). Nil falls back to the provider's ObjectResolver.
 	mysqlSRSResolver func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
+	// srsDepsReader is the ordered channel's deps-only read — a direct,
+	// deliberately uncached forwarder onto the request's own provider,
+	// re-wired every enrich call and set only while the provider itself
+	// satisfies MySQLSRSDependencyReader (capability is judged on the
+	// provider, never a request-level adapter; a plain ObjectResolver
+	// does not imply it). Nil means ordered consumption is unavailable
+	// and the statement takes the existing full resolver path
+	// (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01).
+	srsDepsReader func(ctx context.Context, srid uint32) (*spec.SRSDependencyFact, error)
+	// applyStmtIndex is the index of the statement currently inside
+	// apply — set by the enrich loop before each own-apply so the SRS
+	// ordered channel can record the producer's statement index within
+	// its enrich call (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01).
+	applyStmtIndex int
+	// srsOrdered holds the ordered channel's proven-absence entries —
+	// one per authored uint32 SRID, minted by an A arm's own-apply.
+	// Entries are internal provenance, never a second catalog: a
+	// same-SRID stale mint flips an existing entry's barrier while
+	// keeping the first producer's attribution (keep, never delete),
+	// and every reachable state satisfies
+	// entry.barrier ⇒ srsExistenceStale[entry.srid]
+	// (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01).
+	srsOrdered map[uint32]*srsOrderedEntry
 	// srsExistenceStale records per-SRID existence invalidation — a
 	// qualified unproven drop or any boundary SRS lifecycle write may
 	// have removed or replaced the catalog row, so a later same-SRID
@@ -232,6 +255,7 @@ func newBatchState(dialect spec.Dialect, schema string, provider MetadataProvide
 		mysqlResourceGroupEntries: make(map[string]*batchMySQLResourceGroupEntry),
 		tablespaceEntries:         make(map[string]*batchTablespaceEntry),
 		srsExistenceStale:         make(map[uint32]struct{}),
+		srsOrdered:                make(map[uint32]*srsOrderedEntry),
 	}
 }
 
@@ -491,6 +515,13 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 			// same-SRID statement cannot consume a stale answer
 			// (T26-SRS-DROP-EXECUTION-01).
 			s.srsExistenceStale[statement.DDL.SpatialReference.SRID] = struct{}{}
+			// A boundary write also shadows the ordered channel: the
+			// existing same-SRID entry flips to barrier — kept, never
+			// deleted, so first-producer provenance survives
+			// (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01).
+			if entry := s.srsOrdered[statement.DDL.SpatialReference.SRID]; entry != nil {
+				entry.barrier = true
+			}
 			return nil
 		}
 		if statement.DDL != nil && statement.DDL.Tablespace != nil {

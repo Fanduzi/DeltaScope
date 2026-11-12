@@ -161,6 +161,18 @@ func ValidAbsence(state *SpatialReferenceSystemState, authoredSRID uint32) bool 
 		state.Read && !state.Exists && state.Absence
 }
 
+// OrderedAbsentConsumed is the ordered channel's single cross-layer
+// predicate (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01 contract
+// §4.5): the bind writes the marker only after certifying an active
+// same-SRID entry (absent && !barrier) — the barrier question is
+// decided at bind, so the adjudication consumes marker + authored-SRID
+// equality verbatim with no second check. `state.SRID` is always
+// assigned the declaration's authored SRID at bind; the channel's map
+// key never substitutes for this field-level contract.
+func OrderedAbsentConsumed(state *SpatialReferenceSystemState, authoredSRID uint32) bool {
+	return state != nil && state.OrderedAbsent && state.SRID == authoredSRID
+}
+
 // AdjudicateSRSDrop computes the shared adjudication for one audited
 // qualified MySQL DROP SPATIAL REFERENCE SYSTEM. The caller guarantees
 // the audited slice — MySQL dialect, Kind == drop, no unsupported
@@ -175,10 +187,13 @@ func ValidAbsence(state *SpatialReferenceSystemState, authoredSRID uint32) bool 
 //     and no dependency staleness — refused, owes nothing. The
 //     positive witness outranks a simultaneously proven absence: the
 //     SRID's visible dependents exist regardless.
-//   - A: ValidAbsence holds for the authored SRID. A plain drop is
-//     refused_absent (owes nothing, never consumes the premise); an
-//     IF EXISTS drop is absent_noop while the premise is consumable
-//     (discharges it), else absent_conditional owing exactly
+//   - A: ValidAbsence holds for the authored SRID — a catalog-certified
+//     absence — or OrderedAbsentConsumed holds: the batch's ordered
+//     channel supplied a proven absence fact an earlier statement
+//     certified (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01). A
+//     plain drop is refused_absent (owes nothing, never consumes the
+//     premise); an IF EXISTS drop is absent_noop while the premise is
+//     consumable (discharges it), else absent_conditional owing exactly
 //     {srs.drop.privilege} — never consumed.
 //   - S2: everything else — owes column dependencies always,
 //     privilege while this statement's own premise is not consumable,
@@ -206,7 +221,7 @@ func AdjudicateSRSDrop(state *SpatialReferenceSystemState, srid uint32, depsStal
 		// stays consumed in the unproven arm's owed set.
 		adjudication.Arm = SRSDropArmRefusedDependency
 		return adjudication
-	case ValidAbsence(state, srid):
+	case ValidAbsence(state, srid) || OrderedAbsentConsumed(state, srid):
 		switch {
 		case !ifExists:
 			adjudication.Arm = SRSDropArmAbsentRefused

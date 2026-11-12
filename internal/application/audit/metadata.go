@@ -66,6 +66,21 @@ type MySQLServerDropPrivilegeLoader interface {
 	LoadMySQLServerDropPrivilege(ctx context.Context, dialect spec.Dialect) (*spec.MySQLServerDropPrivilegeObservation, error)
 }
 
+// MySQLSRSDependencyReader optionally supplies the SRS ordered
+// channel's deps-only read — the provider's Qo support gate plus the
+// ST_GEOMETRY_COLUMNS witness read for one authored SRID; the
+// existence query is never issued on this path
+// (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01). Capability is
+// judged on the wired provider itself: a plain ObjectResolver
+// implementation does not imply it, and a request-level adapter or
+// wrapper is never probed. A nil fact with a nil error is a real
+// answer (no witness available, e.g. a proven-unsupported support
+// gate); query/iteration/close errors propagate and are never degraded
+// into empty facts.
+type MySQLSRSDependencyReader interface {
+	ResolveMySQLSRSDependencies(ctx context.Context, srid uint32) (*spec.SRSDependencyFact, error)
+}
+
 // MetadataRequest describes one optional metadata-aware audit invocation.
 type MetadataRequest struct {
 	Schema   string
@@ -394,6 +409,16 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 		state.tablespaceResolver = cachedObjectResolver
 		state.mysqlServerResolver = cachedObjectResolver
 		state.mysqlSRSResolver = cachedObjectResolver
+	}
+	// The ordered channel's deps-only reader is a direct capability of
+	// the request's own provider — re-judged every enrich call so a
+	// reused batchState never inherits a stale capability. The
+	// forwarder is deliberately uncached: every consuming statement
+	// must see a fresh dependency witness, so objectCache is bypassed
+	// (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01).
+	state.srsDepsReader = nil
+	if reader, ok := state.provider.(MySQLSRSDependencyReader); ok {
+		state.srsDepsReader = reader.ResolveMySQLSRSDependencies
 	}
 
 	consumed := 0
@@ -732,6 +757,7 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 		if state.afterBindObserve != nil {
 			state.afterBindObserve(i, &enriched[i])
 		}
+		state.applyStmtIndex = i
 		if err := state.apply(ctx, enriched[i]); err != nil {
 			return nil, err
 		}

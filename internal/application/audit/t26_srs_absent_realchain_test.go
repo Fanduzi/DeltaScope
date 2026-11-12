@@ -227,19 +227,27 @@ func TestT26SRSAbsentStaleChannelsRealChain(t *testing.T) {
 
 // PA-6d over the real provider: two enrichStatements calls sharing one
 // batchState never share the object cache — call2 re-reads and lands
-// S2 while call1's proven absence minted nothing.
+// S2 while call1 minted nothing. Ordered publication
+// (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01) reserves the changed-
+// answer re-read semantics for a NON-minting call1: a refused-
+// dependency S1 arm publishes no entry, so call2 still exercises the
+// fresh full-path read (OP-2d owns the shared-state ordered hit).
 func TestT26SRSAbsentRecachesPerEnrichRealChain(t *testing.T) {
 	fx := &r3Fixture{
 		version: "8.0.36",
 		account: "app@%",
 		grants:  []string{"GRANT SELECT, SUPER ON *.* TO `app`@`%`"},
+		depsScript: [][]r3DepRow{
+			{{schema: "s", table: "t", column: "g", srid: 100001}},
+			nil,
+		},
 	}
 	provider, state := paRealState(t, fx)
 
 	before := paReadsVector(provider, fx)
 	enriched1 := audit.EnrichSRSPrivForTest(t, state, provider, "DROP SPATIAL REFERENCE SYSTEM 100001;")
-	if arm := paAdj(t, enriched1[0]).Arm; arm != spec.SRSDropArmAbsentRefused {
-		t.Fatalf("call1 arm=%v want absent_refused", arm)
+	if arm := paAdj(t, enriched1[0]).Arm; arm != spec.SRSDropArmRefusedDependency {
+		t.Fatalf("call1 arm=%v want refused_dependency — the positive witness answers call1", arm)
 	}
 	paSameStale(t, audit.BatchStateStaleSet(state), map[uint32]bool{}, "after call1")
 	mid := paReadsVector(provider, fx)
@@ -383,7 +391,7 @@ func paSnapEqual(t *testing.T, who string, a, b paStmtSnap) {
 		x, y := a.srs, b.srs
 		if x.SRID != y.SRID || x.Status != y.Status || x.Exists != y.Exists ||
 			x.Absence != y.Absence || x.Read != y.Read || x.UnreadReason != y.UnreadReason ||
-			x.CatalogName != y.CatalogName {
+			x.CatalogName != y.CatalogName || x.OrderedAbsent != y.OrderedAbsent {
 			t.Fatalf("%s SpatialReference differs: %+v vs %+v", who, x, y)
 		}
 		paSRSConflictEqual(t, who+" name", x.NameConflict, y.NameConflict)

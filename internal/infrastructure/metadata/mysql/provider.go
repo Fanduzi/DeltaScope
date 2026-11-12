@@ -191,6 +191,7 @@ func (p *Provider) FindSchemasForTable(ctx context.Context, table string) ([]str
 }
 
 var _ appaudit.MetadataProvider = (*Provider)(nil)
+var _ appaudit.MySQLSRSDependencyReader = (*Provider)(nil)
 
 // LoadInstanceFacts reads server-level variables that influence audit behavior.
 // Facts that cannot be observed stay unknown (Known=false) rather than being

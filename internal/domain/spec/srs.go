@@ -138,6 +138,13 @@ type SpatialReferenceSystemState struct {
 	// Columns are the visible cross-schema witnesses, never a
 	// proven-complete set.
 	Dependencies *SRSDependencyFact `json:"-"`
+	// OrderedAbsent marks a bind served by the batch's ordered channel —
+	// an earlier statement's catalog-certified absence was consumed for
+	// this authored SRID (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01).
+	// It is internal provenance, never serialized and never a catalog
+	// fact: Read/Exists/Absence/Status stay zero on an ordered-served
+	// bind, so every consumer must read it explicitly.
+	OrderedAbsent bool `json:"-"`
 }
 
 // SRSConflictFact is the bounded witness answer of one conflict read —

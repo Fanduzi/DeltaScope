@@ -294,6 +294,26 @@ func (p *Provider) loadMySQLSRSConflict(ctx context.Context, query string, args 
 	return fact, nil
 }
 
+// ResolveMySQLSRSDependencies is the SRS ordered channel's deps-only
+// read (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01): the Qo support
+// gate plus the ST_GEOMETRY_COLUMNS witness read for one authored
+// SRID — the existence query is never issued on this path, and the
+// call is deliberately uncached so every consuming statement sees a
+// fresh witness. A proven-unsupported target short-circuits before
+// the catalog query and answers nil fact/nil error; an unparseable Qo
+// keeps the accepted continue direction (the deps read still issues);
+// query/iteration/close errors propagate wrapped.
+func (p *Provider) ResolveMySQLSRSDependencies(ctx context.Context, srid uint32) (*spec.SRSDependencyFact, error) {
+	supported, proven, _, err := mysqlSRSCatalogSupport(ctx, p.db)
+	if err != nil {
+		return nil, err
+	}
+	if proven && !supported {
+		return nil, nil
+	}
+	return p.loadMySQLSRSDependencies(ctx, uint64(srid))
+}
+
 // loadMySQLSRSDependencies reads the ST_GEOMETRY_COLUMNS witness set for
 // one SRID — the visible schema/table/column identities whose declared
 // SRID is the target. The catalog view is privilege-filtered, so

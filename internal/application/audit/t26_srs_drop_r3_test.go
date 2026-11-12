@@ -58,6 +58,13 @@ type r3Fixture struct {
 	grants      []string
 	failOn      map[string]error
 	count       map[string]int
+	// depsScript overrides deps per "deps"-kind query — the nth deps
+	// query (0-indexed, counting full-path AND direct-reader reads
+	// alike) serves depsScript[n] filtered by SRID; indices past the
+	// script answer empty. Ordered-publication freshness rows script
+	// changing witness answers across one batch (OP-4a).
+	depsScript [][]r3DepRow
+	depsCalls  int
 }
 
 // r3Classify maps each product-loader query to its seam kind. Order
@@ -129,8 +136,18 @@ func (c *r3Conn) QueryContext(_ context.Context, query string, args []driver.Nam
 		return &r3Rows{cols: []string{"srs_id", "srs_name"}}, nil
 	case "deps":
 		srid := args[0].Value.(int64)
+		deps := c.fx.deps
+		if c.fx.depsScript != nil {
+			i := c.fx.depsCalls
+			c.fx.depsCalls++
+			if i < len(c.fx.depsScript) {
+				deps = c.fx.depsScript[i]
+			} else {
+				deps = nil
+			}
+		}
 		var rows [][]driver.Value
-		for _, dep := range c.fx.deps {
+		for _, dep := range deps {
 			if dep.srid == uint64(srid) {
 				rows = append(rows, []driver.Value{dep.schema, dep.table, dep.column})
 			}
@@ -207,6 +224,15 @@ func (p *r3ProductProvider) ResolveObject(ctx context.Context, dialect spec.Dial
 func (p *r3ProductProvider) LoadMySQLServerDropPrivilege(ctx context.Context, dialect spec.Dialect) (*spec.MySQLServerDropPrivilegeObservation, error) {
 	p.privCalls++
 	return p.inner.LoadMySQLServerDropPrivilege(ctx, dialect)
+}
+
+// ResolveMySQLSRSDependencies forwards the ordered channel's deps-only
+// capability to the real product provider — the Qo/Qdeps reads land on
+// the fixture's independent seam counters while NO ResolveObject
+// forward is recorded (the direct method bypasses the objectCache
+// seam, exactly as the contract requires).
+func (p *r3ProductProvider) ResolveMySQLSRSDependencies(ctx context.Context, srid uint32) (*spec.SRSDependencyFact, error) {
+	return p.inner.ResolveMySQLSRSDependencies(ctx, srid)
 }
 
 // r3Harness builds the real product provider over the stub driver.

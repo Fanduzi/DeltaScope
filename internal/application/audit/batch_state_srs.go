@@ -18,6 +18,32 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
+// srsOrderedEntry is the ordered channel's per-SRID proven-absence
+// record (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01): internal
+// provenance, never a second catalog — it records that a certified
+// absence was established by a specific statement at a specific
+// position, and consumers authenticate it by authored SRID before use.
+type srsOrderedEntry struct {
+	// srid is the authored identity — the binding key.
+	srid uint32
+	// absent is the certified fact (the only true value carried).
+	absent bool
+	// sourceArm records which A arm published the entry (provenance).
+	sourceArm spec.SRSDropArm
+	// ownPrivilege is the producing statement's actual premise state —
+	// provenance, not a consumption record; whether that statement
+	// consumed its premise is statement-level and never an entry field.
+	ownPrivilege spec.SRSDropPrivilege
+	// publishedIdx is the producer's statement index within its enrich
+	// call — a later enrich's indices restart and never re-key the
+	// first producer's provenance (earliest wins).
+	publishedIdx int
+	// barrier marks the entry shadowed by a same-SRID boundary/write or
+	// unproven stale mint — the entry is kept for provenance while the
+	// minted srsExistenceStale flag independently blocks consumption.
+	barrier bool
+}
+
 // applySRSStatement is the SRS family's own apply on the audited path.
 // The shared adjudication already classified the arm — the own apply
 // never re-derives it: only the unproven arm (a drop whose drop may
@@ -26,14 +52,55 @@ import (
 // proven-absence arm (absent_refused, absent_noop, absent_conditional)
 // write no stale flag (T26-SRS-DROP-EXECUTION-01 writer table, A-arm
 // extension T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01).
+//
+// Ordered publication (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01):
+// an A arm whose bound state carries a catalog-certified absence
+// (ValidAbsence — never an ordered-served marker) mints the SRID's
+// ordered entry on first publication and keeps the earliest producer's
+// provenance on re-publication; an ordered-served A consumes the
+// existing entry and never re-mints. The unproven arm's stale mint
+// additionally flips an existing same-SRID entry's barrier.
 func (s *batchState) applySRSStatement(statement spec.Statement) error {
 	decl := statement.DDL.SpatialReference
 	adjudication := (*spec.SRSDropAdjudication)(nil)
+	bound := (*spec.SpatialReferenceSystemState)(nil)
 	if statement.Metadata != nil {
 		adjudication = statement.Metadata.SRSDrop
+		bound = statement.Metadata.SpatialReference
 	}
-	if adjudication != nil && adjudication.Arm == spec.SRSDropArmUnproven {
+	if adjudication == nil {
+		return nil
+	}
+	switch adjudication.Arm {
+	case spec.SRSDropArmAbsentRefused, spec.SRSDropArmAbsentNoop, spec.SRSDropArmAbsentConditional:
+		// Only a catalog-certified absence publishes: an ordered-served
+		// A arm consumed the existing entry and is done — no re-mint,
+		// no new source attribution.
+		if !spec.ValidAbsence(bound, decl.SRID) {
+			return nil
+		}
+		// Earliest wins — an existing entry's first-producer
+		// provenance (sourceArm/ownPrivilege/publishedIdx) stands.
+		if s.srsOrdered == nil {
+			s.srsOrdered = make(map[uint32]*srsOrderedEntry)
+		}
+		if _, ok := s.srsOrdered[decl.SRID]; !ok {
+			s.srsOrdered[decl.SRID] = &srsOrderedEntry{
+				srid:         decl.SRID,
+				absent:       true,
+				sourceArm:    adjudication.Arm,
+				ownPrivilege: adjudication.Privilege,
+				publishedIdx: s.applyStmtIndex,
+			}
+		}
+	case spec.SRSDropArmUnproven:
 		s.srsExistenceStale[decl.SRID] = struct{}{}
+		// The stale mint shadows any earlier same-SRID absence entry —
+		// barrier flips, provenance kept (barrier ⇒ stale flag holds by
+		// construction: the same apply mints both).
+		if entry := s.srsOrdered[decl.SRID]; entry != nil {
+			entry.barrier = true
+		}
 	}
 	return nil
 }
