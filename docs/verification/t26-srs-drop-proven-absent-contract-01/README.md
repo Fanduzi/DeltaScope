@@ -1,4 +1,4 @@
-# T26-SRS-DROP-PROVEN-ABSENT-CONTRACT-01 — R1 (docs-only contract)
+# T26-SRS-DROP-PROVEN-ABSENT-CONTRACT-01 — R2 revision (docs-only contract)
 
 Candidate contract for promoting a clean zero-row
 `ST_SPATIAL_REFERENCE_SYSTEMS` answer to a proven-absence fact for the
@@ -14,286 +14,343 @@ not execution authorization.**
 | --- | --- |
 | baseline commit | `56bcf05ff3c9ce087b088eeaba04093d51a97070` |
 | baseline tree | `46436c9e63626b493eff8f15249aa5d29876889b` |
-| baseline parent | `bfc0a1f8cc511d03eb61d41f462137ccef499105` |
-| branch | `milestone/mysql-tidb-ddl-completion` |
-| semantic base | SRS DROP contract accepted at `d68f4ab7`; SRS DROP execution accepted at `128d4595`; SRS privilege contract accepted at `2f7231b5`; SRS privilege execution CLOSED/R3-ACCEPTED at `56bcf05f` |
-| bound evidence | `t26-srs-drop-privilege-execution-r3.tar.gz` 352,624 B / `f7667e08…3393b` + `t26-srs-drop-privilege-execution-r3-supplement.tar.gz` 26,297 B / `cdc54363…d500a1` |
-| registered correction | R1 `p2-seam-counts.json` is HISTORICAL (expected-vector original); R2 `evidence/p2-seam-counts.json` is the REUSED measured-counter original — identical bytes, distinct provenance |
-| this round | `docs/verification/t26-srs-drop-proven-absent-contract-01/{README.md,case-matrix.md}` — the only new paths |
+| R1 candidate | `aceaa48d0ef358e71aae89909cda8193aa8cd24b` (preserved, not amended) |
+| this round | `docs/verification/t26-srs-drop-proven-absent-contract-01/{README.md,case-matrix.md}` — the only two paths touched |
+| semantic base | SRS DROP contract `d68f4ab7`; SRS DROP execution `128d4595`; SRS privilege contract `2f7231b5`; SRS privilege execution CLOSED/R3-ACCEPTED `56bcf05f` |
+| bound evidence | `t26-srs-drop-privilege-execution-r3.tar.gz` 352,624 B / `f7667e08…3393b` + supplement 26,297 B / `cdc54363…d500a1`; R1 archive `t26-srs-drop-proven-absent-contract-r1.tar.gz` 23,751 B / `bab8e289…fbd7` |
 
-## 1. PA-A — lawful supply of the negative fact
+R1 was returned CHANGES REQUIRED (six groups). R2 keeps the preserved
+design direction the ruling explicitly retained — independent zero-value
+-safe absence carrier, plain/IF EXISTS split, independent SRS privilege
+projection, S2-only privilege notice, absent arms mint no stale and
+publish no OrderedAbsent — and rewrites the supply predicate, the
+conflict ordering, the cache/read model, the matrix, and the evidence
+records per the R2 work order.
 
-### A1. Decisive chain (baseline `56bcf05f`, real line numbers)
+## 1. R2-A — lawful supply of the negative fact
 
-Verbatim excerpts in `baseline-source-excerpts.txt`.
+### A1. Three separate domains — never conflated
 
-1. Parser/extractor: `mysqlSRSStatement` branch builds the DDL and calls
-   `applyCoverageBoundary(dialect, &statement, e.node)` —
-   `internal/infrastructure/parser/tidb/extractor.go:123-135` (call at
-   line 133). TiDB marks `Unsupported{Reason:
-   UnsupportedVendorBoundaryReason, Metadata{"boundary":"vendor"}}` at
-   `coverage_boundary.go:83-105`.
-2. Request version resolution: banner → `spec.ParseObservedVersion`;
-   dialect/product and pin/observed mismatches are typed exits;
-   `resolvedVersion = observed` — `metadata.go:141-163`.
-3. Audit-applicability version gate (DROP + in-domain MySQL 8.0.4+ or
-   `Unsupported{boundary:"unaudited",gate:"version"}`) —
-   `metadata.go:274-287`.
-4. Request-level privilege observation (mode-gated, before per-statement
-   arms) — `metadata.go:344-355`.
-5. `objectCache` — once per `(schema,type,name,qualifiers)` per request;
-   `state.mysqlSRSResolver = cachedObjectResolver` —
-   `metadata.go:356-397`.
-6. `bindMySQLSRS` — contamination/existence-stale block →
-   `MetadataUnreadBatchEffects` before any resolver call; resolver
-   request `{Type:"mysql_spatial_reference_system", Name: SRIDName()}`,
-   no qualifiers — `batch_state_server_srs.go:129-166`.
-7. `resolveObjectSnapshot` — providerless/`!ObjectResolver` →
-   `Status=Unavailable` snapshot; resolver errors wrap-propagate, never
-   laundered — `metadata.go:1063-1086`.
-8. `Provider.ResolveObject` dispatch `mysql_spatial_reference_system` →
-   `loadMySQLSRSObject` (MySQL dialect only) —
-   `provider.go:1779-1832`.
-9. `mysqlSRSCatalogSupport` — `select version()`; proven+supported
-   (MySQL `Major>=8`) required, else reads still issue for `!proven`
-   and are skipped for `proven && !supported` —
-   `provider_server_srs.go:94-107`.
-10. Existence read `where srs_id = ?` via `QueryRowContext`: `Scan` →
-    `sql.ErrNoRows` is the clean zero-row branch (`state.Read=true`);
-    every other error propagates wrapped — `provider_server_srs.go:146-169`.
-11. Dependency read `where srs_id = ?` over `ST_GEOMETRY_COLUMNS`,
-    iterated fully, `rows.Err()` propagated —
-    `provider_server_srs.go:259-286`.
-12. `SpatialReferenceSystemState` fields + per-fact existence contract —
-    `internal/domain/spec/srs.go:96-129`.
-13. `state.srsDropPrivilegePremise()` — independent projection over the
-    shared observation — `srs_drop_premise.go:37-56`.
-14. `AdjudicateSRSDrop(state, srid, depsStale, privilege)` first-match
-    B → S0 → S1 → S2 — `internal/domain/spec/srs_drop.go:146-176`;
-    attached at `metadata.go:716-727`; `IfExists` never enters it
-    today (`metadata.go:716` comment; `srs.go:32` field).
-15. Rule projection: `srid0`/`dependency`/`reserved`/`privilege` —
-    `internal/domain/rule/ddl/mysql_srs_rules.go`; gap carrier
-    publishes `Owed` verbatim under `unknown_srs_state`
-    (`mysql_srs_rules.go:142-154`).
-16. Own-apply: `applySRSStatement` mints `srsExistenceStale[srid]` only
-    on `SRSDropArmUnproven` — `batch_state_srs.go:24-34`;
-    `spatialTouching` → `srsDepsStale` — `batch_state.go:415-422`;
-    boundary SRS statements mint existence stale at
-    `batch_state.go:481-495`; scope terminator sets
-    `serverPrivilegeScopeEnded` at `metadata.go:431-437`.
-17. Verdict aggregation: blocker→reject; warning|gap→review; else pass —
-    `internal/domain/report/result.go:180-188`.
+| domain | decided at | version source | membership rule |
+| --- | --- | --- | --- |
+| **D-qualify** (request/audit qualification) | version gate, `metadata.go:274-287` | request-observed version (`spec.ParseObservedVersion` of the target banner, `metadata.go:141-163`) | `MySQLSRSDropAuditedDomain`: MySQL, ValidatedRange, `Major==8 && Minor==0 && Patch>=4` (`srs_drop.go:89-101`) |
+| **D-support** (catalog readability) | `mysqlSRSCatalogSupport`, `provider_server_srs.go:94-107` | provider's own `select version()` result (Qo read) at that call | banner parses to ValidatedRange MySQL, `Major>=8` |
+| **D-proof** (completeness proof for negative fact) | inside `loadMySQLSRSObject`, before the existence read may mint `Absence` | the **same provider banner** `mysqlSRSCatalogSupport` already produced at that call point — NOT the request version | proven && banner version satisfies `Major==8 && Minor==0 && Patch>=4` |
 
-### A2. Current fields cannot carry the proof — proposed carrier
+Rules: `proven && supported` alone NEVER supplies absence. Absence is
+supplied only inside D-proof at the provider call point, judged on the
+provider's own observed banner. Outside D-proof no absence is minted —
+the statement then falls back to whatever the existing admission path
+decides (S2 if qualified and unknown, or boundary/unsupported when the
+request gate applies). The three domains use three distinct observation
+points; the request version and the provider banner are separate reads
+of the same target and are never interchanged.
 
-Today `Read=true, Exists=false` conflates "read, zero rows" with
-"unknown" because no completeness contract was approved
-(`srs.go:88-95`). The field shapes `Read`/`Exists`/`Status` cannot be
-re-purposed without silently changing every existing consumer
-(`AdjudicateSRSDrop` reads exactly `state == nil || !state.Read ||
-!state.Exists` at `srs_drop.go:167`).
+### A2. Official proof — decisive verbatim evidence
 
-Proposed carrier (contract candidate, UNEXECUTED):
+`official-evidence-r2.txt` (out-of-repo supplement) carries the full,
+contiguous, boundary-delimited view definition plus per-source identity:
 
-```go
-// SpatialReferenceSystemState
-// Absence marks a proven-complete negative answer: the existence read
-// issued, returned zero rows, and the target's catalog view is a
-// verified unfiltered projection (see A3). The zero value is false —
-// third-party resolvers, cached snapshots and older call sites keep
-// the unproven meaning unchanged.
-Absence bool `json:"-"`
+| source | immutable identity | file bytes / SHA-256 | fetch date |
+| --- | --- | --- | --- |
+| tag `mysql-8.0.4` | commit `577fbcf856cd693434d554545d499559bcdd3695` | 2,152 B / `8e5a631c…eb56` | 2026-11-12 |
+| tag `mysql-8.0.24` | commit `3e90d07c3578e4da39dc1bce73559bbdf655c28c` | 2,184 B / `6a831b8b…5874` | 2026-11-12 |
+| tag `mysql-8.0.36` | commit `49ef33f7edadef3ae04665e73d1babd40179a4f1` | 2,184 B / `426d1d0e…42333` | 2026-11-12 |
+| `8.0` branch HEAD | commit `9fc8d60003b4eee32767c1e30942f222c3508c31` (resolved via `repos/mysql/mysql-server/branches/8.0`) | 2,235 B / `dd1fd25f…569e2` | 2026-11-12 |
+
+Verbatim definition (branch-HEAD pin, whitespace-normalised, all four
+pins token-identical — normalised SHA-256 `de945460…713c` on the
+constructor body):
+
+```
+m_target_def.add_field(FIELD_SRS_NAME, "SRS_NAME", "name");
+m_target_def.add_field(FIELD_SRS_ID, "SRS_ID", "id");
+m_target_def.add_field(FIELD_ORGANIZATION, "ORGANIZATION", "organization");
+m_target_def.add_field(FIELD_ORGANIZATION_COORDSYS_ID, "ORGANIZATION_COORDSYS_ID", "organization_coordsys_id");
+m_target_def.add_field(FIELD_DEFINITION, "DEFINITION", "definition");
+m_target_def.add_field(FIELD_DESCRIPTION, "DESCRIPTION", "description");
+m_target_def.add_from("mysql.st_spatial_reference_systems");
 ```
 
-- Producer: `loadMySQLSRSObject` only, in the `ErrNoRows` branch
-  (`provider_server_srs.go:154-156`), gated on `proven && supported`
-  from `mysqlSRSCatalogSupport` — an unproven-version clean zero-row
-  stays `Absence=false`.
-- Consumers: `AdjudicateSRSDrop` (new arms) only. No other family reads
-  it; `MetadataNotFound` and other object families are untouched.
-- The snapshot stays immutable request-scoped evidence via
-  `objectCache`; consumers never infer absence from `Exists=false`.
+No `add_where`, no access predicate — a bare projection. Byte-level
+diffs between pins are mechanical only (copyright year, brace style,
+namespace comments), shown verbatim in the supplement.
 
-### A3. Catalog completeness — adjudication
+**Coverage-scale basis for the whole 8.0.4+ claim:** the file's commit
+history on the `8.0` branch (`repos/mysql/mysql-server/commits?path=
+sql/dd/impl/system_views/st_spatial_reference_systems.cc&sha=8.0`,
+fetched 2026-11-12) contains exactly 11 commits: the 2017-04-22
+introducing commit (WL#9495 schema tables) plus ten mechanical commits
+(copyright headers ×6, GPL clause ×2, clang-format ×1, include-paths
+×1, licence exception ×1). **No commit changes the view's fields,
+source table, or adds a predicate since introduction** — the identical
+definition therefore spans every 8.0.x release on the branch, not just
+the sampled tags. This, not tag sampling alone, is the coverage basis.
 
-Evidence (`official-evidence.md` holds the verbatim excerpts):
+Contrast: `st_geometry_columns.cc` (pin 9fc8d600) selects
+`add_from("INFORMATION_SCHEMA.COLUMNS cols")` + LEFT JOIN +
+`add_where(DATA_TYPE IN …)` — filtered view; dependency surface stays
+witness-only. WL#9059 F-3.1 makes the I_S view the sole read channel;
+Refman 28.3.36 is corroboration only.
 
-- WL#9059 (Complete, Server-8.0): SRSs are data-dictionary objects;
-  `SELECT` on `mysql.st_spatial_reference_systems` is forbidden — the
-  `INFORMATION_SCHEMA.ST_SPATIAL_REFERENCE_SYSTEMS` view is the sole
-  read channel (F-3.1). DDL always requires `SUPER` (F-1.9, F-2.4).
-- mysql-server implementation, tags `mysql-8.0.4`, `mysql-8.0.24`,
-  `mysql-8.0.36` and the `8.0` maintenance branch, file
-  `sql/dd/impl/system_views/st_spatial_reference_systems.cc`: the view
-  is a **bare projection** — six fields,
-  `add_from("mysql.st_spatial_reference_systems")`, **no `add_where`,
-  no access predicate**. Every account sees every DD row.
-- Contrast: `st_geometry_columns.cc` selects FROM
-  `INFORMATION_SCHEMA.COLUMNS` (a privilege-filtered view) — the
-  dependency surface stays witness-only, unchanged by this contract.
-- Refman 28.3.36: documents columns and content; silent on filtering —
-  used as corroboration, never as the proof.
+**Ruling proposed:** inside D-proof (provider banner: MySQL,
+ValidatedRange, 8.0.x, patch ≥ 4), a clean zero-row `WHERE srs_id = ?`
+answer is complete absence evidence at the observation instant. The
+claim now rests on the branch-wide unmodified history, bounded to the
+8.0 series; nothing is asserted about 8.4+/9.x or unproven banners.
 
-**Ruling proposed:** for MySQL 8.0.x targets where the resolved version
-is proven inside the audited domain (8.0.4+, the range the verified
-view files span), a completed `where srs_id = ?` read returning a clean
-zero-row answer is **complete absence evidence at the observation
-instant**. Verified implementations: tags mysql-8.0.4, mysql-8.0.24,
-mysql-8.0.36, and `8.0` branch HEAD — one unchanged view definition
-covering the audited range; no per-patch verification is claimed beyond
-identical file bytes at those pins. Unproven/mismatched versions stay
-unknown. No deferred conclusion, no seeded-input shortcut needed.
+### A3. Clean-zero-row predicate — rewritten
 
-### A4. Frozen supply predicate
+`Row.Scan() == sql.ErrNoRows` does NOT prove a clean zero-row read.
+Decisive Go 1.26.1 stdlib source (`database/sql/sql.go`):
 
-`Absence` may be set only when ALL hold:
+- `(*Row).Scan` (line 3486): returns `r.err` first (pre-stored query
+  error), then `if !r.rows.Next() { if err := r.rows.Err(); err != nil
+  { return err }; return ErrNoRows }` — a driver that surfaces
+  `sql.ErrNoRows` *as an error* returns the identical value through
+  `r.err` or `rows.Err()`, indistinguishable from a genuine zero-row
+  result by value comparison alone.
+- `(*Rows).Next` (line 3029) / `(*Rows).Err` (line 3136): the
+  structural discriminant available is `Next()==false && Err()==nil` —
+  a driver-reported `ErrNoRows` lands in `Err() != nil` and never
+  reaches the zero-row branch.
 
-1. `spec.DialectMySQL`; request carries a provider `ObjectResolver`.
-2. `mysqlSRSCatalogSupport` returned `proven && supported` (banner
-   parses to ValidatedRange MySQL, `Major>=8`).
-3. The exact `where srs_id = ?` existence read was issued on that
-   connection and `row.Scan` returned `sql.ErrNoRows` — the zero-row
-   call site at `provider_server_srs.go:154`, distinguished there and
-   nowhere else (`errors.Is` is not used to launder other errors).
-4. No query/scan/driver/cancellation error occurred on the call.
+Registered supply predicate (explicit `*Rows` flow — design only,
+UNEXECUTED):
 
-Failure boundaries: query failure, scan failure, cancellation → error
-propagates (existing behavior). providerless / non-resolver provider /
-cache-only / unproven version → `Absence=false`. `rows.Close()` on the
-conflict/dependency reads is deferred and unchecked — out of scope of
-the guarantee; it cannot change an already-returned fact.
+```
+rows, err := p.db.QueryContext(ctx, qExist, int64(srid))
+if err != nil              { propagate; Absence never set }
+defer-free close check:
+for rows.Next()          { scan one row → Exists=true, Read=true }
+if rows.Err() != nil     { propagate; Absence never set }
+if !sawRow               { Read=true; Absence=true when in D-proof }
+if err := rows.Close()   { err → propagate }
+```
 
-### A5. UNESTABLISHED?
+`Next()==false && Err()==nil && Close()==nil` is the observable
+triple; no sentinel value is trusted. Planned distinguishing rows
+(register now, execute later):
 
-No — the supply path is established by A3+A4. See receipt §G.
+| # | condition | supply |
+| --- | --- | --- |
+| 1 | in-domain clean zero rows (`Next`=false, `Err`=nil, `Close`=nil) | `Absence` set iff in D-proof |
+| 2 | `QueryContext` error that happens to equal `sql.ErrNoRows` | propagate; never Absence |
+| 3 | iteration error that equals `sql.ErrNoRows` (`Err()`) | propagate; never Absence |
+| 4 | generic query/read error | propagate |
+| 5 | ctx cancellation mid-iteration | propagates via `Err()` |
+| 6 | existence succeeded (zero or row) then dependency read fails | propagate; no snapshot delivered to bind — partial local state is never a published fact |
 
-## 2. PA-B — first-match decision table
+Existing bounded-error / `errors.Is` conventions stay; the ErrNoRows
+sentinel keeps its meaning only as a value, never as a path proof. A
+locally assigned struct field inside a helper is NOT a delivered fact:
+only the snapshot returned to `resolveObjectSnapshot`/`bindMySQLSRS`
+counts as published. Registered touchpoint for a future execution
+round: `provider_server_srs.go:146-169` (QueryRowContext → explicit
+Rows), plus `Row.Err()` precheck is insufficient alone because
+`rows.Err()` — not `r.err` — is where iteration errors surface.
 
-Existing arms unchanged: B `[B]`; S0 refused, owed `[]`; S1 refused,
-owed `[]`; S2 owes `[E,D,P]`/`[D,P]`/`[E,D]`/`[D]` per
-existence×privilege. `IfExists` becomes an adjudication input (new
-parameter), replacing "IF EXISTS stays a public rendering fact".
+### A4. ValidAbsence invariants
 
-**Proposed first-match order: B → S0 → A → S1 → S2.**
+Consumer-visible validity: `ValidAbsence(state)` ⇔ `state != nil &&
+state.Read && !state.Exists && state.Absence` — the three-field
+conjunction is the ONLY consumable shape; the bool alone is never
+interpreted.
 
-New arm `A` (proven-absent): entry `state.Absence == true`. Ordering
-before S1: absence is a *complete* catalog fact; a positive dependency
-witness alongside it contradicts the DD invariant (F-2.9: an in-use
-SRID cannot be dropped, so a referencing column implies the SRS
-exists). Where both appear, A wins — `refused_absent`/`absent_noop`
-matches the server's own outcome (ER_SRS_NOT_FOUND is evaluated before
-any column-usage refusal) — and the contradiction row is listed
-explicitly in the matrix, not hidden by order.
+Producer contract (single in-tree producer, `loadMySQLSRSObject`):
+`Absence=true` is set only at the explicit-Rows clean-zero branch,
+only when D-proof holds for the provider banner at that call point,
+for the exact SRID queried. Provenance is enforced producer-side; the
+consumer does not re-derive it — the contract's trust boundary is that
+only the in-tree provider sets the bit, and third-party resolvers that
+never set it keep `Absence=false` (zero value) → unknown, which is the
+only honest claim available: the consumer validates field consistency,
+not provenance.
 
-| arm | entry predicate | outcome | owed | P consumed | marker | own-apply |
+Registered invalid/conflict inputs (absence not consumable; remaining
+facts continue per existing adjudication):
+
+| input | treatment |
+| --- | --- |
+| `Absence && !Read` | invalid — `Absence` ignored; state reads as unknown |
+| `Absence && Exists` | invalid — `Exists` is the positive fact; `Absence` ignored |
+| snapshot carrying `Absence` for a different SRID | cannot exist: bind resolves by `(type,name=SRIDName())`; a foreign-SRID snapshot fails the key and is never bound |
+| providerless / non-`ObjectResolver` provider | `Unavailable` snapshot; `Absence` never set |
+| `!proven` banner, or banner outside D-proof | `Absence` never set even on clean zero rows |
+
+Cache: `objectCache` is created per `enrichOrderedStatements` call
+(`metadata.go:356-397`) and memoises the whole snapshot — including a
+legally established `Absence` — for the rest of THAT enrich only. The
+next enrich builds a fresh cache and re-issues reads; `batchState`
+sharing across enriches does NOT share `objectCache`. No cross-call
+persistence, no re-read repair, no new barrier. No claim is made that
+the two `p.db` reads run on one physical connection or one consistency
+snapshot — they are separate observations at separate instants.
+
+## 2. R2-B — frozen first-match table: B → S0 → S1 → A → S2
+
+Frozen order (per ruling): **B → S0 → S1 (valid, non-stale positive
+dependency witness) → A (valid absence) → S2**. A positive, un-demoted
+dependency witness always wins over absence — the conservative
+refusal. A `srsDepsStale`-demoted witness is not a valid positive and
+does not reach S1 (it enters adjudication as the B arm's debt only).
+
+| arm | entry predicate | outcome | owed | P consumed | conditional marker | own-apply mint |
 |---|---|---|---|---|---|---|
-| B | `UnreadReason==batch_effects` | blocked | `[srs.batch_effects]` | no | none | none (unchanged) |
-| S0 | `srid==0` | refused_srid0 blocker | `[]` | no | none | none (unchanged) |
-| A-plain | `Absence && !IfExists` | refused_absent blocker | `[]` | no | none | none |
-| A-IE✓ | `Absence && IfExists && P==consumable` | absent_noop notice | `[]` | **yes** | `conditional_audit` | none |
-| A-IE? | `Absence && IfExists && P!=consumable` | conditional | `[srs.drop.privilege]` | no | none | none |
-| S1 | positive deps witness, clean channel | refused_dependency blocker | `[]` | no | none | none (unchanged) |
-| S2 | rest | unproven | per matrix | on consumable | `conditional_audit` | mint `srsExistenceStale[srid]` (unchanged) |
+| B | `UnreadReason==batch_effects` | blocked | `[srs.batch_effects]` | no | none | none |
+| S0 | `srid==0` | refused_srid0 blocker | `[]` | no | none | none |
+| S1 | valid positive deps witness (non-stale channel, clean read) | refused_dependency blocker | `[]` | no | none | none |
+| A-plain | `ValidAbsence && !IfExists` | refused_absent blocker | `[]` | no | none | none |
+| A-IE✓ | `ValidAbsence && IfExists && P==consumable` | absent_noop notice | `[]` | **yes** | `conditional_audit="observed_account_new_session"` | none |
+| A-IE? | `ValidAbsence && IfExists && P!=consumable` | absent_conditional | `[srs.drop.privilege]` | no | none | none |
+| S2 | rest | unproven | per matrix | on consumable | `conditional_audit` | mint `srsExistenceStale[srid]` |
 
-- **B1.** Plain DROP on proven-absent → `refused_absent` blocker
-  (mirrors ER_SRS_NOT_FOUND; the refusal is deterministic whether or
-  not privilege would also refuse — no P consumption needed, matching
-  S0/S1). IF EXISTS on proven-absent + consumable P → `absent_noop`:
-  the server's outcome is a warning and no dictionary write; the
-  consumable premise is what proves the request reaches the warning
-  branch rather than ER_CMD_NEED_SUPER, so P is consumed there.
-  P unproven/suppressed → `absent_conditional`: either warning-noop or
-  need-super refusal — bounded, owes `[srs.drop.privilege]` under a new
-  reason token `unproven_privilege` on the same gap carrier (the
-  `unknown_srs_state` token is wrong here — existence is known).
-  IF EXISTS never proves execution permission and absent_noop never
-  claims the statement "did something".
-- **B2.** D under proven absence: discharged by the DD invariant — a
-  geometry column cannot declare an SRID that does not exist
-  (CREATE binds SRID only to existing SRSs; F-2.9 blocks dropping an
-  in-use SRID). Absence therefore *is* the complete dependency answer.
-  Positive witness + absence = contradiction (B3 row).
-- **B3 conflict rows:** absence+positive deps → A arm per ordering
-  above (documented contradiction, severity identical or stricter than
-  S1 for plain DROP); absence+SRID 0 → S0 (unreachable: SRID 0 is a
-  permanent DD row, listed for completeness); absence+existing
-  stale/contamination → B (stale blocks before the read, unchanged);
-  provenance-mismatched proof (wrong version subdomain, third-party
-  resolver shape) → `Absence` never set → S2 unknown.
-- **B4.** P consumption only on A-IE✓. `ddl.mysql.srs.drop.privilege`
-  remains S2-only; the A-IE✓ marker is carried by the new
-  `absent_noop` finding's own `conditional_audit` metadata — no
-  change to the existing rule's arm set. SRS keeps its independent
-  projection; nothing borrowed from SERVER.
-- **B5.** `observed_account_new_session` semantics unchanged: observed
-  account, new session, same target, grant still applying at execution.
-  `absent_noop` claims only "warning + no write under that condition".
+- **B1.** `refused_absent` is THIS audit model's refusal basis
+  ("the authored SRID is proven absent"); no claim is made about which
+  native error the server returns first when P is unproven — the
+  ER_SRS_NOT_FOUND/need-super ordering is outside the bounded
+  commitment (WL#9059 F-2.x listed as corroboration, observation scope
+  = documentation, not a probed server).
+- **B2.** Within the A branch only, absence is the complete answer to
+  D: the DD invariant (a column cannot reference a nonexistent SRID)
+  means the dependency debt is discharged. This is a debt adjudication
+  inside the absent arm — NOT a general dependency-completeness
+  carrier, and it proves nothing about present objects.
+- **B3 conflict rows** (distinguishing, all PLAN/UNEXECUTED): absence +
+  valid positive witness + plain DROP → **S1 refused_dependency**;
+  absence + valid positive witness + IF EXISTS + consumable → **S1
+  refused_dependency** (R1 wrongly routed to absent_noop); demoted
+  (depsStale) witness + absence → A arms (the demoted witness is not
+  valid). A real provider-layer conflict IS reachable: existence and
+  dependency are two separate `p.db` observations without a shared
+  snapshot — a concurrent DDL between the two reads, or a
+  privilege-filtered dependency view that shows a row the existence
+  scan missed, produces "existence zero + positive deps" at the real
+  read layer; at least one such planned row uses the real provider
+  path (matrix PA-4).
+- **B4.** `ddl.mysql.srs.drop.privilege` stays S2-only; the A-IE✓
+  marker lives on its own `absent_noop` finding. SRS keeps its
+  independent premise projection.
+- **B5.** `observed_account_new_session` semantics unchanged;
+  absent_noop claims only "warning + no dictionary write under that
+  observed condition", never execution success.
 
-## 3. PA-C — invalidation, cache, ordering, own-apply
+## 3. R2-C — cache, read vector, state (corrected)
 
-- **C1.** `srsExistenceStale[srid]` vs `srsDepsStale` stay separate.
-  New arms mint neither: a refused_absent writes nothing, and both
-  absent_noop outcomes (warning or need-super error) provably write
-  nothing — strictly more precise than S2, which mints because the
-  write is undecidable. Consumption and absence never clear stale.
-- **C2.** `objectCache` reuse is same-request read memoization only;
-  no OrderedAbsent entry, no cross-statement publication, no re-read
-  repair.
-- **C3.** Own-apply pre/post per new arm: `refused_absent`,
-  `absent_noop`, `absent_conditional` → both stale channels unchanged;
-  no other SRID/SERVER/table/schema touched. Diff vs S2: S2 mints
-  existence stale; the A arms do not, because "may have written" is
-  provably false.
-- **C4.** Read order unchanged: L (privilege loader) before per-
-  statement arms; resolver reads issue before adjudication; no arm
-  skips a catalog query — B/S0/S1/A can never retroactively claim
-  L=0 or Qexist=0.
-- **C5.** Batch relations: same-SRID repeat after an A arm reads the
-  catalog again (no mint, no cache change) — second DROP sees the same
-  proven absence; different SRIDs independent; boundary-then-DROP
-  stays B (boundary mints stale); touching-then-DROP keeps depsStale
-  semantics; REVOKE ends scope before later arms (A-IE✓ degrades to
-  absent_conditional); second enrich shares `batchState` — cached
-  snapshot still carries its `Absence` bit. TiDB real-path and
-  GEOMETRY parse-failure stay as accepted; no mixed-dialect fixtures.
+- **C1.** `objectCache` scope is one `enrichOrderedStatements` call.
+  Same-enrich second bind of the same SRID → cache hit → zero
+  additional R/Qexist/Qdeps/Qo on that bind. The NEXT enrich call
+  builds a new cache → fresh reads; `batchState` sharing ≠ cache
+  sharing. A legally established `Absence` persists for that enrich
+  only.
+- **C2.** B-arm short-circuit (`MetadataUnreadBatchEffects`) returns
+  before the resolver → a real zero-catalog-read result; the L loader
+  gate evaluates independently of the final arm and never back-infers
+  from it.
+- **C3.** Read deltas are specified per-statement AND per-call:
+  R (resolver forwards), Qexist/Qdeps (catalog queries), Qo
+  (`select version()`), L (privilege loader calls); request layer
+  also counts Vd (version discovery); internal layer Vd=N/A.
+- **C4.** Absent arms mint/clear nothing: `srsExistenceStale` and
+  `srsDepsStale` unchanged; unrelated SRID/SERVER/table/schema
+  untouched; no OrderedAbsent publication. State-preservation rows
+  carry non-empty unrelated stale sets and `depsStale=true` controls —
+  empty/false alone proves nothing.
+- **C5.** Double-enrich plan row uses a DIFFERENT second catalog answer
+  (first call: existence zero + clean deps → absent; second call:
+  existence row present) so the new-cache re-read is a distinguishable
+  observable — not just asserted.
 
-## 4. PA-D — public projection + finite matrix
+## 4. R2-E — canonical public projection (clean, non-reserved, single
+SRS statement, defaults enabled)
 
-New rules (defaults, registered like existing SRS rules):
+| arm | findings | gaps | stmt/agg coverage | verdict | conditional_audit |
+| --- | --- | --- | --- | --- | --- |
+| A-plain | 1 × `ddl.mysql.srs.drop.absent` blocker | 0 | complete | reject | absent |
+| A-IE✓ | 1 × `ddl.mysql.srs.drop.absent_noop` notice | 0 | complete | pass | `="observed_account_new_session"` |
+| A-IE? | 0 | 1 × owner `ddl.mysql.srs.drop.dependency`, `reason_code="unproven_privilege"`, `required_facts=[srs.drop.privilege]` ordered | unverified | review | absent |
 
-| rule | level | arm | message | metadata |
-|---|---|---|---|---|
-| `ddl.mysql.srs.drop.absent` | blocker | A-plain | `spatial reference system {srid} does not exist` | `{srid:uint32, outcome:"refused_absent"}` |
-| `ddl.mysql.srs.drop.absent_noop` | notice | A-IE✓ | `spatial reference system {srid} does not exist; IF EXISTS drop is a no-op` | `{srid:uint32, outcome:"absent_noop", conditional_audit:string}` |
+Frozen serialization (to be asserted exactly):
 
-Gap carrier stays `ddl.mysql.srs.drop.dependency` publishing `Owed`
-verbatim; new reason token `unproven_privilege` only for
-`absent_conditional`'s `[srs.drop.privilege]` debt. Reserved advisory
-co-fires on A-IE✓/A-IE? (non-refusal arms) — never inside
-refused_absent, mirroring B/S2 vs S0/S1 today. Verdicts: refused_absent
-→ reject; absent_noop → pass (notice only); absent_conditional →
-review (gap). No catalog payload, name, account, or grant text is
-emitted. Matrix: `case-matrix.md` (PA-1…PA-10), all rows
-PLAN/UNEXECUTED.
+- `absent` finding: `RuleID`, `Level=blocker`, message
+  `spatial reference system {srid} does not exist`, metadata keys
+  exactly `{srid, outcome}` — `srid` emitted as JSON number (in-memory
+  `uint32`), `outcome="refused_absent"`.
+- `absent_noop` finding: `RuleID`, `Level=notice`, message
+  `spatial reference system {srid} does not exist; IF EXISTS drop is a
+  no-op`, metadata keys exactly `{srid, outcome, conditional_audit}`;
+  `conditional_audit` JSON string.
+- Gap object: exactly `rule_id`, `reason_code`, `required_facts` —
+  three keys, `required_facts` ordered `[srs.drop.privilege]`; no
+  internal outcome is serialised as a public field; empty slices
+  follow the existing `omitempty` shape, asserted on real JSON paths.
+- reserved 4326 rows: A-plain emits NO reserved advisory; A-IE✓ and
+  A-IE? each add exactly one existing membership-only
+  `ddl.mysql.srs.drop.reserved` notice — the dual expectation and the
+  PA-10a question mark are removed.
 
-## 5. Implementation touchpoints (for a future execution work order)
+Registered future touchpoints for that co-fire and projection:
 
-`spec`: `Absence` field; `AdjudicateSRSDrop` signature gains `IfExists`
-(or the declaration); new arm values + `unproven_privilege` token.
-`provider_server_srs.go`: set `Absence` in the ErrNoRows branch under
-`proven && supported`. `metadata.go`: pass `decl.IfExists` at line 726.
-`batch_state_srs.go`: no change needed (A arms mint nothing — the
-`== SRSDropArmUnproven` guard already excludes them). `rule/ddl`: two
-new rules + registration + example.yaml rows. No loader, cache,
-dialect-gate, or read-vector change.
+- `mysql_srs_rules.go` reserved rule: arm guard must include the A
+  arms (today it fires on B/S2); new `absent`/`absent_noop` rules;
+  gap reason token `unproven_privilege` on the dependency-owned
+  carrier; coverage projection unchanged shape.
+- `common.go` rule IDs; registry + `configs/deltascope.example.yaml`
+  default levels.
+- `spec`: `Absence` field; `AdjudicateSRSDrop` gains `IfExists` input
+  and the A arm values; `unproven_privilege` reason.
+- `provider_server_srs.go:146-169`: QueryRowContext → explicit Rows
+  (A3); D-proof check on the provider banner.
+- `metadata.go:716-727`: pass `decl.IfExists` into the adjudication
+  attach; `bindMySQLSRS` unchanged.
+- `batch_state_srs.go`: no change — the `== SRSDropArmUnproven` mint
+  guard already excludes A arms.
 
-## 6. Decisions & boundaries
+Policy rows (PLAN): `absent` disabled → A-plain produces no finding
+(bound state/premise/own-apply unchanged); `absent_noop` level
+rewritten to warning → A-IE✓ finding becomes warning → verdict review
+with `conditional_audit` still present. Sentinel plan: distinguishable
+`SRS_ZZTEST`/account `zz_acct`/grant/schema/table/column sentinels;
+scan scope = the full serialised result JSON.
 
-- Completeness is bound to verified mysql-server tags spanning the
-  audited 8.0.4+ domain; outside it, everything stays unknown/S2.
-- A3's proof covers existence only — dependencies remain witness-only
-  forever under this contract.
-- absent_noop never claims execution success, future executor
-  identity, or present-object drop success — those stay out of scope
-  (ordered publication, SRS CREATE, ALTER INSTANCE, T27).
+CLI providerless probes are referenced by identity only (not rerun,
+not used as proven-absence positive evidence).
+
+## 5. Errata registered against R1 records
+
+- `static-checks.txt` printed `git log --format=%H %s -5` unquoted —
+  as transcribed it cannot produce the shown hash+subject output
+  (`%s` splits into a second arg and fails as an ambiguous revision);
+  a corrected real capture ships in the R2 supplement.
+- The trailing search-command lines had no retained output/rc; the
+  `sed -n ranges listed …` line was a placeholder — all marked
+  REPORTED/UNCAPTURED, not re-executed history.
+- R1 `official-evidence.md` was a summary without the contiguous view
+  definition, and claimed a whole-range coverage basis from three
+  tags plus an unbound branch — corrected in R2-A2.
+- R1 README C5/PA-6a cache wording implied cross-enrich persistence —
+  corrected in R2-C.
+- R1 PA-B ordered A before S1 — reversed per R2 ruling; the
+  contradiction row is now S1-frozen with a real provider-layer
+  sequence planned.
+- R1 PA-1a/PA-6c/PA-7/PA-8c/PA-8d/PA-9/PA-10a witness defects —
+  rewritten in `case-matrix.md` R2.
+- `EXECUTION READY` resets to **NO** (see §7).
+
+## 6. Out of scope (unchanged)
+
+Ordered publication, present-object DROP success, SRS CREATE, ALTER
+INSTANCE, T27. Native check ordering is corroborating documentation
+only, never a bounded commitment. Dependency reads stay witness-only
+forever under this contract.
+
+## 7. EXECUTION READY: NO
+
+Precise reasons: (1) the supply predicate requires the registered
+explicit-Rows provider change before absence can be produced by the
+real chain — `Row.Scan()==ErrNoRows` alone cannot supply it; (2) that
+change is a registered touchpoint, not yet implemented or verified;
+(3) therefore no execution work order can currently yield unique
+expected results. The remaining items — domains, ordering, state and
+projections — are closed by this contract; the sole open gate is the
+provider read-path change plus its distinguishing rows.
