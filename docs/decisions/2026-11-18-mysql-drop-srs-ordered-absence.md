@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01, commit `5f9e8439`).
+Submitted — pending reviewer ruling
+(T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01 R2, candidate
+`fc872115`; R1 `5f9e8439` was returned CHANGES REQUIRED and is
+preserved as historical evidence).
 
 ## Decision
 
