@@ -299,6 +299,9 @@ func TestT26SRSR3RefusedDependencyRequest(t *testing.T) {
 	if f.Metadata["outcome"] != "refused_dependency" || f.Metadata["dependency_witness_count"] != 1 {
 		t.Fatalf("metadata=%+v want outcome=refused_dependency witness_count=1", f.Metadata)
 	}
+	if fmt.Sprintf("%v", f.Metadata["srid"]) != "4326" || f.Message != "spatial reference system 4326 is used by 1 visible geometry column(s)" {
+		t.Fatalf("finding srid=%v message=%q want the frozen E1.1 shape", f.Metadata["srid"], f.Message)
+	}
 	if len(stmt.EvidenceGaps) != 0 {
 		t.Fatalf("gaps=%+v want absent — positive witness discharges existence", stmt.EvidenceGaps)
 	}
@@ -487,6 +490,9 @@ func TestT26SRSR3SRID0Request(t *testing.T) {
 		if f.RuleID != "ddl.mysql.srs.drop.srid0" || f.Level != rule.LevelBlocker ||
 			f.Metadata["outcome"] != "refused_srid0" {
 			t.Fatalf("%q finding=%+v want the srid0 blocker", sqlText, f)
+		}
+		if fmt.Sprintf("%v", f.Metadata["srid"]) != "0" || f.Message != "dropping spatial reference system SRID 0 is not allowed" {
+			t.Fatalf("%q finding srid=%v message=%q want the frozen E5.1 shape", sqlText, f.Metadata["srid"], f.Message)
 		}
 		if len(stmt.EvidenceGaps) != 0 {
 			t.Fatalf("%q gaps=%+v want absent", sqlText, stmt.EvidenceGaps)
