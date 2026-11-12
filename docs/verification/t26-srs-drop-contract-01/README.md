@@ -1,19 +1,18 @@
-# T26-SRS-DROP-CONTRACT-01 — MySQL `DROP SPATIAL REFERENCE SYSTEM` audit contract (R3)
+# T26-SRS-DROP-CONTRACT-01 — MySQL `DROP SPATIAL REFERENCE SYSTEM` audit contract (R4)
 
-Status: **R3 — docs-only contract under review**
-Work order: `T26-SRS-DROP-CONTRACT-01 / R3` (AUTHORIZED, docs-only)
+Status: **R4 — docs-only contract under review**
+Work order: `T26-SRS-DROP-CONTRACT-01 / R4` (AUTHORIZED, docs-only)
 Baseline: commit `f129afd8adefee5ffca0431021dc9c4ecfc39acb` · tree `609345c30e3788469397e697d6efa858a8b6611f` · branch `milestone/mysql-tidb-ddl-completion`
 Scope: `DROP SPATIAL REFERENCE SYSTEM [IF EXISTS] <SRID>` under MySQL. First-slice targets are the refusal, missing-fact, and boundary branches plus in-batch fact-invalidation rules. Successful DROP, proven-absent, and OrderedAbsent/OrderedPresent publication are **not** contracted this slice — no SRS ordered channel is proposed.
 
 Files delivered: this README plus `case-matrix.md` (section E). No `.go`, policy, registry, corpus, golden, or historical evidence was changed.
 
-**R2 → R3 delta (reviewer R2 ruling `CHANGES REQUIRED`, six groups):**
-- **R3-A** — canonical owed/writer consistency: S2 owes `{srs.column_dependencies, srs.drop.privilege}` unconditionally (no reachable complete-empty producer) plus `srs.existence` iff existence is unproven; B owes exactly `{srs.batch_effects}` and mints nothing; only S2 and boundary SRS writes mint `srsExistenceStale`.
-- **R3-B** — `spatialTouching` narrowed: inert exceptions are only complete non-spatial `CREATE TABLE`, complete engine/option-only `ALTER TABLE`, `CREATE SCHEMA`, and provably non-table kinds; everything else — partial/unmodeled columns, `CREATE … LIKE/AS`, boundary statements carrying table targets — is touching by default. E8.4 now uses `ALTER TABLE t COMPACT TIFLASH REPLICA`, a statically provable vendor boundary that carries a real `Table` target.
-- **R3-C** — matrix fully concretized: exact fixtures/state/positions per row, observation-layer labels, `N/A` discipline, and the reserved-range correction — **SRID 4326 ∈ [0,32767] is reserved**, so every B/S2 row on 4326 co-fires exactly one `…reserved` notice.
-- **R3-D** — public projection completed: fixed message literals, real JSON paths (`$.statements`, `$.unsupported`, `$.coverage`, `$.verdict`, `$.summary`), `omitempty` absence-vs-zero discipline, `UnsupportedDetail.index` omit-on-zero, version boundary coverage `incomplete`.
-- **R3-E** — probes carry complete copyable command blocks with separated stdout/stderr files and immediate `$?` capture; every rc is derived from the real CLI dispatch (`newUserError`→`exitUser=2`, `failOnTriggered`→exit 1 paths, `SilenceErrors/SilenceUsage`), not assumed.
-- **R3-F** — excerpt set extended for the newly required seams (version regex/validated series, discovery/preflight path, in-loop failure consumption, apply outer Unsupported branch, COMPACT extraction+boundary, public evaluator, CLI dispatch); R1/R2 static-record errata registered separately without rewriting originals.
+**R3 → R4 delta (reviewer R3 ruling `CHANGES REQUIRED`, five groups):**
+- **R4-A** — canonical table vs restatements aligned: B keeps owed `{srs.batch_effects}`, mints/clears no flag of either kind, preserves entry state exactly (contamination-only vs pre-existing same-SRID stale are two distinct entry sources); S1 template uses independent `srid`/`dependency_witness_count` variables; all restatements use the canonical JSON paths `$.statements[i].*`, `$.unsupported`, `$.verdict`/`$.summary`/`$.coverage`; boundary rows' verdict contribution corrected to **none** (`$.unsupported` never feeds `Aggregate` — boundary-only request → `pass`).
+- **R4-B** — `spatialTouching` narrowed to the sanctioned inert set: ALTER inert = complete `[]spec.Alter` all `table_option` + all-`engine` `Options` keys only (no generic option exception); CREATE inert = ordinary explicit-column `CREATE TABLE` only, LIKE/AS-SELECT/partial explicitly touching; kind predicates restated on `spec.DDLOperation`/`boundTargets`/`TableTargets()`/`Alter.Options`/`statementCoverageAspects` fields. E8.4's own apply is now proven from the real path (`batch_state.go:396–497`: `boundTargets`→`invalidateDropIdentities`, `contaminated` unchanged) — COMPACT keeps S2 + `1/1/1/1/0` because the real path never contaminates.
+- **R4-C** — remaining fixtures closed: Group-10 default SQL + observed-vs-loader banner sources; E11 seams/sentinels/termination points; E10.7/8 and E11.5 use the real `LoadInstanceFacts`/`prepareMetadataAudit` discovery seam (`Vd` now bound: N/A providerless, 1 when provider present, `(att)` on failure); Group-8 shared table/schema initial state + prefix own reads; E12.3/E12.5 concrete SRS facts and a full account-bound SERVER witness; observation-layer combinations made explicit.
+- **R4-D** — decisive source paths delivered for every public value: RunE dispatch 95–182, `exitCodeForResult` (`len(Unsupported)>0`→`exitAudit` **before** `failOnTriggered`), `statementCoverage`, evidence-gaps→`unverified` downgrade, `Aggregate` (unsupported contributes nothing → boundary-only `pass`), `ErrInvalidTargetVersion` construction, `prepareMetadataAudit`, viper policy enablement. Probe rc re-derived: **P1=0, P2=1** (non-empty `$.unsupported` wins over `--fail-on none`), **P3=2** — corrected from R3's assumed 0/0/2.
+- **R4-E** — evidence attribution corrected: the inner SRS no-op is cited as exactly that (457–465), not a "complete outer branch"; the full outer discriminator is 396–497; un-attached policy/discovery claims removed; R2 `|| true` erratum re-registered as a Worker supplement (R2 original capture incomplete — not rewritten); this round's static records log full pipelines with per-stage rc.
 
 ---
 
@@ -45,8 +44,9 @@ authored ordering        failureBefore(line,col) — failure records      batch_
                           precede statements by authored position
 geometry vocabulary      spatialMemberFamilyType — the eight            advanced_indexes.go:707–712
                           normalized spatial base-type tokens
-report surface           statements[].sql/findings/evidence_gaps/        report package / evaluate.go
-                          coverage/unsupported; result.verdict/summary
+report surface           $.statements[].raw_sql/normalized_sql/          report package / evaluate.go
+                          findings/evidence_gaps/coverage;               + report/result.go
+                          $.unsupported/$.verdict/$.summary/$.coverage
 CLI surface              audit --sql/--file/--dialect/--format/          interfaces/cli/audit.go
                           --fail-on/--target-version/--config; rc 0/1/2/3
 ```
@@ -139,7 +139,7 @@ Normative arm table — mutually exclusive, evaluated top-down. `audited` admiss
 
 | arm | entry predicate | facts used | outcome | findings | owed | conditional | statement coverage | modeled post-state |
 |---|---|---|---|---|---|---|---|---|
-| **B — `blocked`** | `contaminated` or `srsExistenceStale[SRID]` | none (unconsumable) | review | none (+advisory if reserved) | `srs.batch_effects` | n/a | unverified | SRID stays stale; no new flags minted |
+| **B — `blocked`** | `contaminated` (whole-batch source) **or** `srsExistenceStale[SRID]` (per-SRID source) — two distinct entry sources, either suffices | none (unconsumable) | review | none (+advisory if reserved) | `srs.batch_effects` | n/a | unverified | **preserves entry state exactly** — mints/clears no flag of either kind; a contamination-only B leaves `srsExistenceStale[SRID]` untouched, a stale-only B leaves `contaminated` untouched |
 | **S0 — `refused_srid0`** | `decl.SRID == 0` | static declaration | reject | 1 blocker `ddl.mysql.srs.drop.srid0` | — | n/a | complete | provably unchanged; facts consumable; no flags |
 | **S1 — `refused_dependency`** | **valid-dependency predicate** (§B) | valid positive dep witness | reject | 1 blocker `ddl.mysql.srs.drop.dependency` | — | n/a | complete | provably unchanged (3716-class refusal); facts consumable; no flags |
 | **S2 — `unproven`** | everything else | unread/unknown/empty-incomplete/stale per fact | review | none (+advisory if reserved) | **always** `{srs.column_dependencies, srs.drop.privilege}` (no reachable complete-empty/privilege producer), **plus** `srs.existence` iff existence stayed unproven (`Read=false` or `Exists=false`) | `if_exists` is carried only by the public SQL skeleton — it never discharges a gap, marks a finding, or proves absent | unverified | unmodeled effect → set `srsExistenceStale[SRID]` **only** (a DROP SRS never writes geometry columns, so it cannot invalidate dependency facts) |
@@ -155,26 +155,26 @@ Frozen sub-rulings:
 
 ### Frozen public projection (R2-E — exact per-arm output)
 
-JSON field paths are the existing report surface (`report/result.go`, `rule/rule.go`, `spec/statement.go` — baseline shapes, verbatim in `baseline-source-excerpts.txt`): `statements[i].raw_sql`/`normalized_sql` (the redacted skeleton), `statements[i].findings[]` (`.rule_id`, `.level`, `.message`, `.metadata`), `statements[i].evidence_gaps[]` (`.rule_id`, `.reason_code`, `.required_facts[]`), `statements[i].coverage.status`, `result.unsupported[]` (result-level `{feature, reason, metadata}` — **not** per-statement), `result.verdict`, `result.summary`, `result.coverage`. Arm tokens appear only inside finding `.metadata.outcome`; `if_exists` never appears as a metadata key — it is visible verbatim in `raw_sql`/`normalized_sql`.
+JSON field paths are the existing report surface (`report/result.go`, `rule/rule.go`, `spec/statement.go` — baseline shapes, verbatim in `baseline-source-excerpts.txt`): `$.statements[i].raw_sql`/`normalized_sql` (the redacted skeleton), `$.statements[i].findings[]` (`.rule_id`, `.level`, `.message`, `.metadata`), `$.statements[i].evidence_gaps[]` (`.rule_id`, `.reason_code`, `.required_facts[]`), `$.statements[i].coverage.status`, `$.unsupported[]` (result-level `{feature, reason, metadata, sql?}` — **not** per-statement), `$.verdict`, `$.summary`, `$.coverage`. Arm tokens appear only inside finding `.metadata.outcome`; `if_exists` never appears as a metadata key — it is visible verbatim in `raw_sql`/`normalized_sql`.
 
 Rule-role assignment (fixed): `ddl.mysql.srs.drop.dependency` is the adjudicating rule — it emits the S1 blocker finding **and** reports every B/S2 gap (`rule_id` on the gap is always `…dependency`); `ddl.mysql.srs.drop.srid0` emits only the S0 blocker; `ddl.mysql.srs.drop.reserved` emits only the advisory and reports no gaps.
 
 Fixed message literals (bounded static text / bounded numeric template — never authored names):
 
 - `…srid0`: `"dropping spatial reference system SRID 0 is not allowed"`
-- `…dependency`: `"spatial reference system <srid> is used by <n> visible geometry column(s)"` (`<n>` = `dependency_witness_count`)
+- `…dependency`: `"spatial reference system <srid> is used by <count> visible geometry column(s)"` (`<count>` = `dependency_witness_count` — a distinct variable from `<srid>`)
 - `…reserved`: `"spatial reference system <srid> is in a reserved SRID range"` — states documented range membership only; never claims the native engine emitted a warning
 
 Serialization discipline (frozen): empty `findings`/`evidence_gaps`/`unsupported` serialize as **key-absent** (`omitempty`), never `[]`; `UnsupportedDetail.index` is omitted when `0`; `coverage` is always present as an object `{status:…}`; `conditional_audit` and every conditional marker are **absent on all arms this slice** (no conditional publication exists).
 
 | arm | `$.statements[i].findings` (exact) | `$.statements[i].evidence_gaps` | `$.statements[i].coverage.status` | `$.unsupported` contribution | `$.verdict` contribution |
 |---|---|---|---|---|---|
-| B `blocked` | reserved SRID: `[{rule_id:"ddl.mysql.srs.drop.reserved", level:"notice", message:"spatial reference system <srid> is in a reserved SRID range", metadata:{srid:<n>}}]`; else key absent | `[{rule_id:"ddl.mysql.srs.drop.dependency", reason_code:"unknown_srs_state", required_facts:["srs.batch_effects"]}]` | `unverified` | none | review |
+| B `blocked` | reserved SRID: `[{rule_id:"ddl.mysql.srs.drop.reserved", level:"notice", message:"spatial reference system <srid> is in a reserved SRID range", metadata:{srid:<srid>}}]`; else key absent | `[{rule_id:"ddl.mysql.srs.drop.dependency", reason_code:"unknown_srs_state", required_facts:["srs.batch_effects"]}]` | `unverified` | none | review |
 | S0 `refused_srid0` | `[{rule_id:"ddl.mysql.srs.drop.srid0", level:"blocker", message:"dropping spatial reference system SRID 0 is not allowed", metadata:{srid:0, outcome:"refused_srid0"}}]` | key absent | `complete` | none | reject |
-| S1 `refused_dependency` | `[{rule_id:"ddl.mysql.srs.drop.dependency", level:"blocker", message:"spatial reference system <srid> is used by <n> visible geometry column(s)", metadata:{srid:<n>, outcome:"refused_dependency", dependency_witness_count:<n>}}]` | key absent | `complete` | none | reject |
-| S2 `unproven` | reserved SRID: `[{rule_id:"ddl.mysql.srs.drop.reserved", level:"notice", message:"spatial reference system <srid> is in a reserved SRID range", metadata:{srid:<n>}}]`; else key absent | `[{rule_id:"ddl.mysql.srs.drop.dependency", reason_code:"unknown_srs_state", required_facts:[ordered owed — "srs.column_dependencies","srs.drop.privilege" always, "srs.existence" prepended iff unproven]}]` | `unverified` | none | review |
-| version gate (MySQL, non-8.0.4+) | key absent | key absent | `incomplete` | `$.unsupported` gains `{feature:"drop_spatial_reference_system", sql:"DROP SPATIAL REFERENCE SYSTEM [IF EXISTS] <srid>", reason:"parsed by the shared parser but not covered by audited semantics", metadata:{boundary:"unaudited", object:"spatial_reference_system", gate:"version"}}`; `index` omitted when 0 | review |
-| TiDB vendor boundary (CURRENT) | key absent | key absent | `incomplete` | `{feature:"drop_spatial_reference_system", sql:"<skeleton>", reason:"parsed by the shared parser but outside the supported statement surface for this dialect", metadata:{boundary:"vendor"}}` | review |
+| S1 `refused_dependency` | `[{rule_id:"ddl.mysql.srs.drop.dependency", level:"blocker", message:"spatial reference system <srid> is used by <count> visible geometry column(s)", metadata:{srid:<srid>, outcome:"refused_dependency", dependency_witness_count:<count>}}]` | key absent | `complete` | none | reject |
+| S2 `unproven` | reserved SRID: `[{rule_id:"ddl.mysql.srs.drop.reserved", level:"notice", message:"spatial reference system <srid> is in a reserved SRID range", metadata:{srid:<srid>}}]`; else key absent | `[{rule_id:"ddl.mysql.srs.drop.dependency", reason_code:"unknown_srs_state", required_facts:[ordered owed — "srs.column_dependencies","srs.drop.privilege" always, "srs.existence" prepended iff unproven]}]` | `unverified` | none | review |
+| version gate (MySQL, non-8.0.4+) | key absent | key absent | `incomplete` | `$.unsupported` gains `{feature:"drop_spatial_reference_system", sql:"DROP SPATIAL REFERENCE SYSTEM [IF EXISTS] <srid>", reason:"parsed by the shared parser but not covered by audited semantics", metadata:{boundary:"unaudited", object:"spatial_reference_system", gate:"version"}}`; `index` omitted when 0 | **none** — `$.unsupported` never feeds verdict (`result.go:161–190`): a boundary-only request evaluates to `pass`; with audited siblings present the verdict belongs to them |
+| TiDB vendor boundary (CURRENT) | key absent | key absent | `incomplete` | `{feature:"drop_spatial_reference_system", sql:"<skeleton>", reason:"parsed by the shared parser but outside the supported statement surface for this dialect", metadata:{boundary:"vendor"}}` | **none** — same derivation; boundary-only → `pass` |
 
 **Never serialized**: dependency schema/table/column names, `CatalogName`, WKT/description text, account/grant text, provider error payloads, internal arm/flag names outside `metadata.outcome`. Issued-read failures stay on the existing bounded error path: `metadataObjectReadError`-shaped (fixed public text, `Unwrap` preserves cause) — a failed metadata query is a typed error, never a success-with-gap.
 
@@ -203,9 +203,9 @@ Rationale: a DROP/CREATE/boundary SRS statement writes only the SRS registry —
 | audited DROP, non-refusal arm (S2) | unknown (may have executed) | `srsExistenceStale[SRID]=true` → next DROP hits arm **B** |
 | audited DROP, refusal arm (S0/S1) | provably unchanged | none — facts stay consumable; a repeated identical DROP refuses identically |
 | boundary CREATE / CREATE OR REPLACE / DROP (unaudited, version-gated) | unmodeled — may have written | `srsExistenceStale[SRID]=true` → arm **B** |
-| arm **B** outcome | unchanged stale | stays **B** (stale is monotonic within the batch) |
+| arm **B** outcome | preserves entry state — mints/clears nothing | stays **B** (stale is monotonic within the batch) |
 
-A refused statement never mints staleness; a non-refused or boundary one always does (existence only). No absent/publication path exists — nothing publishes `OrderedAbsent`/`OrderedPresent` for SRS this slice.
+Writers, restated without overlap: refusal arms (S0/S1) and arm B mint **no** flag of either kind; a non-refusal audited SRS write (S2) or a boundary SRS lifecycle write mints `srsExistenceStale[its own SRID]`; a `spatialTouching` table/schema write mints `srsDepsStale` only. Stale demotion itself is per-fact (`srsDepsStale` demotes the dependency fact; `srsExistenceStale[SRID]` routes the statement to B) — the writer enumeration is per-statement, so the two descriptions complement rather than contradict. No absent/publication path exists — nothing publishes `OrderedAbsent`/`OrderedPresent` for SRS this slice.
 
 **D2 — different SRID:** identity is numeric SRID only — no SERVER-style name folding. A write to SRID `a` sets `srsExistenceStale[a]` and nothing else: SRID `b` keeps every consumable fact (its own existence, the shared dependency space *unless* a table/schema write also intervened). `srsDepsStale` is batch-wide by design: dependency space is a single shared catalog across all SRIDs, so a table/schema write demotes witnesses for every SRID — per-SRID dependency invalidation is not modeled.
 
@@ -213,18 +213,20 @@ A refused statement never mints staleness; a non-refused or boundary one always 
 
 | class | verdict | basis |
 |---|---|---|
-| `DROP TABLE`, `TRUNCATE TABLE`, `RENAME TABLE` | touching | removes/renames dependent columns outright |
-| `ALTER TABLE` carrying **any** action outside the inert option set — column-identity/type actions (`add_column`, `drop_column`, `change_column`, `modify_column`, `rename_column`, `alter_column` setters), `rename_table`, index/constraint/partition actions, or an unmodeled/partial action list | touching | may drop, retype, or rename the dependent geometry column — or the action set cannot be proven complete |
-| `ALTER TABLE` whose **complete** modeled action list contains only `engine` / table-option members | inert | provably no column mutation (the action list is fully modeled and every member is storage-layer only) |
-| `CREATE TABLE` with a **complete modeled column list** containing **zero** spatial-family base types (`geometry`, `point`, `linestring`, `polygon`, `multipoint`, `multilinestring`, `multipolygon`, `geometrycollection` — `advanced_indexes.go:707–712`) and no `SRID` column clause | inert | authored column list provably adds no dependent column |
-| `CREATE TABLE` with **any** spatial-family column or `SRID` clause, `CREATE … LIKE`, `CREATE … AS SELECT`, or any partial/unmodeled column set (CTAS `ColumnsTailUnknown`, LIKE-source columns unvouched) | touching | may mint a dependency — completeness cannot be assumed |
+| `DROP TABLE`, `TRUNCATE TABLE`, `RENAME TABLE` (`spec.DDLOperation*`) | touching | removes/renames dependent columns outright |
+| `ALTER TABLE` carrying **any** `spec.Alter` member outside the ENGINE-only inert set — column actions (`add_column`, `drop_column`, `change_column`, `modify_column`, `rename_column`, `alter_column`), `rename_table`, index/constraint/partition/placement actions, a non-`engine` option key in `Alter.Options`, or any action-set aspect gap (`statementCoverageAspects` flag on `aspect:"action"`) | touching | may drop, retype, or rename the dependent geometry column — or the action set cannot be proven complete |
+| `ALTER TABLE` whose **complete** `[]spec.Alter` action list consists solely of `Action:"table_option"` members whose `Options` keys are all `engine` (`tableOptionName` → `"engine"`, `extractor.go:2822–2932`) **and** no action aspect gap exists | inert | the sole sanctioned option-only exception this slice — provably storage-layer only |
+| `CREATE TABLE` in its ordinary, explicit column-definition form — complete modeled column list (`ColumnsTailUnknown=false`, no aspect gap), zero spatial-family base types (`advanced_indexes.go:707–712`), no `SRID` clause | inert | authored column list provably adds no dependent column |
+| any other `CREATE TABLE` — spatial-family column or `SRID` clause, `CREATE … LIKE`, `CREATE … AS SELECT`, or partial/unmodeled column set (CTAS `ColumnsTailUnknown`, LIKE-source columns unvouched) | touching | may mint a dependency — completeness cannot be assumed; mutually exclusive with the inert row |
 | `DROP SCHEMA`, `ALTER SCHEMA`, schema `RENAME`-class writes | touching | removes/renames the schema containing dependents |
 | `CREATE SCHEMA` | inert | an empty container provably holds no dependent column |
-| audited statements whose modeled kind provably carries no table/schema effect — index/view/SERVER/resource-group/sequence/placement/instance families | inert | their modeled effect space cannot write geometry columns |
-| boundary/unmodeled statement whose normalized model **carries table targets** (`TableTargets()≠∅` — e.g. `ALTER TABLE t COMPACT TIFLASH REPLICA`, a vendor boundary under MySQL per `coverage_boundary.go:189–194` with `Table` populated at `extractor.go:813–832`) | touching | model-provable target + unmodeled effect — no SQL-text guessing |
-| boundary/unmodeled statement with `TableTargets()=∅` but a table-affecting modeled kind (feature/kind identifies a table write the extractor did not normalize) | touching | identification is model-level (kind/feature), never text inspection |
-| statement with no table targets and a provably non-table kind | inert | nothing to touch |
+| audited statement whose `spec.DDLOperation` provably carries no table/schema effect — index/view/SERVER/resource-group/sequence/placement/instance families | inert | modeled effect space cannot write geometry columns |
+| boundary/unmodeled statement with `boundTargets(statement)=TableTargets()≠∅` (e.g. `ALTER TABLE t COMPACT TIFLASH REPLICA` — vendor boundary under MySQL, `coverage_boundary.go:189–194`; `Table` populated, `extractor.go:813–832`) | touching | model-provable target + unmodeled effect — no SQL-text guessing |
+| boundary/unmodeled statement with `TableTargets()=∅` but a table-affecting `spec.DDLOperation` | touching | identification is model-level (kind/feature), never text inspection |
+| statement with `TableTargets()=∅` and a provably non-table kind | inert | nothing to touch |
 | parser failure record before the statement | touching-by-contamination | whole-batch `contaminated` (§E9) — stronger than stale |
+
+**COMPACT own-apply, proven from the actual path (R4-B.4):** in `batchState.apply` (`batch_state.go:396–497`), a vendor-boundary statement carrying `DDL.Table=t` hits **none** of the early no-op specials (view / `create_table_select` / `alter_instance` / SRS / TiDB-tablespace / `dropColumnStatement`) and none of the scope-failure bottoms; it reaches `boundTargets(statement)` (`batch_state.go:489–493, 641–649`) → `invalidateDropIdentities(ddl)` → `return nil`. `s.contaminated` is therefore **unchanged** — the only `contaminated=true` bottom is the no-targets/no-scope fallback. Under this contract's own classification (bound table target, unmodeled effect) COMPACT is touching → it mints `srsDepsStale` (proposed flag — `srsDepsStale`/`srsExistenceStale` do not exist in the baseline; they are contract-new `batchState` members). A following `DROP SRS 4326` stays **S2** `{D,P}` + reserved notice with reads `1/1/1/1/0` — frozen from the real path, not asserted to preserve a prior expectation.
 
 Non-table statements never override SRS lifecycle writes: an SRS boundary write still sets `srsExistenceStale` even in a batch that otherwise touches nothing.
 
@@ -264,13 +266,25 @@ Baseline excerpts delivered in `baseline-source-excerpts.txt` (R3 set — each e
 | `SpatialReferenceSystemState` + `Complete=false` | `internal/domain/spec/srs.go:96–171` |
 | `SRIDName` + redacted `PublicSQL` | `internal/domain/spec/srs.go:175–208` |
 | `Metadata.SpatialReference` member | `internal/domain/spec/metadata.go:110–120, 772–778` |
-| unsupported SRS apply = no-op (outer branch) | `internal/application/audit/batch_state.go:457–465` |
+| outer apply `Unsupported` discriminator + generic bound-target invalidation (COMPACT's real path; the inner SRS no-op is only 457–465) | `internal/application/audit/batch_state.go:396–497` |
+| `boundTargets` + `schemaScopeName` | `internal/application/audit/batch_state.go:641–663` |
 | `failureBefore` authored ordering | `internal/application/audit/batch_state.go:3724–3729` |
 | privilege loader trigger (SERVER-only) | `internal/application/audit/server_drop_premise.go:26–37`; `metadata.go:318–329` |
 | bounded error wrapper + `Unwrap` | `internal/application/audit/metadata.go:1021–1056` |
-| unsupported → `$.unsupported` projection + verdict aggregation | `internal/application/audit/evaluate.go:27–54`; `internal/domain/report/result.go:176–190` |
+| unsupported → `$.unsupported` projection (per-statement loop) | `internal/application/audit/evaluate.go:27–54` |
+| `statementCoverage` (ResourceLimit/Unsupported/aspect-gaps → `incomplete`, else `complete`) | `internal/application/audit/coverage.go:881–906` |
+| evidence-gaps → `unverified` downgrade | `internal/application/audit/evaluate.go:98` |
+| `Aggregate`: statement-status floor → aggregate coverage; findings/gaps → verdict (Unsupported contributes nothing) | `internal/domain/report/result.go:131–190` |
 | report JSON shapes (StatementResult/Result/Finding/EvidenceGap/UnsupportedDetail) | `internal/domain/report/result.go:27–46, 85–120`; `internal/domain/rule/rule.go:35–77`; `internal/domain/spec/statement.go:100–106` |
-| CLI flags, policy enablement, `newUserError`, `failOnTriggered`, exit dispatch | `internal/interfaces/cli/audit.go:38–42, 60–70, 99–103, 184–204, 586–600`; `internal/interfaces/cli/cli.go:13–60`; `internal/interfaces/cli/root.go:46–47` |
+| request version surface: `LoadInstanceFacts` call + `ParseObservedVersion` + product-mismatch/pin-mismatch typed errors | `internal/application/audit/metadata.go:141–175`; `internal/application/audit/service.go:27–31, 124, 274–310` |
+| CLI RunE full dispatch: pin preflight → connection/`prepareMetadataAudit` gate → `AuditSQL` → `renderResult` → `exitCodeForResult` | `internal/interfaces/cli/audit.go:95–182` |
+| `prepareMetadataAudit` → `auditmeta.Prepare` (connection-enabled only) | `internal/interfaces/cli/audit_metadata.go:48–84` |
+| `hasRenderableAuditResult` + `renderResult` | `internal/interfaces/cli/audit.go:375–395` |
+| `failOnTriggered` + `exitCodeForResult` (Unsupported non-empty → `exitAudit` **before** threshold) | `internal/interfaces/cli/audit.go:586–618` |
+| `exitUser/exitInternal` constants + `Execute` stderr print (`fmt.Fprintln`) | `internal/interfaces/cli/cli.go:13–40`; `internal/interfaces/cli/root.go:46–47` |
+| `ErrInvalidTargetVersion` + `ValidateTargetVersion` error construction | `internal/domain/spec/version.go:39–97, 110–135` |
+| policy rule `enabled`/`level` load seam (viper) | `internal/infrastructure/config/viper` (rule `enabled`/`level` fields → registry) |
+| `tableOptionName` → `engine` option vocabulary | `internal/infrastructure/parser/tidb/extractor.go:2822–2932` |
 
 Static checks executed this round (records in the archive): `git status`/`diff` scope checks, `git diff --check`, file byte counts, SHA-256 sums — each logged with its actual command and immediate rc. **Not executed (docs-only order):** `go test`, `go build`, `go vet`, `gofmt`, any CLI invocation, any SQL/native execution.
 
@@ -278,4 +292,5 @@ Static checks executed this round (records in the archive): `git status`/`diff` 
 - **E-1 (doc date):** the R1 §B privilege-basis line printed `verified 2026-11-15`; the actual session fetch ran on the worker's local date **2026-11-12**. Corrected above; the R1 archive keeps its original record unmodified.
 - **E-2 (R1 grep rc=1):** the R1 `static-checks.txt` grep-pipeline record ending `rc=1` is a normal no-match exit (pipeline semantics), not a failed read. Registered, not rewritten.
 - **E-3 (R1 `git status --porcelain` rc=1):** the same R1 record separately logs a `git status --porcelain` line at `rc=1`, which the no-match explanation cannot account for. The exact command that produced it is not recoverable from the record; it is registered here as an **unexplained/mislabeled historical capture** — left as-is, not speculated upon.
-- **E-4 (R2 `.go` count label):** R2's `static-checks.txt` recorded `git diff --name-only … | grep -c '\.go$' || true; echo "…grep rc=$?"` — the `0` output is `grep -c`'s real no-match count and the printed `rc` was the `|| true` composite's `0`, not grep's own `1`. The label is corrected here; the `.go changed=0` fact stands independently on the diff itself.
+- **E-4 (R2 `.go` count label):** the R2 receipt interpreted the `.go` record's `rc=0` as grep's own status. **Worker supplement registered this round:** the R2 `static-checks.txt` original did **not** preserve the complete pipeline text — only the count output and the `rc` label survived, so the full command is reconstructed as `… | grep -c '\.go$' || true; echo "…rc=$?"` and the printed `rc` was the `|| true` composite's `0`, not grep's own `1`. The R2 original stays byte-unchanged; the `.go changed=0` fact stands independently on the diff itself.
+- **E-5 (R3 filtered-status record):** R3's `static-checks.txt` printed the filter pipeline's final grep rc but did not record the complete `git status --porcelain | grep -v '^??'` command text inline — registered here; R4's own static records log every pipeline in full and attribute rc per stage (git vs filter).
