@@ -74,3 +74,12 @@ func (s *batchState) Contaminated() bool { return s.contaminated }
 func (s *batchState) SetAfterApplyObserve(fn func(int, *spec.Statement)) {
 	s.afterApplyObserve = fn
 }
+
+// SeedResolvedVersion overrides the resolved version identity — the
+// PA-6e internal companion pins the out-of-domain identity the
+// request layer would have computed from the observed banner
+// (R3-C3); the version gate below decides audit applicability,
+// never read applicability.
+func (s *batchState) SeedResolvedVersion(version *spec.VersionIdentity) {
+	s.resolvedVersion = version
+}

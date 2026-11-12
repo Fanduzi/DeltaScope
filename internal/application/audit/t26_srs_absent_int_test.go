@@ -148,7 +148,7 @@ func TestT26SRSAbsentEnrichForeignSRID(t *testing.T) {
 		t.Fatalf("arm=%v want S2 — foreign-SRID absence is not this object's absence", adj.Arm)
 	}
 	if adj.Privilege != spec.SRSDropPrivilegeConsumable {
-		t.Fatalf("premise=%v want consumable — the positive observation still carries, never consumed", adj.Privilege)
+		t.Fatalf("premise=%v want consumable — the positive observation projects onto S2 without blocking the arm", adj.Privilege)
 	}
 	if len(adj.Owed) != 2 || adj.Owed[0] != spec.SRSFactExistence || adj.Owed[1] != spec.SRSFactColumnDependencies {
 		t.Fatalf("owed=%v want [srs.existence srs.column_dependencies]", adj.Owed)

@@ -118,7 +118,8 @@ func TestT26SRSAbsentStaleChannelsRealChain(t *testing.T) {
 	})
 
 	t.Run("PA-5b-ifexists-noop", func(t *testing.T) {
-		provider, state := newState(t, fxConsumable())
+		fx := fxConsumable()
+		provider, state := newState(t, fx)
 		enriched := audit.EnrichSRSPrivForTest(t, state, provider,
 			"DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001;")
 		adj := paAdj(t, enriched[0])
@@ -129,6 +130,10 @@ func TestT26SRSAbsentStaleChannelsRealChain(t *testing.T) {
 			t.Fatalf("adj=%+v want consumable/no-owed", adj)
 		}
 		paBothStale(t, state, map[uint32]bool{77777: true})
+		// R3-C1: this row's own read vector — one resolver call, one
+		// existence read, one deps read, one Qo read, one privilege
+		// load; Vd is N/A at the internal enrich layer (no discovery).
+		r3AssertReads(t, provider, fx, 1, 1, 1, 1, 1, -1)
 	})
 
 	t.Run("PA-5c-ifexists-unproven", func(t *testing.T) {
@@ -187,6 +192,9 @@ func TestT26SRSAbsentStaleChannelsRealChain(t *testing.T) {
 		if !state.SRSDepsStale() {
 			t.Fatal("depsStale must persist")
 		}
+		// R3-C1: the minted row's own vector — a positive existence
+		// answer still costs the full read pass and one privilege load.
+		r3AssertReads(t, provider, fx, 1, 1, 1, 1, 1, -1)
 	})
 
 	// PA-5f: whole-batch contamination (GARBAGE parse failure) blocks
@@ -275,12 +283,36 @@ type paStmtSnap struct {
 	adjN bool
 }
 
+// R3-B: fidelity clones — a nil slice stays nil and a non-nil empty
+// slice stays non-nil empty. append([]T(nil), x...) erases that
+// distinction, so each collection is rebuilt nil-preserving.
+func paCloneSRIDs(s []uint32) []uint32 {
+	if s == nil {
+		return nil
+	}
+	return append([]uint32{}, s...)
+}
+
+func paCloneDepCols(s []spec.SRSDependentColumn) []spec.SRSDependentColumn {
+	if s == nil {
+		return nil
+	}
+	return append([]spec.SRSDependentColumn{}, s...)
+}
+
+func paCloneStrings(s []string) []string {
+	if s == nil {
+		return nil
+	}
+	return append([]string{}, s...)
+}
+
 func paCloneConflict(f *spec.SRSConflictFact) *spec.SRSConflictFact {
 	if f == nil {
 		return nil
 	}
 	c := *f
-	c.MatchedSRIDs = append([]uint32(nil), f.MatchedSRIDs...)
+	c.MatchedSRIDs = paCloneSRIDs(f.MatchedSRIDs)
 	return &c
 }
 
@@ -297,34 +329,45 @@ func paSnapStmt(stmt spec.Statement) paStmtSnap {
 		c.OrgConflict = paCloneConflict(s.OrgConflict)
 		if s.Dependencies != nil {
 			d := *s.Dependencies
-			d.Columns = append([]spec.SRSDependentColumn(nil), s.Dependencies.Columns...)
+			d.Columns = paCloneDepCols(s.Dependencies.Columns)
 			c.Dependencies = &d
 		}
 		out.srs = &c
 	}
 	if a := stmt.Metadata.SRSDrop; a != nil {
 		c := *a
-		c.Owed = append([]string(nil), a.Owed...)
+		c.Owed = paCloneStrings(a.Owed)
 		out.adj = &c
 	}
 	return out
 }
 
-func paSRSConflictEqual(t *testing.T, who string, a, b *spec.SRSConflictFact) {
-	t.Helper()
+// paSRSConflictSame is the pure comparator — false on ANY difference:
+// pointer nilness, Complete, MatchedSRIDs nilness, length, or elements.
+// paSRSConflictEqual wraps it with fatal detail.
+func paSRSConflictSame(a, b *spec.SRSConflictFact) bool {
 	if (a == nil) != (b == nil) {
-		t.Fatalf("%s conflict nilness differs: %v vs %v", who, a, b)
+		return false
 	}
 	if a == nil {
-		return
+		return true
 	}
-	if a.Complete != b.Complete || len(a.MatchedSRIDs) != len(b.MatchedSRIDs) {
-		t.Fatalf("%s conflict %+v vs %+v", who, a, b)
+	if a.Complete != b.Complete || len(a.MatchedSRIDs) != len(b.MatchedSRIDs) ||
+		(a.MatchedSRIDs == nil) != (b.MatchedSRIDs == nil) {
+		return false
 	}
 	for i := range a.MatchedSRIDs {
 		if a.MatchedSRIDs[i] != b.MatchedSRIDs[i] {
-			t.Fatalf("%s conflict SRIDs[%d]=%d vs %d", who, i, a.MatchedSRIDs[i], b.MatchedSRIDs[i])
+			return false
 		}
+	}
+	return true
+}
+
+func paSRSConflictEqual(t *testing.T, who string, a, b *spec.SRSConflictFact) {
+	t.Helper()
+	if !paSRSConflictSame(a, b) {
+		t.Fatalf("%s conflict %+v vs %+v", who, a, b)
 	}
 }
 
@@ -374,6 +417,88 @@ func paSnapEqual(t *testing.T, who string, a, b paStmtSnap) {
 	}
 }
 
+// R3-B: the snapshot helpers' fidelity — real nil vs real non-nil
+// empty are distinguishable captures, element changes are caught, and
+// the isolation is bidirectional (mutating the live value never
+// retro-changes a captured snapshot; mutating a snapshot never bleeds
+// back into the live value). Covers the three collections PA-7
+// actually copies: MatchedSRIDs, Dependencies.Columns, Owed.
+func TestT26SRSAbsentSnapshotFidelity(t *testing.T) {
+	nilStmt := spec.Statement{Metadata: &spec.Metadata{
+		SpatialReference: &spec.SpatialReferenceSystemState{
+			SRID: 100001,
+			NameConflict: &spec.SRSConflictFact{
+				Complete:     true,
+				MatchedSRIDs: nil, // real nil
+			},
+			Dependencies: &spec.SRSDependencyFact{Columns: nil},
+		},
+		SRSDrop: &spec.SRSDropAdjudication{Owed: nil},
+	}}
+	emptyStmt := spec.Statement{Metadata: &spec.Metadata{
+		SpatialReference: &spec.SpatialReferenceSystemState{
+			SRID: 100001,
+			NameConflict: &spec.SRSConflictFact{
+				Complete:     true,
+				MatchedSRIDs: []uint32{}, // real non-nil empty
+			},
+			Dependencies: &spec.SRSDependencyFact{Columns: []spec.SRSDependentColumn{}},
+		},
+		SRSDrop: &spec.SRSDropAdjudication{Owed: []string{}},
+	}}
+	nilSnap := paSnapStmt(nilStmt)
+	emptySnap := paSnapStmt(emptyStmt)
+
+	// 1. nil vs non-nil empty remain distinguishable captures.
+	if nilSnap.srs.NameConflict.MatchedSRIDs != nil {
+		t.Fatal("nil MatchedSRIDs captured as non-nil")
+	}
+	if emptySnap.srs.NameConflict.MatchedSRIDs == nil || len(emptySnap.srs.NameConflict.MatchedSRIDs) != 0 {
+		t.Fatal("non-nil empty MatchedSRIDs captured as nil")
+	}
+	if nilSnap.srs.Dependencies.Columns != nil || emptySnap.srs.Dependencies.Columns == nil {
+		t.Fatal("Dependencies.Columns nilness not preserved")
+	}
+	if nilSnap.adj.Owed != nil || emptySnap.adj.Owed == nil {
+		t.Fatal("Owed nilness not preserved")
+	}
+
+	// 2. A same-field mismatch between captures is caught by the
+	// comparator — nil vs empty must compare different, not pass.
+	if paSRSConflictSame(nilSnap.srs.NameConflict, emptySnap.srs.NameConflict) {
+		t.Fatal("comparator must distinguish nil from non-nil empty MatchedSRIDs")
+	}
+
+	// 3. Bidirectional isolation on all three collections.
+	live := spec.Statement{Metadata: &spec.Metadata{
+		SpatialReference: &spec.SpatialReferenceSystemState{
+			SRID:         100001,
+			NameConflict: &spec.SRSConflictFact{Complete: true, MatchedSRIDs: []uint32{1}},
+			Dependencies: &spec.SRSDependencyFact{Columns: []spec.SRSDependentColumn{{Schema: "s", Table: "t", Column: "g", SRID: 9}}},
+		},
+		SRSDrop: &spec.SRSDropAdjudication{Owed: []string{"a"}},
+	}}
+	snap := paSnapStmt(live)
+	// mutate the live value — the snapshot must not move
+	live.Metadata.SpatialReference.NameConflict.MatchedSRIDs[0] = 999
+	live.Metadata.SpatialReference.Dependencies.Columns[0].SRID = 999
+	live.Metadata.SRSDrop.Owed[0] = "zzz"
+	if snap.srs.NameConflict.MatchedSRIDs[0] == 999 ||
+		snap.srs.Dependencies.Columns[0].SRID == 999 ||
+		snap.adj.Owed[0] == "zzz" {
+		t.Fatal("live mutation leaked into the captured snapshot")
+	}
+	// mutate the snapshot — the live value must not move
+	snap.srs.NameConflict.MatchedSRIDs[0] = 777
+	snap.srs.Dependencies.Columns[0].SRID = 777
+	snap.adj.Owed[0] = "yyy"
+	if live.Metadata.SpatialReference.NameConflict.MatchedSRIDs[0] == 777 ||
+		live.Metadata.SpatialReference.Dependencies.Columns[0].SRID == 777 ||
+		live.Metadata.SRSDrop.Owed[0] == "yyy" {
+		t.Fatal("snapshot mutation leaked back into the live value")
+	}
+}
+
 // PA-7a over the real provider: stmt1's COMPLETE projection (full
 // SpatialReference + SRSDrop + privilege premise) is independently
 // deep-copied at three real hook points — ① after stmt1's own apply,
@@ -395,10 +520,15 @@ func TestT26SRSAbsentRevokeScopingRealChain(t *testing.T) {
 	var scopeEnded [3]bool
 	var staleAt [3]map[uint32]bool
 	var depsStaleAt [3]bool
+	// R3-C2: per-statement read vectors captured at each apply hook —
+	// baseline before enrich, then after each statement's own apply.
+	base := paReadsVector(provider, fx)
+	var readsAt [3][5]int
 	state.SetAfterApplyObserve(func(i int, stmt *spec.Statement) {
 		scopeEnded[i] = state.ScopeEnded()
 		staleAt[i] = audit.BatchStateStaleSet(state)
 		depsStaleAt[i] = state.SRSDepsStale()
+		readsAt[i] = paReadsVector(provider, fx)
 		if i == 0 {
 			stmt1 = stmt
 		}
@@ -444,5 +574,170 @@ func TestT26SRSAbsentRevokeScopingRealChain(t *testing.T) {
 			t.Fatalf("depsStale[%d] must stay false — no A arm mints or clears", i)
 		}
 	}
+	// R3-C2: per-statement increments measured at each apply point —
+	// not just the final total. stmt1's increment is the full single
+	// pass (R/Qexist/Qdeps/Qo +1 each) PLUS the one-time privilege
+	// observation L=1 — the loader runs once with the first premise
+	// derivation and is an enrich-level observation, never a per-
+	// statement read. The REVOKE apply adds ZERO reads. stmt3's
+	// increment is its own pass and no further load. Vd is N/A at
+	// the internal enrich layer — no discovery runs there.
+	incr := func(a, b [5]int) [5]int {
+		var d [5]int
+		for i := range d {
+			d[i] = a[i] - b[i]
+		}
+		return d
+	}
+	if d := incr(readsAt[0], base); d != [5]int{1, 1, 1, 1, 1} {
+		t.Fatalf("stmt1 increment=%v want [1 1 1 1 1] — its own pass + the one-time premise load", d)
+	}
+	if d := incr(readsAt[1], readsAt[0]); d != [5]int{0, 0, 0, 0, 0} {
+		t.Fatalf("REVOKE increment=%v want [0 0 0 0 0] — a scope event never reads the catalog", d)
+	}
+	if d := incr(readsAt[2], readsAt[1]); d != [5]int{1, 1, 1, 1, 0} {
+		t.Fatalf("stmt3 increment=%v want [1 1 1 1 0] — its own pass under the closed scope, no second load", d)
+	}
+	if readsAt[2][4]-base[4] != 1 {
+		t.Fatalf("privilege loads=%d want exactly 1 across the whole enrich", readsAt[2][4]-base[4])
+	}
 	r3AssertReads(t, provider, fx, 2, 2, 2, 2, 1, -1)
+}
+
+// --- R3-C3: internal companions for PA-6c / PA-6e -------------------
+
+// PA-6c internal companion — same fixture as the public row
+// (zero-row SRS cell, Qo 8.0.36, consumable SUPER observation):
+// the CREATE OR REPLACE prefix carries the implementation boundary
+// with NO SRSDrop adjudication; its own-apply mints the authored
+// SRID stale set {100001} without contaminating the batch; the tail
+// DROP is audited B short-circuited by the same-SRID stale flag.
+// Prefix reads and the tail's ZERO increment are measured at the
+// respective apply hooks — never inferred from totals (R3-C3).
+func TestT26SRSAbsentBoundaryPrefixInternal(t *testing.T) {
+	fx := r3PrivilegeFixture()
+	fx.srs = nil
+	provider, state := paRealState(t, fx)
+
+	base := paReadsVector(provider, fx)
+	var readsAt [2][5]int
+	var staleAt [2]map[uint32]bool
+	var contaminatedAt [2]bool
+	state.SetAfterApplyObserve(func(i int, stmt *spec.Statement) {
+		readsAt[i] = paReadsVector(provider, fx)
+		staleAt[i] = audit.BatchStateStaleSet(state)
+		contaminatedAt[i] = state.Contaminated()
+	})
+	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+		"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 100001 DEFINITION 'x';"+
+			"DROP SPATIAL REFERENCE SYSTEM 100001;")
+	if len(enriched) != 2 {
+		t.Fatalf("enriched=%d want 2", len(enriched))
+	}
+
+	// Prefix: implementation boundary, no SRSDrop adjudication.
+	prefix := enriched[0]
+	if prefix.Unsupported == nil ||
+		prefix.Unsupported.Metadata["boundary"] != "implementation" ||
+		prefix.Unsupported.Metadata["object"] != "spatial_reference_system" ||
+		prefix.Unsupported.Reason != spec.UnsupportedUnauditedReason {
+		t.Fatalf("prefix unsupported=%+v want implementation/spatial_reference_system boundary", prefix.Unsupported)
+	}
+	if prefix.Metadata != nil && prefix.Metadata.SRSDrop != nil {
+		t.Fatalf("prefix carries an SRSDrop adjudication — boundary rows never adjudicate: %+v", prefix.Metadata.SRSDrop)
+	}
+	// Prefix own-apply: authored stale set exactly {100001}; no
+	// contamination (the boundary lifecycle write is the ONLY effect).
+	paSameStale(t, staleAt[0], map[uint32]bool{100001: true}, "prefix apply")
+	if contaminatedAt[0] {
+		t.Fatal("prefix apply must not contaminate the batch — tracked facts provably stand")
+	}
+	// Prefix reads: the pre-state existence pass it issued before its
+	// boundary apply — measured, not inferred.
+	if d := [5]int{readsAt[0][0] - base[0], readsAt[0][1] - base[1],
+		readsAt[0][2] - base[2], readsAt[0][3] - base[3], readsAt[0][4] - base[4]}; d != [5]int{1, 1, 1, 1, 1} {
+		t.Fatalf("prefix increment=%v want [1 1 1 1 1] — its single pass + the one-time load", d)
+	}
+
+	// Tail: audited B — the same-SRID stale minted by the prefix
+	// short-circuits its bind; zero further reads.
+	tail := enriched[1]
+	if tail.Metadata == nil || tail.Metadata.SRSDrop == nil {
+		t.Fatalf("tail missing its audited adjudication: %+v", tail.Metadata)
+	}
+	if tail.Metadata.SRSDrop.Arm != spec.SRSDropArmBlocked ||
+		len(tail.Metadata.SRSDrop.Owed) != 1 || tail.Metadata.SRSDrop.Owed[0] != spec.SRSFactBatchEffects {
+		t.Fatalf("tail adj=%+v want blocked/[srs.batch_effects]", tail.Metadata.SRSDrop)
+	}
+	if d := [5]int{readsAt[1][0] - readsAt[0][0], readsAt[1][1] - readsAt[0][1],
+		readsAt[1][2] - readsAt[0][2], readsAt[1][3] - readsAt[0][3], readsAt[1][4] - readsAt[0][4]}; d != [5]int{0, 0, 0, 0, 0} {
+		t.Fatalf("tail increment=%v want [0 0 0 0 0] — same-SRID stale short-circuits the bind", d)
+	}
+	paSameStale(t, staleAt[1], map[uint32]bool{100001: true}, "tail apply")
+	if contaminatedAt[1] {
+		t.Fatal("tail apply must not contaminate the batch")
+	}
+}
+
+// PA-6e internal companion — same fixture difference as the public row
+// (Qo 8.0.3 ⇒ resolved version OUTSIDE the audited domain): BOTH
+// statements are version boundaries, NEITHER carries an SRSDrop
+// adjudication; stmt1's boundary apply mints the authored stale key;
+// stmt1's single pass and stmt2's ZERO increment are measured at their
+// own hooks; L=0 is attributed to the ADMITTANCE gate — no audited
+// statement ever derived a premise — not to the later stale
+// short-circuit (L was already 0 at stmt1's hook, before any mint).
+// Vd is N/A at this layer: no discovery runs inside enrich.
+func TestT26SRSAbsentBoundaryVersionPairInternal(t *testing.T) {
+	fx := r3PrivilegeFixture()
+	fx.srs = nil
+	fx.version = "8.0.3"
+	provider, state := paRealState(t, fx)
+	state.SeedResolvedVersion(&spec.VersionIdentity{
+		Product: spec.VersionProductMySQL, Version: "8.0.3",
+		Major: 8, Minor: 0, Patch: 3, ValidatedRange: true,
+	})
+
+	base := paReadsVector(provider, fx)
+	var readsAt [2][5]int
+	var staleAt [2]map[uint32]bool
+	state.SetAfterApplyObserve(func(i int, stmt *spec.Statement) {
+		readsAt[i] = paReadsVector(provider, fx)
+		staleAt[i] = audit.BatchStateStaleSet(state)
+	})
+	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+		"DROP SPATIAL REFERENCE SYSTEM 100001; DROP SPATIAL REFERENCE SYSTEM 100001;")
+	if len(enriched) != 2 {
+		t.Fatalf("enriched=%d want 2", len(enriched))
+	}
+	for i, stmt := range enriched {
+		if stmt.Unsupported == nil ||
+			stmt.Unsupported.Metadata["boundary"] != "unaudited" ||
+			stmt.Unsupported.Metadata["gate"] != "version" ||
+			stmt.Unsupported.Metadata["object"] != "spatial_reference_system" {
+			t.Fatalf("stmt%d unsupported=%+v want version/spatial_reference_system boundary", i, stmt.Unsupported)
+		}
+		if stmt.Metadata != nil && stmt.Metadata.SRSDrop != nil {
+			t.Fatalf("stmt%d carries an SRSDrop adjudication — boundary rows never adjudicate", i)
+		}
+	}
+	// stmt1's boundary apply mints the authored key — its own apply
+	// is the mint, not an adjudication.
+	paSameStale(t, staleAt[0], map[uint32]bool{100001: true}, "stmt1 apply")
+	// stmt1's single pass measured at its hook; stmt2's zero increment
+	// measured at its own hook (same-SRID stale short-circuit).
+	if d := [5]int{readsAt[0][0] - base[0], readsAt[0][1] - base[1],
+		readsAt[0][2] - base[2], readsAt[0][3] - base[3], readsAt[0][4] - base[4]}; d != [5]int{1, 1, 1, 1, 0} {
+		t.Fatalf("stmt1 increment=%v want [1 1 1 1 0] — the boundary still reads, L never runs", d)
+	}
+	if d := [5]int{readsAt[1][0] - readsAt[0][0], readsAt[1][1] - readsAt[0][1],
+		readsAt[1][2] - readsAt[0][2], readsAt[1][3] - readsAt[0][3], readsAt[1][4] - readsAt[0][4]}; d != [5]int{0, 0, 0, 0, 0} {
+		t.Fatalf("stmt2 increment=%v want [0 0 0 0 0] — minted stale short-circuits its bind", d)
+	}
+	// L=0 belongs to the admittance gate: it was already 0 at stmt1's
+	// hook — before any stale mint existed — so the mint cannot be
+	// its cause.
+	if readsAt[0][4] != 0 || readsAt[1][4] != 0 {
+		t.Fatalf("L=%d/%d want 0/0 — no audited statement ever derived a premise", readsAt[0][4], readsAt[1][4])
+	}
 }

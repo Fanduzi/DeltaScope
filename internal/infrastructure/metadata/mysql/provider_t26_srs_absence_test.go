@@ -278,12 +278,20 @@ func TestT26SRSAbsencePreCancelledRequestPropagates(t *testing.T) {
 // existence rowset is mid-iteration. database/sql surfaces
 // context.Canceled through rows.Err(); the bounded path propagates it,
 // no snapshot is delivered, and the dependency read is never reached.
+//
+// R3-A: the cancel is synced to the rowset's Next() ENTRY, not merely
+// to the recorded query attempt — QueryContext records its attempt
+// before the rowset exists, so attempt-polling alone cannot prove the
+// cancel landed inside iteration. The driver.Rows.Next handshake
+// (enteredNext) closes the first time Next() is actually entered; the
+// cancel fires only after that handshake.
 func TestT26SRSAbsenceMidIterationCancelPropagates(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	entered := make(chan struct{})
 	db := openTestDB(t, map[string]testQueryResult{
 		testSRSVersionFragment:  t26VersionRow("8.0.36"),
-		testSRSIdentityFragment: {columns: []string{"SRS_ID", "SRS_NAME"}, blockOnCtx: true},
+		testSRSIdentityFragment: {columns: []string{"SRS_ID", "SRS_NAME"}, blockOnCtx: true, enteredNext: entered},
 		testSRSDepFragment:      {columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}},
 	})
 	provider := NewProvider(db)
@@ -296,18 +304,20 @@ func TestT26SRSAbsenceMidIterationCancelPropagates(t *testing.T) {
 		snapshot, err := provider.ResolveObject(ctx, spec.DialectMySQL, t26SRSRequest("100001"))
 		done <- outcome{snapshot, err}
 	}()
-	// Wait until the existence read has actually been attempted — the
-	// cancellation must land INSIDE its rowset iteration, not before
-	// the query was issued.
-	deadline := time.Now().Add(5 * time.Second)
-	for t26Attempt(t, testSRSIdentityFragment) == 0 {
-		if time.Now().After(deadline) {
-			t.Fatal("existence query was never attempted")
-		}
-		time.Sleep(time.Millisecond)
+	// Bounded wait for the actual Next() entry handshake — this is the
+	// proof iteration had begun, not merely that the query was issued.
+	select {
+	case <-entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("rowset Next() was never entered — no mid-iteration point to cancel at")
 	}
+	// Qo succeeded before the cancel; the existence query was attempted
+	// and its rowset is mid-iteration.
 	if got := t26Attempt(t, testSRSVersionFragment); got != 1 {
 		t.Fatalf("Qo attempts=%d want 1 — Qo succeeded before the cancel", got)
+	}
+	if got := t26Attempt(t, testSRSIdentityFragment); got != 1 {
+		t.Fatalf("Qexist attempts=%d want 1", got)
 	}
 	cancel()
 	got := <-done

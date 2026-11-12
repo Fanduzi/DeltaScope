@@ -936,14 +936,19 @@ type testQueryResult struct {
 	// surfaced through rows.Err() once rows.Next() returns false).
 	rowErrAt int
 	rowErr   error
-	// closeErr fails the checked rows.Close() — a distinct answer shape
-	// from iteration errors that a defer-only reader would drop.
+	// closeErr fails the checked rows.Close() — the sentinel reaches the
+	// caller through database/sql's EOF auto-close / rows.Err()
+	// propagation, the same path the product's checked close reads.
 	closeErr error
 	// blockOnCtx parks iteration on the request context: Next() blocks
 	// until ctx.Done() and then returns ctx.Err() — a real mid-rowset
 	// cancellation witness (R2-A2), distinct from a pre-cancelled
-	// request or a driver-sentinel iteration error.
-	blockOnCtx bool
+	// request or a driver-sentinel iteration error. enteredNext, when
+	// supplied, is closed the first time Next() is actually entered —
+	// the handshake the cancellation test waits on so the cancel lands
+	// inside iteration, not merely after QueryContext returned (R3-A).
+	blockOnCtx  bool
+	enteredNext chan struct{}
 }
 
 type testDriver struct {
@@ -956,14 +961,15 @@ type testConn struct {
 }
 
 type testRows struct {
-	columns    []string
-	rows       [][]driver.Value
-	index      int
-	rowErrAt   int
-	rowErr     error
-	closeErr   error
-	blockOnCtx bool
-	ctx        context.Context
+	columns     []string
+	rows        [][]driver.Value
+	index       int
+	rowErrAt    int
+	rowErr      error
+	closeErr    error
+	blockOnCtx  bool
+	enteredNext chan struct{}
+	ctx         context.Context
 }
 
 var (
@@ -1002,13 +1008,14 @@ func registerTestDriverResults(name string, results map[string]testQueryResult) 
 			rows[i] = append([]driver.Value(nil), result.rows[i]...)
 		}
 		cloned[key] = testQueryResult{
-			columns:    append([]string(nil), result.columns...),
-			rows:       rows,
-			queryErr:   result.queryErr,
-			rowErrAt:   result.rowErrAt,
-			rowErr:     result.rowErr,
-			closeErr:   result.closeErr,
-			blockOnCtx: result.blockOnCtx,
+			columns:     append([]string(nil), result.columns...),
+			rows:        rows,
+			queryErr:    result.queryErr,
+			rowErrAt:    result.rowErrAt,
+			rowErr:      result.rowErr,
+			closeErr:    result.closeErr,
+			blockOnCtx:  result.blockOnCtx,
+			enteredNext: result.enteredNext,
 		}
 	}
 	// The foreign-key loader shares the key_column_usage table with the
@@ -1187,13 +1194,14 @@ func (c testConn) QueryContext(ctx context.Context, query string, args []driver.
 		return nil, result.queryErr
 	}
 	return &testRows{
-		columns:    append([]string(nil), result.columns...),
-		rows:       append([][]driver.Value(nil), result.rows...),
-		rowErrAt:   result.rowErrAt,
-		rowErr:     result.rowErr,
-		closeErr:   result.closeErr,
-		blockOnCtx: result.blockOnCtx,
-		ctx:        ctx,
+		columns:     append([]string(nil), result.columns...),
+		rows:        append([][]driver.Value(nil), result.rows...),
+		rowErrAt:    result.rowErrAt,
+		rowErr:      result.rowErr,
+		closeErr:    result.closeErr,
+		blockOnCtx:  result.blockOnCtx,
+		enteredNext: result.enteredNext,
+		ctx:         ctx,
 	}, nil
 }
 
@@ -1205,6 +1213,10 @@ func (r *testRows) Close() error { return r.closeErr }
 
 func (r *testRows) Next(dest []driver.Value) error {
 	if r.blockOnCtx && r.ctx != nil {
+		if r.enteredNext != nil {
+			close(r.enteredNext)
+			r.enteredNext = nil
+		}
 		<-r.ctx.Done()
 		return r.ctx.Err()
 	}
