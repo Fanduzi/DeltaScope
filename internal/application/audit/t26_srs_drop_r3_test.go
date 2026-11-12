@@ -143,6 +143,11 @@ func (c *r3Conn) QueryContext(_ context.Context, query string, args []driver.Nam
 		}
 		return &r3Rows{cols: []string{"server_name"}}, nil
 	case "user":
+		if c.fx.account == "" {
+			// P4b: a successful-but-empty current_user() answer —
+			// zero rows, no account bound.
+			return &r3Rows{cols: []string{"current_user()"}}, nil
+		}
 		return &r3Rows{cols: []string{"current_user()"}, rows: [][]driver.Value{{c.fx.account}}}, nil
 	case "grants":
 		var rows [][]driver.Value
@@ -343,6 +348,94 @@ func r3S2(t *testing.T, result report.Result, stmt report.StatementResult, wantF
 }
 
 const r3SQL = "DROP SPATIAL REFERENCE SYSTEM 4326;"
+
+// r3PrivilegeNotice is the strict conditional-marker check the
+// privilege contract fixes (T26-SRS-DROP-PRIVILEGE-CONTRACT-01 §3):
+// exactly one ddl.mysql.srs.drop.privilege finding on the statement —
+// notice level, the exact discharged-premise message, and typed
+// metadata carrying EXACTLY {srid:uint32, conditional_audit:string}.
+// A missing key, nil, non-string, empty, or wrong token all fail;
+// "!= \"\"" is never the criterion.
+func r3PrivilegeNotice(t *testing.T, stmt report.StatementResult, srid uint32) {
+	t.Helper()
+	var notice *rule.Finding
+	for i := range stmt.Findings {
+		if stmt.Findings[i].RuleID == "ddl.mysql.srs.drop.privilege" {
+			if notice != nil {
+				t.Fatalf("duplicate privilege notice: %+v", stmt.Findings)
+			}
+			notice = &stmt.Findings[i]
+		}
+	}
+	if notice == nil {
+		t.Fatalf("no ddl.mysql.srs.drop.privilege finding: %+v", stmt.Findings)
+	}
+	if notice.Level != rule.LevelNotice {
+		t.Fatalf("privilege notice level=%v want notice", notice.Level)
+	}
+	wantMessage := fmt.Sprintf("spatial reference system %d drop privilege premise discharged under the observed_account_new_session conditional audit", srid)
+	if notice.Message != wantMessage {
+		t.Fatalf("privilege message=%q want exact %q", notice.Message, wantMessage)
+	}
+	if len(notice.Metadata) != 2 {
+		t.Fatalf("privilege metadata=%+v want exactly {srid, conditional_audit}", notice.Metadata)
+	}
+	gotSRID, ok := notice.Metadata["srid"].(uint32)
+	if !ok || gotSRID != srid {
+		t.Fatalf("privilege metadata srid=%v(%T) want typed uint32 %d", notice.Metadata["srid"], notice.Metadata["srid"], srid)
+	}
+	marker, ok := notice.Metadata["conditional_audit"].(string)
+	if !ok || marker != string(spec.PrivilegeAuditModeObservedAccountNewSession) {
+		t.Fatalf("conditional_audit=%v(%T) want exact string observed_account_new_session",
+			notice.Metadata["conditional_audit"], notice.Metadata["conditional_audit"])
+	}
+}
+
+// r3S2Consumed asserts the full consumed-S2 statement projection
+// (T26-SRS-DROP-PRIVILEGE-EXECUTION-01): exactly one dependency-owned
+// unknown_srs_state gap with the exact ordered facts; strictly counted
+// findings — the family's privilege notice always, plus the frozen
+// reserved advisory only when wantReserved; statement coverage stays
+// unverified (consumption never upgrades unproven).
+func r3S2Consumed(t *testing.T, stmt report.StatementResult, wantFacts []string, srid uint32, wantReserved bool) {
+	t.Helper()
+	if len(stmt.EvidenceGaps) != 1 {
+		t.Fatalf("gaps=%+v want exactly 1", stmt.EvidenceGaps)
+	}
+	g := stmt.EvidenceGaps[0]
+	if g.RuleID != "ddl.mysql.srs.drop.dependency" || g.ReasonCode != "unknown_srs_state" {
+		t.Fatalf("gap=%+v want dependency-owned unknown_srs_state", g)
+	}
+	if !reflect.DeepEqual(g.RequiredFacts, wantFacts) {
+		t.Fatalf("gap facts=%v want ordered %v", g.RequiredFacts, wantFacts)
+	}
+	wantFindings := 1
+	if wantReserved {
+		wantFindings = 2
+	}
+	if len(stmt.Findings) != wantFindings {
+		t.Fatalf("findings=%+v want exactly %d (privilege notice + reserved=%v)", stmt.Findings, wantFindings, wantReserved)
+	}
+	r3PrivilegeNotice(t, stmt, srid)
+	if wantReserved {
+		var reserved *rule.Finding
+		for i := range stmt.Findings {
+			if stmt.Findings[i].RuleID == "ddl.mysql.srs.drop.reserved" {
+				reserved = &stmt.Findings[i]
+			}
+		}
+		if reserved == nil {
+			t.Fatalf("findings=%+v want the reserved advisory present", stmt.Findings)
+		}
+		if fmt.Sprintf("%v", reserved.Metadata["srid"]) != fmt.Sprintf("%d", srid) ||
+			reserved.Message != fmt.Sprintf("spatial reference system %d is in a reserved SRID range", srid) {
+			t.Fatalf("reserved advisory=%+v want the frozen shape", *reserved)
+		}
+	}
+	if stmt.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("statement coverage=%v want unverified", stmt.Coverage.Status)
+	}
+}
 
 // r3RefusedDependency asserts the complete refused_dependency public
 // projection (R5-B.3 — reused verbatim on every dependency-refusal row):
@@ -1003,21 +1096,20 @@ func TestT26SRSR3ServerPrivilegeIsolationProduct(t *testing.T) {
 		t.Fatalf("no ddl.mysql.server.drop.notice finding carries outcome=conditional_drop + conditional_audit=observed_account_new_session — privilege premise not proven consumable: %+v", srv.Findings)
 	}
 	srs := result.Statements[1]
-	// R4-A.3 / R5-B.1 — statement-level S2 projection on the SRS row:
-	// one dependency-owned unknown_srs_state gap with exact ordered
-	// [D,P] facts (SERVER privilege never transfers), findings strictly
-	// counted — exactly one frozen reserved notice for SRID 4326.
-	r3S2Statement(t, srs,
-		[]string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 4326)
-	for _, f := range srs.Findings {
-		if f.Metadata["conditional_audit"] != nil || f.Metadata["conditional"] != nil {
-			t.Fatalf("SRS finding carries conditional marker: %+v", f.Metadata)
-		}
-	}
-	// no conditional marker anywhere on the SRS statement
+	// T26-SRS-DROP-PRIVILEGE-EXECUTION-01 registered change (P8): the
+	// SRS statement now projects its own consumable premise — owed
+	// drops from historical [D,P] to [D], one dependency-owned
+	// unknown_srs_state gap remains, and the statement carries the
+	// family's own privilege notice plus the reserved advisory.
+	r3S2Consumed(t, srs, []string{spec.SRSFactColumnDependencies}, 4326, true)
+	// Marker isolation is checked per statement/finding (P8-G): the
+	// SRS notice's conditional_audit is its own designed public field —
+	// the raw SERVER observation payload is what must never cross.
 	srsBlob, _ := json.Marshal(srs)
-	if strings.Contains(string(srsBlob), "conditional_audit") {
-		t.Fatal("SRS statement carries conditional_audit — SERVER marker leaked across channel")
+	for _, forbidden := range []string{"app@%", "current_user", "GRANT SELECT", "GRANT SUPER", "grant_lines"} {
+		if strings.Contains(string(srsBlob), forbidden) {
+			t.Fatalf("SRS statement leaks SERVER observation payload %q", forbidden)
+		}
 	}
 	// R4-A.5: independent read vector for THIS request — R/Qexist/Qdeps/
 	// Qo/L/Vd all exactly 1 (SERVER never borrows SRS seams).

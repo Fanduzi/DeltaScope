@@ -13,6 +13,11 @@
 //   - ddl.mysql.srs.drop.reserved is an advisory that co-fires on the
 //     blocked and unproven arms when the SRID sits in a registered
 //     reserved range — never inside a refusal arm's own finding.
+//   - ddl.mysql.srs.drop.privilege is the family's conditional notice —
+//     it fires only when the shared adjudication says this statement
+//     actually consumed its own privilege premise (unproven arm plus a
+//     consumable premise) and carries exactly {srid, conditional_audit}
+//     (T26-SRS-DROP-PRIVILEGE-EXECUTION-01).
 //
 // Public surfaces stay bounded: finding metadata carries the numeric
 // SRID, the arm's outcome token, and the dependency witness count —
@@ -222,6 +227,57 @@ func (r mysqlSRSDropReservedRule) Evaluate(ctx context.Context, statement spec.S
 		},
 		Metadata: map[string]any{
 			"srid": srid,
+		},
+	}}, nil
+}
+
+// ddl.mysql.srs.drop.privilege — the family's conditional privilege
+// notice. It fires exactly when the shared adjudication reports the
+// statement consumed its own privilege premise: audited drop,
+// adjudication attached, unproven arm, consumable premise. Metadata
+// stays bounded to {srid, conditional_audit} — never an outcome token,
+// account, grant text, session detail, or observation payload
+// (T26-SRS-DROP-PRIVILEGE-EXECUTION-01).
+type mysqlSRSDropPrivilegeRule struct {
+	id    string
+	level rule.Level
+}
+
+func newMySQLSRSDropPrivilegeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return mysqlSRSDropPrivilegeRule{
+		id:    ruleIDMySQLSRSDropPrivilege,
+		level: configuredLevel(cfg, rule.LevelNotice),
+	}, nil
+}
+
+func (r mysqlSRSDropPrivilegeRule) ID() string { return r.id }
+
+func (r mysqlSRSDropPrivilegeRule) AppliesTo(statement spec.Statement) bool {
+	return srsDropStatement(statement)
+}
+
+func (r mysqlSRSDropPrivilegeRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+	adjudication := srsDropAdjudicationFor(statement)
+	if adjudication == nil ||
+		adjudication.Arm != spec.SRSDropArmUnproven ||
+		adjudication.Privilege != spec.SRSDropPrivilegeConsumable {
+		return nil, nil
+	}
+	srid := srsDropSRID(statement)
+	return []rule.Finding{{
+		Level:   r.level,
+		Message: fmt.Sprintf("spatial reference system %d drop privilege premise discharged under the observed_account_new_session conditional audit", srid),
+		Explanation: &rule.FindingExplanation{
+			Why:        "The shared request-level privilege observation bound a positive direct-global SUPER-or-equivalent witness for the observed account, and the ordered scope was still open at this statement — this statement's own privilege premise is discharged.",
+			Risk:       "The witness binds the observed account under a conditional audit: execution is assumed on a new session established after the observation on the same target, with the relied-upon grant still applying when that session loads privileges — never a verified future executor or a pooled connection's live privileges.",
+			Suggestion: "Keep the observed account's direct global SUPER-or-equivalent grant intact for the session that executes the drop.",
+		},
+		Metadata: map[string]any{
+			"srid":              srid,
+			"conditional_audit": string(spec.PrivilegeAuditModeObservedAccountNewSession),
 		},
 	}}, nil
 }

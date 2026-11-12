@@ -330,17 +330,20 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 	}
 	// The SERVER family privilege observation loads at most once per
 	// request — under the request-selected conditional mode and only
-	// while the batch names an audited identifier-form DROP SERVER or
-	// a fully qualified CREATE SERVER (T26-SERVER-DROP-EXECUTION-01,
-	// T26-SERVER-CREATE-EXECUTION-01). The raw account and grant lines
-	// stay request-level immutable evidence; the positive-witness
-	// verdict binds principal, domain version, and the token proof
-	// once, and every statement only projects consumable/suppressed
-	// over the ordered scope. A failed read propagates under the same
+	// while the batch names an audited identifier-form DROP SERVER, a
+	// fully qualified CREATE SERVER (T26-SERVER-DROP-EXECUTION-01,
+	// T26-SERVER-CREATE-EXECUTION-01), or a version-qualified audited
+	// DROP SPATIAL REFERENCE SYSTEM (T26-SRS-DROP-PRIVILEGE-
+	// EXECUTION-01). The raw account and grant lines stay request-level
+	// immutable evidence; the positive-witness verdict binds principal,
+	// domain version, and the token proof once, and every statement only
+	// projects consumable/suppressed over the ordered scope — the SRS
+	// family's projection is independent of every SERVER statement's
+	// adjudication and marker. A failed read propagates under the same
 	// bounded error contract as the object seam.
 	if dialect == spec.DialectMySQL && request != nil &&
 		request.PrivilegeAuditMode == spec.PrivilegeAuditModeObservedAccountNewSession &&
-		statementsNeedMySQLServerPrivilege(statements) {
+		(statementsNeedMySQLServerPrivilege(statements) || statementsNeedMySQLSRSPrivilege(statements)) {
 		if loader, ok := state.provider.(MySQLServerDropPrivilegeLoader); state.provider != nil && ok {
 			observation, err := loader.LoadMySQLServerDropPrivilege(ctx, dialect)
 			if err != nil {
@@ -716,7 +719,11 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 				if enriched[i].Metadata == nil {
 					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
 				}
-				adjudication := spec.AdjudicateSRSDrop(enriched[i].Metadata.SpatialReference, decl.SRID, state.srsDepsStale)
+				// The SRS premise is this statement's own projection
+				// of the shared observation — never a SERVER
+				// adjudication or marker (T26-SRS-DROP-PRIVILEGE-
+				// EXECUTION-01).
+				adjudication := spec.AdjudicateSRSDrop(enriched[i].Metadata.SpatialReference, decl.SRID, state.srsDepsStale, state.srsDropPrivilegePremise())
 				enriched[i].Metadata.SRSDrop = &adjudication
 			}
 		}

@@ -436,7 +436,15 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 func isDeferredCorpusCoverageRule(ruleID string) bool {
 	switch ruleID {
 	case
-		"ddl.pg.alter.add_column.non_null_default.rewrite.warn":
+		"ddl.pg.alter.add_column.non_null_default.rewrite.warn",
+		// T26-SRS-DROP-PRIVILEGE-EXECUTION-01: the notice fires only on
+		// a consumable privilege premise — an online request-level
+		// observation with a positive witness. The offline corpus has
+		// no privilege provider/mode fixture, so the rule can never
+		// fire there; its public shape is proven by the request/API
+		// matrix instead (docs/verification/t26-srs-drop-privilege-
+		// contract-01 P2/P10).
+		"ddl.mysql.srs.drop.privilege":
 		return true
 	default:
 		return false

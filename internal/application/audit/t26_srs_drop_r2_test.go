@@ -855,26 +855,37 @@ func TestT26SRSR2ServerPrivilegeIsolation(t *testing.T) {
 	if len(srsStmt.EvidenceGaps) != 1 || srsStmt.EvidenceGaps[0].ReasonCode != "unknown_srs_state" {
 		t.Fatalf("SRS gaps=%+v want one unknown_srs_state (S2)", srsStmt.EvidenceGaps)
 	}
-	want := []string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}
-	if len(srsStmt.EvidenceGaps[0].RequiredFacts) != 2 {
-		t.Fatalf("required_facts=%v want [D,P]", srsStmt.EvidenceGaps[0].RequiredFacts)
+	// T26-SRS-DROP-PRIVILEGE-EXECUTION-01 registered change: the SRS
+	// statement now projects its own consumable premise — owed drops
+	// from [D,P] to [D] (historical E12.5 asserted [D,P]).
+	want := []string{spec.SRSFactColumnDependencies}
+	if len(srsStmt.EvidenceGaps[0].RequiredFacts) != 1 || srsStmt.EvidenceGaps[0].RequiredFacts[0] != want[0] {
+		t.Fatalf("required_facts=%v want ordered [D] — the SRS premise consumed its own witness", srsStmt.EvidenceGaps[0].RequiredFacts)
 	}
-	for i, f := range want {
-		if srsStmt.EvidenceGaps[0].RequiredFacts[i] != f {
-			t.Fatalf("required_facts=%v want ordered [D,P] — SRS keeps its own privilege debt", srsStmt.EvidenceGaps[0].RequiredFacts)
+	// 4326 is reserved — the SRS privilege notice co-fires with the
+	// advisory on the unproven arm: exactly 2 findings.
+	if len(srsStmt.Findings) != 2 {
+		t.Fatalf("SRS findings=%+v want privilege notice + reserved advisory", srsStmt.Findings)
+	}
+	assertSRSPrivilegeNotice(t, srsStmt, 4326)
+	var reserved *rule.Finding
+	for i := range srsStmt.Findings {
+		if srsStmt.Findings[i].RuleID == "ddl.mysql.srs.drop.reserved" {
+			reserved = &srsStmt.Findings[i]
 		}
 	}
-	// 4326 is reserved — the advisory co-fires on the unproven arm.
-	if len(srsStmt.Findings) != 1 || srsStmt.Findings[0].RuleID != "ddl.mysql.srs.drop.reserved" {
-		t.Fatalf("SRS findings=%+v want only the reserved notice", srsStmt.Findings)
+	if reserved == nil {
+		t.Fatalf("SRS findings=%+v want the reserved advisory present", srsStmt.Findings)
 	}
-	assertReservedAdvisoryText(t, srsStmt.Findings[0])
-	// No conditional marker may leak into the SRS projection.
+	assertReservedAdvisoryText(t, *reserved)
+	// The raw SERVER observation payload must never leak into the SRS
+	// projection — the SRS finding's own conditional_audit token is a
+	// designed public field, the account/grant text is not.
 	blob, err := json.Marshal(srsStmt)
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	if strings.Contains(string(blob), "conditional") || strings.Contains(string(blob), "auditor@localhost") || strings.Contains(string(blob), "SUPER") {
+	if strings.Contains(string(blob), "auditor@localhost") || strings.Contains(string(blob), "GRANT SUPER") || strings.Contains(string(blob), "grant_lines") {
 		t.Fatalf("SRS statement leaks the SERVER privilege evidence: %s", blob)
 	}
 	assertReads(t, provider, fixture, 1, 1, 1, 1, 1) // R counts SRS forwards only; the server forward is a separate fact family's seam — L=1 once per request

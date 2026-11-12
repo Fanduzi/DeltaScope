@@ -1199,6 +1199,11 @@ rules:
     level: notice
     params:
 
+  ddl.mysql.srs.drop.privilege:
+    enabled: true
+    level: notice
+    params:
+
   ddl.tidb.table.auto_random.valid:
     enabled: true
     level: blocker

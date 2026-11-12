@@ -422,6 +422,48 @@ func assertReservedAdvisoryText(t *testing.T, finding rule.Finding) {
 	}
 }
 
+// assertSRSPrivilegeNotice is the strict conditional-marker check the
+// privilege contract fixes (T26-SRS-DROP-PRIVILEGE-CONTRACT-01 §3):
+// exactly one ddl.mysql.srs.drop.privilege finding on the statement —
+// notice level, the exact discharged-premise message, and typed
+// metadata carrying EXACTLY {srid:uint32, conditional_audit:string}.
+// A missing key, nil, non-string, empty, or wrong token all fail;
+// "!= \"\"" is never the criterion.
+func assertSRSPrivilegeNotice(t *testing.T, stmt report.StatementResult, srid uint32) {
+	t.Helper()
+	var notice *rule.Finding
+	for i := range stmt.Findings {
+		if stmt.Findings[i].RuleID == "ddl.mysql.srs.drop.privilege" {
+			if notice != nil {
+				t.Fatalf("duplicate privilege notice: %+v", stmt.Findings)
+			}
+			notice = &stmt.Findings[i]
+		}
+	}
+	if notice == nil {
+		t.Fatalf("no ddl.mysql.srs.drop.privilege finding: %+v", stmt.Findings)
+	}
+	if notice.Level != rule.LevelNotice {
+		t.Fatalf("privilege notice level=%v want notice", notice.Level)
+	}
+	wantMessage := fmt.Sprintf("spatial reference system %d drop privilege premise discharged under the observed_account_new_session conditional audit", srid)
+	if notice.Message != wantMessage {
+		t.Fatalf("privilege message=%q want exact %q", notice.Message, wantMessage)
+	}
+	if len(notice.Metadata) != 2 {
+		t.Fatalf("privilege metadata=%+v want exactly {srid, conditional_audit}", notice.Metadata)
+	}
+	gotSRID, ok := notice.Metadata["srid"].(uint32)
+	if !ok || gotSRID != srid {
+		t.Fatalf("privilege metadata srid=%v(%T) want typed uint32 %d", notice.Metadata["srid"], notice.Metadata["srid"], srid)
+	}
+	marker, ok := notice.Metadata["conditional_audit"].(string)
+	if !ok || marker != string(spec.PrivilegeAuditModeObservedAccountNewSession) {
+		t.Fatalf("conditional_audit=%v(%T) want exact string observed_account_new_session",
+			notice.Metadata["conditional_audit"], notice.Metadata["conditional_audit"])
+	}
+}
+
 func tblTFixture() map[string]*spec.TableSnapshot {
 	return map[string]*spec.TableSnapshot{
 		"s.t": {Schema: "s", Table: &spec.Table{Schema: "s", Name: "t"}, Exists: true,
@@ -1544,7 +1586,7 @@ func TestT26SRSR1SiblingFamilyNoCrosstalk(t *testing.T) {
 
 func TestT26SRSR1AdjudicationUnit(t *testing.T) {
 	// B: batch-effects marker → exact owed.
-	adj := spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{SRID: 1, UnreadReason: spec.MetadataUnreadBatchEffects}, 1, false)
+	adj := spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{SRID: 1, UnreadReason: spec.MetadataUnreadBatchEffects}, 1, false, spec.SRSDropPrivilegeUnproven)
 	if adj.Arm != spec.SRSDropArmBlocked || len(adj.Owed) != 1 || adj.Owed[0] != spec.SRSFactBatchEffects {
 		t.Fatalf("B adj=%+v", adj)
 	}
@@ -1552,7 +1594,7 @@ func TestT26SRSR1AdjudicationUnit(t *testing.T) {
 	adj = spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{
 		SRID: 0, Read: true, Exists: true,
 		Dependencies: &spec.SRSDependencyFact{Columns: []spec.SRSDependentColumn{{SRID: 0}}},
-	}, 0, false)
+	}, 0, false, spec.SRSDropPrivilegeUnproven)
 	if adj.Arm != spec.SRSDropArmRefusedSRID0 || len(adj.Owed) != 0 {
 		t.Fatalf("S0 adj=%+v", adj)
 	}
@@ -1560,7 +1602,7 @@ func TestT26SRSR1AdjudicationUnit(t *testing.T) {
 	adj = spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{
 		SRID: 4326, Read: true, Exists: false,
 		Dependencies: &spec.SRSDependencyFact{Columns: []spec.SRSDependentColumn{{Schema: "s", Table: "t", Column: "g", SRID: 4326}}},
-	}, 4326, false)
+	}, 4326, false, spec.SRSDropPrivilegeUnproven)
 	if adj.Arm != spec.SRSDropArmRefusedDependency {
 		t.Fatalf("S1 adj=%+v", adj)
 	}
@@ -1568,12 +1610,12 @@ func TestT26SRSR1AdjudicationUnit(t *testing.T) {
 	adj = spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{
 		SRID: 4326, Read: true, Exists: true,
 		Dependencies: &spec.SRSDependencyFact{Columns: []spec.SRSDependentColumn{{Schema: "s", Table: "t", Column: "g", SRID: 999}}},
-	}, 4326, false)
+	}, 4326, false, spec.SRSDropPrivilegeUnproven)
 	if adj.Arm != spec.SRSDropArmUnproven {
 		t.Fatalf("wrong-SRID witness adj=%+v want unproven", adj)
 	}
 	// Missing read source (nil Dependencies) never witnesses.
-	adj = spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{SRID: 4326, Read: true, Exists: true}, 4326, false)
+	adj = spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{SRID: 4326, Read: true, Exists: true}, 4326, false, spec.SRSDropPrivilegeUnproven)
 	if adj.Arm != spec.SRSDropArmUnproven || len(adj.Owed) != 2 {
 		t.Fatalf("nil-deps adj=%+v want unproven [D,P]", adj)
 	}
@@ -1582,12 +1624,12 @@ func TestT26SRSR1AdjudicationUnit(t *testing.T) {
 	adj = spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{
 		SRID: 4326, Read: true, Exists: true,
 		Dependencies: &spec.SRSDependencyFact{Columns: []spec.SRSDependentColumn{{Schema: "s", Table: "t", Column: "g", SRID: 4326}}},
-	}, 4326, true)
+	}, 4326, true, spec.SRSDropPrivilegeUnproven)
 	if adj.Arm != spec.SRSDropArmUnproven || len(adj.Owed) != 2 || adj.Owed[0] != spec.SRSFactColumnDependencies {
 		t.Fatalf("stale-deps adj=%+v want unproven [D,P]", adj)
 	}
 	// Unproven existence → [E,D,P] ordered.
-	adj = spec.AdjudicateSRSDrop(nil, 100001, false)
+	adj = spec.AdjudicateSRSDrop(nil, 100001, false, spec.SRSDropPrivilegeUnproven)
 	if adj.Arm != spec.SRSDropArmUnproven || len(adj.Owed) != 3 ||
 		adj.Owed[0] != spec.SRSFactExistence || adj.Owed[1] != spec.SRSFactColumnDependencies || adj.Owed[2] != spec.SRSFactDropPrivilege {
 		t.Fatalf("nil-state adj=%+v want unproven [E,D,P]", adj)

@@ -26,23 +26,38 @@ const (
 	// a consumable dependency witness would have refused the drop;
 	// without one the dependency premise is undischarged.
 	SRSFactColumnDependencies = "srs.column_dependencies"
-	// SRSFactDropPrivilege is always owed on the unproven arm — this
-	// slice ships no privilege witness, so the premise stays
-	// unproven on every qualified input that reaches it.
+	// SRSFactDropPrivilege is owed on the unproven arm while this
+	// statement's own privilege premise is not consumable — an
+	// unproven or scope-suppressed witness stays a debt; only a
+	// consumable premise actually discharges it (T26-SRS-DROP-
+	// PRIVILEGE-CONTRACT-01).
 	SRSFactDropPrivilege = "srs.drop.privilege"
 )
 
 // SRSDropPrivilege is this statement's derived privilege premise
-// projection. Only the unproven value is reachable in this slice — no
-// privilege witness exists yet — but the field is carried so the
-// adjudication shape stays the one the contract fixes.
+// projection — the SRS family's independent read of the shared
+// request-level privilege observation (T26-SRS-DROP-PRIVILEGE-
+// CONTRACT-01). The projection never borrows a SERVER statement's
+// adjudication, marker, or outcome and never derives privilege
+// evidence from the SRS catalog reads.
 type SRSDropPrivilege int
 
 const (
-	// SRSDropPrivilegeUnproven is the only reachable premise this
-	// slice: no consumable SRS drop-privilege witness exists, so the
-	// premise is owed wherever the arm leaves it.
+	// SRSDropPrivilegeUnproven means the premise is not consumable:
+	// no positive witness was established for this request's shared
+	// observation — the premise is owed wherever the arm leaves it.
 	SRSDropPrivilegeUnproven SRSDropPrivilege = iota
+	// SRSDropPrivilegeConsumable means the positive witness and the
+	// still-open ordered scope let this statement actually discharge
+	// its privilege premise — but only the unproven arm consumes it;
+	// blocked/refused arms may carry the projection without using it.
+	SRSDropPrivilegeConsumable
+	// SRSDropPrivilegeSuppressed means a positive witness was
+	// established but the ordered scope ended before this statement —
+	// the premise stays owed exactly like an unproven one, never a
+	// denial. A scope end without an established witness keeps the
+	// premise unproven, never suppressed.
+	SRSDropPrivilegeSuppressed
 )
 
 // SRSDropArm is the adjudicated arm of one audited DROP SPATIAL
@@ -78,8 +93,8 @@ const (
 type SRSDropAdjudication struct {
 	// Arm is the adjudicated arm.
 	Arm SRSDropArm
-	// Privilege is this statement's derived premise projection —
-	// unproven only this slice.
+	// Privilege is this statement's own derived premise projection —
+	// unproven, consumable, or scope-suppressed.
 	Privilege SRSDropPrivilege
 	// Owed lists the bounded gap facts this adjudication still owes —
 	// derived from the arm's actual premises, never a fixed rule.
@@ -123,10 +138,13 @@ func SRSDropInReservedRange(srid uint32) bool {
 //   - S0: authored SRID 0 — refused outright, owes nothing.
 //   - S1: a valid positive dependency witness under a clean channel
 //     and no dependency staleness — refused, owes nothing.
-//   - S2: everything else — owes column dependencies + privilege
-//     always, plus existence first while unproven.
-func AdjudicateSRSDrop(state *SpatialReferenceSystemState, srid uint32, depsStale bool) SRSDropAdjudication {
-	adjudication := SRSDropAdjudication{Privilege: SRSDropPrivilegeUnproven}
+//   - S2: everything else — owes column dependencies always,
+//     privilege while this statement's own premise is not consumable,
+//     plus existence first while unproven. Only the unproven arm under
+//     a consumable premise discharges srs.drop.privilege; every other
+//     arm carries (or lacks) the projection without consuming it.
+func AdjudicateSRSDrop(state *SpatialReferenceSystemState, srid uint32, depsStale bool, privilege SRSDropPrivilege) SRSDropAdjudication {
+	adjudication := SRSDropAdjudication{Privilege: privilege}
 	switch {
 	case state != nil && state.UnreadReason == MetadataUnreadBatchEffects:
 		// The bind blocked before the catalog/cache answer could be
@@ -149,7 +167,10 @@ func AdjudicateSRSDrop(state *SpatialReferenceSystemState, srid uint32, depsStal
 		if state == nil || !state.Read || !state.Exists {
 			adjudication.Owed = append(adjudication.Owed, SRSFactExistence)
 		}
-		adjudication.Owed = append(adjudication.Owed, SRSFactColumnDependencies, SRSFactDropPrivilege)
+		adjudication.Owed = append(adjudication.Owed, SRSFactColumnDependencies)
+		if privilege != SRSDropPrivilegeConsumable {
+			adjudication.Owed = append(adjudication.Owed, SRSFactDropPrivilege)
+		}
 		return adjudication
 	}
 }
