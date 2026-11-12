@@ -1,11 +1,11 @@
-# T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01 — receipt (R3)
+# T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01 — receipt (R4)
 
 Implementation + verification round over the accepted contract
 `docs/verification/t26-srs-drop-ordered-publication-contract-01/`
 (R4, closed at `1346f230`). Status: **submitted / pending reviewer
-ruling** — the R1 and R2 deliveries were each returned CHANGES
-REQUIRED; this receipt is the R3 resubmission bound to candidate
-`de879003` (tree `021c170f`, parent `c3750cb7`). Expected vectors
+ruling** — the R1, R2 and R3 deliveries were each returned CHANGES
+REQUIRED; this receipt is the R4 resubmission bound to candidate
+`cfa42957` (tree `2d722436`, parent `d97907fb`). Expected vectors
 come from the frozen case-matrix; every measured number below was
 captured from raw logs under this candidate — expected and measured
 are never conflated.
@@ -157,6 +157,75 @@ byte-identical to the R2 binary.
   `identity-record.txt`; the manifest classifies every member as NEW
   or REUSED and registers the historical corrections below.
 
+## R4 repairs over R3 (test/evidence layer only — product unchanged)
+
+The R4 ruling again confirmed zero product change and ordered a
+limited test/evidence revision. The entire delta is `*_test.go`
+plus this receipt: the R4 product binary is byte-identical to the
+R3/R2 binary (hash comparison below).
+
+- **R4-A (capability forwarding / conversion layer / exact public
+  shapes)**: `TestT26SRSOrderedPublicCapableInput` installs
+  `opCapablePublicProvider` — a fixture that genuinely implements
+  `ResolveMySQLSRSDependencies` — through the public SDK and proves
+  the adapter never forwards it (`depsCalls == 0`,
+  `resolverCalls == 1` for the pair, two absent blockers, complete
+  coverage, reject verdict). `TestT26SRSOrderedConversionLayer`
+  invokes `appaudit.AuditSQL` directly with a genuinely capable
+  provider (measured resolver/deps vector `1/1` — a real ordered
+  hit), converts through `fromDomainResult`, serializes, and asserts
+  the same two-blocker/reject projection with a clean leak scan:
+  the two layers' mechanisms and counts are asserted separately,
+  never conflated. OP-7a/b/c/c′/d/e and OP-6d/e each carry exact
+  per-statement assertions — canonical metadata key/value sets
+  (`srid` as `uint32`, `outcome` string, `conditional_audit`
+  presence/absence), each finding's own `StatementIndex`, exact
+  cardinality, coverage status, verdict, and omission-vs-null shape
+  (`evidence_gaps`/`findings` keys absent, never `null`).
+- **R4-A3 (scan controls)**: `opPublicScan` is a real recursive walk
+  over the serialized JSON document hunting internal provenance
+  tokens; `TestT26SRSOrderedPublicScanControls` is the dedicated
+  positive/negative control proving the walk detects an injected
+  `barrier` key and accepts a clean document.
+- **R4-B (capture fidelity)**: `ChannelControlsCapture` no longer
+  delegates to the product `cloneTableSnapshot`. The new test-only
+  `opDeepClone` (a mechanical `reflect` walk re-owning pointers,
+  slices, maps and interface members) preserves observed value AND
+  nilness verbatim — nil maps stay nil, non-nil-empty stays
+  non-nil-empty — and `TestT26SRSChannelControlsFidelity` now
+  discriminates with real different inputs: bare-state nil channel
+  maps vs non-nil-empty maps, member-container nilness inside
+  `TableSnapshot`, non-empty nested values (`Cardinality *int64`,
+  `IdentityOptions map[string]any`, `KeyParts`, `View.Updatable`,
+  `TTL`, `PartitionPlacements`), and bidirectional isolation across
+  all those member kinds.
+- **R4-C (two-timepoint / baseline asserts)**: OP-2g now captures
+  the complete `SRSOrderedEntryView` at each post-apply and
+  compares the full struct across both timepoints (stmt1's mint
+  verbatim preserved by stmt2's no-capability fallback). OP-8b
+  keeps the expected-from-before stale-set construction plus the
+  stripped-channel verbatim compare; OP-8c keeps the internal-seam
+  preset (`100002` complete provenance, SERVER `s1`, real `s.t`,
+  schema `s`) with the post-bind `atBind` baseline proving no entry
+  exists before own-apply.
+- **R4-D (TiDB companion)**: `TestT26SRSOrderedTiDBParseCompanion`
+  now walks the REAL `Extract` → `enrichStatements` → own-apply
+  path on a TiDB-dialect `batchState` with a nil provider (any
+  attempted catalog read would fail loudly). Both extracted rows
+  carry the extractor's own `Unsupported{boundary:vendor}` mark;
+  neither is adjudicated, neither commits the marker, the ordered
+  channel stays empty across the batch, and the boundary own-apply
+  still mints exactly `srsExistenceStale{100001}` — TiDB can never
+  publish or consume an ordered entry even though
+  `orderedStateDialect(tidb)` is true.
+- **R4-E (evidence)**: `identity-record.txt` records the real
+  commands run this round verbatim with immediate rc captures; a
+  single bound build at C4 (product surface unchanged) produced the
+  byte-identical binary, so the three probes are classified REUSED
+  from R3 AND re-run against the R4 binary with all six streams
+  byte-compared (`cmp` identical, rc 0/1/2); the manifest
+  classifies every archive member NEW or REUSED individually.
+
 ## Reviewer-level errata registered
 
 1. OP-R4-ER1 — cumulative contract diffstat `+565/-0` (the R4 close
@@ -199,6 +268,22 @@ byte-identical to the R2 binary.
    gate replaces it with the changed packages plus `rule/ddl` and
    `policy`; the full `./...` gate is unchanged and covers all
    packages either way.
+8. R4 row-mapping errata over the R3 mapping: the public-layer rows
+   gain `TestT26SRSOrderedPublicCapableInput` (capable-input
+   non-forwarding witness), `TestT26SRSOrderedConversionLayer`
+   (application→public conversion companion), and
+   `TestT26SRSOrderedPublicScanControls` (dedicated scan
+   discrimination). `TestT26SRSOrderedTiDBParseCompanion` is now an
+   Extract+enrich+own-apply row, no longer parse-only.
+   `TestT26SRSChannelControlsFidelity` is restructured into four
+   subtests (`channel-map-nilness`, `member-container-nilness`,
+   `nested-values-and-isolation`, `required-channels-populated`) and
+   `ChannelControlsCapture` now clones via the test-only
+   `opDeepClone`, never the product `cloneTableSnapshot`. OP-2g's
+   entry assertion is a two-timepoint complete-struct compare. The
+   R4 gate is the two-package `-v` minimum over the changed
+   packages per the R4 ruling; the R3 seven-package and full
+   `./...` gates remain the standing round record.
 
 ## OP mapping — expected vs measured
 
@@ -223,7 +308,7 @@ privilege-loader count; Vd is N/A at the internal enrich layer.
 | OP-2d shared batchState | `TestT26SRSOrderedSharedVsNewStateRealChain` first half | realchain | call1 (1,1,1,1); call2 delta (1,0,1,1) ordered hit |
 | OP-2e new batchState | same test, second half | realchain | call2 (1,1,1,1), S2 + stale mint |
 | OP-2f depsStale mid-batch | `TestT26SRSOrderedInvalidationRealChain/OP-5d` | realchain | (2,1,2,2); depsStale demotes only |
-| OP-2g no-capability warm | `TestT26SRSOrderedNoCapabilityWarmCache` | realchain | capability absence proven by negative `MySQLSRSDependencyReader` assertion on `opNoCapProvider`; per-statement deltas via `r3SnapReads`: stmt1 (1,1,1,1), stmt2 Δ(0,0,0,0) cache-hit, no `OrderedAbsent` marker on stmt2 |
+| OP-2g no-capability warm | `TestT26SRSOrderedNoCapabilityWarmCache` | realchain | capability absence proven by negative `MySQLSRSDependencyReader` assertion on `opNoCapProvider`; per-statement deltas via `r3SnapReads`: stmt1 (1,1,1,1), stmt2 Δ(0,0,0,0) cache-hit, no `OrderedAbsent` marker on stmt2; two-timepoint complete `SRSOrderedEntryView` compare (post-apply ×2 + final identical) |
 | OP-2h no-capability cold | `TestT26SRSOrderedNoCapabilityColdCache` | realchain | per-enrich full read (1,1,1,1) ×2; changed catalog answer → S2; existing entry Barrier flips false→true while every other field stays verbatim (complete `SRSOrderedEntryView` compare); owed [deps, privilege] |
 | OP-3a IE hit consumable | `TestT26SRSOrderedHitIfExistsRealChain` | realchain | absent_noop ordered-served |
 | OP-3b IE→REVOKE→IE | `TestT26SRSOrderedRevokeBetweenIEHits` | realchain | stmt3 absent_conditional + exactly [P]; earliest (consumable) provenance kept; (2,1,2,2), L=1 |
@@ -242,7 +327,7 @@ privilege-loader count; Vd is N/A at the internal enrich layer.
 | OP-5f REVOKE scope | `…/OP-5f` | realchain | scope ends, entry survives; plain tail A-plain |
 | OP-6a in-domain baseline | `TestT26SRSOrderedBaselineProduceRealChain` | realchain | (1,1,1,1), L=1 |
 | OP-6b below floor | `TestT26SRSOrderedBelowFloorRealChain` (real providerless request, no SeedResolvedVersion) + `TestT26SRSOrderedBelowFloorInternalCompanion` | public-shape + internal | real request unsupported item `drop_spatial_reference_system` / `mysql` / object `spatial_reference_system`; zero findings/gaps; companion pins stale{100001} + (1,1,1,1), L=0 |
-| OP-6c TiDB vendor boundary | `TestT26SRSOrderedTiDBVendorBoundaryPublic` + `TestT26SRSOrderedEligibilityInt` + `TestT26SRSOrderedTiDBParseCompanion` | public + internal | Vd=1; zero SRS/privilege reads; one vendor-boundary item; parse companion freezes the TiDB-dialect parse shape (single parsed DROP SRS statement) |
+| OP-6c TiDB vendor boundary | `TestT26SRSOrderedTiDBVendorBoundaryPublic` + `TestT26SRSOrderedEligibilityInt` + `TestT26SRSOrderedTiDBParseCompanion` | public + internal | Vd=1; zero SRS/privilege reads; one vendor-boundary item; companion now walks real Extract→enrich→own-apply on a TiDB batchState (nil provider): extractor marks both rows `Unsupported{boundary:vendor}`, no adjudication/marker/entry ever, boundary own-apply mints exactly stale{100001} |
 | OP-6d providerless | `TestT26SRSOrderedProviderlessPublic` + `ProviderlessInternal` twin | public + internal | exact [E,D,P] gap; unverified coverage; no marker/entry |
 | OP-6e malformed pin | `TestT26SRSOrderedMalformedPinPublic` | public | `errors.Is(ErrInvalidTargetVersion)`; all counters 0; Vd=0 |
 | OP-7a two plain drops | `TestT26SRSOrderedPublicPlainAbsentPair` (pkg/deltascope) + `TestT26SRSOrderedPublicAbsentPlain` (internal companion) | public | identical non-positional `ddl.mysql.srs.drop.absent` findings ×2; own index asserted; complete+reject; recursive JSON leak scan |
@@ -255,42 +340,47 @@ privilege-loader count; Vd is N/A at the internal enrich layer.
 | OP-8a four-point snapshots | `TestT26SRSOrderedSnapshotInvariance` | realchain | post-bind / post-own-apply / post-REVOKE-apply / final identical; channel transitions asserted separately; L=1 attributed to the whole pre-bind→post-bind enrich-entry window |
 | OP-8b barrier-only diff | `TestT26SRSOrderedBoundaryFlipIsolation` | realchain | exact frozen three-statement shape (IE producer → CREATE OR REPLACE boundary → plain tail); only `barrier` + authored stale key differ; tail blocked with exactly `[B]`; `srsDepsStale`/`contaminated` unchanged |
 | OP-8c sibling isolation | `TestT26SRSOrderedSiblingIsolation` | realchain | presets SERVER `s1` + real `s.t` entry + schema `s` + complete-provenance `100002`; post-bind no `100001`; post-own-apply adds exactly `100001`; other channels verbatim; Δ(1,1,1,1), L=1 |
-| snapshot fidelity | `TestT26SRSChannelControlsFidelity` + `paSnapEqual`/`paDepsSame` discrimination controls | internal helpers | ChannelControls deep-value snapshot: nil-vs-empty preserved, nested-element + map mutation isolated bidirectionally, invalidated schemas captured; paDepsSame nil-vs-empty/element/Complete-only controls |
+| snapshot fidelity | `TestT26SRSChannelControlsFidelity` (4 subtests) + `paSnapEqual`/`paDepsSame` discrimination controls | internal helpers | capture built on test-only `opDeepClone` (no product helper): nil channel maps stay nil, non-nil-empty stays non-nil-empty, member-container nilness preserved, non-empty nested values (`Cardinality *int64`, `IdentityOptions`, `KeyParts`, `View.Updatable`, `TTL`, `PartitionPlacements`) verbatim, bidirectional isolation across all member kinds; paDepsSame nil-vs-empty/element/Complete-only controls |
+| R4-A1 capable input | `TestT26SRSOrderedPublicCapableInput` | public SDK | provider genuinely implements `ResolveMySQLSRSDependencies`; through the SDK adapter depsCalls=0, resolverCalls=1, two absent blockers, complete coverage, reject verdict; leak scan clean |
+| R4-A1 conversion | `TestT26SRSOrderedConversionLayer` | application→public | `appaudit.AuditSQL` direct with capable provider: measured resolver/deps 1/1 (real ordered hit); `fromDomainResult` + serialize: two absent blockers, exact message, reject verdict, no provenance leak |
+| R4-A3 scan control | `TestT26SRSOrderedPublicScanControls` | public | recursive walk detects injected `barrier` key (negative control) and accepts clean document (positive control) |
 | R3-A3 ordered consumers | `TestT26SRSOrderedConsumerReaderVariants` | realchain | proven-unsupported Qo `(nil,nil)`: ordered absence consumed, deps nil, no deps query after support gate; unparseable Qo: continues to deps read, binds real empty fact; per-attempt scripted Qo; exact vectors + arm/provenance asserted |
 | regression twins | `TestT26SRSAbsentSameSRIDCacheHit` (2,1,2,2); `TestT26SRSAbsentRecachesPerEnrichRealChain` | existing PA rows | ordered-hit vector under corrected R |
 
-## Gates (bound to C3 `de879003`, tree `021c170f`, parent `c3750cb7`)
+## Gates (bound to C4 `cfa42957`, tree `2d722436`, parent `d97907fb`)
 
-- `go test -count=1 -v` over the seven packages
-  (`internal/application/audit`,
-  `internal/infrastructure/metadata/mysql`, `internal/domain/spec`,
-  `internal/domain/rule/ddl`, `internal/domain/policy`,
-  `pkg/deltascope`, `internal/interfaces/cli` — the changed packages
-  plus the `ddl`/`policy` rule packages the R3 ruling required):
-  rc=0; 3081 `--- PASS` / 0 `--- FAIL`; 7 package `ok` lines.
-- `go test -count=1 ./...`: rc=0; 39 package `ok`, 0 FAIL, 5
-  `[no test files]`.
-- `go vet ./...`: rc=0, empty output.
-- `gofmt -l` over the 6 R3 changed Go files (expanded argv in
-  `gates/`): rc=0, zero-byte output.
-- `git diff --check c3750cb7..de879003`: rc=0, empty output.
+The R4 ruling scoped the gate to the two changed packages; the R3
+seven-package and full `./...` gates remain the standing record for
+the unchanged product surface.
+
+- `go test -v ./internal/application/audit/ ./pkg/deltascope/`:
+  rc=0; 7049 assertion lines (`=== RUN`/`--- PASS`), 0 `--- FAIL`;
+  both package `ok` lines.
+- `go vet ./internal/application/audit/ ./pkg/deltascope/`: rc=0,
+  empty output.
+- `gofmt -l` over the 4 R4 changed Go files (expanded argv in
+  `gates/`): rc=0, zero-byte output after formatting.
+- `git diff --check d97907fb..cfa42957`: rc=0, empty output.
 
 Raw command/stdout/stderr/rc files per gate live under `gates/` in the
 archive.
 
-## Build + probes (bound to C3 `de879003`)
+## Build + probes (bound to C4 `cfa42957`)
 
 - `CGO_ENABLED=1 go build -tags postgresql -buildvcs=false
-  -o <path> ./cmd/deltascope` run twice, identical cwd/toolchain/env:
-  both builds 52,779,058 B, SHA-256
-  `fa1a9a6a7e8107cd004f592ef9ee3aa8bb708411fde7d8f0a5b98798425d02a2`,
-  `cmp` rc=0 — byte-identical to the R2 product binary, as expected
-  for a test-only delta. Toolchain go1.26.1 darwin/arm64; go.mod SHA
-  `80dd9105…b628c98`, go.sum SHA `cc5fa030…000696`. Full transcript
-  in `build-determinism.log`.
-- Three providerless mode-off probes against the b1 binary
-  (`probes/run-probes.sh`, six-rule policy, expanded invocations,
-  immediate `$?` capture):
+  -o <path> ./cmd/deltascope` run ONCE at C4 — the R4 delta is
+  test-only, so a single bound build is the product-surface
+  witness: 52,779,058 B, SHA-256
+  `fa1a9a6a7e8107cd004f592ef9ee3aa8bb708411fde7d8f0a5b98798425d02a2`
+  — **byte-identical to the R3/R2 product binary** (recorded
+  `cmp`/`shasum` transcript in `build/`). Toolchain go1.26.1
+  darwin/arm64; go.mod SHA `80dd9105…b628c98`, go.sum SHA
+  `cc5fa030…000696`.
+- Three providerless mode-off probes classified **REUSED** from the
+  R3 archive AND re-run against the R4 binary as a live
+  discrimination: rc 0/1/2 respectively; all six streams
+  (stdout+stderr ×3) byte-compared `cmp` identical to the reused
+  R3 transcripts (`probes/r4-transcript.txt`):
   - CLI-1 (`--target-version 8.0.36`): rc=0, stdout 896 B — verdict
     review / coverage unverified / exactly one
     `ddl.mysql.srs.drop.dependency` `unknown_srs_state` gap with
@@ -301,9 +391,9 @@ archive.
   - CLI-3 (`8.0.x`): rc=2, stdout 0 B, stderr exactly
     `target_version must match [v]MAJOR.MINOR.PATCH: "8.0.x"\n`
     (56 B).
-- R1/R2 probe/build results are retained under `historical-r1r2/`
+- R1/R2/R3 probe/build results are retained under `historical-r3/`
   marked **reported / uncaptured** where their raw invocation
-  binding was not recorded; the R3 records above are the bound
+  binding was not recorded; the R4 records above are the bound
   evidence (and match the frozen byte shapes exactly).
 
 ## Deferred / not in this round
