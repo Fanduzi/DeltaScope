@@ -82,6 +82,12 @@ func TestT26SRSDepsReaderPositiveWitness(t *testing.T) {
 			t.Fatalf("columns[%d].SRID=%d want authored 100001", i, col.SRID)
 		}
 	}
+	if got := t26Attempt(t, testSRSVersionFragment); got != 1 {
+		t.Fatalf("Qo attempts=%d want 1", got)
+	}
+	if got := t26Attempt(t, testSRSDepFragment); got != 1 {
+		t.Fatalf("Qdeps attempts=%d want 1", got)
+	}
 	opNoExistRead(t)
 }
 
@@ -118,6 +124,9 @@ func TestT26SRSDepsReaderUnparseableQoContinues(t *testing.T) {
 	if fact == nil || len(fact.Columns) != 0 {
 		t.Fatalf("fact=%+v want healthy-empty", fact)
 	}
+	if got := t26Attempt(t, testSRSVersionFragment); got != 1 {
+		t.Fatalf("Qo attempts=%d want 1", got)
+	}
 	if got := t26Attempt(t, testSRSDepFragment); got != 1 {
 		t.Fatalf("Qdeps attempts=%d want 1 — unproven support continues the read", got)
 	}
@@ -125,16 +134,25 @@ func TestT26SRSDepsReaderUnparseableQoContinues(t *testing.T) {
 }
 
 // OP-4 direct-reader row: every error surface propagates — Qo query,
-// deps query, deps mid-iteration, deps close.
+// deps query, deps mid-iteration, deps close. Each row asserts the
+// full attempt vector (Qo, Qexist, Qdeps) AND a nil returned fact —
+// an error never delivers a partial witness, even when the failing
+// iteration already read a positive row.
 func TestT26SRSDepsReaderErrorsPropagate(t *testing.T) {
 	sentinel := errors.New("op-deps sentinel")
 	t.Run("qo-query-error", func(t *testing.T) {
 		results := opDepsFixture("8.0.36",
 			testQueryResult{columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}})
 		results[testSRSVersionFragment] = testQueryResult{queryErr: sentinel}
-		_, err := opResolveDeps(t, results, 100001)
+		fact, err := opResolveDeps(t, results, 100001)
 		if !errors.Is(err, sentinel) {
 			t.Fatalf("err=%v want errors.Is(sentinel)", err)
+		}
+		if fact != nil {
+			t.Fatalf("fact=%+v want nil — an error never delivers a fact", fact)
+		}
+		if got := t26Attempt(t, testSRSVersionFragment); got != 1 {
+			t.Fatalf("Qo attempts=%d want 1", got)
 		}
 		if got := t26Attempt(t, testSRSDepFragment); got != 0 {
 			t.Fatalf("Qdeps attempts=%d want 0 — Qo failure stops the read", got)
@@ -143,9 +161,18 @@ func TestT26SRSDepsReaderErrorsPropagate(t *testing.T) {
 	})
 	t.Run("deps-query-error", func(t *testing.T) {
 		results := opDepsFixture("8.0.36", testQueryResult{queryErr: sentinel})
-		_, err := opResolveDeps(t, results, 100001)
+		fact, err := opResolveDeps(t, results, 100001)
 		if !errors.Is(err, sentinel) {
 			t.Fatalf("err=%v want errors.Is(sentinel)", err)
+		}
+		if fact != nil {
+			t.Fatalf("fact=%+v want nil — an error never delivers a fact", fact)
+		}
+		if got := t26Attempt(t, testSRSVersionFragment); got != 1 {
+			t.Fatalf("Qo attempts=%d want 1", got)
+		}
+		if got := t26Attempt(t, testSRSDepFragment); got != 1 {
+			t.Fatalf("Qdeps attempts=%d want 1", got)
 		}
 		opNoExistRead(t)
 	})
@@ -155,9 +182,18 @@ func TestT26SRSDepsReaderErrorsPropagate(t *testing.T) {
 			rows:     [][]driver.Value{{"s", "t", "c"}},
 			rowErrAt: 1, rowErr: sentinel,
 		})
-		_, err := opResolveDeps(t, results, 100001)
+		fact, err := opResolveDeps(t, results, 100001)
 		if !errors.Is(err, sentinel) {
 			t.Fatalf("err=%v want errors.Is(sentinel)", err)
+		}
+		if fact != nil {
+			t.Fatalf("fact=%+v want nil — the failing iteration must not deliver a partial fact", fact)
+		}
+		if got := t26Attempt(t, testSRSVersionFragment); got != 1 {
+			t.Fatalf("Qo attempts=%d want 1", got)
+		}
+		if got := t26Attempt(t, testSRSDepFragment); got != 1 {
+			t.Fatalf("Qdeps attempts=%d want 1", got)
 		}
 		opNoExistRead(t)
 	})
@@ -166,9 +202,18 @@ func TestT26SRSDepsReaderErrorsPropagate(t *testing.T) {
 			columns:  []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"},
 			closeErr: sentinel,
 		})
-		_, err := opResolveDeps(t, results, 100001)
+		fact, err := opResolveDeps(t, results, 100001)
 		if !errors.Is(err, sentinel) {
 			t.Fatalf("err=%v want errors.Is(sentinel)", err)
+		}
+		if fact != nil {
+			t.Fatalf("fact=%+v want nil — an error never delivers a fact", fact)
+		}
+		if got := t26Attempt(t, testSRSVersionFragment); got != 1 {
+			t.Fatalf("Qo attempts=%d want 1", got)
+		}
+		if got := t26Attempt(t, testSRSDepFragment); got != 1 {
+			t.Fatalf("Qdeps attempts=%d want 1", got)
 		}
 		opNoExistRead(t)
 	})

@@ -65,6 +65,13 @@ type r3Fixture struct {
 	// changing witness answers across one batch (OP-4a).
 	depsScript [][]r3DepRow
 	depsCalls  int
+	// versionScript overrides the Qo banner per "ver"-kind query — the
+	// nth version query (0-indexed) serves versionScript[n]; indices
+	// past the script re-serve the last entry. Ordered-consumer rows
+	// script the direct reader's own Qo independently of stmt1's
+	// full-path Qo (R3-A3).
+	versionScript []string
+	versionCalls  int
 }
 
 // r3Classify maps each product-loader query to its seam kind. Order
@@ -121,7 +128,17 @@ func (c *r3Conn) QueryContext(_ context.Context, query string, args []driver.Nam
 	}
 	switch kind {
 	case "ver":
-		return &r3Rows{cols: []string{"version()"}, rows: [][]driver.Value{{c.fx.version}}}, nil
+		banner := c.fx.version
+		if c.fx.versionScript != nil {
+			i := c.fx.versionCalls
+			c.fx.versionCalls++
+			if i < len(c.fx.versionScript) {
+				banner = c.fx.versionScript[i]
+			} else {
+				banner = c.fx.versionScript[len(c.fx.versionScript)-1]
+			}
+		}
+		return &r3Rows{cols: []string{"version()"}, rows: [][]driver.Value{{banner}}}, nil
 	case "vars":
 		var rows [][]driver.Value
 		if c.fx.discoverVer != "" {
@@ -268,6 +285,30 @@ func r3AssertReads(t *testing.T, p *r3ProductProvider, fx *r3Fixture, wantR, wan
 	}
 	if wantVd >= 0 && p.vd != wantVd {
 		t.Fatalf("Vd=%d want %d", p.vd, wantVd)
+	}
+}
+
+// r3SnapReads samples the current R/Qexist/Qdeps/Qo/L counters for
+// per-statement deltas — the R3 requirement that stmt2 behavior is
+// proved from its own measurement window, never inferred from the
+// batch total.
+func r3SnapReads(p *r3ProductProvider, fx *r3Fixture) [5]int {
+	r := p.depsForward
+	for _, req := range p.forwards {
+		if req.Type == "mysql_spatial_reference_system" {
+			r++
+		}
+	}
+	return [5]int{r, fx.count["exist"], fx.count["deps"], fx.count["ver"], p.privCalls}
+}
+
+// r3AssertDelta asserts the counter delta between two snapshots.
+func r3AssertDelta(t *testing.T, label string, before, after [5]int, wantR, wantExist, wantDeps, wantQo, wantL int) {
+	t.Helper()
+	d := [5]int{after[0] - before[0], after[1] - before[1], after[2] - before[2], after[3] - before[3], after[4] - before[4]}
+	want := [5]int{wantR, wantExist, wantDeps, wantQo, wantL}
+	if d != want {
+		t.Fatalf("%s ΔR/ΔQexist/ΔQdeps/ΔQo/ΔL=%v want %v", label, d, want)
 	}
 }
 

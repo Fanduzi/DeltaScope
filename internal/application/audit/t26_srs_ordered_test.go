@@ -46,6 +46,50 @@ func (p *opNoCapProvider) LoadMySQLServerDropPrivilege(ctx context.Context, dial
 	return p.inner.LoadMySQLServerDropPrivilege(ctx, dialect)
 }
 
+// opTableProvider is the accepted `s.t` table fixture (R3-C2): a
+// table-only adapter wrapping the real product provider — it answers
+// LoadTableSnapshot for s.t with a scripted EXISTING table carrying
+// the geometry column g, counts those table reads on its own seam,
+// and forwards every other seam untouched. Table reads never enter
+// the SRS R/Qexist/Qdeps/Qo/L vectors.
+type opTableProvider struct {
+	inner      *r3ProductProvider
+	tableCalls []string // "schema.table" — the table-read seam
+}
+
+func (p *opTableProvider) LoadInstanceFacts(ctx context.Context, dialect spec.Dialect, schema string) (*spec.InstanceFacts, error) {
+	return p.inner.LoadInstanceFacts(ctx, dialect, schema)
+}
+func (p *opTableProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema, table string) (*spec.TableSnapshot, error) {
+	p.tableCalls = append(p.tableCalls, schema+"."+table)
+	if schema == "s" && table == "t" {
+		return &spec.TableSnapshot{
+			Schema: "s", Exists: true,
+			Table:   &spec.Table{Schema: "s", Name: "t"},
+			Columns: []spec.Column{{Name: "g", Type: "geometry"}},
+		}, nil
+	}
+	return &spec.TableSnapshot{Schema: schema}, nil
+}
+func (p *opTableProvider) ResolveObject(ctx context.Context, dialect spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	return p.inner.ResolveObject(ctx, dialect, req)
+}
+func (p *opTableProvider) LoadMySQLServerDropPrivilege(ctx context.Context, dialect spec.Dialect) (*spec.MySQLServerDropPrivilegeObservation, error) {
+	return p.inner.LoadMySQLServerDropPrivilege(ctx, dialect)
+}
+func (p *opTableProvider) ResolveMySQLSRSDependencies(ctx context.Context, srid uint32) (*spec.SRSDependencyFact, error) {
+	return p.inner.ResolveMySQLSRSDependencies(ctx, srid)
+}
+
+// opTableState mirrors paRealState with the accepted s.t table
+// adapter layered on top — the SRS provider chain stays real.
+func opTableState(t *testing.T, fx *r3Fixture) (*r3ProductProvider, *opTableProvider, *audit.TestBatchState) {
+	t.Helper()
+	inner := r3Harness(t, fx)
+	provider := &opTableProvider{inner: inner}
+	return inner, provider, audit.NewTestBatchState(provider)
+}
+
 func opSRS(t *testing.T, stmt spec.Statement) *spec.SpatialReferenceSystemState {
 	t.Helper()
 	if stmt.Metadata == nil || stmt.Metadata.SpatialReference == nil {
@@ -149,6 +193,53 @@ func TestT26SRSOrderedHitIfExistsRealChain(t *testing.T) {
 	r3AssertReads(t, provider, fx, 2, 1, 2, 2, 1, -1)
 }
 
+// OP-2f (frozen): the accepted s.t table fixture bound via the real
+// LoadTableSnapshot seam, the deps answer stays EMPTY — stmt1
+// A-plain publishes; stmt2's real DROP TABLE mints srsDepsStale;
+// stmt3's ordered hit still consumes the existence entry (the empty
+// stale witness and the proven absence both reach A — staleness never
+// invalidates the existence entry).
+func TestT26SRSOrderedDepsStaleEmptyWitnessRealChain(t *testing.T) {
+	fx := opAbsentFixture(opGrantConsumable)
+	inner, tables, state := opTableState(t, fx)
+	var vecs [][5]int
+	state.SetAfterApplyObserve(func(int, *spec.Statement) {
+		vecs = append(vecs, r3SnapReads(inner, fx))
+	})
+	enriched := audit.EnrichSRSPrivForTest(t, state, tables,
+		"DROP SPATIAL REFERENCE SYSTEM 100001;"+
+			"DROP TABLE s.t;"+
+			"DROP SPATIAL REFERENCE SYSTEM 100001;")
+	if arm := paAdj(t, enriched[0]).Arm; arm != spec.SRSDropArmAbsentRefused {
+		t.Fatalf("stmt1 arm=%v want absent_refused", arm)
+	}
+	if len(tables.tableCalls) != 1 || tables.tableCalls[0] != "s.t" {
+		t.Fatalf("table reads=%v want exactly [s.t]", tables.tableCalls)
+	}
+	if !state.SRSDepsStale() {
+		t.Fatal("DROP TABLE must mint depsStale")
+	}
+	adj3 := paAdj(t, enriched[2])
+	if adj3.Arm != spec.SRSDropArmAbsentRefused {
+		t.Fatalf("stmt3 arm=%v want absent_refused — depsStale never invalidates the existence entry", adj3.Arm)
+	}
+	if !opSRS(t, enriched[2]).OrderedAbsent {
+		t.Fatal("stmt3 must be ordered-served")
+	}
+	if entry := opEntry(t, state, 100001); entry.Barrier {
+		t.Fatal("depsStale demotes the witness only — the entry keeps no barrier")
+	}
+	// stmt1 Δ(1,1,1,1); stmt2 Δ(0,0,0,0) on the SRS seams (the table
+	// read is its own seam); stmt3 direct Δ(1,0,1,1).
+	if len(vecs) != 3 {
+		t.Fatalf("snapshots=%d want 3", len(vecs))
+	}
+	r3AssertDelta(t, "stmt1", [5]int{}, vecs[0], 1, 1, 1, 1, 1)
+	r3AssertDelta(t, "stmt2", vecs[0], vecs[1], 0, 0, 0, 0, 0)
+	r3AssertDelta(t, "stmt3", vecs[1], vecs[2], 1, 0, 1, 1, 0)
+	r3AssertReads(t, inner, fx, 2, 1, 2, 2, 1, -1)
+}
+
 // --- OP-1: non-producer arms and foreign-SRID control (real chain) -----
 
 // OP-1: an S2 unproven statement and an S1 refused-dependency
@@ -244,14 +335,19 @@ func TestT26SRSOrderedProducerSRID0(t *testing.T) {
 }
 
 // OP-1f: a real spatialTouching DROP TABLE ahead of the first SRS
-// statement — depsStale is minted before the SRS statement ever runs;
-// the tail is still a producer (no entry exists) and lands A-plain.
+// statement — the accepted s.t table fixture is bound through the
+// real LoadTableSnapshot seam; depsStale is minted before the SRS
+// statement ever runs; the tail is still a producer (no entry exists)
+// and lands A-plain.
 func TestT26SRSOrderedDepsStaleBeforeFirstSRS(t *testing.T) {
 	fx := opAbsentFixture(opGrantConsumable)
-	provider, state := paRealState(t, fx)
-	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+	inner, tables, state := opTableState(t, fx)
+	enriched := audit.EnrichSRSPrivForTest(t, state, tables,
 		"DROP TABLE s.t;"+
 			"DROP SPATIAL REFERENCE SYSTEM 100001;")
+	if len(tables.tableCalls) != 1 || tables.tableCalls[0] != "s.t" {
+		t.Fatalf("table reads=%v want exactly [s.t] — the accepted fixture bound", tables.tableCalls)
+	}
 	if !state.SRSDepsStale() {
 		t.Fatal("DROP TABLE must mint depsStale")
 	}
@@ -266,6 +362,9 @@ func TestT26SRSOrderedDepsStaleBeforeFirstSRS(t *testing.T) {
 	if !entry.Absent || entry.Barrier || entry.SourceArm != spec.SRSDropArmAbsentRefused {
 		t.Fatalf("entry=%+v want plain producer provenance", entry)
 	}
+	// Table reads never enter the SRS vector — the SRS seams still
+	// show the single producer full read.
+	r3AssertReads(t, inner, fx, 1, 1, 1, 1, 1, -1)
 }
 
 // OP-1g: an unparseable Qo banner can never carry the completeness
@@ -334,6 +433,9 @@ func TestT26SRSOrderedRevokeBetweenIEHits(t *testing.T) {
 	if adj3.Arm != spec.SRSDropArmAbsentConditional {
 		t.Fatalf("stmt3 arm=%v want absent_conditional on the ordered hit", adj3.Arm)
 	}
+	if adj3.Privilege != spec.SRSDropPrivilegeSuppressed {
+		t.Fatalf("stmt3 premise=%v want suppressed — the positive witness was REVOKE-ended, so the re-derived premise is suppressed, not unproven", adj3.Privilege)
+	}
 	if len(adj3.Owed) != 1 || adj3.Owed[0] != spec.SRSFactDropPrivilege {
 		t.Fatalf("stmt3 owed=%v want exactly [srs.drop.privilege]", adj3.Owed)
 	}
@@ -350,32 +452,56 @@ func TestT26SRSOrderedRevokeBetweenIEHits(t *testing.T) {
 	r3AssertReads(t, provider, fx, 2, 1, 2, 2, 1, -1)
 }
 
-// OP-3c: negative grant both sides — stmt1 (producer) and stmt2
-// (ordered hit) both land absent_conditional owing [P].
+// OP-3c (frozen): negative grant on BOTH sides of a REVOKE —
+//
+//	DROP IF EXISTS 100001; REVOKE …; DROP IF EXISTS 100001
+//
+// Because NO positive witness was ever established, REVOKE ends the
+// scope but the tail's re-derived premise stays UNPROVEN — never
+// suppressed. stmt1 and stmt3 both land absent_conditional owing [P];
+// the ordered fact remains consumable (stmt3 ordered-served); the
+// producer's provenance is not rewritten.
 func TestT26SRSOrderedNegativeGrantBothSides(t *testing.T) {
 	fx := opAbsentFixture(opGrantNegative)
 	provider, state := paRealState(t, fx)
 	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
 		"DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001;"+
+			"REVOKE SELECT ON *.* FROM 'app'@'%';"+
 			"DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001;")
-	for i, stmt := range enriched {
-		adj := paAdj(t, stmt)
+	if len(enriched) != 3 {
+		t.Fatalf("enriched=%d want 3", len(enriched))
+	}
+	if !state.ScopeEnded() {
+		t.Fatal("REVOKE must end the privilege scope")
+	}
+	for _, i := range []int{0, 2} {
+		adj := paAdj(t, enriched[i])
 		if adj.Arm != spec.SRSDropArmAbsentConditional {
-			t.Fatalf("stmt%d arm=%v want absent_conditional", i, adj.Arm)
+			t.Fatalf("stmt%d arm=%v want absent_conditional", i+1, adj.Arm)
 		}
 		if len(adj.Owed) != 1 || adj.Owed[0] != spec.SRSFactDropPrivilege {
-			t.Fatalf("stmt%d owed=%v want exactly [srs.drop.privilege]", i, adj.Owed)
+			t.Fatalf("stmt%d owed=%v want exactly [srs.drop.privilege]", i+1, adj.Owed)
 		}
+	}
+	// The frozen distinction: no positive witness ever existed, so the
+	// tail premise stays UNPROVEN — suppressed requires a prior
+	// discharged witness (OP-3b proves that arm).
+	adj3 := paAdj(t, enriched[2])
+	if adj3.Privilege != spec.SRSDropPrivilegeUnproven {
+		t.Fatalf("stmt3 premise=%v want unproven — never a positive witness, so REVOKE cannot suppress it", adj3.Privilege)
 	}
 	if opSRS(t, enriched[0]).OrderedAbsent {
 		t.Fatal("stmt1 is the producer — no marker")
 	}
-	if !opSRS(t, enriched[1]).OrderedAbsent {
-		t.Fatal("stmt2 must be ordered-served")
+	if !opSRS(t, enriched[2]).OrderedAbsent {
+		t.Fatal("stmt3 must remain ordered-served — REVOKE is premise-level, the ordered fact stays consumable")
 	}
+	// Prefix metadata and provenance are not rewritten.
 	entry := opEntry(t, state, 100001)
-	if entry.SourceArm != spec.SRSDropArmAbsentConditional || entry.OwnPrivilege != spec.SRSDropPrivilegeUnproven {
-		t.Fatalf("entry=%+v want the producer's conditional provenance", entry)
+	if entry.SourceArm != spec.SRSDropArmAbsentConditional ||
+		entry.OwnPrivilege != spec.SRSDropPrivilegeUnproven ||
+		entry.PublishedIdx != 0 || entry.Barrier || !entry.Absent {
+		t.Fatalf("entry=%+v want the producer's unchanged conditional provenance", entry)
 	}
 	r3AssertReads(t, provider, fx, 2, 1, 2, 2, 1, -1)
 }
@@ -533,14 +659,26 @@ func TestT26SRSOrderedSharedVsNewStateRealChain(t *testing.T) {
 // resolver and the privilege loader but not the deps-reader method.
 // stmt1 mints through the full path; stmt2's ordered lookup cannot
 // commit (no capability → the entry is NOT consumed), so the full
-// path's per-enrich cache serves the identical key: (1,1,1,1) then
-// (0,0,0,0) with cache-hit=1 — the second statement performs ZERO
-// provider reads of any kind.
+// path's per-enrich cache serves the identical full key: stmt1's own
+// Δ(1,1,1,1) is measured, then stmt2's own Δ(0,0,0,0) proves the real
+// cache hit — never inferred from the batch total. Zero L on stmt2.
 func TestT26SRSOrderedNoCapabilityWarmCache(t *testing.T) {
 	fx := opAbsentFixture(opGrantNegative)
 	inner := r3Harness(t, fx)
 	provider := &opNoCapProvider{inner: inner}
+	// The adapter must NOT satisfy the ordered capability — the whole
+	// row depends on that negative.
+	if _, ok := interface{}(provider).(audit.MySQLSRSDependencyReader); ok {
+		t.Fatal("opNoCapProvider must not satisfy MySQLSRSDependencyReader")
+	}
 	state := audit.NewTestBatchState(provider)
+
+	// Per-statement counter snapshots at post-apply — stmt2's cache hit
+	// is measured inside its own window, not inferred.
+	var snapAt [][5]int
+	state.SetAfterApplyObserve(func(idx int, _ *spec.Statement) {
+		snapAt = append(snapAt, r3SnapReads(inner, fx))
+	})
 
 	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
 		"DROP SPATIAL REFERENCE SYSTEM 100001;"+
@@ -548,45 +686,77 @@ func TestT26SRSOrderedNoCapabilityWarmCache(t *testing.T) {
 	if arm := paAdj(t, enriched[0]).Arm; arm != spec.SRSDropArmAbsentRefused {
 		t.Fatalf("stmt1 arm=%v want absent_refused", arm)
 	}
+	if len(snapAt) != 2 {
+		t.Fatalf("post-apply snapshots=%d want 2", len(snapAt))
+	}
 	bound2 := opSRS(t, enriched[1])
 	if bound2.OrderedAbsent {
 		t.Fatal("OP-2g: no capability → OrderedAbsent must stay false")
 	}
+	// The cached catalog answer is asserted from its own fields: the
+	// full-key cache served the identical lookup — read+absent.
 	if !bound2.Read || bound2.Exists || !bound2.Absence {
 		t.Fatalf("OP-2g stmt2 bound=%+v want the cached catalog answer (read+absent)", bound2)
 	}
 	if arm := paAdj(t, enriched[1]).Arm; arm != spec.SRSDropArmAbsentRefused {
 		t.Fatalf("stmt2 arm=%v want absent_refused via the cached catalog answer", arm)
 	}
-	// One entry, first provenance unchanged, no stale/barrier.
-	if ids := state.SRSOrderedSRIDs(); len(ids) != 1 {
+	// stmt1 minted: Δ(1,1,1,1)+L=1 from zero; stmt2: Δ(0,0,0,0)+L=0 —
+	// a REAL full-key cache hit, zero provider reads of any kind.
+	r3AssertDelta(t, "stmt1", [5]int{}, snapAt[0], 1, 1, 1, 1, 1)
+	r3AssertDelta(t, "stmt2", snapAt[0], snapAt[1], 0, 0, 0, 0, 0)
+	// One entry, complete provenance unchanged by stmt2: capture the
+	// keyset AND the full entry — stmt2 touched neither.
+	if ids := state.SRSOrderedSRIDs(); len(ids) != 1 || ids[0] != 100001 {
 		t.Fatalf("ordered keys=%v want exactly {100001}", ids)
 	}
 	entry := opEntry(t, state, 100001)
-	if entry.Barrier || entry.PublishedIdx != 0 || entry.SourceArm != spec.SRSDropArmAbsentRefused {
-		t.Fatalf("entry=%+v want unchanged first provenance", entry)
+	if entry.Barrier || entry.PublishedIdx != 0 || entry.SourceArm != spec.SRSDropArmAbsentRefused ||
+		!entry.Absent || entry.OwnPrivilege != spec.SRSDropPrivilegeUnproven {
+		t.Fatalf("entry=%+v want the complete unchanged first provenance", entry)
 	}
 	paSameStale(t, audit.BatchStateStaleSet(state), map[uint32]bool{}, "no stale mint")
-	// Vectors: stmt1 (1,1,1,1); stmt2 (0,0,0,0) cache-hit — the
-	// objectCache serves the identical key with zero forwards.
+	// Batch total preserved as the summary check.
 	r3AssertReads(t, inner, fx, 1, 1, 1, 1, 1, -1)
 }
 
 // OP-2h: cold-cache no-capability — same batchState, new objectCache
-// per enrich. The second enrich performs the real full lookup, sees
-// the changed answer, lands S2, and the SAME entry flips
+// per enrich. The second enrich performs its own real full lookup,
+// sees the changed answer, lands S2, and the SAME entry flips
 // barrier=false→true with the stale mint — first provenance kept.
+// Each call's own Δ(1,1,1,1)+L=1 is measured; the entry is compared
+// as expectedAfter=before with Barrier the only changed field.
 func TestT26SRSOrderedNoCapabilityColdCache(t *testing.T) {
 	fx := opAbsentFixture(opGrantNegative)
 	inner := r3Harness(t, fx)
 	provider := &opNoCapProvider{inner: inner}
+	if _, ok := interface{}(provider).(audit.MySQLSRSDependencyReader); ok {
+		t.Fatal("opNoCapProvider must not satisfy MySQLSRSDependencyReader")
+	}
 	state := audit.NewTestBatchState(provider)
+
+	var snapAt [][5]int
+	state.SetAfterApplyObserve(func(idx int, _ *spec.Statement) {
+		snapAt = append(snapAt, r3SnapReads(inner, fx))
+	})
 
 	e1 := audit.EnrichSRSPrivForTest(t, state, provider, "DROP SPATIAL REFERENCE SYSTEM 100001;")
 	if arm := paAdj(t, e1[0]).Arm; arm != spec.SRSDropArmAbsentRefused {
 		t.Fatalf("enrich1 arm=%v want absent_refused", arm)
 	}
 	before := opEntry(t, state, 100001)
+	if before.Barrier {
+		t.Fatal("before.Barrier must be false — the flip is the measured delta")
+	}
+	if !before.Absent || before.PublishedIdx != 0 ||
+		before.SourceArm != spec.SRSDropArmAbsentRefused ||
+		before.OwnPrivilege != spec.SRSDropPrivilegeUnproven {
+		t.Fatalf("before=%+v want the complete first provenance", before)
+	}
+	if len(snapAt) != 1 {
+		t.Fatalf("snapshots after enrich1=%d want 1", len(snapAt))
+	}
+	r3AssertDelta(t, "enrich1", [5]int{}, snapAt[0], 1, 1, 1, 1, 1)
 
 	fx.srs = map[uint32]string{100001: "SRID 100001"}
 	e2 := audit.EnrichSRSPrivForTest(t, state, provider, "DROP SPATIAL REFERENCE SYSTEM 100001;")
@@ -606,16 +776,21 @@ func TestT26SRSOrderedNoCapabilityColdCache(t *testing.T) {
 			t.Fatalf("OP-2h owed[%d]=%q want %q", i, adj2.Owed[i], wantOwed[i])
 		}
 	}
-	after := opEntry(t, state, 100001)
-	if !after.Barrier {
-		t.Fatal("the same entry's barrier must flip false→true")
+	if len(snapAt) != 2 {
+		t.Fatalf("snapshots after enrich2=%d want 2", len(snapAt))
 	}
-	if after.SourceArm != before.SourceArm || after.OwnPrivilege != before.OwnPrivilege ||
-		after.PublishedIdx != before.PublishedIdx || !after.Absent {
-		t.Fatalf("first provenance must survive: %+v vs %+v", before, after)
+	r3AssertDelta(t, "enrich2", snapAt[0], snapAt[1], 1, 1, 1, 1, 1)
+
+	// expectedAfter = before with Barrier the only changed field —
+	// the complete entry comparison, not a field pick-list.
+	expectedAfter := before
+	expectedAfter.Barrier = true
+	after := opEntry(t, state, 100001)
+	if after != expectedAfter {
+		t.Fatalf("entry after=%+v want %+v (barrier the ONLY change)", after, expectedAfter)
 	}
 	paSameStale(t, audit.BatchStateStaleSet(state), map[uint32]bool{100001: true}, "barrier ⇒ stale mint")
-	// Each enrich performed its own real full read: (1,1,1,1) ×2.
+	// Batch total preserved: two independent real full reads.
 	r3AssertReads(t, inner, fx, 2, 2, 2, 2, 2, -1)
 }
 
@@ -661,34 +836,50 @@ func TestT26SRSOrderedFreshDepsRealChain(t *testing.T) {
 }
 
 // OP-4b: a positive dependency witness under srsDepsStale is demoted
-// — stmt2's real DROP TABLE mints the flag, stmt3's ordered hit reads
-// the positive witness but the A arm still governs (staleness demotes
-// witness use only, never the proven absence entry).
+// — stmt2's real DROP TABLE (accepted s.t fixture) mints the flag;
+// stmt3's ordered hit binds the ACTUAL positive witness [s.t.g@100001]
+// through the real merge, yet the A arm still governs (staleness
+// demotes witness use only, never the proven absence entry).
 func TestT26SRSOrderedDepsStaleDemotesRealChain(t *testing.T) {
 	positive := []r3DepRow{{schema: "s", table: "t", column: "g", srid: 100001}}
 	fx := opAbsentFixture(opGrantConsumable)
 	fx.depsScript = [][]r3DepRow{nil, positive}
-	provider, state := paRealState(t, fx)
-	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+	inner, tables, state := opTableState(t, fx)
+	enriched := audit.EnrichSRSPrivForTest(t, state, tables,
 		"DROP SPATIAL REFERENCE SYSTEM 100001;"+
 			"DROP TABLE s.t;"+
 			"DROP SPATIAL REFERENCE SYSTEM 100001;")
 	if arm := paAdj(t, enriched[0]).Arm; arm != spec.SRSDropArmAbsentRefused {
 		t.Fatalf("stmt1 arm=%v want absent_refused", arm)
 	}
+	if len(tables.tableCalls) != 1 || tables.tableCalls[0] != "s.t" {
+		t.Fatalf("table reads=%v want exactly [s.t]", tables.tableCalls)
+	}
 	if !state.SRSDepsStale() {
 		t.Fatal("DROP TABLE must mint depsStale")
 	}
+	// First the bound-state fact: stmt3 carries the ACTUAL positive
+	// dependency [s.t.g@100001] — the real merge attached the fresh
+	// witness before staleness demoted it.
+	bound3 := opSRS(t, enriched[2])
+	if !bound3.OrderedAbsent {
+		t.Fatal("stmt3 must be ordered-served")
+	}
+	if bound3.Dependencies == nil || len(bound3.Dependencies.Columns) != 1 {
+		t.Fatalf("stmt3 Dependencies=%+v want the positive witness bound", bound3.Dependencies)
+	}
+	col := bound3.Dependencies.Columns[0]
+	if col.Schema != "s" || col.Table != "t" || col.Column != "g" || col.SRID != 100001 {
+		t.Fatalf("stmt3 witness=%+v want exactly s.t.g@100001", col)
+	}
+	// Then the demotion: A governs despite the positive witness.
 	adj3 := paAdj(t, enriched[2])
 	if adj3.Arm != spec.SRSDropArmAbsentRefused {
 		t.Fatalf("stmt3 arm=%v want absent_refused — positive witness demoted by staleness", adj3.Arm)
 	}
-	if !opSRS(t, enriched[3-1]).OrderedAbsent {
-		t.Fatal("stmt3 must be ordered-served")
-	}
 	// Frozen total (2,1,2,2): stmt1 Δ(1,1,1,1); stmt2 Δ(0,0,0,0) SRS-seam;
 	// stmt3 Δ(1,0,1,1) direct read.
-	r3AssertReads(t, provider, fx, 2, 1, 2, 2, 1, -1)
+	r3AssertReads(t, inner, fx, 2, 1, 2, 2, 1, -1)
 	if entry := opEntry(t, state, 100001); entry.Barrier {
 		t.Fatal("depsStale demotes the witness only — the entry keeps no barrier")
 	}
@@ -705,15 +896,28 @@ func TestT26SRSOrderedDepsErrorSameEnrich(t *testing.T) {
 	fx := opAbsentFixture(opGrantConsumable)
 	provider, state := paRealState(t, fx)
 
+	// Independent observation closure: stmt1's post-bind and post-apply
+	// entries are recorded by index, and at stmt1's own-apply an
+	// independent deep snapshot of its bound projection plus the
+	// complete ordered entry is captured — the post-error comparison
+	// never relies on live pointers or on the arm field alone.
+	var bindIdx, applyIdx []int
 	var bound1 *spec.Statement
-	applies := 0
+	var snap1 paStmtSnap
+	var entryAtApply audit.SRSOrderedEntryView
+	var entryAtApplyOK bool
+	state.SetAfterBindObserve(func(i int, stmt *spec.Statement) {
+		bindIdx = append(bindIdx, i)
+	})
 	// stmt1's deps read must SUCCEED while stmt2's fails — the fixture
 	// fires failOn on every "deps"-kind query, so arm it at stmt1's
 	// own-apply (which runs before stmt2's deps read).
 	state.SetAfterApplyObserve(func(i int, stmt *spec.Statement) {
-		applies++
+		applyIdx = append(applyIdx, i)
 		if i == 0 {
 			bound1 = stmt
+			snap1 = paSnapStmt(*stmt)
+			entryAtApply, entryAtApplyOK = state.SRSOrderedEntry(100001)
 			fx.failOn = map[string]error{"deps": sentinel}
 		}
 	})
@@ -732,11 +936,18 @@ func TestT26SRSOrderedDepsErrorSameEnrich(t *testing.T) {
 	if strings.Contains(err.Error(), sentinel.Error()) {
 		t.Fatalf("raw sentinel text must never leak into the public error: %q", err.Error())
 	}
-	if applies != 1 {
-		t.Fatalf("applies=%d want exactly 1 — stmt2 never reached adjudication or own-apply", applies)
+	// stmt2 never reached EITHER observation point: bind-observe saw
+	// only index 0 (the failing direct read happens inside stmt2's
+	// bind), apply-observe saw only index 0 (no adjudication, no
+	// own-apply for stmt2).
+	if len(bindIdx) != 1 || bindIdx[0] != 0 {
+		t.Fatalf("bind-observe indexes=%v want [0] — stmt2 never completed bind", bindIdx)
 	}
-	if bound1 == nil {
-		t.Fatal("stmt1 bound state missing")
+	if len(applyIdx) != 1 || applyIdx[0] != 0 {
+		t.Fatalf("apply-observe indexes=%v want [0] — stmt2 never reached adjudication/own-apply", applyIdx)
+	}
+	if bound1 == nil || !entryAtApplyOK {
+		t.Fatal("stmt1 bound state / ordered entry missing at own-apply")
 	}
 	if arm := paAdj(t, *bound1).Arm; arm != spec.SRSDropArmAbsentRefused {
 		t.Fatalf("stmt1 arm=%v want absent_refused", arm)
@@ -745,15 +956,92 @@ func TestT26SRSOrderedDepsErrorSameEnrich(t *testing.T) {
 	// + stmt2 Δ(1,0,1,1) attempted before the error → total (2,1,2,2);
 	// stmt2's Qexist stayed 0 (skipped-by-ordered).
 	r3AssertReads(t, provider, fx, 2, 1, 2, 2, 1, -1)
-	// Complete ordered entry + stmt1's bound metadata unchanged.
-	entry := opEntry(t, state, 100001)
+	// stmt1's bound metadata unchanged — the live statement re-snapshot
+	// must equal the independent capture taken at own-apply.
+	paSnapEqual(t, "stmt1 bound state after the failed hit", snap1, paSnapStmt(*bound1))
+	// Complete ordered entry unchanged — the apply-time view, the
+	// post-error view, and the expected provenance all agree.
 	want := audit.SRSOrderedEntryView{
 		SRID: 100001, Absent: true, SourceArm: spec.SRSDropArmAbsentRefused,
 		OwnPrivilege: spec.SRSDropPrivilegeConsumable, PublishedIdx: 0, Barrier: false,
 	}
-	if entry != want {
-		t.Fatalf("entry=%+v want %+v", entry, want)
+	if entryAtApply != want {
+		t.Fatalf("entry at own-apply=%+v want %+v", entryAtApply, want)
 	}
+	if entry := opEntry(t, state, 100001); entry != want {
+		t.Fatalf("entry after error=%+v want %+v (apply-time %+v)", entry, want, entryAtApply)
+	}
+}
+
+// OP-4 merge-table consumer rows — the REAL ordered-bind merge path
+// over the direct reader's non-error outcome shapes, which neither
+// the provider unit rows (return values only) nor the synthetic
+// marker/adjudication units can stand in for:
+//
+//   - proven-unsupported Qo: the reader's support gate declines →
+//     (nil, nil); the ordered absence still consumes — marker bound,
+//     A arm, zero Qexist/Qdeps on the hit.
+//   - unparseable Qo: support unproven → the reader continues to a
+//     real deps fact; the same merge path adjudicates the ordered A.
+//
+// versionScript scripts the nth Qo attempt: stmt1's full-path bind
+// reads 8.0.36; stmt2's direct-reader Qo is the discriminating input.
+// The entry's provenance and the read vectors are asserted exactly.
+func TestT26SRSOrderedConsumerReaderVariants(t *testing.T) {
+	t.Run("unsupported-qo-nil-fact", func(t *testing.T) {
+		fx := opAbsentFixture(opGrantConsumable)
+		fx.versionScript = []string{"8.0.36", "5.7.44"}
+		provider, state := paRealState(t, fx)
+		enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+			"DROP SPATIAL REFERENCE SYSTEM 100001;"+
+				"DROP SPATIAL REFERENCE SYSTEM 100001;")
+		if arm := paAdj(t, enriched[0]).Arm; arm != spec.SRSDropArmAbsentRefused {
+			t.Fatalf("stmt1 arm=%v want absent_refused (8.0.36 full-path A)", arm)
+		}
+		bound2 := opSRS(t, enriched[1])
+		if !bound2.OrderedAbsent {
+			t.Fatal("stmt2 must consume the ordered absence — nil fact still commits the ordered branch")
+		}
+		if bound2.Dependencies != nil {
+			t.Fatalf("nil fact must bind nil Dependencies, got %+v", bound2.Dependencies)
+		}
+		if arm := paAdj(t, enriched[1]).Arm; arm != spec.SRSDropArmAbsentRefused {
+			t.Fatalf("stmt2 arm=%v want absent_refused — ordered A consumes with a nil witness", arm)
+		}
+		// stmt1 Δ(1,1,1,1) + stmt2 direct attempt Δ(1,0,0,1) — the
+		// support gate declined before the deps query; Qexist stayed
+		// skipped-by-ordered.
+		r3AssertReads(t, provider, fx, 2, 1, 1, 2, 1, -1)
+		entry := opEntry(t, state, 100001)
+		if !entry.Absent || entry.Barrier || entry.SourceArm != spec.SRSDropArmAbsentRefused {
+			t.Fatalf("entry=%+v want unchanged provenance", entry)
+		}
+	})
+
+	t.Run("unparseable-qo-deps-fact", func(t *testing.T) {
+		fx := opAbsentFixture(opGrantConsumable)
+		fx.versionScript = []string{"8.0.36", "unparseable-banner"}
+		provider, state := paRealState(t, fx)
+		enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+			"DROP SPATIAL REFERENCE SYSTEM 100001;"+
+				"DROP SPATIAL REFERENCE SYSTEM 100001;")
+		if arm := paAdj(t, enriched[0]).Arm; arm != spec.SRSDropArmAbsentRefused {
+			t.Fatalf("stmt1 arm=%v want absent_refused", arm)
+		}
+		bound2 := opSRS(t, enriched[1])
+		if !bound2.OrderedAbsent {
+			t.Fatal("stmt2 must be ordered-served")
+		}
+		if bound2.Dependencies == nil {
+			t.Fatal("unparseable Qo continues the deps read — a real (empty) fact must bind")
+		}
+		if arm := paAdj(t, enriched[1]).Arm; arm != spec.SRSDropArmAbsentRefused {
+			t.Fatalf("stmt2 arm=%v want absent_refused — empty witness, ordered A", arm)
+		}
+		// stmt1 Δ(1,1,1,1) + stmt2 direct Δ(1,0,1,1) — support unproven
+		// continues the read.
+		r3AssertReads(t, provider, fx, 2, 1, 2, 2, 1, -1)
+	})
 }
 
 // OP-4c additional witness: the same propagation across TWO enrich
@@ -880,12 +1168,42 @@ func TestT26SRSOrderedInvalidationRealChain(t *testing.T) {
 		r3AssertReads(t, provider, fx, 3, 2, 3, 3, 1, -1)
 	})
 
-	// OP-5c: a real parse-failure record between producer and tail —
-	// whole-batch contamination shadows the channel: the tail exits
-	// before the ordered lookup with ZERO reads; the entry is kept.
-	// (The parser recovers past `GARBAGE;` so the tail is a real
-	// statement; `GARBAGE@#$;` aborts the rest of the parse instead.)
-	t.Run("OP-5c-contamination", func(t *testing.T) {
+	// OP-5c (exact frozen input): `GARBAGE@#$;` — the real parser's
+	// failure record swallows the tail into its RawSQL, so NO tail
+	// statement exists. This is the bounded counterexample: the batch
+	// is still contaminated by the failure record, the producer's
+	// entry survives, and zero reads happen after stmt1. Registered
+	// as a frozen-fixture erratum — see the execution receipt.
+	t.Run("OP-5c-exact-counterexample", func(t *testing.T) {
+		fx := opAbsentFixture(opGrantConsumable)
+		provider, state := paRealState(t, fx)
+		enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+			"DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001;"+
+				"GARBAGE@#$;"+
+				"DROP SPATIAL REFERENCE SYSTEM 100001;")
+		if !state.Contaminated() {
+			t.Fatal("the failure record must contaminate the batch")
+		}
+		// The tail DROP never exists — the failed chunk swallowed it
+		// (parse witness in the internal layer). Only stmt1 is authored.
+		if len(enriched) != 1 {
+			t.Fatalf("enriched=%d want exactly 1 — no tail under GARBAGE@#$", len(enriched))
+		}
+		if arm := paAdj(t, enriched[0]).Arm; arm != spec.SRSDropArmAbsentNoop {
+			t.Fatalf("stmt1 arm=%v want absent_noop — the producer still publishes", arm)
+		}
+		if entry := opEntry(t, state, 100001); !entry.Absent || entry.Barrier {
+			t.Fatalf("entry=%+v kept — contamination shadows, never deletes", entry)
+		}
+		// Frozen total (1,1,1,1): stmt1 only — nothing after it reads.
+		r3AssertReads(t, provider, fx, 1, 1, 1, 1, 1, -1)
+	})
+
+	// OP-5c companion: `GARBAGE;` — the parser recovers past the
+	// failure record, so the tail IS a real statement; whole-batch
+	// contamination shadows the channel: the tail exits before the
+	// ordered lookup with ZERO reads; the entry is kept.
+	t.Run("OP-5c-contamination-companion", func(t *testing.T) {
 		fx := opAbsentFixture(opGrantConsumable)
 		provider, state := paRealState(t, fx)
 		enriched := audit.EnrichSRSPrivForTest(t, state, provider,
@@ -912,17 +1230,21 @@ func TestT26SRSOrderedInvalidationRealChain(t *testing.T) {
 		r3AssertReads(t, provider, fx, 1, 1, 1, 1, 1, -1)
 	})
 
-	// OP-5d: a real DROP TABLE mints srsDepsStale only — the plain
-	// tail consumes the existence entry (ordered-hit A-plain).
+	// OP-5d: a real DROP TABLE (accepted s.t fixture) mints srsDepsStale
+	// only — the plain tail consumes the existence entry
+	// (ordered-hit A-plain).
 	t.Run("OP-5d-touching-deps-stale", func(t *testing.T) {
 		fx := opAbsentFixture(opGrantConsumable)
-		provider, state := paRealState(t, fx)
+		inner, tables, state := opTableState(t, fx)
 		var vecs [][5]int
-		opStmtVecs(provider, fx, state, &vecs)
-		enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+		opStmtVecs(inner, fx, state, &vecs)
+		enriched := audit.EnrichSRSPrivForTest(t, state, tables,
 			"DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001;"+
 				"DROP TABLE s.t;"+
 				"DROP SPATIAL REFERENCE SYSTEM 100001;")
+		if len(tables.tableCalls) != 1 || tables.tableCalls[0] != "s.t" {
+			t.Fatalf("table reads=%v want exactly [s.t]", tables.tableCalls)
+		}
 		if !state.SRSDepsStale() {
 			t.Fatal("DROP TABLE must mint depsStale")
 		}
@@ -938,15 +1260,16 @@ func TestT26SRSOrderedInvalidationRealChain(t *testing.T) {
 			opWantDelta(t, "stmt3 direct", opDelta(vecs[1], vecs[2]), [5]int{1, 0, 1, 1, 0})
 		}
 		// Frozen total (2,1,2,2).
-		r3AssertReads(t, provider, fx, 2, 1, 2, 2, 1, -1)
+		r3AssertReads(t, inner, fx, 2, 1, 2, 2, 1, -1)
 	})
 
 	// OP-5e: a complete engine-only ALTER TABLE is inert — neither
-	// flag mints, the plain tail consumes the entry cleanly.
+	// flag mints, the plain tail consumes the entry cleanly. The
+	// accepted s.t fixture is bound through the real table seam.
 	t.Run("OP-5e-inert-alter", func(t *testing.T) {
 		fx := opAbsentFixture(opGrantConsumable)
-		provider, state := paRealState(t, fx)
-		enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+		inner, tables, state := opTableState(t, fx)
+		enriched := audit.EnrichSRSPrivForTest(t, state, tables,
 			"DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001;"+
 				"ALTER TABLE s.t ENGINE=InnoDB;"+
 				"DROP SPATIAL REFERENCE SYSTEM 100001;")
@@ -961,7 +1284,7 @@ func TestT26SRSOrderedInvalidationRealChain(t *testing.T) {
 			t.Fatalf("entry=%+v want no barrier from an inert op", entry)
 		}
 		paSameStale(t, audit.BatchStateStaleSet(state), map[uint32]bool{}, "inert op mints nothing")
-		r3AssertReads(t, provider, fx, 2, 1, 2, 2, 1, -1)
+		r3AssertReads(t, inner, fx, 2, 1, 2, 2, 1, -1)
 	})
 
 	// OP-5f: REVOKE is premise-level only — the plain tail re-derives
@@ -1015,12 +1338,37 @@ func TestT26SRSOrderedBaselineProduceRealChain(t *testing.T) {
 	r3AssertReads(t, provider, fx, 1, 1, 1, 1, 1, -1)
 }
 
-// OP-6b: the below-floor request row — NO pin; the observed banner
-// itself resolves to 8.0.3 (Qo answers 8.0.3 too). The version
-// boundary binds via the full path (ordered gate excludes it): reads
-// issue, L=0 (the loader gate is never entered), own-apply mints
-// exactly the authored stale SRID — no adjudication, no entry.
+// OP-6b (frozen): the below-floor request row as a REAL public
+// request — NO target-version pin; the observed banner resolves to
+// 8.0.3 through the real discovery seam (Vd=1). The version boundary
+// binds via the full path (ordered gate excludes it): reads issue
+// Δ(1,1,1,1), L=0 (the loader gate is never entered), the public
+// result carries the frozen unaudited/version-gate boundary shape.
+// The internal SeedResolvedVersion variant is the companion below.
 func TestT26SRSOrderedBelowFloorRealChain(t *testing.T) {
+	fx := opAbsentFixture(opGrantConsumable)
+	fx.version = "8.0.3"
+	fx.discoverVer = "8.0.3"
+	provider := r3Harness(t, fx)
+	result, err := audit.AuditSQL(context.Background(), audit.Request{
+		SQL: "DROP SPATIAL REFERENCE SYSTEM 100001;", Dialect: spec.DialectMySQL,
+		MetadataProvider:   provider,
+		PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession,
+	})
+	// The public version-boundary result — the frozen boundary shape.
+	r3Boundary(t, result, err, "spatial_reference_system")
+	if result.Unsupported[0].Feature != "drop_spatial_reference_system" {
+		t.Fatalf("boundary feature=%q want drop_spatial_reference_system", result.Unsupported[0].Feature)
+	}
+	// Full bind issued its reads; L=0 — no audited drop ever asked
+	// the privilege loader; Vd=1 — the REAL discovery ran.
+	r3AssertReads(t, provider, fx, 1, 1, 1, 1, 0, 1)
+}
+
+// OP-6b companion: the identical below-floor boundary reached through
+// the internal seeded identity — kept as the internal observation of
+// own-apply's authored stale mint, which the public layer cannot see.
+func TestT26SRSOrderedBelowFloorInternalCompanion(t *testing.T) {
 	fx := opAbsentFixture(opGrantConsumable)
 	fx.version = "8.0.3"
 	fx.discoverVer = "8.0.3"
@@ -1045,8 +1393,6 @@ func TestT26SRSOrderedBelowFloorRealChain(t *testing.T) {
 	if len(state.SRSOrderedSRIDs()) != 0 {
 		t.Fatal("a boundary statement never mints ordered entries")
 	}
-	// Full bind issued its reads; L=0 — no audited drop ever asked the
-	// privilege loader.
 	r3AssertReads(t, provider, fx, 1, 1, 1, 1, 0, -1)
 }
 
@@ -1223,20 +1569,27 @@ func TestT26SRSOrderedSnapshotInvariance(t *testing.T) {
 		t.Fatalf("final entry=%+v want SAME earliest provenance", final)
 	}
 
-	// (3) Per-hook read attribution: the full dispatch lands inside
-	// stmt1's bind window (the L loader rides it — hook deltas, NOT the
-	// enrich-level total); own-apply itself issues zero reads; REVOKE's
-	// whole window is read-free; the tail's Δ lands after the hook.
-	opWantDelta(t, "stmt1 bind window", opDelta(vPrev, vPostBind), [5]int{1, 1, 1, 1, 1})
+	// (3) Per-hook read attribution: vPrev is sampled BEFORE the enrich
+	// call, so the vPrev→post-bind delta measures everything stmt1 did
+	// up to the bind hook — resolver dispatch plus the enrich-entry
+	// privilege-loader work (L=1 is attributed to that enrich-entry
+	// window, not to a "bind window" the sampling cannot isolate).
+	// Own-apply issues zero reads; REVOKE's window is read-free.
+	opWantDelta(t, "stmt1 pre-bind→post-bind", opDelta(vPrev, vPostBind), [5]int{1, 1, 1, 1, 1})
 	opWantDelta(t, "stmt1 own-apply window", opDelta(vPostBind, vOwnApply), [5]int{0, 0, 0, 0, 0})
 	opWantDelta(t, "REVOKE window", opDelta(vOwnApply, vRevokeApply), [5]int{0, 0, 0, 0, 0})
 	r3AssertReads(t, provider, fx, 2, 1, 2, 2, 1, -1)
 }
 
-// OP-8b: a same-SRID boundary write changes the complete entry in
-// EXACTLY one field — barrier false→true — while the whole channel's
-// stale set gains precisely the authored key; srsDepsStale,
-// contaminated, and all other provenance hold their prior values.
+// OP-8b (frozen): the OP-5a three-statement batch —
+//
+//	DROP IF EXISTS 100001 → CREATE OR REPLACE boundary → plain DROP
+//
+// After the producer's own-apply the complete entry is captured; the
+// boundary's apply flips exactly one field — barrier false→true —
+// while the stale set gains precisely the authored key; the tail is
+// blocked-B owing exactly [B]; srsDepsStale and contaminated hold
+// their prior values throughout.
 func TestT26SRSOrderedBoundaryFlipIsolation(t *testing.T) {
 	fx := opAbsentFixture(opGrantConsumable)
 	provider, state := paRealState(t, fx)
@@ -1250,15 +1603,32 @@ func TestT26SRSOrderedBoundaryFlipIsolation(t *testing.T) {
 		}
 	})
 	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
-		"DROP SPATIAL REFERENCE SYSTEM 100001;"+
-			"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 100001 DEFINITION 'x';")
-	if arm := paAdj(t, enriched[0]).Arm; arm != spec.SRSDropArmAbsentRefused {
-		t.Fatalf("stmt1 arm=%v want absent_refused", arm)
+		"DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001;"+
+			"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 100001 DEFINITION 'x';"+
+			"DROP SPATIAL REFERENCE SYSTEM 100001;")
+	if arm := paAdj(t, enriched[0]).Arm; arm != spec.SRSDropArmAbsentNoop {
+		t.Fatalf("stmt1 arm=%v want absent_noop (IE producer)", arm)
 	}
+	if enriched[1].Unsupported == nil {
+		t.Fatal("stmt2 must carry the CREATE implementation boundary")
+	}
+	// The plain tail is blocked-B — the boundary shadowed the batch.
+	adj3 := paAdj(t, enriched[2])
+	if adj3.Arm != spec.SRSDropArmBlocked {
+		t.Fatalf("stmt3 arm=%v want blocked", adj3.Arm)
+	}
+	if len(adj3.Owed) != 1 || adj3.Owed[0] != spec.SRSFactBatchEffects {
+		t.Fatalf("stmt3 owed=%v want exactly [B]", adj3.Owed)
+	}
+	if opSRS(t, enriched[2]).OrderedAbsent {
+		t.Fatal("a blocked tail never carries the ordered marker")
+	}
+	// Entry compare: complete before vs complete after — Barrier is
+	// the ONLY changed field (full-struct compare, not a field pick).
 	entryBefore := before.Ordered[100001]
 	entryAfter := after.Ordered[100001]
 	wantBefore := audit.SRSOrderedEntryView{
-		SRID: 100001, Absent: true, SourceArm: spec.SRSDropArmAbsentRefused,
+		SRID: 100001, Absent: true, SourceArm: spec.SRSDropArmAbsentNoop,
 		OwnPrivilege: spec.SRSDropPrivilegeConsumable, PublishedIdx: 0, Barrier: false,
 	}
 	wantAfter := wantBefore
@@ -1266,7 +1636,8 @@ func TestT26SRSOrderedBoundaryFlipIsolation(t *testing.T) {
 	if entryBefore != wantBefore || entryAfter != wantAfter {
 		t.Fatalf("entry delta=%+v→%+v want ONLY barrier false→true", entryBefore, entryAfter)
 	}
-	// The stale set gains EXACTLY the authored key — nothing else.
+	// The stale set gains EXACTLY the authored key — compare a
+	// complete expected map, never a whole-map reset.
 	wantStale := map[uint32]bool{}
 	for k := range before.Stale {
 		wantStale[k] = true
@@ -1274,6 +1645,14 @@ func TestT26SRSOrderedBoundaryFlipIsolation(t *testing.T) {
 	wantStale[100001] = true
 	if !reflect.DeepEqual(after.Stale, wantStale) {
 		t.Fatalf("stale set=%v want %v (authored key only)", after.Stale, wantStale)
+	}
+	// Deps-stale and contamination expectations hold: neither flag
+	// moved across the boundary.
+	if before.DepsStale || after.DepsStale {
+		t.Fatalf("depsStale must hold its baseline value: %v→%v", before.DepsStale, after.DepsStale)
+	}
+	if before.Contaminated || after.Contaminated {
+		t.Fatalf("contaminated must hold its baseline value: %v→%v", before.Contaminated, after.Contaminated)
 	}
 	// Whole-channel compare: strip the two sanctioned delta dimensions
 	// (entry view + stale set) — everything else verbatim.
@@ -1286,59 +1665,106 @@ func TestT26SRSOrderedBoundaryFlipIsolation(t *testing.T) {
 	}
 }
 
-// OP-8c: the single producer's own-apply mints EXACTLY its own entry —
-// every other channel (SERVER s1 entry, s.t table entry, s schema
-// entry, both stale channels, contaminated, the preset 100002 entry)
-// compares verbatim before/after.
+// OP-8c (frozen): the single producer's own-apply mints EXACTLY its
+// own entry. Frozen pre-state: no 100001 entry; unrelated 100002
+// entry preset with complete provenance; non-empty controls — SERVER
+// s1 bound entry, the s.t table fixture bound through the real table
+// seam, schema s populated; the baseline stale/contamination flags
+// held. Deep snapshots are captured post-BIND and post-own-apply; the
+// only sanctioned delta is the insertion of the complete 100001
+// entry; every other channel compares verbatim.
 func TestT26SRSOrderedSiblingIsolation(t *testing.T) {
 	fx := opAbsentFixture(opGrantConsumable)
 	fx.servers = map[string]bool{"s1": true}
-	provider, state := paRealState(t, fx)
+	inner, tables, state := opTableState(t, fx)
 
-	// Establish the non-empty controls + the unrelated 100002 entry
-	// with full provenance in a prior batch on the same state.
-	pre := audit.EnrichSRSPrivForTest(t, state, provider,
+	// Establish the frozen pre-state in a prior enrich on the same
+	// state: SERVER s1 bound entry, the s.t table entry (real table
+	// seam), schema s populated, and the unrelated 100002 entry with
+	// complete provenance.
+	pre := audit.EnrichSRSPrivForTest(t, state, tables,
 		"DROP SERVER s1;"+
 			"DROP TABLE s.t;"+
-			"DROP SCHEMA s2;"+
+			"DROP SCHEMA s;"+
 			"DROP SPATIAL REFERENCE SYSTEM 100002;")
 	if len(pre) != 4 {
 		t.Fatalf("control batch enriched=%d want 4", len(pre))
 	}
-	before := state.ChannelControlsCapture()
-	if len(before.Servers) == 0 || len(before.Tables) == 0 || len(before.Schemas) == 0 {
-		t.Fatalf("controls must be non-empty: servers=%d tables=%d schemas=%d",
-			len(before.Servers), len(before.Tables), len(before.Schemas))
+	if len(tables.tableCalls) != 1 || tables.tableCalls[0] != "s.t" {
+		t.Fatalf("table reads=%v want exactly [s.t] — the populated fixture", tables.tableCalls)
 	}
-	if _, ok := before.Ordered[100002]; !ok {
+	before := state.ChannelControlsCapture()
+	if len(before.Servers) == 0 || len(before.Tables) == 0 {
+		t.Fatalf("controls must be non-empty: servers=%d tables=%d",
+			len(before.Servers), len(before.Tables))
+	}
+	if _, ok := before.Schemas["s"]; !ok {
+		t.Fatalf("schema s must be populated by the s.t binding: schemas=%v", before.Schemas)
+	}
+	entry100002, ok := before.Ordered[100002]
+	if !ok {
 		t.Fatal("the unrelated 100002 entry must be preset")
+	}
+	// The 100002 entry carries COMPLETE provenance — every field
+	// asserted, not just presence.
+	want100002 := audit.SRSOrderedEntryView{
+		SRID: 100002, Absent: true, SourceArm: spec.SRSDropArmAbsentRefused,
+		OwnPrivilege: spec.SRSDropPrivilegeConsumable, PublishedIdx: 3, Barrier: false,
+	}
+	if entry100002 != want100002 {
+		t.Fatalf("preset 100002 entry=%+v want complete provenance %+v", entry100002, want100002)
 	}
 	if _, ok := before.Ordered[100001]; ok {
 		t.Fatal("100001 must have no entry yet")
 	}
+	// Baseline flag dims recorded for the verbatim compare.
+	baseDeps, baseContam := before.DepsStale, before.Contaminated
 
-	var during audit.ChannelControls
-	state.SetAfterApplyObserve(func(i int, stmt *spec.Statement) {
-		during = state.ChannelControlsCapture()
+	// Post-bind and post-own-apply deep captures.
+	var atBind, atApply audit.ChannelControls
+	state.SetAfterBindObserve(func(i int, stmt *spec.Statement) {
+		atBind = state.ChannelControlsCapture()
 	})
-	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+	state.SetAfterApplyObserve(func(i int, stmt *spec.Statement) {
+		atApply = state.ChannelControlsCapture()
+	})
+	v0 := r3SnapReads(inner, fx)
+	enriched := audit.EnrichSRSPrivForTest(t, state, tables,
 		"DROP SPATIAL REFERENCE SYSTEM 100001;")
 	if arm := paAdj(t, enriched[0]).Arm; arm != spec.SRSDropArmAbsentRefused {
 		t.Fatalf("producer arm=%v want absent_refused", arm)
 	}
-	after := during
-	if len(after.Ordered) != len(before.Ordered)+1 {
-		t.Fatalf("ordered keys %v → %v want exactly +{100001}", before.Ordered, after.Ordered)
+	// The producer statement discharges its premise at the
+	// adjudication level — the entry field set is provenance-only.
+	if adj := paAdj(t, enriched[0]); adj.Privilege != spec.SRSDropPrivilegeConsumable {
+		t.Fatalf("premise=%v want consumable", adj.Privilege)
+	}
+	r3AssertDelta(t, "producer enrich", v0, r3SnapReads(inner, fx), 1, 1, 1, 1, 1)
+
+	// Post-bind: the 100001 entry does not exist yet — publication is
+	// an own-apply act, never a bind act.
+	if _, ok := atBind.Ordered[100001]; ok {
+		t.Fatal("post-bind must have no 100001 entry — minting is own-apply's act")
 	}
 	wantNew := audit.SRSOrderedEntryView{
 		SRID: 100001, Absent: true, SourceArm: spec.SRSDropArmAbsentRefused,
 		OwnPrivilege: spec.SRSDropPrivilegeConsumable, PublishedIdx: 0, Barrier: false,
+	}
+	// Post-own-apply: exactly the complete new entry is added.
+	after := atApply
+	if len(after.Ordered) != len(before.Ordered)+1 {
+		t.Fatalf("ordered keys %v → %v want exactly +{100001}", before.Ordered, after.Ordered)
 	}
 	if got := after.Ordered[100001]; got != wantNew {
 		t.Fatalf("minted entry=%+v want %+v", got, wantNew)
 	}
 	if got := after.Ordered[100002]; got != before.Ordered[100002] {
 		t.Fatalf("sibling 100002 verbatim compare failed: %+v vs %+v", before.Ordered[100002], got)
+	}
+	// Baseline flag dims unchanged by the mint.
+	if after.DepsStale != baseDeps || after.Contaminated != baseContam {
+		t.Fatalf("flag dims moved: deps %v→%v contaminated %v→%v",
+			baseDeps, after.DepsStale, baseContam, after.Contaminated)
 	}
 	// Every OTHER channel compares verbatim — strip only the ordered
 	// map itself (the one sanctioned delta).
@@ -1532,17 +1958,33 @@ func TestT26SRSOrderedPolicyDisabled(t *testing.T) {
 	}
 
 	// Internal companion — identical fixture, fresh state: publication
-	// is policy-blind; the entry exists exactly once, provenance kept.
+	// is policy-blind. The complete entry is captured after stmt1 and
+	// compared field-for-field after stmt2 — earliest producer
+	// provenance never rewritten by the ordered hit.
 	provider2, state2 := paRealState(t, opAbsentFixture(opGrantConsumable))
+	var afterStmt1, afterStmt2 audit.SRSOrderedEntryView
+	state2.SetAfterApplyObserve(func(idx int, _ *spec.Statement) {
+		if view, ok := state2.SRSOrderedEntry(100001); ok {
+			if idx == 0 {
+				afterStmt1 = view
+			} else if idx == 1 {
+				afterStmt2 = view
+			}
+		}
+	})
 	audit.EnrichSRSPrivForTest(t, state2, provider2,
 		"DROP SPATIAL REFERENCE SYSTEM 100001;DROP SPATIAL REFERENCE SYSTEM 100001;")
 	ids := state2.SRSOrderedSRIDs()
 	if len(ids) != 1 {
 		t.Fatalf("entries=%v want exactly one (policy never gates publication)", ids)
 	}
-	entry := opEntry(t, state2, 100001)
-	if entry.PublishedIdx != 0 || entry.SourceArm != spec.SRSDropArmAbsentRefused || entry.Barrier {
-		t.Fatalf("entry=%+v want first-producer provenance unchanged", entry)
+	if afterStmt1 != afterStmt2 {
+		t.Fatalf("stmt2 rewrote the earliest provenance: %+v vs %+v", afterStmt1, afterStmt2)
+	}
+	if afterStmt2.PublishedIdx != 0 || afterStmt2.SourceArm != spec.SRSDropArmAbsentRefused ||
+		afterStmt2.Barrier || !afterStmt2.Absent ||
+		afterStmt2.OwnPrivilege != spec.SRSDropPrivilegeConsumable {
+		t.Fatalf("entry=%+v want complete first-producer provenance unchanged", afterStmt2)
 	}
 }
 
@@ -1576,10 +2018,27 @@ func TestT26SRSOrderedPolicyWarning(t *testing.T) {
 	}
 
 	provider2, state2 := paRealState(t, opAbsentFixture(opGrantConsumable))
+	var afterStmt1, afterStmt2 audit.SRSOrderedEntryView
+	state2.SetAfterApplyObserve(func(idx int, _ *spec.Statement) {
+		if view, ok := state2.SRSOrderedEntry(100001); ok {
+			if idx == 0 {
+				afterStmt1 = view
+			} else if idx == 1 {
+				afterStmt2 = view
+			}
+		}
+	})
 	audit.EnrichSRSPrivForTest(t, state2, provider2,
 		"DROP SPATIAL REFERENCE SYSTEM 100001;DROP SPATIAL REFERENCE SYSTEM 100001;")
 	if ids := state2.SRSOrderedSRIDs(); len(ids) != 1 {
 		t.Fatalf("entries=%v want exactly one (policy never gates publication)", ids)
+	}
+	if afterStmt1 != afterStmt2 {
+		t.Fatalf("stmt2 rewrote the earliest provenance: %+v vs %+v", afterStmt1, afterStmt2)
+	}
+	if afterStmt2.PublishedIdx != 0 || afterStmt2.SourceArm != spec.SRSDropArmAbsentRefused ||
+		afterStmt2.Barrier || !afterStmt2.Absent {
+		t.Fatalf("entry=%+v want complete first-producer provenance unchanged", afterStmt2)
 	}
 }
 

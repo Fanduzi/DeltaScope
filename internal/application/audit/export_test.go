@@ -154,6 +154,7 @@ type ChannelControls struct {
 	Tables        map[batchTableKey]batchTableEntry
 	TempTables    map[batchTableKey]batchTableEntry
 	Schemas       map[string]batchSchemaEntry
+	Invalidated   map[string]struct{}
 	Sequences     int
 	ResourceGrps  int
 	MySQLRsrcGrps int
@@ -165,16 +166,23 @@ type ChannelControls struct {
 	Ordered       map[uint32]SRSOrderedEntryView
 }
 
-// ChannelControlsCapture copies the full channel state verbatim —
-// maps cloned, entry structs copied by value, TableSnapshot dereferenced
-// into a value (slices inside keep their headers; the compare additionally
-// counts them so a nil/empty distinction survives).
+// ChannelControlsCapture copies the full channel state verbatim — a
+// TRUE deep-value snapshot: maps cloned, entry structs copied by
+// value, and every mutable descendant re-owned so a later apply or a
+// capture mutation can never cross the boundary in either direction.
+// TableSnapshot members go through the product cloneTableSnapshot —
+// columns/indexes/constraints cloned element-wise, maps and pointers
+// re-allocated, and nil vs non-nil-empty distinctions preserved (a
+// nil shape stays nil; a non-nil shape's nil Columns stays nil while
+// an empty Columns slice stays non-nil-empty). invalidatedSchemas is
+// part of the schema channel state and is captured too.
 func (s *batchState) ChannelControlsCapture() ChannelControls {
 	out := ChannelControls{
 		Servers:       make(map[string]batchServerEntry, len(s.serverEntries)),
 		Tables:        make(map[batchTableKey]batchTableEntry, len(s.entries)),
 		TempTables:    make(map[batchTableKey]batchTableEntry, len(s.tempEntries)),
 		Schemas:       make(map[string]batchSchemaEntry, len(s.schemaEntries)),
+		Invalidated:   make(map[string]struct{}, len(s.invalidatedSchemas)),
 		Sequences:     len(s.sequenceEntries),
 		ResourceGrps:  len(s.resourceGroupEntries),
 		MySQLRsrcGrps: len(s.mysqlResourceGroupEntries),
@@ -190,18 +198,12 @@ func (s *batchState) ChannelControlsCapture() ChannelControls {
 	}
 	for k, e := range s.entries {
 		c := *e
-		if e.shape != nil {
-			shape := *e.shape
-			c.shape = &shape
-		}
+		c.shape = cloneTableSnapshot(e.shape)
 		out.Tables[k] = c
 	}
 	for k, e := range s.tempEntries {
 		c := *e
-		if e.shape != nil {
-			shape := *e.shape
-			c.shape = &shape
-		}
+		c.shape = cloneTableSnapshot(e.shape)
 		out.TempTables[k] = c
 	}
 	for k, e := range s.schemaEntries {
@@ -214,6 +216,9 @@ func (s *batchState) ChannelControlsCapture() ChannelControls {
 			c.attrs = attrs
 		}
 		out.Schemas[k] = c
+	}
+	for name := range s.invalidatedSchemas {
+		out.Invalidated[name] = struct{}{}
 	}
 	for id := range s.srsOrdered {
 		v, _ := s.SRSOrderedEntry(id)
