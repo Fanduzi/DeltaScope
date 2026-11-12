@@ -96,12 +96,23 @@ const (
 	// blocker.
 	SRSCreateArmRefusedExistence
 	// SRSCreateArmExistsNoop: a CREATE ... IF NOT EXISTS against a
-	// proven-present SRID (native warning 3713) — the statement is a
-	// no-op, never a conflict finding (frozen U2). A consumable
-	// privilege premise discharges through the noop marker; an
-	// unproven or suppressed premise owes exactly
-	// {srs.create.privilege}.
+	// proven-present SRID under a consumable privilege premise
+	// (native warning 3713) — the statement is a no-op, never a
+	// conflict finding (frozen U2; T26-SRS-CREATE-GUARD-CORRECTION-01
+	// C1: the only arm allowed to publish exists_noop). Owes nothing;
+	// carries the conditional_audit marker.
 	SRSCreateArmExistsNoop
+	// SRSCreateArmOutcomeUnproven (T26-SRS-CREATE-GUARD-CORRECTION-01
+	// C2): a CREATE ... IF NOT EXISTS against a proven-present SRID
+	// whose privilege premise is unproven or suppressed. The catalog
+	// fact — object present — stands, but the native order checks
+	// privilege BEFORE the existence guard, so the guarded no-op arm
+	// is unproven: the statement outcome is unproven, never a claimed
+	// Warning-3713 no-op and never a denial. Owes exactly
+	// {srs.create.privilege}; the own apply writes nothing — no new
+	// success publication and no overwrite of the proven-present
+	// state.
+	SRSCreateArmOutcomeUnproven
 	// SRSCreateArmRefusedNameConflict: a provable authored NAME whose
 	// conflict read returned a witness SRID other than this
 	// statement's own (native 1062 on SRS_NAME). Owes nothing; one
@@ -177,8 +188,11 @@ type SRSCreateAdjudication struct {
 //   - E: proven presence — from the existence read or an own-SRID
 //     conflict witness (a matched own SRID proves the row exists). A
 //     plain create refuses (3712); IF NOT EXISTS takes the no-op
-//     marker arm (3713 — never a blocker, frozen U2); OR REPLACE
-//     continues to the conflict layer.
+//     marker arm (3713 — never a blocker, frozen U2) only under a
+//     consumable privilege premise, else the outcome_unproven arm
+//     (the privilege gate precedes the existence guard natively —
+//     T26-SRS-CREATE-GUARD-CORRECTION-01 C2); OR REPLACE continues
+//     to the conflict layer.
 //   - C1/C2: a provable authored NAME or ORGANIZATION+ID pair whose
 //     conflict read returned a witness on another SRID — refused
 //     (native 1062). A match on the statement's own SRID is never a
@@ -234,10 +248,17 @@ func AdjudicateSRSCreate(state *SpatialReferenceSystemState, decl *SpatialRefere
 		adjudication.Arm = SRSCreateArmRefusedExistence
 		return adjudication
 	case present && !orReplace:
-		adjudication.Arm = SRSCreateArmExistsNoop
+		// G10/C1-C2 (T26-SRS-CREATE-GUARD-CORRECTION-01 over the
+		// frozen oracle): the privilege gate precedes the existence
+		// guard natively, so only a consumable premise proves the
+		// guarded no-op. An unproven or suppressed premise leaves the
+		// outcome unproven — the catalog-present fact stands but the
+		// statement never claims the Warning-3713 no-op.
 		if consumable {
+			adjudication.Arm = SRSCreateArmExistsNoop
 			adjudication.ConditionalAudit = true
 		} else {
+			adjudication.Arm = SRSCreateArmOutcomeUnproven
 			adjudication.Owed = []string{SRSFactCreatePrivilege}
 		}
 		return adjudication

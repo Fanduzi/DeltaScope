@@ -471,6 +471,14 @@ func isDeferredCorpusCoverageRule(ruleID string) bool {
 		// no privilege provider/mode fixture, so the rule can never
 		// fire there (same contract as srs.drop.privilege above).
 		"ddl.mysql.srs.create.privilege",
+		// T26-SRS-CREATE-GUARD-CORRECTION-01: the no-op notice fires
+		// only on the exists_noop arm, which now requires a
+		// consumable privilege premise — the privilege gate precedes
+		// the existence guard natively, so an unproven premise lands
+		// on outcome_unproven. The offline corpus has no privilege
+		// provider/mode fixture, so exists_noop can never fire there
+		// (same contract as srs.create.privilege above).
+		"ddl.mysql.srs.create.exists_noop",
 		// T26-ALTER-INSTANCE-PUBLICATION-01: the conditional notice
 		// fires only on a consumable privilege premise — an online
 		// request-level observation with a positive witness. The

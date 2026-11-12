@@ -133,9 +133,12 @@ func (s *batchState) applySRSStatement(statement spec.Statement) error {
 //   - SRSCreateArmUnproven mints the existence stale flag — the create
 //     may have landed.
 //   - Every other arm writes nothing: refusals prove no write, the
-//     blocked arm shadows every premise, and the exists-noop arm
-//     never mutates (the object is already present in the catalog the
-//     next bind re-reads — nothing to mint).
+//     blocked arm shadows every premise, the exists-noop arm never
+//     mutates (the object is already present in the catalog the next
+//     bind re-reads — nothing to mint), and the outcome_unproven arm
+//     (T26-SRS-CREATE-GUARD-CORRECTION-01 C2) mints no success
+//     publication and no stale flag — the catalog-proven presence
+//     stays readable for later statements, never overwritten.
 //
 // CREATE is never an ordered-channel producer and never mints or
 // rewrites a proven-absence entry — the DROP publication protocol is

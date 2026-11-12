@@ -17,6 +17,5 @@ expect:
   findings:
     include:
       - ddl.mysql.srs.create.existence
-      - ddl.mysql.srs.create.exists_noop
       - ddl.mysql.srs.create.name_conflict
       - ddl.mysql.srs.create.organization_conflict

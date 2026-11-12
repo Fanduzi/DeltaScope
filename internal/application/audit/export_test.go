@@ -58,6 +58,17 @@ func EvaluateEnrichedForTest(t *testing.T, stmts []spec.Statement) report.Result
 // existence-stale key set.
 func BatchStateStaleSet(s *batchState) map[uint32]bool { return staleSet(s) }
 
+// BatchStatePresentSet mirrors the per-SRID proven-presence mints —
+// the own-apply success publications a statement must not mint under
+// the outcome_unproven arm (T26-SRS-CREATE-GUARD-CORRECTION-01).
+func BatchStatePresentSet(s *batchState) map[uint32]bool {
+	out := make(map[uint32]bool, len(s.srsExistencePresent))
+	for id := range s.srsExistencePresent {
+		out[id] = true
+	}
+	return out
+}
+
 // BatchStatePrivObservationSUPER mirrors privObservationSUPER — the
 // positive privilege-observation fixture.
 func BatchStatePrivObservationSUPER() *spec.MySQLServerDropPrivilegeObservation {

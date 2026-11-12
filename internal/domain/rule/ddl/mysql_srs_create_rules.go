@@ -15,13 +15,18 @@
 //   - ddl.mysql.srs.create.existence fires the refusal blocker on the
 //     refused_existence arm (native 3712) and carries the evidence
 //     gap on every arm whose premises stayed owed — blocked,
-//     exists_noop-with-debt, create, replace, unproven — under
+//     outcome_unproven, create, replace, unproven — under
 //     unknown_srs_state, or unproven_privilege when the only debt is
 //     this statement's own privilege premise.
 //   - ddl.mysql.srs.create.exists_noop carries the IF NOT EXISTS
 //     no-op notice on the exists_noop arm (native warning 3713 —
-//     frozen U2: never a blocker, never a claimed re-create); its
-//     metadata carries conditional_audit when the premise discharged.
+//     frozen U2: never a blocker, never a claimed re-create). The
+//     arm requires a consumable privilege premise — the privilege
+//     gate precedes the existence guard natively, so an unproven or
+//     suppressed premise lands on outcome_unproven instead and the
+//     notice never publishes
+//     (T26-SRS-CREATE-GUARD-CORRECTION-01 C1/C2); its metadata
+//     carries conditional_audit when the premise discharged.
 //   - ddl.mysql.srs.create.name_conflict fires the unique-key
 //     blocker on the refused_name_conflict arm (native 1062).
 //   - ddl.mysql.srs.create.organization_conflict fires the unique-key
@@ -245,7 +250,7 @@ func (r mysqlSRSCreateExistenceRule) AppliesTo(statement spec.Statement) bool {
 
 // EvidenceGaps carries the adjudication's owed facts verbatim on the
 // non-refusal arms. When the owed set is exactly this statement's own
-// privilege premise — the exists_noop arm's only possible debt — the
+// privilege premise — the outcome_unproven arm's only debt — the
 // reason narrows to unproven_privilege; otherwise the generic
 // unknown_srs_state reason holds.
 func (r mysqlSRSCreateExistenceRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
@@ -300,9 +305,14 @@ func (r mysqlSRSCreateExistenceRule) Evaluate(ctx context.Context, statement spe
 // ddl.mysql.srs.create.exists_noop — the IF NOT EXISTS no-op notice on
 // a proven-present SRID (native warning 3713, frozen U2): the
 // statement is not judged a failure for the target existing, and the
-// object is never claimed re-created. Metadata stays {srid, outcome}
-// plus conditional_audit when this statement's own privilege premise
-// was consumable — never an authored name or attribute payload.
+// object is never claimed re-created. The arm exists only under a
+// consumable privilege premise (the privilege gate precedes the
+// existence guard natively — T26-SRS-CREATE-GUARD-CORRECTION-01 C1);
+// a proven-present SRID with an unproven or suppressed premise lands
+// on outcome_unproven and this notice never publishes. Metadata stays
+// {srid, outcome} plus conditional_audit when this statement's own
+// privilege premise was consumable — never an authored name or
+// attribute payload.
 type mysqlSRSCreateExistsNoopRule struct {
 	id    string
 	level rule.Level

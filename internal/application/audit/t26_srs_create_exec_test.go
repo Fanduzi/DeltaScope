@@ -300,9 +300,11 @@ func TestT26SRSCreatePrivilegeUnproven(t *testing.T) {
 	}
 }
 
-// C16: IF NOT EXISTS on present with an unproven premise owes the
-// privilege premise — the suppressed-conflict no-op still audits its
-// own privilege gate.
+// C16 (T26-SRS-CREATE-GUARD-CORRECTION-01 C2): IF NOT EXISTS on
+// proven-present with an unproven premise lands on outcome_unproven —
+// the privilege gate precedes the existence guard natively, so the
+// guarded no-op is never claimed; the statement owes exactly the
+// privilege premise and marks no conditional_audit.
 func TestT26SRSCreateNoopPrivilegeUnproven(t *testing.T) {
 	fx := opAbsentFixture(opGrantNegative)
 	fx.srs = map[uint32]string{4326: "WGS 84"}
@@ -310,11 +312,14 @@ func TestT26SRSCreateNoopPrivilegeUnproven(t *testing.T) {
 	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
 		"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4326 NAME 'n1' DEFINITION 'd'")
 	adj := srsCreateAdj(t, enriched[0])
-	if adj.Arm != spec.SRSCreateArmExistsNoop {
-		t.Fatalf("arm=%v want exists_noop", adj.Arm)
+	if adj.Arm != spec.SRSCreateArmOutcomeUnproven {
+		t.Fatalf("arm=%v want outcome_unproven — present fact stands, no-op arm unproven", adj.Arm)
 	}
 	if len(adj.Owed) != 1 || adj.Owed[0] != spec.SRSFactCreatePrivilege {
 		t.Fatalf("owed=%v want exactly [srs.create.privilege]", adj.Owed)
+	}
+	if adj.ConditionalAudit {
+		t.Fatal("unproven premise must not mark conditional_audit")
 	}
 }
 
@@ -675,5 +680,254 @@ func TestT26SRSCreateIncompleteOrgPair(t *testing.T) {
 		"CREATE SPATIAL REFERENCE SYSTEM 900001 NAME 'n1' DEFINITION 'd' ORGANIZATION 'EPSG'")
 	if len(enriched) != 0 {
 		t.Fatalf("enriched=%d want 0 — an incomplete ORGANIZATION pair rejects the whole input before any semantic evaluation", len(enriched))
+	}
+}
+
+// --- GUARD-CORRECTION-01: the C1/C2 frozen contract ----------------------
+//
+// T26-SRS-CREATE-GUARD-CORRECTION-01 over oracle Phase-0-R3: the
+// privilege gate precedes the existence guard natively, so a
+// proven-present SRID + unproven/suppressed privilege lands on
+// outcome_unproven — never the exists_noop marker arm, never a
+// Warning-3713 claim, never a denial. These rows own the E1/E2
+// matrices: the arm grid, the own-apply write-nothing contract, and
+// the public JSON two-layer assertion.
+
+// GC-1: the E1 arm grid — every present/absent/unknown × privilege
+// combination over the real supply chain.
+func TestT26SRSCreateGuardCorrectionMatrix(t *testing.T) {
+	cases := []struct {
+		name        string
+		grants      []string
+		srs         map[uint32]string
+		version     string
+		sql         string
+		wantArm     spec.SRSCreateArm
+		wantOwed    []string
+		conditional bool
+	}{
+		// E1.1 present + proven → exists_noop (only allowed noop branch).
+		{"present+proven", opGrantConsumable, map[uint32]string{4326: "WGS 84"}, "8.0.36",
+			"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4326 NAME 'n1' DEFINITION 'd'",
+			spec.SRSCreateArmExistsNoop, nil, true},
+		// E1.2 present + unknown → outcome_unproven + privilege debt.
+		{"present+unknown", opGrantNegative, map[uint32]string{4326: "WGS 84"}, "8.0.36",
+			"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4326 NAME 'n1' DEFINITION 'd'",
+			spec.SRSCreateArmOutcomeUnproven, []string{spec.SRSFactCreatePrivilege}, false},
+		// E1.3 absent + proven → original create path (unchanged).
+		{"absent+proven", opGrantConsumable, nil, "8.0.36",
+			"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 900001 NAME 'n1' DEFINITION 'd'",
+			spec.SRSCreateArmCreate, []string{spec.SRSFactNameConflict}, true},
+		// E1.4 absent + unknown → bounded create outcome.
+		{"absent+unknown", opGrantNegative, nil, "8.0.36",
+			"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 900001 NAME 'n1' DEFINITION 'd'",
+			spec.SRSCreateArmCreate, []string{spec.SRSFactNameConflict, spec.SRSFactCreatePrivilege}, false},
+		// E1.5 existence unknown + proven → existence gap.
+		{"unknown+proven", opGrantConsumable, nil, "8.0.36",
+			"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 900001 NAME 'n1' DEFINITION 'd'",
+			spec.SRSCreateArmCreate, []string{spec.SRSFactNameConflict}, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fx := opAbsentFixture(tc.grants)
+			fx.srs = tc.srs
+			provider, state := paRealState(t, fx)
+			enriched := audit.EnrichSRSPrivForTest(t, state, provider, tc.sql)
+			adj := srsCreateAdj(t, enriched[0])
+			if adj.Arm != tc.wantArm {
+				t.Fatalf("arm=%v want %v", adj.Arm, tc.wantArm)
+			}
+			if len(adj.Owed) != len(tc.wantOwed) {
+				t.Fatalf("owed=%v want %v", adj.Owed, tc.wantOwed)
+			}
+			for i := range tc.wantOwed {
+				if adj.Owed[i] != tc.wantOwed[i] {
+					t.Fatalf("owed[%d]=%q want %v", i, adj.Owed[i], tc.wantOwed)
+				}
+			}
+			if adj.ConditionalAudit != tc.conditional {
+				t.Fatalf("conditional=%v want %v", adj.ConditionalAudit, tc.conditional)
+			}
+		})
+	}
+}
+
+// GC-2: existence unknown — an unparseable Qo banner strips the
+// absence proof — the IF NOT EXISTS keyword alone never upgrades the
+// statement to a no-op (C5 contract: unknown stays unknown).
+func TestT26SRSCreateGuardCorrectionExistenceUnknown(t *testing.T) {
+	fx := opAbsentFixture(opGrantConsumable)
+	fx.version = "bogus"
+	provider, state := paRealState(t, fx)
+	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+		"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 900001 NAME 'n1' DEFINITION 'd'")
+	adj := srsCreateAdj(t, enriched[0])
+	if adj.Arm == spec.SRSCreateArmExistsNoop || adj.Arm == spec.SRSCreateArmOutcomeUnproven {
+		t.Fatalf("arm=%v — unknown existence must never reach a no-op arm", adj.Arm)
+	}
+	if adj.Arm != spec.SRSCreateArmUnproven {
+		t.Fatalf("arm=%v want unproven", adj.Arm)
+	}
+	found := false
+	for _, fact := range adj.Owed {
+		if fact == spec.SRSFactExistence {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("owed=%v want srs.existence among the debts", adj.Owed)
+	}
+}
+
+// GC-3: E1.7 — present + missing observation (no privilege observation
+// at all) lands outcome_unproven, never a denial and never a noop.
+func TestT26SRSCreateGuardCorrectionMissingObservation(t *testing.T) {
+	fx := opAbsentFixture(nil) // no grants rows at all → premise unproven, not denied
+	fx.srs = map[uint32]string{4326: "WGS 84"}
+	provider, state := paRealState(t, fx)
+	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+		"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4326 NAME 'n1' DEFINITION 'd'")
+	adj := srsCreateAdj(t, enriched[0])
+	if adj.Arm != spec.SRSCreateArmOutcomeUnproven {
+		t.Fatalf("arm=%v want outcome_unproven — missing observation is unproven, never denied", adj.Arm)
+	}
+	if adj.Privilege == spec.SRSCreatePrivilegeConsumable {
+		t.Fatal("no observation must never be consumable")
+	}
+}
+
+// GC-4: E1.9 — a REVOKE ends the authored privilege scope: the
+// suppressed premise lands outcome_unproven exactly like unproven.
+func TestT26SRSCreateGuardCorrectionScopeEnded(t *testing.T) {
+	fx := opAbsentFixture(opGrantConsumable)
+	fx.srs = map[uint32]string{4326: "WGS 84", 4327: "other"}
+	provider, state := paRealState(t, fx)
+	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+		"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4326 NAME 'n1' DEFINITION 'd';"+
+			"REVOKE SELECT ON *.* FROM 'app'@'%';"+
+			"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4327 NAME 'n2' DEFINITION 'd'")
+	if arm := srsCreateAdj(t, enriched[0]).Arm; arm != spec.SRSCreateArmExistsNoop {
+		t.Fatalf("stmt1 arm=%v want exists_noop (pre-REVOKE consumable)", arm)
+	}
+	adj := srsCreateAdj(t, enriched[2])
+	if adj.Arm != spec.SRSCreateArmOutcomeUnproven {
+		t.Fatalf("stmt3 arm=%v want outcome_unproven — suppressed premise is unproven for this statement", adj.Arm)
+	}
+	if adj.Privilege != spec.SRSCreatePrivilegeSuppressed {
+		t.Fatalf("privilege=%v want suppressed (positional scope end)", adj.Privilege)
+	}
+	if len(adj.Owed) != 1 || adj.Owed[0] != spec.SRSFactCreatePrivilege {
+		t.Fatalf("owed=%v want exactly [srs.create.privilege]", adj.Owed)
+	}
+}
+
+// GC-5: E2 core — the outcome_unproven own-apply writes NOTHING: no
+// present mint, no stale mint, no ordered-channel write; a later
+// same-SRID bind still reads the catalog and reaches the same
+// outcome_unproven arm. Internal state + provider-read assertions.
+func TestT26SRSCreateGuardCorrectionOwnApply(t *testing.T) {
+	fx := opAbsentFixture(opGrantNegative)
+	fx.srs = map[uint32]string{4326: "WGS 84"}
+	provider, state := paRealState(t, fx)
+	var presentAt, staleAt [2]map[uint32]bool
+	var readsAt [2][5]int
+	state.SetAfterApplyObserve(func(i int, stmt *spec.Statement) {
+		presentAt[i] = audit.BatchStatePresentSet(state)
+		staleAt[i] = audit.BatchStateStaleSet(state)
+		readsAt[i] = opReads(provider, fx)
+	})
+	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+		"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4326 NAME 'n1' DEFINITION 'd';"+
+			"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4326 NAME 'n2' DEFINITION 'd'")
+	for i := 0; i < 2; i++ {
+		adj := srsCreateAdj(t, enriched[i])
+		if adj.Arm != spec.SRSCreateArmOutcomeUnproven {
+			t.Fatalf("stmt%d arm=%v want outcome_unproven — catalog-present stays readable, outcome unproven", i+1, adj.Arm)
+		}
+	}
+	// No present mint and no stale mint after either apply — the
+	// proven-present catalog fact is never overwritten.
+	for i := 0; i < 2; i++ {
+		if len(presentAt[i]) != 0 {
+			t.Fatalf("stmt%d minted present=%v — statement-derived success publication forbidden", i+1, presentAt[i])
+		}
+		if len(staleAt[i]) != 0 {
+			t.Fatalf("stmt%d minted stale=%v — proven-present must not be overwritten", i+1, staleAt[i])
+		}
+	}
+	// stmt2's bind issued a fresh existence read — the statement was
+	// not blocked by a stale flag and consumed no minted present.
+	if readsAt[0] == readsAt[1] {
+		t.Fatal("stmt2 issued zero existence reads — it must re-read the catalog, not consume a mint")
+	}
+}
+
+// GC-6: E2 — outcome_unproven does not gate a following DROP: the
+// catalog-proven presence stays consumable, the DROP binds normally.
+func TestT26SRSCreateGuardCorrectionFollowedByDrop(t *testing.T) {
+	fx := opAbsentFixture(opGrantNegative)
+	fx.srs = map[uint32]string{4326: "WGS 84"}
+	provider, state := paRealState(t, fx)
+	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+		"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4326 NAME 'n1' DEFINITION 'd';"+
+			"DROP SPATIAL REFERENCE SYSTEM 4326")
+	if arm := srsCreateAdj(t, enriched[0]).Arm; arm != spec.SRSCreateArmOutcomeUnproven {
+		t.Fatalf("stmt1 arm=%v want outcome_unproven", arm)
+	}
+	dropAdj := enriched[1].Metadata.SRSDrop
+	if dropAdj == nil {
+		t.Fatal("stmt2 carries no DROP adjudication — it must bind, not block")
+	}
+	if dropAdj.Arm == spec.SRSDropArmBlocked {
+		t.Fatal("stmt2 blocked — outcome_unproven must never mint stale/batch_effects")
+	}
+	// stmt1's apply minted nothing (asserted via the hook in GC-5);
+	// stmt2's own unproven drop may mint stale — that write belongs to
+	// the DROP adjudication, not to stmt1's outcome_unproven arm.
+	// The point stands on stmt2 reaching a real arm at all.
+}
+
+// GC-7: E1.11/E1.12 public layer — present + unknown privilege emits
+// NO exists_noop finding, NO Warning-3713 claim, NO conditional_audit
+// marker; the only public signal is the unproven_privilege gap while
+// the catalog-present fact stays inside the adjudication.
+func TestT26SRSCreateGuardCorrectionPublicJSON(t *testing.T) {
+	fx := r3PrivilegeFixture()
+	fx.srs = map[uint32]string{4326: "WGS 84"}
+	fx.grants = []string{"GRANT SELECT ON *.* TO 'app'@'%'"}
+	p := r3Harness(t, fx)
+	result, err := r3PrivilegeRequest(t, p,
+		"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4326 NAME 'n1' DEFINITION 'd'")
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	stmt := result.Statements[0]
+	for _, f := range stmt.Findings {
+		if f.RuleID == "ddl.mysql.srs.create.exists_noop" || f.Metadata["outcome"] == "exists_noop" {
+			t.Fatalf("exists_noop finding leaked under unproven privilege: %+v", f)
+		}
+		blob := f.Message + " " + f.Explanation.Why
+		if strings.Contains(blob, "3713") {
+			t.Fatalf("Warning-3713 claim leaked under unproven privilege: %+v", f)
+		}
+	}
+	// The privilege gap is the only public signal — present fact kept.
+	createGap(t, stmt, "unproven_privilege", []string{spec.SRSFactCreatePrivilege})
+}
+
+// GC-8: regression — present + consumable still publishes the
+// exists_noop notice with conditional_audit (C1 unchanged).
+func TestT26SRSCreateGuardCorrectionNoopKept(t *testing.T) {
+	fx := r3PrivilegeFixture()
+	fx.srs = map[uint32]string{4326: "WGS 84"}
+	p := r3Harness(t, fx)
+	result, err := r3PrivilegeRequest(t, p,
+		"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4326 NAME 'n1' DEFINITION 'd'")
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	f := createFinding(t, result.Statements[0], "ddl.mysql.srs.create.exists_noop")
+	if f.Metadata["conditional_audit"] != string(spec.PrivilegeAuditModeObservedAccountNewSession) {
+		t.Fatalf("finding=%+v want conditional_audit marker on the consumable noop arm", f)
 	}
 }
