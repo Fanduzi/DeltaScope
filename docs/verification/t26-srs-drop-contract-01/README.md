@@ -1,11 +1,18 @@
-# T26-SRS-DROP-CONTRACT-01 — MySQL `DROP SPATIAL REFERENCE SYSTEM` audit contract (R1)
+# T26-SRS-DROP-CONTRACT-01 — MySQL `DROP SPATIAL REFERENCE SYSTEM` audit contract (R2)
 
-Status: **R1 — docs-only contract under review**
-Work order: `T26-SRS-DROP-CONTRACT-01 / R1` (AUTHORIZED, docs-only)
+Status: **R2 — docs-only contract under review**
+Work order: `T26-SRS-DROP-CONTRACT-01 / R2` (AUTHORIZED, docs-only)
 Baseline: commit `f129afd8adefee5ffca0431021dc9c4ecfc39acb` · tree `609345c30e3788469397e697d6efa858a8b6611f` · branch `milestone/mysql-tidb-ddl-completion`
-Scope: `DROP SPATIAL REFERENCE SYSTEM [IF EXISTS] <SRID>` under MySQL 8.0.x. First-slice targets are the refusal, missing-fact, and boundary branches plus in-batch fact-invalidation rules. Successful DROP, proven-absent, and OrderedAbsent/OrderedPresent publication are **not** contracted this slice — no SRS ordered channel is proposed.
+Scope: `DROP SPATIAL REFERENCE SYSTEM [IF EXISTS] <SRID>` under MySQL. First-slice targets are the refusal, missing-fact, and boundary branches plus in-batch fact-invalidation rules. Successful DROP, proven-absent, and OrderedAbsent/OrderedPresent publication are **not** contracted this slice — no SRS ordered channel is proposed.
 
 Files delivered: this README plus `case-matrix.md` (section E). No `.go`, policy, registry, corpus, golden, or historical evidence was changed.
+
+**R1 → R2 delta (reviewer R1 ruling `CHANGES REQUIRED`, five groups):**
+- **R2-A** — version lower bound narrowed from "MySQL 8.0.x" to **patch ≥ 4**: `CREATE`/`DROP SPATIAL REFERENCE SYSTEM` was introduced in MySQL 8.0.4, so 8.0.0–8.0.3 must not enter the audited slice. The gate applies to `SRSKindDrop` only; CREATE/CREATE OR REPLACE keep the existing boundary.
+- **R2-B** — S1 now consumes a **valid-dependency predicate**, not a raw `Dependencies` pointer: an invalidated (stale) positive witness can never enter the refusal arm and is demoted to the unproven arm.
+- **R2-C/D** — invalidation scope corrected: SRS lifecycle writes set `srsExistenceStale[srid]` **only**; table/schema writes set `srsDepsStale` **only** — the two facts invalidate independently and one stale fact never erases the other. The `spatialTouching` classification is now a closed enumeration.
+- **R2-E** — the matrix is uniquely expanded (shared defaults are concrete fixtures, every placeholder removed), per-arm public projection is frozen, and the three CLI probes carry complete commands, separated streams, and exact expected outputs/rc.
+- **R2-F** — baseline evidence extended (version preflight, `failureBefore`, geometry vocabulary, ALTER action seam, report JSON fields, CLI flags/exit codes) and errata registered (see §F).
 
 ---
 
@@ -31,6 +38,16 @@ ordered apply            Unsupported SRS → return nil (no-op,           batch_
                           no contamination)
 privilege supply         statementsNeedMySQLServerPrivilege — SERVER    server_drop_premise.go:26–37
                           family only; SRS never triggers L
+version facts            ValidateTargetVersion preflight,               version.go / service.go
+                          ParseObservedVersion banner → product+series
+authored ordering        failureBefore(line,col) — failure records      batch_state.go:3724–3729
+                          precede statements by authored position
+geometry vocabulary      spatialMemberFamilyType — the eight            advanced_indexes.go:707–712
+                          normalized spatial base-type tokens
+report surface           statements[].sql/findings/evidence_gaps/        report package / evaluate.go
+                          coverage/unsupported; result.verdict/summary
+CLI surface              audit --sql/--file/--dialect/--format/          interfaces/cli/audit.go
+                          --fail-on/--target-version/--config; rc 0/1/2/3
 ```
 
 Per-item status (CURRENT = baseline implements it; PROPOSED = this contract selects it for a later execution order; UNREACHABLE/DEFERRED = cannot or will not be built):
@@ -47,23 +64,24 @@ Per-item status (CURRENT = baseline implements it; PROPOSED = this contract sele
 
 ### B1 — Audit admission table (PROPOSED token `MySQLSRSDropAuditedDomain`)
 
-Admission decides audited-vs-boundary from the **resolved** version — the same input the accepted SERVER G2 gate consumes — never from pin-presence alone:
+Admission decides audited-vs-boundary from the **resolved** version — the same input the accepted SERVER G2 gate consumes — never from pin-presence alone. **Audit qualification and provider-read applicability are separate axes** (B2): a gated statement may still bind and read, and an admitted statement may read nothing.
 
 | resolved product | resolved version | statement form | admission |
 |---|---|---|---|
 | TiDB | any | any SRS statement | `vendor` boundary (CURRENT, parser-level) |
-| MySQL | 8.0.x | `SRSKindDrop` recognized (plain or `IF EXISTS`, any uint32 SRID incl. 0) | **audited** → adjudication (PROPOSED) |
-| MySQL | 8.0.x | `SRSKindCreate`/`SRSKindCreateOrReplace` | unaudited boundary `object=spatial_reference_system` (unchanged) |
-| MySQL | ≠8.0.x resolved (5.7.x, 8.4.x, other) | any SRS statement | unaudited boundary `gate:"version"` (PROPOSED enrich gate, mirrors SERVER) |
-| MySQL | unresolved (no pin, unparseable/absent banner) | any SRS statement | unaudited boundary `gate:"version"` (PROPOSED) |
+| MySQL | 8.0.4+ (validated `Major=8,Minor=0,Patch≥4`) | `SRSKindDrop` recognized (plain or `IF EXISTS`, any uint32 SRID incl. 0) | **audited** → adjudication (PROPOSED) |
+| MySQL | 8.0.0–8.0.3 (validated, patch < 4) | `SRSKindDrop` | unaudited boundary `gate:"version"` — the feature was introduced in 8.0.4 (PROPOSED enrich gate, mirrors SERVER) |
+| MySQL | ≠8.0 resolved (5.7.x, 8.4.x, other) | `SRSKindDrop` | unaudited boundary `gate:"version"` (PROPOSED) |
+| MySQL | unresolved (no pin, unparseable/absent banner, observed-version failure) | `SRSKindDrop` | unaudited boundary `gate:"version"` (PROPOSED) — **unknown is never converted to "feature absent"**; it is merely not proven ≥8.0.4 |
+| MySQL | any resolved version | `SRSKindCreate`/`SRSKindCreateOrReplace` | unaudited boundary `object=spatial_reference_system` (CURRENT, unchanged — the 8.0.4 gate is DROP-only and does **not** expand CREATE) |
 | — | — | unclaimed input (negative/overflow/non-numeric SRID, trailing tokens, `IF NOT EXISTS` on DROP, doubled guards) | never a statement → base grammar diagnostic (CURRENT) |
 | — | — | version conflicts | `ErrInvalidTargetVersion` (malformed pin), `ErrDialectProductMismatch` (observed product ≠ dialect), `ErrTargetVersionMismatch` (pin ≠ observed) — typed errors before enrichment (CURRENT, `metadata.go:152–160`) |
 
-`MySQLSRSDropAuditedDomain(version)` = `Product=mysql && Major=8 && Minor=0` (PROPOSED spec helper, single definition site — 8.0 manual semantics only; 8.4 is a later slice with its own evidence).
+`MySQLSRSDropAuditedDomain(version)` = `Product=mysql && ValidatedRange && Major=8 && Minor=0 && Patch>=4` (PROPOSED spec helper, single definition site). **Feature lower bound basis**: the MySQL 8.0.4 release notes document `CREATE`/`DROP SPATIAL REFERENCE SYSTEM` as new in 8.0.4 (`https://dev.mysql.com/doc/relnotes/mysql/8.0/en/news-8-0-4.html`); the 8.0 Reference Manual DROP page (§B privilege basis) carries the semantics. 8.0.0–8.0.3 predate the feature — a proven pre-feature version is a **proven boundary**, kept distinct from an **unproven version** which is also a boundary but for a different reason (not proven ≥, not proven <). Pin presence alone never infers admission or exit-code behavior; the gate consumes the resolved version fact.
 
 ### B2 — Provider-read applicability table (all CURRENT behavior)
 
-Reads are keyed on the **observed** server version inside the provider and on the **batch state** inside bind — independent of admission: a version-gated unaudited statement still binds and reads on MySQL today (`metadata.go:676` has no `Unsupported` check). Pin-presence never causes a read; non-admission never suppresses one.
+Reads are keyed on the **observed** server version inside the provider and on the **batch state** inside bind — independent of admission: a version-gated unaudited statement still binds and reads on MySQL today (`metadata.go:676` has no `Unsupported` check). Pin-presence never causes a read; non-admission never suppresses one. An unproven version keeps reads firing: if the provider issues a read and it fails, the failure stays a typed error — never a "feature absent" state.
 
 | condition | R (resolver forward) | `Qother` version() | `Qexist` | `Qdeps` | notes |
 |---|---|---|---|---|---|
@@ -95,19 +113,22 @@ Reads are keyed on the **observed** server version inside the provider and on th
 | `facts unconsumable` | §D stale/consumption flags | a batch write (or possible write) outranks the cached answer |
 | `read failed` | resolver/load error | typed error path — never converted into a state or gap |
 
-PROPOSED inputs the adjudication adds beyond the CURRENT bound state: `contaminated` (whole-batch flag, already on batchState), `srsExistenceStale`/`srsDepsStale` (per-SRID / batch-wide consumption flags from §D — new PROPOSED `batchState` members), `decl.SRID`, `decl.IfExists`, `decl.SRID ∈ reserved ranges` (static), `resolvedVersion` for admission.
+**Valid-dependency predicate (PROPOSED, the only witness S1 may consume).** A bound `Dependencies` fact is a *valid dependency witness* iff **all** hold: (a) `Dependencies ≠ nil` and `len(Columns) > 0`; (b) every row's `Columns[].SRID` equals `decl.SRID`; (c) the fact came from a real issued read this batch (a populated struct minted without a read is not a witness); (d) the fact is currently consumable — `contaminated=false`, `srsExistenceStale[srid]=false`, **`srsDepsStale=false`** (a batch write that may have dropped/renamed/retyped the dependent column invalidates the witness **before** it reaches S1); (e) no earlier same-SRID statement in authored order minted `srsExistenceStale`. A witness invalidated by a preceding table/schema change is **demoted, never deleted and never read as absence**: the statement falls to S2 with `srs.column_dependencies` owed.
+
+PROPOSED inputs the adjudication adds beyond the CURRENT bound state: `contaminated` (whole-batch flag, already on batchState), `srsExistenceStale` (per-SRID consumption flag) / `srsDepsStale` (batch-wide dependency-fact flag) — two new PROPOSED `batchState` members with **disjoint writers** (§D), `decl.SRID`, `decl.IfExists`, `decl.SRID ∈ reserved ranges` (static), `resolvedVersion` for admission.
 
 ### Hard constraints (frozen)
 
-- Catalog zero-row → never proven-absent. Dependency zero-row with `Complete=false` → never proven-empty.
-- **Existence unknown + positive dependency witness → the `refused_dependency` arm refuses.** Preconditions: (a) facts consumable (no contamination/stale flag on this SRID), (b) the witness is a real issued read (`Dependencies≠nil` with rows), (c) `Columns[].SRID` echoes the target SRID. Rationale: the 3716 refusal is enforced on the dependency check regardless of what the existence read returned; the dep rows also imply presence, so `srs.existence` is discharged by the witness itself.
+- Catalog zero-row → never proven-absent. Dependency zero-row with `Complete=false` → never proven-empty. An invalidated positive witness → never a proven absence and never a refusal.
+- **Existence unknown + valid dependency witness → the `refused_dependency` arm refuses.** Rationale: the 3716 refusal is enforced on the dependency check regardless of what the existence read returned; the dep rows also imply presence, so `srs.existence` is discharged by the witness itself.
+- **Existence and dependency validity are independent.** A stale dependency flag demotes only the dependency fact — a still-valid positive existence stays consumable. A stale existence flag routes the whole statement to B regardless of dependency state.
 - Unproven-privilege + everything else: `srs.drop.privilege` stays owed on every non-refusal arm. **Privilege premise token `SRSDropPrivilege` is PROPOSED with exactly one reachable state — `unproven` — this slice** (no loader exists; the SERVER consumable premise is not an SRS proof and is not widened).
 - Inputs with no lawful producer (proven-absent existence, proven-empty-complete deps) are **model/unit-layer only** — never wrapped as enrich/provider witnesses.
 - Missing external fact and unimplemented capability are separate gap tokens; no catch-all.
 
 ### Privilege basis (official)
 
-MySQL 8.0 Reference Manual §15.1.31 `DROP SPATIAL REFERENCE SYSTEM` — *"This statement removes a spatial reference system (SRS) definition from the data dictionary. **It requires the `SUPER` privilege.**"* — URL `https://dev.mysql.com/doc/refman/8.0/en/drop-spatial-reference-system.html`, verified 2026-11-15 (this session fetch). Additional fixed semantics from the same page: absent SRID → error unless `IF EXISTS` (then warning); column dependency → `ERROR 3716 (SR005)`; SRID 0 is a valid SRID but cannot be used with `DROP SPATIAL REFERENCE SYSTEM`; reserved ranges `[0,32767]`/`[60000000,69999999]`/`[2000000000,2147483647]` produce a warning on use, and dropping system SRSs is discouraged (not prohibited). Metadata readability (the audit's catalog reads) does **not** imply the audited account holds `SUPER` — the premise stays unproven until a lawful observation path exists (deferred; PROPOSED future slice may reuse the `SUPER`-token grant-line witness shape only under its own work order).
+MySQL 8.0 Reference Manual §15.1.31 `DROP SPATIAL REFERENCE SYSTEM` — *"This statement removes a spatial reference system (SRS) definition from the data dictionary. **It requires the `SUPER` privilege.**"* — URL `https://dev.mysql.com/doc/refman/8.0/en/drop-spatial-reference-system.html`, fetched this session (worker local date 2026-11-12; the R1 doc misprinted `2026-11-15` — see §F errata). Additional fixed semantics from the same page: absent SRID → error unless `IF EXISTS` (then warning); column dependency → `ERROR 3716 (SR005)`; SRID 0 is a valid SRID but cannot be used with `DROP SPATIAL REFERENCE SYSTEM`; reserved ranges `[0,32767]`/`[60000000,69999999]`/`[2000000000,2147483647]` produce a warning on use, and dropping system SRSs is discouraged (not prohibited). Metadata readability (the audit's catalog reads) does **not** imply the audited account holds `SUPER` — the premise stays unproven until a lawful observation path exists (deferred; PROPOSED future slice may reuse the `SUPER`-token grant-line witness shape only under its own work order).
 
 ## C — Unique adjudication table and public output
 
@@ -115,72 +136,125 @@ Normative arm table — mutually exclusive, evaluated top-down. `audited` admiss
 
 | arm | entry predicate | facts used | outcome | findings | owed | conditional | statement coverage | modeled post-state |
 |---|---|---|---|---|---|---|---|---|
-| **B — `blocked`** | `contaminated` or `srsExistenceStale[SRID]` | none (unconsumable) | review | none | `srs.batch_effects` | n/a | unverified | SRID stays stale; facts unconsumed |
-| **S0 — `refused_srid0`** | `decl.SRID == 0` | static declaration | reject | 1 blocker `ddl.mysql.srs.drop.srid0` | — | n/a | complete | provably unchanged; facts consumable |
-| **S1 — `refused_dependency`** | `Dependencies≠nil && len(Columns)>0` (and each row's `SRID` matches) | positive dep witness | reject | 1 blocker `ddl.mysql.srs.drop.dependency` | — | n/a | complete | provably unchanged (3716-class refusal); facts consumable |
-| **S2 — `unproven`** | everything else | unread/unknown/empty-incomplete per fact | review | none | one token per unproven required fact: `srs.existence` (unread or `Exists=false`), `srs.column_dependencies` (nil or empty-incomplete **or `srsDepsStale`**), `srs.drop.privilege` (always, this slice) | `if_exists` authored flag rides finding metadata only — it never discharges a gap or proves absent | unverified | unmodeled effect → set `srsExistenceStale[SRID]` **and** `srsDepsStale` |
+| **B — `blocked`** | `contaminated` or `srsExistenceStale[SRID]` | none (unconsumable) | review | none (+advisory if reserved) | `srs.batch_effects` | n/a | unverified | SRID stays stale; no new flags minted |
+| **S0 — `refused_srid0`** | `decl.SRID == 0` | static declaration | reject | 1 blocker `ddl.mysql.srs.drop.srid0` | — | n/a | complete | provably unchanged; facts consumable; no flags |
+| **S1 — `refused_dependency`** | **valid-dependency predicate** (§B) | valid positive dep witness | reject | 1 blocker `ddl.mysql.srs.drop.dependency` | — | n/a | complete | provably unchanged (3716-class refusal); facts consumable; no flags |
+| **S2 — `unproven`** | everything else | unread/unknown/empty-incomplete/stale per fact | review | none (+advisory if reserved) | one token per unproven required fact: `srs.existence` (unread or `Exists=false`), `srs.column_dependencies` (nil or empty-incomplete **or `srsDepsStale`**), `srs.drop.privilege` (always, this slice) | `if_exists` is carried only by the public SQL skeleton — it never discharges a gap, marks a finding, or proves absent | unverified | unmodeled effect → set `srsExistenceStale[SRID]` **only** (R2-D fix: a DROP SRS never writes geometry columns, so it cannot invalidate dependency facts) |
 | reserved advisory | co-fires on B/S2 only | static `SRID ∈ reserved` | — | +1 notice `ddl.mysql.srs.drop.reserved` | — | — | — | — |
 
 Frozen sub-rulings:
 
 1. **Does a dependency refusal close other owed?** Yes — the 3716-class refusal is proven by the witness alone; `srs.existence` and `srs.drop.privilege` are moot for a statement that provably cannot execute. Owed list on refusal arms is empty. (Same closure rule for S0 — a static unconditional refusal owes nothing.)
 2. **"Cannot succeed" vs "predict native's first error".** Refusal arms promise only that the statement cannot succeed — never which server error fires first; manual/worklog ordering is not a sequencing oracle.
-3. **`IF EXISTS` scope.** It addresses only the absent-object error, which has no lawful producer this slice — so `IF EXISTS` changes **nothing** in the arm table except the carried `if_exists` metadata flag. It does not suppress SRID 0, does not suppress dependency refusal, does not discharge existence, and cannot alone prove absent.
+3. **`IF EXISTS` scope.** It addresses only the absent-object error, which has no lawful producer this slice — so `IF EXISTS` changes **nothing** in the arm table. Its only public carrier is the verbatim `IF EXISTS` in the redacted SQL skeleton; it is never copied into finding metadata. It does not suppress SRID 0, does not suppress dependency refusal, does not discharge existence, and cannot alone prove absent.
 4. **Reserved range is advisory, not prohibition.** `ddl.mysql.srs.drop.reserved` is a static notice — it never makes a statement complete by itself and is **suppressed on refusal arms** (a statement that cannot execute has no reserved-drop to warn about). Advisory text must not claim the native engine emitted a warning — it states the documented range membership only.
-5. **Stale deps are per-fact, not per-statement.** `srsDepsStale` demotes only the dependency fact inside S2 — existence may still adjudicate present; `srsExistenceStale[SRID]` demotes the whole statement into B.
+5. **Stale facts demote per fact, never per statement and never to absence.** `srsDepsStale` demotes only the dependency fact inside S2 — existence may still adjudicate present; `srsExistenceStale[SRID]` demotes the whole statement into B. Neither flag erases the other, and neither converts a witness into a proven no-dependency.
 
-Public output (all CURRENT mechanisms reused; new tokens listed separately):
+### Frozen public projection (R2-E — exact per-arm output)
 
-- SQL: `DROP SPATIAL REFERENCE SYSTEM [IF EXISTS] <decimal SRID>` — `SpatialReferenceDeclaration.PublicSQL()`, unchanged. The SRID is numeric and carries no authored identity.
-- Findings carry rule_id/level/message only; bounded metadata allowed: `srid` (numeric), `if_exists` (bool), `dependency_witness_count` (int). **Never** exposed: dependency schema/table/column names, `CatalogName`, WKT/description text, account/grant text, provider error payloads.
-- Issued-read failures stay on the existing bounded error path: `metadataObjectReadError`/`serverPrivilegeReadError`-shaped (fixed public text, `Unwrap` preserves cause) — a failed metadata query is a typed error, never a success-with-gap.
-- New PROPOSED tokens (single naming): rule IDs `ddl.mysql.srs.drop.srid0`, `ddl.mysql.srs.drop.dependency`, `ddl.mysql.srs.drop.reserved`; fact tokens `srs.existence`, `srs.column_dependencies`, `srs.drop.privilege`, `srs.batch_effects`; spec types `SRSDropAdjudication{Arm, Owed}`, `SRSDropArm*`, `SRSDropPrivilege{Unproven…}`; helper `MySQLSRSDropAuditedDomain`; `Metadata.SRSDrop`. Reused: `UnsupportedDetail` gates, `MetadataUnread*` vocabulary, coverage mechanics (`gaps→unverified` lowering), PublicSQL.
+JSON field paths are the existing report surface (`report/result.go`, `rule/rule.go`, `spec/statement.go` — baseline shapes, verbatim in `baseline-source-excerpts.txt`): `statements[i].raw_sql`/`normalized_sql` (the redacted skeleton), `statements[i].findings[]` (`.rule_id`, `.level`, `.message`, `.metadata`), `statements[i].evidence_gaps[]` (`.rule_id`, `.reason_code`, `.required_facts[]`), `statements[i].coverage.status`, `result.unsupported[]` (result-level `{feature, reason, metadata}` — **not** per-statement), `result.verdict`, `result.summary`, `result.coverage`. Arm tokens appear only inside finding `.metadata.outcome`; `if_exists` never appears as a metadata key — it is visible verbatim in `raw_sql`/`normalized_sql`.
+
+Rule-role assignment (fixed): `ddl.mysql.srs.drop.dependency` is the adjudicating rule — it emits the S1 blocker finding **and** reports every B/S2 gap (`rule_id` on the gap is always `…dependency`); `ddl.mysql.srs.drop.srid0` emits only the S0 blocker; `ddl.mysql.srs.drop.reserved` emits only the advisory and reports no gaps.
+
+| arm | `statements[i].findings` (exact) | `statements[i].evidence_gaps` | `statements[i].coverage.status` | `result.unsupported` contribution | `result.verdict` contribution |
+|---|---|---|---|---|---|
+| B `blocked` | reserved SRID: `[{rule_id:"ddl.mysql.srs.drop.reserved", level:"notice", message:<fixed static text>, metadata:{srid:<n>}}]`; else `[]` | `[{rule_id:"ddl.mysql.srs.drop.dependency", reason_code:"unknown_srs_state", required_facts:["srs.batch_effects"]}]` | `unverified` | none | review |
+| S0 `refused_srid0` | `[{rule_id:"ddl.mysql.srs.drop.srid0", level:"blocker", message:<fixed refusal text>, metadata:{srid:0, outcome:"refused_srid0"}}]` | `[]` | `complete` | none | reject |
+| S1 `refused_dependency` | `[{rule_id:"ddl.mysql.srs.drop.dependency", level:"blocker", message:<fixed refusal text>, metadata:{srid:<n>, outcome:"refused_dependency", dependency_witness_count:<k>}}]` | `[]` | `complete` | none | reject |
+| S2 `unproven` | reserved SRID: `[{rule_id:"ddl.mysql.srs.drop.reserved", level:"notice", message:<fixed static text>, metadata:{srid:<n>}}]`; else `[]` | `[{rule_id:"ddl.mysql.srs.drop.dependency", reason_code:"unknown_srs_state", required_facts:[<ordered subset of "srs.existence","srs.column_dependencies","srs.drop.privilege">]}]` | `unverified` | none | review |
+| version/dialect boundary | `[]` | `[]` | existing boundary coverage mechanics | `result.unsupported` gains `{feature:"<srs statement feature>", reason:"<bounded boundary reason>", metadata:{object:"spatial_reference_system", gate:"version"}}` (version gate) or the CURRENT vendor marker (TiDB) | review (a boundary alone never rejects) |
+
+**Never serialized**: dependency schema/table/column names, `CatalogName`, WKT/description text, account/grant text, provider error payloads, internal arm/flag names outside `metadata.outcome`. Issued-read failures stay on the existing bounded error path: `metadataObjectReadError`-shaped (fixed public text, `Unwrap` preserves cause) — a failed metadata query is a typed error, never a success-with-gap.
+
+- New PROPOSED tokens (single naming): rule IDs `ddl.mysql.srs.drop.srid0`, `ddl.mysql.srs.drop.dependency`, `ddl.mysql.srs.drop.reserved`; gap `reason_code` `unknown_srs_state`; fact tokens `srs.existence`, `srs.column_dependencies`, `srs.drop.privilege`, `srs.batch_effects`; spec types `SRSDropAdjudication{Arm, Owed}`, `SRSDropArm*`, `SRSDropPrivilege{Unproven…}`; helper `MySQLSRSDropAuditedDomain`; `Metadata.SRSDrop`. Reused: `UnsupportedDetail` gates, `MetadataUnread*` vocabulary, coverage mechanics (`gaps→unverified` lowering), PublicSQL.
 - Aggregate `coverage`/`verdict` asserted only in full-request-observed matrix rows; per-statement finding counts are per-statement, never batch totals.
 
 ## D — In-batch ordering and fact invalidation
 
-`objectCache` is a per-enrich-call memo of **pre-state reads**; it is not lifecycle knowledge. Consumption validity is adjudicated per fact before any cached or provider answer is used.
+`objectCache` is a per-enrich-call memo of **pre-state reads**; it is not lifecycle knowledge. Consumption validity is adjudicated per fact **before** any cached or provider answer is used: `contaminated` → `srsExistenceStale[srid]` → `srsDepsStale` → then the bind/cache answer. A read issued *during* the current statement's own bind is still only a **pre-DDL database** read — re-querying cannot prove the post-DDL simulated state.
+
+The two flags have **disjoint writers** (R2-D fix):
+
+| writer class | `srsExistenceStale[srid]` | `srsDepsStale` |
+|---|---|---|
+| audited `SRSKindDrop` on S2 (uncertain effect) for `srid` | set for that `srid` | not set |
+| boundary/unsupported SRS lifecycle write (`CREATE`, `CREATE OR REPLACE`, `DROP` — any SRID-bearing form that did not audit) | set for that statement's `srid` | not set |
+| `spatialTouching` table/schema write (enumeration below) | not set | set (batch-wide) |
+| refusal arms S0/S1, arm B | never | never |
+
+Rationale: a DROP/CREATE/boundary SRS statement writes only the SRS registry — it never creates, drops, or modifies a geometry column, so it cannot invalidate a dependency witness. A table/schema write writes only geometry-column space — it never deletes an SRS catalog row, so existence stays consumable. Flags are monotonic within the batch (never cleared) and live on `batchState`, persisting across enrich calls.
 
 **D1 — same SRID:**
 
 | prior statement | modeled effect | effect on later same-SRID reads |
 |---|---|---|
-| audited DROP, non-refusal arm (S2) | unknown (may have executed) | `srsExistenceStale[SRID]=true` + `srsDepsStale=true` → next DROP hits arm **B** |
+| audited DROP, non-refusal arm (S2) | unknown (may have executed) | `srsExistenceStale[SRID]=true` → next DROP hits arm **B** |
 | audited DROP, refusal arm (S0/S1) | provably unchanged | none — facts stay consumable; a repeated identical DROP refuses identically |
-| boundary CREATE / CREATE OR REPLACE / DROP (unaudited, version-gated) | unmodeled — may have written | same as unknown-effect DROP → arm **B** |
+| boundary CREATE / CREATE OR REPLACE / DROP (unaudited, version-gated) | unmodeled — may have written | `srsExistenceStale[SRID]=true` → arm **B** |
 | arm **B** outcome | unchanged stale | stays **B** (stale is monotonic within the batch) |
 
-A refused statement never mints staleness; a non-refused one always does. No absent/publication path exists — nothing publishes `OrderedAbsent`/`OrderedPresent` for SRS this slice.
+A refused statement never mints staleness; a non-refused or boundary one always does (existence only). No absent/publication path exists — nothing publishes `OrderedAbsent`/`OrderedPresent` for SRS this slice.
 
-**D2 — different SRID:** identity is numeric equality of the authored `uint32`; `100001` and `4326` are distinct objects. No name folding, no relation lattice. `srsExistenceStale` is keyed per-SRID; `srsDepsStale` is batch-wide (a geometry-column change can target any SRID — see D3).
+**D2 — different SRID:** identity is numeric SRID only — no SERVER-style name folding. A write to SRID `a` sets `srsExistenceStale[a]` and nothing else: SRID `b` keeps every consumable fact (its own existence, the shared dependency space *unless* a table/schema write also intervened). `srsDepsStale` is batch-wide by design: dependency space is a single shared catalog across all SRIDs, so a table/schema write demotes witnesses for every SRID — per-SRID dependency invalidation is not modeled.
 
-**D3 — table/schema writes vs the dependency witness:** the `ST_GEOMETRY_COLUMNS` read is pre-state; any statement whose modeled **or unmodeled** effect could change the column→SRID binding set invalidates every deps witness. Invalidation predicate `spatialTouching(stmt)` = true, **except** a statement provably spatial-inert — audited with a complete authored column/action inventory containing no spatial-typed column create/add/change/drop and no table drop/rename/truncate (e.g., `CREATE TABLE t (i INT)` with the full column list declared, `ALTER TABLE t ENGINE=InnoDB`, pure option/migration-free operations, non-table statements). `DROP SCHEMA`/`ALTER SCHEMA` are touching (a dropped schema removes its tables); `CREATE SCHEMA` is inert (holds no columns). Everything unclassifiable defaults to touching — conservative. Re-querying cannot recover validity: the database never executed this batch's earlier DDL, so a fresh read would still be pre-state.
+**D3 — `spatialTouching` closed enumeration (R2-C fix).** A statement is dependency-invalidating iff it matches any class below; anything else is inert for dependency purposes:
 
-**D4 — contamination and isolation:** the failure-record ordering uses authored `(Line, Column)` position (`metadata.go:398–403`); contamination set before a statement suppresses its resolver call (R=0) and persists across enrich calls on the same `batchState` (per-call cache cannot launder it — the flag lives on state, `metadata.go:705–707`). SRS's own apply never rewrites accepted SERVER state or unrelated table/schema state — invalidation arrives from *other* statements' applies, attributed there, not to the SRS statement. A refused SRS write adds no taint; an unmodeled-effect SRS write marks only its own SRID — never whole-batch contamination.
+| class | verdict | basis |
+|---|---|---|
+| `DROP TABLE`, `TRUNCATE TABLE`, `RENAME TABLE` | touching | removes/renames dependent columns outright |
+| `ALTER TABLE` with **any** column-identity or column-type action — `add_column`, `drop_column`, `change_column`, `modify_column`, `rename_column`, `alter_column` setters | touching | may drop, retype, or rename the dependent geometry column |
+| `ALTER TABLE` whose **complete** modeled action list contains only non-column actions (engine/option/index/constraint/partition ops) | inert | the action list is complete — provably no column mutation |
+| `CREATE TABLE` (and `LIKE`/`AS` variants) with a complete modeled column list containing **zero** spatial-family base types (`geometry`, `point`, `linestring`, `polygon`, `multipoint`, `multilinestring`, `multipolygon`, `geometrycollection` — `advanced_indexes.go:707–712`) | inert | authored column list provably adds no dependent column |
+| `CREATE TABLE` with **any** spatial-family column, `SRID` clause, or an **unmodeled/partial** column set (CTAS `ColumnsTailUnknown`, LIKE-source columns unvouched) | touching | may mint a dependency on the target SRID |
+| `DROP SCHEMA`, `ALTER SCHEMA`, `RENAME`-class schema writes | touching | removes/renames the schema containing dependents |
+| `CREATE SCHEMA` | inert | an empty container provably holds no dependent column |
+| recognized statements with no table targets and no SRS lifecycle write (indexes, views, placement, resource, SERVER, …) | inert | nothing to touch |
+| unmodeled/boundary statement carrying table targets (e.g. `CREATE TRIGGER … ON t`) — provable boundary classification, TableTargets possibly empty | touching | unmodeled effect — cannot prove it does not bind the dependent column |
+| parser failure record before the statement | touching-by-contamination | whole-batch `contaminated` (§E9) — stronger than stale |
 
-## E — Acceptance matrix and probe plan
+Non-table statements never override SRS lifecycle writes: an SRS boundary write still sets `srsExistenceStale` even in a batch that otherwise touches nothing.
 
-`case-matrix.md` carries 12 case families (E1–E12) with per-row: case ID, observation layer, full SQL/sequence, dialect/product/version, pin, provider/cache/batch state, provider response, rule config, expected adjudication + public fields + state effect, and independent read counts `R/Qexist/Qdeps/Qother/L`. Three `PLAN/UNEXECUTED` CLI probes (single `DROP SPATIAL REFERENCE SYSTEM 100001` under pin `8.0.36`, no pin, malformed `8.0.x`) are registered with full config text, exact commands, separated stdout/stderr, immediate-rc script, and per-field expectations — this contract only plans them.
+**D4 — sequencing and contamination:**
 
-## F — Execution seam table (for the follow-on execution order; nothing implemented here)
+- Authored order governs: a failure record at `(line,col)` contaminates every statement **after** it by `failureBefore` (`batch_state.go:3724–3729`), not by list position; the authored position of each record is preserved in the failure record.
+- A trailing failure with **no** later statement still sets `contaminated` for subsequent enrich calls on the same `batchState` (the R2-accepted tail sweep, `metadata.go:705–707`).
+- Cache hits do not launder staleness: the second bind of a same-SRID statement sees `srsExistenceStale` **before** consulting the memoized answer (arm B exits at bind; reads=0).
+- A stale dependency flag plus a still-valid positive existence → S2 owed `{srs.column_dependencies, srs.drop.privilege}` — existence stays consumed, dependency stays owed, never a false absence.
 
-| seam | change needed | why | reusable | explicitly unchanged |
-|---|---|---|---|---|
-| spec | `SRSDropAdjudication`, `SRSDropArm*` (blocked/refused_srid0/refused_dependency/unproven), `SRSDropPrivilege`, `MySQLSRSDropAuditedDomain`, `AdjudicateSRS Drop`, `Metadata.SRSDrop` | one adjudication truth feeding rule+apply | `ServerDropAdjudication` shape, `PublicSQL`, `MetadataUnread*` | `SpatialReferenceSystemState` fields, `Complete` contract |
-| qualification | `mysqlSRSAuditedDropForm` + enrich G2 for `SRSKindDrop` only | move audited DROP out of the implementation boundary | SERVER G2 gate mechanics (`metadata.go:248–266`) | CREATE/OR REPLACE stay boundary; parser claims |
-| bind | consume `contaminated`+stale flags; PROPOSED stamp `UnreadReason=batch_effects` on contaminated bind for symmetry | honest unread reasons | `bindMySQLSRS`, objectCache | resolver signature, lookup qualifiers |
-| provider | **none** | reads already bounded | `loadMySQLSRSObject` | no new queries, no completeness claims |
-| ordered invalidation | `batchState.srsExistenceStale map[uint32]bool`, `srsDepsStale bool`; SRS own apply stays no-op on tracked channels but sets stale flags per arm; `spatialTouching` predicate wires table/schema applies | §D rules | `fidelityTableSnapshot`-style test witnesses for isolation tests | no SRS ordered channel this slice |
-| rules | `ddl.mysql.srs.drop.{srid0,dependency,reserved}` | arm→findings | `mysqlDropServerRule` pattern | existing rule set |
-| coverage | arm→coverage mapping (complete/unverified); gap lowering reuse | §C | existing mechanics | boundary coverage path |
-| policy | register three rule IDs + default levels | config surface | `deltascope.example.yaml` pattern | — |
-| tests | unit truth-table + premise/invalidate/enrich/public/vertical cases per matrix | E families | t26 provider/fixture/hook seams | snapshot helpers already accepted |
-| docs | module README rows + ADR | three-level discipline | existing formats | — |
+## E — Case matrix
 
-### Static checks actually run this round
+`case-matrix.md` — uniquely expanded rows over the 12 use-case families, shared concrete fixtures, and three `PLAN/UNEXECUTED` CLI probes with complete commands, separated streams, and exact expected results.
 
-`git status`/`git log`/`git rev-parse` (identity), baseline source reads (above), one official-doc fetch (URL + date in §B), `git diff --check` on the delivered diff — outputs in `static-checks.txt` (archive artifact). No tests, builds, probes, golden, or native rounds — per the work order.
+## F — Execution seams, static checks, errata
 
-### Exclusions
+Baseline excerpts delivered in `baseline-source-excerpts.txt` (R2-expanded set — each excerpt carries the baseline commit identity, path, and verbatim line numbers):
 
-SRS CREATE/OR REPLACE and `IF NOT EXISTS` adjudication; ALTER INSTANCE; T27; SRS ordered channel / post-state publication; privilege loaders for SRS; proven-absent / proven-empty consumption; WKT legality; NAME/ORGANIZATION conflict binding; native oracle work (registered as future evidence needs, never assumed).
+| seam | path : lines |
+|---|---|
+| whole-input DROP claim + SRID decode | `internal/infrastructure/parser/tidb/mysql_srs.go:47–131, 263–272` |
+| extraction → typed declaration | `internal/infrastructure/parser/tidb/extractor.go:123–135` |
+| coverage boundary classification | `internal/infrastructure/parser/tidb/coverage_boundary.go:83–103` |
+| G2 enrich version gate (SERVER today) | `internal/application/audit/metadata.go:248–266` |
+| version pin preflight + observed resolution | `internal/application/audit/service.go` (ValidateTargetVersion site) + `internal/domain/spec/version.go` |
+| enrich loop: bind → Unsupported check ordering | `internal/application/audit/metadata.go:660–710` |
+| `bindMySQLSRS` + contaminated early-exit | `internal/application/audit/batch_state_server_srs.go:129–150` |
+| `objectResolverFor` + per-call objectCache | `internal/application/audit/metadata.go:332–371` |
+| SRS loader: version() probe, read firing | `internal/infrastructure/metadata/mysql/provider_server_srs.go:94–107, 129–199` |
+| existence + dependency SQL bodies | `internal/infrastructure/metadata/mysql/provider_server_srs.go:259–286` |
+| `SpatialReferenceSystemState` + `Complete=false` | `internal/domain/spec/srs.go:96–171` |
+| `SRIDName` + redacted `PublicSQL` | `internal/domain/spec/srs.go:175–208` |
+| `Metadata.SpatialReference` member | `internal/domain/spec/metadata.go:114, 772–778` |
+| unsupported SRS apply = no-op | `internal/application/audit/batch_state.go:457–465` |
+| `failureBefore` authored ordering | `internal/application/audit/batch_state.go:3724–3729` |
+| geometry family vocabulary | `internal/domain/spec/advanced_indexes.go:707–712` |
+| `ALTER` action facts (`spec.Alter` members) | `internal/domain/spec/ddl.go:944–978` |
+| privilege loader trigger (SERVER-only) | `internal/application/audit/server_drop_premise.go:26–37`; `metadata.go:318–329` |
+| bounded error wrapper + `Unwrap` | `internal/application/audit/metadata.go:1021–1056` |
+| report JSON field projection | `internal/domain/report` + `evaluate.go:27–54` |
+| CLI flags, policy enablement, exit codes 0/1/2/3 | `internal/interfaces/cli/audit.go:60–70, 184–204` |
+
+Static checks executed this round (records in the archive): `git status`/`diff` scope checks, `git diff --check`, file byte counts, SHA-256 sums. **Not executed (docs-only order):** `go test`, `go build`, `go vet`, `gofmt`, any CLI invocation, any SQL/native execution.
+
+**Errata register:**
+- **E-1 (doc date):** the R1 §B privilege-basis line printed `verified 2026-11-15`; the actual session fetch ran on the worker's local date **2026-11-12** (the `2026-11-15` string was a transcription slip, not a real clock reading). Corrected above; the R1 archive keeps its original record unmodified.
+- **E-2 (R1 static record):** the R1 archive's `static-checks.txt` includes a grep-pipeline record that ended `rc=1` (no-match exit, pipeline semantics — not a failed read). It stays as captured; R2 records its own static checks separately.
