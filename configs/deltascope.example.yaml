@@ -1254,6 +1254,21 @@ rules:
     level: notice
     params:
 
+  ddl.mysql.alter_instance.reload_tls:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.mysql.alter_instance.rotate_master_key:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.mysql.alter_instance.privilege:
+    enabled: true
+    level: notice
+    params:
+
   ddl.tidb.table.auto_random.valid:
     enabled: true
     level: blocker

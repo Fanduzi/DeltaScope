@@ -64,7 +64,7 @@ var stmtDispositions = map[string]string{
 	"ExecuteStmt":               "execute_prepared",
 	"SetResourceGroupStmt":      "set_resource_group",
 	"AlterRangeStmt":            "extracted",
-	"AlterInstanceStmt":         "alter_instance",
+	"AlterInstanceStmt":         "extracted",
 	"AdminStmt":                 "admin",
 	"FlashBackTableStmt":        "flashback_table",
 	"FlashBackDatabaseStmt":     "flashback_database",

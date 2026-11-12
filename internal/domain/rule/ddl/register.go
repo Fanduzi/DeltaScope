@@ -392,6 +392,15 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDMySQLSRSCreatePrivilege, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newMySQLSRSCreatePrivilegeRule(cfg)
 		}},
+		{ruleID: ruleIDMySQLAlterInstanceReloadTLS, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLAlterInstanceReloadTLSRule(cfg)
+		}},
+		{ruleID: ruleIDMySQLAlterInstanceRotateKey, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLAlterInstanceRotateKeyRule(cfg)
+		}},
+		{ruleID: ruleIDMySQLAlterInstancePrivilege, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLAlterInstancePrivilegeRule(cfg)
+		}},
 		{ruleID: ruleIDAlterAddIndexColumnsMaxCount, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterAddedIndexColumnsMaxCountRule(8, rule.LevelWarning, cfg)
 		}},

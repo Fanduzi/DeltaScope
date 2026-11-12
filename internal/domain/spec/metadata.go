@@ -121,6 +121,12 @@ type Metadata struct {
 	// slice (T26-SRS-CREATE-PUBLICATION-01 frozen contract). Nil
 	// outside that slice.
 	SRSCreate *SRSCreateAdjudication `json:"-"`
+	// AlterInstance carries the shared per-statement adjudication for
+	// the audited MySQL ALTER INSTANCE slice — RELOAD TLS (including
+	// the no_rollback_on_error variant) and ROTATE INNODB MASTER KEY
+	// (T26-ALTER-INSTANCE-PUBLICATION-01 frozen contract). Nil outside
+	// that slice.
+	AlterInstance *AlterInstanceAdjudication `json:"-"`
 }
 
 // MetadataSchemaTarget is the ordered schema binding accessor rules use —

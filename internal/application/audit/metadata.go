@@ -303,6 +303,30 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 					},
 				}
 			}
+			// The ALTER INSTANCE gate is per form (D2): RELOAD TLS
+			// needs MySQL 8.0+ while ROTATE INNODB MASTER KEY exists
+			// from 5.7.11 — a proven-too-old or unresolvable version
+			// gates the statement to the unaudited boundary, exactly
+			// like the SRS family's catalog-domain gate.
+			if statements[i].DDL != nil && statements[i].DDL.AlterInstance != nil &&
+				statements[i].Unsupported == nil &&
+				!spec.MySQLAlterInstanceAuditedDomain(resolvedVersion, statements[i].DDL.AlterInstance.Form) {
+				metadata := map[string]any{
+					"boundary": "unaudited",
+					"object":   "instance",
+					"gate":     "version",
+				}
+				if statements[i].DDL.AlterInstance.NoRollbackOnError {
+					// The NO ROLLBACK ON ERROR member is recorded, not
+					// merged silently into the plain subaction.
+					metadata["no_rollback_on_error"] = true
+				}
+				statements[i].Unsupported = &spec.UnsupportedDetail{
+					Feature:  statements[i].DDL.AlterInstance.Feature(),
+					Reason:   spec.UnsupportedUnauditedReason,
+					Metadata: metadata,
+				}
+			}
 		}
 	}
 	enriched := make([]spec.Statement, len(statements))
@@ -361,7 +385,7 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 	// bounded error contract as the object seam.
 	if dialect == spec.DialectMySQL && request != nil &&
 		request.PrivilegeAuditMode == spec.PrivilegeAuditModeObservedAccountNewSession &&
-		(statementsNeedMySQLServerPrivilege(statements) || statementsNeedMySQLSRSPrivilege(statements)) {
+		(statementsNeedMySQLServerPrivilege(statements) || statementsNeedMySQLSRSPrivilege(statements) || statementsNeedMySQLAlterInstancePrivilege(statements)) {
 		if loader, ok := state.provider.(MySQLServerDropPrivilegeLoader); state.provider != nil && ok {
 			observation, err := loader.LoadMySQLServerDropPrivilege(ctx, dialect)
 			if err != nil {
@@ -774,6 +798,20 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 				adjudication := spec.AdjudicateSRSCreate(enriched[i].Metadata.SpatialReference, decl, state.srsCreatePrivilegePremise())
 				enriched[i].Metadata.SRSCreate = &adjudication
 			}
+		}
+		// The audited ALTER INSTANCE family carries its own shared
+		// adjudication — the same one-truth contract as the SRS slices,
+		// with the statement's own privilege premise projection over the
+		// shared observed-account evidence (frozen D3). The batch
+		// contamination flag is read before this statement's own apply
+		// marks the instance surface mutated.
+		if enriched[i].DDL != nil && enriched[i].DDL.AlterInstance != nil && enriched[i].Unsupported == nil {
+			if enriched[i].Metadata == nil {
+				enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
+			}
+			decl := enriched[i].DDL.AlterInstance
+			adjudication := spec.AdjudicateAlterInstance(state.alterInstanceMutated, decl, state.alterInstancePrivilegePremise(decl.Form))
+			enriched[i].Metadata.AlterInstance = &adjudication
 		}
 
 		if state.afterBindObserve != nil {

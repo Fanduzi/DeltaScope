@@ -170,6 +170,13 @@ type batchState struct {
 	// fully-discharged create arm); a stale mint kills it
 	// (T26-SRS-CREATE-PUBLICATION-01 frozen F-8).
 	srsExistencePresent map[uint32]bool
+	// alterInstanceMutated marks that an earlier batch statement ran
+	// the ALTER INSTANCE apply — the instance surface (TLS context,
+	// keyring) a later ALTER INSTANCE premise would read may have
+	// changed, so the later bind is blocked before reading its own
+	// premises (the same contamination contract as the SRS family's
+	// batch-effects arm; T26-ALTER-INSTANCE-PUBLICATION-01).
+	alterInstanceMutated bool
 	// srsExistenceStale records per-SRID existence invalidation — a
 	// qualified unproven drop or any boundary SRS lifecycle write may
 	// have removed or replaced the catalog row, so a later same-SRID
@@ -671,6 +678,15 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		return s.applyTablespaceStatement(ctx, statement)
 	case spec.DDLOperationDropSpatialReferenceSystem, spec.DDLOperationCreateSpatialReferenceSystem:
 		return s.applySRSStatement(statement)
+	case spec.DDLOperationAlterInstance:
+		// The audited ALTER INSTANCE apply mints no post-state (frozen
+		// D6: there is no generic instance-state channel — a return
+		// code never proves TLS reload or key rotation). It marks the
+		// instance surface mutated so a later ALTER INSTANCE bind is
+		// blocked before reading premises the statement may have
+		// changed (T26-ALTER-INSTANCE-PUBLICATION-01).
+		s.alterInstanceMutated = true
+		return nil
 	case spec.DDLOperationSplitRegion, spec.DDLOperationCompactTable:
 		// Neither statement moves a catalog fact: region scatter and
 		// replica compaction leave identity, columns, indexes, and every

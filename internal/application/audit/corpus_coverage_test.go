@@ -143,7 +143,14 @@ func corpusRuleDialectTargets(ruleID string) []string {
 		"ddl.mysql.srs.create.srid0", "ddl.mysql.srs.create.duplicate_attribute",
 		"ddl.mysql.srs.create.missing_attribute", "ddl.mysql.srs.create.existence",
 		"ddl.mysql.srs.create.exists_noop", "ddl.mysql.srs.create.name_conflict",
-		"ddl.mysql.srs.create.organization_conflict":
+		"ddl.mysql.srs.create.organization_conflict",
+		// T26-ALTER-INSTANCE-PUBLICATION-01: the audited ALTER INSTANCE
+		// markers only evaluate the MySQL family declaration — under
+		// TiDB every recognized form is a boundary (RELOAD forms
+		// unaudited, ROTATE vendor) and PostgreSQL never binds the
+		// declaration.
+		"ddl.mysql.alter_instance.reload_tls",
+		"ddl.mysql.alter_instance.rotate_master_key":
 		return []string{"mysql"}
 	}
 	if strings.HasPrefix(ruleID, "ddl.pg.") || isPostgreSQLOnlyRule(ruleID) {
@@ -463,7 +470,13 @@ func isDeferredCorpusCoverageRule(ruleID string) bool {
 		// observation with a positive witness. The offline corpus has
 		// no privilege provider/mode fixture, so the rule can never
 		// fire there (same contract as srs.drop.privilege above).
-		"ddl.mysql.srs.create.privilege":
+		"ddl.mysql.srs.create.privilege",
+		// T26-ALTER-INSTANCE-PUBLICATION-01: the conditional notice
+		// fires only on a consumable privilege premise — an online
+		// request-level observation with a positive witness. The
+		// offline corpus is providerless, so it can never fire there
+		// (same contract as the srs privilege notices above).
+		"ddl.mysql.alter_instance.privilege":
 		return true
 	default:
 		return false

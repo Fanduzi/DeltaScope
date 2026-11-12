@@ -165,6 +165,13 @@ type DDL struct {
 	// (presence/length only); the statement's serialized SQL fields
 	// render the declaration's fixed-shape redacted form (T26/#105).
 	SpatialReference *SpatialReferenceDeclaration `json:"-"`
+	// AlterInstance carries the authored ALTER INSTANCE declaration —
+	// RELOAD TLS (with the no_rollback_on_error variant member) and
+	// ROTATE INNODB MASTER KEY — on statements the parser adapter
+	// recognized as the audited MySQL family (T26-ALTER-INSTANCE-
+	// PUBLICATION-01). The declaration keeps presence members only; it
+	// never carries certificate, key, or keyring payload.
+	AlterInstance *AlterInstanceDeclaration `json:"-"`
 }
 
 // TemporaryScope identifies the parsed temporary-table scope on CREATE and
@@ -308,6 +315,11 @@ const (
 	// operations; OR REPLACE and the IF-guards ride on the declaration.
 	DDLOperationCreateSpatialReferenceSystem DDLOperation = "create_spatial_reference_system"
 	DDLOperationDropSpatialReferenceSystem   DDLOperation = "drop_spatial_reference_system"
+	// DDLOperationAlterInstance is the audited MySQL ALTER INSTANCE
+	// family — RELOAD TLS (plus the no_rollback_on_error variant
+	// member) and ROTATE INNODB MASTER KEY
+	// (T26-ALTER-INSTANCE-PUBLICATION-01).
+	DDLOperationAlterInstance DDLOperation = "alter_instance"
 
 	DDLOperationAlterIndex            DDLOperation = "alter_index"
 	DDLOperationAlterMaterializedView DDLOperation = "alter_materialized_view"

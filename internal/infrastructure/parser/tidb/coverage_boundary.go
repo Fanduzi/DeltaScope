@@ -97,6 +97,39 @@ func applyCoverageBoundary(dialect spec.Dialect, statement *spec.Statement, node
 			}
 			return
 		}
+		if statement.DDL.AlterInstance != nil {
+			// The audited ALTER INSTANCE family (T26-ALTER-INSTANCE-
+			// PUBLICATION-01 D8): under TiDB the RELOAD TLS forms are
+			// real TiDB semantics but stay outside this slice — a
+			// named unaudited boundary, never a MySQL verdict — while
+			// ROTATE INNODB MASTER KEY is MySQL-only grammar TiDB
+			// rejects at parse — a vendor boundary. Under MySQL every
+			// recognized form enters the audited path pending the
+			// enrich-time per-form version gate.
+			decl := statement.DDL.AlterInstance
+			if dialect == spec.DialectTiDB {
+				if decl.Form == spec.AlterInstanceFormRotateInnodbMasterKey {
+					statement.Unsupported = &spec.UnsupportedDetail{
+						Feature:  decl.Feature(),
+						Reason:   spec.UnsupportedVendorBoundaryReason,
+						Metadata: map[string]any{"boundary": "vendor"},
+					}
+				} else {
+					detail := &spec.UnsupportedDetail{
+						Feature:  decl.Feature(),
+						Reason:   spec.UnsupportedUnauditedReason,
+						Metadata: map[string]any{"boundary": "unaudited"},
+					}
+					if decl.NoRollbackOnError {
+						// The NO ROLLBACK ON ERROR member is recorded,
+						// not merged silently into the plain subaction.
+						detail.Metadata["no_rollback_on_error"] = true
+					}
+					statement.Unsupported = detail
+				}
+			}
+			return
+		}
 		if feature, vendor, ok := dialectBoundaryFeature(dialect, statement.DDL); ok {
 			detail := &spec.UnsupportedDetail{Feature: feature, Reason: boundaryReason(vendor)}
 			if vendor {
@@ -117,20 +150,6 @@ func applyCoverageBoundary(dialect spec.Dialect, statement *spec.Statement, node
 				// syntax — vendor boundary under TiDB (T24/#103).
 				detail.Reason = spec.UnsupportedVendorBoundaryReason
 				detail.Metadata = map[string]any{"boundary": "vendor"}
-			}
-			if inst, ok := node.(*mysqlAlterInstanceStatement); ok && inst.mysqlOnly && dialect == spec.DialectTiDB {
-				// ROTATE INNODB MASTER KEY is MySQL-only grammar — a
-				// vendor boundary under TiDB (T26/#105).
-				detail.Reason = spec.UnsupportedVendorBoundaryReason
-				detail.Metadata = map[string]any{"boundary": "vendor"}
-			}
-			if inst, ok := node.(*ast.AlterInstanceStmt); ok && inst.NoRollbackOnError {
-				// The NO ROLLBACK ON ERROR member is recorded, not
-				// merged silently into the plain subaction (T26/#105).
-				if detail.Metadata == nil {
-					detail.Metadata = map[string]any{}
-				}
-				detail.Metadata["no_rollback_on_error"] = true
 			}
 			statement.Unsupported = detail
 		}
@@ -297,22 +316,6 @@ func unhandledStatementFeature(node ast.StmtNode) string {
 			return "set_resource_group"
 		}
 		return ""
-	case *mysqlAlterInstanceStatement:
-		// The recognizer assigns the precise feature name at claim time
-		// (T26/#105 inventory scope — ROTATE is T26-owned; the EXT
-		// tracking label holds only the surplus subactions).
-		return n.feature
-	case *ast.AlterInstanceStmt:
-		// This case only sees subactions the native grammar already
-		// produced an AST for; syntax failures keep the parser-error
-		// path. The inventory-owned RELOAD TLS subaction gets its
-		// precise name; NO ROLLBACK ON ERROR stays the same subaction
-		// with the member recorded in boundary metadata. Other
-		// successfully-parsed subactions keep the generic name (T26).
-		if n.ReloadTLS {
-			return "alter_instance.reload_tls"
-		}
-		return "alter_instance"
 	case *ast.AdminStmt:
 		return "admin"
 	case *ast.FlashBackTableStmt:

@@ -134,9 +134,16 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 		return statement, nil
 	}
 	if _, ok := e.node.(*mysqlAlterInstanceStatement); ok {
-		// The MySQL-only ALTER INSTANCE ROTATE subaction carries no DDL
-		// — it falls to the unhandled-statement boundary with its
-		// precise feature name (T26/#105 inventory scope).
+		// The MySQL-only ALTER INSTANCE ROTATE INNODB MASTER KEY
+		// subaction binds its typed declaration — the audit slice owns
+		// the statement now (T26-ALTER-INSTANCE-PUBLICATION-01).
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterInstance,
+			ObjectType: "instance",
+			AlterInstance: &spec.AlterInstanceDeclaration{
+				Form: spec.AlterInstanceFormRotateInnodbMasterKey,
+			},
+		}
 		applyCoverageBoundary(dialect, &statement, e.node)
 		return statement, nil
 	}
@@ -247,6 +254,22 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 		statement.DDL = extractAlterPlacementPolicy(node)
 	case *ast.DropPlacementPolicyStmt:
 		statement.DDL = extractDropPlacementPolicy(node)
+	case *ast.AlterInstanceStmt:
+		if node.ReloadTLS {
+			// `ALTER INSTANCE RELOAD TLS` binds its typed declaration;
+			// the NO ROLLBACK ON ERROR member stays variant metadata
+			// on the same feature — never a separate feature id
+			// (T26-ALTER-INSTANCE-PUBLICATION-01 D1/D7). Other
+			// subactions keep the generic alter_instance boundary.
+			statement.DDL = &spec.DDL{
+				Operation:  spec.DDLOperationAlterInstance,
+				ObjectType: "instance",
+				AlterInstance: &spec.AlterInstanceDeclaration{
+					Form:              spec.AlterInstanceFormReloadTLS,
+					NoRollbackOnError: node.NoRollbackOnError,
+				},
+			}
+		}
 	case *ast.AlterRangeStmt:
 		statement.DDL = extractAlterRangePlacement(node)
 	case *ast.CreateSequenceStmt:
@@ -392,11 +415,12 @@ func classify(stmt ast.StmtNode) spec.Kind {
 		return spec.KindDDL
 	case *mysqlServerStatement, *mysqlSRSStatement:
 		return spec.KindDDL
-	case *mysqlAlterInstanceStatement:
-		// A recognized ALTER INSTANCE subaction stays kind=unknown — it
-		// carries no DDL and takes the unhandled-statement boundary with
-		// its precise feature name (T26/#105).
-		return spec.KindUnknown
+	case *mysqlAlterInstanceStatement, *ast.AlterInstanceStmt:
+		// Recognized ALTER INSTANCE subactions carry a typed
+		// declaration and take the audited-DDL path; dialect and
+		// version gates decide their boundary downstream
+		// (T26-ALTER-INSTANCE-PUBLICATION-01).
+		return spec.KindDDL
 	case *ast.InsertStmt,
 		*ast.UpdateStmt,
 		*ast.DeleteStmt:

@@ -179,9 +179,9 @@ func (s *batchState) spatialTouching(statement spec.Statement) bool {
 		return false
 	}
 	// D3-1: provably non-table model markers — non-DDL statements,
-	// the SERVER and tablespace families, and ALTER INSTANCE boundary
-	// features cannot write a geometry-column/SRID fact.
-	if ddl == nil || ddl.Server != nil || ddl.Tablespace != nil {
+	// the SERVER, tablespace, and ALTER INSTANCE families (audited or
+	// boundary) cannot write a geometry-column/SRID fact.
+	if ddl == nil || ddl.Server != nil || ddl.Tablespace != nil || ddl.AlterInstance != nil {
 		return false
 	}
 	if statement.Unsupported != nil && strings.HasPrefix(statement.Unsupported.Feature, "alter_instance") {
