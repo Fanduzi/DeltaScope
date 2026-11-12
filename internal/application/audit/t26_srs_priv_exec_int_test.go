@@ -4,7 +4,9 @@ package audit
 // internal-layer halves of the accepted matrix rows (P5 non-consuming
 // arms with exact stale-set before/after, P6a stale-source demotion,
 // P6b two enrich calls on one batchState, P7 positional suppression
-// with the in-position REVOKE observation, P9b/P9c boundary mints,
+// with the in-position REVOKE observation, P9b/P9c boundary mints
+// (P9c via the real TiDB parseSQL+Extract path — the R2 mixed-dialect
+// fixture is preserved as historical only, R3-A),
 // P8 sibling isolation in both orders, P5b snapshot stability). They
 // observe the real batchState
 // through the afterBindObserve/afterApplyObserve seams and never claim
@@ -353,9 +355,12 @@ func TestT26SRSPrivP6bInternalDoubleEnrich(t *testing.T) {
 	// from one public request.
 	r1 := evaluateEnriched(t, call1)
 	s1 := r1.Statements[0]
-	if len(s1.Findings) != 1 || s1.Findings[0].RuleID != "ddl.mysql.srs.drop.privilege" {
-		t.Fatalf("call1 findings=%+v want the privilege notice", s1.Findings)
+	if len(s1.Findings) != 1 {
+		t.Fatalf("call1 findings=%+v want exactly the privilege notice", s1.Findings)
 	}
+	// R3-B2: the fixed notice shape — level, exact message, typed
+	// srid, typed marker — count+RuleID alone is insufficient.
+	assertSRSPrivilegeNotice(t, s1, 100001)
 	intExactGap(t, s1, []string{spec.SRSFactColumnDependencies})
 	if s1.Coverage.Status != report.CoverageUnverified {
 		t.Fatalf("call1 coverage=%v want unverified", s1.Coverage.Status)
@@ -505,15 +510,19 @@ func TestT26SRSPrivP9bInternalBoundaryMint(t *testing.T) {
 	}
 }
 
-// P9c internal companion (R2-B5 — COUNTEREXAMPLE): the frozen
-// expectation asked for srsExistenceStale[100001] minted by the TiDB
-// vendor-boundary own-apply. The real product chain contradicts it:
-// the TiDB vendor boundary never sets statement.Unsupported (it lives
-// only in the computed coverage aspects projected to
-// result.Unsupported), so the apply dispatch reaches
-// applySRSStatement with no attached adjudication — minting nothing.
-// This test pins the actual behavior as the bounded counterexample
-// for ruling, rather than asserting a mint that does not happen.
+// P9c internal companion (R3-A): the REAL TiDB parse path. The R2
+// fixture was a mixed-dialect witness — parseT26 always parses MySQL
+// (server_alter_r2_test.go:99-107), so feeding its output into a TiDB
+// batchState produced a clean MySQL-extracted row: Unsupported nil,
+// nothing minted. That observation was never a real vendor-boundary
+// row and is registered as historical, not as a contract
+// counterexample. Under the real TiDB parseSQL+Extract the extractor
+// itself marks the SRS statement Unsupported{boundary:vendor}
+// (coverage_boundary.go:91-96); enrichment attaches no adjudication
+// (the bind block is mysql-gated) and the loader gate is mysql-only
+// (metadata.go:344-346), so zero SRS catalog/privilege reads issue;
+// the own-apply boundary branch (batch_state.go:481-495) then mints
+// exactly {100001} — the contract expectation stands.
 func TestT26SRSPrivP9cInternalVendorBoundaryMint(t *testing.T) {
 	fx := &srsSQLFixture{
 		version: "8.0.11-TiDB-v8.5.0",
@@ -521,37 +530,95 @@ func TestT26SRSPrivP9cInternalVendorBoundaryMint(t *testing.T) {
 	}
 	_, provider := newSRSSQLHarness(t, fx, nil)
 	provider.privObservation = privObservationSUPER()
-	state := newBatchState(spec.DialectTiDB, "golden", provider)
-	state.resolvedVersion = &spec.VersionIdentity{
-		Product: spec.VersionProductTiDB, Version: "8.0.11-TiDB-v8.5.0",
-		ValidatedRange: true,
+
+	// R3-A2: real TiDB parseSQL+Extract — the parser/extractor pair
+	// produces the vendor-boundary marker, never a test-set field.
+	parsed, err := parseSQL(context.Background(), "DROP SPATIAL REFERENCE SYSTEM 100001;", spec.DialectTiDB)
+	if err != nil {
+		t.Fatalf("tidb parse: %v", err)
 	}
+	if len(parsed.failures) != 0 {
+		t.Fatalf("failures=%+v want none", parsed.failures)
+	}
+	statements, err := Extract(context.Background(), parsed)
+	if err != nil {
+		t.Fatalf("tidb extract: %v", err)
+	}
+	if len(statements) != 1 {
+		t.Fatalf("statements=%d want exactly one extracted row", len(statements))
+	}
+	stmt0 := statements[0]
+	if stmt0.Dialect != spec.DialectTiDB {
+		t.Fatalf("dialect=%v want tidb", stmt0.Dialect)
+	}
+	if stmt0.DDL == nil || stmt0.DDL.SpatialReference == nil ||
+		stmt0.DDL.SpatialReference.Kind != spec.SRSKindDrop ||
+		stmt0.DDL.SpatialReference.SRID != 100001 {
+		t.Fatalf("extracted=%+v want DROP SPATIAL REFERENCE SYSTEM 100001", stmt0.DDL)
+	}
+	if stmt0.Unsupported == nil {
+		t.Fatal("real TiDB parse must mark the SRS row Unsupported — coverage_boundary.go:91-96")
+	}
+	if stmt0.Unsupported.Feature != string(spec.DDLOperationDropSpatialReferenceSystem) ||
+		stmt0.Unsupported.Reason != spec.UnsupportedVendorBoundaryReason {
+		t.Fatalf("unsupported=%+v want drop_spatial_reference_system + vendor-boundary reason", stmt0.Unsupported)
+	}
+	if len(stmt0.Unsupported.Metadata) != 1 || stmt0.Unsupported.Metadata["boundary"] != "vendor" {
+		t.Fatalf("unsupported metadata=%v want exactly {boundary:vendor}", stmt0.Unsupported.Metadata)
+	}
+
+	// batchState.dialect matches the parse dialect; resolvedVersion is
+	// the real parse of the observed banner (product TiDB, version
+	// 8.5.0) — never the raw banner string in the Version field.
+	state := newBatchState(spec.DialectTiDB, "golden", provider)
+	state.resolvedVersion = spec.ParseObservedVersion("8.0.11-TiDB-v8.5.0")
 	state.instanceFacts = &spec.InstanceFacts{Version: "8.0.11-TiDB-v8.5.0"}
-	enriched := enrichSRSPriv(t, state, provider, "DROP SPATIAL REFERENCE SYSTEM 100001;")
+	if state.resolvedVersion == nil || state.resolvedVersion.Product != spec.VersionProductTiDB ||
+		state.resolvedVersion.Version != "8.5.0" {
+		t.Fatalf("resolvedVersion=%+v want banner-parsed tidb 8.5.0", state.resolvedVersion)
+	}
+
+	var staleAtBind, staleAfterApply map[uint32]bool
+	state.afterBindObserve = func(i int, _ *spec.Statement) {
+		if i == 0 {
+			staleAtBind = staleSet(state)
+		}
+	}
+	state.afterApplyObserve = func(i int, _ *spec.Statement) {
+		if i == 0 {
+			staleAfterApply = staleSet(state)
+		}
+	}
+	enriched, err := state.enrichStatements(context.Background(),
+		&MetadataRequest{Schema: "golden", Provider: provider,
+			PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession},
+		statements, parsed.failures, state.instanceFacts,
+		auditLimits{orderedStatements: defaultOrderedStatementLimit})
+	if err != nil {
+		t.Fatalf("enrich: %v", err)
+	}
 	if len(enriched) != 1 {
 		t.Fatalf("enriched=%d want 1", len(enriched))
-	}
-	// The vendor boundary is an aspect-only mark: statement.Unsupported
-	// stays nil (it is set only for version-gated unaudited rows,
-	// metadata.go:274-287), and no SRS adjudication is attached under
-	// TiDB (the bind block is mysql-gated, metadata.go:702).
-	if enriched[0].Unsupported != nil {
-		t.Fatalf("unsupported=%+v want nil — vendor boundary lives in coverage aspects, not the marker", enriched[0].Unsupported)
 	}
 	if enriched[0].Metadata != nil && enriched[0].Metadata.SRSDrop != nil {
 		t.Fatalf("SRS adjudication=%+v want none — a boundary row is never adjudicated", enriched[0].Metadata.SRSDrop)
 	}
-	// Counterexample to the R2-B5 mint expectation: own-apply mints
-	// nothing — the Unsupported!=nil branch (batch_state.go:481-495)
-	// is never reached, applySRSStatement requires an attached S2
-	// adjudication, and spatialTouching exits on the family marker.
-	sameStaleSet(t, staleSet(state), map[uint32]bool{}, "vendor-boundary stale — no mint")
+	// R3-A3: clean initial set at bind; the own-apply boundary branch
+	// mints exactly {100001} — the authored SRID's lifecycle write.
+	sameStaleSet(t, staleAtBind, map[uint32]bool{}, "pre-apply stale")
+	sameStaleSet(t, staleAfterApply, map[uint32]bool{100001: true}, "boundary post-apply stale")
+	sameStaleSet(t, staleSet(state), map[uint32]bool{100001: true}, "final stale")
 	if state.srsDepsStale {
 		t.Fatal("vendor-boundary apply must never mint deps stale")
 	}
 	if state.contaminated {
 		t.Fatal("a boundary statement contaminates nothing")
 	}
+	// No SRS catalog or privilege read issued: the loader gate is
+	// mysql-only and the Unsupported mark disqualifies the SRS
+	// qualification (srs_drop_premise.go:26-35). Internal Vd=N/A —
+	// enrichStatements receives instanceFacts directly.
+	assertReads(t, provider, fx, 0, 0, 0, 0, 0)
 }
 
 // --- P8 internal: sibling independence ----------------------------------------
@@ -660,10 +727,19 @@ func TestT26SRSPrivP5bInternalSnapshotStable(t *testing.T) {
 
 	var snap1 srsAdjSnapshot
 	var staleAfterStmt1 map[uint32]bool
+	var depsStaleBeforeStmt2, depsStaleAfterStmt2 bool
 	state.afterApplyObserve = func(i int, stmt *spec.Statement) {
-		if i == 0 {
+		switch i {
+		case 0:
 			snap1 = snapSRSDropAdj(*stmt)
 			staleAfterStmt1 = staleSet(state)
+		case 1:
+			depsStaleAfterStmt2 = state.srsDepsStale
+		}
+	}
+	state.afterBindObserve = func(i int, _ *spec.Statement) {
+		if i == 1 {
+			depsStaleBeforeStmt2 = state.srsDepsStale
 		}
 	}
 	enriched := enrichSRSPriv(t, state, provider,
@@ -682,6 +758,11 @@ func TestT26SRSPrivP5bInternalSnapshotStable(t *testing.T) {
 		t.Fatalf("stmt2 owed=%v want exactly [srs.batch_effects]", adj2.Owed)
 	}
 	sameStaleSet(t, staleSet(state), staleAfterStmt1, "final stale after blocked stmt2")
+	// R3-B3: depsStale compared across stmt2's own apply at the real
+	// observation points — a blocked arm touches no SRS staleness.
+	if depsStaleBeforeStmt2 != depsStaleAfterStmt2 {
+		t.Fatalf("depsStale changed across blocked stmt2 own-apply %v -> %v", depsStaleBeforeStmt2, depsStaleAfterStmt2)
+	}
 	snap1.sameAs(t, enriched[0], "stmt1 adjudication")
 	if state.serverPrivilegeScopeEnded {
 		t.Fatal("scope stays open across the blocked statement")

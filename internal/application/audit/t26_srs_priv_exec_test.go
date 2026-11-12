@@ -557,6 +557,11 @@ func TestT26SRSPrivP5cdSRID0(t *testing.T) {
 		r3OnlyFinding(t, stmt, "ddl.mysql.srs.drop.srid0",
 			"dropping spatial reference system SRID 0 is not allowed",
 			map[string]any{"srid": 0, "outcome": "refused_srid0"})
+		// R3-B4: the exact shape check alone never proves the severity —
+		// the refused arm's finding must be the blocker level.
+		if stmt.Findings[0].Level != rule.LevelBlocker {
+			t.Fatalf("%q level=%v want blocker", sqlText, stmt.Findings[0].Level)
+		}
 		if len(stmt.EvidenceGaps) != 0 {
 			t.Fatalf("%q gaps=%+v want 0 — refused arm owes nothing", sqlText, stmt.EvidenceGaps)
 		}
@@ -762,6 +767,13 @@ func TestT26SRSPrivP9bBelowFloorBoundary(t *testing.T) {
 // P9c: tidb dialect, no pin, recognized TiDB banner — vendor boundary;
 // the MySQL SRS path never enters: loader-internal version N/A, all
 // reads zero, Vd=1.
+// R3-A4 attribution correction registered: the R2 internal "zero mint"
+// observation came from a MySQL-parsed statement fed into a TiDB
+// batchState — a mixed-dialect fixture, never a real TiDB
+// vendor-boundary row and not a contract counterexample. The real
+// TiDB parse path is proven by the internal companion
+// TestT26SRSPrivP9cInternalVendorBoundaryMint (R3-A); the R2
+// archive/logs/counterexample text stay preserved as historical.
 func TestT26SRSPrivP9cTiDBVendorBoundary(t *testing.T) {
 	fx := &r3Fixture{
 		version:     "8.0.11-TiDB-v8.5.0",
@@ -1178,19 +1190,12 @@ func TestT26SRSPrivP6aRequestStaleDemotion(t *testing.T) {
 		t.Fatalf("statements=%d want 2", len(result.Statements))
 	}
 	stmt := result.Statements[1]
-	if len(stmt.Findings) != 1 || stmt.Findings[0].RuleID != "ddl.mysql.srs.drop.privilege" {
-		t.Fatalf("findings=%+v want exactly the consumable-premise notice", stmt.Findings)
-	}
-	marker, ok := stmt.Findings[0].Metadata["conditional_audit"].(string)
-	if !ok || marker != "observed_account_new_session" ||
-		stmt.Findings[0].Metadata["srid"] != uint32(100001) || len(stmt.Findings[0].Metadata) != 2 {
-		t.Fatalf("notice metadata=%+v want exactly {srid:100001, conditional_audit:observed_account_new_session}",
-			stmt.Findings[0].Metadata)
-	}
-	r3ExactGap(t, stmt, []string{spec.SRSFactColumnDependencies})
-	if stmt.Coverage.Status != report.CoverageUnverified {
-		t.Fatalf("coverage=%v want unverified", stmt.Coverage.Status)
-	}
+	// R3-B1: the fixed notice shape — exactly one privilege finding
+	// carrying level=notice, the exact discharged-premise message, and
+	// the typed two-key metadata {srid:uint32, conditional_audit:string};
+	// dependency-owned [D] gap; unverified coverage. r3S2Consumed
+	// asserts all of it — count+RuleID alone is insufficient.
+	r3S2Consumed(t, stmt, []string{spec.SRSFactColumnDependencies}, 100001, false)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
 }
 
