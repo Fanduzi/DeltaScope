@@ -17,7 +17,7 @@ records are unchanged and remain the frozen expectation source.
 | R3 final | `cce8c05b9a304886b6ba3045fca101f8b41abf57` | `432af227` | submitted; R3 ruling CHANGES REQUIRED |
 | R4 product | `b90bf8eb023838364b08483eb351399ecfd26381` | `cce8c05b` | submitted; R4 ruling CHANGES REQUIRED |
 | R4 final | `e0f2a3d15f6a5e97acf3bac6a47fd9714406bda5` | `b90bf8eb` | submitted; R4 ruling CHANGES REQUIRED |
-| R5 product | _pending commit_ | `e0f2a3d1` | R5 test/assertion fixes in working tree |
+| R5 product | `ec913df429f90ca008162e85420df25e09c67ebe` | `e0f2a3d1` | submitted, pending ruling |
 
 Branch `milestone/mysql-tidb-ddl-completion`. No push, merge, tag, release,
 or issue close.
