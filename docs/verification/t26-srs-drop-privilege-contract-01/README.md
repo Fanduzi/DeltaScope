@@ -1,4 +1,4 @@
-# T26-SRS-DROP-PRIVILEGE-CONTRACT-01 — R1 candidate (docs-only contract)
+# T26-SRS-DROP-PRIVILEGE-CONTRACT-01 — R3 revision (docs-only contract)
 
 Candidate contract for the `srs.drop.privilege` premise of the audited
 MySQL `DROP SPATIAL REFERENCE SYSTEM [IF EXISTS] <uint32>` slice
@@ -53,13 +53,28 @@ All citations below bind baseline `0c6004ba`; verbatim excerpts are in
   `SRSDropInReservedRange`, metadata exactly `{srid}`)
   (`internal/domain/rule/ddl/mysql_srs_rules.go`; rule IDs at
   `internal/domain/rule/ddl/common.go:137-139`; registered enabled at
-  `configs/deltascope.example.yaml:1187-1197`). `rule.EvidenceGap` has
-  only `ReasonCode` and `RequiredFacts` — no metadata carrier.
+  `configs/deltascope.example.yaml:1187-1197`). `rule.EvidenceGap`
+  carries exactly three fields — `RuleID`, `ReasonCode`, and
+  `RequiredFacts` (`internal/domain/rule/rule.go:73-77`) — no metadata
+  carrier.
 - SRS audited domain `MySQLSRSDropAuditedDomain` = resolved MySQL
   8.0.x, `ValidatedRange`, patch ≥ 4 (`srs_drop.go:89-101`); enforced by
   the phase-2 version gate at `metadata.go:274-287`, which mints
   `Unsupported{boundary:"unaudited",object:"spatial_reference_system",gate:"version"}`
   **before** the privilege loader gate (`metadata.go:341`) evaluates.
+  The audit-qualification gate is distinct from the provider's own
+  catalogue-read qualification (`mysqlSRSCatalogSupport`,
+  `provider_server_srs.go:94-107` — `Major >= 8`): a below-floor 8.0.3
+  still issues the resolver forward, `select version()`, existence and
+  dependency reads while failing the audit gate (accepted E10.3b
+  evidence, `TestT26SRSR3E10Proven803`).
+- Boundary lifecycle write (existing, unchanged by this contract): the
+  shared apply mints `srsExistenceStale[authored SRID]` for **any**
+  SRS-family statement carrying `Unsupported != nil` — vendor boundary
+  or version gate alike — at `batch_state.go:481-495`. It is not
+  dialect-gated and it never writes `srsDepsStale` (the SRS family exits
+  `spatialTouching` at `batch_state_srs.go:45-49`, and the boundary
+  branch returns before any dependency write).
 
 ## 2. MySQL 8.0 authority
 
@@ -127,8 +142,12 @@ The execution phase adds `SRSDropPrivilegeConsumable` and
    one dedicated `*sql.Conn` reads `select current_user()` (rowset —
    empty answer is distinct from a failed query) then
    `show grants for current_user()` via `loadMySQLGrantLines`
-   (`provider_resource_group_facts.go:218`). Every connect/query/scan/
-   iterate/close error wraps and propagates; non-MySQL answers
+   (`provider_resource_group_facts.go:218-236`). Only the operations
+   the provider actually checks are inside the error promise — the
+   `Conn` acquisition, both `QueryContext` calls, the `current_user`
+   `Scan`, `rows.Err`, and the `current_user` `rows.Close` each wrap
+   and propagate; the deferred `conn.Close` and the deferred
+   `show grants` `rows.Close` return unchecked (§7). Non-MySQL answers
    `(nil, nil)`.
 5. Immutable storage — the result lands on
    `batchState.serverDropPrivilege` (`batch_state.go:171-175`) as
@@ -156,6 +175,19 @@ contains `SUPER` — not a substring heuristic. The SRS audited domain
 (8.0.4+) is a strict subset of the proof domain (8.0.x), so the proof
 remains valid wherever an SRS premise can be consumed. This contract
 reuses the proof unchanged; it does not expand it.
+
+**Exact-token discriminator (bound by accepted-test identity, not
+re-proven)**: `TestCollectMySQLGlobalPrivilegesExactTokens`
+(`internal/domain/spec/server_drop_premise_test.go:36-55` @ baseline
+`0c6004ba`) — `GRANT RESOURCE_GROUP_USER ON *.*` is collected while
+`RESOURCE_GROUP_ADMIN` never enters the set, so a substring matcher
+would fail. At the witness level,
+`TestMySQLServerDropPrivilegeWitness` subcase
+`connection_admin is not super` (same file, line 74) — a parsed global
+grant line lacking the `SUPER` token yields `witness=false`. Matrix row
+P4h registers the SRS-side synthetic witness-unit input (`SUPERUSER` on
+`*.*`) that discriminates exact-token from substring matching; neither
+row re-runs the parser proof.
 
 ### 3.3 Independent SRS derivation (no borrowing)
 
@@ -310,7 +342,11 @@ are PLAN matrix rows.
 ### 6.1 Actual order (bound to source)
 
 `service.go` request validation (incl. `ErrInvalidPrivilegeMode`)
-→ parse → `enrichOrderedStatements`/`enrichStatements` (`metadata.go:219/232`)
+→ parse → `LoadInstanceFacts` discovery (`metadata.go:141`, `Vd`)
+→ observed-product check `ErrDialectProductMismatch`
+(`metadata.go:154-155`) → pin check `ErrTargetVersionMismatch`
+(`metadata.go:157-158`) →
+`enrichOrderedStatements`/`enrichStatements` (`metadata.go:219/232`)
 → phase-2 version gates (`metadata.go:248-289`)
 → placement/catalog request loads
 → **privilege observation gate + load** (`metadata.go:341-352`)
@@ -323,7 +359,20 @@ are PLAN matrix rows.
 
 Loading therefore precedes per-statement arm selection — recorded
 explicitly: `L` (loader invocations, 0 or 1 per request) must never be
-inferred `0` from a B/S0/S1 outcome.
+inferred `0` from a B/S0/S1 outcome. Two distinct exit shapes exist
+before the loop: typed validation/discovery exits (invalid mode,
+malformed pin, product mismatch, version mismatch) end the request
+with zero statements so every result dimension is N/A; **boundary
+report** exits (vendor boundary, version gate) still return a
+one-statement row with zero findings/gaps and `incomplete` coverage.
+
+The two observation layers stay distinct: `afterBindObserve` /
+`afterApplyObserve` see only the **internal** attached premise,
+adjudication, and owed values; request-produced `Findings` /
+`EvidenceGaps` exist **only after the loop**, when rule projection
+builds the public report. A snapshot captured at `afterApply` can
+therefore compare internal premise/adjudication/owed values — never
+public findings/gaps, which do not exist yet at that point.
 
 ### 6.2 SRS-only observed-mode entry
 
@@ -343,11 +392,14 @@ Positional mechanism (existing): inside the statement loop,
 before the current statement's bind — `DDLOperationGrant` /
 `DDLOperationRevoke` plus boundary features
 `{set_role, set_default_role, grant_role, revoke_role, grant_proxy}`.
-After termination: every later statement's premise projects
-`suppressed`; an authored later `GRANT` does **not** restore a new
-positive observation (no un-end path — the flag is monotonic within the
-request); completed statements keep their already-attached
-premise/adjudication snapshots — nothing is rewritten retroactively.
+After termination, a later statement's premise projects `suppressed`
+**only when the positive request witness was already established** — a
+path that never produced a positive witness stays `unproven` even when
+the scope flag is set (§3.1). An authored later `GRANT` does **not**
+restore a new positive observation (no un-end path — the flag is
+monotonic within the request); completed statements keep their
+already-attached premise/adjudication snapshots — nothing is rewritten
+retroactively.
 
 Required scope witness (matrix row P7):
 
@@ -370,6 +422,16 @@ own premise projection; each emits its own family marker
 Neither family reads the other's adjudication, marker, or outcome —
 shared ownership lives only at the request-level raw evidence.
 
+The families' own resolver seams stay separate in the read
+vocabulary: the SERVER family's forward issues exactly one
+`mysql.servers` `server_name` query and **no** internal
+`select version()` (`loadMySQLServerObject`,
+`provider_server_srs.go:47-76`); the SRS `Qo` version read lives only
+inside the SRS resolver path (`mysqlSRSCatalogSupport`,
+`provider_server_srs.go:94-107`). A mixed request therefore counts
+`R/Qexist/Qdeps/Qo` for SRS, `forward + mysql.servers query` for
+SERVER, `L=1` once, `Vd=1` once — no fold-in either direction.
+
 ## 7. Reads and error semantics
 
 Reads vocabulary (unchanged from the accepted execution round):
@@ -379,9 +441,9 @@ Reads vocabulary (unchanged from the accepted execution round):
 | `R` | SRS resolver forwards (`mysqlSRSResolver` → cachedObjectResolver → provider `ResolveObject`) | `metadata.go:393`, `batch_state_server_srs.go:151-161` |
 | `Qexist` | `information_schema.st_spatial_reference_systems` existence query | `provider_server_srs.go` |
 | `Qdeps` | `information_schema.st_geometry_columns` dependency query | `provider_server_srs.go:262` |
-| `Qo` | loader-internal `select version()` | provider version channel |
+| `Qo` | loader-internal `select version()` — issued **only** inside the SRS resolver path (`mysqlSRSCatalogSupport`); the SERVER family loader issues no version query (`loadMySQLServerObject` is a single `mysql.servers` `server_name` read, `provider_server_srs.go:47-76`), and the two families' seams are never folded into `R`/`Qo` | `provider_server_srs.go:94-107` |
 | `L` | privilege-observation loader invocations — issued iff mode is on AND a qualifying audited statement is present AND the provider exists and implements `MySQLServerDropPrivilegeLoader`; capability-missing keeps `L=0`; the B/S0/S1 outcome of any statement never decides `L` (the load precedes arm selection) | `metadata.go:341-352` |
-| `Vd` | request `LoadInstanceFacts` method invocations | service/request layer |
+| `Vd` | request `LoadInstanceFacts` method invocations | `metadata.go:141` |
 
 `L` counts one invocation per `enrichStatements` entry — per request on
 the request/API layer, and per call again when the same `batchState` is
@@ -439,6 +501,13 @@ Boundary catalog-bind behavior is preserved exactly: B-arm unread
 markers and read suppression follow `bindMySQLSRS`'s existing order
 (`batch_state_server_srs.go:129-166`); this contract claims no "zero
 reads" for any boundary — reads follow the actual resolver path.
+Boundary apply likewise stays the existing lifecycle write: any SRS
+statement with `Unsupported != nil` mints
+`srsExistenceStale[authored SRID]` (`batch_state.go:481-495`) —
+version-gate and vendor boundary alike, never `srsDepsStale`. No
+privilege premise is attached to these rows (no adjudication exists),
+so their `P` dimensions are N/A rather than unproven — unobserved is
+never zero output.
 
 ## 8. Differences from previous scope
 
@@ -488,4 +557,10 @@ Static only: `git` identity/status/diff checks, source reading of every
 cited symbol at baseline `0c6004ba`, official MySQL 8.0 documentation
 lookup. No tests, builds, vet, CLI, SQL/native, Docker, or golden
 execution ran. Raw captures live in `static-checks.txt`;
-`baseline-source-excerpts.txt` carries the verbatim decisive chain.
+`baseline-source-excerpts.txt` carries the verbatim decisive chain —
+R3 adds only the minimal corrected-attribution excerpts (SERVER loader
+`provider_server_srs.go:47-76`, request mismatch order
+`metadata.go:141-161`, SRS boundary lifecycle `batch_state.go:481-495`)
+and accepted-test identities (`t26_srs_drop_r1_test.go:425-436`,
+`server_drop_premise_test.go:36-55,74`,
+`t26_srs_drop_r3_test.go` E10 rows), referenced by path+line+symbol.
