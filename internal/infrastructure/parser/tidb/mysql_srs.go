@@ -157,6 +157,7 @@ func mysqlSRSAttrs(sqlText string, rest []sqlTok, decl *spec.SpatialReferenceDec
 			dup("name")
 			decl.Attrs.HasName = true
 			decl.Attrs.Name = value
+			decl.Attrs.NameDecodeComplete = mysqlSRSDecodeComplete(sqlText, rest[i+1], value)
 			i += 2
 		case rest[i].wordIs(sqlText, "definition"):
 			if i+1 >= len(rest) || rest[i+1].kind != tokStr {
@@ -186,6 +187,7 @@ func mysqlSRSAttrs(sqlText string, rest []sqlTok, decl *spec.SpatialReferenceDec
 			dup("organization")
 			decl.Attrs.HasOrganization = true
 			decl.Attrs.OrgName = orgName
+			decl.Attrs.OrgDecodeComplete = mysqlSRSDecodeComplete(sqlText, rest[i+1], orgName)
 			i += 2
 			if i+2 >= len(rest) || !rest[i].wordIs(sqlText, "identified") ||
 				!rest[i+1].wordIs(sqlText, "by") ||
@@ -236,6 +238,34 @@ func mysqlSRSStringValue(sqlText string, tok sqlTok) (string, bool) {
 		return strings.ReplaceAll(inner, "''", "'"), true
 	}
 	return strings.ReplaceAll(inner, `""`, `"`), true
+}
+
+// mysqlSRSDecodeComplete reports whether a decoded identity spelling
+// provably equals the bytes MySQL stores — the frozen
+// T26-SRS-CONFLICT-IDENTITY-01 query-eligibility rule (I1). It is true
+// only while every condition holds on the ORIGINAL token: the literal
+// was single-quoted (a double-quoted spelling is sql_mode-dependent —
+// ANSI_QUOTES reads it as an identifier, which is unobservable), the
+// decoded value carries no backslash byte (a backslash decode is
+// sql_mode-dependent — NO_BACKSLASH_ESCAPES changes the stored bytes),
+// and the decoded value is ASCII-only (the conservative product
+// eligibility boundary — not a claim that MySQL accepts ASCII only).
+// The token is the evidence: this never re-derives the quote kind from
+// the decoded string.
+func mysqlSRSDecodeComplete(sqlText string, tok sqlTok, value string) bool {
+	raw := tok.text(sqlText)
+	if len(raw) < 1 || raw[0] != '\'' {
+		return false
+	}
+	if strings.ContainsRune(value, '\\') {
+		return false
+	}
+	for i := 0; i < len(value); i++ {
+		if value[i] >= 0x80 {
+			return false
+		}
+	}
+	return true
 }
 
 // mysqlSRSCreate consumes the CREATE tail — SRID plus the attribute

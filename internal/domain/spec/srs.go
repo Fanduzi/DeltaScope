@@ -47,6 +47,14 @@ type SRSAttributes struct {
 	// spelling, doubled quotes resolved).
 	HasName bool
 	Name    string
+	// NameDecodeComplete records that the authored NAME spelling is
+	// decode-complete — a single-quoted literal with no backslash byte
+	// and ASCII-only content, so the decoded value provably equals the
+	// bytes MySQL stores for every sql_mode (T26-SRS-CONFLICT-
+	// IDENTITY-01 frozen I1/I6). Set at token time by the recognizer;
+	// default false. It is a conflict-query eligibility fact, never a
+	// claim about the name's content.
+	NameDecodeComplete bool
 	// HasDefinition marks an authored DEFINITION clause;
 	// DefinitionByteLen is the byte length of the unquoted text and
 	// DefHasNewline records literal CR/LF presence in that text — a
@@ -62,8 +70,14 @@ type SRSAttributes struct {
 	// recognition requires the complete pair.
 	HasOrganization bool
 	OrgName         string
-	HasIdentifiedBy bool
-	OrgID           uint32
+	// OrgDecodeComplete is the ORGANIZATION member's decode-completeness
+	// flag — the same rule as NameDecodeComplete, adjudicated
+	// independently (T26-SRS-CONFLICT-IDENTITY-01 frozen I1/I3/I7). The
+	// composite conflict identity is trusted only while this flag AND
+	// the parser-proven OrgID both hold.
+	OrgDecodeComplete bool
+	HasIdentifiedBy   bool
+	OrgID             uint32
 	// HasDescription marks an authored DESCRIPTION clause;
 	// DescriptionByteLen is the byte length of the unquoted text. The
 	// description text is never stored.

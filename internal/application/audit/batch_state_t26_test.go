@@ -29,6 +29,12 @@ type t26Provider struct {
 	tables  map[string]*spec.TableSnapshot // catalog-present table identities
 	calls   []t26Call
 	err     error
+	// srsNameConflict/srsOrgConflict seed the conflict witness sets —
+	// keyed by the qualified spelling the request carries, so the stub
+	// mirrors the provider's `= ?` predicate rather than pre-deciding
+	// a match (T26-SRS-CONFLICT-IDENTITY-01 EXECUTION-01).
+	srsNameConflict map[string][]uint32
+	srsOrgConflict  map[string][]uint32
 	// version is the observed banner the loader reports — set to a
 	// MySQL 8.0.x string when a test needs the in-domain version fact.
 	version string
@@ -106,6 +112,17 @@ func (p *t26Provider) ResolveObject(_ context.Context, dialect spec.Dialect, req
 		if p.srs[state.SRID] {
 			state.Exists, state.Status = true, spec.MetadataStatusConfirmed
 			snapshot.Status, snapshot.Exists = spec.MetadataStatusConfirmed, true
+		}
+		// Conflict reads mirror the provider contract: fire only on a
+		// populated qualifier, answer a non-nil fact whose empty
+		// MatchedSRIDs stays "read, zero rows, unknown"
+		// (T26-SRS-CONFLICT-IDENTITY-01).
+		if name := req.Qualifiers[spec.ObjectLookupQualifierSRSName]; name != "" {
+			state.NameConflict = &spec.SRSConflictFact{MatchedSRIDs: p.srsNameConflict[name]}
+		}
+		org, orgID := req.Qualifiers[spec.ObjectLookupQualifierSRSOrg], req.Qualifiers[spec.ObjectLookupQualifierSRSOrgID]
+		if org != "" && orgID != "" {
+			state.OrgConflict = &spec.SRSConflictFact{MatchedSRIDs: p.srsOrgConflict[org+"|"+orgID]}
 		}
 		state.Dependencies = &spec.SRSDependencyFact{}
 	}

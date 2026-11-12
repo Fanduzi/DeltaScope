@@ -197,10 +197,14 @@ func (s *batchState) bindMySQLSRS(ctx context.Context, statement spec.Statement)
 	// conflict premises are not its contract.
 	if decl.Kind == spec.SRSKindCreate || decl.Kind == spec.SRSKindCreateOrReplace {
 		lookup.Qualifiers = map[string]string{}
-		if decl.Attrs.HasName {
+		// T26-SRS-CONFLICT-IDENTITY-01 frozen I6/I7: only a
+		// decode-complete authored spelling may populate a conflict
+		// qualifier — an unproven identity fires no query and leaves
+		// its premise owed (I12), never a silent no-conflict read.
+		if decl.Attrs.HasName && decl.Attrs.NameDecodeComplete {
 			lookup.Qualifiers[spec.ObjectLookupQualifierSRSName] = decl.Attrs.Name
 		}
-		if decl.Attrs.HasOrganization && decl.Attrs.HasIdentifiedBy {
+		if decl.Attrs.HasOrganization && decl.Attrs.HasIdentifiedBy && decl.Attrs.OrgDecodeComplete {
 			lookup.Qualifiers[spec.ObjectLookupQualifierSRSOrg] = decl.Attrs.OrgName
 			lookup.Qualifiers[spec.ObjectLookupQualifierSRSOrgID] = strconv.FormatUint(uint64(decl.Attrs.OrgID), 10)
 		}
