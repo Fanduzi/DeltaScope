@@ -1,13 +1,15 @@
-# T26-SRS-DROP-PRIVILEGE-EXECUTION-01 — execution receipt (R2)
+# T26-SRS-DROP-PRIVILEGE-EXECUTION-01 — execution receipt (R3)
 
-Status: **awaiting R2 ruling**. R1 ruling was CHANGES REQUIRED —
-evidence/assertion/provenance deficiencies only; the accepted contract
-and product semantics were left unchanged. R2 closes the ordered
-deficiencies: a real P6a request/API twin, corrected P9f/P9b fixtures,
-internal own-apply and stale-set witnesses, strict public-output
-assertions, real counter serialization, the prescribed
-`CGO_ENABLED=0 -buildvcs=false` build recipe, fresh probe captures, and
-receipt/provenance corrections. Contract
+Status: **awaiting R3 ruling**. R2 ruling was CHANGES REQUIRED —
+the P9c internal fixture was a mixed-dialect witness (MySQL-parsed
+statement fed into a TiDB `batchState`), several local assertions were
+still too loose, and identity/capture records needed completion. R3
+reparses P9c through the real TiDB `parseSQL`+`Extract` path — the
+extractor's own `Unsupported{boundary:"vendor"}` mark proves the
+contract's `{100001}` mint expectation correct — tightens the P6a/P6b
+fixed-notice checks, P5b depsStale and P5c/d level assertions, and
+completes the identity, probe-transcript, and attribution records.
+Product semantics remain unchanged (test + docs only). Contract
 `docs/verification/t26-srs-drop-privilege-contract-01` was ACCEPTED at
 `2f7231b59744d6bbafb7150ffe32891002a2f6ab` (R3); this directory is the
 implementation's execution evidence — a separate phase that begins from
@@ -26,7 +28,9 @@ push/merge/tag/release/issue close is implied or authorised.
 | receipt R1 | `14795fb46effb04b17d0d30a8cafa2f5061ec79b` | `62c874b5c644b37e4d629bac8299b7012b64e2fd` | `2d4ee54c` | R1 identity-chain closeout |
 | receipt R1 | `5c09d04f44f20418f1134a9b460aedbab19312fa` | `181447ed7e9ebb819abead81eee5afd5ed08c7ee` | `14795fb4` | R1 final HEAD — the R1 candidate, unchanged by R2 |
 | R2 tests | `0183db7e6abbb7e83eb8f9011b52383d7eebb78e` | `a49328e36a4b40cab837d5ef4fc5bbc251733a0d` | `5c09d04f` | R2-A..C evidence closure: P6a request/API twin + `r3TableFixtureProvider` seam; P9f explicit no-pin; P9c public boundary/product asserts; P9b aligned `8.0.3-log` fixture; P5 non-consuming-arm internal table (arm/premise/Owed + exact stale key sets); P6b call-2 `[B]` Owed + stale-set equality + named evaluations; P7 in-position REVOKE observation + exact per-SRID final set; P8b reversed-order companion; P9c counterexample row; strict `r3ExactGap`/`r3OnlyFinding`/`r3Aggregate` public assertions; P2 real-counter serialization |
-| receipt R2 | (this file's commit — chain-final docs closeout) | — | `0183db7e` | this receipt; its commit/tree hash cannot self-embed and is registered in the delivery manifest and message |
+| receipt R2 | `f5d4bfd111abcb61e8ab2519ff32676b47153951` | `c2b2f8b6fda23359c74aedc7510949ac4ac59ca5` | `0183db7e` | R2 receipt (docs-only child of the R2 test source) |
+| R3 tests | `bfc0a1f8cc511d03eb61d41f462137ccef499105` | `d75dba0a9f647326c4040a04172bcfb8802898d5` | `f5d4bfd1` | R3-A/B/C evidence closure: P9c real-TiDB reparse; P6a+P6b fixed-notice asserts; P5b depsStale before/after; P5c/d `Level==blocker`; audit README loader-OR correction |
+| receipt R3 | (this file's commit — chain-final docs closeout) | — | `bfc0a1f8` | this receipt; its commit/tree hash cannot self-embed and is registered in the delivery manifest and message |
 
 The full six-commit R1 chain is now registered verbatim:
 `e0f36f62 → 924e3ac8 → 8738402f → 2d4ee54c → 14795fb4 → 5c09d04f` —
@@ -40,10 +44,14 @@ carry its own commit's hash. Branch:
 `milestone/mysql-tidb-ddl-completion`. Cumulative diff under review:
 `2f7231b59744d6bbafb7150ffe32891002a2f6ab..FINAL_HEAD`.
 
-Cumulative diffstat (corrected): **19 files, +2536/−63, 13 `.go`
-files** — the R1 receipt's `+2034/−63, 12 Go` was a transcription error;
-the true R1 cumulative was `+2039/−63, 13 Go`, and R2 adds `+559/−62`
-(net +497) in the two execution test files only. Categories: product
+Cumulative diffstat (R3 actuals): **19 files, +2741/−63, 13 `.go`
+files** at `2f7231b5..bfc0a1f8`. Per-range actuals: R1→R2
+(`5c09d04f..f5d4bfd1`) was **3 files, +751/−135** — two test files
+`+559/−62` plus this README `+192/−73` (the R2 receipt's `+2536` total
+was a transcription error — the true R1 cumulative was `+2039/−63` and
+base→R2-final is `+2655/−63`). R2→R3
+(`f5d4bfd1..bfc0a1f8`) adds **3 files, +131/−45** — test/doc only, zero
+product. Categories: product
 (`srs_drop.go`, `srs_drop_premise.go`, `metadata.go`,
 `mysql_srs_rules.go`, `common.go`, `register.go`, `defaults_ddl.go`),
 config (`deltascope.example.yaml`), tests (r1/r2/r3 updates + two
@@ -52,16 +60,14 @@ record, this receipt).
 
 ## Gate/build/probe source identity
 
-Every gate below ran at test source commit `0183db7e` on a clean
-tracked tree. Build, rebuild, and the three CLI probes used the binary
-built from `0183db7e` via the prescribed recipe. Between that gate
-source commit and final HEAD the only delta is this receipt itself — a
-docs-only file under `docs/verification/` that touches no product,
-test, build, or config input, so the gate results bind unchanged. The
-R1 seven-package and full-suite logs were bound to `8738402f`; they are
-preserved as R1 originals and superseded by the R2 captures below — R2
-test-source changes make the audit package's R1 log non-authoritative
-for the added tests.
+R3 gates ran at test source commit `bfc0a1f8` on a clean tracked tree.
+The R2 gates ran at `0183db7e`; build/rebuild and the CLI probes ride
+the R2 binary `87cf741a` (reused per R3-C2 — this round changed tests
+and docs only, no product or build input). Between `bfc0a1f8` and final
+HEAD the only delta is this receipt — docs-only, no gate input. The R1
+seven-package and full-suite logs were bound to `8738402f`; they are
+preserved as R1 originals. Per-source binding: R2 verbose pkg gate +
+build/probes → `0183db7e`; R3 audit/vet/gofmt/diff-check → `bfc0a1f8`.
 
 ## P1–P10 row map
 
@@ -99,7 +105,7 @@ forward/mysql.servers/internal-version seam.
 | P8a/P8b | request/API + internal | `DROP SERVER s1; DROP SRS 100001` and reversed | one shared observation; SERVER finding carries `outcome=conditional_drop` + `conditional_audit=observed_account_new_session` on the SAME finding; SRS independently consumable S2 `[D]`; marker never leaks across | exact match — SERVER seam 1/1/0 (every `version()` belongs to the SRS catalog) | SRS 1/1/1/1; SERVER 1/1/0; L=1; Vd=1 | `TestT26SRSPrivP8aServerThenSRS`, `TestT26SRSPrivP8bSRSThenServer`, `TestT26SRSPrivP8InternalSiblingIndependence`, `TestT26SRSPrivP8bInternalSiblingReversed` — each family publishes its own post-state (SERVER OrderedAbsent; SRS S2 `[D]` + its own stale) in BOTH orders |
 | P9a | request/API | pin/observed/loader `8.0.4` (floor) | S2 consumable `[D]`; 1 notice | exact match | 1/1/1/1/1, Vd=1 | `TestT26SRSPrivP9aFloor` |
 | P9b | request/API + internal | mysql, no pin, observed+loader banner `8.0.3-log`, resolved `8.0.3` | version boundary; 0 findings/0 gaps; incomplete/review; boundary apply mints `srsExistenceStale[100001]` only | exact match — `r3Boundary` projection + internal mint check; R2-A4 aligned the internal fixture banner with the resolved version (the 8.0.36-loader/8.0.3-resolved pairing is a historical variant only) | 1/1/1/1/0, Vd=1 | `TestT26SRSPrivP9bBelowFloorBoundary`, `TestT26SRSPrivP9bInternalBoundaryMint` |
-| P9c | request/API + internal | tidb, no pin, observed `8.0.11-TiDB-v8.5.0` | vendor boundary; resolved product TiDB; `boundary="vendor"` metadata + `UnsupportedVendorBoundaryReason` asserted separately; 0 findings/0 gaps; incomplete/review; all SRS reads zero; loader-internal version N/A | exact match — `ErrUnsupportedStatement`; **internal companion registers a bounded counterexample (see errata)**: the real TiDB vendor-boundary statement carries `Unsupported=nil` (the boundary is aspect-level), so own-apply mints NOTHING — no `srsExistenceStale`, no `srsDepsStale` | 0/0/0/0/0, Vd=1 | `TestT26SRSPrivP9cTiDBVendorBoundary`, `TestT26SRSPrivP9cInternalVendorBoundaryMint` |
+| P9c | request/API + internal | tidb, no pin, observed `8.0.11-TiDB-v8.5.0` | vendor boundary; resolved product TiDB; `boundary="vendor"` metadata + `UnsupportedVendorBoundaryReason` asserted separately; 0 findings/0 gaps; incomplete/review; all SRS reads zero; loader-internal version N/A | exact match — `ErrUnsupportedStatement`; internal companion (R3-A) drives the REAL TiDB `parseSQL`+`Extract`: extractor marks `Unsupported{boundary:"vendor"}`, no adjudication attaches, zero SRS catalog/privilege reads, own-apply mints exactly `{100001}` (boundary branch `batch_state.go:481-495`) — the R2 mixed-dialect "no mint" observation is registered as a fixture error, not a counterexample (see errata) | 0/0/0/0/0, Vd=1 | `TestT26SRSPrivP9cTiDBVendorBoundary`, `TestT26SRSPrivP9cInternalVendorBoundaryMint` |
 | P9d | request/API | `PrivilegeAuditMode="bogus_mode"` | `ErrInvalidPrivilegeMode`; all zero; Vd=0 | exact match | 0/0/0/0/0, Vd=0 | `TestT26SRSPrivP9dInvalidMode` |
 | P9e | request/API | `--target-version`-equivalent pin `8.0.x` | `ErrInvalidTargetVersion`; all zero; Vd=0 | exact match | 0/0/0/0/0, Vd=0 | `TestT26SRSPrivP9eMalformedPin` |
 | P9f | request/API | mysql dialect + TiDB banner `8.0.11-TiDB-v8.5.0` + explicit no-pin `Request` (R2-A2 — the shared helper's 8.0.36 pin would falsify the frozen input) | `ErrDialectProductMismatch`; all zero; Vd=1 | exact match | 0/0/0/0/0, Vd=1 | `TestT26SRSPrivP9fProductMismatch` |
@@ -121,8 +127,10 @@ non-consuming arms' attached arm/premise/Owed tuples plus exact stale
 key sets and depsStale before/after their own apply; prefix
 contamination is never attributed to the DROP's apply),
 `TestT26SRSPrivP8bInternalSiblingReversed` (P8 in the opposite
-order), `TestT26SRSPrivP9cInternalVendorBoundaryMint` (the R2-B5
-counterexample row). Every unavailable/boundary/error row asserts its
+order), `TestT26SRSPrivP9cInternalVendorBoundaryMint` (R3-A — the real
+TiDB parse-path boundary row: parser-set `Unsupported{boundary:vendor}`,
+no adjudication, zero SRS reads, own-apply mints exactly `{100001}`).
+Every unavailable/boundary/error row asserts its
 own N/A scope — N/A never means zero output: arm/premise/result-
 projection N/A on typed exits; reads/aggregate observation N/A only
 where the layer cannot produce them (P1a Vd, P6b Vd).
@@ -145,32 +153,33 @@ where the layer cannot produce them (P1a Vd, P6b Vd).
 - No frozen row was deleted; no fixture was substituted to make a row
   pass.
 
-## Gates (test inputs bound to `0183db7e`; HEAD adds only this receipt)
+## Gates (R3 run at `bfc0a1f8`; HEAD adds only this receipt)
 
 - `go test -count=1 -v ./internal/application/audit` — rc 0;
   4,581 PASS, 0 FAIL, 0 SKIP; 1 `ok` package line.
-  Raw log `gate-audit-verbose.log`.
-- `go test -count=1 -v ./pkg/deltascope` — rc 0;
-  580 PASS, 0 FAIL, 0 SKIP; 1 `ok` package line.
-  Raw log `gate-deltascope-verbose.log`.
-- `go vet ./internal/application/audit ./pkg/deltascope` — rc 0.
-  Raw log `gate-vet-gofmt-diffcheck.log`.
+  Raw log `r3-gates/audit-verbose.log`.
+- `go vet ./internal/application/audit` — rc 0.
+  Raw log `r3-gates/vet.log`.
 - `gofmt -l` over the 13 cumulative changed `.go` files (real file list
-  `gate-gofmt-filelist.txt`) — clean. Pre-existing unformatted
+  `r3-gates/gofmt-filelist.txt`) — clean. Pre-existing unformatted
   `internal/infrastructure/parser/tidb/mysql_t26r5_test.go` is NOT
   touched by this chain (tracked, unchanged; repo-wide observation
-  only). Raw log `gate-gofmt.log`.
-- `git diff --check 2f7231b5..0183db7e` — rc 0.
-  `gate-vet-gofmt-diffcheck.log`.
-- R1 originals preserved as historical evidence: seven-package verbose
-  (8,279 PASS / 1 SKIP / 0 FAIL / 7 `ok` at `8738402f`), full suite
-  (39 `ok` / 5 no-test) — classified REUSED/report originals; any R1
-  command whose immediate rc was not captured stays labelled
-  `reported/uncaptured`.
+  only). Raw log `r3-gates/gofmt.log`.
+- `git diff --check 2f7231b5..HEAD` — rc 0.
+  Raw log `r3-gates/diff-check.log`.
+- Reused by identity (R3-D): the R2 `pkg/deltascope` verbose log
+  (580 PASS at `0183db7e`), the R2 build/rebuild/cmp records, and the
+  P2 public-result + live seam-count captures — R3 changed no input
+  those gates measure. R1 originals preserved as historical evidence:
+  seven-package verbose (8,279 PASS / 1 SKIP / 0 FAIL / 7 `ok` at
+  `8738402f`), full suite (39 `ok` / 5 no-test) — classified
+  REUSED/report originals; any R1 command whose immediate rc was not
+  captured stays labelled `reported/uncaptured`.
 
-## Build + rebuild (R2-D recipe)
+## Build + rebuild (R2-D recipe — reused per R3-C2)
 
-Source: commit `0183db7e6abbb7e83eb8f9011b52383d7eebb78e`, tree
+R3 changed no product or build input; the verified R2 binary is reused
+by full hash rather than rebuilt. Source: commit `0183db7e6abbb7e83eb8f9011b52383d7eebb78e`, tree
 `a49328e36a4b40cab837d5ef4fc5bbc251733a0d`, cwd
 `/Users/fan/GolangProjects/DeltaScope`, tracked tree clean.
 Toolchain `go1.26.1 darwin/arm64`; `GOOS=darwin GOARCH=arm64
@@ -193,18 +202,20 @@ ldflags none. `go.mod` sha256
   The R1 binary (`53735b9a`) carried `CGO_ENABLED=1` and embedded VCS
   data with `vcs.modified=true`; the R2 recipe replaces it.
 
-## CLI probes (binary `87cf741a`, providerless, mode-off)
+## CLI probes (binary `87cf741a`, providerless, mode-off — R3-C3 re-capture)
 
-cwd `/tmp/t26-priv-r2`; evidence captured to `cliN.stdout` /
-`cliN.stderr` / `cliN.rc` (six output streams + three rc files);
-policy `probe-policy.yaml` enables all four SRS rules at their
-required levels; no top-level dialect key; providerless (no connection
-flags); privilege mode off (no privilege flags); `--dialect mysql`,
+Re-captured on the verified R2 binary at cwd `/tmp/t26-priv-r3/probes`
+(R3-C3 — no R2 invocation transcript existed to preserve; the expanded
+invocations now live in `probe-transcript.txt` with cwd, redirects and
+immediate `echo $?` capture). Streams: `cliN.stdout` / `cliN.stderr` /
+`cliN.rc` (six streams + three rc files); policy
+`/tmp/t26-priv-r2/build/probe-policy.yaml` enables all four SRS rules
+at their required levels; no top-level dialect key; providerless (no
+connection flags); privilege mode off; `--dialect mysql`,
 `--format json`, `--fail-on none`; SQL
-`DROP SPATIAL REFERENCE SYSTEM 100001;`. Full invocation record
-`probe-commands.txt` (real commands — the R1 file's unexpanded
-variables are preserved as a HISTORICAL artifact; a real R1
-invocation transcript was never captured).
+`DROP SPATIAL REFERENCE SYSTEM 100001;`. The R1 file's unexpanded
+variables stay preserved as a HISTORICAL artifact; a real R1
+invocation transcript was never captured.
 
 | probe | command tail | rc | stdout | stderr | expected | actual |
 |---|---|---|---|---|---|---|
@@ -214,16 +225,18 @@ invocation transcript was never captured).
 
 ## Executed / not executed
 
-- Executed: every P1–P10 row at its contract layer incl. the new
-  P6a request/API twin; the R2 verbose gates for both changed-test
-  package and `pkg/deltascope`; vet, gofmt (real file list),
-  diff-check; the prescribed build + byte-identical rebuild; the three
-  CLI probes on the new binary; P2 real-counter + serialized public
-  capture.
+- Executed (R3): the R3-D gate set at `bfc0a1f8` — audit verbose, vet,
+  gofmt over the cumulative 13-file list, diff-check — plus the three
+  CLI probes re-captured on the verified R2 binary with a real
+  transcript.
+- Executed (R2, reused): every P1–P10 row; the `pkg/deltascope` verbose
+  gate; the prescribed build + byte-identical rebuild; P2 real-counter
+  + serialized public capture.
 - Not executed: Docker/native metadata e2e (not part of this work
-  order); push/merge/tag/release/issue close (not authorised);
-  the R1 seven-package/full-suite gates were NOT re-run (only tests
-  changed — R1 logs preserved as source-bound originals).
+  order); push/merge/tag/release/issue close (not authorised); no
+  rebuild this round (test/doc-only changes); the seven-package and
+  full-suite gates were not re-run — R1/R2 logs preserved as
+  source-bound originals.
 
 ## Loader qualification (verbatim)
 
@@ -234,32 +247,46 @@ the actual loader gate (`metadata.go`).
 
 ## Errata and attribution
 
-### R2-B5 counterexample (raised for ruling — no product change made)
+### R2-B5 "counterexample" retracted — it was a fixture error, not product truth
 
-The R2 work order asked to prove the real TiDB vendor-boundary
-statement's boundary own-apply mints `srsExistenceStale[100001]`. The
-real product chain contradicts the expectation:
+The R2 internal P9c test fed `parseT26` output (always MySQL-parsed,
+`server_alter_r2_test.go:99-107`) into a TiDB `batchState` — a
+mixed-dialect fixture that produced a cleanly-extracted MySQL row:
+`Unsupported=nil`, no adjudication, zero mint. R2 reported that as a
+bounded counterexample to the contract's `{100001}` mint expectation.
 
-- Under TiDB the vendor boundary never sets `statement.Unsupported` —
-  the boundary is a computed coverage aspect (`coverage_boundary.go`
-  emits `boundary:"vendor"` details to the report's unsupported list);
-  `statement.Unsupported` is assigned only for version-gated unaudited
-  rows (`metadata.go:274-287`).
-- The accepted contract's mint claim is conditional: `batch_state.go`'s
-  boundary branch requires `Unsupported != nil`. With the marker absent
-  under TiDB, dispatch reaches `applySRSStatement`, which mints only on
-  an attached S2 adjudication — and no adjudication attaches under TiDB
-  (the bind block is `dialect == spec.DialectMySQL`-gated,
-  `metadata.go:702`).
-- `TestT26SRSPrivP9cInternalVendorBoundaryMint` pins the actual
-  behaviour: `srsExistenceStale` empty, `srsDepsStale` false, no
-  contamination, `Unsupported=nil`, no adjudication — a boundary row,
-  not an audited SRS row.
+R3-A reparses the same input through the real TiDB path
+(`parseSQL(ctx, sql, spec.DialectTiDB)` + `Extract`): the extractor
+itself marks the row `Unsupported{feature:drop_spatial_reference_system,
+reason:UnsupportedVendorBoundaryReason, metadata:{boundary:"vendor"}}`
+(`coverage_boundary.go:91-96`); enrichment attaches no adjudication and
+the mysql-gated loader never fires — zero SRS catalog/privilege reads;
+the own-apply boundary branch (`batch_state.go:481-495`) mints exactly
+`srsExistenceStale={100001}` — the contract expectation stands.
 
-Whether the expectation should be amended (aspect-level boundary → no
-mint is coherent: no same-batch MySQL-dialect read can follow under
-TiDB) or the product should gain a TiDB-boundary mint is a ruling
-question — R2 made no semantic change.
+The R2 archive, logs, and counterexample text are preserved unchanged
+as historical evidence (HISTORICAL class); this test file and the
+external row's comment register the correction.
+
+### R3-C4 record corrections
+
+- R1→R2 actual diffstat: **3 files, +751/−135** (two test files
+  `+559/−62`, receipt README `+192/−73`) — the R2 receipt's cumulative
+  `+2536` figure was wrong; corrected above with per-range actuals.
+- The R2 receipt recorded a `gofmt` pass cleanly; the FIRST R2 gofmt
+  invocation actually errored (rc 2, a nonexistent path in the list)
+  before the corrected 13-file run passed — both invocations are
+  registered here; the passing 13-file log is the archived original.
+- Command/status transcripts are recorded separately from tool-output
+  streams — a 65 B transcript file is never described as a "0 B"
+  capture.
+- P5c/d/e and P6a-bis premise/no-mint conclusions are carried by the
+  internal companions (`TestT26SRSPrivP5ArmsInternalNonConsumption`),
+  not the request/API rows alone — the row map now names both layers.
+- Audit module README's loader description corrected to the real OR
+  gate `statementsNeedMySQLServerPrivilege(statements) ||
+  statementsNeedMySQLSRSPrivilege(statements)` — the server helper
+  itself never accepts SRS.
 
 ### R1 receipt corrections registered
 
