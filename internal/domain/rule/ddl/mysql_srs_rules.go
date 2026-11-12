@@ -216,8 +216,8 @@ func (r mysqlSRSDropReservedRule) Evaluate(ctx context.Context, statement spec.S
 		Level:   r.level,
 		Message: fmt.Sprintf("spatial reference system %d is in a reserved SRID range", srid),
 		Explanation: &rule.FindingExplanation{
-			Why:        "The authored SRID sits inside a documented MySQL reserved range; a native drop of a reserved SRID is refused regardless of catalog state.",
-			Risk:       "The statement would be refused if it lands — the advisory does not claim it executed.",
+			Why:        "The authored SRID sits inside a documented MySQL reserved range; the advisory reports that membership only.",
+			Risk:       "The advisory carries no claim about whether a native drop would refuse, succeed, or warn — the audit outcome on this arm is already settled by the shared adjudication.",
 			Suggestion: "Review whether the reserved SRID was intended; pick a non-reserved identifier for new spatial reference systems.",
 		},
 		Metadata: map[string]any{

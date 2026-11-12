@@ -101,8 +101,8 @@ func MySQLSRSDropAuditedDomain(version *VersionIdentity) bool {
 }
 
 // SRSDropInReservedRange reports whether the SRID falls inside a
-// registered reserved range — the documented MySQL reserved blocks the
-// drop would refuse natively. The reserved notice is an advisory that
+// registered reserved range — the documented MySQL reserved blocks.
+// The reserved notice is an advisory that
 // co-fires on the blocked and unproven arms; it never refires inside a
 // refusal arm's own finding.
 func SRSDropInReservedRange(srid uint32) bool {

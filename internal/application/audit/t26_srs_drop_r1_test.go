@@ -142,13 +142,14 @@ func srsQueryCount(fixture *srsSQLFixture, mark string) int {
 // st_geometry_columns. Table snapshots come from the fixture map
 // (tbl-t style prefixes carry N/A reads by design).
 type srsSQLProvider struct {
-	db          *sql.DB
-	version     string
-	tables      map[string]*spec.TableSnapshot
-	forwards    []spec.ObjectLookupRequest // R seam
-	privCalls   int                        // L seam
-	discoverErr error
-	resolveErr  error
+	db              *sql.DB
+	version         string
+	tables          map[string]*spec.TableSnapshot
+	forwards        []spec.ObjectLookupRequest // R seam
+	privCalls       int                        // L seam
+	privObservation *spec.MySQLServerDropPrivilegeObservation
+	discoverErr     error
+	resolveErr      error
 }
 
 func (p *srsSQLProvider) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
@@ -298,6 +299,9 @@ func (p *srsSQLProvider) LoadMySQLServerDropPrivilege(_ context.Context, dialect
 	if dialect != spec.DialectMySQL {
 		return nil, nil
 	}
+	if p.privObservation != nil {
+		return p.privObservation, nil
+	}
 	return &spec.MySQLServerDropPrivilegeObservation{}, nil
 }
 
@@ -380,6 +384,24 @@ func assertReads(t *testing.T, provider *srsSQLProvider, fixture *srsSQLFixture,
 	}
 }
 
+// assertReservedAdvisoryText is the R2-A discriminating check: the
+// advisory explains reserved-range membership only — it must never
+// upgrade membership into a native refusal prediction.
+func assertReservedAdvisoryText(t *testing.T, finding rule.Finding) {
+	t.Helper()
+	if finding.Explanation == nil {
+		t.Fatalf("reserved notice lost its Explanation")
+	}
+	for _, field := range []string{finding.Explanation.Why, finding.Explanation.Risk} {
+		if strings.Contains(field, "refused") && !strings.Contains(field, "no claim") {
+			t.Fatalf("reserved advisory claims native refusal: %q", field)
+		}
+	}
+	if !strings.Contains(finding.Explanation.Why, "reserved range") {
+		t.Fatalf("Why must state reserved-range membership: %q", finding.Explanation.Why)
+	}
+}
+
 func tblTFixture() map[string]*spec.TableSnapshot {
 	return map[string]*spec.TableSnapshot{
 		"s.t": {Schema: "s", Table: &spec.Table{Schema: "s", Name: "t"}, Exists: true,
@@ -422,6 +444,11 @@ func TestT26SRSR1RefusedDependency(t *testing.T) {
 	}
 	if finding.Metadata["srid"] != uint32(4326) || finding.Metadata["outcome"] != "refused_dependency" || finding.Metadata["dependency_witness_count"] != 1 {
 		t.Fatalf("metadata=%+v", finding.Metadata)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.mysql.srs.drop.reserved" {
+			t.Fatalf("reserved advisory must not fire inside the refusal arm even though 4326 is reserved: %+v", f)
+		}
 	}
 	if len(result.Statements[0].EvidenceGaps) != 0 || result.Statements[0].Coverage.Status != report.CoverageComplete {
 		t.Fatalf("gaps=%+v coverage=%+v", result.Statements[0].EvidenceGaps, result.Statements[0].Coverage)
@@ -562,6 +589,11 @@ func TestT26SRSR1RefusedSRID0(t *testing.T) {
 		stmt.Findings[0].Metadata["srid"] != 0 || stmt.Findings[0].Metadata["outcome"] != "refused_srid0" {
 		t.Fatalf("findings=%+v want the fixed srid0 blocker", stmt.Findings)
 	}
+	for _, f := range stmt.Findings {
+		if f.RuleID == "ddl.mysql.srs.drop.reserved" {
+			t.Fatalf("reserved advisory must not fire inside the refusal arm: %+v", f)
+		}
+	}
 	if len(stmt.EvidenceGaps) != 0 || stmt.Coverage.Status != report.CoverageComplete || result.Verdict != report.VerdictReject {
 		t.Fatalf("gaps=%+v coverage=%v verdict=%v", stmt.EvidenceGaps, stmt.Coverage.Status, result.Verdict)
 	}
@@ -582,12 +614,16 @@ func TestT26SRSR1ReservedEndpoints(t *testing.T) {
 	// E5.4 shape: endpoint advisory fires as the lone notice finding.
 	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36"}, nil)
 	enriched := enrichSRS(t, newSRSState(provider), provider, "DROP SPATIAL REFERENCE SYSTEM 32767")
+	if arm := srsArm(t, enriched[0]); arm != spec.SRSDropArmUnproven {
+		t.Fatalf("32767 arm=%v want unproven before checking the advisory text", arm)
+	}
 	result := evaluateEnriched(t, enriched)
 	stmt := result.Statements[0]
 	if len(stmt.Findings) != 1 || stmt.Findings[0].RuleID != "ddl.mysql.srs.drop.reserved" ||
 		stmt.Findings[0].Message != "spatial reference system 32767 is in a reserved SRID range" {
 		t.Fatalf("findings=%+v want the reserved notice", stmt.Findings)
 	}
+	assertReservedAdvisoryText(t, stmt.Findings[0])
 	assertReads(t, provider, fixture, 1, 1, 1, 1, 0)
 
 	// E5.5 shape: 32768 — no advisory at all.
@@ -704,6 +740,7 @@ func TestT26SRSR1BoundaryLifecycleMintsStale(t *testing.T) {
 	if n := len(result.Statements[1].Findings); n != 1 || result.Statements[1].Findings[0].RuleID != "ddl.mysql.srs.drop.reserved" {
 		t.Fatalf("stmt2 findings=%+v want only the reserved co-fire", result.Statements[1].Findings)
 	}
+	assertReservedAdvisoryText(t, result.Statements[1].Findings[0])
 }
 
 // E7.2: a different SRID stays unaffected by the boundary write.
