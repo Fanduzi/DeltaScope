@@ -1,14 +1,21 @@
-# T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01 — receipt (R5)
+# T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01 — receipt (R5, CLOSED)
 
 Implementation + verification round over the accepted contract
 `docs/verification/t26-srs-drop-ordered-publication-contract-01/`
-(R4, closed at `1346f230`). Status: **submitted / pending reviewer
-ruling** — the R1–R4 deliveries were each returned CHANGES
-REQUIRED; the R4 ruling ACCEPTED the product behavior and all
-test-layer semantics (R4-A…D CLOSED), leaving only evidence
-provenance open. This receipt is the **R5 evidence closeout**,
-docs/evidence-only, bound to the unchanged candidate C4
-`cfa4295712291979db14a618456106ad4b79b6b4` (tree `2d722436286c5f77e7a774a8f4c1a5a8b15c57af`) — no Go source moved. Expected vectors come from the frozen case-matrix; every measured number below was captured from raw logs — expected and measured are never conflated.
+(R4, closed at `1346f230`). Status: **R5 ACCEPTED / CLOSED** — the
+R1–R4 deliveries were each returned CHANGES REQUIRED; the R4 ruling
+accepted the product behavior and all test-layer semantics
+(R4-A…D CLOSED); the R5 ruling closed evidence provenance.
+Final identities: product/test candidate C4
+`cfa4295712291979db14a618456106ad4b79b6b4` (tree
+`2d722436286c5f77e7a774a8f4c1a5a8b15c57af`); evidence closeout F5
+`ff6069a51a6694efa509eef2773a2f686fa82cc2` (tree
+`84be9cb7a4d7a8b154448dce5b4c2387935bfc4b`). This acceptance is NOT
+a push/merge/tag/release/issue-close authorization; SRS CREATE /
+ALTER INSTANCE / T27 remain separate follow-up work orders.
+Expected vectors come from the frozen case-matrix; every measured
+number below was captured from raw logs — expected and measured are
+never conflated.
 
 ## Scope (unchanged product surface)
 
@@ -365,6 +372,15 @@ verbatim — corrections are marked, never rewritten.
    transcript carried no real `cmp` argv — `build-verify-r5.txt`
    supplies the literal binding. No file content was rewritten;
    labels only.
+10. R5-ER1 (reviewer-level attribution note, record-only):
+    `identity-recheck-r5.txt` captured the current Git identity
+    while F4 was HEAD — it does not contain F5's own
+    `git rev-parse` output. Correct attribution: C4/F4 identity is
+    proven by that original capture; F5
+    `ff6069a5` / tree `84be9cb7` / parent `19fd6de6` is the R5
+    delivery's own closeout identity recorded here. No amend was
+    required — the ruling explicitly avoids a self-reference loop
+    for the final evidence commit.
 
 ## OP mapping — expected vs measured
 
