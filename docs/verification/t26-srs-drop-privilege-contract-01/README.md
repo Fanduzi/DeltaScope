@@ -88,10 +88,15 @@ privileges, no schema-scoped grants, no grant grammar extension.
 | --- | --- | --- | --- | --- |
 | `unproven` | any of: mode not selected; loader absent on provider; observation nil; empty `Account` (principal unbound); resolved version outside the witness domain; grant lines without exact-token `SUPER`/`ALL PRIVILEGES` on `*.*`; loader read issued but returned no positive witness | request-level, derived once at load | premise read by the SRS adjudication of every audited drop statement | `P` stays owed on S2; no conditional marker anywhere |
 | `consumable` | all of: a loaded observation; bound account; in-domain version; positive `*.*` witness; the statement's premise projected while the positional scope is still open | the statement's own premise projection over the request witness | only this statement's adjudication | S2 owed set drops `P` → `[D]` or `[E,D]`; the SRS privilege-premise notice fires (§5) |
-| `suppressed` (suppressed-by-scope) | a positive request witness exists, but the positional scope terminator minted `serverPrivilegeScopeEnded` before this statement | per-statement projection over the same witness + scope flag | later statements only; completed statements keep their snapshot | identical public shape to `unproven` on this statement (`P` owed, no marker); prefix statements are unaffected |
+| `suppressed` (suppressed-by-scope) | **requires both**: a positive request witness already established (the once-derived verdict is true) AND the positional scope terminator minted `serverPrivilegeScopeEnded` before this statement | per-statement projection over the same witness + scope flag | later statements only; completed statements keep their snapshot | identical public shape to `unproven` on this statement (`P` owed, no marker); prefix statements are unaffected |
 
-`suppressed` is the `ServerDropPrivilegeSuppressed` equivalent already
-registered for the SERVER family (`internal/domain/spec/server_drop_premise.go:77-80`).
+`suppressed` applies only when the positive witness was already
+established — any path that never produced a positive witness stays
+`unproven`, never `suppressed` (the two unavailable families must not
+be conflated: a witness that was never proven is not the same as a
+proven witness whose scope ended). `suppressed` is the
+`ServerDropPrivilegeSuppressed` equivalent already registered for the
+SERVER family (`internal/domain/spec/server_drop_premise.go:77-80`).
 The execution phase adds `SRSDropPrivilegeConsumable` and
 `SRSDropPrivilegeSuppressed` constants to the existing
 `spec.SRSDropPrivilege` enum — it does not replace it.
@@ -226,8 +231,9 @@ arm still mints `srsExistenceStale[srid]` for later statements).
 ## 5. Selected conditional public projection
 
 **Selected carrier: a dedicated SRS privilege-premise notice rule.**
-Rationale: `rule.EvidenceGap` has no metadata carrier (only
-`ReasonCode`/`RequiredFacts`), so the marker cannot ride the gap; and
+Rationale: `rule.EvidenceGap` carries exactly `rule_id`, `reason_code`,
+`required_facts` (`internal/domain/rule/rule.go:73-77`) — it has no
+metadata carrier, so the marker cannot ride the gap; and
 `ddl.mysql.srs.drop.reserved` must stay membership-only
 (`{srid}`-only metadata, suppressed on refusal arms), so it cannot
 absorb the marker either.
@@ -245,12 +251,19 @@ Frozen public contract (all PLAN / UNEXECUTED):
 | JSON path | `$.statements[i].findings[j].metadata.conditional_audit`; the key is present only on consuming statements — absent, `null`, non-string, `""`, or any other token never equals the marker |
 | findings per SRS statement | S2+consumed+non-reserved → exactly 1 (this notice); S2+consumed+reserved → exactly 2 (notice + reserved advisory); S2+not-consumed+reserved → exactly 1 (reserved); S2+not-consumed+non-reserved → 0; B/S0/S1 → unchanged by this rule |
 | gaps per SRS statement | exactly 1 on B/S2 via `ddl.mysql.srs.drop.dependency`, reason `unknown_srs_state`, `RequiredFacts` = owed order above |
-| coverage / verdict under consumption | S2 stays unverified → statement coverage `unverified`, aggregate verdict `review` — `P` consumption never upgrades coverage or claims success |
+| coverage / verdict under consumption | the SRS statement's coverage stays `unverified` — `P` consumption never upgrades coverage or claims success; the aggregate verdict follows normal aggregation over the **whole request** (single-SRS fixture with default levels → `review`; a blocker-level rewrite or sibling blockers → `reject`) |
 
 Three distinct predicates stay distinct and each appears in the matrix:
 (i) the request carries a legal observation; (ii) this statement's
 premise is consumable; (iii) this arm actually consumed `P`. Only (iii)
-emits the marker.
+emits the marker. The `observed_account_new_session` scope itself is
+the registered conditional contract: the observed `CURRENT_USER`
+account is the expected execution principal, execution is assumed in a
+new session on the same target established after the observation, and
+the relied-upon grant is assumed to still apply when that session loads
+privileges. It does **not** claim the future executor was verified,
+that any pooled/current session holds effective `SUPER`, or that a new
+execution session was created (`server_drop_premise.go:20-28`).
 
 Unique projections, frozen:
 
@@ -267,8 +280,15 @@ the premise was discharged under the declared conditional scope.
 `ddl.mysql.srs.drop.privilege` suppresses only the notice — the
 adjudication's premise verdict and the reduced owed set are spec truth,
 not output policy; the gap's `RequiredFacts` still show `P` discharged.
-A level rewrite changes only the finding level. Premise validity never
-silently tracks rule config.
+The marker-exactness assertion therefore reads: **every actually
+emitted privilege notice carries the exact string marker** — under a
+disabled rule there is no notice and no marker, while the reduced owed
+set (`[D]`/`[E,D]`) stands unchanged. A level rewrite leaves
+premise/owed/apply untouched but participates in normal severity
+aggregation like any finding: `warning` keeps the single-statement
+fixture at `review`, while a `blocker` rewrite raises the aggregate
+verdict to `reject` even though statement coverage stays `unverified`.
+Premise validity never silently tracks rule config.
 
 **Conditionality cannot be represented**: `P` consumption is decided by
 the premise, not by the marker — if the notice rule were disabled the
@@ -360,17 +380,26 @@ Reads vocabulary (unchanged from the accepted execution round):
 | `Qexist` | `information_schema.st_spatial_reference_systems` existence query | `provider_server_srs.go` |
 | `Qdeps` | `information_schema.st_geometry_columns` dependency query | `provider_server_srs.go:262` |
 | `Qo` | loader-internal `select version()` | provider version channel |
-| `L` | privilege-observation loader invocations (0 or 1 per request) | `metadata.go:341-352` |
+| `L` | privilege-observation loader invocations — issued iff mode is on AND a qualifying audited statement is present AND the provider exists and implements `MySQLServerDropPrivilegeLoader`; capability-missing keeps `L=0`; the B/S0/S1 outcome of any statement never decides `L` (the load precedes arm selection) | `metadata.go:341-352` |
 | `Vd` | request `LoadInstanceFacts` method invocations | service/request layer |
 
-Sub-counts are available on demand: the loader issues exactly two
-statements — `select current_user()` then `show grants for
-current_user()` (`provider_server_drop_privilege.go:46-65`) — so a
-per-statement split is recordable without new seams. Failed calls count
-as attempts. `P` consumption adds **zero** new catalog reads: the
-premise is projection over already-loaded evidence, and the SRS
-existence/dependency reads still issue exactly as today (`P` is never a
-read gate). `Vd` and `Qo` counts are unchanged by this contract.
+`L` counts one invocation per `enrichStatements` entry — per request on
+the request/API layer, and per call again when the same `batchState` is
+re-enriched internally (the gate sits inside `enrichStatements`, not on
+a once-per-state lifetime). The two counting units stay distinct in the
+matrix.
+
+Sub-counts are available on demand: on the healthy path the loader
+issues exactly two statements — `select current_user()` then
+`show grants for current_user()`
+(`provider_server_drop_privilege.go:46-65`) — so a per-statement split
+is recordable without new seams; on a failure path the second statement
+may never be attempted (the matrix records the actual attempts, not the
+healthy-path total). Failed calls count as attempts. `P` consumption
+adds **zero** new catalog reads: the premise is projection over
+already-loaded evidence, and the SRS existence/dependency reads still
+issue exactly as today (`P` is never a read gate). `Vd` and `Qo`
+counts are unchanged by this contract.
 
 Privilege read error: a failed `LoadMySQLServerDropPrivilege` wraps in
 `serverPrivilegeReadError` ("server drop privilege observation
@@ -379,9 +408,23 @@ returns from `enrichStatements` (`metadata.go:345-348`) — processing
 terminates; no bind, adjudication, or apply is entered for any
 statement; the bounded public error reaches the caller with the
 `errors.Is` cause intact. A real issued-read error is **never**
-downgraded into an ordinary `P` evidence gap. Distinct states the
-matrix keeps separate: mode off / loader absent → `unproven` (no
-error); loader present but observation fails → typed error exit;
+downgraded into an ordinary `P` evidence gap.
+
+Loader error coverage is narrowed to the operations the provider
+actually checks and propagates (`provider_server_drop_privilege.go:30-70`):
+the `Conn` acquisition, both `QueryContext` calls, the
+`current_user` `Scan`, `rows.Err`, and the `current_user` `rows.Close`
+are each explicitly checked; the deferred `conn.Close` and the
+`show grants` `rows.Close` (inside `loadMySQLGrantLines`,
+`provider_resource_group_facts.go:218`) are deferred/unchecked-return —
+no promise is made about them and the provider is not changed to
+satisfy a stronger one. Per-statement attempt counts under failure:
+`current_user` query failure → attempts `1/0` (first statement tried,
+second never reached); `show grants` failure → `1/1`.
+
+Distinct states the matrix keeps separate: mode off / loader absent →
+`unproven` (no error, `L=0`); loader present but observation fails →
+typed error exit (`L=1`, no SRS seams entered);
 observation ok, no positive witness → `unproven`; witness ok, scope
 ended → `suppressed`.
 
