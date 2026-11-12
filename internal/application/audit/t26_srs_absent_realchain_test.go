@@ -469,7 +469,8 @@ func TestT26SRSAbsentSnapshotFidelity(t *testing.T) {
 		t.Fatal("comparator must distinguish nil from non-nil empty MatchedSRIDs")
 	}
 
-	// 3. Bidirectional isolation on all three collections.
+	// 3. Exact-value preservation: the capture must carry the original
+	// values, not merely a non-nil slice of the same shape (R4-B).
 	live := spec.Statement{Metadata: &spec.Metadata{
 		SpatialReference: &spec.SpatialReferenceSystemState{
 			SRID:         100001,
@@ -479,23 +480,48 @@ func TestT26SRSAbsentSnapshotFidelity(t *testing.T) {
 		SRSDrop: &spec.SRSDropAdjudication{Owed: []string{"a"}},
 	}}
 	snap := paSnapStmt(live)
-	// mutate the live value — the snapshot must not move
+	wantCol := spec.SRSDependentColumn{Schema: "s", Table: "t", Column: "g", SRID: 9}
+	if len(snap.srs.NameConflict.MatchedSRIDs) != 1 || snap.srs.NameConflict.MatchedSRIDs[0] != 1 {
+		t.Fatalf("MatchedSRIDs=%v want exactly [1]", snap.srs.NameConflict.MatchedSRIDs)
+	}
+	if len(snap.srs.Dependencies.Columns) != 1 || snap.srs.Dependencies.Columns[0] != wantCol {
+		t.Fatalf("Dependencies.Columns=%+v want exactly [%+v]", snap.srs.Dependencies.Columns, wantCol)
+	}
+	if len(snap.adj.Owed) != 1 || snap.adj.Owed[0] != "a" {
+		t.Fatalf("Owed=%v want exactly [a]", snap.adj.Owed)
+	}
+	// mutate the live value — the snapshot must keep the ORIGINAL values
 	live.Metadata.SpatialReference.NameConflict.MatchedSRIDs[0] = 999
 	live.Metadata.SpatialReference.Dependencies.Columns[0].SRID = 999
 	live.Metadata.SRSDrop.Owed[0] = "zzz"
-	if snap.srs.NameConflict.MatchedSRIDs[0] == 999 ||
-		snap.srs.Dependencies.Columns[0].SRID == 999 ||
-		snap.adj.Owed[0] == "zzz" {
+	if snap.srs.NameConflict.MatchedSRIDs[0] != 1 ||
+		snap.srs.Dependencies.Columns[0] != wantCol ||
+		snap.adj.Owed[0] != "a" {
 		t.Fatal("live mutation leaked into the captured snapshot")
 	}
-	// mutate the snapshot — the live value must not move
+	// mutate the snapshot — the live value must keep the WRITTEN values
 	snap.srs.NameConflict.MatchedSRIDs[0] = 777
 	snap.srs.Dependencies.Columns[0].SRID = 777
 	snap.adj.Owed[0] = "yyy"
-	if live.Metadata.SpatialReference.NameConflict.MatchedSRIDs[0] == 777 ||
-		live.Metadata.SpatialReference.Dependencies.Columns[0].SRID == 777 ||
-		live.Metadata.SRSDrop.Owed[0] == "yyy" {
+	if live.Metadata.SpatialReference.NameConflict.MatchedSRIDs[0] != 999 ||
+		live.Metadata.SpatialReference.Dependencies.Columns[0].SRID != 999 ||
+		live.Metadata.SRSDrop.Owed[0] != "zzz" {
 		t.Fatal("snapshot mutation leaked back into the live value")
+	}
+
+	// 4. Comparator controls (R4-B): a positive control proves two
+	// identical non-empty conflicts compare equal; a negative control
+	// proves same Complete/same nilness/same length but a differing
+	// ELEMENT is caught — a shape-preserving clone that zeroed values
+	// cannot slip through.
+	posA := &spec.SRSConflictFact{Complete: true, MatchedSRIDs: []uint32{1, 2}}
+	posB := &spec.SRSConflictFact{Complete: true, MatchedSRIDs: []uint32{1, 2}}
+	if !paSRSConflictSame(posA, posB) {
+		t.Fatal("comparator must return true for identical non-empty MatchedSRIDs")
+	}
+	neg := &spec.SRSConflictFact{Complete: true, MatchedSRIDs: []uint32{1, 42}}
+	if paSRSConflictSame(posA, neg) {
+		t.Fatal("comparator must catch a differing element at same shape/nilness/length")
 	}
 }
 
@@ -684,9 +710,10 @@ func TestT26SRSAbsentBoundaryPrefixInternal(t *testing.T) {
 // statements are version boundaries, NEITHER carries an SRSDrop
 // adjudication; stmt1's boundary apply mints the authored stale key;
 // stmt1's single pass and stmt2's ZERO increment are measured at their
-// own hooks; L=0 is attributed to the ADMITTANCE gate — no audited
-// statement ever derived a premise — not to the later stale
-// short-circuit (L was already 0 at stmt1's hook, before any mint).
+// own hooks. L=0 is an AFTER-APPLY measured value at each hook — the
+// reason the loader never fired is the enrich-entry qualification gate
+// plus this fixture, which these counts do not themselves time-order
+// (R4-E1: the hook observes after apply, not before the mint).
 // Vd is N/A at this layer: no discovery runs inside enrich.
 func TestT26SRSAbsentBoundaryVersionPairInternal(t *testing.T) {
 	fx := r3PrivilegeFixture()
@@ -734,9 +761,12 @@ func TestT26SRSAbsentBoundaryVersionPairInternal(t *testing.T) {
 		readsAt[1][2] - readsAt[0][2], readsAt[1][3] - readsAt[0][3], readsAt[1][4] - readsAt[0][4]}; d != [5]int{0, 0, 0, 0, 0} {
 		t.Fatalf("stmt2 increment=%v want [0 0 0 0 0] — minted stale short-circuits its bind", d)
 	}
-	// L=0 belongs to the admittance gate: it was already 0 at stmt1's
-	// hook — before any stale mint existed — so the mint cannot be
-	// its cause.
+	// L=0 measured at both after-apply hooks. The gate story — the
+	// loader is never triggered because no audited statement reaches
+	// the premise-derivation point on a version boundary — comes from
+	// the enrich-entry qualification gate and this fixture; these
+	// after-apply counts do not themselves time-order the mint
+	// (R4-E1: after-apply measurement, not a pre-mint observation).
 	if readsAt[0][4] != 0 || readsAt[1][4] != 0 {
 		t.Fatalf("L=%d/%d want 0/0 — no audited statement ever derived a premise", readsAt[0][4], readsAt[1][4])
 	}

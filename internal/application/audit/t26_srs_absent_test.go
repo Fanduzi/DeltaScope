@@ -355,20 +355,20 @@ func TestT26SRSAbsentBoundaryPrefixBlocks(t *testing.T) {
 	if len(result.Statements) != 2 {
 		t.Fatalf("statements=%d want 2", len(result.Statements))
 	}
-	// R2-D1: stmt1 is the typed CREATE OR REPLACE implementation
-	// boundary — its own unsupported entry, exact boundary/object
-	// metadata, zero findings and gaps, incomplete coverage.
-	if len(result.Unsupported) == 0 {
-		t.Fatalf("unsupported=%+v want the typed boundary entry", result.Unsupported)
+	// R4-C: the public Unsupported set is exactly ONE entry — the typed
+	// CREATE OR REPLACE implementation boundary — bound to statement
+	// index 0 (the prefix) and to the Feature literal the prefix
+	// actually carries (`create_spatial_reference_system`, the
+	// candidate's DDLOperationCreateSpatialReferenceSystem), with the
+	// frozen reason/boundary/object metadata.
+	if len(result.Unsupported) != 1 {
+		t.Fatalf("unsupported=%+v want exactly one typed boundary entry", result.Unsupported)
 	}
-	var createBoundary *spec.UnsupportedDetail
-	for i := range result.Unsupported {
-		if result.Unsupported[i].Metadata["boundary"] == "implementation" {
-			createBoundary = &result.Unsupported[i]
-		}
-	}
-	if createBoundary == nil {
-		t.Fatalf("unsupported=%+v want one implementation boundary for the CREATE OR REPLACE", result.Unsupported)
+	createBoundary := &result.Unsupported[0]
+	if createBoundary.Index != 0 ||
+		createBoundary.Feature != string(spec.DDLOperationCreateSpatialReferenceSystem) ||
+		createBoundary.Metadata["boundary"] != "implementation" {
+		t.Fatalf("create boundary=%+v want index=0/feature=create_spatial_reference_system/boundary=implementation", createBoundary)
 	}
 	if createBoundary.Reason != spec.UnsupportedUnauditedReason ||
 		createBoundary.Metadata["object"] != "spatial_reference_system" {
@@ -377,6 +377,9 @@ func TestT26SRSAbsentBoundaryPrefixBlocks(t *testing.T) {
 	stmt1 := result.Statements[0]
 	if len(stmt1.Findings) != 0 || len(stmt1.EvidenceGaps) != 0 {
 		t.Fatalf("stmt1 findings=%+v gaps=%+v want both empty on the boundary", stmt1.Findings, stmt1.EvidenceGaps)
+	}
+	if stmt1.Coverage.Status != report.CoverageIncomplete {
+		t.Fatalf("stmt1 coverage=%v want incomplete — a boundary row is never fully covered", stmt1.Coverage.Status)
 	}
 	// The tail DROP is the audited B row — its [B] gap, no findings,
 	// and the read increments the contract froze.
@@ -432,11 +435,15 @@ func TestT26SRSAbsentBoundaryVersionPair(t *testing.T) {
 			t.Fatalf("stmt%d coverage=%v want incomplete", i, stmt.Coverage.Status)
 		}
 	}
-	// Reads: stmt1's bind issued the single R/Qexist/Qdeps/Qo pass
-	// (Vd=1 discovery, L=0 — the privilege loader never runs for a
-	// boundary row); stmt2's own-apply stale mint short-circuits its
-	// bind, so the pair's TOTAL stays exactly one pass — the zero
-	// increment is measured against stmt1, not inferred.
+	// Reads (R4-E2): this public row measures the pair TOTAL —
+	// stmt1's bind issued the single R/Qexist/Qdeps/Qo pass (Vd=1
+	// discovery, L=0 — the privilege loader never runs for a
+	// boundary row). The short-circuit cause is stmt1's COMPLETED
+	// boundary own-apply — it minted the authored-SRID stale key —
+	// not anything in stmt2's own apply. Per-statement increments are
+	// the internal companion's witness (…VersionPairInternal); this
+	// layer asserts the total only, and the two layers' attributions
+	// stay separate.
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 	if len(p.forwards) != 1 || p.forwards[0].Type != "mysql_spatial_reference_system" {
 		t.Fatalf("forwards=%+v want exactly one SRS bind for the pair", p.forwards)

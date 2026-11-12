@@ -327,9 +327,10 @@ func TestT26SRSAbsenceMidIterationCancelPropagates(t *testing.T) {
 	if got.snapshot != nil {
 		t.Fatalf("snapshot = %+v, want none delivered", got.snapshot)
 	}
-	if got := t26Attempt(t, testSRSDepFragment); got != 0 {
-		t.Fatalf("Qdeps attempts=%d want 0 — the read after the cancelled one was never reached", got)
-	}
+	// Final-vector assertion AFTER the call returns — the pre-cancel
+	// counts above prove where the cancel landed; this excludes any
+	// further Qo/existence attempt made after the cancel (R4-A).
+	t26AssertSeams(t, 1, 1, 0)
 }
 
 // PA-9f: the existence read's clean zero-observed-row answer does not
