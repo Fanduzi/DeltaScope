@@ -1,14 +1,14 @@
-# T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01 — receipt (R4)
+# T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01 — receipt (R5)
 
 Implementation + verification round over the accepted contract
 `docs/verification/t26-srs-drop-ordered-publication-contract-01/`
 (R4, closed at `1346f230`). Status: **submitted / pending reviewer
-ruling** — the R1, R2 and R3 deliveries were each returned CHANGES
-REQUIRED; this receipt is the R4 resubmission bound to candidate
-`cfa42957` (tree `2d722436`, parent `d97907fb`). Expected vectors
-come from the frozen case-matrix; every measured number below was
-captured from raw logs under this candidate — expected and measured
-are never conflated.
+ruling** — the R1–R4 deliveries were each returned CHANGES
+REQUIRED; the R4 ruling ACCEPTED the product behavior and all
+test-layer semantics (R4-A…D CLOSED), leaving only evidence
+provenance open. This receipt is the **R5 evidence closeout**,
+docs/evidence-only, bound to the unchanged candidate C4
+`cfa4295712291979db14a618456106ad4b79b6b4` (tree `2d722436286c5f77e7a774a8f4c1a5a8b15c57af`) — no Go source moved. Expected vectors come from the frozen case-matrix; every measured number below was captured from raw logs — expected and measured are never conflated.
 
 ## Scope (unchanged product surface)
 
@@ -225,6 +225,74 @@ R3/R2 binary (hash comparison below).
   from R3 AND re-run against the R4 binary with all six streams
   byte-compared (`cmp` identical, rc 0/1/2); the manifest
   classifies every archive member NEW or REUSED individually.
+  ⚠ R5 closeout correction (erratum 9): parts of this R4 evidence
+  paragraph overclaimed — the manifest was an aggregate wildcard
+  ledger, the "fresh rerun" transcripts carry no literal invocation
+  binding, and the pre-format gofmt capture was cited as clean.
+  The R5 section below supersedes the claim level, not the files.
+
+## R5 evidence closeout (docs/evidence-only — zero Go changes)
+
+The R4 ruling (CHANGES REQUIRED — evidence-only closeout) accepted
+R4-A…D and the product semantics; this section answers the R5 §9
+checklist item-by-item. R1/R2/R3/R4 records below are retained
+verbatim — corrections are marked, never rewritten.
+
+1. **C4/F4 current recheck** (`identity-recheck-r5.txt`, literal
+   argv + immediate rc, captured now — labeled current recheck,
+   never re-dated as R4 capture):
+   - C4 `cfa4295712291979db14a618456106ad4b79b6b4`, tree
+     `2d722436286c5f77e7a774a8f4c1a5a8b15c57af`, parent
+     `d97907fb245c7b94ba3939009fd68407b2a95e33`.
+   - F4 `19fd6de6df56ef6fd77d5dab5a631db42cdf617f`, tree
+     `eb0a7f1270dbf4c2573f2207d632121736e31c5e`, parent
+     `cfa4295712291979db14a618456106ad4b79b6b4`.
+   - Branch `milestone/mysql-tidb-ddl-completion`;
+     `git status --porcelain=v1 --untracked-files=no` empty.
+   - F5 (this receipt + archive corrections) is appended
+     sequentially — no amend/rebase.
+2. **C4→F4 interval identity**: `git diff --name-status
+   cfa42957..19fd6de6` = exactly `M
+   docs/verification/t26-srs-drop-ordered-publication-execution-01/README.md`
+   — the interval is docs-only by literal capture;
+   `git diff --check` rc=0.
+3. **Manifest**: `manifest-sha256.txt` now carries one row per
+   actual member in the format `CLASS | bytes | SHA-256 | path |
+   source-commit | source-archive | source-member`. Member count
+   reconciled: **67 regular files = 66 manifest rows + 1
+   self-excluded outer manifest**; nested historical manifests are
+   listed as members (the prior `! -name` filter silently dropped
+   them — registered, corrected).
+4. **REUSED members**: every REUSED row names the source archive
+   (`t26-srs-ordered-exec-r3.tar.gz`, 21,376,958 B, SHA-256
+   `2c327422dcec85e4fac81bd16fd2e2b53ded97a4f70f79b015ea17e55831a41f`,
+   bound to R3 candidate `de879003`), the source member path, and
+   the member bytes/SHA; all 40 REUSED members were re-hashed
+   against the extracted R3 archive — 40/40 match.
+5. **gofmt evidence split**: `gates/static-checks-r4-preformat.txt`
+   is relabeled the R4 **pre-format** capture (2 files listed — not
+   a clean capture); `gates/gofmt-clean-r5.txt` is the R5 current
+   clean capture (`gofmt -l` over the four literal file paths,
+   zero-byte stdout, rc=0).
+6. **Build**: bound by `build/build-verify-r5.txt` — literal cwd,
+   literal build argv, build rc=0, literal `shasum`/`wc` argv, and
+   a real `cmp deltascope-r5 b1` rc=0 against the archive `b1`
+   (52,779,058 B / `fa1a9a6a…d02a2`). The R4 summary transcript is
+   retained verbatim as `build/transcript.txt`.
+7. **Probes**: `probes/cli1/2/3.{rc,stdout,stderr}` +
+   `policy-srs-ordered.yaml` + `run-probes.sh` stay REUSED from the
+   R3 archive (per-member source SHA verified). The R4 re-run
+   outputs are re-homed under `probes/r4-unbound/` and classified
+   **UNBOUND comparison artifacts — invocation binding not
+   retained**; the "fresh rerun is bound evidence" claim is
+   **withdrawn** (the transcripts corroborate only; the bound probe
+   evidence is the REUSED R3 originals plus the shared byte-
+   identical binary).
+8. **Member count**: re-registered above — 67 files, 66 listed
+   members, self-exclusion + nested-manifest handling explicit.
+9. **History**: R1/R2/R3/R4 receipts, captures and claims are
+   retained verbatim; every R5 correction is a relabel or an
+   explicit withdrawal, never an overwrite.
 
 ## Reviewer-level errata registered
 
@@ -284,6 +352,19 @@ R3/R2 binary (hash comparison below).
    R4 gate is the two-package `-v` minimum over the changed
    packages per the R4 ruling; the R3 seven-package and full
    `./...` gates remain the standing round record.
+9. R4 evidence-claim errata (per the R5 ruling, section seven):
+   (a) "manifest classifies every archive member" was overclaimed —
+   the R4 ledger used aggregate wildcard rows and its member count
+   silently skipped nested manifests; the R5 7-column manifest is
+   the corrective. (b) "fresh rerun is bound evidence" is
+   **withdrawn** — the r4 probe transcripts kept no literal
+   invocation binding and are reclassified UNBOUND comparison
+   artifacts. (c) `gates/static-checks-r4-preformat.txt` is the
+   PRE-FORMAT capture (2 files listed), never the clean capture —
+   `gofmt-clean-r5.txt` is the clean one. (d) the R4 build summary
+   transcript carried no real `cmp` argv — `build-verify-r5.txt`
+   supplies the literal binding. No file content was rewritten;
+   labels only.
 
 ## OP mapping — expected vs measured
 
@@ -358,29 +439,32 @@ the unchanged product surface.
   both package `ok` lines.
 - `go vet ./internal/application/audit/ ./pkg/deltascope/`: rc=0,
   empty output.
-- `gofmt -l` over the 4 R4 changed Go files (expanded argv in
-  `gates/`): rc=0, zero-byte output after formatting.
+- `gofmt -l` over the 4 R4 changed Go files: the PRE-FORMAT
+  capture listed 2 files (`static-checks-r4-preformat.txt`); the
+  R5 current clean capture `gofmt-clean-r5.txt` is zero-byte,
+  rc=0 — the two captures are kept separate per erratum 9(c).
 - `git diff --check d97907fb..cfa42957`: rc=0, empty output.
 
 Raw command/stdout/stderr/rc files per gate live under `gates/` in the
 archive.
 
-## Build + probes (bound to C4 `cfa42957`)
+## Build + probes (R5 evidence model)
 
-- `CGO_ENABLED=1 go build -tags postgresql -buildvcs=false
-  -o <path> ./cmd/deltascope` run ONCE at C4 — the R4 delta is
-  test-only, so a single bound build is the product-surface
-  witness: 52,779,058 B, SHA-256
-  `fa1a9a6a7e8107cd004f592ef9ee3aa8bb708411fde7d8f0a5b98798425d02a2`
-  — **byte-identical to the R3/R2 product binary** (recorded
-  `cmp`/`shasum` transcript in `build/`). Toolchain go1.26.1
-  darwin/arm64; go.mod SHA `80dd9105…b628c98`, go.sum SHA
-  `cc5fa030…000696`.
-- Three providerless mode-off probes classified **REUSED** from the
-  R3 archive AND re-run against the R4 binary as a live
-  discrimination: rc 0/1/2 respectively; all six streams
-  (stdout+stderr ×3) byte-compared `cmp` identical to the reused
-  R3 transcripts (`probes/r4-transcript.txt`):
+- **Build**: bound by `build/build-verify-r5.txt` — a literal
+  current verification: `pwd`, literal
+  `CGO_ENABLED=1 go build -tags postgresql -buildvcs=false
+  -o /tmp/t26-ordered-exec-r4/build/deltascope-r5 ./cmd/deltascope`
+  rc=0, literal `shasum -a 256` (fa1a9a6a…d02a2) and `wc -c`
+  (52,779,058 B), then literal `cmp deltascope-r5 b1` rc=0 — the
+  current build is byte-identical to the archive `b1`, which is
+  byte-identical to the R3/R2 product binary. The R4 summary
+  transcript (`build/transcript.txt`) is retained verbatim but no
+  longer cited as the binding. Toolchain go1.26.1 darwin/arm64;
+  go.mod SHA `80dd9105…b628c98`, go.sum SHA `cc5fa030…000696`.
+- **Probes**: the bound probe evidence is the REUSED R3 originals
+  (`probes/cli1/2/3.{rc,stdout,stderr}`, `policy-srs-ordered.yaml`,
+  `run-probes.sh` — per-member SHA verified against the R3 archive)
+  exercised by a byte-identical binary:
   - CLI-1 (`--target-version 8.0.36`): rc=0, stdout 896 B — verdict
     review / coverage unverified / exactly one
     `ddl.mysql.srs.drop.dependency` `unknown_srs_state` gap with
@@ -391,10 +475,13 @@ archive.
   - CLI-3 (`8.0.x`): rc=2, stdout 0 B, stderr exactly
     `target_version must match [v]MAJOR.MINOR.PATCH: "8.0.x"\n`
     (56 B).
-- R1/R2/R3 probe/build results are retained under `historical-r3/`
-  marked **reported / uncaptured** where their raw invocation
-  binding was not recorded; the R4 records above are the bound
-  evidence (and match the frozen byte shapes exactly).
+- `probes/r4-unbound/` holds the R4 ad-hoc re-run outputs as
+  **UNBOUND comparison artifacts** (invocation binding not
+  retained); they corroborate byte-equality and are not claimed as
+  bound evidence.
+- R1/R2/R3 records are retained under `historical-r3/` marked
+  **reported / uncaptured** where their raw invocation binding was
+  not recorded.
 
 ## Deferred / not in this round
 
