@@ -6,14 +6,19 @@
 // identity, an inapplicable proven version, or a statement that never
 // names the family issues no dedicated query.
 //
-// Zero-row contract (R2 metadata fact scheme): no fact below promotes a
-// clean zero-row answer to proven-absent — mysql.servers and the
-// ST_SPATIAL_REFERENCE_SYSTEMS / ST_GEOMETRY_COLUMNS catalogs are
-// privilege-scoped surfaces with no approved completeness contract, so a
-// successful empty answer stays unknown. Query, scan, iteration, and
-// driver errors propagate wrapped on every version surface — a query
-// that already issued and failed is never laundered into "not loaded",
-// and failures are never cached as absence.
+// Zero-row contract (R2 metadata fact scheme): mysql.servers and
+// ST_GEOMETRY_COLUMNS stay privilege-scoped surfaces with no approved
+// completeness contract — a successful empty answer stays unknown.
+// ST_SPATIAL_REFERENCE_SYSTEMS is the registered exception
+// (T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01): the accepted completeness
+// proof establishes the view as a bare projection of the DD table, so
+// a clean zero-observed-row answer under the same Qo observation's
+// D-proof supplies Absence=true. Every other surface's zero-row
+// answer and every zero-row answer outside the D-proof stays unknown.
+// Query, scan, iteration, and driver errors propagate wrapped on
+// every version surface — a query that already issued and failed is
+// never laundered into "not loaded", and failures are never cached as
+// absence.
 //
 // Identity contract: the SERVER name read fires only when the request
 // marks the name a complete decoded identifier (name_form=identifier) —
@@ -91,19 +96,26 @@ func (p *Provider) loadMySQLServerObject(ctx context.Context, request spec.Objec
 //   - !proven: the catalog may not exist — the reads are still issued
 //     and every returned error propagates; an unproven version never
 //     converts a query that already failed into "not loaded".
-func mysqlSRSCatalogSupport(ctx context.Context, querier mysqlVersionQuerier) (supported bool, proven bool, err error) {
+//
+// The parsed provider version is also returned so the caller's
+// completeness proof evaluates the SAME Qo observation — one
+// select version() serves both the support gate and the proven-absence
+// domain proof (T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01). It is nil
+// whenever the banner could not be parsed or fails the product/range
+// checks; request-supplied versions never substitute for it.
+func mysqlSRSCatalogSupport(ctx context.Context, querier mysqlVersionQuerier) (supported bool, proven bool, version *spec.VersionIdentity, err error) {
 	var banner string
 	if err := querier.QueryRowContext(ctx, `select version()`).Scan(&banner); err != nil {
 		if err == sql.ErrNoRows {
-			return false, false, nil
+			return false, false, nil, nil
 		}
-		return false, false, fmt.Errorf("query server version for srs channels: %w", err)
+		return false, false, nil, fmt.Errorf("query server version for srs channels: %w", err)
 	}
-	version := spec.ParseObservedVersion(banner)
+	version = spec.ParseObservedVersion(banner)
 	if version == nil || !version.ValidatedRange || version.Product != spec.VersionProductMySQL {
-		return false, false, nil
+		return false, false, nil, nil
 	}
-	return version.Major >= 8, true, nil
+	return version.Major >= 8, true, version, nil
 }
 
 // loadMySQLSRSObject resolves one MySQL spatial reference system
@@ -135,7 +147,7 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 		return snapshot, nil
 	}
 	state.SRID = uint32(srid)
-	supported, proven, err := mysqlSRSCatalogSupport(ctx, p.db)
+	supported, proven, qoVersion, err := mysqlSRSCatalogSupport(ctx, p.db)
 	if err != nil {
 		return nil, err
 	}
@@ -145,19 +157,41 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 	}
 	var matchedID sql.NullInt64
 	var matchedName sql.NullString
-	row := p.db.QueryRowContext(ctx, `
+	// The existence read runs on an explicit *sql.Rows so the delivered
+	// state can distinguish the answer shapes a QueryRow Scan collapses
+	// (T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01): Absence=true is
+	// supplied ONLY when every one of the frozen supply conditions
+	// holds — QueryContext succeeded, Next() never returned true for
+	// this result (a Next()==false AFTER a positive row is only EOF),
+	// rows.Err()==nil after iteration, and the checked Close()==nil —
+	// AND the same Qo observation satisfies the registered D-proof
+	// (validated MySQL 8.0.4+). Any query/scan/iteration/cancellation/
+	// close error propagates on the bounded path; an error whose value
+	// equals sql.ErrNoRows never supplies absence.
+	rows, err := p.db.QueryContext(ctx, `
 		select srs_id, srs_name
 		from information_schema.st_spatial_reference_systems
 		where srs_id = ?
 	`, int64(srid))
-	if err := row.Scan(&matchedID, &matchedName); err != nil {
-		if err == sql.ErrNoRows {
-			// A clean zero-row answer — unknown, never proven-absent.
-			state.Read = true
-		} else {
-			return nil, fmt.Errorf("query mysql srs snapshot: %w", err)
+	if err != nil {
+		return nil, fmt.Errorf("query mysql srs snapshot: %w", err)
+	}
+	observed := false
+	for rows.Next() {
+		observed = true
+		if err := rows.Scan(&matchedID, &matchedName); err != nil {
+			rows.Close()
+			return nil, fmt.Errorf("scan mysql srs snapshot: %w", err)
 		}
-	} else {
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, fmt.Errorf("iterate mysql srs snapshot: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, fmt.Errorf("close mysql srs snapshot: %w", err)
+	}
+	if observed {
 		state.Read = true
 		state.Exists = true
 		state.Status = spec.MetadataStatusConfirmed
@@ -166,6 +200,12 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 		}
 		snapshot.Status = spec.MetadataStatusConfirmed
 		snapshot.Exists = true
+	} else {
+		state.Read = true
+		// Clean zero observed rows — a proven-absence fact only while
+		// the same Qo observation is inside the proven-absence domain;
+		// every other zero-row answer stays unknown (Absence=false).
+		state.Absence = spec.MySQLSRSDropAuditedDomain(qoVersion)
 	}
 	// The conflict reads fire only on provable request identities —
 	// an authored spelling never reaches them.
@@ -233,11 +273,11 @@ func (p *Provider) loadMySQLSRSConflict(ctx context.Context, query string, args 
 	if err != nil {
 		return nil, fmt.Errorf("query mysql srs conflict read: %w", err)
 	}
-	defer rows.Close()
 	fact := &spec.SRSConflictFact{}
 	for rows.Next() {
 		var id sql.NullInt64
 		if err := rows.Scan(&id); err != nil {
+			rows.Close()
 			return nil, fmt.Errorf("scan mysql srs conflict witness: %w", err)
 		}
 		if id.Valid && id.Int64 >= 0 && id.Int64 <= 4294967295 {
@@ -245,7 +285,11 @@ func (p *Provider) loadMySQLSRSConflict(ctx context.Context, query string, args 
 		}
 	}
 	if err := rows.Err(); err != nil {
+		rows.Close()
 		return nil, fmt.Errorf("iterate mysql srs conflict witnesses: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, fmt.Errorf("close mysql srs conflict read: %w", err)
 	}
 	return fact, nil
 }
@@ -265,11 +309,11 @@ func (p *Provider) loadMySQLSRSDependencies(ctx context.Context, srid uint64) (*
 	if err != nil {
 		return nil, fmt.Errorf("query mysql srs column dependencies: %w", err)
 	}
-	defer rows.Close()
 	fact := &spec.SRSDependencyFact{}
 	for rows.Next() {
 		var schemaName, tableName, columnName sql.NullString
 		if err := rows.Scan(&schemaName, &tableName, &columnName); err != nil {
+			rows.Close()
 			return nil, fmt.Errorf("scan mysql srs column dependency: %w", err)
 		}
 		fact.Columns = append(fact.Columns, spec.SRSDependentColumn{
@@ -280,7 +324,11 @@ func (p *Provider) loadMySQLSRSDependencies(ctx context.Context, srid uint64) (*
 		})
 	}
 	if err := rows.Err(); err != nil {
+		rows.Close()
 		return nil, fmt.Errorf("iterate mysql srs column dependencies: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, fmt.Errorf("close mysql srs column dependencies: %w", err)
 	}
 	return fact, nil
 }

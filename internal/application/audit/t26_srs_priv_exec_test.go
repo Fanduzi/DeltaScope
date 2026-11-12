@@ -309,10 +309,13 @@ func TestT26SRSPrivP2Consumable(t *testing.T) {
 	t.Logf("P2 serialized public result: %s", blob)
 }
 
-// P3: E=zero rows — consumable still discharges P; [E,D].
+// P3: E=zero rows — consumable still discharges P; [E,D]. The Qo
+// banner 8.0.3 stays outside the proven-absence domain so the zero-row
+// answer remains unknown — T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01.
 func TestT26SRSPrivP3ConsumableZeroRowExistence(t *testing.T) {
 	fx := r3PrivilegeFixture()
-	fx.srs = nil // zero-row existence answer
+	fx.srs = nil             // zero-row existence answer
+	fx.version = "8.0.3-log" // Qo outside the D-proof
 	p := r3Harness(t, fx)
 	result, err := r3PrivilegeRequest(t, p, "DROP SPATIAL REFERENCE SYSTEM 100001;")
 	if err != nil {

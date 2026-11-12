@@ -362,6 +362,12 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDMySQLSRSDropPrivilege, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newMySQLSRSDropPrivilegeRule(cfg)
 		}},
+		{ruleID: ruleIDMySQLSRSDropAbsent, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLSRSDropAbsentRule(cfg)
+		}},
+		{ruleID: ruleIDMySQLSRSDropAbsentNoop, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLSRSDropAbsentNoopRule(cfg)
+		}},
 		{ruleID: ruleIDAlterAddIndexColumnsMaxCount, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterAddedIndexColumnsMaxCountRule(8, rule.LevelWarning, cfg)
 		}},

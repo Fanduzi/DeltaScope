@@ -87,9 +87,15 @@ const (
 //
 // The existence contract is per-fact, never guessed:
 //   - Read=true + Exists=true: a catalog row proved the SRID present.
-//   - Read=true + Exists=false: the query ran and returned zero rows —
-//     unknown, never proven-absent: catalog visibility is
-//     privilege-filtered and no approved completeness contract exists.
+//   - Read=true + Exists=false + Absence=true: the clean
+//     zero-observed-row answer was promoted to a proven-absence fact
+//     under the registered completeness contract
+//     (T26-SRS-DROP-PROVEN-ABSENT-CONTRACT-01 —
+//     ST_SPATIAL_REFERENCE_SYSTEMS is a bare projection of the DD
+//     table: no WHERE clause and no privilege predicate, so zero rows
+//     on a successful read is the complete answer).
+//   - Read=true + Exists=false + Absence=false: the query ran and
+//     returned zero rows but no completeness proof applied — unknown.
 //   - Read=false: the read was never issued — UnreadReason names why
 //     (identity unproven, version-inapplicable). A failed read is an
 //     error propagated by the resolver, never a state value.
@@ -97,11 +103,17 @@ type SpatialReferenceSystemState struct {
 	// SRID is the authored numeric identity — the provable catalog key.
 	SRID uint32 `json:"-"`
 	// Status is the snapshot vocabulary: confirmed on a proven row,
-	// otherwise unavailable (never not_found — no approved completeness
-	// contract exists for the SRS catalog).
+	// otherwise unavailable (never not_found — absence carries its own
+	// fact, not a snapshot status word).
 	Status MetadataStatus `json:"-"`
 	// Exists is the proven-presence answer.
 	Exists bool `json:"-"`
+	// Absence is the proven-absence answer. Its zero value means NO
+	// absence proof — Read=true && Exists=false alone never implies it;
+	// only the supplier's clean zero-observed-row read satisfying the
+	// registered completeness proof may set it
+	// (T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01).
+	Absence bool `json:"-"`
 	// Read reports whether the existence read was actually issued.
 	Read bool `json:"-"`
 	// UnreadReason names why the existence read stayed unissued when

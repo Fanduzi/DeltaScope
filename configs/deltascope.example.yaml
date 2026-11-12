@@ -1204,6 +1204,16 @@ rules:
     level: notice
     params:
 
+  ddl.mysql.srs.drop.absent:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.mysql.srs.drop.absent_noop:
+    enabled: true
+    level: notice
+    params:
+
   ddl.tidb.table.auto_random.valid:
     enabled: true
     level: blocker

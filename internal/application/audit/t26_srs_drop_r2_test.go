@@ -337,7 +337,9 @@ func TestT26SRSR2DiscoveryMismatch(t *testing.T) {
 // --- R2-C.6: E3.2 request-layer zero-row + empty-incomplete -------------------
 
 func TestT26SRSR2RequestZeroRow(t *testing.T) {
-	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36"}, nil)
+	// Qo 8.0.3 — supported catalog read but outside the proven-absence
+	// domain — keeps the zero-row answer unknown → S2 [E,D,P].
+	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36", qoVersion: "8.0.3"}, nil)
 	result, err := AuditSQL(context.Background(), Request{
 		SQL: "DROP SPATIAL REFERENCE SYSTEM 4326", Dialect: spec.DialectMySQL,
 		TargetVersion: "8.0.36", MetadataProvider: provider,
@@ -1010,7 +1012,9 @@ func TestT26SRSR2AuthoredCoordinates(t *testing.T) {
 // --- R2-B.4: E10.3d — the inclusive floor fires the full audited projection ---
 
 func TestT26SRSR2FloorFullProjection(t *testing.T) {
-	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.4"}, nil)
+	// Request layer qualifies at the 8.0.4 floor; Qo 8.0.3 stays outside
+	// the proven-absence domain so the zero-row answer keeps S2.
+	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.4", qoVersion: "8.0.3"}, nil)
 	result, err := AuditSQL(context.Background(), Request{
 		SQL: "DROP SPATIAL REFERENCE SYSTEM 4326", Dialect: spec.DialectMySQL,
 		TargetVersion: "8.0.4", MetadataProvider: provider,

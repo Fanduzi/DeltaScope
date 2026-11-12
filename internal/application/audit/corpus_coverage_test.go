@@ -444,7 +444,16 @@ func isDeferredCorpusCoverageRule(ruleID string) bool {
 		// fire there; its public shape is proven by the request/API
 		// matrix instead (docs/verification/t26-srs-drop-privilege-
 		// contract-01 P2/P10).
-		"ddl.mysql.srs.drop.privilege":
+		"ddl.mysql.srs.drop.privilege",
+		// T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01: both rules fire only
+		// on a proven absence — a supplier-certified zero-observed-row
+		// answer under an online provider's Qo/version proof. The
+		// offline corpus is providerless, so the absent arms never
+		// occur there; the public shapes are proven by the request/API
+		// matrix instead (docs/verification/t26-srs-drop-proven-absent-
+		// contract-01 PA-2/PA-10).
+		"ddl.mysql.srs.drop.absent",
+		"ddl.mysql.srs.drop.absent_noop":
 		return true
 	default:
 		return false

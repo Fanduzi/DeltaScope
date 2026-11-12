@@ -33,12 +33,14 @@ type srsDepRow struct {
 }
 
 type srsSQLFixture struct {
-	version string
-	srs     map[uint32]string // srid -> srs_name (existence rows)
-	deps    []srsDepRow
-	servers map[string]bool
-	queries []string
-	failOn  map[string]error // query-substring -> sentinel
+	version   string
+	qoVersion string            // select version() answer inside loadSRS — when set, diverges from version (the LoadInstanceFacts/observed banner)
+	srs       map[uint32]string // srid -> srs_name (existence rows)
+	deps      []srsDepRow
+	servers   map[string]bool
+	queries   []string
+	failOn    map[string]error // query-substring -> sentinel
+	closeOn   map[string]error // query-substring -> rows.Close() sentinel
 }
 
 var (
@@ -65,9 +67,10 @@ func openSRSSQLDB(t *testing.T, fixture *srsSQLFixture) *sql.DB {
 type srsSQLDriver struct{}
 type srsSQLConn struct{ fixture *srsSQLFixture }
 type srsSQLRows struct {
-	cols  []string
-	rows  [][]driver.Value
-	index int
+	cols     []string
+	rows     [][]driver.Value
+	index    int
+	closeErr error
 }
 
 func (srsSQLDriver) Open(name string) (driver.Conn, error) {
@@ -86,15 +89,27 @@ func (c *srsSQLConn) QueryContext(_ context.Context, query string, args []driver
 			return nil, sentinel
 		}
 	}
+	closeErr := func() error {
+		for mark, sentinel := range c.fixture.closeOn {
+			if strings.Contains(query, mark) {
+				return sentinel
+			}
+		}
+		return nil
+	}()
 	switch {
 	case strings.Contains(query, "version()"):
-		return &srsSQLRows{cols: []string{"version()"}, rows: [][]driver.Value{{c.fixture.version}}}, nil
+		banner := c.fixture.version
+		if c.fixture.qoVersion != "" {
+			banner = c.fixture.qoVersion
+		}
+		return &srsSQLRows{cols: []string{"version()"}, rows: [][]driver.Value{{banner}}, closeErr: closeErr}, nil
 	case strings.Contains(query, "st_spatial_reference_systems"):
 		srid := args[0].Value.(int64)
 		if name, ok := c.fixture.srs[uint32(srid)]; ok {
-			return &srsSQLRows{cols: []string{"srs_id", "srs_name"}, rows: [][]driver.Value{{srid, name}}}, nil
+			return &srsSQLRows{cols: []string{"srs_id", "srs_name"}, rows: [][]driver.Value{{srid, name}}, closeErr: closeErr}, nil
 		}
-		return &srsSQLRows{cols: []string{"srs_id", "srs_name"}}, nil
+		return &srsSQLRows{cols: []string{"srs_id", "srs_name"}, closeErr: closeErr}, nil
 	case strings.Contains(query, "st_geometry_columns"):
 		srid := args[0].Value.(int64)
 		var rows [][]driver.Value
@@ -103,19 +118,19 @@ func (c *srsSQLConn) QueryContext(_ context.Context, query string, args []driver
 				rows = append(rows, []driver.Value{dep.schema, dep.table, dep.column})
 			}
 		}
-		return &srsSQLRows{cols: []string{"table_schema", "table_name", "column_name"}, rows: rows}, nil
+		return &srsSQLRows{cols: []string{"table_schema", "table_name", "column_name"}, rows: rows, closeErr: closeErr}, nil
 	case strings.Contains(query, "mysql.servers"):
 		name, _ := args[0].Value.(string)
 		if c.fixture.servers[name] {
-			return &srsSQLRows{cols: []string{"Server_name"}, rows: [][]driver.Value{{name}}}, nil
+			return &srsSQLRows{cols: []string{"Server_name"}, rows: [][]driver.Value{{name}}, closeErr: closeErr}, nil
 		}
-		return &srsSQLRows{cols: []string{"Server_name"}}, nil
+		return &srsSQLRows{cols: []string{"Server_name"}, closeErr: closeErr}, nil
 	}
-	return &srsSQLRows{cols: []string{"x"}}, nil
+	return &srsSQLRows{cols: []string{"x"}, closeErr: closeErr}, nil
 }
 
 func (r *srsSQLRows) Columns() []string { return r.cols }
-func (r *srsSQLRows) Close() error      { return nil }
+func (r *srsSQLRows) Close() error      { return r.closeErr }
 func (r *srsSQLRows) Next(dest []driver.Value) error {
 	if r.index >= len(r.rows) {
 		return io.EOF
@@ -180,9 +195,11 @@ func (p *srsSQLProvider) ResolveObject(ctx context.Context, dialect spec.Dialect
 }
 
 // loadSRS mirrors loadMySQLSRSObject: parse the SRID, qualify the
-// catalog surface through select version(), then the bounded existence
-// read and the always-issued dependency witness read. Errors propagate
-// wrapped exactly as the real loader wraps them.
+// catalog surface through select version(), then the explicit-Rows
+// existence read whose zero-observed-row answer supplies Absence only
+// under the same Qo observation's D-proof, and the always-issued
+// dependency witness read. Errors propagate wrapped exactly as the
+// real loader wraps them.
 func (p *srsSQLProvider) loadSRS(ctx context.Context, dialect spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
 	snapshot := &spec.ObjectSnapshot{Schema: req.Schema, Type: req.Type, Name: req.Name, Status: spec.MetadataStatusUnavailable}
 	if dialect != spec.DialectMySQL {
@@ -209,18 +226,30 @@ func (p *srsSQLProvider) loadSRS(ctx context.Context, dialect spec.Dialect, req 
 	}
 	var matchedID sql.NullInt64
 	var matchedName sql.NullString
-	row := p.db.QueryRowContext(ctx, `
+	existRows, err := p.db.QueryContext(ctx, `
 		select srs_id, srs_name
 		from information_schema.st_spatial_reference_systems
 		where srs_id = ?
 	`, int64(srid))
-	if err := row.Scan(&matchedID, &matchedName); err != nil {
-		if err == sql.ErrNoRows {
-			state.Read = true
-		} else {
-			return nil, fmt.Errorf("query mysql srs snapshot: %w", err)
+	if err != nil {
+		return nil, fmt.Errorf("query mysql srs snapshot: %w", err)
+	}
+	observed := false
+	for existRows.Next() {
+		observed = true
+		if err := existRows.Scan(&matchedID, &matchedName); err != nil {
+			existRows.Close()
+			return nil, fmt.Errorf("scan mysql srs snapshot: %w", err)
 		}
-	} else {
+	}
+	if err := existRows.Err(); err != nil {
+		existRows.Close()
+		return nil, fmt.Errorf("iterate mysql srs snapshot: %w", err)
+	}
+	if err := existRows.Close(); err != nil {
+		return nil, fmt.Errorf("close mysql srs snapshot: %w", err)
+	}
+	if observed {
 		state.Read = true
 		state.Exists = true
 		state.Status = spec.MetadataStatusConfirmed
@@ -229,6 +258,9 @@ func (p *srsSQLProvider) loadSRS(ctx context.Context, dialect spec.Dialect, req 
 		}
 		snapshot.Status = spec.MetadataStatusConfirmed
 		snapshot.Exists = true
+	} else {
+		state.Read = true
+		state.Absence = spec.MySQLSRSDropAuditedDomain(version)
 	}
 	rows, err := p.db.QueryContext(ctx, `
 		select table_schema, table_name, column_name
@@ -676,7 +708,8 @@ func TestT26SRSR1ReservedEndpoints(t *testing.T) {
 		}
 	}
 	// E5.4 shape: endpoint advisory fires as the lone notice finding.
-	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36"}, nil)
+	// Qo outside the D-proof keeps the zero-row answer unproven → S2.
+	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36", qoVersion: "8.0.3"}, nil)
 	enriched := enrichSRS(t, newSRSState(provider), provider, "DROP SPATIAL REFERENCE SYSTEM 32767")
 	if arm := srsArm(t, enriched[0]); arm != spec.SRSDropArmUnproven {
 		t.Fatalf("32767 arm=%v want unproven before checking the advisory text", arm)
@@ -691,7 +724,7 @@ func TestT26SRSR1ReservedEndpoints(t *testing.T) {
 	assertReads(t, provider, fixture, 1, 1, 1, 1, 0)
 
 	// E5.5 shape: 32768 — no advisory at all.
-	fixture, provider = newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36"}, nil)
+	fixture, provider = newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36", qoVersion: "8.0.3"}, nil)
 	enriched = enrichSRS(t, newSRSState(provider), provider, "DROP SPATIAL REFERENCE SYSTEM 32768")
 	result = evaluateEnriched(t, enriched)
 	if n := len(result.Statements[0].Findings); n != 0 {
@@ -729,9 +762,10 @@ func TestT26SRSR1UnclaimedForms(t *testing.T) {
 // --- E6/E7: repeat-SRID, cross-call, boundary lifecycle -----------------------
 
 // E6.1: S2 mints same-SRID existence stale — stmt2 blocks before the
-// cache (reads 0).
+// cache (reads 0). Qo 8.0.3 keeps the zero-row answer outside the
+// proven-absence domain → the unproven arm still governs.
 func TestT26SRSR1S2MintsExistenceStale(t *testing.T) {
-	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36"}, nil)
+	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36", qoVersion: "8.0.3"}, nil)
 	enriched := enrichSRS(t, newSRSState(provider), provider,
 		"DROP SPATIAL REFERENCE SYSTEM 4326; DROP SPATIAL REFERENCE SYSTEM 4326")
 	if arm := srsArm(t, enriched[0]); arm != spec.SRSDropArmUnproven {
@@ -808,8 +842,9 @@ func TestT26SRSR1BoundaryLifecycleMintsStale(t *testing.T) {
 }
 
 // E7.2: a different SRID stays unaffected by the boundary write.
+// Qo 8.0.3 keeps the zero-row answer unproven → S2, not the absent arm.
 func TestT26SRSR1BoundaryDifferentSRID(t *testing.T) {
-	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36"}, nil)
+	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36", qoVersion: "8.0.3"}, nil)
 	enriched := enrichSRS(t, newSRSState(provider), provider,
 		"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 4326 DEFINITION 'x'; DROP SPATIAL REFERENCE SYSTEM 100001")
 	if arm := srsArm(t, enriched[1]); arm != spec.SRSDropArmUnproven {
@@ -1586,7 +1621,7 @@ func TestT26SRSR1SiblingFamilyNoCrosstalk(t *testing.T) {
 
 func TestT26SRSR1AdjudicationUnit(t *testing.T) {
 	// B: batch-effects marker → exact owed.
-	adj := spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{SRID: 1, UnreadReason: spec.MetadataUnreadBatchEffects}, 1, false, spec.SRSDropPrivilegeUnproven)
+	adj := spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{SRID: 1, UnreadReason: spec.MetadataUnreadBatchEffects}, 1, false, spec.SRSDropPrivilegeUnproven, false)
 	if adj.Arm != spec.SRSDropArmBlocked || len(adj.Owed) != 1 || adj.Owed[0] != spec.SRSFactBatchEffects {
 		t.Fatalf("B adj=%+v", adj)
 	}
@@ -1594,7 +1629,7 @@ func TestT26SRSR1AdjudicationUnit(t *testing.T) {
 	adj = spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{
 		SRID: 0, Read: true, Exists: true,
 		Dependencies: &spec.SRSDependencyFact{Columns: []spec.SRSDependentColumn{{SRID: 0}}},
-	}, 0, false, spec.SRSDropPrivilegeUnproven)
+	}, 0, false, spec.SRSDropPrivilegeUnproven, false)
 	if adj.Arm != spec.SRSDropArmRefusedSRID0 || len(adj.Owed) != 0 {
 		t.Fatalf("S0 adj=%+v", adj)
 	}
@@ -1602,7 +1637,7 @@ func TestT26SRSR1AdjudicationUnit(t *testing.T) {
 	adj = spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{
 		SRID: 4326, Read: true, Exists: false,
 		Dependencies: &spec.SRSDependencyFact{Columns: []spec.SRSDependentColumn{{Schema: "s", Table: "t", Column: "g", SRID: 4326}}},
-	}, 4326, false, spec.SRSDropPrivilegeUnproven)
+	}, 4326, false, spec.SRSDropPrivilegeUnproven, false)
 	if adj.Arm != spec.SRSDropArmRefusedDependency {
 		t.Fatalf("S1 adj=%+v", adj)
 	}
@@ -1610,12 +1645,12 @@ func TestT26SRSR1AdjudicationUnit(t *testing.T) {
 	adj = spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{
 		SRID: 4326, Read: true, Exists: true,
 		Dependencies: &spec.SRSDependencyFact{Columns: []spec.SRSDependentColumn{{Schema: "s", Table: "t", Column: "g", SRID: 999}}},
-	}, 4326, false, spec.SRSDropPrivilegeUnproven)
+	}, 4326, false, spec.SRSDropPrivilegeUnproven, false)
 	if adj.Arm != spec.SRSDropArmUnproven {
 		t.Fatalf("wrong-SRID witness adj=%+v want unproven", adj)
 	}
 	// Missing read source (nil Dependencies) never witnesses.
-	adj = spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{SRID: 4326, Read: true, Exists: true}, 4326, false, spec.SRSDropPrivilegeUnproven)
+	adj = spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{SRID: 4326, Read: true, Exists: true}, 4326, false, spec.SRSDropPrivilegeUnproven, false)
 	if adj.Arm != spec.SRSDropArmUnproven || len(adj.Owed) != 2 {
 		t.Fatalf("nil-deps adj=%+v want unproven [D,P]", adj)
 	}
@@ -1624,12 +1659,12 @@ func TestT26SRSR1AdjudicationUnit(t *testing.T) {
 	adj = spec.AdjudicateSRSDrop(&spec.SpatialReferenceSystemState{
 		SRID: 4326, Read: true, Exists: true,
 		Dependencies: &spec.SRSDependencyFact{Columns: []spec.SRSDependentColumn{{Schema: "s", Table: "t", Column: "g", SRID: 4326}}},
-	}, 4326, true, spec.SRSDropPrivilegeUnproven)
+	}, 4326, true, spec.SRSDropPrivilegeUnproven, false)
 	if adj.Arm != spec.SRSDropArmUnproven || len(adj.Owed) != 2 || adj.Owed[0] != spec.SRSFactColumnDependencies {
 		t.Fatalf("stale-deps adj=%+v want unproven [D,P]", adj)
 	}
 	// Unproven existence → [E,D,P] ordered.
-	adj = spec.AdjudicateSRSDrop(nil, 100001, false, spec.SRSDropPrivilegeUnproven)
+	adj = spec.AdjudicateSRSDrop(nil, 100001, false, spec.SRSDropPrivilegeUnproven, false)
 	if adj.Arm != spec.SRSDropArmUnproven || len(adj.Owed) != 3 ||
 		adj.Owed[0] != spec.SRSFactExistence || adj.Owed[1] != spec.SRSFactColumnDependencies || adj.Owed[2] != spec.SRSFactDropPrivilege {
 		t.Fatalf("nil-state adj=%+v want unproven [E,D,P]", adj)

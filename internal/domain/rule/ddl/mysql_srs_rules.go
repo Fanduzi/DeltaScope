@@ -9,15 +9,25 @@
 //   - ddl.mysql.srs.drop.dependency fires the dependency blocker on
 //     refused_dependency and carries the evidence gap on every arm
 //     whose premises stayed owed (blocked, unproven) under the fixed
-//     unknown_srs_state reason.
+//     unknown_srs_state reason — and the absent_conditional arm's
+//     exactly-[srs.drop.privilege] debt under unproven_privilege
+//     (T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01).
 //   - ddl.mysql.srs.drop.reserved is an advisory that co-fires on the
-//     blocked and unproven arms when the SRID sits in a registered
-//     reserved range — never inside a refusal arm's own finding.
+//     blocked, unproven, absent_noop, and absent_conditional arms when
+//     the SRID sits in a registered reserved range — never inside a
+//     refusal arm's own finding.
 //   - ddl.mysql.srs.drop.privilege is the family's conditional notice —
 //     it fires only when the shared adjudication says this statement
 //     actually consumed its own privilege premise (unproven arm plus a
 //     consumable premise) and carries exactly {srid, conditional_audit}
 //     (T26-SRS-DROP-PRIVILEGE-EXECUTION-01).
+//   - ddl.mysql.srs.drop.absent fires the refused_absent blocker on the
+//     proven-absence plain drop (T26-SRS-DROP-PROVEN-ABSENT-
+//     EXECUTION-01).
+//   - ddl.mysql.srs.drop.absent_noop carries the absent_noop notice —
+//     including the conditional_audit marker — on the IF EXISTS
+//     proven-absence arm with a consumable premise; the same marker is
+//     a finding metadata key, not an arm outcome of its own.
 //
 // Public surfaces stay bounded: finding metadata carries the numeric
 // SRID, the arm's outcome token, and the dependency witness count —
@@ -138,7 +148,11 @@ func (r mysqlSRSDropDependencyRule) AppliesTo(statement spec.Statement) bool {
 
 // EvidenceGaps carries the adjudication's owed facts on every arm whose
 // premises stayed unproven — the blocked and unproven arms — under the
-// fixed unknown_srs_state reason.
+// fixed unknown_srs_state reason. The absent_conditional arm is the one
+// registered exception (T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01): the
+// object's absence IS proven, so the remaining debt is exactly this
+// statement's own privilege premise under unproven_privilege — never
+// the catalog-state reason.
 func (r mysqlSRSDropDependencyRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
 	if !r.AppliesTo(statement) {
 		return nil
@@ -147,8 +161,13 @@ func (r mysqlSRSDropDependencyRule) EvidenceGaps(statement spec.Statement) []rul
 	if len(owed) == 0 {
 		return nil
 	}
+	reason := "unknown_srs_state"
+	if adjudication := srsDropAdjudicationFor(statement); adjudication != nil &&
+		adjudication.Arm == spec.SRSDropArmAbsentConditional {
+		reason = "unproven_privilege"
+	}
 	return []rule.EvidenceGap{{
-		ReasonCode:    "unknown_srs_state",
+		ReasonCode:    reason,
 		RequiredFacts: owed,
 	}}
 }
@@ -184,8 +203,11 @@ func (r mysqlSRSDropDependencyRule) Evaluate(ctx context.Context, statement spec
 }
 
 // ddl.mysql.srs.drop.reserved — the reserved-range advisory. It
-// co-fires on the blocked and unproven arms only and carries exactly
-// {srid} — never arm, outcome, or gap data.
+// co-fires on the blocked, unproven, absent_noop, and
+// absent_conditional arms and carries exactly {srid} — never arm,
+// outcome, or gap data. The absent-refusal arm is a refusal: its own
+// blocker finding already settles the outcome, so no advisory
+// co-fires (T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01).
 type mysqlSRSDropReservedRule struct {
 	id    string
 	level rule.Level
@@ -210,7 +232,8 @@ func (r mysqlSRSDropReservedRule) Evaluate(ctx context.Context, statement spec.S
 	}
 	adjudication := srsDropAdjudicationFor(statement)
 	if adjudication == nil ||
-		(adjudication.Arm != spec.SRSDropArmBlocked && adjudication.Arm != spec.SRSDropArmUnproven) {
+		(adjudication.Arm != spec.SRSDropArmBlocked && adjudication.Arm != spec.SRSDropArmUnproven &&
+			adjudication.Arm != spec.SRSDropArmAbsentNoop && adjudication.Arm != spec.SRSDropArmAbsentConditional) {
 		return nil, nil
 	}
 	srid := srsDropSRID(statement)
@@ -277,6 +300,105 @@ func (r mysqlSRSDropPrivilegeRule) Evaluate(ctx context.Context, statement spec.
 		},
 		Metadata: map[string]any{
 			"srid":              srid,
+			"conditional_audit": string(spec.PrivilegeAuditModeObservedAccountNewSession),
+		},
+	}}, nil
+}
+
+// ddl.mysql.srs.drop.absent — the proven-absence refusal blocker
+// (T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01). Fires only on the shared
+// adjudication's absent_refused arm: a plain DROP against a catalog
+// answer the registered completeness proof certified as absent.
+// Metadata stays {srid:uint32, outcome:"refused_absent"} — never an
+// authored name, catalog payload, or premise detail.
+type mysqlSRSDropAbsentRule struct {
+	id    string
+	level rule.Level
+}
+
+func newMySQLSRSDropAbsentRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return mysqlSRSDropAbsentRule{
+		id:    ruleIDMySQLSRSDropAbsent,
+		level: configuredLevel(cfg, rule.LevelBlocker),
+	}, nil
+}
+
+func (r mysqlSRSDropAbsentRule) ID() string { return r.id }
+
+func (r mysqlSRSDropAbsentRule) AppliesTo(statement spec.Statement) bool {
+	return srsDropStatement(statement)
+}
+
+func (r mysqlSRSDropAbsentRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+	adjudication := srsDropAdjudicationFor(statement)
+	if adjudication == nil || adjudication.Arm != spec.SRSDropArmAbsentRefused {
+		return nil, nil
+	}
+	srid := srsDropSRID(statement)
+	return []rule.Finding{{
+		Level:   r.level,
+		Message: fmt.Sprintf("spatial reference system %d does not exist", srid),
+		Explanation: &rule.FindingExplanation{
+			Why:        "The bounded ST_SPATIAL_REFERENCE_SYSTEMS read returned a clean zero-observed-row answer under the registered completeness proof — the authored SRID is proven absent, so the drop cannot land.",
+			Risk:       "The statement names an object the catalog proves absent; a plain DROP without IF EXISTS is refused.",
+			Suggestion: "Remove the statement, author the SRID first, or add IF EXISTS if an absent SRID is acceptable.",
+		},
+		Metadata: map[string]any{
+			"srid":    srid,
+			"outcome": "refused_absent",
+		},
+	}}, nil
+}
+
+// ddl.mysql.srs.drop.absent_noop — the proven-absence IF EXISTS
+// notice (T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01). Fires only on the
+// shared adjudication's absent_noop arm: an IF EXISTS drop whose
+// proven-absent object makes the statement a no-op while the
+// statement's own privilege premise was consumable — the conditional
+// marker rides this finding's metadata, never a sibling rule.
+// Metadata stays exactly {srid:uint32, outcome:"absent_noop",
+// conditional_audit:"observed_account_new_session"}.
+type mysqlSRSDropAbsentNoopRule struct {
+	id    string
+	level rule.Level
+}
+
+func newMySQLSRSDropAbsentNoopRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return mysqlSRSDropAbsentNoopRule{
+		id:    ruleIDMySQLSRSDropAbsentNoop,
+		level: configuredLevel(cfg, rule.LevelNotice),
+	}, nil
+}
+
+func (r mysqlSRSDropAbsentNoopRule) ID() string { return r.id }
+
+func (r mysqlSRSDropAbsentNoopRule) AppliesTo(statement spec.Statement) bool {
+	return srsDropStatement(statement)
+}
+
+func (r mysqlSRSDropAbsentNoopRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+	adjudication := srsDropAdjudicationFor(statement)
+	if adjudication == nil || adjudication.Arm != spec.SRSDropArmAbsentNoop {
+		return nil, nil
+	}
+	srid := srsDropSRID(statement)
+	return []rule.Finding{{
+		Level:   r.level,
+		Message: fmt.Sprintf("spatial reference system %d does not exist; IF EXISTS drop is a no-op", srid),
+		Explanation: &rule.FindingExplanation{
+			Why:        "The bounded ST_SPATIAL_REFERENCE_SYSTEMS read returned a clean zero-observed-row answer under the registered completeness proof — the authored SRID is proven absent and the authored IF EXISTS guard makes the statement a no-op.",
+			Risk:       "The no-op's privilege premise was discharged under the observed_account_new_session conditional audit: a new session is assumed to hold the observed account's grant when it loads privileges — never a verified future executor.",
+			Suggestion: "Keep the statement only if the absent SRID is acceptable; otherwise author the SRID first.",
+		},
+		Metadata: map[string]any{
+			"srid":              srid,
+			"outcome":           "absent_noop",
 			"conditional_audit": string(spec.PrivilegeAuditModeObservedAccountNewSession),
 		},
 	}}, nil

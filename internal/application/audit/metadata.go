@@ -713,8 +713,9 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			// The audited qualified drop carries the shared
 			// adjudication — one truth the rule's gap/message/output
 			// and the own apply's stale flags both read
-			// (T26-SRS-DROP-EXECUTION-01). IF EXISTS stays a public
-			// rendering fact and never enters the adjudication.
+			// (T26-SRS-DROP-EXECUTION-01). The authored IF EXISTS guard
+			// enters the adjudication and splits the proven-absence arm
+			// (T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01).
 			if decl := enriched[i].DDL.SpatialReference; decl.Kind == spec.SRSKindDrop && enriched[i].Unsupported == nil {
 				if enriched[i].Metadata == nil {
 					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
@@ -723,7 +724,7 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 				// of the shared observation — never a SERVER
 				// adjudication or marker (T26-SRS-DROP-PRIVILEGE-
 				// EXECUTION-01).
-				adjudication := spec.AdjudicateSRSDrop(enriched[i].Metadata.SpatialReference, decl.SRID, state.srsDepsStale, state.srsDropPrivilegePremise())
+				adjudication := spec.AdjudicateSRSDrop(enriched[i].Metadata.SpatialReference, decl.SRID, state.srsDepsStale, state.srsDropPrivilegePremise(), decl.IfExists)
 				enriched[i].Metadata.SRSDrop = &adjudication
 			}
 		}

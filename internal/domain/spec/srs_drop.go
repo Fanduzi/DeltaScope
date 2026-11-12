@@ -6,10 +6,18 @@
 // One shared adjudication is the single truth the rule projection and
 // the batch own-apply both read — the rule never recomputes premises
 // and apply never re-derives an arm. The arm table is the contract's
-// first-match order B → S0 → S1 → S2; owed facts follow the arm, never
-// a fixed per-row rule. Findings, gaps, coverage, and the stale flags
-// this slice mints are all projections of this one result. Internal
-// facts, flags, and this structure never enter a serialized payload.
+// first-match order B → S0 → S1 → A → S2; owed facts follow the arm,
+// never a fixed per-row rule. Findings, gaps, coverage, and the stale
+// flags this slice mints are all projections of this one result.
+// Internal facts, flags, and this structure never enter a serialized
+// payload.
+//
+// T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01 adds the A family between S1
+// and S2: a proven absence (the supplier's clean zero-observed-row
+// answer under the registered completeness proof, bound to the
+// authored SRID) refuses a plain DROP, no-ops an IF EXISTS drop under
+// a consumable privilege premise, and stays conditional while that
+// premise is unproven or scope-suppressed.
 package spec
 
 // Owed-fact vocabulary for the audited SRS drop — stable internal
@@ -81,6 +89,20 @@ const (
 	// staleness) proves a visible geometry column uses the SRID.
 	// Owes nothing; one blocker finding.
 	SRSDropArmRefusedDependency
+	// SRSDropArmAbsentRefused (A-plain): a proven absence — ValidAbsence
+	// holds — on a plain DROP without IF EXISTS. Refused, owes nothing,
+	// never consumes the privilege premise; one blocker finding.
+	SRSDropArmAbsentRefused
+	// SRSDropArmAbsentNoop (A-IE✓): a proven absence on an IF EXISTS
+	// drop while this statement's privilege premise is consumable —
+	// the no-op drop discharges it. Owes nothing; one notice finding
+	// carrying the conditional-audit marker.
+	SRSDropArmAbsentNoop
+	// SRSDropArmAbsentConditional (A-IE?): a proven absence on an
+	// IF EXISTS drop while the privilege premise is unproven or
+	// scope-suppressed — never consumed. Owes exactly
+	// {srs.drop.privilege} under the unproven_privilege gap reason.
+	SRSDropArmAbsentConditional
 	// SRSDropArmUnproven (S2): every remaining qualified input —
 	// owed facts follow the arm: srs.column_dependencies and
 	// srs.drop.privilege always, plus srs.existence first only while
@@ -126,6 +148,17 @@ func SRSDropInReservedRange(srid uint32) bool {
 		(srid >= 2000000000 && srid <= 2147483647)
 }
 
+// ValidAbsence is the consumer-side proven-absence predicate
+// (T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01): the bound state carries a
+// supplier-certified absence ONLY for the statement's own authored
+// SRID — a foreign-SRID snapshot is never consumed as this object's
+// absence. Read && !Exists alone stays unknown: the zero value of
+// Absence is the "no absence proof" answer.
+func ValidAbsence(state *SpatialReferenceSystemState, authoredSRID uint32) bool {
+	return state != nil && state.SRID == authoredSRID &&
+		state.Read && !state.Exists && state.Absence
+}
+
 // AdjudicateSRSDrop computes the shared adjudication for one audited
 // qualified MySQL DROP SPATIAL REFERENCE SYSTEM. The caller guarantees
 // the audited slice — MySQL dialect, Kind == drop, no unsupported
@@ -137,13 +170,20 @@ func SRSDropInReservedRange(srid uint32) bool {
 //     same SRID's existence stale flag. Owes {srs.batch_effects}.
 //   - S0: authored SRID 0 — refused outright, owes nothing.
 //   - S1: a valid positive dependency witness under a clean channel
-//     and no dependency staleness — refused, owes nothing.
+//     and no dependency staleness — refused, owes nothing. The
+//     positive witness outranks a simultaneously proven absence: the
+//     SRID's visible dependents exist regardless.
+//   - A: ValidAbsence holds for the authored SRID. A plain drop is
+//     refused_absent (owes nothing, never consumes the premise); an
+//     IF EXISTS drop is absent_noop while the premise is consumable
+//     (discharges it), else absent_conditional owing exactly
+//     {srs.drop.privilege} — never consumed.
 //   - S2: everything else — owes column dependencies always,
 //     privilege while this statement's own premise is not consumable,
 //     plus existence first while unproven. Only the unproven arm under
 //     a consumable premise discharges srs.drop.privilege; every other
 //     arm carries (or lacks) the projection without consuming it.
-func AdjudicateSRSDrop(state *SpatialReferenceSystemState, srid uint32, depsStale bool, privilege SRSDropPrivilege) SRSDropAdjudication {
+func AdjudicateSRSDrop(state *SpatialReferenceSystemState, srid uint32, depsStale bool, privilege SRSDropPrivilege, ifExists bool) SRSDropAdjudication {
 	adjudication := SRSDropAdjudication{Privilege: privilege}
 	switch {
 	case state != nil && state.UnreadReason == MetadataUnreadBatchEffects:
@@ -161,6 +201,17 @@ func AdjudicateSRSDrop(state *SpatialReferenceSystemState, srid uint32, depsStal
 		// consumable; a still-valid existence fact is untouched and
 		// stays consumed in the unproven arm's owed set.
 		adjudication.Arm = SRSDropArmRefusedDependency
+		return adjudication
+	case ValidAbsence(state, srid):
+		switch {
+		case !ifExists:
+			adjudication.Arm = SRSDropArmAbsentRefused
+		case privilege == SRSDropPrivilegeConsumable:
+			adjudication.Arm = SRSDropArmAbsentNoop
+		default:
+			adjudication.Arm = SRSDropArmAbsentConditional
+			adjudication.Owed = []string{SRSFactDropPrivilege}
+		}
 		return adjudication
 	default:
 		adjudication.Arm = SRSDropArmUnproven

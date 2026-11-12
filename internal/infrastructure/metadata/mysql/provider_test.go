@@ -936,6 +936,9 @@ type testQueryResult struct {
 	// surfaced through rows.Err() once rows.Next() returns false).
 	rowErrAt int
 	rowErr   error
+	// closeErr fails the checked rows.Close() — a distinct answer shape
+	// from iteration errors that a defer-only reader would drop.
+	closeErr error
 }
 
 type testDriver struct {
@@ -953,6 +956,7 @@ type testRows struct {
 	index    int
 	rowErrAt int
 	rowErr   error
+	closeErr error
 }
 
 var (
@@ -996,6 +1000,7 @@ func registerTestDriverResults(name string, results map[string]testQueryResult) 
 			queryErr: result.queryErr,
 			rowErrAt: result.rowErrAt,
 			rowErr:   result.rowErr,
+			closeErr: result.closeErr,
 		}
 	}
 	// The foreign-key loader shares the key_column_usage table with the
@@ -1178,6 +1183,7 @@ func (c testConn) QueryContext(_ context.Context, query string, args []driver.Na
 		rows:     append([][]driver.Value(nil), result.rows...),
 		rowErrAt: result.rowErrAt,
 		rowErr:   result.rowErr,
+		closeErr: result.closeErr,
 	}, nil
 }
 
@@ -1185,7 +1191,7 @@ func (r *testRows) Columns() []string {
 	return append([]string(nil), r.columns...)
 }
 
-func (r *testRows) Close() error { return nil }
+func (r *testRows) Close() error { return r.closeErr }
 
 func (r *testRows) Next(dest []driver.Value) error {
 	if r.rowErr != nil && r.index == r.rowErrAt {

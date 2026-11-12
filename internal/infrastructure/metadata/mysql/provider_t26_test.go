@@ -217,10 +217,13 @@ func TestT26SRSIdentityRowConfirms(t *testing.T) {
 
 // Zero rows on the identity read stay unknown while the independently
 // provable dependency read still fires — a provable SRID fact never
-// depends on the existence answer.
+// depends on the existence answer. The Qo banner 8.0.3 sits outside
+// the proven-absence domain, so this row exercises the unknown branch
+// (the in-domain zero-row answer supplies Absence — PA-1 at the
+// provider layer below).
 func TestT26SRSZeroRowsUnknownButDepsRead(t *testing.T) {
 	snapshot, err := t26Resolve(t, map[string]testQueryResult{
-		testSRSVersionFragment:  t26VersionRow("8.0.46"),
+		testSRSVersionFragment:  t26VersionRow("8.0.3"),
 		testSRSIdentityFragment: {columns: []string{"SRS_ID", "SRS_NAME"}},
 		testSRSDepFragment:      {columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}},
 	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "9999"})
@@ -228,7 +231,7 @@ func TestT26SRSZeroRowsUnknownButDepsRead(t *testing.T) {
 		t.Fatalf("ResolveObject: %v", err)
 	}
 	state := snapshot.SpatialReference
-	if state == nil || !state.Read || state.Exists || snapshot.IsNotFound() {
+	if state == nil || !state.Read || state.Exists || state.Absence || snapshot.IsNotFound() {
 		t.Fatalf("srs state = %+v, want issued read + unknown answer", state)
 	}
 	if state.Dependencies == nil || len(state.Dependencies.Columns) != 0 || state.Dependencies.Complete {

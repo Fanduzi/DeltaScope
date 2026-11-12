@@ -138,6 +138,8 @@ const (
 	ruleIDMySQLSRSDropDependency                             = "ddl.mysql.srs.drop.dependency"
 	ruleIDMySQLSRSDropReserved                               = "ddl.mysql.srs.drop.reserved"
 	ruleIDMySQLSRSDropPrivilege                              = "ddl.mysql.srs.drop.privilege"
+	ruleIDMySQLSRSDropAbsent                                 = "ddl.mysql.srs.drop.absent"
+	ruleIDMySQLSRSDropAbsentNoop                             = "ddl.mysql.srs.drop.absent_noop"
 	ruleIDAlterModifyColumnTargetTypeFamilyAllowlist         = "ddl.alter.modify_column.target_type_family.allowlist"
 	ruleIDAlterChangeColumnTargetTypeFamilyAllowlist         = "ddl.alter.change_column.target_type_family.allowlist"
 	ruleIDAlterModifyColumnExplicitNullabilityChangeForbid   = "ddl.alter.modify_column.explicit_nullability_change.forbid"

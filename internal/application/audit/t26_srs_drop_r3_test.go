@@ -572,9 +572,12 @@ func TestT26SRSR3UnprovenProviderless(t *testing.T) {
 
 // E3.2 strengthened (R3-B.2): zero-row existence + empty deps through
 // the product loader → [E,D,P] exact length+order, exactly one reserved
-// notice, aggregate unverified.
+// notice, aggregate unverified. The Qo banner 8.0.3 is supported
+// (major >= 8) but outside the proven-absence domain (patch < 4), so
+// the clean zero-row answer stays unknown — T26-SRS-DROP-PROVEN-
+// ABSENT-EXECUTION-01.
 func TestT26SRSR3ZeroRowProductLoader(t *testing.T) {
-	fx := &r3Fixture{version: "8.0.36", discoverVer: "8.0.36"}
+	fx := &r3Fixture{version: "8.0.3-log", discoverVer: "8.0.36"}
 	p := r3Harness(t, fx)
 	result, err := audit.AuditSQL(context.Background(), audit.Request{
 		SQL: r3SQL, Dialect: spec.DialectMySQL, TargetVersion: "8.0.36", MetadataProvider: p,
@@ -629,8 +632,9 @@ func TestT26SRSR3SRID0Request(t *testing.T) {
 
 // E5.3: the authored max-uint32 SRID through the real loader —
 // exist(empty) deps([]) → unproven [E,D,P], findings absent.
+// Qo 8.0.3 keeps the zero-row answer outside the D-proof.
 func TestT26SRSR3MaxSRIDRequest(t *testing.T) {
-	fx := &r3Fixture{version: "8.0.36", discoverVer: "8.0.36"}
+	fx := &r3Fixture{version: "8.0.3-log", discoverVer: "8.0.36"}
 	p := r3Harness(t, fx)
 	result, err := audit.AuditSQL(context.Background(), audit.Request{
 		SQL:     "DROP SPATIAL REFERENCE SYSTEM 4294967295;",
@@ -658,7 +662,9 @@ func TestT26SRSR3ReservedCellsEmptyEvidence(t *testing.T) {
 		{2000000000, true}, {1999999999, false}, {2147483647, true}, {2147483648, false}, // E5.6e–h
 	}
 	for _, cell := range cells {
-		fx := &r3Fixture{version: "8.0.36", discoverVer: "8.0.36"}
+		// Qo 8.0.3 — supported read outside the proven-absence domain —
+		// keeps every zero-row cell on the unproven arm.
+		fx := &r3Fixture{version: "8.0.3-log", discoverVer: "8.0.36"}
 		p := r3Harness(t, fx)
 		result, err := audit.AuditSQL(context.Background(), audit.Request{
 			SQL:     fmt.Sprintf("DROP SPATIAL REFERENCE SYSTEM %d;", cell.srid),
@@ -715,9 +721,10 @@ func TestT26SRSR3E10ObservedUnknown(t *testing.T) {
 }
 
 // E10.2: healthy observed + loader ver → audited unproven [E,D,P] +
-// exactly one reserved notice; unverified; review.
+// exactly one reserved notice; unverified; review. Qo 8.0.3 keeps the
+// zero-row answer outside the proven-absence domain.
 func TestT26SRSR3E10HealthyObserved(t *testing.T) {
-	fx := &r3Fixture{version: "8.0.36", discoverVer: "8.0.36-log"}
+	fx := &r3Fixture{version: "8.0.3-log", discoverVer: "8.0.36-log"}
 	p := r3Harness(t, fx)
 	result, err := audit.AuditSQL(context.Background(), audit.Request{
 		SQL: r3SQL, Dialect: spec.DialectMySQL, MetadataProvider: p,

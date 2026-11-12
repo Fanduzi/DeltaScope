@@ -6,7 +6,10 @@
 // (contract D3: first-match, never SQL text). applySRSStatement is the
 // own apply for audited SRS lifecycle statements: only the shared
 // adjudication's unproven arm mints the authored SRID's existence
-// staleness — blocked and refused arms write nothing.
+// staleness — blocked, refused, and proven-absence arms write nothing
+// (T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01: an absent drop never
+// lands, and the arm already carries that truth, so no stale flag is
+// minted and no state is cleared).
 package audit
 
 import (
@@ -19,8 +22,10 @@ import (
 // The shared adjudication already classified the arm — the own apply
 // never re-derives it: only the unproven arm (a drop whose drop may
 // have landed) mints the authored SRID's existence staleness for every
-// later statement; blocked, SRID-0, and dependency-refused arms write
-// no stale flag (T26-SRS-DROP-EXECUTION-01 writer table).
+// later statement; blocked, SRID-0, dependency-refused, and every
+// proven-absence arm (absent_refused, absent_noop, absent_conditional)
+// write no stale flag (T26-SRS-DROP-EXECUTION-01 writer table, A-arm
+// extension T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01).
 func (s *batchState) applySRSStatement(statement spec.Statement) error {
 	decl := statement.DDL.SpatialReference
 	adjudication := (*spec.SRSDropAdjudication)(nil)

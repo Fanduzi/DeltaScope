@@ -780,6 +780,8 @@ func ddlCoreRules() map[string]RulePolicy {
 		"ddl.mysql.srs.drop.dependency":      {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.mysql.srs.drop.reserved":        {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.mysql.srs.drop.privilege":       {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
+		"ddl.mysql.srs.drop.absent":          {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
+		"ddl.mysql.srs.drop.absent_noop":     {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.tidb.table.auto_random.valid":   {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.tidb.table.options.valid":       {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.tidb.alter.auto_random.valid":   {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
