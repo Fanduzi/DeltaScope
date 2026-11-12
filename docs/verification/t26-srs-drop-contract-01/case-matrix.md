@@ -1,4 +1,4 @@
-# T26-SRS-DROP-CONTRACT-01 — case matrix (R6)
+# T26-SRS-DROP-CONTRACT-01 — case matrix (R7)
 
 Companion to `README.md`. Every row is a **contract expectation derived from baseline source** — nothing below was measured this round. Status per `expected`: **CURRENT** = baseline already produces it; **PROPOSED** = this contract selects it for the execution order.
 
