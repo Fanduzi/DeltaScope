@@ -139,6 +139,46 @@ func MySQLSRSDropAuditedDomain(version *VersionIdentity) bool {
 		version.Major == 8 && version.Minor == 0 && version.Patch >= 4
 }
 
+// SRSFactVersionApplicability is the named version-dependent
+// applicability premise (T26-SRS-VERSION-APPLICABILITY-01 frozen V4):
+// when the resolved version cannot certify the audited domain, the gap
+// is reported under this fact id with one of the four version reasons —
+// never folded into a generic unknown.
+const SRSFactVersionApplicability = "srs.version_applicability"
+
+// MySQLSRSVersionGateReason is the SRS family's single version verdict
+// (frozen V1): one request-level version fact decides BOTH audit
+// admission (the unaudited boundary marker) and catalog-read admission
+// (whether the provider's SRS queries may fire at all). It returns ""
+// only inside the registered 8.0.4+ domain; otherwise the stable reason
+// token the public marker and the bound state both carry:
+//
+//   - nil version, no observation ever ran → version_unproven
+//   - nil version, an observation answered without a usable banner fact
+//     → version_observation_error
+//   - identity outside the validated series → version_out_of_series
+//   - proven in-series but outside the audited domain (5.7, 8.0.0–8.0.3,
+//     8.4) → version_inapplicable
+//
+// `observed` reports whether a provider observation was performed this
+// request — it is what separates "never observed" from "observation
+// failed" (frozen V2/V10).
+func MySQLSRSVersionGateReason(version *VersionIdentity, observed bool) string {
+	if MySQLSRSDropAuditedDomain(version) {
+		return ""
+	}
+	switch {
+	case version == nil && !observed:
+		return MetadataUnreadVersionUnproven
+	case version == nil:
+		return MetadataUnreadVersionObservationError
+	case !version.ValidatedRange:
+		return MetadataUnreadVersionOutOfSeries
+	default:
+		return MetadataUnreadVersionInapplicable
+	}
+}
+
 // SRSDropInReservedRange reports whether the SRID falls inside a
 // registered reserved range — the documented MySQL reserved blocks.
 // The reserved notice is an advisory that

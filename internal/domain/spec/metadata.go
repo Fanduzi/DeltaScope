@@ -739,6 +739,19 @@ const (
 	// because a proven server version makes the catalog inapplicable —
 	// never issued on a surface that cannot hold the object.
 	MetadataUnreadVersionInapplicable = "version_inapplicable"
+	// MetadataUnreadVersionUnproven marks a fact read skipped because no
+	// version observation ever produced a fact — the version premise is
+	// missing, not contradicted (T26-SRS-VERSION-APPLICABILITY-01 V2).
+	MetadataUnreadVersionUnproven = "version_unproven"
+	// MetadataUnreadVersionOutOfSeries marks a fact read skipped because
+	// a resolved version identity lies outside the milestone-validated
+	// series — a known fact, not an unproven one (V2).
+	MetadataUnreadVersionOutOfSeries = "version_out_of_series"
+	// MetadataUnreadVersionObservationError marks a fact read skipped
+	// because the observation channel answered but the banner carried no
+	// usable version fact — distinct from both inapplicable and unproven
+	// (V10).
+	MetadataUnreadVersionObservationError = "version_observation_error"
 	// MetadataUnreadBatchEffects marks a fact read suppressed because an
 	// earlier batch statement left an undischarged unknown effect on the
 	// identity — the ordered channel's unproven barrier — so the catalog

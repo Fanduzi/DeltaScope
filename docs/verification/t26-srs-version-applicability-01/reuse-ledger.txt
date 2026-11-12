@@ -1,0 +1,12 @@
+# reuse-ledger — T26-SRS-VERSION-APPLICABILITY-01 phase0-r2
+# baseline 41ea7895a1df62df924fe4f3576bbf54f72c5576
+# Format: class | member | source-archive | source-archive-sha256 | source-member | member-sha256 | member-bytes | acceptance
+
+REUSED  t26-srs-version-applicability-01/mysql-collation-boundary.md  artifacts/t26-srs-conflict-identity-phase0-r2.tar.gz  048ada32c5e6bdab5508001e0de03068b4330d1f69d509f1c8a567dd7448b183  ./mysql-collation-boundary.md  0bd7f2ccd058cefa9159fed86789df6fc1b8ac48034a8274cc87b72c719b4878  3422  T26-SRS-CONFLICT-IDENTITY-01 Phase 0 R2 ACCEPTED
+
+# NEW members (authored this round):
+# README.md source-facts.md version-observation-map.md mysql57-boundary.md
+# mysql80-applicability.md mysql84-applicability.md unknown-version-behavior.md
+# provider-version-error.md own-apply-version-analysis.md proposed-contract.md
+# unresolved-items.md manifest-sha256.txt reuse-ledger.txt
+# This ledger does not record its own digest; the manifest covers it by hash.

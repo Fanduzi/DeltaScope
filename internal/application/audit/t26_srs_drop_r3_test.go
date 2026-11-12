@@ -808,8 +808,9 @@ func TestT26SRSR3ReservedRefusalRequest(t *testing.T) {
 
 // --- R3-B.B: Group 10 --------------------------------------------------------
 
-// E10.1: observed banner unproven → qualification gate fires while the
-// product loader's own ver("8.0.36") still opens its catalog-read path.
+// E10.1: observed banner unproven → qualification gate fires AND the
+// unified gate (frozen V1/V8) suppresses every catalog read — the
+// loader's own ver("8.0.36") never even runs.
 func TestT26SRSR3E10ObservedUnknown(t *testing.T) {
 	fx := &r3Fixture{version: "8.0.36", discoverVer: "unknown"}
 	p := r3Harness(t, fx)
@@ -817,7 +818,7 @@ func TestT26SRSR3E10ObservedUnknown(t *testing.T) {
 		SQL: r3SQL, Dialect: spec.DialectMySQL, MetadataProvider: p,
 	})
 	r3Boundary(t, result, err, "spatial_reference_system")
-	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
+	r3AssertReads(t, p, fx, 0, 0, 0, 0, 0, 1)
 }
 
 // E10.2: healthy observed + loader ver → audited unproven [E,D,P] +
@@ -838,8 +839,9 @@ func TestT26SRSR3E10HealthyObserved(t *testing.T) {
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 }
 
-// E10.3: proven 5.7 → version boundary AND the loader's own version
-// gate skips catalog reads entirely.
+// E10.3: proven 5.7 → version boundary; the unified gate skips the
+// resolver entirely — even the loader-internal version read never runs
+// (frozen V5).
 func TestT26SRSR3E10Proven57(t *testing.T) {
 	fx := &r3Fixture{version: "5.7.0-m14", discoverVer: "5.7.0-m14"}
 	p := r3Harness(t, fx)
@@ -847,11 +849,12 @@ func TestT26SRSR3E10Proven57(t *testing.T) {
 		SQL: r3SQL, Dialect: spec.DialectMySQL, MetadataProvider: p,
 	})
 	r3Boundary(t, result, err, "spatial_reference_system")
-	r3AssertReads(t, p, fx, 1, 0, 0, 1, 0, 1)
+	r3AssertReads(t, p, fx, 0, 0, 0, 0, 0, 1)
 }
 
-// E10.3b: proven 8.0.3 → audit gate fires (patch < 4) but the loader's
-// catalog path (major >= 8) still issues existence+deps.
+// E10.3b: proven 8.0.3 → audit gate fires (patch < 4) and the unified
+// gate now also suppresses every catalog read (frozen V6 — the
+// audited domain and the read domain are one fact).
 func TestT26SRSR3E10Proven803(t *testing.T) {
 	fx := &r3Fixture{version: "8.0.3-log", discoverVer: "8.0.3-log"}
 	p := r3Harness(t, fx)
@@ -859,7 +862,7 @@ func TestT26SRSR3E10Proven803(t *testing.T) {
 		SQL: r3SQL, Dialect: spec.DialectMySQL, MetadataProvider: p,
 	})
 	r3Boundary(t, result, err, "spatial_reference_system")
-	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
+	r3AssertReads(t, p, fx, 0, 0, 0, 0, 0, 1)
 }
 
 // E10.3c/E10.4: providerless pins outside the domain → boundary, all

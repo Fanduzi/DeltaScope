@@ -182,6 +182,16 @@ func (s *batchState) bindMySQLSRS(ctx context.Context, statement spec.Statement)
 			return bound, nil
 		}
 	}
+	// Unified version gate (T26-SRS-VERSION-APPLICABILITY-01 frozen V1,
+	// V5–V8): the request-level version fact that already decided audit
+	// admission now decides catalog-read admission too — outside the
+	// registered domain, no SRS existence/conflict/dependency query may
+	// fire, and the bound state names the exact version reason instead of
+	// issuing a read it could never adjudicate.
+	if reason := spec.MySQLSRSVersionGateReason(s.resolvedVersion, s.instanceFacts != nil); reason != "" {
+		bound.UnreadReason = reason
+		return bound, nil
+	}
 	resolver := s.objectResolverFor(s.mysqlSRSResolver)
 	if resolver == nil {
 		return bound, nil

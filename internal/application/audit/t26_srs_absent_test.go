@@ -429,18 +429,17 @@ func TestT26SRSAbsentBoundaryVersionPair(t *testing.T) {
 			t.Fatalf("stmt%d coverage=%v want incomplete", i, stmt.Coverage.Status)
 		}
 	}
-	// Reads (R4-E2): this public row measures the pair TOTAL —
-	// stmt1's bind issued the single R/Qexist/Qdeps/Qo pass (Vd=1
-	// discovery, L=0 — the privilege loader never runs for a
-	// boundary row). The short-circuit cause is stmt1's COMPLETED
-	// boundary own-apply — it minted the authored-SRID stale key —
-	// not anything in stmt2's own apply. Per-statement increments are
-	// the internal companion's witness (…VersionPairInternal); this
-	// layer asserts the total only, and the two layers' attributions
-	// stay separate.
-	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
-	if len(p.forwards) != 1 || p.forwards[0].Type != "mysql_spatial_reference_system" {
-		t.Fatalf("forwards=%+v want exactly one SRS bind for the pair", p.forwards)
+	// Reads (R4-E2, revised by T26-SRS-VERSION-APPLICABILITY-01 frozen
+	// V1/V5–V8): the version boundary now suppresses every SRS catalog
+	// read — zero resolver forwards, zero exist/deps queries, zero
+	// loader-internal version reads. Vd=1 (the request-level discovery
+	// still ran — that is HOW the boundary was proven); L=0 (the
+	// privilege loader never runs for a boundary row). stmt2's zero
+	// increment comes from the minted stale short-circuit; the two
+	// layers' attributions stay separate.
+	r3AssertReads(t, p, fx, 0, 0, 0, 0, 0, 1)
+	if len(p.forwards) != 0 {
+		t.Fatalf("forwards=%+v want zero SRS binds on a version boundary", p.forwards)
 	}
 }
 

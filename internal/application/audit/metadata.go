@@ -282,14 +282,15 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			// is unknown or outside the registered MySQL 8.0.4+ domain
 			// takes the unaudited boundary — the presence or absence of
 			// a caller pin is never the criterion; the resolved
-			// version is. The statement's catalog reads still issue on
-			// the provider's own channel qualification below — the
-			// gate decides audit applicability, never read
-			// applicability. The CREATE family inherits the same
-			// catalog-domain gate verbatim (T26-SRS-CREATE-
-			// PUBLICATION-01 frozen F-2: the 8.0.4+ applicability basis
-			// is the existing provider contract, not a new CREATE
-			// fact).
+			// version is. The same version verdict now also suppresses
+			// the family's catalog reads inside bindMySQLSRS — one
+			// request-level version fact controls both audit and read
+			// admission (T26-SRS-VERSION-APPLICABILITY-01 frozen V1).
+			// The CREATE family inherits the same catalog-domain gate
+			// verbatim (T26-SRS-CREATE-PUBLICATION-01 frozen F-2). The
+			// marker keeps gate:"version" and adds the four-way reason
+			// subdivision plus the named applicability gap (frozen V4/
+			// V11).
 			if statements[i].DDL != nil && statements[i].DDL.SpatialReference != nil &&
 				statements[i].Unsupported == nil &&
 				!spec.MySQLSRSDropAuditedDomain(resolvedVersion) {
@@ -297,9 +298,11 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 					Feature: string(statements[i].DDL.Operation),
 					Reason:  spec.UnsupportedUnauditedReason,
 					Metadata: map[string]any{
-						"boundary": "unaudited",
-						"object":   "spatial_reference_system",
-						"gate":     "version",
+						"boundary":       "unaudited",
+						"object":         "spatial_reference_system",
+						"gate":           "version",
+						"version_reason": spec.MySQLSRSVersionGateReason(resolvedVersion, instanceFacts != nil),
+						"gap_fact":       spec.SRSFactVersionApplicability,
 					},
 				}
 			}

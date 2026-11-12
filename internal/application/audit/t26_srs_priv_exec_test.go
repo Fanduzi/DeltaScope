@@ -764,7 +764,8 @@ func TestT26SRSPrivP9bBelowFloorBoundary(t *testing.T) {
 		PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession,
 	})
 	r3Boundary(t, result, err, "spatial_reference_system")
-	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
+	// Unified gate: zero catalog reads on the version boundary.
+	r3AssertReads(t, p, fx, 0, 0, 0, 0, 0, 1)
 }
 
 // P9c: tidb dialect, no pin, recognized TiDB banner — vendor boundary;

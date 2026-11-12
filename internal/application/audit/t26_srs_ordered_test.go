@@ -1364,9 +1364,10 @@ func TestT26SRSOrderedBaselineProduceRealChain(t *testing.T) {
 // OP-6b (frozen): the below-floor request row as a REAL public
 // request — NO target-version pin; the observed banner resolves to
 // 8.0.3 through the real discovery seam (Vd=1). The version boundary
-// binds via the full path (ordered gate excludes it): reads issue
-// Δ(1,1,1,1), L=0 (the loader gate is never entered), the public
-// result carries the frozen unaudited/version-gate boundary shape.
+// now issues ZERO catalog reads (T26-SRS-VERSION-APPLICABILITY-01
+// frozen V1/V6 — the unified gate suppresses resolver, queries, and
+// the loader-internal version read alike), L=0 (the privilege loader
+// never runs for a boundary row).
 // The internal SeedResolvedVersion variant is the companion below.
 func TestT26SRSOrderedBelowFloorRealChain(t *testing.T) {
 	fx := opAbsentFixture(opGrantConsumable)
@@ -1383,9 +1384,9 @@ func TestT26SRSOrderedBelowFloorRealChain(t *testing.T) {
 	if result.Unsupported[0].Feature != "drop_spatial_reference_system" {
 		t.Fatalf("boundary feature=%q want drop_spatial_reference_system", result.Unsupported[0].Feature)
 	}
-	// Full bind issued its reads; L=0 — no audited drop ever asked
-	// the privilege loader; Vd=1 — the REAL discovery ran.
-	r3AssertReads(t, provider, fx, 1, 1, 1, 1, 0, 1)
+	// Zero reads under the unified gate; L=0 — no audited drop ever
+	// asked the privilege loader; Vd=1 — the REAL discovery ran.
+	r3AssertReads(t, provider, fx, 0, 0, 0, 0, 0, 1)
 }
 
 // OP-6b companion: the identical below-floor boundary reached through
@@ -1416,7 +1417,8 @@ func TestT26SRSOrderedBelowFloorInternalCompanion(t *testing.T) {
 	if len(state.SRSOrderedSRIDs()) != 0 {
 		t.Fatal("a boundary statement never mints ordered entries")
 	}
-	r3AssertReads(t, provider, fx, 1, 1, 1, 1, 0, -1)
+	// Unified gate: zero catalog reads on the version boundary.
+	r3AssertReads(t, provider, fx, 0, 0, 0, 0, 0, -1)
 }
 
 // OP-6c realchain: the REAL request-layer TiDB path — AuditSQL with

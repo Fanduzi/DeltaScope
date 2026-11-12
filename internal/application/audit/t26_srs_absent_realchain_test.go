@@ -798,8 +798,8 @@ func TestT26SRSAbsentBoundaryVersionPairInternal(t *testing.T) {
 	// stmt1's single pass measured at its hook; stmt2's zero increment
 	// measured at its own hook (same-SRID stale short-circuit).
 	if d := [5]int{readsAt[0][0] - base[0], readsAt[0][1] - base[1],
-		readsAt[0][2] - base[2], readsAt[0][3] - base[3], readsAt[0][4] - base[4]}; d != [5]int{1, 1, 1, 1, 0} {
-		t.Fatalf("stmt1 increment=%v want [1 1 1 1 0] — the boundary still reads, L never runs", d)
+		readsAt[0][2] - base[2], readsAt[0][3] - base[3], readsAt[0][4] - base[4]}; d != [5]int{0, 0, 0, 0, 0} {
+		t.Fatalf("stmt1 increment=%v want [0 0 0 0 0] — V1/V8 unified gate: boundary issues zero reads", d)
 	}
 	if d := [5]int{readsAt[1][0] - readsAt[0][0], readsAt[1][1] - readsAt[0][1],
 		readsAt[1][2] - readsAt[0][2], readsAt[1][3] - readsAt[0][3], readsAt[1][4] - readsAt[0][4]}; d != [5]int{0, 0, 0, 0, 0} {

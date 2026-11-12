@@ -193,7 +193,7 @@ func TestT26ServerSpellingBindsUnproven(t *testing.T) {
 // statement itself inserts into the unique key (frozen F-6); a
 // DROP still carries no qualifiers at all.
 func TestT26SRSBindsBySRID(t *testing.T) {
-	provider := &t26Provider{srs: map[uint32]bool{4326: true}}
+	provider := &t26Provider{srs: map[uint32]bool{4326: true}, version: "8.0.46"}
 	enriched := enrichT26(t, "CREATE SPATIAL REFERENCE SYSTEM 4326 NAME 'WGS 84' DEFINITION 'x'", spec.DialectMySQL, provider)
 	state := enriched[0].Metadata.SpatialReference
 	if state == nil || !state.Read || !state.Exists || state.SRID != 4326 {
@@ -214,7 +214,7 @@ func TestT26SRSBindsBySRID(t *testing.T) {
 // The DROP family never qualifies — its contract has no conflict
 // premises, so no authored spelling rides the lookup.
 func TestT26SRSDropBindsUnqualified(t *testing.T) {
-	provider := &t26Provider{srs: map[uint32]bool{4326: true}}
+	provider := &t26Provider{srs: map[uint32]bool{4326: true}, version: "8.0.46"}
 	enriched := enrichT26(t, "DROP SPATIAL REFERENCE SYSTEM 4326", spec.DialectMySQL, provider)
 	state := enriched[0].Metadata.SpatialReference
 	if state == nil || !state.Read || !state.Exists || state.SRID != 4326 {
