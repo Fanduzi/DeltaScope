@@ -1,6 +1,6 @@
 # MySQL DROP SPATIAL REFERENCE SYSTEM: promoted to the audited slice
 
-Status: submitted, pending reviewer sign-off (T26-SRS-DROP-EXECUTION-01 R4 revision in progress on top of R3 chain `4a1a99fd`/`432af227`/`cce8c05b`, issue #105, milestone T26/#105). The contract (T26-SRS-DROP-CONTRACT-01, candidate `d68f4ab7`) was accepted independently; this record describes the implementation slice only — implementation acceptance is a separate reviewer ruling, not a Worker claim.
+Status: **accepted** — T26-SRS-DROP-EXECUTION-01 closed at candidate `128d459520c17660efce37e867fa7b779a9e55e3` (tree `ebe2cd8c16de9d8b30cb773d916382426e00ba65`, parent `ec913df4`, R5 ruling ACCEPTED; chain R1 `3c74445c` → R2 `35d41f5b`/`f3a70987` → R3 `4a1a99fd`/`432af227`/`cce8c05b` → R4 `b90bf8eb`/`e0f2a3d1` → R5 `ec913df4`/`128d4595`, issue #105, milestone T26/#105). The contract (T26-SRS-DROP-CONTRACT-01, candidate `d68f4ab7` + parser-type-subtree supplement) was accepted independently. The R5 ruling registered limited archive-classification errata (E8.2b owner-assertion scope, E12.3/E12.4 reads/projection N/A labels, E7.2 layer labels, E12.5 R2-witness layer, ledger/ADR manifest classes) as review-level records — no repo revision required. T26 stays open: proven-absent, ordered publication, SRS privilege witnesses, SRS CREATE, ALTER INSTANCE, T27 await their own work orders; no push/merge/tag/release/issue close.
 
 ## Decision
 
