@@ -1,6 +1,6 @@
 # MySQL DROP SPATIAL REFERENCE SYSTEM: promoted to the audited slice
 
-Status: accepted implementation (T26-SRS-DROP-EXECUTION-01 R1, issue #105, milestone T26/#105)
+Status: submitted, pending reviewer sign-off (T26-SRS-DROP-EXECUTION-01 R2 candidate `35d41f5b`, issue #105, milestone T26/#105). The contract (T26-SRS-DROP-CONTRACT-01, candidate `d68f4ab7`) was accepted independently; this record describes the implementation slice only — implementation acceptance is a separate reviewer ruling, not a Worker claim.
 
 ## Decision
 
