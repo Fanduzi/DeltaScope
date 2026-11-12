@@ -97,20 +97,80 @@ func TestT26SRSR2BoundaryDifferentSRIDRefuses(t *testing.T) {
 	}
 }
 
-// --- R2-C.3: E8.2b — inert CREATE then an empty-incomplete SRID stays S2 ----
+// --- R2-C.3/R3-D: E8.2a positive control + E8.2b inert-CREATE ---------
 
+// E8.2a: the inert CREATE leaves the positive dependency witness fully
+// consumable — the tbl-u fixture's s.u.g row drives refused_dependency.
+func TestT26SRSR2InertCreatePositiveControl(t *testing.T) {
+	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{
+		version: "8.0.36",
+		srs:     map[uint32]string{4326: "EPSG 4326"},
+		deps:    []srsDepRow{{schema: "s", table: "u", column: "g", srid: 4326}},
+	}, tblTFixture())
+	state := newSRSState(provider)
+	enriched := enrichSRS(t, state, provider,
+		"CREATE TABLE s.t_new (i INT); DROP SPATIAL REFERENCE SYSTEM 4326")
+	if arm := srsArm(t, enriched[1]); arm != spec.SRSDropArmRefusedDependency {
+		t.Fatalf("stmt2 arm=%v want refused_dependency — the positive s.u.g witness survives the inert CREATE", arm)
+	}
+	if got := srsOwed(enriched[1]); len(got) != 0 {
+		t.Fatalf("owed=%v want empty — refusal owes nothing", got)
+	}
+	if state.srsDepsStale {
+		t.Fatal("inert CREATE minted dependency staleness")
+	}
+	result := evaluateEnriched(t, enriched)
+	stmt := result.Statements[1]
+	if len(stmt.Findings) != 1 || stmt.Findings[0].RuleID != "ddl.mysql.srs.drop.dependency" {
+		t.Fatalf("findings=%+v want only the dependency blocker", stmt.Findings)
+	}
+	if len(stmt.EvidenceGaps) != 0 || stmt.Coverage.Status != report.CoverageComplete {
+		t.Fatalf("gaps=%+v coverage=%v want none/complete", stmt.EvidenceGaps, stmt.Coverage.Status)
+	}
+	assertReads(t, provider, fixture, 1, 1, 1, 1, 0)
+}
+
+// E8.2b: inert CREATE then an empty-incomplete SRID stays S2 — the
+// unproven result is caused by the empty deps answer itself, never by
+// stale state (srsDepsStale asserted false at the SRS bind point).
 func TestT26SRSR2InertCreateEmptyIncomplete(t *testing.T) {
 	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{
 		version: "8.0.36",
 		srs:     map[uint32]string{4326: "EPSG 4326"},
 	}, tblTFixture())
-	enriched := enrichSRS(t, newSRSState(provider), provider,
+	state := newSRSState(provider)
+	var depsStaleAtSRSBind *bool
+	state.afterBindObserve = func(i int, _ *spec.Statement) {
+		if i == 1 {
+			flag := state.srsDepsStale
+			depsStaleAtSRSBind = &flag
+		}
+	}
+	enriched := enrichSRS(t, state, provider,
 		"CREATE TABLE s.t_new (i INT); DROP SPATIAL REFERENCE SYSTEM 4326")
+	if depsStaleAtSRSBind == nil || *depsStaleAtSRSBind {
+		t.Fatalf("srsDepsStale at SRS bind=%v want false — inert CREATE writes nothing", depsStaleAtSRSBind)
+	}
 	if arm := srsArm(t, enriched[1]); arm != spec.SRSDropArmUnproven {
 		t.Fatalf("stmt2 arm=%v want unproven — inert CREATE on tbl_u keeps the SRID unshadowed", arm)
 	}
-	if got := srsOwed(enriched[1]); len(got) != 2 || got[0] != spec.SRSFactColumnDependencies {
-		t.Fatalf("owed=%v want [D,P] — empty deps is incomplete, never proven-absent", got)
+	wantOwed := []string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}
+	if got := srsOwed(enriched[1]); !reflect.DeepEqual(got, wantOwed) {
+		t.Fatalf("owed=%v want exactly %v — empty deps is incomplete, never proven-absent", got, wantOwed)
+	}
+	result := evaluateEnriched(t, enriched)
+	stmt := result.Statements[1]
+	if len(stmt.EvidenceGaps) != 1 || !reflect.DeepEqual(stmt.EvidenceGaps[0].RequiredFacts, wantOwed) {
+		t.Fatalf("public gap=%+v want exactly the %v evidence gap", stmt.EvidenceGaps, wantOwed)
+	}
+	reserved := 0
+	for _, f := range stmt.Findings {
+		if f.RuleID == "ddl.mysql.srs.drop.reserved" {
+			reserved++
+		}
+	}
+	if reserved != 1 {
+		t.Fatalf("reserved notices=%d want exactly 1 — 4326 is reserved", reserved)
 	}
 	assertReads(t, provider, fixture, 1, 1, 1, 1, 0)
 }
@@ -348,6 +408,103 @@ func TestT26SRSR2ErrorSeamAccounting(t *testing.T) {
 	if len(state.srsExistenceStale) != 0 {
 		t.Fatalf("failed bind minted stale: %+v", state.srsExistenceStale)
 	}
+
+	// E11.2: the existence query itself fails after the loader's
+	// version read — deps never issued; own bind terminates.
+	sentinelE := errors.New("srs-exist-r2-2")
+	fixture, provider = newSRSSQLHarness(t, &srsSQLFixture{
+		version: "8.0.36",
+		failOn:  map[string]error{"st_spatial_reference_systems": sentinelE},
+	}, nil)
+	state = newSRSState(provider)
+	var bindObserved, applyObserved bool
+	state.afterBindObserve = func(int, *spec.Statement) { bindObserved = true }
+	state.afterApplyObserve = func(int, *spec.Statement) { applyObserved = true }
+	_, err = state.enrichStatements(context.Background(),
+		&MetadataRequest{Schema: "golden", Provider: provider},
+		statements, failures, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
+	if err == nil || !errors.Is(err, sentinelE) {
+		t.Fatalf("err=%v want errors.Is(exist sentinel)", err)
+	}
+	if err.Error() != "metadata object read failed" {
+		t.Fatalf("exist public text=%q", err.Error())
+	}
+	if bindObserved || applyObserved {
+		t.Fatal("failed own bind must not reach the bind/apply observe seams — adjudication never ran")
+	}
+	assertReads(t, provider, fixture, 1, 1, 0, 1, 0) // exist attempt counted, deps never issued
+
+	// E11.4: the loader's own select version() fails before any
+	// catalog read — the R attempt happened, zero downstream reads.
+	sentinelV := errors.New("srs-ver-r2-4")
+	fixture, provider = newSRSSQLHarness(t, &srsSQLFixture{
+		version: "8.0.36",
+		failOn:  map[string]error{"version()": sentinelV},
+	}, nil)
+	state = newSRSState(provider)
+	_, err = state.enrichStatements(context.Background(),
+		&MetadataRequest{Schema: "golden", Provider: provider},
+		statements, failures, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
+	if err == nil || !errors.Is(err, sentinelV) {
+		t.Fatalf("err=%v want errors.Is(version sentinel)", err)
+	}
+	if err.Error() != "metadata object read failed" {
+		t.Fatalf("version public text=%q", err.Error())
+	}
+	assertReads(t, provider, fixture, 1, 0, 0, 1, 0) // Qo attempt counted, nothing downstream
+	if len(state.srsExistenceStale) != 0 || state.srsDepsStale {
+		t.Fatal("failed bind minted SRS flags")
+	}
+}
+
+// E11.x sibling isolation: a mid-sequence bind failure leaves already-
+// applied sibling state untouched and never reaches later statements.
+func TestT26SRSR2ErrorSiblingIsolation(t *testing.T) {
+	sentinel := errors.New("srs-deps-r2-sib")
+	_, provider := newSRSSQLHarness(t, &srsSQLFixture{
+		version: "8.0.36",
+		srs:     map[uint32]string{4326: "EPSG 4326"},
+		deps:    []srsDepRow{},
+		failOn:  map[string]error{"st_geometry_columns": sentinel},
+	}, tblTFixture())
+	state := newSRSState(provider)
+	var afterFirstApply map[string]any
+	state.afterApplyObserve = func(i int, _ *spec.Statement) {
+		if i == 0 {
+			afterFirstApply = srsChannels(t, state)
+		}
+	}
+	parsed, _ := parseSQL(context.Background(),
+		"DROP TABLE s.t_new; DROP SPATIAL REFERENCE SYSTEM 4326; DROP TABLE s.t", spec.DialectMySQL)
+	stmts, err := Extract(context.Background(), parsed)
+	if err != nil || len(stmts) != 3 {
+		t.Fatalf("extract: %v %d", err, len(stmts))
+	}
+	_, err = state.enrichStatements(context.Background(),
+		&MetadataRequest{Schema: "golden", Provider: provider},
+		stmts, parsed.failures, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
+	if err == nil || !errors.Is(err, sentinel) {
+		t.Fatalf("err=%v want errors.Is(sentinel)", err)
+	}
+	// Statement 1's own apply already committed its legitimate write
+	// (depsStale minted by the touching DROP TABLE); statement 3 never
+	// ran — the failure terminated the loop. The post-error state must
+	// be value-identical to the post-statement-1 state: the failed bind
+	// wrote nothing.
+	after := srsChannels(t, state)
+	if !reflect.DeepEqual(after, afterFirstApply) {
+		t.Fatalf("failed bind mutated state: after=%+v want %+v", after, afterFirstApply)
+	}
+	if len(state.srsExistenceStale) != 0 {
+		t.Fatalf("failed bind minted existence stale: %+v", state.srsExistenceStale)
+	}
+	// The error was not laundered into an evidence gap: no statement
+	// carries an adjudication.
+	for _, s := range stmts {
+		if s.Metadata != nil && s.Metadata.SRSDrop != nil {
+			t.Fatalf("statement %q carries an adjudication despite the failed bind", s.RawSQL)
+		}
+	}
 }
 
 // E11.5: the LoadInstanceFacts sentinel — request dies before the
@@ -379,76 +536,211 @@ func TestT26SRSR2DiscoverySentinel(t *testing.T) {
 
 // --- R2-D: E12 deep-value snapshots ------------------------------------------
 
-// E12.3: a genuine S2 mints exactly its own SRID's existence stale and
-// nothing else — table/schema/SERVER channels compared by full value.
-func TestT26SRSR2UnprovenOwnApplySnapshot(t *testing.T) {
-	_, provider := newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36"}, tblTFixture())
-	state := newSRSState(provider)
-	// Seed non-empty table state + a SERVER ordered entry so the
-	// snapshot covers sibling channels.
-	enrichSRS(t, state, provider, "DROP TABLE s.t_new; DROP SERVER s1")
-	tableBefore := snapshotTableSchemaState(t, state)
-	serverBefore := snapshotServerChannel(state)
-	depsBefore := state.srsDepsStale
-	staleBefore := map[uint32]bool{}
-	for srid := range state.srsExistenceStale {
-		staleBefore[srid] = true
+// srsStaleSet deep-copies the batch's per-SRID existence-stale key set
+// so before/after captures compare complete sets by value (comma-ok —
+// never a bare map-membership probe).
+func srsStaleSet(state *batchState) map[uint32]struct{} {
+	set := map[uint32]struct{}{}
+	for srid, v := range state.srsExistenceStale {
+		if _, ok := state.srsExistenceStale[srid]; !ok {
+			panic("unreachable")
+		}
+		set[srid] = v
 	}
+	return set
+}
+
+// srsChannels captures the full deep value of every sibling channel the
+// SRS own apply could conceivably touch — the table/schema registry,
+// the SERVER channel, and both SRS flags.
+func srsChannels(t *testing.T, state *batchState) map[string]any {
+	t.Helper()
+	return map[string]any{
+		"table":  snapshotTableSchemaState(t, state),
+		"server": snapshotServerChannel(state),
+		"deps":   state.srsDepsStale,
+		"stale":  srsStaleSet(state),
+	}
+}
+
+// E12.3: frozen initial state — a tracked s.t snapshot carrying the
+// geometry column, a SERVER OrderedPresent entry, clean SRS flags;
+// the SRS bind gets an existence row and empty dependencies → a real
+// S2 proven by facts, owed exactly [D,P]. Independent deep snapshots
+// taken at the bind and apply observe seams prove the own apply's only
+// write is existenceStale ∪ {4326}.
+func TestT26SRSR2UnprovenOwnApplySnapshot(t *testing.T) {
+	_, provider := newSRSSQLHarness(t, &srsSQLFixture{
+		version: "8.0.36",
+		srs:     map[uint32]string{4326: "EPSG 4326"},
+	}, nil)
+	state := newSRSState(provider)
+	// Seed the frozen non-empty initial state: tracked s.t table
+	// snapshot with g:geometry and a SERVER OrderedPresent entry.
+	key := batchTableKey{dialect: spec.DialectMySQL, schema: "s", table: "t"}
+	state.entries[key] = &batchTableEntry{
+		state: tablePresent,
+		shape: &spec.TableSnapshot{
+			Schema: "s", Table: &spec.Table{Schema: "s", Name: "t"}, Exists: true,
+			Columns: []spec.Column{{Name: "g", Type: "geometry"}},
+		},
+		displaySchema: "s", displayTable: "t", notView: true,
+	}
+	state.serverEntryFor("s1").present = true // OrderedPresent
+	state.srsDepsStale = false
+
+	before := srsChannels(t, state)
+	var atBind, atApply map[string]any
+	state.afterBindObserve = func(_ int, _ *spec.Statement) { atBind = srsChannels(t, state) }
+	state.afterApplyObserve = func(_ int, _ *spec.Statement) { atApply = srsChannels(t, state) }
 	enriched := enrichSRS(t, state, provider, "DROP SPATIAL REFERENCE SYSTEM 4326")
 	if arm := srsArm(t, enriched[0]); arm != spec.SRSDropArmUnproven {
 		t.Fatalf("arm=%v want unproven", arm)
 	}
-	if after := snapshotTableSchemaState(t, state); !reflect.DeepEqual(after, tableBefore) {
+	wantOwed := []string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}
+	if got := srsOwed(enriched[0]); !reflect.DeepEqual(got, wantOwed) {
+		t.Fatalf("owed=%v want exactly %v — existence row discharges E, empty deps stays unproven", got, wantOwed)
+	}
+	if atBind == nil || atApply == nil {
+		t.Fatal("observe hooks did not fire — bind/apply witnesses missing")
+	}
+	// The bind performs reads only: every channel value-identical.
+	if !reflect.DeepEqual(atBind, before) {
+		t.Fatalf("own bind mutated state: before=%+v atBind=%+v", before, atBind)
+	}
+	// The own apply writes exactly one key and nothing else.
+	if !reflect.DeepEqual(atApply["table"], before["table"]) {
 		t.Fatal("S2 own apply touched the table/schema channel")
 	}
-	if after := snapshotServerChannel(state); !reflect.DeepEqual(after, serverBefore) {
+	if !reflect.DeepEqual(atApply["server"], before["server"]) {
 		t.Fatal("S2 own apply touched the SERVER channel")
 	}
-	if state.srsDepsStale != depsBefore {
+	if atApply["deps"] != false {
 		t.Fatal("S2 own apply must not mint dependency staleness")
 	}
-	if len(state.srsExistenceStale) != len(staleBefore)+1 || state.srsExistenceStale[4326] != struct{}{} {
-		t.Fatalf("existenceStale=%+v want exactly +4326", state.srsExistenceStale)
+	if _, ok := state.srsExistenceStale[4326]; !ok {
+		t.Fatalf("comma-ok: existenceStale missing 4326: %+v", state.srsExistenceStale)
+	}
+	if !reflect.DeepEqual(atApply["stale"], map[uint32]struct{}{4326: {}}) {
+		t.Fatalf("existenceStale=%+v want exactly {4326} — prior keys ∪ {4326}", atApply["stale"])
 	}
 }
 
-// E12.4: the table statement's own apply mints srsDepsStale, changes
-// its own table state, and never touches existenceStale or SERVER —
-// the SRS S2 mint on the following statement is separate.
+// E12.4: two own applies observed separately — the table statement's
+// own apply mints srsDepsStale (false→true), leaves existenceStale and
+// the SERVER channel value-identical, and writes its legitimate table
+// change; the SRS S2's own apply then adds only {4326}.
 func TestT26SRSR2TouchingApplyThenSRSMint(t *testing.T) {
 	_, provider := newSRSSQLHarness(t, &srsSQLFixture{
 		version: "8.0.36",
 		srs:     map[uint32]string{4326: "EPSG 4326"},
 	}, tblTFixture())
 	state := newSRSState(provider)
-	var depsAt1, staleAt1 int
-	var depsFlag1 bool
-	serverBefore := snapshotServerChannel(state)
-	state.afterApplyObserve = func(i int, stmt *spec.Statement) {
-		if i == 0 {
-			depsFlag1 = state.srsDepsStale
-			staleAt1 = len(state.srsExistenceStale)
-			depsAt1 = len(state.entries)
+	before := srsChannels(t, state)
+	var afterTableApply, afterSRSApply map[string]any
+	state.afterApplyObserve = func(i int, _ *spec.Statement) {
+		switch i {
+		case 0:
+			afterTableApply = srsChannels(t, state)
+		case 1:
+			afterSRSApply = srsChannels(t, state)
 		}
 	}
 	enriched := enrichSRS(t, state, provider,
 		"DROP TABLE s.t; DROP SPATIAL REFERENCE SYSTEM 4326")
-	if !depsFlag1 {
-		t.Fatal("table apply must mint srsDepsStale")
+	if afterTableApply == nil || afterSRSApply == nil {
+		t.Fatal("apply observe hooks did not fire for both statements")
 	}
-	if staleAt1 != 0 {
-		t.Fatalf("table apply minted existence stale: %d", staleAt1)
+	// Table statement's own apply: depsStale false→true; existenceStale
+	// and SERVER channel exactly unchanged; the s.t entry legitimately
+	// changed (asserted separately, not folded into the flag check).
+	if afterTableApply["deps"] != true {
+		t.Fatal("table apply must mint srsDepsStale false→true")
 	}
-	if !reflect.DeepEqual(snapshotServerChannel(state), serverBefore) {
+	if !reflect.DeepEqual(afterTableApply["stale"], before["stale"]) {
+		t.Fatalf("table apply touched existenceStale: %+v want %+v", afterTableApply["stale"], before["stale"])
+	}
+	if !reflect.DeepEqual(afterTableApply["server"], before["server"]) {
 		t.Fatal("table apply must not touch the SERVER channel")
 	}
+	key := batchTableKey{dialect: spec.DialectMySQL, schema: "s", table: "t"}
+	entry, ok := state.entries[key]
+	if !ok {
+		t.Fatalf("table apply produced no s.t entry: %+v", state.entries)
+	}
+	if entry.state == tablePresent {
+		t.Fatal("DROP TABLE must write its own table state — the legitimate change")
+	}
+	// SRS S2's own apply: adds only {4326}; depsStale, table/schema and
+	// SERVER all identical to the post-table-apply point.
 	if arm := srsArm(t, enriched[1]); arm != spec.SRSDropArmUnproven {
-		t.Fatalf("stmt2 arm=%v want unproven", arm)
+		t.Fatalf("stmt2 arm=%v want unproven — stale deps witness demotes, existence consumed", arm)
 	}
-	if state.srsExistenceStale[4326] != struct{}{} || len(state.srsExistenceStale) != 1 {
-		t.Fatalf("S2 own apply must mint exactly {4326}: %+v", state.srsExistenceStale)
+	if got := srsOwed(enriched[1]); !reflect.DeepEqual(got, []string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}) {
+		t.Fatalf("owed=%v want [D,P]", got)
 	}
-	_ = depsAt1
+	if _, ok := state.srsExistenceStale[4326]; !ok {
+		t.Fatalf("comma-ok: existenceStale missing 4326: %+v", state.srsExistenceStale)
+	}
+	if !reflect.DeepEqual(afterSRSApply["stale"], map[uint32]struct{}{4326: {}}) {
+		t.Fatalf("existenceStale=%+v want exactly {4326}", afterSRSApply["stale"])
+	}
+	if afterSRSApply["deps"] != true {
+		t.Fatal("SRS own apply must leave depsStale as the table write left it")
+	}
+	if !reflect.DeepEqual(afterSRSApply["table"], afterTableApply["table"]) {
+		t.Fatal("SRS own apply touched the table/schema channel")
+	}
+	if !reflect.DeepEqual(afterSRSApply["server"], afterTableApply["server"]) {
+		t.Fatal("SRS own apply touched the SERVER channel")
+	}
+}
+
+// B-arm own apply is a no-op — both blocked sources compared by full
+// deep state: whole-batch contamination and a pre-existing same-SRID
+// existence-stale flag.
+func TestT26SRSR2BlockedOwnApplyNoop(t *testing.T) {
+	// Source 1: whole-batch contamination (tail-sweep seeded).
+	_, provider := newSRSSQLHarness(t, &srsSQLFixture{
+		version: "8.0.36",
+		srs:     map[uint32]string{4326: "EPSG 4326"},
+	}, nil)
+	state := newSRSState(provider)
+	state.contaminated = true
+	before := srsChannels(t, state)
+	var atApply map[string]any
+	state.afterApplyObserve = func(_ int, _ *spec.Statement) { atApply = srsChannels(t, state) }
+	enriched := enrichSRS(t, state, provider, "DROP SPATIAL REFERENCE SYSTEM 4326")
+	if arm := srsArm(t, enriched[0]); arm != spec.SRSDropArmBlocked {
+		t.Fatalf("contamination arm=%v want blocked", arm)
+	}
+	if got := srsOwed(enriched[0]); !reflect.DeepEqual(got, []string{spec.SRSFactBatchEffects}) {
+		t.Fatalf("contamination owed=%v want [B]", got)
+	}
+	if !reflect.DeepEqual(atApply, before) {
+		t.Fatalf("blocked own apply must write nothing: before=%+v after=%+v", before, atApply)
+	}
+
+	// Source 2: pre-existing same-SRID existence stale.
+	_, provider = newSRSSQLHarness(t, &srsSQLFixture{
+		version: "8.0.36",
+		srs:     map[uint32]string{4326: "EPSG 4326"},
+	}, nil)
+	state = newSRSState(provider)
+	state.srsExistenceStale[4326] = struct{}{}
+	before = srsChannels(t, state)
+	atApply = nil
+	state.afterApplyObserve = func(_ int, _ *spec.Statement) { atApply = srsChannels(t, state) }
+	enriched = enrichSRS(t, state, provider, "DROP SPATIAL REFERENCE SYSTEM 4326")
+	if arm := srsArm(t, enriched[0]); arm != spec.SRSDropArmBlocked {
+		t.Fatalf("stale arm=%v want blocked", arm)
+	}
+	if got := srsOwed(enriched[0]); !reflect.DeepEqual(got, []string{spec.SRSFactBatchEffects}) {
+		t.Fatalf("stale owed=%v want [B]", got)
+	}
+	if !reflect.DeepEqual(atApply, before) {
+		t.Fatalf("blocked own apply must write nothing: before=%+v after=%+v", before, atApply)
+	}
 }
 
 // E12.2: serialized output never carries catalog identities — full

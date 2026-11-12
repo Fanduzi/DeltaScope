@@ -12,6 +12,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"io"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -382,6 +383,25 @@ func assertReads(t *testing.T, provider *srsSQLProvider, fixture *srsSQLFixture,
 	if got := provider.privCalls; got != wantL {
 		t.Fatalf("L=%d want %d", got, wantL)
 	}
+}
+
+// readsVector returns the current R/Qexist/Qdeps/Qo/L counters as an
+// ordered array — used for per-call deltas where assertReads' fatal
+// comparisons are too coarse.
+func readsVector(provider *srsSQLProvider, fixture *srsSQLFixture) [5]int {
+	var v [5]int
+	for _, req := range provider.forwards {
+		if req.Type == "mysql_spatial_reference_system" {
+			v[0]++
+		}
+	}
+	if fixture != nil {
+		v[1] = srsQueryCount(fixture, "st_spatial_reference_systems")
+		v[2] = srsQueryCount(fixture, "st_geometry_columns")
+		v[3] = srsQueryCount(fixture, "version()")
+	}
+	v[4] = provider.privCalls
+	return v
 }
 
 // assertReservedAdvisoryText is the R2-A discriminating check: the
@@ -813,7 +833,8 @@ func TestT26SRSR1CompactTouchesWithoutContamination(t *testing.T) {
 	assertReads(t, provider, fixture, 1, 1, 1, 1, 0)
 }
 
-// E8.5: the flag survives across enrich calls on the same batchState.
+// E8.5: the flag survives across enrich calls on the same batchState —
+// per-call read deltas plus the exact public projection.
 func TestT26SRSR1DepsStaleCrossCall(t *testing.T) {
 	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{
 		version: "8.0.36",
@@ -825,6 +846,11 @@ func TestT26SRSR1DepsStaleCrossCall(t *testing.T) {
 	if !state.srsDepsStale {
 		t.Fatal("DROP TABLE t must mint srsDepsStale")
 	}
+	// Call-1 delta: zero SRS reads — the table write never binds SRS.
+	call1 := readsVector(provider, fixture)
+	if call1 != [5]int{0, 0, 0, 0, 0} {
+		t.Fatalf("call1 SRS reads=%v want all zero", call1)
+	}
 	// Per-call counters: the once-per-request object cache is per
 	// enrich call, so call2 re-forwards the SRID.
 	provider.forwards = nil
@@ -833,10 +859,28 @@ func TestT26SRSR1DepsStaleCrossCall(t *testing.T) {
 	if arm := srsArm(t, enriched[0]); arm != spec.SRSDropArmUnproven {
 		t.Fatalf("call2 arm=%v want unproven — flag persists across calls", arm)
 	}
-	if got := srsOwed(enriched[0]); len(got) != 2 {
-		t.Fatalf("owed=%v want [D,P]", got)
+	wantOwed := []string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}
+	if got := srsOwed(enriched[0]); !reflect.DeepEqual(got, wantOwed) {
+		t.Fatalf("owed=%v want exactly %v", got, wantOwed)
 	}
-	assertReads(t, provider, fixture, 1, 1, 1, 1, 0)
+	call2 := readsVector(provider, fixture)
+	if call2 != [5]int{1, 1, 1, 1, 0} {
+		t.Fatalf("call2 delta=%v want 1/1/1/1/0", call2)
+	}
+	result := evaluateEnriched(t, enriched)
+	stmt := result.Statements[0]
+	if len(stmt.EvidenceGaps) != 1 || !reflect.DeepEqual(stmt.EvidenceGaps[0].RequiredFacts, wantOwed) {
+		t.Fatalf("public gap=%+v want exactly %v", stmt.EvidenceGaps, wantOwed)
+	}
+	reserved := 0
+	for _, f := range stmt.Findings {
+		if f.RuleID == "ddl.mysql.srs.drop.reserved" {
+			reserved++
+		}
+	}
+	if reserved != 1 || stmt.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("reserved=%d coverage=%v want 1/unverified", reserved, stmt.Coverage.Status)
+	}
 }
 
 // E8.6: refused S1 mints nothing; the later touching write is what
@@ -977,8 +1021,34 @@ func TestT26SRSR1D3ClassifierEdges(t *testing.T) {
 		return &spec.DDL{Operation: spec.DDLOperationCreateTable, HasReferTable: true,
 			ReferTable: &spec.Table{Name: "t"}, Columns: []spec.Column{{Name: "i", Type: "int"}}}
 	})
+	// The discriminator flags alone decide — a true flag with a nil
+	// payload or empty source list is still touching.
+	touching("create_refer_flag_nil", func() *spec.DDL {
+		return &spec.DDL{Operation: spec.DDLOperationCreateTable, HasReferTable: true,
+			Columns: []spec.Column{{Name: "i", Type: "int"}}}
+	})
+	touching("create_select_flag_empty", func() *spec.DDL {
+		return &spec.DDL{Operation: spec.DDLOperationCreateTable, HasSelect: true,
+			SelectSources: nil, Columns: []spec.Column{{Name: "i", Type: "int"}}}
+	})
+	touching("create_select_sources", func() *spec.DDL {
+		return &spec.DDL{Operation: spec.DDLOperationCreateTable, HasSelect: true,
+			SelectSources: []spec.Table{{Name: "src"}}, Columns: []spec.Column{{Name: "i", Type: "int"}}}
+	})
 	touching("create_spatial_col", func() *spec.DDL {
 		return &spec.DDL{Operation: spec.DDLOperationCreateTable, Columns: []spec.Column{{Name: "g", Type: "geometry"}}}
+	})
+	// Position inside the column list never matters: a clean head column
+	// followed by a spatial tail is still touching.
+	touching("create_clean_then_spatial", func() *spec.DDL {
+		return &spec.DDL{Operation: spec.DDLOperationCreateTable, Columns: []spec.Column{
+			{Name: "i", Type: "int"}, {Name: "g", Type: "point"}}}
+	})
+	// Same for a clean head + unextracted tail — member-level options
+	// defeat the column-list completeness clause.
+	touching("create_clean_then_unextracted", func() *spec.DDL {
+		return &spec.DDL{Operation: spec.DDLOperationCreateTable, Columns: []spec.Column{
+			{Name: "i", Type: "int"}, {Name: "v", Type: "varchar", UnextractedOptions: []string{"charset"}}}}
 	})
 	inert("create_plain", func() *spec.DDL {
 		return &spec.DDL{Operation: spec.DDLOperationCreateTable, Columns: []spec.Column{{Name: "i", Type: "int"}, {Name: "v", Type: "varchar"}}}
@@ -1003,6 +1073,38 @@ func TestT26SRSR1D3ClassifierEdges(t *testing.T) {
 	touching("unknown_op", func() *spec.DDL {
 		return &spec.DDL{Operation: spec.DDLOperationUnknown}
 	})
+
+	// Coverage-aspect triggers — the completeness clause fires on a real
+	// aspect gap, not just on field shape. Each fixture first proves the
+	// named aspect is actually produced, then asserts the classifier
+	// resolves touching (R3-D).
+	// CREATE: an AUTO_RANDOM column under MySQL produces an
+	// aspect:"column" gap while every other inert predicate holds —
+	// the aspect clause alone defeats inertness.
+	autoRandom := spec.Statement{Dialect: spec.DialectMySQL, Kind: spec.KindDDL,
+		DDL: &spec.DDL{Operation: spec.DDLOperationCreateTable, Columns: []spec.Column{
+			{Name: "i", Type: "bigint", AutoRandom: true}}}}
+	if !srsHasCoverageAspect(spec.DialectMySQL, autoRandom, "column") {
+		t.Fatal("AUTO_RANDOM fixture must produce the column aspect gap it tests")
+	}
+	if !state.spatialTouching(autoRandom) {
+		t.Fatal("CREATE with a column-aspect gap must be touching")
+	}
+	// ALTER: a DDL-level unextracted option produces aspect:"option"
+	// while every member action is a clean engine-only table_option —
+	// the aspect clause catches what member checks miss. (Member-level
+	// UnextractedOptions overlaps the action exclusion and is covered
+	// by alter_unextracted above.)
+	alterOptGap := spec.Statement{Dialect: spec.DialectMySQL, Kind: spec.KindDDL,
+		DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "t"},
+			UnextractedOptions: []string{"compression"},
+			Alter:              []spec.Alter{{Action: "table_option", Options: map[string]string{"engine": "x"}}}}}
+	if !srsHasCoverageAspect(spec.DialectMySQL, alterOptGap, "option") {
+		t.Fatal("DDL-level unextracted option must produce the option aspect gap")
+	}
+	if !state.spatialTouching(alterOptGap) {
+		t.Fatal("ALTER with an option-aspect gap must be touching")
+	}
 }
 
 // --- E9: authored ordering + cross-call contamination -------------------------
@@ -1022,6 +1124,13 @@ func TestT26SRSR1ParseFailureBlocks(t *testing.T) {
 	statements, err := Extract(context.Background(), parsed)
 	if err != nil || len(statements) != 1 {
 		t.Fatalf("extract: %v %d", err, len(statements))
+	}
+	// E9.2 authored coordinates: the failure record sits at (1,1) and
+	// the DROP was authored at (1,10) on the same line — those exact
+	// positions belong to this GARBAGE case; the GEOMETRY rows keep
+	// their own authored positions (R3 erratum E-9.2-attribution).
+	if statements[0].Line != 1 || statements[0].Column != 10 {
+		t.Fatalf("DROP authored at (%d,%d) want (1,10)", statements[0].Line, statements[0].Column)
 	}
 	state := newSRSState(provider)
 	enriched, err := state.enrichStatements(context.Background(),
@@ -1061,12 +1170,24 @@ func TestT26SRSR1TwoCallContamination(t *testing.T) {
 	if arm := srsArm(t, enriched1[0]); arm != spec.SRSDropArmRefusedSRID0 {
 		t.Fatalf("call1 arm=%v want refused_srid0", arm)
 	}
-	assertReads(t, provider, fixture, 1, 1, 1, 1, 0)
+	// Call-1 delta: the S0 bind really fired all four reads.
+	call1 := readsVector(provider, fixture)
+	if call1 != [5]int{1, 1, 1, 1, 0} {
+		t.Fatalf("call1 reads=%v want 1/1/1/1/0 — S0's reads must not be erased", call1)
+	}
 	if !state.contaminated {
 		t.Fatal("trailing failure must contaminate via the tail sweep")
 	}
 	if len(state.srsExistenceStale) != 0 {
 		t.Fatalf("S0 mints no stale: %+v", state.srsExistenceStale)
+	}
+	result1 := evaluateEnriched(t, enriched1)
+	stmt1 := result1.Statements[0]
+	if len(stmt1.Findings) != 1 || stmt1.Findings[0].RuleID != "ddl.mysql.srs.drop.srid0" {
+		t.Fatalf("call1 findings=%+v want only the srid0 blocker", stmt1.Findings)
+	}
+	if stmt1.Coverage.Status != report.CoverageComplete {
+		t.Fatalf("call1 coverage=%v want complete", stmt1.Coverage.Status)
 	}
 
 	parsed2, _ := parseSQL(context.Background(), "DROP SPATIAL REFERENCE SYSTEM 4326", spec.DialectMySQL)
@@ -1083,7 +1204,33 @@ func TestT26SRSR1TwoCallContamination(t *testing.T) {
 	if arm := srsArm(t, enriched2[0]); arm != spec.SRSDropArmBlocked {
 		t.Fatalf("call2 arm=%v want blocked", arm)
 	}
-	assertReads(t, provider, fixture, 1, 1, 1, 1, 0) // cumulative — call2 adds zero
+	if got := srsOwed(enriched2[0]); !reflect.DeepEqual(got, []string{spec.SRSFactBatchEffects}) {
+		t.Fatalf("call2 owed=%v want exactly [B]", got)
+	}
+	// Call-2 delta: zero — the fresh per-call cache cannot launder the
+	// batchState contamination.
+	call2 := readsVector(provider, fixture)
+	if call2 != [5]int{1, 1, 1, 1, 0} {
+		t.Fatalf("call2 cumulative=%v want 1/1/1/1/0 — call2 delta zero", call2)
+	}
+	result2 := evaluateEnriched(t, enriched2)
+	stmt2 := result2.Statements[0]
+	if len(stmt2.EvidenceGaps) != 1 ||
+		!reflect.DeepEqual(stmt2.EvidenceGaps[0].RequiredFacts, []string{spec.SRSFactBatchEffects}) {
+		t.Fatalf("call2 public gap=%+v want exactly [B]", stmt2.EvidenceGaps)
+	}
+	reserved := 0
+	for _, f := range stmt2.Findings {
+		if f.RuleID == "ddl.mysql.srs.drop.reserved" {
+			reserved++
+		}
+	}
+	if reserved != 1 {
+		t.Fatalf("call2 reserved=%d want 1 — reserved co-fires on B", reserved)
+	}
+	if stmt2.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("call2 coverage=%v want unverified", stmt2.Coverage.Status)
+	}
 }
 
 // B priority: contamination outranks S0/S1 in the first-match order.
