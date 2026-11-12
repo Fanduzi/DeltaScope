@@ -12,8 +12,10 @@ records are unchanged and remain the frozen expectation source.
 | R1 | `3c74445cea952d657e32a31ffb5c20057abbf511` | `d68f4ab7` | submitted; R1 ruling CHANGES REQUIRED |
 | R2 product | `35d41f5b52248364a7339794f58c80a0625e0277` | `3c74445c` | submitted; R2 ruling CHANGES REQUIRED |
 | R2 final | `f3a70987a178a62137448dd1e3d5c1684f597a99` | `35d41f5b` | submitted; R2 ruling CHANGES REQUIRED |
-| R3 product | `4a1a99fd6e01d5a14aba1622e16bb121ebd74e02` | `f3a70987` | submitted, pending ruling |
+| R3 product | `4a1a99fd6e01d5a14aba1622e16bb121ebd74e02` | `f3a70987` | submitted; R3 ruling CHANGES REQUIRED |
 | R3 test fixup | `432af22761339a78c58adb1e4e5d8e3084509a76` | `4a1a99fd` | frozen E1.1/E5.1 finding-text assertions |
+| R3 final | `cce8c05b9a304886b6ba3045fca101f8b41abf57` | `432af227` | submitted; R3 ruling CHANGES REQUIRED |
+| R4 product | `b90bf8eb023838364b08483eb351399ecfd26381` | `cce8c05b` | submitted, pending ruling |
 
 Branch `milestone/mysql-tidb-ddl-completion`. No push, merge, tag, release,
 or issue close.
@@ -123,6 +125,14 @@ SHA256 `8cf4821c3914744b3678be7140abbab1b5f44c88d03ba5ed130ad4992e5f6162`
 (37,179,042 B), policy `/tmp/policy-srs.yaml`
 SHA256 `ed43bc6a4b3c983d8e1378572bf7e805a15d54510dce1ad9fbe6df32da75ace2`,
 probe SQL `dd9bb7a7b4bd5bb3e5a11444709d2caa85cb62ba57d21e6decb174e32601b6c3`.
+
+## Gates (R4 — tests/docs-only revision)
+
+- `go test -count=1 -v ./internal/application/audit` — rc 0; 4529 PASS / 0 FAIL (audit package, all indentation). Raw log in the R4 archive.
+- `go vet ./internal/application/audit` — rc 0, 0-byte output.
+- `gofmt -l` over the 17 cumulative `d68f4ab7..HEAD` changed `.go` files — rc 0, 0-byte.
+- `git diff --check d68f4ab7..HEAD` — rc 0, 0-byte.
+- R3 seven-package + full-suite logs are REUSED evidence bound to `cce8c05b` — R4 moved only `*_test.go` and docs, so no new seven-package/full-suite/build run was performed or claimed. The registered binary (SHA `8cf4821c…f6162`) remains valid for the R4 source state.
 
 ## Gates (R3)
 
