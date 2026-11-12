@@ -284,11 +284,13 @@ func r3Boundary(t *testing.T, result report.Result, err error, object string) {
 	}
 }
 
-// r3S2 asserts the exact unproven public projection: exactly one gap
-// owned by the dependency rule with reason unknown_srs_state and exact
-// ordered required_facts; finding count and reserved-notice fields
-// checked separately; statement+aggregate unverified; review.
-func r3S2(t *testing.T, result report.Result, stmt report.StatementResult, wantFacts []string, wantReserved int) {
+// r3S2Statement asserts the exact statement-level unproven projection:
+// one dependency-owned unknown_srs_state gap carrying the exact ordered
+// required_facts; findings strictly counted — zero when the authored
+// SRID is not reserved (wantReservedSRID=0), else exactly one frozen
+// reserved notice with RuleID/notice-level/exact message/authored SRID
+// and never a refusal prediction; statement coverage unverified.
+func r3S2Statement(t *testing.T, stmt report.StatementResult, wantFacts []string, wantReservedSRID uint32) {
 	t.Helper()
 	if len(stmt.EvidenceGaps) != 1 {
 		t.Fatalf("gaps=%+v want exactly 1", stmt.EvidenceGaps)
@@ -300,20 +302,40 @@ func r3S2(t *testing.T, result report.Result, stmt report.StatementResult, wantF
 	if !reflect.DeepEqual(g.RequiredFacts, wantFacts) {
 		t.Fatalf("gap facts=%v want ordered %v", g.RequiredFacts, wantFacts)
 	}
-	reserved := 0
-	for _, f := range stmt.Findings {
-		if f.RuleID == "ddl.mysql.srs.drop.reserved" {
-			reserved++
-			if f.Level != rule.LevelNotice {
-				t.Fatalf("reserved finding level=%v want notice", f.Level)
-			}
+	wantFindings := 0
+	if wantReservedSRID != 0 {
+		wantFindings = 1
+	}
+	if len(stmt.Findings) != wantFindings {
+		t.Fatalf("findings=%+v want exactly %d (reserved SRID %d)", stmt.Findings, wantFindings, wantReservedSRID)
+	}
+	if wantReservedSRID != 0 {
+		f := stmt.Findings[0]
+		if f.RuleID != "ddl.mysql.srs.drop.reserved" || f.Level != rule.LevelNotice {
+			t.Fatalf("finding=%+v want the frozen reserved notice", f)
+		}
+		if srid, ok := f.Metadata["srid"]; !ok || srid != wantReservedSRID {
+			t.Fatalf("finding metadata=%+v want srid=%d present", f.Metadata, wantReservedSRID)
+		}
+		wantMessage := fmt.Sprintf("spatial reference system %d is in a reserved SRID range", wantReservedSRID)
+		if f.Message != wantMessage {
+			t.Fatalf("reserved message=%q want exact %q", f.Message, wantMessage)
 		}
 	}
-	if reserved != wantReserved {
-		t.Fatalf("reserved findings=%d want %d; findings=%+v", reserved, wantReserved, stmt.Findings)
+	if stmt.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("statement coverage=%v want unverified", stmt.Coverage.Status)
 	}
-	if stmt.Coverage.Status != report.CoverageUnverified || result.Coverage.Status != report.CoverageUnverified {
-		t.Fatalf("coverage=%v/%v want unverified/unverified", stmt.Coverage.Status, result.Coverage.Status)
+}
+
+// r3S2 asserts the exact unproven public projection at statement AND
+// aggregate level: the r3S2Statement shape plus aggregate unverified
+// coverage and review verdict. For rows inside multi-statement batches
+// use r3S2Statement on the SRS statement alone.
+func r3S2(t *testing.T, result report.Result, stmt report.StatementResult, wantFacts []string, wantReservedSRID uint32) {
+	t.Helper()
+	r3S2Statement(t, stmt, wantFacts, wantReservedSRID)
+	if result.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("aggregate coverage=%v want unverified", result.Coverage.Status)
 	}
 	if result.Verdict != report.VerdictReview {
 		t.Fatalf("verdict=%v want review", result.Verdict)
@@ -321,6 +343,38 @@ func r3S2(t *testing.T, result report.Result, stmt report.StatementResult, wantF
 }
 
 const r3SQL = "DROP SPATIAL REFERENCE SYSTEM 4326;"
+
+// r3RefusedDependency asserts the complete refused_dependency public
+// projection (R5-B.3 — reused verbatim on every dependency-refusal row):
+// exactly one dependency blocker carrying outcome=refused_dependency,
+// the authored SRID, dependency_witness_count and the frozen message;
+// zero evidence gaps; statement+aggregate complete; reject verdict.
+func r3RefusedDependency(t *testing.T, result report.Result, stmt report.StatementResult, srid uint32, wantWitnesses int) {
+	t.Helper()
+	if len(stmt.Findings) != 1 {
+		t.Fatalf("findings=%+v want exactly one", stmt.Findings)
+	}
+	f := stmt.Findings[0]
+	if f.RuleID != "ddl.mysql.srs.drop.dependency" || f.Level != rule.LevelBlocker {
+		t.Fatalf("finding=%+v want the dependency blocker", f)
+	}
+	if f.Metadata["outcome"] != "refused_dependency" || f.Metadata["dependency_witness_count"] != wantWitnesses {
+		t.Fatalf("metadata=%+v want outcome=refused_dependency witness_count=%d", f.Metadata, wantWitnesses)
+	}
+	wantMessage := fmt.Sprintf("spatial reference system %d is used by %d visible geometry column(s)", srid, wantWitnesses)
+	if fmt.Sprintf("%v", f.Metadata["srid"]) != fmt.Sprintf("%d", srid) || f.Message != wantMessage {
+		t.Fatalf("finding srid=%v message=%q want the frozen refused_dependency shape", f.Metadata["srid"], f.Message)
+	}
+	if len(stmt.EvidenceGaps) != 0 {
+		t.Fatalf("gaps=%+v want absent — positive witness discharges existence", stmt.EvidenceGaps)
+	}
+	if stmt.Coverage.Status != report.CoverageComplete || result.Coverage.Status != report.CoverageComplete {
+		t.Fatalf("coverage=%v/%v want complete/complete", stmt.Coverage.Status, result.Coverage.Status)
+	}
+	if result.Verdict != report.VerdictReject {
+		t.Fatalf("verdict=%v want reject", result.Verdict)
+	}
+}
 
 // --- R3-B.A: request/API basic rows ------------------------------------------
 
@@ -340,28 +394,7 @@ func TestT26SRSR3RefusedDependencyRequest(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	stmt := result.Statements[0]
-	if len(stmt.Findings) != 1 {
-		t.Fatalf("findings=%+v want exactly one", stmt.Findings)
-	}
-	f := stmt.Findings[0]
-	if f.RuleID != "ddl.mysql.srs.drop.dependency" || f.Level != rule.LevelBlocker {
-		t.Fatalf("finding=%+v want the dependency blocker", f)
-	}
-	if f.Metadata["outcome"] != "refused_dependency" || f.Metadata["dependency_witness_count"] != 1 {
-		t.Fatalf("metadata=%+v want outcome=refused_dependency witness_count=1", f.Metadata)
-	}
-	if fmt.Sprintf("%v", f.Metadata["srid"]) != "4326" || f.Message != "spatial reference system 4326 is used by 1 visible geometry column(s)" {
-		t.Fatalf("finding srid=%v message=%q want the frozen E1.1 shape", f.Metadata["srid"], f.Message)
-	}
-	if len(stmt.EvidenceGaps) != 0 {
-		t.Fatalf("gaps=%+v want absent — positive witness discharges existence", stmt.EvidenceGaps)
-	}
-	if stmt.Coverage.Status != report.CoverageComplete || result.Coverage.Status != report.CoverageComplete {
-		t.Fatalf("coverage=%v/%v want complete/complete", stmt.Coverage.Status, result.Coverage.Status)
-	}
-	if result.Verdict != report.VerdictReject {
-		t.Fatalf("verdict=%v want reject", result.Verdict)
-	}
+	r3RefusedDependency(t, result, stmt, 4326, 1)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 }
 
@@ -380,15 +413,7 @@ func TestT26SRSR3ZeroRowPositiveDepsRefuses(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	stmt := result.Statements[0]
-	if len(stmt.Findings) != 1 || stmt.Findings[0].RuleID != "ddl.mysql.srs.drop.dependency" {
-		t.Fatalf("findings=%+v want the dependency blocker", stmt.Findings)
-	}
-	if len(stmt.EvidenceGaps) != 0 || stmt.Coverage.Status != report.CoverageComplete {
-		t.Fatalf("gaps=%+v coverage=%v want none/complete", stmt.EvidenceGaps, stmt.Coverage.Status)
-	}
-	if result.Verdict != report.VerdictReject {
-		t.Fatalf("verdict=%v want reject", result.Verdict)
-	}
+	r3RefusedDependency(t, result, stmt, 4326, 1)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 }
 
@@ -409,9 +434,7 @@ func TestT26SRSR3IfExistsRequest(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	stmt := result.Statements[0]
-	if len(stmt.Findings) != 1 || stmt.Findings[0].RuleID != "ddl.mysql.srs.drop.dependency" {
-		t.Fatalf("findings=%+v want only the dependency blocker — IF EXISTS never reaches adjudication", stmt.Findings)
-	}
+	r3RefusedDependency(t, result, stmt, 4326, 1)
 	if stmt.NormalizedSQL != "DROP SPATIAL REFERENCE SYSTEM IF EXISTS 4326" {
 		t.Fatalf("normalized_sql=%q want authored IF EXISTS form", stmt.NormalizedSQL)
 	}
@@ -437,22 +460,7 @@ func TestT26SRSR3UnprovenReservedRequest(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	stmt := result.Statements[0]
-	if len(stmt.Findings) != 1 {
-		t.Fatalf("findings=%+v want exactly one", stmt.Findings)
-	}
-	f := stmt.Findings[0]
-	if f.RuleID != "ddl.mysql.srs.drop.reserved" || f.Level != rule.LevelNotice {
-		t.Fatalf("finding=%+v want the frozen reserved notice", f)
-	}
-	if srid, ok := f.Metadata["srid"]; !ok || srid != uint32(4326) {
-		t.Fatalf("finding metadata=%+v want srid=4326 present", f.Metadata)
-	}
-	if !strings.Contains(f.Message, "reserved") ||
-		strings.Contains(strings.ToLower(f.Message), "refuse") ||
-		strings.Contains(strings.ToLower(f.Message), "reject") {
-		t.Fatalf("advisory message=%q must state membership only, never a refusal prediction", f.Message)
-	}
-	r3S2(t, result, stmt, []string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 1)
+	r3S2(t, result, stmt, []string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 4326)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 }
 
@@ -465,9 +473,6 @@ func TestT26SRSR3UnprovenProviderless(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	stmt := result.Statements[0]
-	if len(stmt.Findings) != 0 {
-		t.Fatalf("findings=%+v want absent — 100001 is not reserved", stmt.Findings)
-	}
 	r3S2(t, result, stmt,
 		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 0)
 }
@@ -486,7 +491,7 @@ func TestT26SRSR3ZeroRowProductLoader(t *testing.T) {
 	}
 	stmt := result.Statements[0]
 	r3S2(t, result, stmt,
-		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 1)
+		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 4326)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 }
 
@@ -520,8 +525,10 @@ func TestT26SRSR3SRID0Request(t *testing.T) {
 		if len(stmt.EvidenceGaps) != 0 {
 			t.Fatalf("%q gaps=%+v want absent", sqlText, stmt.EvidenceGaps)
 		}
-		if stmt.Coverage.Status != report.CoverageComplete || result.Verdict != report.VerdictReject {
-			t.Fatalf("%q coverage=%v verdict=%v want complete/reject", sqlText, stmt.Coverage.Status, result.Verdict)
+		if stmt.Coverage.Status != report.CoverageComplete || result.Coverage.Status != report.CoverageComplete ||
+			result.Verdict != report.VerdictReject {
+			t.Fatalf("%q coverage=%v/%v verdict=%v want complete/complete/reject",
+				sqlText, stmt.Coverage.Status, result.Coverage.Status, result.Verdict)
 		}
 		r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 	}
@@ -540,9 +547,6 @@ func TestT26SRSR3MaxSRIDRequest(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	stmt := result.Statements[0]
-	if len(stmt.Findings) != 0 {
-		t.Fatalf("findings=%+v want absent — 4294967295 is not reserved", stmt.Findings)
-	}
 	r3S2(t, result, stmt,
 		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 0)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
@@ -571,17 +575,13 @@ func TestT26SRSR3ReservedCellsEmptyEvidence(t *testing.T) {
 			t.Fatalf("srid %d audit: %v", cell.srid, err)
 		}
 		stmt := result.Statements[0]
-		wantReserved := 0
+		var wantReserved uint32
 		if cell.advised {
-			wantReserved = 1
+			wantReserved = cell.srid
 		}
 		r3S2(t, result, stmt,
 			[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege},
 			wantReserved)
-		// reject extra findings beyond the advisory (R4-B.3)
-		if len(stmt.Findings) != wantReserved {
-			t.Fatalf("srid %d: findings=%+v want exactly %d", cell.srid, stmt.Findings, wantReserved)
-		}
 		r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 	}
 }
@@ -603,12 +603,7 @@ func TestT26SRSR3ReservedRefusalRequest(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	stmt := result.Statements[0]
-	if len(stmt.Findings) != 1 || stmt.Findings[0].RuleID != "ddl.mysql.srs.drop.dependency" {
-		t.Fatalf("findings=%+v want only the dependency blocker — advisory suppressed on refusal", stmt.Findings)
-	}
-	if result.Verdict != report.VerdictReject {
-		t.Fatalf("verdict=%v want reject", result.Verdict)
-	}
+	r3RefusedDependency(t, result, stmt, 2000000000, 1)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 }
 
@@ -639,7 +634,7 @@ func TestT26SRSR3E10HealthyObserved(t *testing.T) {
 	}
 	stmt := result.Statements[0]
 	r3S2(t, result, stmt,
-		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 1)
+		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 4326)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 }
 
@@ -688,7 +683,7 @@ func TestT26SRSR3E10FloorProviderless(t *testing.T) {
 	}
 	stmt := result.Statements[0]
 	r3S2(t, result, stmt,
-		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 1)
+		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 4326)
 	if len(result.Unsupported) != 0 {
 		t.Fatalf("unsupported=%+v want absent on an audited row", result.Unsupported)
 	}
@@ -716,6 +711,10 @@ func TestT26SRSR3E10TiDBVendorBoundary(t *testing.T) {
 		t.Fatalf("unsupported=%+v want the vendor boundary", result.Unsupported)
 	}
 	// statement-level zero findings/gaps + incomplete coverage (R4-B.1)
+	// — explicitly one statement row before reading its fields (R5-B.2)
+	if len(result.Statements) != 1 {
+		t.Fatalf("statements=%d want exactly 1 boundary row", len(result.Statements))
+	}
 	for _, s := range result.Statements {
 		if len(s.Findings) != 0 || len(s.EvidenceGaps) != 0 {
 			t.Fatalf("boundary row carries findings/gaps: %+v", s)
@@ -975,16 +974,22 @@ func TestT26SRSR3ServerPrivilegeIsolationProduct(t *testing.T) {
 			fx.count["user"], fx.count["grants"])
 	}
 	srv := result.Statements[0]
-	// positive consumability proof: the SUPER witness was consumed by the
-	// SERVER adjudication — its finding carries the conditional_audit
-	// marker and drop_privilege is absent from its owed facts.
+	// positive consumability proof (R5-A): the SUPER witness was consumed
+	// by the SERVER adjudication — ONE ddl.mysql.server.drop.notice finding
+	// carries the full conditional projection on the same finding:
+	// outcome=conditional_drop and conditional_audit=
+	// observed_account_new_session as a string. A missing key, nil,
+	// non-string, empty string, or wrong token all fail this proof —
+	// absence of a server.drop_privilege debt alone does not count.
 	serverConsumed := false
 	for _, f := range srv.Findings {
-		if f.Metadata["conditional_audit"] != "" {
-			serverConsumed = true
+		if f.RuleID != "ddl.mysql.server.drop.notice" {
+			continue
 		}
-		for _, fact := range f.Metadata {
-			_ = fact
+		marker, isString := f.Metadata["conditional_audit"].(string)
+		if isString && marker == string(spec.PrivilegeAuditModeObservedAccountNewSession) &&
+			f.Metadata["outcome"] == "conditional_drop" {
+			serverConsumed = true
 		}
 	}
 	for _, gap := range srv.EvidenceGaps {
@@ -995,37 +1000,19 @@ func TestT26SRSR3ServerPrivilegeIsolationProduct(t *testing.T) {
 		}
 	}
 	if !serverConsumed {
-		t.Fatalf("SERVER finding lacks the conditional_audit marker — privilege premise not proven consumable: %+v", srv.Findings)
+		t.Fatalf("no ddl.mysql.server.drop.notice finding carries outcome=conditional_drop + conditional_audit=observed_account_new_session — privilege premise not proven consumable: %+v", srv.Findings)
 	}
 	srs := result.Statements[1]
-	// R4-A.3 — exactly one dependency-owned unknown_srs_state gap, exact
-	// ordered facts [D,P]; no flattening tricks.
-	if len(srs.EvidenceGaps) != 1 {
-		t.Fatalf("gaps=%+v want exactly 1", srs.EvidenceGaps)
-	}
-	g := srs.EvidenceGaps[0]
-	if g.RuleID != "ddl.mysql.srs.drop.dependency" || g.ReasonCode != "unknown_srs_state" {
-		t.Fatalf("gap=%+v want dependency-owned unknown_srs_state", g)
-	}
-	want := []string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}
-	if !reflect.DeepEqual(g.RequiredFacts, want) {
-		t.Fatalf("gap facts=%v want ordered [D,P] — SERVER privilege never transfers", g.RequiredFacts)
-	}
-	// exactly one frozen reserved notice on the SRS statement
-	reserved := 0
+	// R4-A.3 / R5-B.1 — statement-level S2 projection on the SRS row:
+	// one dependency-owned unknown_srs_state gap with exact ordered
+	// [D,P] facts (SERVER privilege never transfers), findings strictly
+	// counted — exactly one frozen reserved notice for SRID 4326.
+	r3S2Statement(t, srs,
+		[]string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 4326)
 	for _, f := range srs.Findings {
-		if f.RuleID == "ddl.mysql.srs.drop.reserved" {
-			reserved++
-			if f.Metadata["conditional_audit"] != nil || f.Metadata["conditional"] != nil {
-				t.Fatalf("reserved finding carries conditional marker: %+v", f.Metadata)
-			}
+		if f.Metadata["conditional_audit"] != nil || f.Metadata["conditional"] != nil {
+			t.Fatalf("SRS finding carries conditional marker: %+v", f.Metadata)
 		}
-	}
-	if reserved != 1 {
-		t.Fatalf("reserved findings=%d want exactly 1", reserved)
-	}
-	if srs.Coverage.Status != report.CoverageUnverified {
-		t.Fatalf("SRS coverage=%v want unverified", srs.Coverage.Status)
 	}
 	// no conditional marker anywhere on the SRS statement
 	srsBlob, _ := json.Marshal(srs)
