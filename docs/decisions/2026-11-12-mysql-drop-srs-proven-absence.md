@@ -24,9 +24,11 @@ witness still outranks a simultaneous absence proof.
 
 ## Why
 
-`DROP SPATIAL REFERENCE SYSTEM` on a proven-absent SRID refuses natively
-(`ER_SP_DOES_NOT_EXIST`) while `IF EXISTS` warns — evidence the audit can
-now legally supply, unlike the privilege-filtered
+`DROP SPATIAL REFERENCE SYSTEM` on an absent SRID is documented server
+behavior: refusal with `ER_SP_DOES_NOT_EXIST`, a warning under
+`IF EXISTS` (contract work order's audit-model basis — not a claim of
+new native execution in this change). Proven absence is evidence the
+audit can now legally supply, unlike the privilege-filtered
 `ST_GEOMETRY_COLUMNS` view where zero rows stay unproven forever. The
 `Absence` bit is supplier-certified, never inferred from
 `Read && !Exists`: `sql.ErrNoRows` at QueryContext or `rows.Err()` is an
