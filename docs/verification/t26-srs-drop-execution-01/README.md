@@ -46,12 +46,12 @@ Reads columns are R / Qexist / Qdeps / Qo / L (+Vd where request discovery runs)
 
 | E-ID | Layer | SQL / fixture | Expected (arm, owed, state) | Public assertions | Reads | Witness |
 |---|---|---|---|---|---|---|
-| E1.1 | request/API | `DROP SRS 4326`, pin `8.0.36`; product loader ver 8.0.36 + exist row + deps `[s.t.g]` | S1 refused_dependency; findings covered; no mint | exact finding shape (`ddl.mysql.srs.drop.dependency`, blocker, dependent_count); coverage complete; verdict reject | 1/1/1/1/0, Vd=1 | `TestT26SRSR3RefusedDependencyRequest` |
+| E1.1 | request/API | `DROP SRS 4326`, pin `8.0.36`; product loader ver 8.0.36 + exist row + deps `[s.t.g]` | S1 refused_dependency; findings covered; no mint | exact finding shape (`ddl.mysql.srs.drop.dependency`, blocker, dependency_witness_count); coverage complete; verdict reject | 1/1/1/1/0, Vd=1 | `TestT26SRSR3RefusedDependencyRequest` |
 | E1.2 | request/API | `DROP SRS IF EXISTS 4326`, same fixture | S1 same arm; `if_exists` not a metadata key | normalized_sql keeps authored IF EXISTS; same refusal | 1/1/1/1/0, Vd=1 | `TestT26SRSR3IfExistsRequest`, `TestT26SRSR1IfExistsSameArm` |
-| E2.1 | request/API | pin `8.0.36`; exist row + deps `[]` | S2 unproven; owed `[D,P]`; no mint | exactly one reserved notice; unverified; review | 1/1/1/1/0, Vd=1 | `TestT26SRSR3UnprovenReservedRequest`, `TestT26SRSR1UnprovenPresentEmptyDeps` |
-| E3.1 | request/API | pin `8.0.36`, SRID `100001`; providerless | S2 unproven; owed `[E,D,P]` | no findings; one reserved notice; unverified; review | 0/0/0/0/0, Vd=N/A | `TestT26SRSR3UnprovenProviderless`, `TestT26SRSR1UnprovenProviderless` |
+| E2.1 | request/API | pin `8.0.36`; exist row + deps `[]` | S2 unproven; owed `[D,P]`; own apply mints `srsExistenceStale[4326]` | exactly one reserved notice; unverified; review | 1/1/1/1/0, Vd=1 | `TestT26SRSR3UnprovenReservedRequest`, `TestT26SRSR1UnprovenPresentEmptyDeps` |
+| E3.1 | request/API | pin `8.0.36`, SRID `100001`; providerless | S2 unproven; owed `[E,D,P]` | zero findings (100001 ∉ reserved blocks); unverified; review | 0/0/0/0/0, Vd=N/A | `TestT26SRSR3UnprovenProviderless`, `TestT26SRSR1UnprovenProviderless` |
 | E3.2 | request/API | pin `8.0.36`; exist empty + deps `[]` | S2 unproven; owed `[E,D,P]` | gap length=1, order `[E,D,P]`; exactly one reserved notice; aggregate unverified | 1/1/1/1/0, Vd=1 | `TestT26SRSR3ZeroRowProductLoader`, `TestT26SRSR2RequestZeroRow` |
-| E3.3 | enrich | provider without ObjectResolver | S2 unproven; owed `[E,D,P]` | reserved notice; unverified | R counts only SRS forwards | `TestT26SRSR1UnprovenNoResolver` |
+| E3.3 | enrich | provider without ObjectResolver | S2 unproven; owed `[E,D,P]` | zero findings (100001 ∉ reserved); unverified | R counts only SRS forwards | `TestT26SRSR1UnprovenNoResolver` |
 | E4.1 | request/API | pin `8.0.36`; exist empty + deps `[s.t.g]` | S1 refused_dependency (witness discharges existence) | dependency blocker; complete; reject | 1/1/1/1/0, Vd=1 | `TestT26SRSR3ZeroRowPositiveDepsRefuses` |
 | E5.1 | request/API | `DROP SRS 0`; exist row + deps `[]` | S0 refused_srid0 | frozen finding text; complete; reject; reserved advisory suppressed | 1/1/1/1/0, Vd=1 | `TestT26SRSR3SRID0Request`, `TestT26SRSR1RefusedSRID0` |
 | E5.2 | request/API | `DROP SRS IF EXISTS 0`; same fixture | S0 same arm | srid0 blocker; IF EXISTS never suppresses | 1/1/1/1/0, Vd=1 | `TestT26SRSR3SRID0Request`, `TestT26SRSR2IfExistsSRID0` |
@@ -59,9 +59,9 @@ Reads columns are R / Qexist / Qdeps / Qo / L (+Vd where request discovery runs)
 | E5.4–E5.6h | request/API + cells | `32767/32768`, `59999999/60000000/69999999/70000000`, `1999999999/2000000000/2147483647/2147483648` | S2; owed `[E,D,P]`; reserved notice exactly inside the three blocks, absent at endpoints/corridors | exact advisory presence/absence per cell | request rows 1/1/1/1/0 | `TestT26SRSR3ReservedCellsEmptyEvidence`, `TestT26SRSR2ReservedStatementCells`, `TestT26SRSR1ReservedEndpoints` |
 | E5.7–E5.10 | parser | unclaimed spellings | no SRS statement forms | parser diagnostics only | N/A | `TestT26SRSR1UnclaimedForms` |
 | E5.11 | request/API | `DROP SRS 2000000000`; exist row + deps `[s.t.g]` | S1 refused_dependency (reserved range but positive witness) | advisory suppressed on refusal arms; only the dependency blocker | 1/1/1/1/0, Vd=1 | `TestT26SRSR3ReservedRefusalRequest`, `TestT26SRSR2ReservedSuppressedInRefusal` |
-| E6.1–E6.3 | enrich | repeat SRID across calls | per-call staleness honored | repeat reads after mint; refusal repeats | R deltas per call | `TestT26SRSR1S2MintsExistenceStale`, `S0RepeatReads`, `S1RepeatRefuses` |
+| E6.1–E6.3 | enrich/apply+pp | two same-SRID statements in ONE batch | stmt2 re-adjudicates per frozen rule | E6.1: stmt2 blocked [B] (bind exits pre-cache); E6.2: refusal cache-hit re-adjudicates identical; E6.3: refused twice | stmt2 0/0/0/0/0 each | `TestT26SRSR1S2MintsExistenceStale`, `S0RepeatReads`, `S1RepeatRefuses` |
 | E7.1/E7.2 | enrich | batch lifecycle / different SRID | stale flags per scope | same-SRID skip, different-SRID fresh read | per-call R | `TestT26SRSR1BoundaryLifecycleMintsStale`, `TestT26SRSR2BoundaryDifferentSRIDRefuses` |
-| E8.1 | apply | `DROP TABLE` after SRS | mints `srsDepsStale` only | table channel untouched | — | `TestT26SRSR1DropTableTouchesDeps` |
+| E8.1 | enrich/apply+pp | `DROP TABLE s.t` BEFORE `DROP SRS 4326`; stmt2 `exist(row) deps([s.t.g])` | table own apply mints `srsDepsStale` + writes its legitimate table change | stmt2's positive witness is DB-pre-state → demoted → `unproven` `[D,P]` + 1 reserved; existence stays consumable | stmt2 1/1/1/1/0 | `TestT26SRSR1DropTableTouchesDeps` |
 | E8.2a | apply | inert `CREATE TABLE` (no spatial col) with positive witness | no deps stale; witness retained | positive control | — | `TestT26SRSR2InertCreatePositiveControl` |
 | E8.2b | apply | inert CREATE, empty evidence | deps stale absent; owed `[D,P]` kept | reserved co-fire; public gap intact | — | `TestT26SRSR2InertCreateEmptyIncomplete`, `TestT26SRSR1InertCreateKeepsWitness` |
 | E8.3/E8.3b | parse→enrich | authored GEOMETRY CREATEs | real Type-position parse failures → B | blocked source = parse | — | `TestT26SRSR2GeometryTypeRefusal` |
@@ -71,7 +71,7 @@ Reads columns are R / Qexist / Qdeps / Qo / L (+Vd where request discovery runs)
 | E8.7 | apply | `ALTER TABLE … DROP COLUMN g` | touches deps | D3 ALTER member path | — | `TestT26SRSR1AlterDropColumnTouches` |
 | E8.8 | apply | inert ALTER | keeps witness | no mint | — | `TestT26SRSR1InertAlterKeepsWitness` |
 | E8.9/E8.10 | apply | schema ops | per D3 table | schema-channel behavior | — | `TestT26SRSR1SchemaOps` |
-| E8.11 | apply | `CREATE TABLE … LIKE` / CTAS | touches deps | LIKE/CTAS classifier | — | `TestT26SRSR1CreateLikeTouches` |
+| E8.11 | enrich/apply+pp (LIKE) / model-unit (CTAS) | `CREATE TABLE t_new LIKE s.t` then SRS | LIKE-source columns unvouched → completeness unproven → touching → `unproven [D,P]` + 1 reserved | CTAS covered only as classifier model input | stmt2 1/1/1/1/0 | `TestT26SRSR1CreateLikeTouches`, `TestT26SRSR2D3Discriminating` |
 | D3 | classifier | HasSelect, multi-member ALTER, nil/empty source/member, spatial cols, unextracted col/member/DDL opts, LIKE/CTAS, unknown ops | table-driven expected touching | each input discriminates | — | `TestT26SRSR1D3ClassifierEdges`, `TestT26SRSR2D3Discriminating` |
 | E9.1/E9.2 | parse→enrich | authored batch `bad; DROP SRS` | failure blocks; authored coords | failure at (1,1), DROP at (1,10) | — | `TestT26SRSR1ParseFailureBlocks`, `TestT26SRSR2AuthoredCoordinates` |
 | E9.3 | enrich×2 | contaminated batch across calls | per-call isolation | public projection + deltas | per-call | `TestT26SRSR1TwoCallContamination` |
@@ -88,9 +88,9 @@ Reads columns are R / Qexist / Qdeps / Qo / L (+Vd where request discovery runs)
 | E10.7 | request/API | MySQL dialect + TiDB banner | `ErrDialectProductMismatch` | typed error; SRS zeros | 0/0/0/0/0, Vd=1 | `TestT26SRSR3E10ProductMismatch`, `TestT26SRSR2ProductMismatch` |
 | E10.8 | request/API | pin `8.0.36`, observed `8.0.37-log` (R3) / `5.7.44` (R2) | `ErrTargetVersionMismatch` | typed error; SRS zeros | 0/0/0/0/0, Vd=1 | `TestT26SRSR3E10VersionMismatch`, `TestT26SRSR2DiscoveryMismatch` |
 | E11.1 | request/API | resolver forward fails | sentinel via `metadata object read failed`; no adjudication/apply | `errors.Is` preserved; downstream seams suppressed | 1/0/0/0/0, Vd=1 | `TestT26SRSR3E11ResolverFailure` |
-| E11.2 | request/API + internal | existence read fails | same wrapper; terminate before adjudicate/apply | public text exact; sibling isolation | 1/1/0/1/0 | `TestT26SRSR3E11ExistenceFailure`, `TestT26SRSR2ErrorSeamAccounting` (E11.2 subtest), `TestT26SRSR2ErrorSiblingIsolation` |
-| E11.3 | request/API | dependency read fails | same wrapper | exact text; sentinel | 1/1/1/1/0 | `TestT26SRSR3E11DepsFailure`, `TestT26SRSR2ErrorSeamAccounting` (E11.3 subtest) |
-| E11.4 | request/API + internal | loader `select version()` fails | same wrapper | no adjudication; sibling isolation | 1/0/0/1/0 | `TestT26SRSR3E11LoaderVersionFailure`, `TestT26SRSR2ErrorSeamAccounting` (E11.4 subtest) |
+| E11.2 | request/API + internal | existence read fails | same wrapper; terminate before adjudicate/apply | public text exact; bind/apply observe hooks never fire; deps never issued | 1/1/0/1/0 | `TestT26SRSR3E11ExistenceFailure`, `TestT26SRSR2ErrorSeamAccounting` (E11.2 subtest) |
+| E11.3 | request/API + internal | dependency read fails | same wrapper | exact text; sentinel; sibling isolation witness (post-stmt1 baseline, later indices never reach bind/apply) | 1/1/1/1/0 | `TestT26SRSR3E11DepsFailure`, `TestT26SRSR2ErrorSeamAccounting` (E11.3 subtest), `TestT26SRSR2ErrorSiblingIsolation` |
+| E11.4 | request/API + internal | loader `select version()` fails | same wrapper | no adjudication (bind/apply observe hooks never fire) | 1/0/0/1/0 | `TestT26SRSR3E11LoaderVersionFailure`, `TestT26SRSR2ErrorSeamAccounting` (E11.4 subtest) |
 | E11.5 | request/API | `LoadInstanceFacts` sentinel | `fmt.Errorf("load instance facts: %w")`; `report.Result{}` zero | `errors.Is` + exact text; all SRS seams zero; no enrich entry | 0/0/0/0/0, Vd=1(attempt) | `TestT26SRSR3E11DiscoverySentinel`, `TestT26SRSR2DiscoverySentinel` |
 | E12.1 | request/API | raw vs normalized SQL | exact raw/normalized projection | both forms serialized | — | `TestT26SRSR3SerializedSQLForms`, `TestT26SRSR1PublicShape` |
 | E12.2 | request/API | full serialized result | no catalog identities (schema/table/column names) leak | full-blob scan | — | `TestT26SRSR3SerializationScanRequest`, `TestT26SRSR2SerializationScan` |
@@ -158,7 +158,7 @@ probe SQL `dd9bb7a7b4bd5bb3e5a11444709d2caa85cb62ba57d21e6decb174e32601b6c3`.
 - R2 gates: seven-package `-count=1 -v` rc 0, full suite rc 0, vet clean,
   gofmt clean, `git diff --check` clean, `go build -buildvcs=false` with
   a byte-identical independent rebuild.
-- R3 changed only test files and this README — no product `.go` source
+- R3 changed three test files plus this README and the ADR — no product `.go` source
   moved between R2 and R3, so the R3 build inputs (non-test packages)
   are identical to R2's; the build was still re-run and re-hashed on the
   R3 source state rather than inferred.

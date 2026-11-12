@@ -1,6 +1,6 @@
 # MySQL DROP SPATIAL REFERENCE SYSTEM: promoted to the audited slice
 
-Status: submitted, pending reviewer sign-off (T26-SRS-DROP-EXECUTION-01 R3 candidate chain `4a1a99fd`/`432af227` + docs, issue #105, milestone T26/#105). The contract (T26-SRS-DROP-CONTRACT-01, candidate `d68f4ab7`) was accepted independently; this record describes the implementation slice only — implementation acceptance is a separate reviewer ruling, not a Worker claim.
+Status: submitted, pending reviewer sign-off (T26-SRS-DROP-EXECUTION-01 R4 revision in progress on top of R3 chain `4a1a99fd`/`432af227`/`cce8c05b`, issue #105, milestone T26/#105). The contract (T26-SRS-DROP-CONTRACT-01, candidate `d68f4ab7`) was accepted independently; this record describes the implementation slice only — implementation acceptance is a separate reviewer ruling, not a Worker claim.
 
 ## Decision
 
@@ -69,12 +69,21 @@ evidence the reads did return.
   propagation, public shape, sibling-family isolation, spec-level unit
   cells; read counters at the resolver-forward and real
   database/sql→stub-driver seams.
-- Probes (providerless, `bin/deltascope audit --format json
+- Probes (R1-era, providerless, `bin/deltascope audit --format json
   --fail-on none`): pinned `8.0.36` audited unproven → rc=0
   (verdict review, 1 gap ×3 ordered facts); no pin → version boundary →
-  rc=1; malformed pin `8.0.x` → typed input error → rc=2.
-- `go test ./...`, `go vet ./...`, `gofmt -l`, `git diff --check`,
-  `make build` — all clean at the candidate commit.
+  rc=1; malformed pin `8.0.x` → typed input error → rc=2. Recipe
+  corrected in R2 (rules-only policy needs explicit `enabled:true`;
+  `--config` not `--policy`).
+- R1-era verification: `go test ./...`, `go vet ./...`, `gofmt -l`,
+  `git diff --check`, `make build` — clean at the R1 candidate.
+- R2 verification (candidate 35d41f5b): seven-package `-count=1 -v`,
+  full suite, vet, gofmt, diff --check, `go build -buildvcs=false` with
+  byte-identical rebuild — all clean.
+- R3 verification (candidate cce8c05b): seven-package `-count=1 -v`
+  (8267 PASS / 1 SKIP / 0 FAIL), full suite, vet, gofmt on cumulative
+  changed files, diff --check — all clean; `go build -buildvcs=false`
+  byte-identical rebuild; three providerless probes rc 0/1/2 exact match.
 - Corpus coverage: `testdata/sql-corpus/mysql/ddl/findings/
   mysql_srs_drop_rules.sql|expected.yaml` exercises all three rules;
   dialect targeting for the new rule IDs is MySQL-only.

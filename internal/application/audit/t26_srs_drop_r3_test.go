@@ -245,11 +245,26 @@ func r3Facts(stmt report.StatementResult) []string {
 }
 
 // r3Boundary asserts the frozen boundary-row shape: ErrUnsupportedStatement,
-// exactly one unsupported entry, incomplete coverage both levels, review.
+// exactly one unsupported entry, exactly one statement carrying
+// incomplete coverage with ZERO findings and ZERO gaps, aggregate
+// incomplete, review verdict.
 func r3Boundary(t *testing.T, result report.Result, err error, object string) {
 	t.Helper()
 	if !errors.Is(err, audit.ErrUnsupportedStatement) {
 		t.Fatalf("err=%v want ErrUnsupportedStatement", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("statements=%d want exactly 1 on a version-boundary row", len(result.Statements))
+	}
+	stmt := result.Statements[0]
+	if len(stmt.Findings) != 0 {
+		t.Fatalf("findings=%+v want ZERO on a boundary row", stmt.Findings)
+	}
+	if len(stmt.EvidenceGaps) != 0 {
+		t.Fatalf("gaps=%+v want ZERO on a boundary row", stmt.EvidenceGaps)
+	}
+	if stmt.Coverage.Status != report.CoverageIncomplete {
+		t.Fatalf("statement coverage=%v want incomplete", stmt.Coverage.Status)
 	}
 	if len(result.Unsupported) != 1 {
 		t.Fatalf("unsupported=%+v want exactly one entry", result.Unsupported)
@@ -263,6 +278,42 @@ func r3Boundary(t *testing.T, result report.Result, err error, object string) {
 	}
 	if result.Coverage.Status != report.CoverageIncomplete {
 		t.Fatalf("aggregate coverage=%v want incomplete", result.Coverage.Status)
+	}
+	if result.Verdict != report.VerdictReview {
+		t.Fatalf("verdict=%v want review", result.Verdict)
+	}
+}
+
+// r3S2 asserts the exact unproven public projection: exactly one gap
+// owned by the dependency rule with reason unknown_srs_state and exact
+// ordered required_facts; finding count and reserved-notice fields
+// checked separately; statement+aggregate unverified; review.
+func r3S2(t *testing.T, result report.Result, stmt report.StatementResult, wantFacts []string, wantReserved int) {
+	t.Helper()
+	if len(stmt.EvidenceGaps) != 1 {
+		t.Fatalf("gaps=%+v want exactly 1", stmt.EvidenceGaps)
+	}
+	g := stmt.EvidenceGaps[0]
+	if g.RuleID != "ddl.mysql.srs.drop.dependency" || g.ReasonCode != "unknown_srs_state" {
+		t.Fatalf("gap=%+v want dependency-owned unknown_srs_state", g)
+	}
+	if !reflect.DeepEqual(g.RequiredFacts, wantFacts) {
+		t.Fatalf("gap facts=%v want ordered %v", g.RequiredFacts, wantFacts)
+	}
+	reserved := 0
+	for _, f := range stmt.Findings {
+		if f.RuleID == "ddl.mysql.srs.drop.reserved" {
+			reserved++
+			if f.Level != rule.LevelNotice {
+				t.Fatalf("reserved finding level=%v want notice", f.Level)
+			}
+		}
+	}
+	if reserved != wantReserved {
+		t.Fatalf("reserved findings=%d want %d; findings=%+v", reserved, wantReserved, stmt.Findings)
+	}
+	if stmt.Coverage.Status != report.CoverageUnverified || result.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("coverage=%v/%v want unverified/unverified", stmt.Coverage.Status, result.Coverage.Status)
 	}
 	if result.Verdict != report.VerdictReview {
 		t.Fatalf("verdict=%v want review", result.Verdict)
@@ -401,16 +452,7 @@ func TestT26SRSR3UnprovenReservedRequest(t *testing.T) {
 		strings.Contains(strings.ToLower(f.Message), "reject") {
 		t.Fatalf("advisory message=%q must state membership only, never a refusal prediction", f.Message)
 	}
-	want := []string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}
-	if got := r3Facts(stmt); !reflect.DeepEqual(got, want) {
-		t.Fatalf("required_facts=%v want ordered %v", got, want)
-	}
-	if stmt.Coverage.Status != report.CoverageUnverified || result.Coverage.Status != report.CoverageUnverified {
-		t.Fatalf("coverage=%v/%v want unverified/unverified", stmt.Coverage.Status, result.Coverage.Status)
-	}
-	if result.Verdict != report.VerdictReview {
-		t.Fatalf("verdict=%v want review", result.Verdict)
-	}
+	r3S2(t, result, stmt, []string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 1)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 }
 
@@ -426,13 +468,8 @@ func TestT26SRSR3UnprovenProviderless(t *testing.T) {
 	if len(stmt.Findings) != 0 {
 		t.Fatalf("findings=%+v want absent — 100001 is not reserved", stmt.Findings)
 	}
-	want := []string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}
-	if got := r3Facts(stmt); !reflect.DeepEqual(got, want) {
-		t.Fatalf("required_facts=%v want ordered %v", got, want)
-	}
-	if stmt.Coverage.Status != report.CoverageUnverified || result.Verdict != report.VerdictReview {
-		t.Fatalf("coverage=%v verdict=%v", stmt.Coverage.Status, result.Verdict)
-	}
+	r3S2(t, result, stmt,
+		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 0)
 }
 
 // E3.2 strengthened (R3-B.2): zero-row existence + empty deps through
@@ -448,22 +485,8 @@ func TestT26SRSR3ZeroRowProductLoader(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	stmt := result.Statements[0]
-	want := []string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}
-	if got := r3Facts(stmt); !reflect.DeepEqual(got, want) {
-		t.Fatalf("required_facts=%v want ordered %v (len %d)", got, want, len(want))
-	}
-	reserved := 0
-	for _, f := range stmt.Findings {
-		if f.RuleID == "ddl.mysql.srs.drop.reserved" {
-			reserved++
-		}
-	}
-	if reserved != 1 {
-		t.Fatalf("reserved notices=%d want exactly 1", reserved)
-	}
-	if result.Coverage.Status != report.CoverageUnverified {
-		t.Fatalf("aggregate coverage=%v want unverified", result.Coverage.Status)
-	}
+	r3S2(t, result, stmt,
+		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 1)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 }
 
@@ -520,13 +543,8 @@ func TestT26SRSR3MaxSRIDRequest(t *testing.T) {
 	if len(stmt.Findings) != 0 {
 		t.Fatalf("findings=%+v want absent — 4294967295 is not reserved", stmt.Findings)
 	}
-	want := []string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}
-	if got := r3Facts(stmt); !reflect.DeepEqual(got, want) {
-		t.Fatalf("required_facts=%v want ordered %v", got, want)
-	}
-	if stmt.Coverage.Status != report.CoverageUnverified || result.Verdict != report.VerdictReview {
-		t.Fatalf("coverage=%v verdict=%v", stmt.Coverage.Status, result.Verdict)
-	}
+	r3S2(t, result, stmt,
+		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 0)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 }
 
@@ -553,24 +571,16 @@ func TestT26SRSR3ReservedCellsEmptyEvidence(t *testing.T) {
 			t.Fatalf("srid %d audit: %v", cell.srid, err)
 		}
 		stmt := result.Statements[0]
-		want := []string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}
-		if got := r3Facts(stmt); !reflect.DeepEqual(got, want) {
-			t.Fatalf("srid %d: required_facts=%v want ordered %v", cell.srid, got, want)
+		wantReserved := 0
+		if cell.advised {
+			wantReserved = 1
 		}
-		reserved := 0
-		for _, f := range stmt.Findings {
-			if f.RuleID == "ddl.mysql.srs.drop.reserved" {
-				reserved++
-			}
-		}
-		if cell.advised && reserved != 1 {
-			t.Fatalf("srid %d: reserved=%d want 1", cell.srid, reserved)
-		}
-		if !cell.advised && reserved != 0 {
-			t.Fatalf("srid %d: unexpected advisory", cell.srid)
-		}
-		if stmt.Coverage.Status != report.CoverageUnverified {
-			t.Fatalf("srid %d: coverage=%v want unverified", cell.srid, stmt.Coverage.Status)
+		r3S2(t, result, stmt,
+			[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege},
+			wantReserved)
+		// reject extra findings beyond the advisory (R4-B.3)
+		if len(stmt.Findings) != wantReserved {
+			t.Fatalf("srid %d: findings=%+v want exactly %d", cell.srid, stmt.Findings, wantReserved)
 		}
 		r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 	}
@@ -628,22 +638,8 @@ func TestT26SRSR3E10HealthyObserved(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	stmt := result.Statements[0]
-	want := []string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}
-	if got := r3Facts(stmt); !reflect.DeepEqual(got, want) {
-		t.Fatalf("required_facts=%v want ordered %v", got, want)
-	}
-	reserved := 0
-	for _, f := range stmt.Findings {
-		if f.RuleID == "ddl.mysql.srs.drop.reserved" {
-			reserved++
-		}
-	}
-	if reserved != 1 {
-		t.Fatalf("reserved=%d want 1", reserved)
-	}
-	if stmt.Coverage.Status != report.CoverageUnverified || result.Verdict != report.VerdictReview {
-		t.Fatalf("coverage=%v verdict=%v", stmt.Coverage.Status, result.Verdict)
-	}
+	r3S2(t, result, stmt,
+		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 1)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 }
 
@@ -691,18 +687,15 @@ func TestT26SRSR3E10FloorProviderless(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	stmt := result.Statements[0]
-	want := []string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}
-	if got := r3Facts(stmt); !reflect.DeepEqual(got, want) {
-		t.Fatalf("required_facts=%v want ordered %v", got, want)
+	r3S2(t, result, stmt,
+		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 1)
+	if len(result.Unsupported) != 0 {
+		t.Fatalf("unsupported=%+v want absent on an audited row", result.Unsupported)
 	}
-	reserved := 0
-	for _, f := range stmt.Findings {
-		if f.RuleID == "ddl.mysql.srs.drop.reserved" {
-			reserved++
-		}
-	}
-	if reserved != 1 || stmt.Coverage.Status != report.CoverageUnverified || result.Verdict != report.VerdictReview {
-		t.Fatalf("reserved=%d coverage=%v verdict=%v", reserved, stmt.Coverage.Status, result.Verdict)
+	// declared target-version projection
+	if result.Version == nil || result.Version.Product != spec.VersionProductMySQL ||
+		result.Version.Version != "8.0.4" || result.Version.Source != "target" {
+		t.Fatalf("version=%+v want mysql 8.0.4 source=target", result.Version)
 	}
 }
 
@@ -721,6 +714,19 @@ func TestT26SRSR3E10TiDBVendorBoundary(t *testing.T) {
 		result.Unsupported[0].Reason != spec.UnsupportedVendorBoundaryReason ||
 		result.Unsupported[0].Metadata["boundary"] != "vendor" {
 		t.Fatalf("unsupported=%+v want the vendor boundary", result.Unsupported)
+	}
+	// statement-level zero findings/gaps + incomplete coverage (R4-B.1)
+	for _, s := range result.Statements {
+		if len(s.Findings) != 0 || len(s.EvidenceGaps) != 0 {
+			t.Fatalf("boundary row carries findings/gaps: %+v", s)
+		}
+		if s.Coverage.Status != report.CoverageIncomplete {
+			t.Fatalf("statement coverage=%v want incomplete", s.Coverage.Status)
+		}
+	}
+	// declared TiDB product attribution (R4-B.6)
+	if result.Version == nil || result.Version.Product != spec.VersionProductTiDB {
+		t.Fatalf("version=%+v want resolved product tidb", result.Version)
 	}
 	if result.Coverage.Status != report.CoverageIncomplete || result.Verdict != report.VerdictReview {
 		t.Fatalf("coverage=%v verdict=%v", result.Coverage.Status, result.Verdict)
@@ -889,8 +895,9 @@ func TestT26SRSR3SerializedSQLForms(t *testing.T) {
 			t.Fatalf("%q audit: %v", tc.sql, err)
 		}
 		stmt := result.Statements[0]
-		if stmt.RawSQL != strings.TrimSuffix(tc.sql, ";") && stmt.RawSQL != tc.sql {
-			t.Fatalf("raw_sql=%q", stmt.RawSQL)
+		// frozen: raw_sql equals the semicolon-free authored string exactly
+		if stmt.RawSQL != strings.TrimSuffix(tc.sql, ";") {
+			t.Fatalf("raw_sql=%q want %q", stmt.RawSQL, strings.TrimSuffix(tc.sql, ";"))
 		}
 		if stmt.NormalizedSQL != tc.normalized {
 			t.Fatalf("normalized_sql=%q want %q", stmt.NormalizedSQL, tc.normalized)
@@ -968,6 +975,18 @@ func TestT26SRSR3ServerPrivilegeIsolationProduct(t *testing.T) {
 			fx.count["user"], fx.count["grants"])
 	}
 	srv := result.Statements[0]
+	// positive consumability proof: the SUPER witness was consumed by the
+	// SERVER adjudication — its finding carries the conditional_audit
+	// marker and drop_privilege is absent from its owed facts.
+	serverConsumed := false
+	for _, f := range srv.Findings {
+		if f.Metadata["conditional_audit"] != "" {
+			serverConsumed = true
+		}
+		for _, fact := range f.Metadata {
+			_ = fact
+		}
+	}
 	for _, gap := range srv.EvidenceGaps {
 		for _, fact := range gap.RequiredFacts {
 			if fact == "server.drop_privilege" {
@@ -975,11 +994,47 @@ func TestT26SRSR3ServerPrivilegeIsolationProduct(t *testing.T) {
 			}
 		}
 	}
-	srs := result.Statements[1]
-	want := []string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}
-	if got := r3Facts(srs); !reflect.DeepEqual(got, want) {
-		t.Fatalf("SRS required_facts=%v want ordered [D,P] — SERVER privilege never transfers", got)
+	if !serverConsumed {
+		t.Fatalf("SERVER finding lacks the conditional_audit marker — privilege premise not proven consumable: %+v", srv.Findings)
 	}
+	srs := result.Statements[1]
+	// R4-A.3 — exactly one dependency-owned unknown_srs_state gap, exact
+	// ordered facts [D,P]; no flattening tricks.
+	if len(srs.EvidenceGaps) != 1 {
+		t.Fatalf("gaps=%+v want exactly 1", srs.EvidenceGaps)
+	}
+	g := srs.EvidenceGaps[0]
+	if g.RuleID != "ddl.mysql.srs.drop.dependency" || g.ReasonCode != "unknown_srs_state" {
+		t.Fatalf("gap=%+v want dependency-owned unknown_srs_state", g)
+	}
+	want := []string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}
+	if !reflect.DeepEqual(g.RequiredFacts, want) {
+		t.Fatalf("gap facts=%v want ordered [D,P] — SERVER privilege never transfers", g.RequiredFacts)
+	}
+	// exactly one frozen reserved notice on the SRS statement
+	reserved := 0
+	for _, f := range srs.Findings {
+		if f.RuleID == "ddl.mysql.srs.drop.reserved" {
+			reserved++
+			if f.Metadata["conditional_audit"] != nil || f.Metadata["conditional"] != nil {
+				t.Fatalf("reserved finding carries conditional marker: %+v", f.Metadata)
+			}
+		}
+	}
+	if reserved != 1 {
+		t.Fatalf("reserved findings=%d want exactly 1", reserved)
+	}
+	if srs.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("SRS coverage=%v want unverified", srs.Coverage.Status)
+	}
+	// no conditional marker anywhere on the SRS statement
+	srsBlob, _ := json.Marshal(srs)
+	if strings.Contains(string(srsBlob), "conditional_audit") {
+		t.Fatal("SRS statement carries conditional_audit — SERVER marker leaked across channel")
+	}
+	// R4-A.5: independent read vector for THIS request — R/Qexist/Qdeps/
+	// Qo/L/Vd all exactly 1 (SERVER never borrows SRS seams).
+	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
 	// conditional_audit is a designed public projection on the SERVER
 	// finding; the raw observation payload is not — the serialized
 	// result must never carry the observed account or grant text.

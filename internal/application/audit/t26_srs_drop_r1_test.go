@@ -426,6 +426,8 @@ func tblTFixture() map[string]*spec.TableSnapshot {
 	return map[string]*spec.TableSnapshot{
 		"s.t": {Schema: "s", Table: &spec.Table{Schema: "s", Name: "t"}, Exists: true,
 			Columns: []spec.Column{{Name: "g", Type: "geometry"}}},
+		"s.u": {Schema: "s", Table: &spec.Table{Schema: "s", Name: "u"}, Exists: true,
+			Columns: []spec.Column{{Name: "g", Type: "geometry"}}},
 		"s.t_new": {Schema: "s", Table: &spec.Table{Schema: "s", Name: "t_new"}, Exists: false},
 		"golden.t": {Schema: "golden", Table: &spec.Table{Schema: "golden", Name: "t"}, Exists: true,
 			Columns: []spec.Column{{Name: "g", Type: "geometry"}}},

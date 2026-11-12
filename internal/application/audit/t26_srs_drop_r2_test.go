@@ -371,6 +371,9 @@ func TestT26SRSR2ErrorSeamAccounting(t *testing.T) {
 	fixture, provider := newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36"}, nil)
 	provider.resolveErr = sentinel
 	state := newSRSState(provider)
+	var bindSeen, applySeen []int
+	state.afterBindObserve = func(i int, _ *spec.Statement) { bindSeen = append(bindSeen, i) }
+	state.afterApplyObserve = func(i int, _ *spec.Statement) { applySeen = append(applySeen, i) }
 	statements, failures := parseT26(t, "DROP SPATIAL REFERENCE SYSTEM 4326")
 	_, err := state.enrichStatements(context.Background(),
 		&MetadataRequest{Schema: "golden", Provider: provider},
@@ -380,6 +383,9 @@ func TestT26SRSR2ErrorSeamAccounting(t *testing.T) {
 	}
 	if err.Error() != "metadata object read failed" {
 		t.Fatalf("public text=%q want the bounded message — sentinel must not leak", err.Error())
+	}
+	if len(bindSeen) != 0 || len(applySeen) != 0 {
+		t.Fatalf("failed resolver reached bind/apply observe: bind=%v apply=%v", bindSeen, applySeen)
 	}
 	assertReads(t, provider, fixture, 1, 0, 0, 0, 0) // R=1 attempt, zero later
 
@@ -392,6 +398,9 @@ func TestT26SRSR2ErrorSeamAccounting(t *testing.T) {
 		failOn:  map[string]error{"st_geometry_columns": sentinelD},
 	}, nil)
 	state = newSRSState(provider)
+	bindSeen, applySeen = nil, nil
+	state.afterBindObserve = func(i int, _ *spec.Statement) { bindSeen = append(bindSeen, i) }
+	state.afterApplyObserve = func(i int, _ *spec.Statement) { applySeen = append(applySeen, i) }
 	_, err = state.enrichStatements(context.Background(),
 		&MetadataRequest{Schema: "golden", Provider: provider},
 		statements, failures, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
@@ -403,6 +412,9 @@ func TestT26SRSR2ErrorSeamAccounting(t *testing.T) {
 	}
 	// R=1, Qexist=1 (answered), Qdeps=1 (failed attempt), Qo=1.
 	assertReads(t, provider, fixture, 1, 1, 1, 1, 0)
+	if len(bindSeen) != 0 || len(applySeen) != 0 {
+		t.Fatalf("deps-failed bind reached observe seams: bind=%v apply=%v", bindSeen, applySeen)
+	}
 	// Failed bind must not attach an adjudication arm or mint flags —
 	// enrichment aborted before own apply.
 	if len(state.srsExistenceStale) != 0 {
@@ -442,6 +454,9 @@ func TestT26SRSR2ErrorSeamAccounting(t *testing.T) {
 		failOn:  map[string]error{"version()": sentinelV},
 	}, nil)
 	state = newSRSState(provider)
+	bindSeen, applySeen = nil, nil
+	state.afterBindObserve = func(i int, _ *spec.Statement) { bindSeen = append(bindSeen, i) }
+	state.afterApplyObserve = func(i int, _ *spec.Statement) { applySeen = append(applySeen, i) }
 	_, err = state.enrichStatements(context.Background(),
 		&MetadataRequest{Schema: "golden", Provider: provider},
 		statements, failures, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
@@ -452,6 +467,9 @@ func TestT26SRSR2ErrorSeamAccounting(t *testing.T) {
 		t.Fatalf("version public text=%q", err.Error())
 	}
 	assertReads(t, provider, fixture, 1, 0, 0, 1, 0) // Qo attempt counted, nothing downstream
+	if len(bindSeen) != 0 || len(applySeen) != 0 {
+		t.Fatalf("version-failed bind reached observe seams: bind=%v apply=%v", bindSeen, applySeen)
+	}
 	if len(state.srsExistenceStale) != 0 || state.srsDepsStale {
 		t.Fatal("failed bind minted SRS flags")
 	}
@@ -469,7 +487,10 @@ func TestT26SRSR2ErrorSiblingIsolation(t *testing.T) {
 	}, tblTFixture())
 	state := newSRSState(provider)
 	var afterFirstApply map[string]any
+	var bindSeen, applySeen []int
+	state.afterBindObserve = func(i int, _ *spec.Statement) { bindSeen = append(bindSeen, i) }
 	state.afterApplyObserve = func(i int, _ *spec.Statement) {
+		applySeen = append(applySeen, i)
 		if i == 0 {
 			afterFirstApply = srsChannels(t, state)
 		}
@@ -498,11 +519,17 @@ func TestT26SRSR2ErrorSiblingIsolation(t *testing.T) {
 	if len(state.srsExistenceStale) != 0 {
 		t.Fatalf("failed bind minted existence stale: %+v", state.srsExistenceStale)
 	}
-	// The error was not laundered into an evidence gap: no statement
-	// carries an adjudication.
-	for _, s := range stmts {
-		if s.Metadata != nil && s.Metadata.SRSDrop != nil {
-			t.Fatalf("statement %q carries an adjudication despite the failed bind", s.RawSQL)
+	// R4-D: real non-entry proof — the failing statement (index 1) and
+	// every later index never reached post-bind or post-apply. Index 0
+	// legitimately fired both (its apply produced the baseline above).
+	for _, i := range bindSeen {
+		if i != 0 {
+			t.Fatalf("bind observe fired for index %d after the failure", i)
+		}
+	}
+	for _, i := range applySeen {
+		if i != 0 {
+			t.Fatalf("apply observe fired for index %d after the failure", i)
 		}
 	}
 }
@@ -588,6 +615,9 @@ func TestT26SRSR2UnprovenOwnApplySnapshot(t *testing.T) {
 	}
 	state.serverEntryFor("s1").present = true // OrderedPresent
 	state.srsDepsStale = false
+	// R4-C.1: pre-seed an unrelated stale key — the own apply must PRESERVE
+	// it and union, never clear-and-write {4326} alone.
+	state.srsExistenceStale[100001] = struct{}{}
 
 	before := srsChannels(t, state)
 	var atBind, atApply map[string]any
@@ -621,8 +651,8 @@ func TestT26SRSR2UnprovenOwnApplySnapshot(t *testing.T) {
 	if _, ok := state.srsExistenceStale[4326]; !ok {
 		t.Fatalf("comma-ok: existenceStale missing 4326: %+v", state.srsExistenceStale)
 	}
-	if !reflect.DeepEqual(atApply["stale"], map[uint32]struct{}{4326: {}}) {
-		t.Fatalf("existenceStale=%+v want exactly {4326} — prior keys ∪ {4326}", atApply["stale"])
+	if !reflect.DeepEqual(atApply["stale"], map[uint32]struct{}{100001: {}, 4326: {}}) {
+		t.Fatalf("existenceStale=%+v want exactly {100001,4326} — prior keys preserved ∪ {4326}", atApply["stale"])
 	}
 }
 
@@ -634,8 +664,13 @@ func TestT26SRSR2TouchingApplyThenSRSMint(t *testing.T) {
 	_, provider := newSRSSQLHarness(t, &srsSQLFixture{
 		version: "8.0.36",
 		srs:     map[uint32]string{4326: "EPSG 4326"},
+		// R4-C.3: frozen E8.1 fixture — a positive dependency witness that
+		// the D-stale demotes to unproven.
+		deps: []srsDepRow{{schema: "s", table: "t", column: "g", srid: 4326}},
 	}, tblTFixture())
 	state := newSRSState(provider)
+	// R4-C.1: unrelated pre-existing stale key must survive both applies.
+	state.srsExistenceStale[100001] = struct{}{}
 	before := srsChannels(t, state)
 	var afterTableApply, afterSRSApply map[string]any
 	state.afterApplyObserve = func(i int, _ *spec.Statement) {
@@ -682,8 +717,8 @@ func TestT26SRSR2TouchingApplyThenSRSMint(t *testing.T) {
 	if _, ok := state.srsExistenceStale[4326]; !ok {
 		t.Fatalf("comma-ok: existenceStale missing 4326: %+v", state.srsExistenceStale)
 	}
-	if !reflect.DeepEqual(afterSRSApply["stale"], map[uint32]struct{}{4326: {}}) {
-		t.Fatalf("existenceStale=%+v want exactly {4326}", afterSRSApply["stale"])
+	if !reflect.DeepEqual(afterSRSApply["stale"], map[uint32]struct{}{100001: {}, 4326: {}}) {
+		t.Fatalf("existenceStale=%+v want exactly {100001,4326} — pre-seeded key preserved", afterSRSApply["stale"])
 	}
 	if afterSRSApply["deps"] != true {
 		t.Fatal("SRS own apply must leave depsStale as the table write left it")
