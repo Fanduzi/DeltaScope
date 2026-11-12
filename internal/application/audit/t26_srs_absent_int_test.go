@@ -101,7 +101,8 @@ func TestT26SRSAbsentAdjIfExistsSplit(t *testing.T) {
 // every SRS lookup with a deliberately foreign-SRID absence state,
 // while the privilege loader rides the positive observation.
 type srsForeignAbsentProvider struct {
-	forwards []spec.ObjectLookupRequest
+	forwards  []spec.ObjectLookupRequest
+	privCalls int
 }
 
 func (p *srsForeignAbsentProvider) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
@@ -113,6 +114,7 @@ func (p *srsForeignAbsentProvider) LoadTableSnapshot(context.Context, spec.Diale
 }
 
 func (p *srsForeignAbsentProvider) LoadMySQLServerDropPrivilege(context.Context, spec.Dialect) (*spec.MySQLServerDropPrivilegeObservation, error) {
+	p.privCalls++
 	return privObservationSUPER(), nil
 }
 
@@ -129,6 +131,10 @@ func (p *srsForeignAbsentProvider) ResolveObject(_ context.Context, _ spec.Diale
 // PA-4e2: a foreign-SRID absence at the real bind never selects the A
 // arm — ValidAbsence's authored bind fails, the statement lands S2
 // with [E,D] owed, and own-apply mints the AUTHORED 100001 only.
+// R2-B2 completes the frozen observation scope: premise=consumable is
+// asserted directly, L=1 is measured, and the same enrich is carried
+// through the real rule projection — the strict S2 privilege notice
+// plus the dependency-owned [E,D] gap.
 func TestT26SRSAbsentEnrichForeignSRID(t *testing.T) {
 	provider := &srsForeignAbsentProvider{}
 	state := newSRSState(provider)
@@ -141,13 +147,31 @@ func TestT26SRSAbsentEnrichForeignSRID(t *testing.T) {
 	if adj.Arm != spec.SRSDropArmUnproven {
 		t.Fatalf("arm=%v want S2 — foreign-SRID absence is not this object's absence", adj.Arm)
 	}
+	if adj.Privilege != spec.SRSDropPrivilegeConsumable {
+		t.Fatalf("premise=%v want consumable — the positive observation still carries, never consumed", adj.Privilege)
+	}
 	if len(adj.Owed) != 2 || adj.Owed[0] != spec.SRSFactExistence || adj.Owed[1] != spec.SRSFactColumnDependencies {
 		t.Fatalf("owed=%v want [srs.existence srs.column_dependencies]", adj.Owed)
+	}
+	if provider.privCalls != 1 {
+		t.Fatalf("L=%d want exactly 1", provider.privCalls)
 	}
 	sameStaleSet(t, staleSet(state), map[uint32]bool{100001: true}, "own-apply")
 	if len(provider.forwards) != 1 {
 		t.Fatalf("resolver forwards=%d want exactly 1", len(provider.forwards))
 	}
+	// The same enrich through the real rule projection: the strict S2
+	// privilege notice and the dependency-owned [E,D] gap.
+	result := evaluateEnriched(t, enriched)
+	if len(result.Statements) != 1 {
+		t.Fatalf("result statements=%d want 1", len(result.Statements))
+	}
+	stmt := result.Statements[0]
+	if len(stmt.Findings) != 1 || stmt.Findings[0].RuleID != "ddl.mysql.srs.drop.privilege" {
+		t.Fatalf("findings=%+v want exactly the S2 privilege notice", stmt.Findings)
+	}
+	assertSRSPrivilegeNotice(t, stmt, 100001)
+	intExactGap(t, stmt, []string{spec.SRSFactExistence, spec.SRSFactColumnDependencies})
 }
 
 // --- PA-5: stale channels and own-apply on the A arms -------------------------

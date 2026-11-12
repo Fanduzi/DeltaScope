@@ -939,6 +939,11 @@ type testQueryResult struct {
 	// closeErr fails the checked rows.Close() — a distinct answer shape
 	// from iteration errors that a defer-only reader would drop.
 	closeErr error
+	// blockOnCtx parks iteration on the request context: Next() blocks
+	// until ctx.Done() and then returns ctx.Err() — a real mid-rowset
+	// cancellation witness (R2-A2), distinct from a pre-cancelled
+	// request or a driver-sentinel iteration error.
+	blockOnCtx bool
 }
 
 type testDriver struct {
@@ -951,12 +956,14 @@ type testConn struct {
 }
 
 type testRows struct {
-	columns  []string
-	rows     [][]driver.Value
-	index    int
-	rowErrAt int
-	rowErr   error
-	closeErr error
+	columns    []string
+	rows       [][]driver.Value
+	index      int
+	rowErrAt   int
+	rowErr     error
+	closeErr   error
+	blockOnCtx bool
+	ctx        context.Context
 }
 
 var (
@@ -995,12 +1002,13 @@ func registerTestDriverResults(name string, results map[string]testQueryResult) 
 			rows[i] = append([]driver.Value(nil), result.rows[i]...)
 		}
 		cloned[key] = testQueryResult{
-			columns:  append([]string(nil), result.columns...),
-			rows:     rows,
-			queryErr: result.queryErr,
-			rowErrAt: result.rowErrAt,
-			rowErr:   result.rowErr,
-			closeErr: result.closeErr,
+			columns:    append([]string(nil), result.columns...),
+			rows:       rows,
+			queryErr:   result.queryErr,
+			rowErrAt:   result.rowErrAt,
+			rowErr:     result.rowErr,
+			closeErr:   result.closeErr,
+			blockOnCtx: result.blockOnCtx,
 		}
 	}
 	// The foreign-key loader shares the key_column_usage table with the
@@ -1157,7 +1165,7 @@ const testShardingInfoFragment = "select tidb_row_id_sharding_info"
 // longest-match routing keeps the anchor-table join deterministic.
 const testCacheMetaFragment = "left join mysql.table_cache_meta"
 
-func (c testConn) QueryContext(_ context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
+func (c testConn) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
 	recordTestQueryCall(c.name, query, args)
 	// Longest matching fragment wins: loaders sharing a catalog table (the
 	// foreign-key join and the TiDB primary-column probe both read
@@ -1179,11 +1187,13 @@ func (c testConn) QueryContext(_ context.Context, query string, args []driver.Na
 		return nil, result.queryErr
 	}
 	return &testRows{
-		columns:  append([]string(nil), result.columns...),
-		rows:     append([][]driver.Value(nil), result.rows...),
-		rowErrAt: result.rowErrAt,
-		rowErr:   result.rowErr,
-		closeErr: result.closeErr,
+		columns:    append([]string(nil), result.columns...),
+		rows:       append([][]driver.Value(nil), result.rows...),
+		rowErrAt:   result.rowErrAt,
+		rowErr:     result.rowErr,
+		closeErr:   result.closeErr,
+		blockOnCtx: result.blockOnCtx,
+		ctx:        ctx,
 	}, nil
 }
 
@@ -1194,6 +1204,10 @@ func (r *testRows) Columns() []string {
 func (r *testRows) Close() error { return r.closeErr }
 
 func (r *testRows) Next(dest []driver.Value) error {
+	if r.blockOnCtx && r.ctx != nil {
+		<-r.ctx.Done()
+		return r.ctx.Err()
+	}
 	if r.rowErr != nil && r.index == r.rowErrAt {
 		return r.rowErr
 	}

@@ -52,12 +52,8 @@ func paGap(t *testing.T, stmt report.StatementResult, reason string, wantFacts [
 // conditional_audit:"observed_account_new_session"} — the marker
 // legitimately rides THIS finding, so the generic r3OnlyFinding leak
 // guard does not apply.
-func paAbsentNoop(t *testing.T, stmt report.StatementResult, srid uint32) {
+func paAbsentNoopFinding(t *testing.T, f rule.Finding, srid uint32) {
 	t.Helper()
-	if len(stmt.Findings) != 1 {
-		t.Fatalf("findings=%+v want exactly one absent_noop finding", stmt.Findings)
-	}
-	f := stmt.Findings[0]
 	if f.RuleID != "ddl.mysql.srs.drop.absent_noop" || f.Level != rule.LevelNotice {
 		t.Fatalf("finding=%+v want the absent_noop notice", f)
 	}
@@ -78,6 +74,14 @@ func paAbsentNoop(t *testing.T, stmt report.StatementResult, srid uint32) {
 			t.Fatalf("metadata[%q]=%v(%T) want %v(%T)", k, f.Metadata[k], f.Metadata[k], v, v)
 		}
 	}
+}
+
+func paAbsentNoop(t *testing.T, stmt report.StatementResult, srid uint32) {
+	t.Helper()
+	if len(stmt.Findings) != 1 {
+		t.Fatalf("findings=%+v want exactly one absent_noop finding", stmt.Findings)
+	}
+	paAbsentNoopFinding(t, stmt.Findings[0], srid)
 }
 
 // paPolicyFile writes a minimal rule-override config for the
@@ -351,8 +355,36 @@ func TestT26SRSAbsentBoundaryPrefixBlocks(t *testing.T) {
 	if len(result.Statements) != 2 {
 		t.Fatalf("statements=%d want 2", len(result.Statements))
 	}
+	// R2-D1: stmt1 is the typed CREATE OR REPLACE implementation
+	// boundary — its own unsupported entry, exact boundary/object
+	// metadata, zero findings and gaps, incomplete coverage.
+	if len(result.Unsupported) == 0 {
+		t.Fatalf("unsupported=%+v want the typed boundary entry", result.Unsupported)
+	}
+	var createBoundary *spec.UnsupportedDetail
+	for i := range result.Unsupported {
+		if result.Unsupported[i].Metadata["boundary"] == "implementation" {
+			createBoundary = &result.Unsupported[i]
+		}
+	}
+	if createBoundary == nil {
+		t.Fatalf("unsupported=%+v want one implementation boundary for the CREATE OR REPLACE", result.Unsupported)
+	}
+	if createBoundary.Reason != spec.UnsupportedUnauditedReason ||
+		createBoundary.Metadata["object"] != "spatial_reference_system" {
+		t.Fatalf("create boundary=%+v want unaudited/spatial_reference_system implementation boundary", createBoundary)
+	}
+	stmt1 := result.Statements[0]
+	if len(stmt1.Findings) != 0 || len(stmt1.EvidenceGaps) != 0 {
+		t.Fatalf("stmt1 findings=%+v gaps=%+v want both empty on the boundary", stmt1.Findings, stmt1.EvidenceGaps)
+	}
+	// The tail DROP is the audited B row — its [B] gap, no findings,
+	// and the read increments the contract froze.
 	stmt := result.Statements[1]
 	paGap(t, stmt, "unknown_srs_state", []string{spec.SRSFactBatchEffects})
+	if len(stmt.Findings) != 0 {
+		t.Fatalf("tail findings=%+v want none on the blocked arm", stmt.Findings)
+	}
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
 }
 
@@ -376,10 +408,39 @@ func TestT26SRSAbsentBoundaryVersionPair(t *testing.T) {
 	if len(result.Statements) != 2 {
 		t.Fatalf("statements=%d want 2", len(result.Statements))
 	}
+	// R2-D1: BOTH statements are the same version boundary — exact
+	// boundary/gate/object on each unsupported entry; the second is
+	// NOT an SRSDrop-B arm (boundary rows never adjudicate); zero
+	// findings and gaps on both; incomplete coverage on both.
 	if len(result.Unsupported) != 2 {
 		t.Fatalf("unsupported=%+v want the version-boundary marker on both statements", result.Unsupported)
 	}
+	for i := range result.Unsupported {
+		entry := result.Unsupported[i]
+		if entry.Reason != spec.UnsupportedUnauditedReason ||
+			entry.Metadata["boundary"] != "unaudited" ||
+			entry.Metadata["object"] != "spatial_reference_system" ||
+			entry.Metadata["gate"] != "version" {
+			t.Fatalf("unsupported[%d]=%+v want unaudited/spatial_reference_system/version", i, entry)
+		}
+	}
+	for i, stmt := range result.Statements {
+		if len(stmt.Findings) != 0 || len(stmt.EvidenceGaps) != 0 {
+			t.Fatalf("stmt%d findings=%+v gaps=%+v want both empty on a version boundary", i, stmt.Findings, stmt.EvidenceGaps)
+		}
+		if stmt.Coverage.Status != report.CoverageIncomplete {
+			t.Fatalf("stmt%d coverage=%v want incomplete", i, stmt.Coverage.Status)
+		}
+	}
+	// Reads: stmt1's bind issued the single R/Qexist/Qdeps/Qo pass
+	// (Vd=1 discovery, L=0 — the privilege loader never runs for a
+	// boundary row); stmt2's own-apply stale mint short-circuits its
+	// bind, so the pair's TOTAL stays exactly one pass — the zero
+	// increment is measured against stmt1, not inferred.
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
+	if len(p.forwards) != 1 || p.forwards[0].Type != "mysql_spatial_reference_system" {
+		t.Fatalf("forwards=%+v want exactly one SRS bind for the pair", p.forwards)
+	}
 }
 
 // --- PA-7b: REVOKE scoping — public twin ---------------------------------------
@@ -400,7 +461,13 @@ func TestT26SRSAbsentRevokeScopingPublic(t *testing.T) {
 		t.Fatalf("statements=%d want 3", len(result.Statements))
 	}
 	paAbsentNoop(t, result.Statements[0], 100001)
-	paGap(t, result.Statements[2], "unproven_privilege", []string{spec.SRSFactDropPrivilege})
+	// R2-C1: stmt3 carries the conditional gap and NOTHING else — no
+	// finding, no conditional marker leak onto the public projection.
+	stmt3 := result.Statements[2]
+	paGap(t, stmt3, "unproven_privilege", []string{spec.SRSFactDropPrivilege})
+	if len(stmt3.Findings) != 0 {
+		t.Fatalf("stmt3 findings=%+v want none — suppressed premise publishes no notice", stmt3.Findings)
+	}
 	r3AssertReads(t, p, fx, 2, 2, 2, 2, 1, 1)
 }
 
@@ -475,19 +542,48 @@ func TestT26SRSAbsentNoopReservedAdvisory(t *testing.T) {
 	for i := range stmt.Findings {
 		switch stmt.Findings[i].RuleID {
 		case "ddl.mysql.srs.drop.absent_noop":
+			if noop != nil {
+				t.Fatalf("duplicate absent_noop finding: %+v", stmt.Findings)
+			}
 			noop = &stmt.Findings[i]
 		case "ddl.mysql.srs.drop.reserved":
+			if reserved != nil {
+				t.Fatalf("duplicate reserved finding: %+v", stmt.Findings)
+			}
 			reserved = &stmt.Findings[i]
+		default:
+			t.Fatalf("unexpected finding RuleID %q: %+v", stmt.Findings[i].RuleID, stmt.Findings[i])
 		}
 	}
 	if noop == nil || reserved == nil {
 		t.Fatalf("findings=%+v want absent_noop + reserved", stmt.Findings)
 	}
-	if len(reserved.Metadata) != 1 || fmt.Sprintf("%v", reserved.Metadata["srid"]) != "4326" {
-		t.Fatalf("reserved metadata=%+v want exactly {srid:4326}", reserved.Metadata)
+	// R2-C1: the noop finding carries its full frozen shape — notice
+	// level, exact message, and the exact {srid:uint32, outcome,
+	// conditional_audit} metadata triple.
+	paAbsentNoopFinding(t, *noop, 4326)
+	// The reserved advisory is membership-only, {srid}-only.
+	if reserved.RuleID != "ddl.mysql.srs.drop.reserved" || reserved.Level != rule.LevelNotice {
+		t.Fatalf("reserved=%+v want the notice-level reserved advisory", reserved)
+	}
+	wantReserved := fmt.Sprintf("spatial reference system %d is in a reserved SRID range", 4326)
+	if reserved.Message != wantReserved {
+		t.Fatalf("reserved message=%q want exact %q", reserved.Message, wantReserved)
+	}
+	if len(reserved.Metadata) != 1 {
+		t.Fatalf("reserved metadata=%+v want exactly {srid}", reserved.Metadata)
+	}
+	if srid, ok := reserved.Metadata["srid"].(uint32); !ok || srid != 4326 {
+		t.Fatalf("reserved srid=%v(%T) want uint32 4326", reserved.Metadata["srid"], reserved.Metadata["srid"])
+	}
+	if _, leaked := reserved.Metadata["conditional_audit"]; leaked {
+		t.Fatalf("reserved metadata leaks the conditional marker: %+v", reserved.Metadata)
 	}
 	if len(stmt.EvidenceGaps) != 0 {
 		t.Fatalf("gaps=%+v want none", stmt.EvidenceGaps)
+	}
+	if stmt.Coverage.Status != report.CoverageComplete || result.Verdict != report.VerdictPass {
+		t.Fatalf("coverage=%v verdict=%v want complete/pass", stmt.Coverage.Status, result.Verdict)
 	}
 }
 
@@ -503,10 +599,27 @@ func TestT26SRSAbsentConditionalReservedAdvisory(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	stmt := result.Statements[0]
-	if len(stmt.Findings) != 1 || stmt.Findings[0].RuleID != "ddl.mysql.srs.drop.reserved" {
-		t.Fatalf("findings=%+v want exactly the reserved advisory", stmt.Findings)
+	if len(stmt.Findings) != 1 {
+		t.Fatalf("findings=%+v want exactly the reserved advisory — no notice, no marker leak", stmt.Findings)
+	}
+	reserved := stmt.Findings[0]
+	if reserved.RuleID != "ddl.mysql.srs.drop.reserved" || reserved.Level != rule.LevelNotice {
+		t.Fatalf("finding=%+v want the notice-level reserved advisory", reserved)
+	}
+	wantReserved := fmt.Sprintf("spatial reference system %d is in a reserved SRID range", 4326)
+	if reserved.Message != wantReserved {
+		t.Fatalf("reserved message=%q want exact %q", reserved.Message, wantReserved)
+	}
+	if len(reserved.Metadata) != 1 {
+		t.Fatalf("reserved metadata=%+v want exactly {srid}", reserved.Metadata)
+	}
+	if srid, ok := reserved.Metadata["srid"].(uint32); !ok || srid != 4326 {
+		t.Fatalf("reserved srid=%v(%T) want uint32 4326", reserved.Metadata["srid"], reserved.Metadata["srid"])
 	}
 	paGap(t, stmt, "unproven_privilege", []string{spec.SRSFactDropPrivilege})
+	if stmt.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("coverage=%v want unverified — the conditional debt holds the review floor", stmt.Coverage.Status)
+	}
 }
 
 // PA-10d: disabling the absent rule removes the finding only —
@@ -550,21 +663,190 @@ func TestT26SRSAbsentNoopWarningLevel(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	stmt := result.Statements[0]
-	if len(stmt.Findings) != 1 || stmt.Findings[0].Level != rule.LevelWarning {
-		t.Fatalf("findings=%+v want one warning-level absent_noop", stmt.Findings)
+	// R2-C1: the warning-override preserves the full frozen shape —
+	// exact RuleID, the exact message, the exact metadata triple
+	// including the conditional_audit marker, zero gaps, and the
+	// review verdict the warning level aggregates to.
+	if len(stmt.Findings) != 1 {
+		t.Fatalf("findings=%+v want exactly one absent_noop", stmt.Findings)
 	}
-	if marker := stmt.Findings[0].Metadata["conditional_audit"]; marker != string(spec.PrivilegeAuditModeObservedAccountNewSession) {
-		t.Fatalf("conditional_audit=%v want the marker preserved", marker)
+	f := stmt.Findings[0]
+	if f.RuleID != "ddl.mysql.srs.drop.absent_noop" || f.Level != rule.LevelWarning {
+		t.Fatalf("finding=%+v want the warning-level absent_noop", f)
+	}
+	wantMessage := fmt.Sprintf("spatial reference system %d does not exist; IF EXISTS drop is a no-op", 100001)
+	if f.Message != wantMessage {
+		t.Fatalf("finding message=%q want exact %q", f.Message, wantMessage)
+	}
+	want := map[string]any{
+		"srid":              uint32(100001),
+		"outcome":           "absent_noop",
+		"conditional_audit": string(spec.PrivilegeAuditModeObservedAccountNewSession),
+	}
+	if len(f.Metadata) != len(want) {
+		t.Fatalf("metadata=%+v want exactly %v", f.Metadata, want)
+	}
+	for k, v := range want {
+		if f.Metadata[k] != v {
+			t.Fatalf("metadata[%q]=%v(%T) want %v(%T)", k, f.Metadata[k], f.Metadata[k], v, v)
+		}
+	}
+	if len(stmt.EvidenceGaps) != 0 {
+		t.Fatalf("gaps=%+v want none", stmt.EvidenceGaps)
+	}
+	if stmt.Coverage.Status != report.CoverageComplete {
+		t.Fatalf("coverage=%v want complete", stmt.Coverage.Status)
 	}
 	if result.Verdict != report.VerdictReview {
 		t.Fatalf("verdict=%v want review", result.Verdict)
 	}
 }
 
+// R2-C2 / PA-10g-adjacent: the canonical JSON skeleton of each A arm
+// through the REAL public serialization path — json.Marshal over the
+// report.Result the request layer returns. These assertions pin the
+// wire shape the contract froze: index keys present at zero, empty
+// findings/evidence_gaps omitted, metadata.srid a JSON number, the
+// exact metadata key set, the marker ABSENT (not null) on non-A-IE✓
+// arms, and the conditional [P] gap's exact owner/reason/facts.
+func TestT26SRSAbsentCanonicalJSON(t *testing.T) {
+	decode := func(t *testing.T, fx *r3Fixture, sqlText string) map[string]any {
+		t.Helper()
+		p := r3Harness(t, fx)
+		result, err := r3PrivilegeRequest(t, p, sqlText)
+		if err != nil {
+			t.Fatalf("audit: %v", err)
+		}
+		blob, err := json.Marshal(result)
+		if err != nil {
+			t.Fatalf("marshal: %v", err)
+		}
+		var doc map[string]any
+		if err := json.Unmarshal(blob, &doc); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		return doc
+	}
+	statement := func(t *testing.T, doc map[string]any) map[string]any {
+		t.Helper()
+		stmts, ok := doc["statements"].([]any)
+		if !ok || len(stmts) != 1 {
+			t.Fatalf("statements=%v want exactly one", doc["statements"])
+		}
+		stmt, ok := stmts[0].(map[string]any)
+		if !ok {
+			t.Fatalf("statements[0]=%T want object", stmts[0])
+		}
+		idx, present := stmt["index"]
+		if !present || idx != float64(0) {
+			t.Fatalf("statements[0].index=%v(present=%v) want the key present at 0", idx, present)
+		}
+		return stmt
+	}
+
+	// A-plain: one finding, no evidence_gaps KEY at all, metadata keys
+	// exactly {srid, outcome} — conditional_audit ABSENT (not null).
+	t.Run("A-plain", func(t *testing.T) {
+		fx := r3PrivilegeFixture()
+		fx.srs = nil
+		stmt := statement(t, decode(t, fx, "DROP SPATIAL REFERENCE SYSTEM 100001;"))
+		if _, present := stmt["evidence_gaps"]; present {
+			t.Fatalf("evidence_gaps key must be omitted on an empty projection: %v", stmt)
+		}
+		findings, ok := stmt["findings"].([]any)
+		if !ok || len(findings) != 1 {
+			t.Fatalf("findings=%v want exactly one", stmt["findings"])
+		}
+		f := findings[0].(map[string]any)
+		if f["rule_id"] != "ddl.mysql.srs.drop.absent" {
+			t.Fatalf("rule_id=%v want absent", f["rule_id"])
+		}
+		if _, present := f["statement_index"]; present {
+			t.Fatalf("statement_index=%v must be omitted at index 0 (omitempty)", f["statement_index"])
+		}
+		meta, ok := f["metadata"].(map[string]any)
+		if !ok || len(meta) != 2 {
+			t.Fatalf("metadata=%v want exactly {srid,outcome}", f["metadata"])
+		}
+		if meta["srid"] != float64(100001) {
+			t.Fatalf("metadata.srid=%v(%T) want JSON number 100001", meta["srid"], meta["srid"])
+		}
+		if meta["outcome"] != "refused_absent" {
+			t.Fatalf("metadata.outcome=%v want refused_absent", meta["outcome"])
+		}
+		if _, present := meta["conditional_audit"]; present {
+			t.Fatalf("conditional_audit must be ABSENT (not null) on A-plain: %v", meta)
+		}
+	})
+
+	// A-IE✓: the absent_noop finding — metadata keys exactly
+	// {srid,outcome,conditional_audit}, srid a JSON number, marker a
+	// real string; no evidence_gaps key.
+	t.Run("A-IE-check", func(t *testing.T) {
+		fx := r3PrivilegeFixture()
+		fx.srs = nil
+		stmt := statement(t, decode(t, fx, "DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001;"))
+		if _, present := stmt["evidence_gaps"]; present {
+			t.Fatalf("evidence_gaps key must be omitted: %v", stmt)
+		}
+		findings, ok := stmt["findings"].([]any)
+		if !ok || len(findings) != 1 {
+			t.Fatalf("findings=%v want exactly one", stmt["findings"])
+		}
+		f := findings[0].(map[string]any)
+		if f["rule_id"] != "ddl.mysql.srs.drop.absent_noop" {
+			t.Fatalf("rule_id=%v want absent_noop", f["rule_id"])
+		}
+		meta, ok := f["metadata"].(map[string]any)
+		if !ok || len(meta) != 3 {
+			t.Fatalf("metadata=%v want exactly {srid,outcome,conditional_audit}", f["metadata"])
+		}
+		if meta["srid"] != float64(100001) {
+			t.Fatalf("metadata.srid=%v(%T) want JSON number 100001", meta["srid"], meta["srid"])
+		}
+		if meta["outcome"] != "absent_noop" {
+			t.Fatalf("metadata.outcome=%v want absent_noop", meta["outcome"])
+		}
+		if meta["conditional_audit"] != string(spec.PrivilegeAuditModeObservedAccountNewSession) {
+			t.Fatalf("conditional_audit=%v want the observed_account_new_session token", meta["conditional_audit"])
+		}
+	})
+
+	// A-IE?: no findings key at all; the [P] gap carries the exact
+	// owner/reason/ordered facts — the marker can never ride a gap.
+	t.Run("A-IE-conditional", func(t *testing.T) {
+		fx := r3PrivilegeFixture()
+		fx.srs = nil
+		fx.grants = []string{"GRANT SELECT ON *.* TO `app`@`%`"}
+		stmt := statement(t, decode(t, fx, "DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001;"))
+		if _, present := stmt["findings"]; present {
+			t.Fatalf("findings key must be omitted on the conditional arm: %v", stmt)
+		}
+		gaps, ok := stmt["evidence_gaps"].([]any)
+		if !ok || len(gaps) != 1 {
+			t.Fatalf("evidence_gaps=%v want exactly one", stmt["evidence_gaps"])
+		}
+		g := gaps[0].(map[string]any)
+		if g["rule_id"] != "ddl.mysql.srs.drop.dependency" || g["reason_code"] != "unproven_privilege" {
+			t.Fatalf("gap=%v want dependency-owned unproven_privilege", g)
+		}
+		facts, ok := g["required_facts"].([]any)
+		if !ok || len(facts) != 1 || facts[0] != spec.SRSFactDropPrivilege {
+			t.Fatalf("required_facts=%v want exactly [srs.drop.privilege]", g["required_facts"])
+		}
+		if _, present := g["conditional_audit"]; present {
+			t.Fatalf("the marker can never ride a gap: %v", g)
+		}
+	})
+}
+
 // PA-10f: sentinel scans — catalog names, dependent identities, and
 // the observed account/grant text never reach the serialized result.
+// R2-C3: each variant FIRST proves it hit the frozen arm's public
+// projection; only then is its serialized output scanned — a
+// misrouted no-output arm can never satisfy the scan vacuously.
 func TestT26SRSAbsentSentinelScan(t *testing.T) {
-	run := func(t *testing.T, fx *r3Fixture, sqlText string) string {
+	run := func(t *testing.T, fx *r3Fixture, sqlText string) (report.Result, string) {
 		p := r3Harness(t, fx)
 		result, err := r3PrivilegeRequest(t, p, sqlText)
 		if err != nil {
@@ -574,30 +856,40 @@ func TestT26SRSAbsentSentinelScan(t *testing.T) {
 		if err != nil {
 			t.Fatalf("marshal result: %v", err)
 		}
-		return string(blob)
+		return result, string(blob)
 	}
-	// PA-3a-variant: the catalog srs_name sentinel.
+	// PA-3a-variant: the catalog srs_name sentinel — S2 first (present
+	// object owes [D], the consumable premise's notice is emitted).
 	fx := r3PrivilegeFixture()
 	fx.srs = map[uint32]string{100001: "SRS_ZZTEST"}
-	if out := run(t, fx, "DROP SPATIAL REFERENCE SYSTEM 100001;"); strings.Contains(out, "SRS_ZZTEST") {
+	result, out := run(t, fx, "DROP SPATIAL REFERENCE SYSTEM 100001;")
+	r3S2Consumed(t, result.Statements[0], []string{spec.SRSFactColumnDependencies}, 100001, false)
+	if strings.Contains(out, "SRS_ZZTEST") {
 		t.Fatalf("serialized result leaks the catalog name sentinel: %s", out)
 	}
-	// PA-4a-variant: dependent schema/table/column sentinels.
+	// PA-4a-variant: dependent schema/table/column sentinels — S1
+	// (strict refused_dependency projection) first.
 	fx = r3PrivilegeFixture()
 	fx.srs = nil
 	fx.deps = []r3DepRow{{schema: "zz_schema", table: "zz_table", column: "zz_col", srid: 100001}}
-	out := run(t, fx, "DROP SPATIAL REFERENCE SYSTEM 100001;")
+	result, out = run(t, fx, "DROP SPATIAL REFERENCE SYSTEM 100001;")
+	r3RefusedDependency(t, result, result.Statements[0], 100001, 1)
 	for _, sentinel := range []string{"zz_schema", "zz_table", "zz_col"} {
 		if strings.Contains(out, sentinel) {
 			t.Fatalf("serialized result leaks the dependency sentinel %q: %s", sentinel, out)
 		}
 	}
-	// PA-2b-variant: the observed account and grant text sentinels.
+	// PA-2b-variant: the observed account and grant text sentinels —
+	// A-IE✓ (strict absent_noop + marker, no gap) first.
 	fx = r3PrivilegeFixture()
 	fx.srs = nil
 	fx.account = "zz_acct@%"
 	fx.grants = []string{"GRANT SUPER ON *.* TO `zz_acct`@`%`"}
-	out = run(t, fx, "DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001;")
+	result, out = run(t, fx, "DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001;")
+	paAbsentNoop(t, result.Statements[0], 100001)
+	if len(result.Statements[0].EvidenceGaps) != 0 {
+		t.Fatalf("gaps=%+v want none on the A-IE✓ scan variant", result.Statements[0].EvidenceGaps)
+	}
 	for _, sentinel := range []string{"zz_acct", "GRANT SUPER"} {
 		if strings.Contains(out, sentinel) {
 			t.Fatalf("serialized result leaks the privilege sentinel %q: %s", sentinel, out)

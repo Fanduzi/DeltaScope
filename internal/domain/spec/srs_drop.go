@@ -57,8 +57,10 @@ const (
 	SRSDropPrivilegeUnproven SRSDropPrivilege = iota
 	// SRSDropPrivilegeConsumable means the positive witness and the
 	// still-open ordered scope let this statement actually discharge
-	// its privilege premise — but only the unproven arm consumes it;
-	// blocked/refused arms may carry the projection without using it.
+	// its privilege premise — the unproven arm discharges it through
+	// the S2-specific privilege notice and A-IE✓ discharges it
+	// through the absent_noop marker; blocked/refused arms may carry
+	// the projection without using it.
 	SRSDropPrivilegeConsumable
 	// SRSDropPrivilegeSuppressed means a positive witness was
 	// established but the ordered scope ended before this statement —
@@ -180,8 +182,10 @@ func ValidAbsence(state *SpatialReferenceSystemState, authoredSRID uint32) bool 
 //     {srs.drop.privilege} — never consumed.
 //   - S2: everything else — owes column dependencies always,
 //     privilege while this statement's own premise is not consumable,
-//     plus existence first while unproven. Only the unproven arm under
-//     a consumable premise discharges srs.drop.privilege; every other
+//     plus existence first while unproven. A consumable premise
+//     reaching this arm is discharged here (the S2-specific privilege
+//     notice carries that consumption); A-IE✓ discharges the same
+//     premise through its own absent_noop marker. Every remaining
 //     arm carries (or lacks) the projection without consuming it.
 func AdjudicateSRSDrop(state *SpatialReferenceSystemState, srid uint32, depsStale bool, privilege SRSDropPrivilege, ifExists bool) SRSDropAdjudication {
 	adjudication := SRSDropAdjudication{Privilege: privilege}
