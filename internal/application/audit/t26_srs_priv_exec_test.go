@@ -27,6 +27,7 @@ import (
 
 	audit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
@@ -51,6 +52,102 @@ func r3PrivilegeRequest(t *testing.T, p *r3ProductProvider, sqlText string) (rep
 		MetadataProvider:   p,
 		PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession,
 	})
+}
+
+// r3ExactGap is the frozen strict gap assertion (contract §R2-C):
+// exactly one evidence gap on the statement, carrying exactly the
+// dependency-owned rule id, the unknown_srs_state reason, and the
+// row's frozen ORDERED required-facts list. Flattening several gaps
+// into facts alone can never prove this shape.
+func r3ExactGap(t *testing.T, stmt report.StatementResult, wantFacts []string) {
+	t.Helper()
+	if len(stmt.EvidenceGaps) != 1 {
+		t.Fatalf("gaps=%+v want exactly one", stmt.EvidenceGaps)
+	}
+	gap := stmt.EvidenceGaps[0]
+	if gap.RuleID != "ddl.mysql.srs.drop.dependency" || gap.ReasonCode != "unknown_srs_state" {
+		t.Fatalf("gap=%+v want owner ddl.mysql.srs.drop.dependency / unknown_srs_state", gap)
+	}
+	if len(gap.RequiredFacts) != len(wantFacts) {
+		t.Fatalf("gap facts=%v want ordered %v", gap.RequiredFacts, wantFacts)
+	}
+	for i := range wantFacts {
+		if gap.RequiredFacts[i] != wantFacts[i] {
+			t.Fatalf("gap facts[%d]=%q want ordered %v", i, gap.RequiredFacts[i], wantFacts)
+		}
+	}
+}
+
+// r3Aggregate asserts the frozen whole-request projection for the
+// rows that declare it: review verdict plus the aggregate coverage.
+func r3Aggregate(t *testing.T, result report.Result, wantCoverage report.CoverageStatus) {
+	t.Helper()
+	if result.Verdict != report.VerdictReview {
+		t.Fatalf("verdict=%v want review", result.Verdict)
+	}
+	if result.Coverage.Status != wantCoverage {
+		t.Fatalf("aggregate coverage=%v want %v", result.Coverage.Status, wantCoverage)
+	}
+}
+
+// r3OnlyFinding asserts the statement carries exactly one finding —
+// the named rule — with the exact fixed message and the exact
+// ORDERED metadata key/value set (no extra keys, no conditional_audit
+// leak). want is the literal metadata map; every value is compared by
+// typed equality against the emitted metadata.
+func r3OnlyFinding(t *testing.T, stmt report.StatementResult, ruleID, wantMessage string, wantMetadata map[string]any) {
+	t.Helper()
+	if len(stmt.Findings) != 1 {
+		t.Fatalf("findings=%+v want exactly one %s finding", stmt.Findings, ruleID)
+	}
+	f := stmt.Findings[0]
+	if f.RuleID != ruleID {
+		t.Fatalf("finding rule=%q want %q", f.RuleID, ruleID)
+	}
+	if wantMessage != "" && f.Message != wantMessage {
+		t.Fatalf("finding message=%q want exact %q", f.Message, wantMessage)
+	}
+	if len(f.Metadata) != len(wantMetadata) {
+		t.Fatalf("finding metadata=%+v want exactly %d keys %v", f.Metadata, len(wantMetadata), wantMetadata)
+	}
+	for k, want := range wantMetadata {
+		got, ok := f.Metadata[k]
+		if !ok {
+			t.Fatalf("finding metadata missing key %q: %+v", k, f.Metadata)
+		}
+		if got != want {
+			t.Fatalf("finding metadata[%q]=%v(%T) want %v(%T)", k, got, got, want, want)
+		}
+	}
+	if _, leaked := f.Metadata["conditional_audit"]; leaked {
+		t.Fatalf("conditional_audit leaked into %s metadata: %+v", ruleID, f.Metadata)
+	}
+}
+
+// r3TableFixtureProvider delegates every provider method to the real
+// mysqlmeta.NewProvider chain except LoadTableSnapshot — the P6a
+// request/API twin's accepted test-only table seam (tblTFixture shape:
+// s.t Exists=true, Columns {g:geometry}). Discovery, the privilege
+// loader, and the SRS resolver still ride the real product code.
+type r3TableFixtureProvider struct {
+	p      *r3ProductProvider
+	tables map[string]*spec.TableSnapshot
+}
+
+func (w *r3TableFixtureProvider) LoadInstanceFacts(ctx context.Context, dialect spec.Dialect, schema string) (*spec.InstanceFacts, error) {
+	return w.p.LoadInstanceFacts(ctx, dialect, schema)
+}
+
+func (w *r3TableFixtureProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema, table string) (*spec.TableSnapshot, error) {
+	return w.tables[schema+"."+table], nil
+}
+
+func (w *r3TableFixtureProvider) ResolveObject(ctx context.Context, dialect spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	return w.p.ResolveObject(ctx, dialect, req)
+}
+
+func (w *r3TableFixtureProvider) LoadMySQLServerDropPrivilege(ctx context.Context, dialect spec.Dialect) (*spec.MySQLServerDropPrivilegeObservation, error) {
+	return w.p.LoadMySQLServerDropPrivilege(ctx, dialect)
 }
 
 // r3ServerSeam returns the SERVER family's separate counts —
@@ -157,9 +254,7 @@ func TestT26SRSPrivP2Consumable(t *testing.T) {
 	}
 	stmt := result.Statements[0]
 	r3S2Consumed(t, stmt, []string{spec.SRSFactColumnDependencies}, 100001, false)
-	if result.Verdict != report.VerdictReview || result.Coverage.Status != report.CoverageUnverified {
-		t.Fatalf("aggregate=%v/%v want review/unverified", result.Verdict, result.Coverage.Status)
-	}
+	r3Aggregate(t, result, report.CoverageUnverified)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
 	// The JSON layer separately asserts numeric srid, the exact key set,
 	// and the exact token — decoded numbers are never mistaken for the
@@ -189,8 +284,23 @@ func TestT26SRSPrivP2Consumable(t *testing.T) {
 		if werr := os.WriteFile(filepath.Join(dir, "p2-public-result.json"), full, 0o644); werr != nil {
 			t.Fatalf("write p2 evidence: %v", werr)
 		}
+		// R2-C6: serialize the REAL measured counters — never the
+		// expected vector. Each field reads the live seam the same way
+		// r3AssertReads does (resolver forwards by object type, SQL
+		// attempts by query text, loader/discovery by call counters).
+		var forwards int
+		for _, req := range p.forwards {
+			if req.Type == "mysql_spatial_reference_system" {
+				forwards++
+			}
+		}
 		reads, _ := json.Marshal(map[string]int{
-			"R": 1, "Qexist": 1, "Qdeps": 1, "Qo": 1, "L": 1, "Vd": 1,
+			"R":      forwards,
+			"Qexist": fx.count["exist"],
+			"Qdeps":  fx.count["deps"],
+			"Qo":     fx.count["ver"],
+			"L":      p.privCalls,
+			"Vd":     p.vd,
 		})
 		if werr := os.WriteFile(filepath.Join(dir, "p2-seam-counts.json"), reads, 0o644); werr != nil {
 			t.Fatalf("write p2 seam counts: %v", werr)
@@ -210,6 +320,7 @@ func TestT26SRSPrivP3ConsumableZeroRowExistence(t *testing.T) {
 	}
 	r3S2Consumed(t, result.Statements[0],
 		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies}, 100001, false)
+	r3Aggregate(t, result, report.CoverageUnverified)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
 }
 
@@ -290,6 +401,7 @@ func TestT26SRSPrivP4eGlobalAllImpliesSuper(t *testing.T) {
 	}
 	r3S2Consumed(t, result.Statements[0],
 		[]string{spec.SRSFactColumnDependencies}, 100001, false)
+	r3Aggregate(t, result, report.CoverageUnverified)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
 }
 
@@ -391,14 +503,9 @@ func TestT26SRSPrivP5aParseFailureBlocked(t *testing.T) {
 	if len(stmt.Findings) != 0 {
 		t.Fatalf("findings=%+v want 0 — B arm emits no privilege notice", stmt.Findings)
 	}
-	if len(stmt.EvidenceGaps) != 1 ||
-		stmt.EvidenceGaps[0].RuleID != "ddl.mysql.srs.drop.dependency" ||
-		stmt.EvidenceGaps[0].ReasonCode != "unknown_srs_state" {
-		t.Fatalf("gap=%+v want exactly one dependency-owned unknown_srs_state", stmt.EvidenceGaps)
-	}
-	facts := stmt.EvidenceGaps[0].RequiredFacts
-	if len(facts) != 1 || facts[0] != spec.SRSFactBatchEffects {
-		t.Fatalf("facts=%v want exactly [B]", facts)
+	r3ExactGap(t, stmt, []string{spec.SRSFactBatchEffects})
+	if stmt.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("coverage=%v want unverified", stmt.Coverage.Status)
 	}
 	r3AssertReads(t, p, fx, 0, 0, 0, 0, 1, 1)
 }
@@ -422,9 +529,9 @@ func TestT26SRSPrivP5bSameSRIDTwice(t *testing.T) {
 	if len(stmt2.Findings) != 0 {
 		t.Fatalf("stmt2 findings=%+v want 0 — B arm carries no privilege notice", stmt2.Findings)
 	}
-	facts := r3Facts(stmt2)
-	if len(facts) != 1 || facts[0] != spec.SRSFactBatchEffects {
-		t.Fatalf("stmt2 facts=%v want exactly [B]", facts)
+	r3ExactGap(t, stmt2, []string{spec.SRSFactBatchEffects})
+	if stmt2.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("stmt2 coverage=%v want unverified", stmt2.Coverage.Status)
 	}
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
 	if result.Verdict != report.VerdictReview {
@@ -447,9 +554,9 @@ func TestT26SRSPrivP5cdSRID0(t *testing.T) {
 			t.Fatalf("audit %q: %v", sqlText, err)
 		}
 		stmt := result.Statements[0]
-		if len(stmt.Findings) != 1 || stmt.Findings[0].RuleID != "ddl.mysql.srs.drop.srid0" {
-			t.Fatalf("%q findings=%+v want only the srid0 blocker", sqlText, stmt.Findings)
-		}
+		r3OnlyFinding(t, stmt, "ddl.mysql.srs.drop.srid0",
+			"dropping spatial reference system SRID 0 is not allowed",
+			map[string]any{"srid": 0, "outcome": "refused_srid0"})
 		if len(stmt.EvidenceGaps) != 0 {
 			t.Fatalf("%q gaps=%+v want 0 — refused arm owes nothing", sqlText, stmt.EvidenceGaps)
 		}
@@ -474,6 +581,10 @@ func TestT26SRSPrivP5eDependencyRefusal(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	r3RefusedDependency(t, result, result.Statements[0], 100001, 1)
+	stmt := result.Statements[0]
+	r3OnlyFinding(t, stmt, "ddl.mysql.srs.drop.dependency",
+		"spatial reference system 100001 is used by 1 visible geometry column(s)",
+		map[string]any{"srid": uint32(100001), "outcome": "refused_dependency", "dependency_witness_count": 1})
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
 }
 
@@ -497,9 +608,9 @@ func TestT26SRSPrivP6aBisGeometryParseBlocked(t *testing.T) {
 	if len(stmt.Findings) != 0 {
 		t.Fatalf("findings=%+v want 0 on B", stmt.Findings)
 	}
-	facts := r3Facts(stmt)
-	if len(facts) != 1 || facts[0] != spec.SRSFactBatchEffects {
-		t.Fatalf("facts=%v want exactly [B]", facts)
+	r3ExactGap(t, stmt, []string{spec.SRSFactBatchEffects})
+	if stmt.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("coverage=%v want unverified", stmt.Coverage.Status)
 	}
 	r3AssertReads(t, p, fx, 0, 0, 0, 0, 1, 1)
 }
@@ -529,9 +640,9 @@ func TestT26SRSPrivP7ScopeTerminator(t *testing.T) {
 	if len(stmt3.Findings) != 0 {
 		t.Fatalf("stmt3 findings=%+v want 0 — suppressed premise emits no notice", stmt3.Findings)
 	}
-	facts := r3Facts(stmt3)
-	if len(facts) != 2 || facts[0] != spec.SRSFactColumnDependencies || facts[1] != spec.SRSFactDropPrivilege {
-		t.Fatalf("stmt3 facts=%v want ordered [D,P] — suppressed stays owed", facts)
+	r3ExactGap(t, stmt3, []string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege})
+	if stmt3.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("stmt3 coverage=%v want unverified", stmt3.Coverage.Status)
 	}
 	r3AssertReads(t, p, fx, 2, 2, 2, 2, 1, 1)
 }
@@ -626,6 +737,7 @@ func TestT26SRSPrivP9aFloor(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	r3S2Consumed(t, result.Statements[0], []string{spec.SRSFactColumnDependencies}, 100001, false)
+	r3Aggregate(t, result, report.CoverageUnverified)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
 }
 
@@ -671,8 +783,16 @@ func TestT26SRSPrivP9cTiDBVendorBoundary(t *testing.T) {
 		t.Fatalf("result=%+v want one statement + one unsupported entry", result)
 	}
 	entry := result.Unsupported[0]
+	// The reason token and the metadata boundary value are separate
+	// frozen fields — assert both (R2-A3).
 	if entry.Reason != spec.UnsupportedVendorBoundaryReason {
 		t.Fatalf("unsupported=%+v want the vendor-boundary reason", entry)
+	}
+	if entry.Metadata["boundary"] != "vendor" {
+		t.Fatalf("unsupported metadata=%+v want boundary=vendor", entry.Metadata)
+	}
+	if result.Version == nil || result.Version.Product != spec.VersionProductTiDB {
+		t.Fatalf("result.Version=%+v want resolved product TiDB", result.Version)
 	}
 	stmt := result.Statements[0]
 	if len(stmt.Findings) != 0 || len(stmt.EvidenceGaps) != 0 {
@@ -724,11 +844,17 @@ func TestT26SRSPrivP9eMalformedPin(t *testing.T) {
 
 // P9f: mysql dialect, no pin, recognized TiDB banner — product
 // mismatch typed exit after discovery: Vd=1, everything else zero.
+// R2-A2: the request carries NO TargetVersion — the helper's hardcoded
+// 8.0.36 pin would falsify the frozen input.
 func TestT26SRSPrivP9fProductMismatch(t *testing.T) {
 	fx := r3PrivilegeFixture()
 	fx.discoverVer = "8.0.11-TiDB-v8.5.0"
 	p := r3Harness(t, fx)
-	result, err := r3PrivilegeRequest(t, p, "DROP SPATIAL REFERENCE SYSTEM 100001;")
+	result, err := audit.AuditSQL(context.Background(), audit.Request{
+		SQL: "DROP SPATIAL REFERENCE SYSTEM 100001;", Dialect: spec.DialectMySQL,
+		MetadataProvider:   p,
+		PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession,
+	})
 	if !errors.Is(err, audit.ErrDialectProductMismatch) {
 		t.Fatalf("err=%v want ErrDialectProductMismatch", err)
 	}
@@ -758,7 +884,8 @@ func TestT26SRSPrivP9gVersionMismatch(t *testing.T) {
 // --- P10: public carrier and configuration ----------------------------------
 
 // P10a: reserved SRID consumed — exactly 2 findings (privilege +
-// reserved), 1 gap [D].
+// reserved), 1 gap [D]. R2-C3: the reserved advisory carries only
+// {srid} — no conditional_audit or outcome leaks onto its carrier.
 func TestT26SRSPrivP10aReservedConsumed(t *testing.T) {
 	fx := r3PrivilegeFixture()
 	fx.srs = map[uint32]string{4326: "WGS 84"}
@@ -768,6 +895,23 @@ func TestT26SRSPrivP10aReservedConsumed(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	r3S2Consumed(t, result.Statements[0], []string{spec.SRSFactColumnDependencies}, 4326, true)
+	var reserved *rule.Finding
+	for i := range result.Statements[0].Findings {
+		if result.Statements[0].Findings[i].RuleID == "ddl.mysql.srs.drop.reserved" {
+			reserved = &result.Statements[0].Findings[i]
+		}
+	}
+	if reserved == nil {
+		t.Fatal("the reserved advisory must co-fire on the consumed S2")
+	}
+	if reserved.Level != "notice" ||
+		reserved.Message != "spatial reference system 4326 is in a reserved SRID range" {
+		t.Fatalf("reserved finding=%+v want notice + fixed membership text", reserved)
+	}
+	if len(reserved.Metadata) != 1 || reserved.Metadata["srid"] != uint32(4326) {
+		t.Fatalf("reserved metadata=%+v want exactly {srid}", reserved.Metadata)
+	}
+	r3Aggregate(t, result, report.CoverageUnverified)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
 }
 
@@ -785,6 +929,22 @@ func TestT26SRSPrivP10bReservedUnproven(t *testing.T) {
 	stmt := result.Statements[0]
 	r3S2(t, result, stmt,
 		[]string{spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 4326)
+	// R2-C3: the unproven reserved advisory keeps its exact key set —
+	// strict no-extra; no conditional_audit or outcome anywhere.
+	var reserved *rule.Finding
+	for i := range stmt.Findings {
+		if stmt.Findings[i].RuleID == "ddl.mysql.srs.drop.reserved" {
+			reserved = &stmt.Findings[i]
+		}
+	}
+	if reserved == nil {
+		t.Fatal("the reserved advisory must fire on the unproven S2")
+	}
+	if len(reserved.Metadata) != 1 || reserved.Metadata["srid"] != uint32(4326) ||
+		reserved.Level != "notice" ||
+		reserved.Message != "spatial reference system 4326 is in a reserved SRID range" {
+		t.Fatalf("reserved finding=%+v want notice, fixed text, exactly {srid}", reserved)
+	}
 	blob, _ := json.Marshal(stmt)
 	if strings.Contains(string(blob), "conditional_audit") {
 		t.Fatal("unproven SRS statement carries conditional_audit")
@@ -839,9 +999,12 @@ func TestT26SRSPrivP10cRuleDisabled(t *testing.T) {
 	if len(stmt.Findings) != 0 {
 		t.Fatalf("findings=%+v want 0 — disabling the notice suppresses only the finding", stmt.Findings)
 	}
-	facts := r3Facts(stmt)
-	if len(facts) != 1 || facts[0] != spec.SRSFactColumnDependencies {
-		t.Fatalf("facts=%v want [D] — P still discharged inside the adjudication", facts)
+	r3ExactGap(t, stmt, []string{spec.SRSFactColumnDependencies})
+	if stmt.Coverage.Status != report.CoverageUnverified || result.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("coverage=%v/%v want unverified/unverified — the flag never upgrades coverage", stmt.Coverage.Status, result.Coverage.Status)
+	}
+	if result.Verdict != report.VerdictReview {
+		t.Fatalf("verdict=%v want review", result.Verdict)
 	}
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
 }
@@ -864,6 +1027,12 @@ func TestT26SRSPrivP10dWarningRewrite(t *testing.T) {
 		t.Fatalf("findings=%+v want one warning-level privilege notice", stmt.Findings)
 	}
 	assertJSONMarker(t, stmt, 100001)
+	// R2-C4: the level rewrite must not re-owe P — the exact [D] gap
+	// and unverified coverage hold at both scopes.
+	r3ExactGap(t, stmt, []string{spec.SRSFactColumnDependencies})
+	if stmt.Coverage.Status != report.CoverageUnverified || result.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("coverage=%v/%v want unverified/unverified", stmt.Coverage.Status, result.Coverage.Status)
+	}
 	if result.Verdict != report.VerdictReview {
 		t.Fatalf("verdict=%v want review", result.Verdict)
 	}
@@ -889,12 +1058,12 @@ func TestT26SRSPrivP10eBlockerRewrite(t *testing.T) {
 		t.Fatalf("findings=%+v want one blocker-level privilege notice", stmt.Findings)
 	}
 	assertJSONMarker(t, stmt, 100001)
-	facts := r3Facts(stmt)
-	if len(facts) != 1 || facts[0] != spec.SRSFactColumnDependencies {
-		t.Fatalf("facts=%v want [D] — premise/Owed unchanged by the rewrite", facts)
-	}
+	r3ExactGap(t, stmt, []string{spec.SRSFactColumnDependencies})
 	if stmt.Coverage.Status != report.CoverageUnverified {
 		t.Fatalf("coverage=%v want unverified — blocker rewrite never upgrades", stmt.Coverage.Status)
+	}
+	if result.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("aggregate coverage=%v want unverified", result.Coverage.Status)
 	}
 	if result.Verdict != report.VerdictReject {
 		t.Fatalf("verdict=%v want reject", result.Verdict)
@@ -956,6 +1125,7 @@ func TestT26SRSPrivP10fLegacyMetadataMode(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	r3S2Consumed(t, result.Statements[0], []string{spec.SRSFactColumnDependencies}, 100001, false)
+	r3Aggregate(t, result, report.CoverageUnverified)
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
 }
 
@@ -971,6 +1141,55 @@ func TestT26SRSPrivP10gIfExists(t *testing.T) {
 	r3S2Consumed(t, stmt, []string{spec.SRSFactColumnDependencies}, 100001, false)
 	if stmt.NormalizedSQL != "DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001" {
 		t.Fatalf("normalized_sql=%q want authored IF EXISTS form", stmt.NormalizedSQL)
+	}
+	r3Aggregate(t, result, report.CoverageUnverified)
+	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
+}
+
+// --- P6a request/API twin -----------------------------------------------------
+
+// P6a request/API twin (R2-A1): `DROP TABLE s.t; DROP SRS 100001` —
+// the DROP TABLE binds through the accepted test-only LoadTableSnapshot
+// seam (tblTFixture shape: s.t Exists=true, Columns {g:geometry}) while
+// discovery, the privilege loader, and the SRS resolver ride the real
+// mysqlmeta.NewProvider chain. DROP TABLE's own apply mints
+// srsDepsStale; the positive dependency witness is demoted to S2 with
+// the premise still consumable → the family's own notice + one [D]
+// dependency-owned gap. Non-SRS reads and the DROP TABLE's own public
+// output stay outside the frozen vector's declared scope.
+func TestT26SRSPrivP6aRequestStaleDemotion(t *testing.T) {
+	fx := r3PrivilegeFixture()
+	fx.deps = []r3DepRow{{schema: "s", table: "t", column: "g", srid: 100001}}
+	p := r3Harness(t, fx)
+	provider := &r3TableFixtureProvider{p: p, tables: map[string]*spec.TableSnapshot{
+		"s.t": {Schema: "s", Table: &spec.Table{Schema: "s", Name: "t"}, Exists: true,
+			Columns: []spec.Column{{Name: "g", Type: "geometry"}}},
+	}}
+	result, err := audit.AuditSQL(context.Background(), audit.Request{
+		SQL:     "DROP TABLE s.t; DROP SPATIAL REFERENCE SYSTEM 100001;",
+		Dialect: spec.DialectMySQL, TargetVersion: "8.0.36",
+		MetadataProvider:   provider,
+		PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Statements) != 2 {
+		t.Fatalf("statements=%d want 2", len(result.Statements))
+	}
+	stmt := result.Statements[1]
+	if len(stmt.Findings) != 1 || stmt.Findings[0].RuleID != "ddl.mysql.srs.drop.privilege" {
+		t.Fatalf("findings=%+v want exactly the consumable-premise notice", stmt.Findings)
+	}
+	marker, ok := stmt.Findings[0].Metadata["conditional_audit"].(string)
+	if !ok || marker != "observed_account_new_session" ||
+		stmt.Findings[0].Metadata["srid"] != uint32(100001) || len(stmt.Findings[0].Metadata) != 2 {
+		t.Fatalf("notice metadata=%+v want exactly {srid:100001, conditional_audit:observed_account_new_session}",
+			stmt.Findings[0].Metadata)
+	}
+	r3ExactGap(t, stmt, []string{spec.SRSFactColumnDependencies})
+	if stmt.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("coverage=%v want unverified", stmt.Coverage.Status)
 	}
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
 }
