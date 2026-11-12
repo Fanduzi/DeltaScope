@@ -187,7 +187,7 @@ func TestT26SRSIdentityRowConfirms(t *testing.T) {
 			columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"},
 			rows:    [][]driver.Value{{"geo", "cities", "pt"}, {"gis", "roads", "path"}},
 		},
-	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326"})
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326", RequestVersion: spec.ParseObservedVersion("8.0.46")})
 	if err != nil {
 		t.Fatalf("ResolveObject: %v", err)
 	}
@@ -215,30 +215,24 @@ func TestT26SRSIdentityRowConfirms(t *testing.T) {
 	}
 }
 
-// Zero rows on the identity read stay unknown while the independently
-// provable dependency read still fires — a provable SRID fact never
-// depends on the existence answer. The Qo banner 8.0.3 sits outside
-// the proven-absence domain, so this row exercises the unknown branch
-// (the in-domain zero-row answer supplies Absence — PA-1 at the
-// provider layer below).
+// O1=8.0.3 is outside the registered audited domain — under the R3
+// single-authority binding the request-level identity closes the call
+// before any query: no witness, no existence read, no deps read.
 func TestT26SRSZeroRowsUnknownButDepsRead(t *testing.T) {
 	snapshot, err := t26Resolve(t, map[string]testQueryResult{
 		testSRSVersionFragment:  t26VersionRow("8.0.3"),
 		testSRSIdentityFragment: {columns: []string{"SRS_ID", "SRS_NAME"}},
 		testSRSDepFragment:      {columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}},
-	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "9999"})
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "9999", RequestVersion: spec.ParseObservedVersion("8.0.3")})
 	if err != nil {
 		t.Fatalf("ResolveObject: %v", err)
 	}
 	state := snapshot.SpatialReference
-	if state == nil || !state.Read || state.Exists || state.Absence || snapshot.IsNotFound() {
-		t.Fatalf("srs state = %+v, want issued read + unknown answer", state)
+	if state == nil || state.Read || state.UnreadReason != spec.MetadataUnreadVersionInapplicable {
+		t.Fatalf("srs state = %+v, want unread version_inapplicable", state)
 	}
-	if state.Dependencies == nil || len(state.Dependencies.Columns) != 0 || state.Dependencies.Complete {
-		t.Fatalf("dependencies = %+v, want read-with-empty-visible-set, never proven-none", state.Dependencies)
-	}
-	if calls := t26Calls(t, testSRSDepFragment); len(calls) != 1 {
-		t.Fatalf("dependency read issued %d times, want exactly once", len(calls))
+	if calls := t26Calls(t, testSRSDepFragment); len(calls) != 0 {
+		t.Fatalf("dependency read issued %d times, want zero under an off-domain O1", len(calls))
 	}
 }
 
@@ -275,6 +269,7 @@ func TestT26SRSNameConflictWitnesses(t *testing.T) {
 		Qualifiers: map[string]string{
 			spec.ObjectLookupQualifierSRSName: "WGS 84",
 		},
+		RequestVersion: spec.ParseObservedVersion("8.0.46"),
 	})
 	if err != nil {
 		t.Fatalf("ResolveObject: %v", err)
@@ -300,7 +295,7 @@ func TestT26SRSNameConflictZeroRowsAndAbsent(t *testing.T) {
 		testSRSVersionFragment:  t26VersionRow("8.0.46"),
 		testSRSIdentityFragment: {columns: []string{"SRS_ID", "SRS_NAME"}},
 		testSRSDepFragment:      {columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}},
-	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326"})
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326", RequestVersion: spec.ParseObservedVersion("8.0.46")})
 	if err != nil {
 		t.Fatalf("ResolveObject: %v", err)
 	}
@@ -319,7 +314,7 @@ func TestT26SRSNameConflictZeroRowsAndAbsent(t *testing.T) {
 		testSRSDepFragment:      {columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}},
 	}, spec.DialectMySQL, spec.ObjectLookupRequest{
 		Type: "mysql_spatial_reference_system", Name: "4326",
-		Qualifiers: map[string]string{spec.ObjectLookupQualifierSRSName: "Free Name"},
+		Qualifiers: map[string]string{spec.ObjectLookupQualifierSRSName: "Free Name"}, RequestVersion: spec.ParseObservedVersion("8.0.46"),
 	})
 	if err != nil {
 		t.Fatalf("ResolveObject: %v", err)
@@ -344,7 +339,7 @@ func TestT26SRSOrgConflictPairContract(t *testing.T) {
 		Qualifiers: map[string]string{
 			spec.ObjectLookupQualifierSRSOrg:   "EPSG",
 			spec.ObjectLookupQualifierSRSOrgID: "4326",
-		},
+		}, RequestVersion: spec.ParseObservedVersion("8.0.46"),
 	})
 	if err != nil {
 		t.Fatalf("ResolveObject: %v", err)
@@ -377,6 +372,7 @@ func TestT26SRSOrgConflictPartialNeverQueries(t *testing.T) {
 			testSRSDepFragment:      {columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}},
 		}, spec.DialectMySQL, spec.ObjectLookupRequest{
 			Type: "mysql_spatial_reference_system", Name: "4326", Qualifiers: qualifiers,
+			RequestVersion: spec.ParseObservedVersion("8.0.46"),
 		})
 		if err != nil {
 			t.Fatalf("qualifiers %+v: %v, want silent unissued", qualifiers, err)
@@ -402,7 +398,7 @@ func TestT26SRSErrorPropagation(t *testing.T) {
 	if _, err := t26Resolve(t, map[string]testQueryResult{
 		testSRSVersionFragment:  t26VersionRow("8.0.46"),
 		testSRSIdentityFragment: {queryErr: want},
-	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1", Qualifiers: qualifiers}); !errors.Is(err, want) {
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1", Qualifiers: qualifiers, RequestVersion: spec.ParseObservedVersion("8.0.46")}); !errors.Is(err, want) {
 		t.Fatalf("identity error: %v, want errors.Is", err)
 	}
 	depErr := errors.New("geometry columns denied")
@@ -412,7 +408,7 @@ func TestT26SRSErrorPropagation(t *testing.T) {
 		testSRSNameFragment:     {columns: []string{"SRS_ID"}},
 		testSRSOrgFragment:      {columns: []string{"SRS_ID"}},
 		testSRSDepFragment:      {queryErr: depErr},
-	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1", Qualifiers: qualifiers}); !errors.Is(err, depErr) {
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1", Qualifiers: qualifiers, RequestVersion: spec.ParseObservedVersion("8.0.46")}); !errors.Is(err, depErr) {
 		t.Fatalf("dep error: %v, want errors.Is", err)
 	}
 	nameErr := errors.New("name conflict denied")
@@ -422,7 +418,7 @@ func TestT26SRSErrorPropagation(t *testing.T) {
 		testSRSNameFragment:     {queryErr: nameErr},
 		testSRSOrgFragment:      {columns: []string{"SRS_ID"}},
 		testSRSDepFragment:      {columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}},
-	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1", Qualifiers: qualifiers}); !errors.Is(err, nameErr) {
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1", Qualifiers: qualifiers, RequestVersion: spec.ParseObservedVersion("8.0.46")}); !errors.Is(err, nameErr) {
 		t.Fatalf("name conflict error: %v, want errors.Is", err)
 	}
 	orgErr := errors.New("org conflict denied")
@@ -432,13 +428,13 @@ func TestT26SRSErrorPropagation(t *testing.T) {
 		testSRSNameFragment:     {columns: []string{"SRS_ID"}},
 		testSRSOrgFragment:      {queryErr: orgErr},
 		testSRSDepFragment:      {columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}},
-	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1", Qualifiers: qualifiers}); !errors.Is(err, orgErr) {
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1", Qualifiers: qualifiers, RequestVersion: spec.ParseObservedVersion("8.0.46")}); !errors.Is(err, orgErr) {
 		t.Fatalf("org conflict error: %v, want errors.Is", err)
 	}
 	verErr := errors.New("version read denied")
 	if _, err := t26Resolve(t, map[string]testQueryResult{
 		testSRSVersionFragment: {queryErr: verErr},
-	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1"}); !errors.Is(err, verErr) {
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1", RequestVersion: spec.ParseObservedVersion("8.0.46")}); !errors.Is(err, verErr) {
 		t.Fatalf("version error: %v, want errors.Is", err)
 	}
 }
@@ -455,7 +451,7 @@ func TestT26SRSDependencyIterationErrorPropagates(t *testing.T) {
 			rows:     [][]driver.Value{{"geo", "t", "c"}},
 			rowErrAt: 1, rowErr: want,
 		},
-	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1"})
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1", RequestVersion: spec.ParseObservedVersion("8.0.46")})
 	if !errors.Is(err, want) {
 		t.Fatalf("err = %v, want errors.Is(%v)", err, want)
 	}
@@ -466,7 +462,7 @@ func TestT26SRSScanErrorPropagates(t *testing.T) {
 	_, err := t26Resolve(t, map[string]testQueryResult{
 		testSRSVersionFragment:  t26VersionRow("8.0.46"),
 		testSRSIdentityFragment: {columns: []string{"SRS_ID"}, rows: [][]driver.Value{{int64(1)}}},
-	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1"})
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1", RequestVersion: spec.ParseObservedVersion("8.0.46")})
 	if err == nil {
 		t.Fatalf("want scan error on one-column row into a two-column scan")
 	}
@@ -482,7 +478,7 @@ func TestT26SRSVersionGate(t *testing.T) {
 		testSRSVersionFragment:  t26VersionRow("5.7.44"),
 		testSRSIdentityFragment: {queryErr: mustNotQuery},
 		testSRSDepFragment:      {queryErr: mustNotQuery},
-	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326"})
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326", RequestVersion: spec.ParseObservedVersion("5.7.44")})
 	if err != nil {
 		t.Fatalf("5.7: ResolveObject: %v, want catalog queries gated out", err)
 	}
@@ -497,38 +493,45 @@ func TestT26SRSVersionGate(t *testing.T) {
 		t.Fatalf("5.7 issued %d dep queries", len(calls))
 	}
 
-	// Unproven version + a real catalog error → propagates like every
-	// issued-query failure. An unknown version never converts a query
-	// that already failed into "not loaded" — missing-object codes are
-	// not degraded anywhere on this surface.
-	for _, number := range []uint16{1054, 1109, 1146} {
-		missing := &gomysql.MySQLError{Number: number, Message: "catalog object missing"}
-		if _, err := t26Resolve(t, map[string]testQueryResult{
-			testSRSIdentityFragment: {queryErr: missing},
-		}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326"}); !errors.Is(err, missing) {
-			t.Fatalf("unproven version errno %d: err = %v, want errors.Is propagation", number, err)
-		}
+	// Missing O1 (R3): no authoritative version exists — the call closes
+	// version_unproven with zero queries of any kind; even a scripted
+	// catalog error is never reached.
+	snapshot, err = t26Resolve(t, map[string]testQueryResult{
+		testSRSVersionFragment:  {queryErr: mustNotQuery},
+		testSRSIdentityFragment: {queryErr: mustNotQuery},
+		testSRSDepFragment:      {queryErr: mustNotQuery},
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326"})
+	if err != nil {
+		t.Fatalf("missing-O1: ResolveObject: %v, want silent unproven bind", err)
+	}
+	state = snapshot.SpatialReference
+	if state == nil || state.Read || state.UnreadReason != spec.MetadataUnreadVersionUnproven {
+		t.Fatalf("missing-O1: srs state = %+v, want version_unproven", state)
+	}
+	if total := len(testQueryCallsByName(testStubName(t))); total != 0 {
+		t.Fatalf("missing O1 issued %d queries — zero reads is the contract", total)
 	}
 
-	// Proven 8.0 + missing-object code → propagates like every error.
+	// In-domain O1 + missing-object code → propagates like every error.
 	missing := &gomysql.MySQLError{Number: 1146, Message: "Table 'x' doesn't exist"}
 	if _, err = t26Resolve(t, map[string]testQueryResult{
 		testSRSVersionFragment:  t26VersionRow("8.0.46"),
 		testSRSIdentityFragment: {queryErr: missing},
-	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326"}); !errors.Is(err, missing) {
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326", RequestVersion: spec.ParseObservedVersion("8.0.46")}); !errors.Is(err, missing) {
 		t.Fatalf("proven 8.0 missing-object: err = %v, want errors.Is(1146)", err)
 	}
 
-	// Unproven version + existence answered + dep error → propagates.
+	// In-domain O1 + existence answered + dep error → propagates.
 	// A successful existence read never launders a following dependency
 	// failure into a partial normal return.
 	depMissing := &gomysql.MySQLError{Number: 1146, Message: "Table 'st_geometry_columns' doesn't exist"}
 	if _, err = t26Resolve(t, map[string]testQueryResult{
+		testSRSVersionFragment: t26VersionRow("8.0.46"),
 		testSRSIdentityFragment: {columns: []string{"SRS_ID", "SRS_NAME"},
 			rows: [][]driver.Value{{int64(4326), "WGS 84"}}},
 		testSRSDepFragment: {queryErr: depMissing},
-	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326"}); !errors.Is(err, depMissing) {
-		t.Fatalf("unproven dep error: err = %v, want errors.Is propagation", err)
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326", RequestVersion: spec.ParseObservedVersion("8.0.46")}); !errors.Is(err, depMissing) {
+		t.Fatalf("dep error: err = %v, want errors.Is propagation", err)
 	}
 }
 
@@ -566,4 +569,82 @@ func TestT26FamilyIsolation(t *testing.T) {
 			t.Fatalf("server lookup issued %d %q queries — families stay isolated", len(calls), fragment)
 		}
 	}
+}
+
+// R3-E witness matrix: O1=8.0.46 fixed — only an identical O2 banner
+// may open the catalog channels. Every disagreeing or unreadable
+// channel answer is the bounded consistency error (a raw query error
+// propagates on the bounded path), the witness fires exactly once,
+// and NO existence or dependency query is ever reached. O2 can never
+// change the version verdict nor mint a fact.
+func TestT26SRSR3ChannelWitnessMatrix(t *testing.T) {
+	noCatalog := errors.New("catalog read must never issue past a failed witness")
+	mustNotExist := testQueryResult{queryErr: noCatalog}
+	mustNotDeps := testQueryResult{queryErr: noCatalog}
+	sentinel := errors.New("channel observation query failed")
+
+	cells := []struct {
+		name        string
+		version     testQueryResult
+		wantErr     error
+		wantIsIsErr bool // errors.Is against ErrSRSChannelVersionInconsistent
+	}{
+		{"o2-mismatch-8.4.10", t26VersionRow("8.4.10"), ErrSRSChannelVersionInconsistent, true},
+		{"o2-mismatch-5.7.44", t26VersionRow("5.7.44"), ErrSRSChannelVersionInconsistent, true},
+		{"o2-unparseable", t26VersionRow("bogus-banner"), ErrSRSChannelVersionInconsistent, true},
+		{"o2-empty-answer", testQueryResult{columns: []string{"version()"}}, ErrSRSChannelVersionInconsistent, true},
+		{"o2-query-error", testQueryResult{queryErr: sentinel}, sentinel, false},
+	}
+	for _, cell := range cells {
+		t.Run(cell.name, func(t *testing.T) {
+			snapshot, err := t26Resolve(t, map[string]testQueryResult{
+				testSRSVersionFragment:  cell.version,
+				testSRSIdentityFragment: mustNotExist,
+				testSRSNameFragment:     mustNotDeps,
+				testSRSOrgFragment:      mustNotDeps,
+				testSRSDepFragment:      mustNotDeps,
+			}, spec.DialectMySQL, spec.ObjectLookupRequest{
+				Type: "mysql_spatial_reference_system", Name: "4326",
+				RequestVersion: spec.ParseObservedVersion("8.0.46"),
+			})
+			if !errors.Is(err, cell.wantErr) {
+				t.Fatalf("err=%v want errors.Is(%v)", err, cell.wantErr)
+			}
+			if isInconsistent := errors.Is(err, ErrSRSChannelVersionInconsistent); isInconsistent != cell.wantIsIsErr {
+				t.Fatalf("errors.Is(ErrSRSChannelVersionInconsistent)=%v want %v", isInconsistent, cell.wantIsIsErr)
+			}
+			if snapshot != nil && snapshot.SpatialReference != nil && snapshot.SpatialReference.Read {
+				t.Fatalf("srs state = %+v — a failed witness mints no existence fact", snapshot.SpatialReference)
+			}
+			if got := t26Attempt(t, testSRSVersionFragment); got != 1 {
+				t.Fatalf("Qo attempts=%d want exactly one witness probe", got)
+			}
+			if got := t26Attempt(t, testSRSIdentityFragment); got != 0 {
+				t.Fatalf("Qexist attempts=%d want zero — a failed witness mints nothing", got)
+			}
+			if got := t26Attempt(t, testSRSDepFragment); got != 0 {
+				t.Fatalf("Qdeps attempts=%d want zero — a failed witness mints nothing", got)
+			}
+		})
+	}
+
+	// The identical banner is the only witness that opens the catalog.
+	t.Run("o2-match-8.0.46", func(t *testing.T) {
+		snapshot, err := t26Resolve(t, map[string]testQueryResult{
+			testSRSVersionFragment: t26VersionRow("8.0.46"),
+			testSRSIdentityFragment: {columns: []string{"SRS_ID", "SRS_NAME"},
+				rows: [][]driver.Value{{int64(4326), "WGS 84"}}},
+			testSRSDepFragment: {columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}},
+		}, spec.DialectMySQL, spec.ObjectLookupRequest{
+			Type: "mysql_spatial_reference_system", Name: "4326",
+			RequestVersion: spec.ParseObservedVersion("8.0.46"),
+		})
+		if err != nil {
+			t.Fatalf("ResolveObject: %v, want matching witness to admit", err)
+		}
+		state := snapshot.SpatialReference
+		if state == nil || !state.Read || !state.Exists {
+			t.Fatalf("srs state = %+v, want read+present under a matching witness", state)
+		}
+	})
 }

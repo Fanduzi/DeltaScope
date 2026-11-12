@@ -256,8 +256,6 @@ func TestT26SRSVersionGateOwnApplyDrop(t *testing.T) {
 // the bind even for an in-domain reader.
 func TestT26SRSVersionGateNoStaleConsumption(t *testing.T) {
 	fx := r3PrivilegeFixture()
-	fx.version = "8.0.46"
-	fx.discoverVer = "8.0.46"
 	provider, state := paRealState(t, fx)
 	appaudit.EnrichSRSPrivForTest(t, state, provider,
 		"DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001;")

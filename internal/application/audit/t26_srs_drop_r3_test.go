@@ -280,9 +280,9 @@ func (p *r3ProductProvider) LoadMySQLServerDropPrivilege(ctx context.Context, di
 // SQL reads still land on the fixture's independent seam counters and
 // NO ResolveObject forward is recorded (the direct method bypasses the
 // objectCache seam, exactly as the contract requires).
-func (p *r3ProductProvider) ResolveMySQLSRSDependencies(ctx context.Context, srid uint32) (*spec.SRSDependencyFact, error) {
+func (p *r3ProductProvider) ResolveMySQLSRSDependencies(ctx context.Context, srid uint32, version *spec.VersionIdentity) (*spec.SRSDependencyFact, error) {
 	p.depsForward++
-	return p.inner.ResolveMySQLSRSDependencies(ctx, srid)
+	return p.inner.ResolveMySQLSRSDependencies(ctx, srid, version)
 }
 
 // r3Harness builds the real product provider over the stub driver.
@@ -673,14 +673,11 @@ func TestT26SRSR3UnprovenProviderless(t *testing.T) {
 	}
 }
 
-// E3.2 strengthened (R3-B.2): zero-row existence + empty deps through
-// the product loader → [E,D,P] exact length+order, exactly one reserved
-// notice, aggregate unverified. The Qo banner 8.0.3 is supported
-// (major >= 8) but outside the proven-absence domain (patch < 4), so
-// the clean zero-row answer stays unknown — T26-SRS-DROP-PROVEN-
-// ABSENT-EXECUTION-01.
+// E4b (R3): O1 in-domain + matching O2 witness + zero rows → proven
+// absence through the product loader — absent_refused, and the
+// reserved-range advisory never co-fires (PA-10a).
 func TestT26SRSR3ZeroRowProductLoader(t *testing.T) {
-	fx := &r3Fixture{version: "8.0.3-log", discoverVer: "8.0.36"}
+	fx := &r3Fixture{version: "8.0.36", discoverVer: "8.0.36"}
 	p := r3Harness(t, fx)
 	result, err := audit.AuditSQL(context.Background(), audit.Request{
 		SQL: r3SQL, Dialect: spec.DialectMySQL, TargetVersion: "8.0.36", MetadataProvider: p,
@@ -688,9 +685,9 @@ func TestT26SRSR3ZeroRowProductLoader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("audit: %v", err)
 	}
-	stmt := result.Statements[0]
-	r3S2(t, result, stmt,
-		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 4326)
+	r3OnlyFinding(t, result.Statements[0], "ddl.mysql.srs.drop.absent",
+		"spatial reference system 4326 does not exist",
+		map[string]any{"srid": uint32(4326), "outcome": "refused_absent"})
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 }
 
@@ -733,11 +730,10 @@ func TestT26SRSR3SRID0Request(t *testing.T) {
 	}
 }
 
-// E5.3: the authored max-uint32 SRID through the real loader —
-// exist(empty) deps([]) → unproven [E,D,P], findings absent.
-// Qo 8.0.3 keeps the zero-row answer outside the D-proof.
+// E5.3 (R3): max-uint32 SRID with a matching witness + zero rows →
+// proven absence — absent_refused.
 func TestT26SRSR3MaxSRIDRequest(t *testing.T) {
-	fx := &r3Fixture{version: "8.0.3-log", discoverVer: "8.0.36"}
+	fx := &r3Fixture{version: "8.0.36", discoverVer: "8.0.36"}
 	p := r3Harness(t, fx)
 	result, err := audit.AuditSQL(context.Background(), audit.Request{
 		SQL:     "DROP SPATIAL REFERENCE SYSTEM 4294967295;",
@@ -746,44 +742,35 @@ func TestT26SRSR3MaxSRIDRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("audit: %v", err)
 	}
-	stmt := result.Statements[0]
-	r3S2(t, result, stmt,
-		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 0)
+	r3OnlyFinding(t, result.Statements[0], "ddl.mysql.srs.drop.absent",
+		"spatial reference system 4294967295 does not exist",
+		map[string]any{"srid": uint32(4294967295), "outcome": "refused_absent"})
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 }
 
-// E5.4/E5.5/E5.6a–h (frozen exist(empty)/deps([]) form): every
-// reserved-range cell and boundary neighbour through the product
-// loader → unproven [E,D,P] with advisory present/absent per cell.
+// E5.4/E5.5/E5.6a–h (R3): every reserved-range cell and boundary
+// neighbour through the product loader — in-domain O1 + matching O2 +
+// zero rows → proven absence → absent_refused; the reserved-range
+// advisory never co-fires (PA-10a).
 func TestT26SRSR3ReservedCellsEmptyEvidence(t *testing.T) {
-	cells := []struct {
-		srid    uint32
-		advised bool
-	}{
-		{32767, true}, {32768, false}, // E5.4 / E5.5
-		{60000000, true}, {59999999, false}, {69999999, true}, {70000000, false}, // E5.6a–d
-		{2000000000, true}, {1999999999, false}, {2147483647, true}, {2147483648, false}, // E5.6e–h
+	cells := []uint32{
+		32767, 32768, // E5.4 / E5.5
+		60000000, 59999999, 69999999, 70000000, // E5.6a–d
+		2000000000, 1999999999, 2147483647, 2147483648, // E5.6e–h
 	}
-	for _, cell := range cells {
-		// Qo 8.0.3 — supported read outside the proven-absence domain —
-		// keeps every zero-row cell on the unproven arm.
-		fx := &r3Fixture{version: "8.0.3-log", discoverVer: "8.0.36"}
+	for _, srid := range cells {
+		fx := &r3Fixture{version: "8.0.36", discoverVer: "8.0.36"}
 		p := r3Harness(t, fx)
 		result, err := audit.AuditSQL(context.Background(), audit.Request{
-			SQL:     fmt.Sprintf("DROP SPATIAL REFERENCE SYSTEM %d;", cell.srid),
+			SQL:     fmt.Sprintf("DROP SPATIAL REFERENCE SYSTEM %d;", srid),
 			Dialect: spec.DialectMySQL, TargetVersion: "8.0.36", MetadataProvider: p,
 		})
 		if err != nil {
-			t.Fatalf("srid %d audit: %v", cell.srid, err)
+			t.Fatalf("srid %d audit: %v", srid, err)
 		}
-		stmt := result.Statements[0]
-		var wantReserved uint32
-		if cell.advised {
-			wantReserved = cell.srid
-		}
-		r3S2(t, result, stmt,
-			[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege},
-			wantReserved)
+		r3OnlyFinding(t, result.Statements[0], "ddl.mysql.srs.drop.absent",
+			fmt.Sprintf("spatial reference system %d does not exist", srid),
+			map[string]any{"srid": srid, "outcome": "refused_absent"})
 		r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 	}
 }
@@ -824,11 +811,11 @@ func TestT26SRSR3E10ObservedUnknown(t *testing.T) {
 	r3AssertReads(t, p, fx, 0, 0, 0, 0, 0, 1)
 }
 
-// E10.2: healthy observed + loader ver → audited unproven [E,D,P] +
-// exactly one reserved notice; unverified; review. Qo 8.0.3 keeps the
-// zero-row answer outside the proven-absence domain.
+// E10.2 (R3): healthy observed + matching loader witness → audited
+// proven absence — absent_refused (the request-level O1, not O2,
+// decides the absence domain).
 func TestT26SRSR3E10HealthyObserved(t *testing.T) {
-	fx := &r3Fixture{version: "8.0.3-log", discoverVer: "8.0.36-log"}
+	fx := &r3Fixture{version: "8.0.36-log", discoverVer: "8.0.36-log"}
 	p := r3Harness(t, fx)
 	result, err := audit.AuditSQL(context.Background(), audit.Request{
 		SQL: r3SQL, Dialect: spec.DialectMySQL, MetadataProvider: p,
@@ -836,9 +823,9 @@ func TestT26SRSR3E10HealthyObserved(t *testing.T) {
 	if err != nil {
 		t.Fatalf("audit: %v", err)
 	}
-	stmt := result.Statements[0]
-	r3S2(t, result, stmt,
-		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 4326)
+	r3OnlyFinding(t, result.Statements[0], "ddl.mysql.srs.drop.absent",
+		"spatial reference system 4326 does not exist",
+		map[string]any{"srid": uint32(4326), "outcome": "refused_absent"})
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 }
 

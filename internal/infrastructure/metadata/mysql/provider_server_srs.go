@@ -32,6 +32,7 @@ package mysqlmeta
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -80,42 +81,42 @@ func (p *Provider) loadMySQLServerObject(ctx context.Context, request spec.Objec
 	return snapshot, nil
 }
 
-// mysqlSRSCatalogSupport observes the server version once and
-// adjudicates the SRS catalog reads against it —
-// information_schema.ST_SPATIAL_REFERENCE_SYSTEMS and
-// ST_GEOMETRY_COLUMNS.SRS_ID are 8.0 surfaces (the SRS feature itself is
-// 8.0+; the 5.7 geometry-column surface carried a differently shaped
-// SRID member):
+// ErrSRSChannelVersionInconsistent marks the bounded consistency error
+// raised when the provider channel's own version observation (O2)
+// disagrees with the request-level observed identity (O1) — under a
+// proxy or topology split the two reads can land on different
+// backends, and a disagreement makes every catalog answer unsafe, so
+// the read fails closed instead of silently adjudicating with O2
+// (T26-SRS-VERSION-APPLICABILITY-01 EXECUTION-01 R3 frozen contract).
+var ErrSRSChannelVersionInconsistent = errors.New("mysql srs channel version inconsistent with the request-observed identity")
+
+// mysqlSRSChannelVersionWitness issues the channel's own
+// select version() as a CONSISTENCY WITNESS — never a second
+// adjudicator (frozen V1/R3). The request-level identity (O1) already
+// decided applicability; O2 may only confirm the channel answers the
+// same product+version, or fail closed:
 //
-//   - proven && !supported: the 8.0 catalog cannot hold this object —
-//     the dedicated queries are never issued and every fact stays
-//     unproven.
-//   - proven && supported: the catalog objects must exist — every
-//     query, scan, permission, driver, and cancellation error
-//     propagates (missing-object codes included).
-//   - !proven: the catalog may not exist — the reads are still issued
-//     and every returned error propagates; an unproven version never
-//     converts a query that already failed into "not loaded".
+//   - query/scan error → propagated wrapped on the bounded path;
+//   - empty answer or unparseable/mismatched banner →
+//     ErrSRSChannelVersionInconsistent;
+//   - matching banner → nil.
 //
-// The parsed provider version is also returned so the caller's
-// completeness proof evaluates the SAME Qo observation — one
-// select version() serves both the support gate and the proven-absence
-// domain proof (T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01). It is nil
-// whenever the banner could not be parsed or fails the product/range
-// checks; request-supplied versions never substitute for it.
-func mysqlSRSCatalogSupport(ctx context.Context, querier mysqlVersionQuerier) (supported bool, proven bool, version *spec.VersionIdentity, err error) {
+// O2 never substitutes for O1 and never relaxes the request verdict;
+// when O1 is absent the callers issue no query at all.
+func mysqlSRSChannelVersionWitness(ctx context.Context, querier mysqlVersionQuerier, o1 *spec.VersionIdentity) error {
 	var banner string
 	if err := querier.QueryRowContext(ctx, `select version()`).Scan(&banner); err != nil {
 		if err == sql.ErrNoRows {
-			return false, false, nil, nil
+			return fmt.Errorf("%w: channel observation unavailable", ErrSRSChannelVersionInconsistent)
 		}
-		return false, false, nil, fmt.Errorf("query server version for srs channels: %w", err)
+		return fmt.Errorf("query server version for srs channels: %w", err)
 	}
-	version = spec.ParseObservedVersion(banner)
-	if version == nil || !version.ValidatedRange || version.Product != spec.VersionProductMySQL {
-		return false, false, nil, nil
+	o2 := spec.ParseObservedVersion(banner)
+	if o2 == nil || o2.Product != o1.Product || o2.Version != o1.Version {
+		return fmt.Errorf("%w: request=%s/%s channel=%q",
+			ErrSRSChannelVersionInconsistent, o1.Product, o1.Version, banner)
 	}
-	return version.Major >= 8, true, version, nil
+	return nil
 }
 
 // loadMySQLSRSObject resolves one MySQL spatial reference system
@@ -147,13 +148,24 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 		return snapshot, nil
 	}
 	state.SRID = uint32(srid)
-	supported, proven, qoVersion, err := mysqlSRSCatalogSupport(ctx, p.db)
-	if err != nil {
-		return nil, err
-	}
-	if proven && !supported {
-		state.UnreadReason = spec.MetadataUnreadVersionInapplicable
+	// Single-authority binding (frozen V1/R3): the request-level observed
+	// identity (O1) decides applicability — a missing O1 means no
+	// authoritative version exists, so the call closes unproven with
+	// zero catalog reads and never falls back to an independent O2
+	// adjudication. An off-domain O1 names the exact version reason.
+	// Only an in-domain O1 reaches the witness check below, where O2
+	// can merely confirm or fail closed.
+	o1 := request.RequestVersion
+	if o1 == nil {
+		state.UnreadReason = spec.MetadataUnreadVersionUnproven
 		return snapshot, nil
+	}
+	if reason := spec.MySQLSRSVersionGateReason(o1, true); reason != "" {
+		state.UnreadReason = reason
+		return snapshot, nil
+	}
+	if err := mysqlSRSChannelVersionWitness(ctx, p.db, o1); err != nil {
+		return nil, err
 	}
 	var matchedID sql.NullInt64
 	var matchedName sql.NullString
@@ -203,9 +215,11 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 	} else {
 		state.Read = true
 		// Clean zero observed rows — a proven-absence fact only while
-		// the same Qo observation is inside the proven-absence domain;
-		// every other zero-row answer stays unknown (Absence=false).
-		state.Absence = spec.MySQLSRSDropAuditedDomain(qoVersion)
+		// the request-level identity is inside the proven-absence domain
+		// (O1 is the D-proof now — the witness only confirmed the
+		// channel); every other zero-row answer stays unknown
+		// (Absence=false).
+		state.Absence = spec.MySQLSRSDropAuditedDomain(o1)
 	}
 	// The conflict reads fire only on provable request identities —
 	// an authored spelling never reaches them.
@@ -295,21 +309,22 @@ func (p *Provider) loadMySQLSRSConflict(ctx context.Context, query string, args 
 }
 
 // ResolveMySQLSRSDependencies is the SRS ordered channel's deps-only
-// read (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01): the Qo support
-// gate plus the ST_GEOMETRY_COLUMNS witness read for one authored
-// SRID — the existence query is never issued on this path, and the
-// call is deliberately uncached so every consuming statement sees a
-// fresh witness. A proven-unsupported target short-circuits before
-// the catalog query and answers nil fact/nil error; an unparseable Qo
-// keeps the accepted continue direction (the deps read still issues);
-// query/iteration/close errors propagate wrapped.
-func (p *Provider) ResolveMySQLSRSDependencies(ctx context.Context, srid uint32) (*spec.SRSDependencyFact, error) {
-	supported, proven, _, err := mysqlSRSCatalogSupport(ctx, p.db)
-	if err != nil {
-		return nil, err
-	}
-	if proven && !supported {
+// read (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01), bound to the
+// request-level observed identity (R3 additive binding): a nil or
+// off-domain version means no authoritative O1 exists — zero catalog
+// reads and no fact rather than an independent provider adjudication.
+// An in-domain O1 still runs the channel witness; a disagreement or
+// observation failure propagates the bounded consistency error. The
+// ST_GEOMETRY_COLUMNS witness read for one authored SRID then runs —
+// the existence query is never issued on this path, and the call is
+// deliberately uncached so every consuming statement sees a fresh
+// witness. Query/iteration/close errors propagate wrapped.
+func (p *Provider) ResolveMySQLSRSDependencies(ctx context.Context, srid uint32, version *spec.VersionIdentity) (*spec.SRSDependencyFact, error) {
+	if version == nil || spec.MySQLSRSVersionGateReason(version, true) != "" {
 		return nil, nil
+	}
+	if err := mysqlSRSChannelVersionWitness(ctx, p.db, version); err != nil {
+		return nil, err
 	}
 	return p.loadMySQLSRSDependencies(ctx, uint64(srid))
 }

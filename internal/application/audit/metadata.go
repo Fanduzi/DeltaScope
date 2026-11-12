@@ -78,7 +78,7 @@ type MySQLServerDropPrivilegeLoader interface {
 // gate); query/iteration/close errors propagate and are never degraded
 // into empty facts.
 type MySQLSRSDependencyReader interface {
-	ResolveMySQLSRSDependencies(ctx context.Context, srid uint32) (*spec.SRSDependencyFact, error)
+	ResolveMySQLSRSDependencies(ctx context.Context, srid uint32, version *spec.VersionIdentity) (*spec.SRSDependencyFact, error)
 }
 
 // MetadataRequest describes one optional metadata-aware audit invocation.
@@ -451,7 +451,7 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 	if reader, ok := state.provider.(MySQLSRSDependencyReader); ok {
 		resolve := reader.ResolveMySQLSRSDependencies
 		state.srsDepsReader = func(ctx context.Context, srid uint32) (*spec.SRSDependencyFact, error) {
-			fact, err := resolve(ctx, srid)
+			fact, err := resolve(ctx, srid, resolvedVersion)
 			if err != nil {
 				return nil, metadataObjectReadError{cause: err}
 			}

@@ -28,10 +28,16 @@ func opDepsFixture(version string, deps testQueryResult) map[string]testQueryRes
 	}
 }
 
-func opResolveDeps(t *testing.T, results map[string]testQueryResult, srid uint32) (*spec.SRSDependencyFact, error) {
+func opResolveDeps(t *testing.T, results map[string]testQueryResult, srid uint32, version *spec.VersionIdentity) (*spec.SRSDependencyFact, error) {
 	t.Helper()
 	db := openTestDB(t, results)
-	return NewProvider(db).ResolveMySQLSRSDependencies(context.Background(), srid)
+	return NewProvider(db).ResolveMySQLSRSDependencies(context.Background(), srid, version)
+}
+
+// opObserved builds the request-level observed identity the caller
+// binds — O1 in the R3 single-authority contract.
+func opObserved(banner string) *spec.VersionIdentity {
+	return spec.ParseObservedVersion(banner)
 }
 
 func opNoExistRead(t *testing.T) {
@@ -45,7 +51,7 @@ func opNoExistRead(t *testing.T) {
 // healthy-empty result — non-nil fact, nil Columns, no Qexist.
 func TestT26SRSDepsReaderHealthyEmpty(t *testing.T) {
 	fact, err := opResolveDeps(t, opDepsFixture("8.0.36",
-		testQueryResult{columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}}), 100001)
+		testQueryResult{columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}}), 100001, opObserved("8.0.36"))
 	if err != nil {
 		t.Fatalf("ResolveMySQLSRSDependencies: %v", err)
 	}
@@ -70,7 +76,7 @@ func TestT26SRSDepsReaderPositiveWitness(t *testing.T) {
 			{"geo", "cities", "location"},
 			{"geo", "roads", "path"},
 		},
-	}), 100001)
+	}), 100001, opObserved("8.0.36"))
 	if err != nil {
 		t.Fatalf("ResolveMySQLSRSDependencies: %v", err)
 	}
@@ -91,20 +97,20 @@ func TestT26SRSDepsReaderPositiveWitness(t *testing.T) {
 	opNoExistRead(t)
 }
 
-// OP-4 direct-reader row: a proven-unsupported Qo banner (major < 8)
-// short-circuits at the support gate — nil fact, nil error, no deps
-// query, no exist query.
+// OP-4 direct-reader row (R3): an out-of-domain O1 closes before ANY
+// query — the request-level identity already adjudicated, so neither
+// the witness nor the deps read may issue. nil fact, nil error.
 func TestT26SRSDepsReaderProvenUnsupported(t *testing.T) {
 	fact, err := opResolveDeps(t, opDepsFixture("5.7.44",
-		testQueryResult{queryErr: errors.New("deps must not issue past the support gate")}), 100001)
+		testQueryResult{queryErr: errors.New("deps must not issue past the support gate")}), 100001, opObserved("5.7.44"))
 	if err != nil {
 		t.Fatalf("ResolveMySQLSRSDependencies: %v", err)
 	}
 	if fact != nil {
-		t.Fatalf("fact=%+v want nil — the support gate declined", fact)
+		t.Fatalf("fact=%+v want nil — the request gate declined", fact)
 	}
-	if got := t26Attempt(t, testSRSVersionFragment); got != 1 {
-		t.Fatalf("Qo attempts=%d want 1", got)
+	if got := t26Attempt(t, testSRSVersionFragment); got != 0 {
+		t.Fatalf("Qo attempts=%d want 0 — even the witness is suppressed off-domain", got)
 	}
 	if got := t26Attempt(t, testSRSDepFragment); got != 0 {
 		t.Fatalf("Qdeps attempts=%d want 0 — the gate declined before the catalog query", got)
@@ -112,23 +118,24 @@ func TestT26SRSDepsReaderProvenUnsupported(t *testing.T) {
 	opNoExistRead(t)
 }
 
-// OP-4 direct-reader row: an unparseable Qo banner keeps the accepted
-// continue direction — the deps read still issues (support is
-// unproven, not declined).
+// OP-4 direct-reader row (R3): an unparseable channel banner (O2) is
+// a bounded inconsistency — O2 can no longer adjudicate support, so a
+// disagreeing or unreadable O2 fails closed with
+// ErrSRSChannelVersionInconsistent and zero catalog reads.
 func TestT26SRSDepsReaderUnparseableQoContinues(t *testing.T) {
 	fact, err := opResolveDeps(t, opDepsFixture("unparseable-banner",
-		testQueryResult{columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}}), 100001)
-	if err != nil {
-		t.Fatalf("ResolveMySQLSRSDependencies: %v", err)
+		testQueryResult{columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}}), 100001, opObserved("8.0.36"))
+	if !errors.Is(err, ErrSRSChannelVersionInconsistent) {
+		t.Fatalf("err=%v want errors.Is(ErrSRSChannelVersionInconsistent)", err)
 	}
-	if fact == nil || len(fact.Columns) != 0 {
-		t.Fatalf("fact=%+v want healthy-empty", fact)
+	if fact != nil {
+		t.Fatalf("fact=%+v want nil — inconsistency never delivers a fact", fact)
 	}
 	if got := t26Attempt(t, testSRSVersionFragment); got != 1 {
-		t.Fatalf("Qo attempts=%d want 1", got)
+		t.Fatalf("Qo attempts=%d want 1 — the witness still issues", got)
 	}
-	if got := t26Attempt(t, testSRSDepFragment); got != 1 {
-		t.Fatalf("Qdeps attempts=%d want 1 — unproven support continues the read", got)
+	if got := t26Attempt(t, testSRSDepFragment); got != 0 {
+		t.Fatalf("Qdeps attempts=%d want 0 — inconsistency stops the catalog read", got)
 	}
 	opNoExistRead(t)
 }
@@ -144,7 +151,7 @@ func TestT26SRSDepsReaderErrorsPropagate(t *testing.T) {
 		results := opDepsFixture("8.0.36",
 			testQueryResult{columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}})
 		results[testSRSVersionFragment] = testQueryResult{queryErr: sentinel}
-		fact, err := opResolveDeps(t, results, 100001)
+		fact, err := opResolveDeps(t, results, 100001, opObserved("8.0.36"))
 		if !errors.Is(err, sentinel) {
 			t.Fatalf("err=%v want errors.Is(sentinel)", err)
 		}
@@ -161,7 +168,7 @@ func TestT26SRSDepsReaderErrorsPropagate(t *testing.T) {
 	})
 	t.Run("deps-query-error", func(t *testing.T) {
 		results := opDepsFixture("8.0.36", testQueryResult{queryErr: sentinel})
-		fact, err := opResolveDeps(t, results, 100001)
+		fact, err := opResolveDeps(t, results, 100001, opObserved("8.0.36"))
 		if !errors.Is(err, sentinel) {
 			t.Fatalf("err=%v want errors.Is(sentinel)", err)
 		}
@@ -182,7 +189,7 @@ func TestT26SRSDepsReaderErrorsPropagate(t *testing.T) {
 			rows:     [][]driver.Value{{"s", "t", "c"}},
 			rowErrAt: 1, rowErr: sentinel,
 		})
-		fact, err := opResolveDeps(t, results, 100001)
+		fact, err := opResolveDeps(t, results, 100001, opObserved("8.0.36"))
 		if !errors.Is(err, sentinel) {
 			t.Fatalf("err=%v want errors.Is(sentinel)", err)
 		}
@@ -202,7 +209,7 @@ func TestT26SRSDepsReaderErrorsPropagate(t *testing.T) {
 			columns:  []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"},
 			closeErr: sentinel,
 		})
-		fact, err := opResolveDeps(t, results, 100001)
+		fact, err := opResolveDeps(t, results, 100001, opObserved("8.0.36"))
 		if !errors.Is(err, sentinel) {
 			t.Fatalf("err=%v want errors.Is(sentinel)", err)
 		}

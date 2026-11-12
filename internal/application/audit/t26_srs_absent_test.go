@@ -22,6 +22,7 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+	mysqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql"
 )
 
 // paGap asserts exactly one evidence gap with the frozen owner,
@@ -142,21 +143,21 @@ func TestT26SRSAbsentPlainRefused(t *testing.T) {
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
 }
 
-// PA-1c/PA-8b: the ONLY changed input is the Qo banner — an
-// unparseable answer can never carry the completeness proof, so the
-// clean zero-row answer stays unknown: S2 [E,D] + privilege notice.
+// PA-1c/PA-8b (R3): an unparseable O2 banner can never witness the
+// request identity — the bounded consistency error propagates; the
+// witness ran once and zero catalog reads were issued.
 func TestT26SRSAbsentUnprovenQoStaysUnproven(t *testing.T) {
 	fx := r3PrivilegeFixture()
 	fx.srs = nil
 	fx.version = "unparseable"
 	p := r3Harness(t, fx)
-	result, err := r3PrivilegeRequest(t, p, "DROP SPATIAL REFERENCE SYSTEM 100001;")
-	if err != nil {
-		t.Fatalf("audit: %v", err)
+	_, err := r3PrivilegeRequest(t, p, "DROP SPATIAL REFERENCE SYSTEM 100001;")
+	if !errors.Is(err, mysqlmeta.ErrSRSChannelVersionInconsistent) {
+		t.Fatalf("audit err=%v want ErrSRSChannelVersionInconsistent", err)
 	}
-	r3S2Consumed(t, result.Statements[0],
-		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies}, 100001, false)
-	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
+	if fx.count["exist"] != 0 || fx.count["deps"] != 0 {
+		t.Fatalf("catalog reads exist/deps=%d/%d — a failed witness mints nothing", fx.count["exist"], fx.count["deps"])
+	}
 }
 
 // --- PA-2: plain / IF EXISTS × premise ----------------------------------------

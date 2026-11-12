@@ -16,6 +16,7 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+	mysqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql"
 )
 
 // srsCreateAdj returns the statement's SRSCreate adjudication — the
@@ -153,20 +154,20 @@ func TestT26SRSCreateOrReplacePresent(t *testing.T) {
 	}
 }
 
-// C7: unknown existence — an unparseable Qo banner strips the absence
-// proof, so the arm is unproven with the existence premise owed.
+// C7 (R3): an unparseable O2 banner can never witness the request
+// identity — the bounded consistency error propagates; the witness
+// ran once and no catalog read was issued.
 func TestT26SRSCreateUnknownExistence(t *testing.T) {
 	fx := opAbsentFixture(opGrantConsumable)
 	fx.version = "bogus"
 	provider, state := paRealState(t, fx)
-	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+	_, err := audit.EnrichSRSPrivErrForTest(t, state, provider,
 		"CREATE SPATIAL REFERENCE SYSTEM 900001 NAME 'n1' DEFINITION 'd'")
-	adj := srsCreateAdj(t, enriched[0])
-	if adj.Arm != spec.SRSCreateArmUnproven {
-		t.Fatalf("arm=%v want unproven", adj.Arm)
+	if !errors.Is(err, mysqlmeta.ErrSRSChannelVersionInconsistent) {
+		t.Fatalf("err=%v want ErrSRSChannelVersionInconsistent", err)
 	}
-	if len(adj.Owed) != 2 || adj.Owed[0] != spec.SRSFactExistence || adj.Owed[1] != spec.SRSFactNameConflict {
-		t.Fatalf("owed=%v want [srs.existence srs.name_conflict]", adj.Owed)
+	if fx.count["exist"] != 0 || fx.count["deps"] != 0 {
+		t.Fatalf("catalog reads exist/deps=%d/%d — a failed witness mints nothing", fx.count["exist"], fx.count["deps"])
 	}
 }
 
@@ -367,22 +368,20 @@ func TestT26SRSCreateReplaceMintsPresent(t *testing.T) {
 	paSameStale(t, staleAt[1], map[uint32]bool{4326: true}, "post-unproven-drop — its own apply mints stale")
 }
 
-// C18: an uncertain create arm (unproven existence) mints staleness —
-// the same-SRID DROP tail blocks with [B] and zero reads.
+// C18 (R3): an unparseable O2 banner fails the witness — the bounded
+// consistency error propagates on stmt1 before any apply, so nothing
+// is minted and no catalog read ran.
 func TestT26SRSCreateUnprovenMintsStale(t *testing.T) {
 	fx := opAbsentFixture(opGrantConsumable)
 	fx.version = "bogus"
 	provider, state := paRealState(t, fx)
-	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+	_, err := audit.EnrichSRSPrivErrForTest(t, state, provider,
 		"CREATE SPATIAL REFERENCE SYSTEM 900001 NAME 'n1' DEFINITION 'd';"+
 			"DROP SPATIAL REFERENCE SYSTEM 900001")
-	if arm := srsCreateAdj(t, enriched[0]).Arm; arm != spec.SRSCreateArmUnproven {
-		t.Fatalf("stmt1 arm=%v want unproven", arm)
+	if !errors.Is(err, mysqlmeta.ErrSRSChannelVersionInconsistent) {
+		t.Fatalf("err=%v want ErrSRSChannelVersionInconsistent", err)
 	}
-	if arm := paAdj(t, enriched[1]).Arm; arm != spec.SRSDropArmBlocked {
-		t.Fatalf("stmt2 arm=%v want blocked — uncertainty minted staleness", arm)
-	}
-	paSameStale(t, audit.BatchStateStaleSet(state), map[uint32]bool{900001: true}, "unproven minted stale")
+	paSameStale(t, audit.BatchStateStaleSet(state), map[uint32]bool{}, "failed witness mints no staleness")
 }
 
 // C19: refused and no-op arms write nothing — no stale mint, no
@@ -752,30 +751,21 @@ func TestT26SRSCreateGuardCorrectionMatrix(t *testing.T) {
 	}
 }
 
-// GC-2: existence unknown — an unparseable Qo banner strips the
-// absence proof — the IF NOT EXISTS keyword alone never upgrades the
-// statement to a no-op (C5 contract: unknown stays unknown).
+// GC-2 (R3): an unparseable O2 banner fails the witness — the bounded
+// consistency error propagates; IF NOT EXISTS can never reach a no-op
+// arm when the channel's own observation cannot confirm the request
+// identity.
 func TestT26SRSCreateGuardCorrectionExistenceUnknown(t *testing.T) {
 	fx := opAbsentFixture(opGrantConsumable)
 	fx.version = "bogus"
 	provider, state := paRealState(t, fx)
-	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+	_, err := audit.EnrichSRSPrivErrForTest(t, state, provider,
 		"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 900001 NAME 'n1' DEFINITION 'd'")
-	adj := srsCreateAdj(t, enriched[0])
-	if adj.Arm == spec.SRSCreateArmExistsNoop || adj.Arm == spec.SRSCreateArmOutcomeUnproven {
-		t.Fatalf("arm=%v — unknown existence must never reach a no-op arm", adj.Arm)
+	if !errors.Is(err, mysqlmeta.ErrSRSChannelVersionInconsistent) {
+		t.Fatalf("err=%v want ErrSRSChannelVersionInconsistent", err)
 	}
-	if adj.Arm != spec.SRSCreateArmUnproven {
-		t.Fatalf("arm=%v want unproven", adj.Arm)
-	}
-	found := false
-	for _, fact := range adj.Owed {
-		if fact == spec.SRSFactExistence {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatalf("owed=%v want srs.existence among the debts", adj.Owed)
+	if fx.count["exist"] != 0 || fx.count["deps"] != 0 {
+		t.Fatalf("catalog reads exist/deps=%d/%d — a failed witness mints nothing", fx.count["exist"], fx.count["deps"])
 	}
 }
 

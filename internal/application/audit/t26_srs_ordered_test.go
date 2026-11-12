@@ -24,6 +24,7 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+	mysqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql"
 )
 
 // opNoCapProvider is the OP-2g/OP-2h thin adapter — it exposes the
@@ -77,8 +78,8 @@ func (p *opTableProvider) ResolveObject(ctx context.Context, dialect spec.Dialec
 func (p *opTableProvider) LoadMySQLServerDropPrivilege(ctx context.Context, dialect spec.Dialect) (*spec.MySQLServerDropPrivilegeObservation, error) {
 	return p.inner.LoadMySQLServerDropPrivilege(ctx, dialect)
 }
-func (p *opTableProvider) ResolveMySQLSRSDependencies(ctx context.Context, srid uint32) (*spec.SRSDependencyFact, error) {
-	return p.inner.ResolveMySQLSRSDependencies(ctx, srid)
+func (p *opTableProvider) ResolveMySQLSRSDependencies(ctx context.Context, srid uint32, version *spec.VersionIdentity) (*spec.SRSDependencyFact, error) {
+	return p.inner.ResolveMySQLSRSDependencies(ctx, srid, version)
 }
 
 // opTableState mirrors paRealState with the accepted s.t table
@@ -367,22 +368,25 @@ func TestT26SRSOrderedDepsStaleBeforeFirstSRS(t *testing.T) {
 	r3AssertReads(t, inner, fx, 1, 1, 1, 1, 1, -1)
 }
 
-// OP-1g: an unparseable Qo banner can never carry the completeness
-// proof — S2 with the authored stale mint; no entry, full reads issued.
+// OP-1g (R3): an unparseable O2 banner fails the consistency witness —
+// the bounded error propagates; no entry, no stale mint, no catalog
+// reads beyond the single witness probe.
 func TestT26SRSOrderedUnparseableQo(t *testing.T) {
 	fx := opAbsentFixture(opGrantConsumable)
 	fx.version = "unparseable"
 	provider, state := paRealState(t, fx)
-	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+	_, err := audit.EnrichSRSPrivErrForTest(t, state, provider,
 		"DROP SPATIAL REFERENCE SYSTEM 100001;")
-	if arm := paAdj(t, enriched[0]).Arm; arm != spec.SRSDropArmUnproven {
-		t.Fatalf("arm=%v want unproven — unparseable Qo", arm)
+	if !errors.Is(err, mysqlmeta.ErrSRSChannelVersionInconsistent) {
+		t.Fatalf("err=%v want ErrSRSChannelVersionInconsistent", err)
 	}
 	if len(state.SRSOrderedSRIDs()) != 0 {
-		t.Fatal("S2 never mints an ordered entry")
+		t.Fatal("a failed witness never mints an ordered entry")
 	}
-	paSameStale(t, audit.BatchStateStaleSet(state), map[uint32]bool{100001: true}, "S2 minted stale")
-	r3AssertReads(t, provider, fx, 1, 1, 1, 1, 1, -1)
+	paSameStale(t, audit.BatchStateStaleSet(state), map[uint32]bool{}, "a failed witness mints no stale flag")
+	if fx.count["exist"] != 0 || fx.count["deps"] != 0 {
+		t.Fatalf("catalog reads exist/deps=%d/%d — a failed witness mints nothing", fx.count["exist"], fx.count["deps"])
+	}
 }
 
 // OP-1h: a same-SRID CREATE boundary ahead of the first DROP — the
@@ -997,69 +1001,45 @@ func TestT26SRSOrderedDepsErrorSameEnrich(t *testing.T) {
 // the provider unit rows (return values only) nor the synthetic
 // marker/adjudication units can stand in for:
 //
-//   - proven-unsupported Qo: the reader's support gate declines →
-//     (nil, nil); the ordered absence still consumes — marker bound,
-//     A arm, zero Qexist/Qdeps on the hit.
-//   - unparseable Qo: support unproven → the reader continues to a
-//     real deps fact; the same merge path adjudicates the ordered A.
+//   - R3: O2 can only witness the request identity — a drifted or
+//     unparseable mid-request answer is the bounded consistency error,
+//     never an adjudication input. The ordered entry minted by stmt1
+//     survives untouched.
 //
-// versionScript scripts the nth Qo attempt: stmt1's full-path bind
-// reads 8.0.36; stmt2's direct-reader Qo is the discriminating input.
-// The entry's provenance and the read vectors are asserted exactly.
+// versionScript scripts the nth witness attempt: stmt1's full-path
+// bind observes 8.0.36; stmt2's direct-reader witness is the
+// discriminating input.
 func TestT26SRSOrderedConsumerReaderVariants(t *testing.T) {
-	t.Run("unsupported-qo-nil-fact", func(t *testing.T) {
+	t.Run("drifted-o2-bounded-error", func(t *testing.T) {
 		fx := opAbsentFixture(opGrantConsumable)
 		fx.versionScript = []string{"8.0.36", "5.7.44"}
 		provider, state := paRealState(t, fx)
-		enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+		_, err := audit.EnrichSRSPrivErrForTest(t, state, provider,
 			"DROP SPATIAL REFERENCE SYSTEM 100001;"+
 				"DROP SPATIAL REFERENCE SYSTEM 100001;")
-		if arm := paAdj(t, enriched[0]).Arm; arm != spec.SRSDropArmAbsentRefused {
-			t.Fatalf("stmt1 arm=%v want absent_refused (8.0.36 full-path A)", arm)
+		if !errors.Is(err, mysqlmeta.ErrSRSChannelVersionInconsistent) {
+			t.Fatalf("err=%v want ErrSRSChannelVersionInconsistent — drifted O2 is a witness failure", err)
 		}
-		bound2 := opSRS(t, enriched[1])
-		if !bound2.OrderedAbsent {
-			t.Fatal("stmt2 must consume the ordered absence — nil fact still commits the ordered branch")
-		}
-		if bound2.Dependencies != nil {
-			t.Fatalf("nil fact must bind nil Dependencies, got %+v", bound2.Dependencies)
-		}
-		if arm := paAdj(t, enriched[1]).Arm; arm != spec.SRSDropArmAbsentRefused {
-			t.Fatalf("stmt2 arm=%v want absent_refused — ordered A consumes with a nil witness", arm)
-		}
-		// stmt1 Δ(1,1,1,1) + stmt2 direct attempt Δ(1,0,0,1) — the
-		// support gate declined before the deps query; Qexist stayed
-		// skipped-by-ordered.
-		r3AssertReads(t, provider, fx, 2, 1, 1, 2, 1, -1)
 		entry := opEntry(t, state, 100001)
 		if !entry.Absent || entry.Barrier || entry.SourceArm != spec.SRSDropArmAbsentRefused {
-			t.Fatalf("entry=%+v want unchanged provenance", entry)
+			t.Fatalf("entry=%+v want stmt1's provenance unchanged", entry)
 		}
 	})
 
-	t.Run("unparseable-qo-deps-fact", func(t *testing.T) {
+	t.Run("unparseable-o2-bounded-error", func(t *testing.T) {
 		fx := opAbsentFixture(opGrantConsumable)
 		fx.versionScript = []string{"8.0.36", "unparseable-banner"}
 		provider, state := paRealState(t, fx)
-		enriched := audit.EnrichSRSPrivForTest(t, state, provider,
+		_, err := audit.EnrichSRSPrivErrForTest(t, state, provider,
 			"DROP SPATIAL REFERENCE SYSTEM 100001;"+
 				"DROP SPATIAL REFERENCE SYSTEM 100001;")
-		if arm := paAdj(t, enriched[0]).Arm; arm != spec.SRSDropArmAbsentRefused {
-			t.Fatalf("stmt1 arm=%v want absent_refused", arm)
+		if !errors.Is(err, mysqlmeta.ErrSRSChannelVersionInconsistent) {
+			t.Fatalf("err=%v want ErrSRSChannelVersionInconsistent — unparseable O2 is a witness failure", err)
 		}
-		bound2 := opSRS(t, enriched[1])
-		if !bound2.OrderedAbsent {
-			t.Fatal("stmt2 must be ordered-served")
+		entry := opEntry(t, state, 100001)
+		if !entry.Absent || entry.Barrier || entry.SourceArm != spec.SRSDropArmAbsentRefused {
+			t.Fatalf("entry=%+v want stmt1's provenance unchanged", entry)
 		}
-		if bound2.Dependencies == nil {
-			t.Fatal("unparseable Qo continues the deps read — a real (empty) fact must bind")
-		}
-		if arm := paAdj(t, enriched[1]).Arm; arm != spec.SRSDropArmAbsentRefused {
-			t.Fatalf("stmt2 arm=%v want absent_refused — empty witness, ordered A", arm)
-		}
-		// stmt1 Δ(1,1,1,1) + stmt2 direct Δ(1,0,1,1) — support unproven
-		// continues the read.
-		r3AssertReads(t, provider, fx, 2, 1, 2, 2, 1, -1)
 	})
 }
 

@@ -199,6 +199,10 @@ func (s *batchState) bindMySQLSRS(ctx context.Context, statement spec.Statement)
 	lookup := spec.ObjectLookupRequest{
 		Type: "mysql_spatial_reference_system",
 		Name: decl.SRIDName(),
+		// The request-level observed identity (O1) rides the request so
+		// the provider's channel version can only witness, never
+		// adjudicate (frozen V1/R3 additive binding).
+		RequestVersion: s.resolvedVersion,
 	}
 	// The CREATE family qualifies its conflict reads with the authored
 	// NAME / ORGANIZATION+IDENTIFIED BY identities — the spellings the

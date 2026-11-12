@@ -22,8 +22,9 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
-func t26SRSRequest(srid string) spec.ObjectLookupRequest {
-	return spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: srid}
+func t26SRSRequest(srid string, o1 string) spec.ObjectLookupRequest {
+	return spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: srid,
+		RequestVersion: spec.ParseObservedVersion(o1)}
 }
 
 func t26SRSAbsenceFixture(version string, exist testQueryResult) map[string]testQueryResult {
@@ -47,7 +48,7 @@ func t26ResolveCtx(ctx context.Context, t *testing.T, results map[string]testQue
 func TestT26SRSAbsenceSuppliedInDomain(t *testing.T) {
 	snapshot, err := t26Resolve(t, t26SRSAbsenceFixture("8.0.36",
 		testQueryResult{columns: []string{"SRS_ID", "SRS_NAME"}}),
-		spec.DialectMySQL, t26SRSRequest("100001"))
+		spec.DialectMySQL, t26SRSRequest("100001", "8.0.36"))
 	if err != nil {
 		t.Fatalf("ResolveObject: %v", err)
 	}
@@ -78,7 +79,7 @@ func t26Attempt(t *testing.T, fragment string) int {
 func TestT26SRSAbsenceSuppliedInDomain804(t *testing.T) {
 	snapshot, err := t26Resolve(t, t26SRSAbsenceFixture("8.0.4",
 		testQueryResult{columns: []string{"SRS_ID", "SRS_NAME"}}),
-		spec.DialectMySQL, t26SRSRequest("100001"))
+		spec.DialectMySQL, t26SRSRequest("100001", "8.0.4"))
 	if err != nil {
 		t.Fatalf("ResolveObject: %v", err)
 	}
@@ -97,46 +98,47 @@ func TestT26SRSAbsenceSuppliedInDomain804(t *testing.T) {
 	}
 }
 
-// R2-A1: a parseable, supported MySQL banner OUTSIDE the 8.0.x proven-
-// absence domain — Qo=8.4.3 satisfies D-support (Major>=8) so the
-// reads still issue, but the D-proof (8.0.4+) fails, so a clean
-// zero-observed-row answer stays unknown (Absence=false). This row
-// separates the support gate from the completeness domain.
+// R2-A1 (R3): an out-of-domain O1 — 8.4.3 is outside the registered
+// 8.0.4+ audited domain — closes the call before ANY query: no
+// witness, no catalog read, UnreadReason=version_inapplicable.
 func TestT26SRSAbsenceNotSuppliedSupportedNon80(t *testing.T) {
 	snapshot, err := t26Resolve(t, t26SRSAbsenceFixture("8.4.3",
 		testQueryResult{columns: []string{"SRS_ID", "SRS_NAME"}}),
-		spec.DialectMySQL, t26SRSRequest("100001"))
+		spec.DialectMySQL, t26SRSRequest("100001", "8.4.3"))
 	if err != nil {
 		t.Fatalf("ResolveObject: %v", err)
 	}
 	state := snapshot.SpatialReference
-	if state == nil || !state.Read || state.Exists || state.Absence {
-		t.Fatalf("srs state = %+v, want read + unknown — D-support held, D-proof did not", state)
+	if state == nil || state.Read || state.UnreadReason != spec.MetadataUnreadVersionInapplicable {
+		t.Fatalf("srs state = %+v, want unread version_inapplicable — O1 owns the domain verdict", state)
 	}
-	if got := t26Attempt(t, testSRSVersionFragment); got != 1 {
-		t.Fatalf("Qo attempts=%d want 1", got)
+	if got := t26Attempt(t, testSRSVersionFragment); got != 0 {
+		t.Fatalf("Qo attempts=%d want 0 — even the witness is suppressed off-domain", got)
 	}
-	if got := t26Attempt(t, testSRSIdentityFragment); got != 1 {
-		t.Fatalf("Qexist attempts=%d want 1 — supported versions still read", got)
+	if got := t26Attempt(t, testSRSIdentityFragment); got != 0 {
+		t.Fatalf("Qexist attempts=%d want 0", got)
 	}
-	if got := t26Attempt(t, testSRSDepFragment); got != 1 {
-		t.Fatalf("Qdeps attempts=%d want 1", got)
+	if got := t26Attempt(t, testSRSDepFragment); got != 0 {
+		t.Fatalf("Qdeps attempts=%d want 0", got)
 	}
 }
 
-// PA-9e: a clean zero-observed-row answer under an unparseable Qo
-// banner — the D-proof never holds, so Absence stays false and the
-// answer remains unknown (the S2 outcome is the api/enrich twin).
+// PA-9e (R3): a missing O1 — a standalone SRS call with no request-
+// level observed identity — closes unproven with zero reads; the
+// provider never falls back to its own version adjudication.
 func TestT26SRSAbsenceNotSuppliedUnprovenVersion(t *testing.T) {
 	snapshot, err := t26Resolve(t, t26SRSAbsenceFixture("unparseable",
-		testQueryResult{columns: []string{"SRS_ID", "SRS_NAME"}}),
-		spec.DialectMySQL, t26SRSRequest("100001"))
+		testQueryResult{queryErr: errors.New("no query may issue without O1")}),
+		spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "100001"})
 	if err != nil {
 		t.Fatalf("ResolveObject: %v", err)
 	}
 	state := snapshot.SpatialReference
-	if state == nil || !state.Read || state.Exists || state.Absence {
-		t.Fatalf("srs state = %+v, want {Read:true,Exists:false,Absence:false}", state)
+	if state == nil || state.Read || state.UnreadReason != spec.MetadataUnreadVersionUnproven {
+		t.Fatalf("srs state = %+v, want unread version_unproven", state)
+	}
+	if total := len(testQueryCallsByName(testStubName(t))); total != 0 {
+		t.Fatalf("missing O1 issued %d queries — zero reads is the contract", total)
 	}
 }
 
@@ -146,7 +148,7 @@ func TestT26SRSAbsenceNotSuppliedUnprovenVersion(t *testing.T) {
 func TestT26SRSAbsenceEOFFterPositiveRow(t *testing.T) {
 	snapshot, err := t26Resolve(t, t26SRSAbsenceFixture("8.0.36",
 		testQueryResult{columns: []string{"SRS_ID", "SRS_NAME"}, rows: [][]driver.Value{{int64(100001), "ZZTEST"}}}),
-		spec.DialectMySQL, t26SRSRequest("100001"))
+		spec.DialectMySQL, t26SRSRequest("100001", "8.0.36"))
 	if err != nil {
 		t.Fatalf("ResolveObject: %v", err)
 	}
@@ -180,7 +182,7 @@ func t26AssertSeams(t *testing.T, wantQo, wantExist, wantDeps int) {
 func TestT26SRSAbsenceQueryErrNoRowsPropagates(t *testing.T) {
 	snapshot, err := t26Resolve(t, t26SRSAbsenceFixture("8.0.36",
 		testQueryResult{columns: []string{"SRS_ID", "SRS_NAME"}, queryErr: sql.ErrNoRows}),
-		spec.DialectMySQL, t26SRSRequest("100001"))
+		spec.DialectMySQL, t26SRSRequest("100001", "8.0.36"))
 	if !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("err = %v, want errors.Is(sql.ErrNoRows) — an ErrNoRows-valued failure never supplies absence", err)
 	}
@@ -196,7 +198,7 @@ func TestT26SRSAbsenceQueryErrNoRowsPropagates(t *testing.T) {
 func TestT26SRSAbsenceIterationErrNoRowsPropagates(t *testing.T) {
 	snapshot, err := t26Resolve(t, t26SRSAbsenceFixture("8.0.36",
 		testQueryResult{columns: []string{"SRS_ID", "SRS_NAME"}, rowErrAt: 0, rowErr: sql.ErrNoRows}),
-		spec.DialectMySQL, t26SRSRequest("100001"))
+		spec.DialectMySQL, t26SRSRequest("100001", "8.0.36"))
 	if !errors.Is(err, sql.ErrNoRows) {
 		t.Fatalf("err = %v, want errors.Is(sql.ErrNoRows) — iteration sentinel never supplies absence", err)
 	}
@@ -211,7 +213,7 @@ func TestT26SRSAbsenceQueryErrorPropagates(t *testing.T) {
 	want := errors.New("srs existence read denied")
 	snapshot, err := t26Resolve(t, t26SRSAbsenceFixture("8.0.36",
 		testQueryResult{columns: []string{"SRS_ID", "SRS_NAME"}, queryErr: want}),
-		spec.DialectMySQL, t26SRSRequest("100001"))
+		spec.DialectMySQL, t26SRSRequest("100001", "8.0.36"))
 	if !errors.Is(err, want) {
 		t.Fatalf("err = %v, want errors.Is(%v)", err, want)
 	}
@@ -227,7 +229,7 @@ func TestT26SRSAbsenceIterationErrorPropagates(t *testing.T) {
 	want := errors.New("srs existence rowset lost")
 	snapshot, err := t26Resolve(t, t26SRSAbsenceFixture("8.0.36",
 		testQueryResult{columns: []string{"SRS_ID", "SRS_NAME"}, rowErrAt: 0, rowErr: want}),
-		spec.DialectMySQL, t26SRSRequest("100001"))
+		spec.DialectMySQL, t26SRSRequest("100001", "8.0.36"))
 	if !errors.Is(err, want) {
 		t.Fatalf("err = %v, want errors.Is(%v)", err, want)
 	}
@@ -247,7 +249,7 @@ func TestT26SRSAbsenceCloseErrorPropagates(t *testing.T) {
 	want := errors.New("srs existence close failed")
 	snapshot, err := t26Resolve(t, t26SRSAbsenceFixture("8.0.36",
 		testQueryResult{columns: []string{"SRS_ID", "SRS_NAME"}, closeErr: want}),
-		spec.DialectMySQL, t26SRSRequest("100001"))
+		spec.DialectMySQL, t26SRSRequest("100001", "8.0.36"))
 	if !errors.Is(err, want) {
 		t.Fatalf("err = %v, want errors.Is(%v)", err, want)
 	}
@@ -264,7 +266,7 @@ func TestT26SRSAbsencePreCancelledRequestPropagates(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	snapshot, err := t26ResolveCtx(ctx, t, t26SRSAbsenceFixture("8.0.36",
-		testQueryResult{columns: []string{"SRS_ID", "SRS_NAME"}}), t26SRSRequest("100001"))
+		testQueryResult{columns: []string{"SRS_ID", "SRS_NAME"}}), t26SRSRequest("100001", "8.0.36"))
 	if err == nil || !strings.Contains(err.Error(), "context") {
 		t.Fatalf("err = %v, want the cancellation propagated", err)
 	}
@@ -301,7 +303,7 @@ func TestT26SRSAbsenceMidIterationCancelPropagates(t *testing.T) {
 	}
 	done := make(chan outcome, 1)
 	go func() {
-		snapshot, err := provider.ResolveObject(ctx, spec.DialectMySQL, t26SRSRequest("100001"))
+		snapshot, err := provider.ResolveObject(ctx, spec.DialectMySQL, t26SRSRequest("100001", "8.0.36"))
 		done <- outcome{snapshot, err}
 	}()
 	// Bounded wait for the actual Next() entry handshake — this is the
@@ -342,7 +344,7 @@ func TestT26SRSAbsenceDepsErrorPropagates(t *testing.T) {
 		testSRSVersionFragment:  t26VersionRow("8.0.36"),
 		testSRSIdentityFragment: {columns: []string{"SRS_ID", "SRS_NAME"}},
 		testSRSDepFragment:      {columns: []string{"TABLE_SCHEMA", "TABLE_NAME", "COLUMN_NAME"}, queryErr: want},
-	}, spec.DialectMySQL, t26SRSRequest("100001"))
+	}, spec.DialectMySQL, t26SRSRequest("100001", "8.0.36"))
 	if !errors.Is(err, want) {
 		t.Fatalf("err = %v, want errors.Is(%v)", err, want)
 	}

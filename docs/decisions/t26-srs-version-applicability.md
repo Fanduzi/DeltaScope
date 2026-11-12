@@ -43,3 +43,55 @@ proven banners, and the former providerless-pin S2 cells assert the
 `version_unproven` boundary. ER2 (provider-internal O2 observation)
 awaits a technical-proposal adjudication before any Provider contract
 change.
+
+## ER2 correction (reviewer-approved O-E/O-A design, R3)
+
+One request must use one authoritative identity from version
+observation to catalog query. The approved design binds O1 into every
+SRS read and demotes the provider-internal observation (O2) to a
+consistency witness:
+
+- `spec.ObjectLookupRequest` gains the additive
+  `RequestVersion *VersionIdentity` field — `bindMySQLSRS` stamps the
+  request's `resolvedVersion` on every SRS object lookup (existence,
+  NAME conflict, ORGANIZATION+ID conflict all ride one request), and
+  `enrichOrderedStatements` passes the same `resolvedVersion` into
+  `MySQLSRSDependencyReader.ResolveMySQLSRSDependencies(ctx, srid,
+  version)` for ordered SRS DROP dependency reads. Non-SRS consumers
+  see nil and keep prior behavior.
+- `loadMySQLSRSObject` adjudicates O1 first: nil O1 →
+  `version_unproven` with zero queries (not even the version probe);
+  off-domain O1 → the exact gate reason with zero queries. Only an
+  in-domain O1 reaches `mysqlSRSChannelVersionWitness`, which issues
+  `select version()` and admits catalog reads solely when O2's parsed
+  product+version equals O1's. `sql.ErrNoRows`, an unparseable
+  banner, or a disagreement fails closed with
+  `ErrSRSChannelVersionInconsistent`; a real query error propagates
+  wrapped — an O2 observation error can never surface as an empty
+  catalog answer. `Absence` is now supplied from O1
+  (`MySQLSRSDropAuditedDomain(o1)`), never from O2.
+- `ResolveMySQLSRSDependencies` applies the identical order: nil or
+  off-domain version → nil fact and zero queries; in-domain → witness
+  then dependency read.
+
+### Public contract
+
+- `ErrSRSChannelVersionInconsistent` — the bounded consistency error
+  marking proxy/topology split or backend drift; exported for
+  `errors.Is` assertions. It is never an adjudication input.
+- `MySQLSRSDependencyReader` signature gains `version
+  *spec.VersionIdentity` (the approved additive supply binding —
+  limited to the SRS request supply contract, not a generic version
+  framework).
+
+### Verification
+
+- Provider matrix `TestT26SRSR3ChannelWitnessMatrix`: O1=8.0.46 ×
+  O2 {8.0.46 match; 8.4.10/5.7.44 mismatch; unparseable; empty;
+  query-error} — witness fires once, zero catalog reads on failure,
+  no existence/dependency fact minted.
+- `TestT26SRSVersionGate` missing-O1 cell: zero queries of any kind;
+  off-domain O1 cells (5.7.44, 8.0.3, 8.4.x) name the exact reason.
+- Application cells: mid-request O2 drift (`versionScript`)
+  propagates the bounded error while stmt1's ordered entry survives;
+  own-apply stale/barrier cells unchanged.

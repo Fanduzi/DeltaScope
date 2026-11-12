@@ -812,6 +812,13 @@ type ObjectLookupRequest struct {
 	Type       string
 	Name       string
 	Qualifiers map[string]string
+	// RequestVersion carries the request-level OBSERVED version identity
+	// the caller already adjudicated for this object's family — the SRS
+	// family binds it so the provider channel's own version query can
+	// only act as a consistency witness, never a second adjudicator
+	// (T26-SRS-VERSION-APPLICABILITY-01 frozen V1/R3 additive binding).
+	// Other families leave it nil and keep their existing checks.
+	RequestVersion *VersionIdentity
 }
 
 // Object-lookup qualifier keys for the T26/#105 SERVER/SRS fact reads.

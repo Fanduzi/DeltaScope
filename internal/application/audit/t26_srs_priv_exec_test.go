@@ -312,21 +312,20 @@ func TestT26SRSPrivP2Consumable(t *testing.T) {
 	t.Logf("P2 serialized public result: %s", blob)
 }
 
-// P3: E=zero rows — consumable still discharges P; [E,D]. The Qo
-// banner 8.0.3 stays outside the proven-absence domain so the zero-row
-// answer remains unknown — T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01.
+// P3 (R3): E=zero rows with a matching witness → proven absence —
+// absent_refused (O1 decides the absence domain; consumable privilege
+// never reaches the refused branch).
 func TestT26SRSPrivP3ConsumableZeroRowExistence(t *testing.T) {
 	fx := r3PrivilegeFixture()
-	fx.srs = nil             // zero-row existence answer
-	fx.version = "8.0.3-log" // Qo outside the D-proof
+	fx.srs = nil // zero-row existence answer under a matching O2 witness
 	p := r3Harness(t, fx)
 	result, err := r3PrivilegeRequest(t, p, "DROP SPATIAL REFERENCE SYSTEM 100001;")
 	if err != nil {
 		t.Fatalf("audit: %v", err)
 	}
-	r3S2Consumed(t, result.Statements[0],
-		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies}, 100001, false)
-	r3Aggregate(t, result, report.CoverageUnverified)
+	r3OnlyFinding(t, result.Statements[0], "ddl.mysql.srs.drop.absent",
+		"spatial reference system 100001 does not exist",
+		map[string]any{"srid": uint32(100001), "outcome": "refused_absent"})
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 1, 1)
 }
 

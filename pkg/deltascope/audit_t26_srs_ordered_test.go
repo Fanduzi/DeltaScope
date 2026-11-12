@@ -816,7 +816,7 @@ func (p *opAppCapableProvider) LoadMySQLServerDropPrivilege(_ context.Context, _
 	}, nil
 }
 
-func (p *opAppCapableProvider) ResolveMySQLSRSDependencies(_ context.Context, srid uint32) (*spec.SRSDependencyFact, error) {
+func (p *opAppCapableProvider) ResolveMySQLSRSDependencies(_ context.Context, srid uint32, _ *spec.VersionIdentity) (*spec.SRSDependencyFact, error) {
 	p.depsCalls++
 	if srid != 100001 {
 		return nil, nil
