@@ -98,6 +98,30 @@ func alterInstanceFormToken(form spec.AlterInstanceForm) string {
 	return "reload_tls"
 }
 
+// alterInstanceExplanation is the per-feature public prose: every form
+// explains only its own premise and its own variant semantics — the
+// RELOAD TLS forms never mention keyring, ROTATE never mentions TLS
+// context or NO ROLLBACK (the audit may stay silent about what it
+// cannot prove, but it must never mis-describe what it cannot prove).
+func alterInstanceExplanation(form spec.AlterInstanceForm, noRollback bool) (premise, why, risk, suggestion string) {
+	if form == spec.AlterInstanceFormRotateInnodbMasterKey {
+		premise = "keyring"
+		why = "The keyring-backend premise this form needs has no proven supplier, and a successful return code never proves the rotation took effect."
+		risk = "The InnoDB master key may or may not have rotated — the outcome stays bounded by the owed facts."
+		suggestion = "Confirm the result against the server's own keyring observables; the audit reports only what is provable."
+		return premise, why, risk, suggestion
+	}
+	premise = "TLS-context"
+	why = "The TLS-context premise this form needs has no proven supplier, and a successful return code never proves the reload took effect."
+	risk = "The TLS surface may be unchanged or refreshed, or the reload may have failed while retaining the old context — the outcome stays bounded by the owed facts."
+	if noRollback {
+		why += " The NO ROLLBACK ON ERROR variant can report success while suppressing the failure, so the TLS surface may have been dropped or left partially applied."
+		risk = "The TLS surface may be unchanged or refreshed, or the suppressed failure may have dropped TLS capability entirely — the outcome stays bounded by the owed facts."
+	}
+	suggestion = "Confirm the result against the server's own TLS observables; the audit reports only what is provable."
+	return premise, why, risk, suggestion
+}
+
 // alterInstanceEvaluate is the shared per-form evaluation: the blocked
 // arm fires a notice that an earlier batch statement contaminated the
 // premise surface; the unproven arm fires the bounded-outcome notice —
@@ -106,8 +130,10 @@ func alterInstanceFormToken(form spec.AlterInstanceForm) string {
 func alterInstanceEvaluate(statement spec.Statement, level rule.Level, form spec.AlterInstanceForm) []rule.Finding {
 	adjudication := alterInstanceAdjudicationFor(statement)
 	metadata := alterInstanceMetadata(statement, adjudication)
+	decl := statement.DDL.AlterInstance
+	premise, why, risk, suggestion := alterInstanceExplanation(form, decl.NoRollbackOnError)
 	name := "ALTER INSTANCE RELOAD TLS"
-	if statement.DDL.AlterInstance.NoRollbackOnError {
+	if decl.NoRollbackOnError {
 		name = "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR"
 	}
 	if form == spec.AlterInstanceFormRotateInnodbMasterKey {
@@ -118,7 +144,7 @@ func alterInstanceEvaluate(statement spec.Statement, level rule.Level, form spec
 			Level:   level,
 			Message: name + " blocked — an earlier statement may have mutated the instance surface",
 			Explanation: &rule.FindingExplanation{
-				Why:        "A preceding batch statement ran the ALTER INSTANCE apply, so the TLS-context or keyring premise this statement would read may be stale — the bind is blocked before reading it.",
+				Why:        "A preceding batch statement ran the ALTER INSTANCE apply, so the " + premise + " premise this statement would read may be stale — the bind is blocked before reading it.",
 				Risk:       "The outcome cannot be bounded against the pre-state — the batch-effects evidence is owed.",
 				Suggestion: "Audit the statement in its own batch so the instance premise is read before any mutation.",
 			},
@@ -129,9 +155,9 @@ func alterInstanceEvaluate(statement spec.Statement, level rule.Level, form spec
 		Level:   level,
 		Message: name + " audited — outcome unproven",
 		Explanation: &rule.FindingExplanation{
-			Why:        "The instance premise this form needs (a usable TLS context / a loaded keyring backend) has no proven supplier, and a successful return code never proves the operation took effect — the NO ROLLBACK variant makes even that signal weaker.",
-			Risk:       "The statement may have run, failed silently, or taken partial effect — the outcome stays bounded by the owed facts.",
-			Suggestion: "Confirm the result against the server's own observables (TLS status / keyring state); the audit reports only what is provable.",
+			Why:        why,
+			Risk:       risk,
+			Suggestion: suggestion,
 		},
 		Metadata: metadata,
 	}}

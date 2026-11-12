@@ -299,6 +299,82 @@ func TestT26AlterInstancePrivilegeSupplyGate(t *testing.T) {
 	}
 }
 
+// ER1: every form's public prose explains only its own premise and its
+// own variant semantics — RELOAD TLS never mentions keyring, ROTATE
+// never mentions TLS context or NO ROLLBACK, and only the variant
+// member carries the suppression semantics. The audit may stay silent
+// about what it cannot prove; it must never mis-describe it.
+func TestT26AlterInstanceExplanationIsolation(t *testing.T) {
+	publicText := func(sql string, provider MetadataProvider) string {
+		enriched := enrichT26Premise(t, sql, provider, spec.PrivilegeAuditMode(""))
+		result := EvaluateEnrichedForTest(t, enriched)
+		var b strings.Builder
+		for _, s := range result.Statements {
+			for _, f := range s.Findings {
+				b.WriteString(f.Message)
+				b.WriteString("\n")
+				if f.Explanation != nil {
+					b.WriteString(f.Explanation.Why)
+					b.WriteString("\n")
+					b.WriteString(f.Explanation.Risk)
+					b.WriteString("\n")
+					b.WriteString(f.Explanation.Suggestion)
+					b.WriteString("\n")
+				}
+			}
+		}
+		return b.String()
+	}
+	assertFree := func(sql, text string, banned []string) {
+		t.Helper()
+		lower := strings.ToLower(text)
+		for _, needle := range banned {
+			if strings.Contains(lower, strings.ToLower(needle)) {
+				t.Fatalf("%q: public prose leaks %q:\n%s", sql, needle, text)
+			}
+		}
+	}
+
+	provider := aiProvider("8.0.46", nil)
+	reload := publicText("ALTER INSTANCE RELOAD TLS", provider)
+	assertFree("reload", reload, []string{"keyring", "rotate", "no_rollback", "no rollback"})
+	if !strings.Contains(reload, "TLS") {
+		t.Fatalf("reload prose must explain its TLS-context premise:\n%s", reload)
+	}
+
+	variant := publicText("ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR", provider)
+	assertFree("reload no-rollback", variant, []string{"keyring", "rotate"})
+	if !strings.Contains(variant, "NO ROLLBACK") || !strings.Contains(variant, "TLS") {
+		t.Fatalf("variant prose must explain TLS-context plus suppression:\n%s", variant)
+	}
+
+	rotate := publicText("ALTER INSTANCE ROTATE INNODB MASTER KEY", provider)
+	assertFree("rotate", rotate, []string{"TLS", "reload", "no_rollback", "no rollback"})
+	if !strings.Contains(rotate, "keyring") {
+		t.Fatalf("rotate prose must explain its keyring premise:\n%s", rotate)
+	}
+
+	// The blocked arm is form-scoped too: a ROTATE blocked behind an
+	// earlier RELOAD mutation must not claim a TLS premise.
+	stmts, failures := parseT26(t,
+		"ALTER INSTANCE RELOAD TLS; ALTER INSTANCE ROTATE INNODB MASTER KEY")
+	state := newBatchState(spec.DialectMySQL, "golden", aiProvider("8.0.46", nil))
+	state.SeedResolvedVersion(&spec.VersionIdentity{
+		Product: spec.VersionProductMySQL, Major: 8, Minor: 0, Patch: 46, ValidatedRange: true,
+	})
+	enriched := enrichSlice(t, state,
+		aiProvider("8.0.46", nil), spec.PrivilegeAuditMode(""), stmts, failures)
+	result := EvaluateEnrichedForTest(t, enriched)
+	var b strings.Builder
+	for _, f := range result.Statements[1].Findings {
+		b.WriteString(f.Message + "\n")
+		if f.Explanation != nil {
+			b.WriteString(f.Explanation.Why + "\n" + f.Explanation.Risk + "\n" + f.Explanation.Suggestion + "\n")
+		}
+	}
+	assertFree("blocked rotate", b.String(), []string{"TLS", "reload", "no_rollback", "no rollback"})
+}
+
 func containsStr(haystack []string, needle string) bool {
 	for _, s := range haystack {
 		if s == needle {
