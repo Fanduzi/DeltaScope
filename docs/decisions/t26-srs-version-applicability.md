@@ -28,3 +28,18 @@ Unchanged fail-closed: boundary writes mint `srsExistenceStale` + ordered barrie
 - `go test ./...`, `go vet ./...`, gofmt clean.
 
 Evidence: accepted Phase 0 archive `artifacts/t26-srs-version-applicability-phase0-r2.tar.gz` (SHA-256 b3410f2a…); contract docs under `docs/verification/t26-srs-version-applicability-01/`.
+
+## ER1 correction (reviewer CHANGES REQUIRED, R2)
+
+The caller `target_version` pin is a conflict check only and never
+substitutes for a provider observation. `MySQLSRSDropAuditedDomain`
+and `MySQLSRSVersionGateReason` now require
+`Source == VersionSourceObserved`: any non-observed identity —
+including a valid in-domain pin — classifies as `version_unproven`
+with zero SRS catalog reads. The global `resolvedVersion` pin fallback
+for other objects (T24-accepted) is unchanged; the scoping lives inside
+the SRS gate. Tests now stamp `Source: observed` on literals modelling
+proven banners, and the former providerless-pin S2 cells assert the
+`version_unproven` boundary. ER2 (provider-internal O2 observation)
+awaits a technical-proposal adjudication before any Provider contract
+change.
