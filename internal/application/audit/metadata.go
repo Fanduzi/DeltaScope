@@ -278,11 +278,12 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 				}
 			}
 			// The audited SRS drop slice (T26-SRS-DROP-EXECUTION-01)
-			// shares this gate shape: every DROP whose resolved version
+			// shares this gate shape: every DROP whose OBSERVED version
 			// is unknown or outside the registered MySQL 8.0.4+ domain
-			// takes the unaudited boundary — the presence or absence of
-			// a caller pin is never the criterion; the resolved
-			// version is. The same version verdict now also suppresses
+			// takes the unaudited boundary — a caller pin is a conflict
+			// check only and never substitutes for observation
+			// (frozen V1, ER1). The same version verdict now also
+			// suppresses
 			// the family's catalog reads inside bindMySQLSRS — one
 			// request-level version fact controls both audit and read
 			// admission (T26-SRS-VERSION-APPLICABILITY-01 frozen V1).

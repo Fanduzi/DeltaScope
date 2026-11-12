@@ -126,14 +126,17 @@ type SRSDropAdjudication struct {
 }
 
 // MySQLSRSDropAuditedDomain is the registered applicability domain for
-// the audited SRS drop slice: a resolved, validated MySQL 8.0.4+
-// version. The gate reads the resolved version — the presence or
-// absence of a caller pin is never the criterion. Unknown or
+// the audited SRS drop slice: a provider-observed, validated MySQL
+// 8.0.4+ version. The gate reads the OBSERVED version — a caller
+// target_version pin is a conflict check only and can never substitute
+// for observation (T26-SRS-VERSION-APPLICABILITY-01 frozen V1, ER1):
+// without a live banner fact the identity stays unproven. Unknown or
 // unparseable versions, proven pre-8.0.4, non-MySQL products, and
 // unvalidated ranges all stay boundary — never inferred feature
 // absence.
 func MySQLSRSDropAuditedDomain(version *VersionIdentity) bool {
 	return version != nil &&
+		version.Source == VersionSourceObserved &&
 		version.Product == VersionProductMySQL &&
 		version.ValidatedRange &&
 		version.Major == 8 && version.Minor == 0 && version.Patch >= 4
@@ -154,11 +157,15 @@ const SRSFactVersionApplicability = "srs.version_applicability"
 // token the public marker and the bound state both carry:
 //
 //   - nil version, no observation ever ran → version_unproven
+//   - non-observed identity (caller target_version pin) →
+//     version_unproven — the pin is a conflict check, never a fact
+//     the database provided (frozen V1, ER1)
 //   - nil version, an observation answered without a usable banner fact
 //     → version_observation_error
-//   - identity outside the validated series → version_out_of_series
-//   - proven in-series but outside the audited domain (5.7, 8.0.0–8.0.3,
-//     8.4) → version_inapplicable
+//   - observed identity outside the validated series →
+//     version_out_of_series
+//   - observed in-series but outside the audited domain (5.7,
+//     8.0.0–8.0.3, 8.4) → version_inapplicable
 //
 // `observed` reports whether a provider observation was performed this
 // request — it is what separates "never observed" from "observation
@@ -172,6 +179,8 @@ func MySQLSRSVersionGateReason(version *VersionIdentity, observed bool) string {
 		return MetadataUnreadVersionUnproven
 	case version == nil:
 		return MetadataUnreadVersionObservationError
+	case version.Source != VersionSourceObserved:
+		return MetadataUnreadVersionUnproven
 	case !version.ValidatedRange:
 		return MetadataUnreadVersionOutOfSeries
 	default:

@@ -166,18 +166,21 @@ func r3ServerSeam(p *r3ProductProvider, fx *r3Fixture) (forwards, servers int) {
 
 // --- P1: three distinct unavailable reasons --------------------------------
 
-// P1a: providerless under mode — the loader surface never exists, S2
-// unproven [E,D,P], zero reads, Vd=N/A.
+// P1a (ER1): providerless under mode — the pin is conflict-check
+// only; with no observation the statement takes the version boundary
+// (unproven) and the loader surface never exists.
 func TestT26SRSPrivP1aProviderless(t *testing.T) {
 	result, err := audit.AuditSQL(context.Background(), audit.Request{
 		SQL: "DROP SPATIAL REFERENCE SYSTEM 100001;", Dialect: spec.DialectMySQL, TargetVersion: "8.0.36",
 		PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession,
 	})
-	if err != nil {
-		t.Fatalf("audit: %v", err)
+	if err == nil || len(result.Unsupported) != 1 {
+		t.Fatalf("err=%v unsupported=%+v want the version boundary", err, result.Unsupported)
 	}
-	r3S2(t, result, result.Statements[0],
-		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 0)
+	u := result.Unsupported[0]
+	if u.Metadata["gate"] != "version" || u.Metadata["version_reason"] != spec.MetadataUnreadVersionUnproven {
+		t.Fatalf("unsupported=%+v want gate=version reason=version_unproven", u)
+	}
 }
 
 // P1b: mode off — the SRS catalog still reads; the privilege premise

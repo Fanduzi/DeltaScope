@@ -439,7 +439,7 @@ func newSRSSQLHarness(t *testing.T, fixture *srsSQLFixture, tables map[string]*s
 
 // --- harness -----------------------------------------------------------------
 
-var srsGoldenVersion = &spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.36", Major: 8, Minor: 0, Patch: 36, ValidatedRange: true}
+var srsGoldenVersion = &spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.36", Major: 8, Minor: 0, Patch: 36, ValidatedRange: true, Source: spec.VersionSourceObserved}
 
 func newSRSState(provider MetadataProvider) *batchState {
 	state := newBatchState(spec.DialectMySQL, "golden", provider)
@@ -1464,13 +1464,17 @@ func TestT26SRSR1VersionGate(t *testing.T) {
 		}
 	}
 	gate(nil, false)
-	gate(&spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.3", Major: 8, Minor: 0, Patch: 3, ValidatedRange: true}, false)
-	gate(&spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.4", Major: 8, Minor: 0, Patch: 4, ValidatedRange: true}, true)
-	gate(&spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "5.7.44", Major: 5, Minor: 7, Patch: 44, ValidatedRange: true}, false)
-	gate(&spec.VersionIdentity{Product: "tidb", Version: "8.5.0", Major: 8, Minor: 5, Patch: 0, ValidatedRange: true}, false)
-	gate(&spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.36", Major: 8, Minor: 0, Patch: 36, ValidatedRange: false}, false)
+	gate(&spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.3", Major: 8, Minor: 0, Patch: 3, ValidatedRange: true, Source: spec.VersionSourceObserved}, false)
+	gate(&spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.4", Major: 8, Minor: 0, Patch: 4, ValidatedRange: true, Source: spec.VersionSourceObserved}, true)
+	gate(&spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "5.7.44", Major: 5, Minor: 7, Patch: 44, ValidatedRange: true, Source: spec.VersionSourceObserved}, false)
+	gate(&spec.VersionIdentity{Product: "tidb", Version: "8.5.0", Major: 8, Minor: 5, Patch: 0, ValidatedRange: true, Source: spec.VersionSourceObserved}, false)
+	gate(&spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.36", Major: 8, Minor: 0, Patch: 36, ValidatedRange: false, Source: spec.VersionSourceObserved}, false)
+	// ER1: a caller pin (Source=target) is never an observation — even
+	// a valid in-domain pin fails the domain check without a live banner.
+	gate(&spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.46", Major: 8, Minor: 0, Patch: 46, ValidatedRange: true, Source: spec.VersionSourceTarget}, false)
 
-	// E10.3c/E10.4: providerless pin below the floor → gate boundary.
+	// E10.3c/E10.4: providerless pin → gate boundary (ER1: the pin is a
+	// conflict check only; with no observation the identity is unproven).
 	for _, pin := range []string{"8.0.3", "5.7.44"} {
 		result, err := AuditSQL(context.Background(), Request{
 			SQL: "DROP SPATIAL REFERENCE SYSTEM 100001", Dialect: spec.DialectMySQL, TargetVersion: pin,
@@ -1491,18 +1495,16 @@ func TestT26SRSR1VersionGate(t *testing.T) {
 		}
 	}
 
-	// E10.3d: floor is inclusive — 8.0.4 audits.
+	// E10.3d (ER1): even a valid in-domain pin cannot substitute for an
+	// observation — providerless 8.0.4 stays boundary, version_unproven.
 	result, err := AuditSQL(context.Background(), Request{
 		SQL: "DROP SPATIAL REFERENCE SYSTEM 4326", Dialect: spec.DialectMySQL, TargetVersion: "8.0.4",
 	})
-	if err != nil {
-		t.Fatalf("8.0.4 audit: %v", err)
+	if err == nil || len(result.Unsupported) != 1 {
+		t.Fatalf("8.0.4 pin err=%v unsupported=%+v want the version boundary", err, result.Unsupported)
 	}
-	if len(result.Unsupported) != 0 {
-		t.Fatalf("8.0.4 unsupported=%+v want audited", result.Unsupported)
-	}
-	if result.Verdict != report.VerdictReview {
-		t.Fatalf("8.0.4 verdict=%v want review", result.Verdict)
+	if got := result.Unsupported[0].Metadata["version_reason"]; got != spec.MetadataUnreadVersionUnproven {
+		t.Fatalf("8.0.4 pin version_reason=%v want %v", got, spec.MetadataUnreadVersionUnproven)
 	}
 
 	// E10.2-shape: providerless + no pin → gate (resolved version

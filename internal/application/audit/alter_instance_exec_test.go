@@ -191,7 +191,8 @@ func TestT26AlterInstanceBatchEffects(t *testing.T) {
 func TestT26AlterInstanceDoesNotTouchSRSChannel(t *testing.T) {
 	state := newBatchState(spec.DialectMySQL, "golden", aiProvider("8.0.46", nil))
 	state.SeedResolvedVersion(&spec.VersionIdentity{
-		Product: spec.VersionProductMySQL, Major: 8, Minor: 0, Patch: 46, ValidatedRange: true,
+		Product: spec.VersionProductMySQL, Major: 8, Minor: 0, Patch: 46,
+		Source: spec.VersionSourceObserved, ValidatedRange: true,
 	})
 	stmts, failures := parseT26(t, "ALTER INSTANCE RELOAD TLS; DROP SPATIAL REFERENCE SYSTEM 1234")
 	enriched := enrichSlice(t, state, aiProvider("8.0.46", nil), spec.PrivilegeAuditMode(""), stmts, failures)

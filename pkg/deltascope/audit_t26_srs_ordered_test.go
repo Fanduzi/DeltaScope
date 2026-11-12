@@ -656,51 +656,25 @@ func TestT26SRSOrderedPublicPolicyWarning(t *testing.T) {
 	opPublicScan(t, raw, "OP-7e")
 }
 
-// OP-6d: providerless public row — pin supplies the version; the
-// providerless S2 projection is unchanged by the ordered channel.
+// OP-6d (ER1): providerless public row — the pin is conflict-check
+// only; with no observation the statement takes the version boundary
+// (unproven) through the public surface too.
 func TestT26SRSOrderedPublicProviderless(t *testing.T) {
 	result, err := Audit(context.Background(), Request{
 		SQL: "DROP SPATIAL REFERENCE SYSTEM 100001;", Dialect: DialectMySQL,
 		TargetVersion:      "8.0.36",
 		PrivilegeAuditMode: PrivilegeAuditModeObservedAccountNewSession,
 	})
-	if err != nil {
-		t.Fatalf("audit: %v", err)
+	if err == nil || !errors.Is(err, ErrUnsupportedStatement) {
+		t.Fatalf("err=%v want the unsupported-statement exit", err)
 	}
-	if len(result.Statements) != 1 {
-		t.Fatalf("statements=%d want 1", len(result.Statements))
+	if len(result.Unsupported) != 1 {
+		t.Fatalf("unsupported=%+v want one boundary entry", result.Unsupported)
 	}
-	stmt := result.Statements[0]
-	if len(stmt.Findings) != 0 {
-		t.Fatalf("findings=%+v want zero — providerless never discharges", stmt.Findings)
-	}
-	if len(stmt.EvidenceGaps) != 1 {
-		t.Fatalf("gaps=%+v want the bounded [E,D,P] gap", stmt.EvidenceGaps)
-	}
-	gap := stmt.EvidenceGaps[0]
-	if gap.RuleID != "ddl.mysql.srs.drop.dependency" {
-		t.Fatalf("gap owner=%q want ddl.mysql.srs.drop.dependency", gap.RuleID)
-	}
-	if gap.ReasonCode != "unknown_srs_state" {
-		t.Fatalf("gap reason=%q want unknown_srs_state", gap.ReasonCode)
-	}
-	want := []string{"srs.existence", "srs.column_dependencies", "srs.drop.privilege"}
-	if len(gap.RequiredFacts) != 3 {
-		t.Fatalf("required_facts=%v want three", gap.RequiredFacts)
-	}
-	for i := range want {
-		if gap.RequiredFacts[i] != want[i] {
-			t.Fatalf("required_facts[%d]=%q want %q", i, gap.RequiredFacts[i], want[i])
-		}
-	}
-	if stmt.Coverage.Status != CoverageUnverified {
-		t.Fatalf("coverage=%v want unverified", stmt.Coverage.Status)
-	}
-	if result.Coverage.Status != CoverageUnverified {
-		t.Fatalf("aggregate coverage=%v want unverified", result.Coverage.Status)
-	}
-	if result.Verdict != VerdictReview {
-		t.Fatalf("verdict=%v want review — a bounded gap is owed", result.Verdict)
+	u := result.Unsupported[0]
+	if u.Metadata["object"] != "spatial_reference_system" || u.Metadata["gate"] != "version" ||
+		u.Metadata["version_reason"] != "version_unproven" {
+		t.Fatalf("unsupported=%+v want object=srs gate=version reason=version_unproven", u)
 	}
 	raw := mustMarshalResult(t, result)
 	opPublicScan(t, raw, "OP-6d")

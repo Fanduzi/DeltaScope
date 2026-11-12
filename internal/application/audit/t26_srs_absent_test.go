@@ -97,23 +97,22 @@ func paPolicyFile(t *testing.T, body string) string {
 
 // --- PA-1: absence supply discriminant ---------------------------------------
 
-// PA-1a: providerless — pin admits D-qualify but no existence read
-// ever runs, so the statement stays S2 with the full unproven debt.
+// PA-1a: providerless — a caller pin is conflict-check only (frozen
+// V1/ER1): with no observation the version stays unproven, so the
+// statement takes the version boundary before any absence premise can
+// even form.
 func TestT26SRSAbsentProviderlessStaysUnproven(t *testing.T) {
 	result, err := audit.AuditSQL(context.Background(), audit.Request{
 		SQL: "DROP SPATIAL REFERENCE SYSTEM 100001;", Dialect: spec.DialectMySQL,
 		TargetVersion: "8.0.36",
 	})
-	if err != nil {
-		t.Fatalf("audit: %v", err)
+	if err == nil || len(result.Unsupported) != 1 {
+		t.Fatalf("err=%v unsupported=%+v want the version boundary", err, result.Unsupported)
 	}
-	stmt := result.Statements[0]
-	paGap(t, stmt, "unknown_srs_state",
-		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege})
-	if len(stmt.Findings) != 0 {
-		t.Fatalf("findings=%+v want none — nothing discharges an unproven premise", stmt.Findings)
+	u := result.Unsupported[0]
+	if u.Metadata["gate"] != "version" || u.Metadata["version_reason"] != spec.MetadataUnreadVersionUnproven {
+		t.Fatalf("unsupported=%+v want gate=version reason=version_unproven", u)
 	}
-	r3Aggregate(t, result, report.CoverageUnverified)
 }
 
 // PA-1b/PA-2a: plain DROP against a proven absence — the absent

@@ -97,24 +97,20 @@ func TestT26SRSVersionGateUnprovenProviderless(t *testing.T) {
 	vgMarker(t, result.Unsupported, spec.MetadataUnreadVersionUnproven)
 }
 
-// Case 8b: providerless WITH a valid in-domain pin — the pin cannot
-// substitute for an observation (frozen V1); with no provider the
-// resolver is simply absent. The statement is STILL boundary-free in
-// audit terms only when the pinned domain admits it — but no catalog
-// read can fire without a provider.
+// Case 8b (ER1): providerless WITH a valid in-domain pin — the pin
+// cannot substitute for an observation (frozen V1): the statement
+// takes the version boundary as unproven. No catalog read can fire
+// without a provider, so zero reads holds by construction.
 func TestT26SRSVersionGatePinNoProvider(t *testing.T) {
 	result, err := appaudit.AuditSQL(context.Background(), appaudit.Request{
 		SQL: vgSQL, Dialect: spec.DialectMySQL, TargetVersion: "8.0.46",
 	})
-	// A valid in-domain pin keeps the statement auditable (accepted
-	// providerless semantics); the resolver seam is nil so no reads
-	// exist to suppress. Assert no unsupported marker blocks it.
-	for _, u := range result.Unsupported {
-		if u.Metadata["object"] == "spatial_reference_system" && u.Metadata["gate"] == "version" {
-			t.Fatalf("in-domain pin must not take the version boundary: %+v", u)
-		}
-	}
-	_ = err
+	// ER1 regression: a caller pin is conflict-check only and can never
+	// substitute for an observation — even a valid in-domain pin takes
+	// the version boundary as unproven. No provider means no read seams
+	// exist at all, so zero reads holds by construction.
+	r3Boundary(t, result, err, "spatial_reference_system")
+	vgMarker(t, result.Unsupported, spec.MetadataUnreadVersionUnproven)
 }
 
 // Case 10: observation channel itself failed — the audit surfaces the
@@ -177,13 +173,27 @@ func TestT26SRSVersionGateStaticPreserved(t *testing.T) {
 	if result.Unsupported == nil && err == nil {
 		t.Fatal("a statically-invalid SRID must surface under no version observation")
 	}
-	// 14: CREATE missing the mandatory paired attribute is a static
-	// violation independent of version.
+	// 14 (ER3): CREATE missing the mandatory paired attribute
+	// (ORGANIZATION without IDENTIFIED BY) is a static violation the
+	// parser itself reports — it must still be identified with NO
+	// version observation: a preserved parser_error diagnostic, never
+	// silently swallowed by the version gate.
 	result2, err2 := appaudit.AuditSQL(context.Background(), appaudit.Request{
 		SQL: "CREATE SPATIAL REFERENCE SYSTEM 4326 ORGANIZATION 'EPSG';", Dialect: spec.DialectMySQL,
 	})
-	_ = result2
-	_ = err2
+	if err2 == nil {
+		t.Fatal("a missing-mandatory-attribute CREATE must surface under no version observation")
+	}
+	if len(result2.Diagnostics) != 1 {
+		t.Fatalf("diagnostics=%+v want exactly the static parser diagnostic", result2.Diagnostics)
+	}
+	d := result2.Diagnostics[0]
+	if d.Classification != spec.DiagnosticParserError || d.Audited {
+		t.Fatalf("diagnostic=%+v want parser_error audited=false", d)
+	}
+	if len(result2.Unsupported) != 0 {
+		t.Fatalf("unsupported=%+v want none — the static error precedes the version gate", result2.Unsupported)
+	}
 }
 
 // --- D-section: own-apply / batch effects under version variance (frozen V12) ---
@@ -193,8 +203,7 @@ func TestT26SRSVersionGateStaticPreserved(t *testing.T) {
 func vgOutOfDomain(state *appaudit.TestBatchState) {
 	state.SeedResolvedVersion(&spec.VersionIdentity{
 		Product: spec.VersionProductMySQL, Version: "8.4.10",
-		Major: 8, Minor: 4, Patch: 10, ValidatedRange: true,
-	})
+		Major: 8, Minor: 4, Patch: 10, ValidatedRange: true, Source: spec.VersionSourceObserved})
 }
 
 // D1: an out-of-domain CREATE mints NO present fact — it is a boundary
@@ -258,8 +267,7 @@ func TestT26SRSVersionGateNoStaleConsumption(t *testing.T) {
 	// Back in-domain: the stale flag blocks the bind before any read.
 	state.SeedResolvedVersion(&spec.VersionIdentity{
 		Product: spec.VersionProductMySQL, Version: "8.0.46",
-		Major: 8, Minor: 0, Patch: 46, ValidatedRange: true,
-	})
+		Major: 8, Minor: 0, Patch: 46, ValidatedRange: true, Source: spec.VersionSourceObserved})
 	enriched := appaudit.EnrichSRSPrivForTest(t, state, provider,
 		"DROP SPATIAL REFERENCE SYSTEM 100001;")
 	bound := enriched[0].Metadata.SpatialReference

@@ -766,8 +766,7 @@ func TestT26SRSAbsentBoundaryVersionPairInternal(t *testing.T) {
 	provider, state := paRealState(t, fx)
 	state.SeedResolvedVersion(&spec.VersionIdentity{
 		Product: spec.VersionProductMySQL, Version: "8.0.3",
-		Major: 8, Minor: 0, Patch: 3, ValidatedRange: true,
-	})
+		Major: 8, Minor: 0, Patch: 3, ValidatedRange: true, Source: spec.VersionSourceObserved})
 
 	base := paReadsVector(provider, fx)
 	var readsAt [2][5]int

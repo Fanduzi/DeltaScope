@@ -109,7 +109,7 @@ func TestT26SRSOrderedEligibilityInt(t *testing.T) {
 		t.Fatal("a boundary statement is never ordered-eligible")
 	}
 	out := newSRSState(nil)
-	out.resolvedVersion = &spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.3", Major: 8, Minor: 0, Patch: 3}
+	out.resolvedVersion = &spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.3", Major: 8, Minor: 0, Patch: 3, Source: spec.VersionSourceObserved}
 	if out.orderedSRSDropEligible(drop()) {
 		t.Fatal("an out-of-domain resolvedVersion is never ordered-eligible")
 	}

@@ -493,8 +493,7 @@ func TestT26SRSPrivP9bInternalBoundaryMint(t *testing.T) {
 	state := newSRSState(provider)
 	state.resolvedVersion = &spec.VersionIdentity{
 		Product: spec.VersionProductMySQL, Version: "8.0.3",
-		Major: 8, Minor: 0, Patch: 3, ValidatedRange: true,
-	}
+		Major: 8, Minor: 0, Patch: 3, ValidatedRange: true, Source: spec.VersionSourceObserved}
 	enriched := enrichSRSPriv(t, state, provider, "DROP SPATIAL REFERENCE SYSTEM 100001;")
 	if len(enriched) != 1 || enriched[0].Unsupported == nil {
 		t.Fatalf("enriched=%+v want the version-gated boundary mark", enriched)

@@ -657,17 +657,20 @@ func TestT26SRSR3UnprovenReservedRequest(t *testing.T) {
 	r3AssertReads(t, p, fx, 1, 1, 1, 1, 0, 1)
 }
 
-// E3.1: providerless S2 — [E,D,P], findings absent, review, zero reads.
+// E3.1 (ER1): providerless pin — the pin is conflict-check only, so
+// the statement takes the version boundary (unproven) before any S2
+// debt can form; zero reads by construction.
 func TestT26SRSR3UnprovenProviderless(t *testing.T) {
 	result, err := audit.AuditSQL(context.Background(), audit.Request{
 		SQL: "DROP SPATIAL REFERENCE SYSTEM 100001;", Dialect: spec.DialectMySQL, TargetVersion: "8.0.36",
 	})
-	if err != nil {
-		t.Fatalf("audit: %v", err)
+	if err == nil || len(result.Unsupported) != 1 {
+		t.Fatalf("err=%v unsupported=%+v want the version boundary", err, result.Unsupported)
 	}
-	stmt := result.Statements[0]
-	r3S2(t, result, stmt,
-		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 0)
+	u := result.Unsupported[0]
+	if u.Metadata["gate"] != "version" || u.Metadata["version_reason"] != spec.MetadataUnreadVersionUnproven {
+		t.Fatalf("unsupported=%+v want gate=version reason=version_unproven", u)
+	}
 }
 
 // E3.2 strengthened (R3-B.2): zero-row existence + empty deps through
@@ -876,21 +879,20 @@ func TestT26SRSR3E10ProviderlessBoundary(t *testing.T) {
 	}
 }
 
-// E10.3d: providerless pin 8.0.4 (floor inclusive) → audited S2.
+// E10.3d (ER1): providerless pin 8.0.4 — the floor is inclusive but a
+// pin is not an observation; the statement stays version_unproven.
 func TestT26SRSR3E10FloorProviderless(t *testing.T) {
 	result, err := audit.AuditSQL(context.Background(), audit.Request{
 		SQL: r3SQL, Dialect: spec.DialectMySQL, TargetVersion: "8.0.4",
 	})
-	if err != nil {
-		t.Fatalf("audit: %v", err)
+	if err == nil || len(result.Unsupported) != 1 {
+		t.Fatalf("err=%v unsupported=%+v want the version boundary", err, result.Unsupported)
 	}
-	stmt := result.Statements[0]
-	r3S2(t, result, stmt,
-		[]string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege}, 4326)
-	if len(result.Unsupported) != 0 {
-		t.Fatalf("unsupported=%+v want absent on an audited row", result.Unsupported)
+	u := result.Unsupported[0]
+	if u.Metadata["gate"] != "version" || u.Metadata["version_reason"] != spec.MetadataUnreadVersionUnproven {
+		t.Fatalf("unsupported=%+v want gate=version reason=version_unproven", u)
 	}
-	// declared target-version projection
+	// declared target-version projection still reported
 	if result.Version == nil || result.Version.Product != spec.VersionProductMySQL ||
 		result.Version.Version != "8.0.4" || result.Version.Source != "target" {
 		t.Fatalf("version=%+v want mysql 8.0.4 source=target", result.Version)

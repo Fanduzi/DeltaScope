@@ -1398,8 +1398,7 @@ func TestT26SRSOrderedBelowFloorInternalCompanion(t *testing.T) {
 	fx.discoverVer = "8.0.3"
 	provider, state := paRealState(t, fx)
 	state.SeedResolvedVersion(&spec.VersionIdentity{
-		Product: spec.VersionProductMySQL, Version: "8.0.3", Major: 8, Minor: 0, Patch: 3,
-	})
+		Product: spec.VersionProductMySQL, Version: "8.0.3", Major: 8, Minor: 0, Patch: 3, Source: spec.VersionSourceObserved})
 	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
 		"DROP SPATIAL REFERENCE SYSTEM 100001;")
 	stmt := enriched[0]
@@ -1455,28 +1454,21 @@ func TestT26SRSOrderedTiDBVendorBoundaryPublic(t *testing.T) {
 	r3AssertReads(t, provider, fx, 0, 0, 0, 0, 0, 1)
 }
 
-// OP-6d: single providerless public/API row — pin supplies the
-// version; provider seams are N/A (no provider attached). The
-// providerless S2 projection is unchanged by the ordered channel.
+// OP-6d (ER1): providerless public/API row — the pin is conflict-check
+// only, so with no observation the statement takes the version
+// boundary (unproven); provider seams are N/A by construction.
 func TestT26SRSOrderedProviderlessPublic(t *testing.T) {
 	result, err := audit.AuditSQL(context.Background(), audit.Request{
 		SQL: "DROP SPATIAL REFERENCE SYSTEM 100001;", Dialect: spec.DialectMySQL,
 		TargetVersion:      "8.0.36",
 		PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession,
 	})
-	if err != nil {
-		t.Fatalf("audit: %v", err)
+	if err == nil || len(result.Unsupported) != 1 {
+		t.Fatalf("err=%v unsupported=%+v want the version boundary", err, result.Unsupported)
 	}
-	if len(result.Statements) != 1 {
-		t.Fatalf("statements=%d want 1", len(result.Statements))
-	}
-	stmt := result.Statements[0]
-	r3ExactGap(t, stmt, []string{spec.SRSFactExistence, spec.SRSFactColumnDependencies, spec.SRSFactDropPrivilege})
-	if len(stmt.Findings) != 0 {
-		t.Fatalf("findings=%+v want none — providerless never discharges", stmt.Findings)
-	}
-	if stmt.Coverage.Status != report.CoverageUnverified {
-		t.Fatalf("coverage=%v want unverified", stmt.Coverage.Status)
+	u := result.Unsupported[0]
+	if u.Metadata["gate"] != "version" || u.Metadata["version_reason"] != spec.MetadataUnreadVersionUnproven {
+		t.Fatalf("unsupported=%+v want gate=version reason=version_unproven", u)
 	}
 }
 
