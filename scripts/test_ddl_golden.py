@@ -29,7 +29,12 @@ MANIFEST = {
             "product": "mysql",
             "version_contains": "9.9.9",
             "database": "golden",
-            "exec_client": ["mysql", "-uroot", "-proot"],
+            "exec_client": ["mysql", "--defaults-extra-file=/etc/deltascope-golden-client.cnf", "-uroot"],
+            "client_option_file": {
+                "container_path": "/etc/deltascope-golden-client.cnf",
+                "user": "root",
+                "password": "root",
+            },
         }
     },
     "ddl_steps": [
@@ -99,7 +104,8 @@ def make_artifact(tmp: pathlib.Path) -> dict:
         "policy_profile": {"path": str(tmp / "p.yaml"), "disabled_rules": 3, "profile": "all-rules-disabled"},
         "required_case_ids": list(MANIFEST["required_case_ids"]),
         "executed_count": 3,
-        "cleanup": {"compose_down_rc": 0, "compose_down_stderr": "", "residual_containers": []},
+        "credential_scan": {"surfaces": ["argv", "stdout", "stderr", "setup_log", "cleanup_log", "artifact_json"], "findings": []},
+        "cleanup": {"compose_down_rc": 0, "compose_down_stderr": "", "residual_containers": [], "client_option_files": {"mysqlX": {"removed": True, "stderr": ""}}},
         "cases": [
             {
                 "case_id": "TX.db.mysqlX.ddl",
@@ -273,6 +279,54 @@ def main():
                     "required_cli_dialects": ["mysql"]}
         results.append(probe("missing locked digest blocked", "no locked expected_image_digest",
                              probe_baseline=unlocked))
+
+        # Issue #81 R3 — credential-safe evidence fail-closed checks.
+        a = copy.deepcopy(base)
+        del a["credential_scan"]
+        results.append(check("missing credential_scan rejected", a, "credential_scan"))
+
+        a = copy.deepcopy(base)
+        a["credential_scan"]["findings"] = ["$.x: password-bearing argv token -pro***"]
+        results.append(check("recorded credential findings rejected", a, "credential leak findings"))
+
+        a = copy.deepcopy(base)
+        a["cases"][0]["actual"]["steps"][0]["argv"] = ["docker", "exec", "c", "mysql", "-uroot", "-proot", "golden", "-e", "X"]
+        results.append(check("inline -p password argv rejected", a, "credential leak"))
+
+        a = copy.deepcopy(base)
+        a["cases"][1]["actual"]["stderr"] = "mysql --password=hunter2 failed"
+        results.append(check("generic --password argv rejected", a, "credential leak"))
+
+        a = copy.deepcopy(base)
+        a["cases"][1]["actual"]["stdout"] = "password=s3cr3t"
+        results.append(check("password= text rejected", a, "credential leak"))
+
+        a = copy.deepcopy(base)
+        a["setup"] = {"command": ["docker", "exec", "-e", "MYSQL_PWD=root", "c"], "rc": 0, "stdout": "", "stderr": ""}
+        results.append(check("fixture credential in setup log rejected", a, "credential leak"))
+
+        a = copy.deepcopy(base)
+        a["cases"][0]["actual"]["steps"][0]["argv"] = ["docker", "exec", "c", "mysql",
+            "--defaults-extra-file=/etc/deltascope-golden-client.cnf", "-uroot", "golden", "-e", "X"]
+        results.append(check("option-file argv accepted", a, ""))
+
+        def cred_probe(name, mutate, needle):
+            m = copy.deepcopy(MANIFEST)
+            mutate(m["anchors"]["mysqlX"])
+            failures = ddl_golden.manifest_credential_failures(m)
+            ok = any(needle in f for f in failures) if needle else not failures
+            print(("PASS " if ok else "FAIL ") + name + ("" if ok else f": {failures}"))
+            return ok
+
+        results.append(cred_probe("option-file manifest accepted", lambda a: None, ""))
+        results.append(cred_probe("inline -p in exec_client rejected",
+                                  lambda a: a["exec_client"].append("-proot"), "password-bearing"))
+        results.append(cred_probe("option file without defaults-extra-file rejected",
+                                  lambda a: a["exec_client"].remove(
+                                      "--defaults-extra-file=/etc/deltascope-golden-client.cnf"),
+                                  "defaults-extra-file"))
+        results.append(cred_probe("option file missing password rejected",
+                                  lambda a: a["client_option_file"].pop("password"), "missing password"))
 
         a = copy.deepcopy(base)
         a["cli"]["path"] = str(tmp / "nonexistent-binary")

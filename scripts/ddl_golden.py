@@ -247,6 +247,33 @@ def prove_anchor_identity(manifest, baseline):
     return facts, failures
 
 
+def manifest_credential_failures(manifest):
+    """Manifest wiring for credential-safe client execution (issue #81 R3).
+
+    An anchor declaring client_option_file must point exec_client at that
+    file via --defaults-extra-file, and no exec_client element may ever be a
+    password-bearing argument regardless of provisioning mode.
+    """
+    failures = []
+    for key, anchor in (manifest.get("anchors") or {}).items():
+        client = anchor.get("exec_client") or []
+        for element in client:
+            for pattern in CREDENTIAL_ARG_PATTERNS:
+                if pattern.match(element):
+                    failures.append(f"anchor {key}: exec_client serializes a password-bearing argument")
+        spec = anchor.get("client_option_file")
+        if not spec:
+            continue
+        for field in ("container_path", "user", "password"):
+            if not spec.get(field):
+                failures.append(f"anchor {key}: client_option_file missing {field}")
+        expected_flag = f"--defaults-extra-file={spec.get('container_path')}"
+        if spec.get("container_path") and expected_flag not in client:
+            failures.append(
+                f"anchor {key}: exec_client must reference {expected_flag}")
+    return failures
+
+
 def mysql_exec_argv(anchor, sql, database=None, silent=True):
     """Build the docker-exec argv mysql_exec would run (for case evidence)."""
     client = list(anchor["exec_client"])
@@ -259,6 +286,117 @@ def mysql_exec_argv(anchor, sql, database=None, silent=True):
     if anchor.get("exec_password_env"):
         argv += ["--env", "MYSQL_PWD"]
     return argv + [target, *client]
+
+
+def provision_client_option_files(manifest, work_dir):
+    """Install a restricted MySQL client option file inside each anchor's
+    client container so serialized argv carries only the file path.
+
+    Issue #81 R3: disposable fixture passwords must never appear in recorded
+    argv/stdout/stderr. The file contents (user/password) come from the
+    manifest's client_option_file spec, are written to a 0600 host temp file,
+    copied into the container with docker cp, chmod 600 inside, and the host
+    copy is removed immediately. Only non-secret facts are returned.
+    """
+    facts = {}
+    failures = []
+    secrets_dir = work_dir / ".secrets"
+    secrets_dir.mkdir(parents=True, exist_ok=True)
+    os.chmod(secrets_dir, 0o700)
+    for key, anchor in manifest["anchors"].items():
+        spec = anchor.get("client_option_file")
+        if not spec:
+            continue
+        container = anchor.get("client_container") or anchor["container"]
+        dest = spec["container_path"]
+        local = secrets_dir / f"{key}.cnf"
+        try:
+            local.write_text(
+                f"[client]\nuser={spec['user']}\npassword={spec['password']}\n",
+                encoding="utf-8",
+            )
+            os.chmod(local, 0o600)
+            rc, _, err = run_cmd(["docker", "cp", str(local), f"{container}:{dest}"], timeout=60)
+            if rc == 0:
+                rc, _, err = run_cmd(["docker", "exec", container, "chmod", "600", dest], timeout=60)
+            if rc != 0:
+                failures.append(f"anchor {key}: option-file install failed: {err.strip()}")
+            else:
+                facts[key] = {"container": container, "container_path": dest, "mode": "0600"}
+        finally:
+            local.unlink(missing_ok=True)
+    secrets_dir.rmdir()
+    return facts, failures
+
+
+def cleanup_client_option_files(manifest):
+    """Remove installed client option files from containers before teardown."""
+    removed = {}
+    for key, anchor in manifest["anchors"].items():
+        spec = anchor.get("client_option_file")
+        if not spec:
+            continue
+        container = anchor.get("client_container") or anchor["container"]
+        rc, _, err = run_cmd(
+            ["docker", "exec", container, "rm", "-f", spec["container_path"]],
+            timeout=60,
+        )
+        removed[key] = {"removed": rc == 0, "stderr": err.strip() if rc != 0 else ""}
+    return removed
+
+
+CREDENTIAL_ARG_PATTERNS = (
+    re.compile(r"^-p\S"),              # mysql -p<secret>
+    re.compile(r"^--password(?:=|$)"),  # --password=<secret> / bare --password
+)
+CREDENTIAL_TEXT_PATTERNS = (
+    re.compile(r"password\s*=\s*\S+", re.IGNORECASE),   # password=<secret>
+    re.compile(r"MYSQL_PWD\s*=\s*\S+"),                  # MYSQL_PWD=<secret>
+)
+
+
+def _iter_evidence_strings(node, path="$"):
+    """Yield (path, string) for every string leaf in a JSON-like structure."""
+    if isinstance(node, str):
+        yield path, node
+    elif isinstance(node, dict):
+        for key, value in node.items():
+            yield from _iter_evidence_strings(value, f"{path}.{key}")
+    elif isinstance(node, (list, tuple)):
+        for index, value in enumerate(node):
+            yield from _iter_evidence_strings(value, f"{path}[{index}]")
+
+
+def credential_leak_findings(artifact, manifest):
+    """Scan serialized evidence for credential material.
+
+    Detects the known disposable fixture credential (in any password-bearing
+    form) plus generic password-bearing command arguments, over argv, stdout,
+    stderr, setup and cleanup logs recorded in the artifact.
+    """
+    secrets = set()
+    for anchor in manifest["anchors"].values():
+        spec = anchor.get("client_option_file") or {}
+        if spec.get("password"):
+            secrets.add(spec["password"])
+    findings = []
+    for path, text in _iter_evidence_strings(artifact):
+        for pattern in CREDENTIAL_ARG_PATTERNS:
+            for token in text.split():
+                if pattern.match(token):
+                    findings.append(f"{path}: password-bearing argv token {token[:4]}***")
+                    break
+        for pattern in CREDENTIAL_TEXT_PATTERNS:
+            if pattern.search(text):
+                findings.append(f"{path}: password-bearing text {pattern.pattern}")
+                break
+        for secret in secrets:
+            for form in (f"-p{secret}", f"--password={secret}", f"--password {secret}",
+                         f"password={secret}", f"PASSWORD={secret}", f"MYSQL_PWD={secret}"):
+                if form in text:
+                    findings.append(f"{path}: fixture credential serialized as {form[:4]}***")
+                    break
+    return sorted(set(findings))
 
 
 def mysql_exec(anchor, sql, database=None, silent=True):
@@ -3981,7 +4119,14 @@ T06_ANCHORS = {
         "product": "mysql",
         "version_contains": "5.7.44",
         "database": "golden",
-        "exec_client": ["mysql", "-uroot", "-proot"],
+        "exec_client": ["mysql",
+                        "--defaults-extra-file=/etc/deltascope-golden-client.cnf",
+                        "-uroot"],
+        "client_option_file": {
+            "container_path": "/etc/deltascope-golden-client.cnf",
+            "user": "root",
+            "password": "root",
+        },
         "needs_database_create": False,
     },
     "mysql80": {
@@ -3991,7 +4136,14 @@ T06_ANCHORS = {
         "product": "mysql",
         "version_contains": "8.0.46",
         "database": "golden",
-        "exec_client": ["mysql", "-uroot", "-proot"],
+        "exec_client": ["mysql",
+                        "--defaults-extra-file=/etc/deltascope-golden-client.cnf",
+                        "-uroot"],
+        "client_option_file": {
+            "container_path": "/etc/deltascope-golden-client.cnf",
+            "user": "root",
+            "password": "root",
+        },
         "needs_database_create": False,
     },
     "mysql84": {
@@ -4001,7 +4153,14 @@ T06_ANCHORS = {
         "product": "mysql",
         "version_contains": "8.4.10",
         "database": "golden",
-        "exec_client": ["mysql", "-uroot", "-proot"],
+        "exec_client": ["mysql",
+                        "--defaults-extra-file=/etc/deltascope-golden-client.cnf",
+                        "-uroot"],
+        "client_option_file": {
+            "container_path": "/etc/deltascope-golden-client.cnf",
+            "user": "root",
+            "password": "root",
+        },
         "needs_database_create": False,
     },
     "tidb85": {
@@ -7713,6 +7872,19 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     if failures:
         return failures
 
+    # Issue #81 R3: evidence must never serialize credentials. The runner
+    # records a credential_scan section; the validator requires it present and
+    # clean AND independently re-scans the artifact payload.
+    credential_scan = artifact.get("credential_scan")
+    if not isinstance(credential_scan, dict) or not isinstance(credential_scan.get("findings"), list):
+        failures.append("missing artifact credential_scan findings")
+    elif credential_scan["findings"]:
+        failures.append(f"credential leak findings recorded: {credential_scan['findings']}")
+    scan_target = {k: v for k, v in artifact.items() if k != "credential_scan"}
+    for finding in credential_leak_findings(scan_target, manifest):
+        failures.append(f"credential leak in artifact: {finding}")
+    failures.extend(manifest_credential_failures(manifest))
+
     t07_failures = t07_artifact_failures(artifact, manifest)
     if t07_failures:
         return t07_failures
@@ -8203,6 +8375,9 @@ def cmd_run(args):
     baseline_errors = baseline_manifest_failures(manifest, baseline)
     if baseline_errors:
         fail_run(f"manifest violates locked baseline: {baseline_errors}")
+    credential_errors = manifest_credential_failures(manifest)
+    if credential_errors:
+        fail_run(f"manifest violates credential-safe wiring: {credential_errors}")
     artifact_root = pathlib.Path(args.artifact_dir).resolve() / args.task
     artifact_root.mkdir(parents=True, exist_ok=True)
     cases_dir = artifact_root / "cases"
@@ -8272,17 +8447,26 @@ def cmd_run(args):
                 if identity_failures:
                     artifact["external_blocker"] = "anchor image identity proof failed: " + "; ".join(identity_failures)
                 else:
-                    for anchor_key, anchor_def in manifest["anchors"].items():
-                        if anchor_def.get("infra_only"):
-                            continue
-                        artifact["cases"].append(execute_ddl_case(manifest, anchor_key))
-                        artifact["cases"].append(execute_negative_case(manifest, anchor_key))
-                    for spec in cli_case_specs(manifest):
-                        artifact["cases"].append(execute_cli_case(manifest, cli["path"], policies, spec))
-                    for spec in metadata_case_specs(manifest):
-                        artifact["cases"].append(execute_metadata_case(manifest, spec["anchor"], cli["path"], policies, spec))
-                    for spec in error_case_specs(manifest):
-                        artifact["cases"].append(execute_error_case(manifest, cli["path"], policies, spec))
+                    # Credential-safe client wiring (issue #81 R3): install a
+                    # restricted option file inside each client container so
+                    # recorded argv carries a file path, never a password.
+                    option_facts, option_failures = provision_client_option_files(
+                        manifest, artifact_root)
+                    artifact["client_option_files"] = option_facts
+                    if option_failures:
+                        artifact["external_blocker"] = "client option-file provisioning failed: " + "; ".join(option_failures)
+                    else:
+                        for anchor_key, anchor_def in manifest["anchors"].items():
+                            if anchor_def.get("infra_only"):
+                                continue
+                            artifact["cases"].append(execute_ddl_case(manifest, anchor_key))
+                            artifact["cases"].append(execute_negative_case(manifest, anchor_key))
+                        for spec in cli_case_specs(manifest):
+                            artifact["cases"].append(execute_cli_case(manifest, cli["path"], policies, spec))
+                        for spec in metadata_case_specs(manifest):
+                            artifact["cases"].append(execute_metadata_case(manifest, spec["anchor"], cli["path"], policies, spec))
+                        for spec in error_case_specs(manifest):
+                            artifact["cases"].append(execute_error_case(manifest, cli["path"], policies, spec))
                 for case in artifact["cases"]:
                     db = (case.get("actual") or {}).get("database")
                     if db and case.get("anchor") in anchor_facts:
@@ -8307,9 +8491,18 @@ def cmd_run(args):
                                 "detail": f"platform={facts.get('platform')!r} locked={locked_platform!r}",
                             })
     finally:
+        option_file_cleanup = cleanup_client_option_files(manifest)
         artifact["cleanup"] = compose_cleanup()
+        artifact["cleanup"]["client_option_files"] = option_file_cleanup
         artifact["executed_count"] = len(artifact["cases"])
         artifact["generated_at"] = utc_now()
+
+    # Credential-leak scan over the fully serialized artifact before it is
+    # persisted or validated (issue #81 R3). A finding is an evidence failure.
+    artifact["credential_scan"] = {
+        "surfaces": ["argv", "stdout", "stderr", "setup_log", "cleanup_log", "artifact_json"],
+        "findings": credential_leak_findings(artifact, manifest),
+    }
 
     artifact_path = artifact_root / "artifact.json"
     with artifact_path.open("w", encoding="utf-8") as handle:

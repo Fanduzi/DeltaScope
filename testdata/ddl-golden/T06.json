@@ -535,9 +535,14 @@
    "database": "golden",
    "exec_client": [
     "mysql",
-    "-uroot",
-    "-proot"
+    "--defaults-extra-file=/etc/deltascope-golden-client.cnf",
+    "-uroot"
    ],
+   "client_option_file": {
+     "container_path": "/etc/deltascope-golden-client.cnf",
+     "user": "root",
+     "password": "root"
+   },
    "needs_database_create": false
   },
   "mysql80": {
@@ -549,9 +554,14 @@
    "database": "golden",
    "exec_client": [
     "mysql",
-    "-uroot",
-    "-proot"
+    "--defaults-extra-file=/etc/deltascope-golden-client.cnf",
+    "-uroot"
    ],
+   "client_option_file": {
+     "container_path": "/etc/deltascope-golden-client.cnf",
+     "user": "root",
+     "password": "root"
+   },
    "needs_database_create": false
   },
   "mysql84": {
@@ -563,9 +573,14 @@
    "database": "golden",
    "exec_client": [
     "mysql",
-    "-uroot",
-    "-proot"
+    "--defaults-extra-file=/etc/deltascope-golden-client.cnf",
+    "-uroot"
    ],
+   "client_option_file": {
+     "container_path": "/etc/deltascope-golden-client.cnf",
+     "user": "root",
+     "password": "root"
+   },
    "needs_database_create": false
   },
   "tidb85": {
