@@ -154,6 +154,24 @@ def image_digest(image):
     return digests[0] if digests else ""
 
 
+def image_facts(image):
+    """Return the anchor image's docker image ID and platform.
+
+    Issue #81 requires every anchor case to record the image ID and
+    platform/architecture alongside the resolved repo digest so a run can be
+    tied to an immutable local image identity. Empty strings when inspect
+    fails — reachability/version assertions still govern the case outcome.
+    """
+    rc, out, _ = run_cmd(
+        ["docker", "image", "inspect", image, "--format", "{{.Id}} {{.Os}}/{{.Architecture}}"],
+        timeout=30,
+    )
+    if rc != 0:
+        return {"image_id": "", "platform": ""}
+    parts = out.strip().split(" ", 1)
+    return {"image_id": parts[0], "platform": parts[1] if len(parts) > 1 else ""}
+
+
 def mysql_exec(anchor, sql, database=None, silent=True):
     """Execute fixed fixture SQL through the anchor's dedicated mysql client."""
     client = list(anchor["exec_client"])
@@ -8072,6 +8090,14 @@ def cmd_run(args):
 
     try:
         rc, out, err = compose("up", "-d", *services, timeout=300)
+        # Setup log is required anchor evidence (issue #81): keep the raw
+        # compose-up output so readiness is inspectable, not just asserted.
+        artifact["setup"] = {
+            "command": ["docker", "compose", "up", "-d", *services],
+            "rc": rc,
+            "stdout": out,
+            "stderr": err,
+        }
         if rc != 0:
             artifact["external_blocker"] = f"compose up failed: {err.strip()}"
         else:
@@ -8092,6 +8118,21 @@ def cmd_run(args):
                     artifact["cases"].append(execute_metadata_case(manifest, spec["anchor"], cli["path"], policies, spec))
                 for spec in error_case_specs(manifest):
                     artifact["cases"].append(execute_error_case(manifest, cli["path"], policies, spec))
+                # Anchor identity evidence (issue #81): image ID, platform and
+                # the fixture schema are collected once per anchor at run
+                # level — never inside a case path, so a fixture failure can
+                # still prove zero subprocess calls. Facts are merged into
+                # each case's database record for per-case inspectability.
+                anchor_facts = {}
+                for anchor_key, anchor_def in manifest["anchors"].items():
+                    facts = image_facts(anchor_def["image"])
+                    facts["schema"] = anchor_def.get("database")
+                    anchor_facts[anchor_key] = facts
+                artifact["anchor_facts"] = anchor_facts
+                for case in artifact["cases"]:
+                    db = (case.get("actual") or {}).get("database")
+                    if db and case.get("anchor") in anchor_facts:
+                        db.update(anchor_facts[case["anchor"]])
     finally:
         artifact["cleanup"] = compose_cleanup()
         artifact["executed_count"] = len(artifact["cases"])
