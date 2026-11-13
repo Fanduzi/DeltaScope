@@ -11,6 +11,7 @@ honestly — not a count of implemented rules.
 |------|----------------|
 | inventory.yaml | The inventory: verified official sources, status vocabulary, owner tasks (real issues), the `required_row_ids` denominator, and one row per statement family/subaction scoped to the versions where it exists |
 | required_rows.txt | Locked denominator baseline — one row ID per line, checked in independently of `inventory.yaml`. The gate requires `rows` == `required_row_ids` == this file, so shrinking both YAML fields together still fails |
+| matrix.json | Derived view of the inventory (`id`, `product`, `owner`, derived `status`, `parser_status`, `audit_status`, `applicability`, optional `subaction_status`). Regenerate with `python3 scripts/gen_ddl_inventory_matrix.py` after any inventory change; do not hand-edit |
 | T06-base-traceability.md | Bounded T06 (#85) traceability table: maps each CREATE TABLE acceptance dimension on `mysql.create-table`/`tidb.create-table` to normalized spec fields, consuming rules, and concrete evidence; records accepted representation limits and other-task boundaries |
 | T06-CLOSEOUT.md | Final T06 (#85) technical closeout index (T06技术收口材料齐备): binds every accepted dimension to the traceability rows, the SHA-frozen umbrella evidence, and the owner boundary for deferred dimensions; issue #85 stays open |
 
@@ -18,8 +19,38 @@ honestly — not a count of implemented rules.
 
 Every row carries: `id` (stable, unique), `product` (`mysql`/`tidb`),
 `versions`, `sources`, `family`, `subactions`, `sql_shape`, `prerequisites`,
-`status`, `status_evidence`, `targets`, `acceptance` (`dimensions`, `refs`),
-`owner`.
+`status` (derived aggregate — never authored independently),
+`parser_status`, `audit_status`, `applicability`, optional
+`subaction_status`, `status_evidence`, `targets`, `acceptance`
+(`dimensions`, `refs`), `owner`.
+
+The v2 status model separates three axes:
+
+- `parser_status`: `recognized` | `partial` | `unrecognized`
+- `audit_status`: `audited` | `notice_only` | `explicit_unsupported` |
+  `silent` | `not_applicable` | `mixed`
+- `applicability`: one cell per anchor carrying `anchor`,
+  `version_range`, `official_presence` (`documented` | `not_documented` |
+  `not_assessed`), `product_scope` (`registered` | `version_gated` |
+  `vendor_boundary` | `not_applicable` | `unknown`), cell-level
+  `parser_status`/`audit_status`, and `evidence` refs — evidence is
+  required on every version cell.
+
+`subaction_status` records exist where subactions differ meaningfully;
+each carries a stable `subaction_id`, its own parser/audit status, and
+complete applicability cells with evidence for every declared version.
+
+`status` is derived from the row's applicability cells by frozen rules
+(enforced by the gate): all registered applicable cells audited →
+`semantically_checked`; all notice-only → `generic_notice`; all
+explicit-unsupported → `explicit_unsupported`; all silent →
+`parse_only`; all relevant documented forms parser-unrecognized →
+`parser_unsupported`; all relevant product cells vendor-boundary →
+`vendor_not_supported`; mixed registered audit states → `mixed_coverage`.
+Out-of-domain `version_gated`/`vendor_boundary`/`not_applicable` cells do
+not downgrade a completely audited registered domain, and
+parser-unrecognized documented forms take precedence over mixed
+registered states.
 
 `required_row_ids` lists every row ID and must equal the row set exactly —
 deleting a row without updating the denominator fails the gate. The checked-in
@@ -39,6 +70,10 @@ Statuses (mutually exclusive, never substitutable):
 - `parse_only` — parses silently, zero findings
 - `parser_unsupported` — parser_error on a vendor-valid form
 - `vendor_not_supported` — product boundary, not a to-do item
+- `explicit_unsupported` — statement recognized but the product emits
+  explicit unsupported/bounded evidence (not audited, not silent)
+- `mixed_coverage` — registered applicable cells carry different audit
+  states (per-subaction split)
 
 `acceptance.refs` entries are `file:<repo-path>` (must exist),
 `gate:<make-target>`, or `missing:<description>` for honest gaps.
@@ -48,10 +83,14 @@ incomplete implementation — they are assigned, not counted as coverage.
 
 ## Gate
 
-`make ddl-inventory-gate` runs `TestDDLInventoryContract` plus the
-denominator-lock negative `TestDDLInventoryDenominatorLocked`
+`make ddl-inventory-gate` runs `TestDDLInventoryContract` (schema,
+vocabularies, per-cell evidence, version/subaction coverage, derived
+aggregate status), the denominator-lock negative
+`TestDDLInventoryDenominatorLocked`, and the derivation-rules unit test
+`TestDDLInventoryAggregateDerivation`
 (`internal/application/audit/ddl_inventory_contract_test.go`).
 
 Verified sources: MySQL 5.7 (frozen Oracle mirror — the dev.mysql.com 5.7
 URL redirects to 9.7), MySQL 8.0, MySQL 8.4, TiDB release-8.5 docs.
-Verification date: 2026-09-22.
+Schema version 2 (parser/audit/applicability/subaction separation),
+verification date: 2026-11-13.

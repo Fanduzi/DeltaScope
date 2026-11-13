@@ -1,0 +1,4928 @@
+{
+  "version": 2,
+  "verified": "2026-11-13",
+  "generated_from": "testdata/ddl-inventory/inventory.yaml",
+  "note": "Derived artifact - regenerate with scripts/gen_ddl_inventory_matrix.py; do not hand-edit.",
+  "anchors": [
+    "mysql57",
+    "mysql80",
+    "mysql84",
+    "tidb85"
+  ],
+  "status_counts": {
+    "semantically_checked": 75,
+    "generic_notice": 14,
+    "parse_only": 1,
+    "mixed_coverage": 1,
+    "parser_unsupported": 9,
+    "explicit_unsupported": 3,
+    "vendor_not_supported": 11
+  },
+  "rows": [
+    {
+      "id": "mysql.create-database",
+      "product": "mysql",
+      "owner": "T17",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_schema.go",
+            "file:internal/domain/rule/ddl/lifecycle_t17_rules.go",
+            "file:testdata/ddl-golden/T17.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings/database_lifecycle_rules.sql"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_schema.go",
+            "file:internal/domain/rule/ddl/lifecycle_t17_rules.go",
+            "file:testdata/ddl-golden/T17.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings/database_lifecycle_rules.sql"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_schema.go",
+            "file:internal/domain/rule/ddl/lifecycle_t17_rules.go",
+            "file:testdata/ddl-golden/T17.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings/database_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-database",
+      "product": "mysql",
+      "owner": "T17",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_schema.go",
+            "file:internal/domain/rule/ddl/lifecycle_t17_rules.go",
+            "file:testdata/ddl-golden/T17.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings/database_lifecycle_rules.sql"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_schema.go",
+            "file:internal/domain/rule/ddl/lifecycle_t17_rules.go",
+            "file:testdata/ddl-golden/T17.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings/database_lifecycle_rules.sql"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_schema.go",
+            "file:internal/domain/rule/ddl/lifecycle_t17_rules.go",
+            "file:testdata/ddl-golden/T17.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings/database_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.drop-database",
+      "product": "mysql",
+      "owner": "T17",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/supported",
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+            "file:internal/application/audit/batch_state_schema.go",
+            "file:internal/domain/rule/ddl/lifecycle_t17_rules.go",
+            "file:testdata/ddl-golden/T17.json"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/supported",
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+            "file:internal/application/audit/batch_state_schema.go",
+            "file:internal/domain/rule/ddl/lifecycle_t17_rules.go",
+            "file:testdata/ddl-golden/T17.json"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/supported",
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+            "file:internal/application/audit/batch_state_schema.go",
+            "file:internal/domain/rule/ddl/lifecycle_t17_rules.go",
+            "file:testdata/ddl-golden/T17.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-table",
+      "product": "mysql",
+      "owner": "T06",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T02.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings",
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T06.json",
+            "file:testdata/ddl-inventory/T06-base-traceability.md",
+            "file:testdata/ddl-inventory/T06-CLOSEOUT.md"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T02.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings",
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T06.json",
+            "file:testdata/ddl-inventory/T06-base-traceability.md",
+            "file:testdata/ddl-inventory/T06-CLOSEOUT.md"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T02.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings",
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T06.json",
+            "file:testdata/ddl-inventory/T06-base-traceability.md",
+            "file:testdata/ddl-inventory/T06-CLOSEOUT.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-table-temporary",
+      "product": "mysql",
+      "owner": "T16",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_namespace.go",
+            "file:testdata/ddl-golden/T16.json",
+            "file:testdata/sql-corpus/mysql/ddl/metadata"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_namespace.go",
+            "file:testdata/ddl-golden/T16.json",
+            "file:testdata/sql-corpus/mysql/ddl/metadata"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_namespace.go",
+            "file:testdata/ddl-golden/T16.json",
+            "file:testdata/sql-corpus/mysql/ddl/metadata"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-table-like",
+      "product": "mysql",
+      "owner": "T16",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T16.json",
+            "file:internal/domain/rule/ddl/lifecycle_t16_rules.go"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T16.json",
+            "file:internal/domain/rule/ddl/lifecycle_t16_rules.go"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T16.json",
+            "file:internal/domain/rule/ddl/lifecycle_t16_rules.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-table-select",
+      "product": "mysql",
+      "owner": "T16",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T16.json",
+            "file:internal/application/audit/batch_state.go"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T16.json",
+            "file:internal/application/audit/batch_state.go"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T16.json",
+            "file:internal/application/audit/batch_state.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-table-generated-column",
+      "product": "mysql",
+      "owner": "T07",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "missing: owner adds dependency and version-boundary fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "missing: owner adds dependency and version-boundary fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "missing: owner adds dependency and version-boundary fixtures"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-table-constraints",
+      "product": "mysql",
+      "owner": "T11",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings",
+            "file:testdata/ddl-golden/T11.json",
+            "file:testdata/ddl-golden/T12.json",
+            "file:testdata/sql-corpus/mysql/ddl/metadata/check_lifecycle.sql"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings",
+            "file:testdata/ddl-golden/T11.json",
+            "file:testdata/ddl-golden/T12.json",
+            "file:testdata/sql-corpus/mysql/ddl/metadata/check_lifecycle.sql"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings",
+            "file:testdata/ddl-golden/T11.json",
+            "file:testdata/ddl-golden/T12.json",
+            "file:testdata/sql-corpus/mysql/ddl/metadata/check_lifecycle.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-table-partitioning",
+      "product": "mysql",
+      "owner": "T14",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/boundary/create_table_range_partition.sql",
+            "file:testdata/sql-corpus/mysql/ddl/boundary/create_table_list_partition.sql",
+            "file:testdata/ddl-golden/T14.json",
+            "file:internal/application/audit/partition_transitions.go",
+            "file:docs/work-plans/t14-partition-topology/CONTRACT.md"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/boundary/create_table_range_partition.sql",
+            "file:testdata/sql-corpus/mysql/ddl/boundary/create_table_list_partition.sql",
+            "file:testdata/ddl-golden/T14.json",
+            "file:internal/application/audit/partition_transitions.go",
+            "file:docs/work-plans/t14-partition-topology/CONTRACT.md"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/boundary/create_table_range_partition.sql",
+            "file:testdata/sql-corpus/mysql/ddl/boundary/create_table_list_partition.sql",
+            "file:testdata/ddl-golden/T14.json",
+            "file:internal/application/audit/partition_transitions.go",
+            "file:docs/work-plans/t14-partition-topology/CONTRACT.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-table-options",
+      "product": "mysql",
+      "owner": "T15",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/boundary/create_table_options.sql",
+            "missing: per-option semantic fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/boundary/create_table_options.sql",
+            "missing: per-option semantic fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/boundary/create_table_options.sql",
+            "missing: per-option semantic fixtures"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.drop-table",
+      "product": "mysql",
+      "owner": "T16",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T16.json",
+            "file:internal/application/audit/batch_state.go",
+            "file:docs/research/2026-09-22-ddl-multi-target-denylist-probes.json"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T16.json",
+            "file:internal/application/audit/batch_state.go",
+            "file:docs/research/2026-09-22-ddl-multi-target-denylist-probes.json"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T16.json",
+            "file:internal/application/audit/batch_state.go",
+            "file:docs/research/2026-09-22-ddl-multi-target-denylist-probes.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.rename-table",
+      "product": "mysql",
+      "owner": "T01",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:docs/decisions/2026-09-22-ddl-multi-target-denylist.md",
+            "file:pkg/deltascope/audit_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:docs/decisions/2026-09-22-ddl-multi-target-denylist.md",
+            "file:pkg/deltascope/audit_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:docs/decisions/2026-09-22-ddl-multi-target-denylist.md",
+            "file:pkg/deltascope/audit_test.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.truncate-table",
+      "product": "mysql",
+      "owner": "T16",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T16.json"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T16.json"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T16.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.add-column",
+      "product": "mysql",
+      "owner": "T08",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+            "missing: position and existence assertions"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+            "missing: position and existence assertions"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+            "missing: position and existence assertions"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.drop-column",
+      "product": "mysql",
+      "owner": "T08",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+            "missing: dependency-risk assertions"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+            "missing: dependency-risk assertions"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+            "missing: dependency-risk assertions"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.modify-column",
+      "product": "mysql",
+      "owner": "T08",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:scripts/test_cli_metadata_e2e.sh",
+            "missing: offline unverified evidence-gap assertions (T04)"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:scripts/test_cli_metadata_e2e.sh",
+            "missing: offline unverified evidence-gap assertions (T04)"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:scripts/test_cli_metadata_e2e.sh",
+            "missing: offline unverified evidence-gap assertions (T04)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.change-column",
+      "product": "mysql",
+      "owner": "T08",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.rename-column",
+      "product": "mysql",
+      "owner": "T08",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.alter-column-default",
+      "product": "mysql",
+      "owner": "T08",
+      "status": "parse_only",
+      "parser_status": "recognized",
+      "audit_status": "silent",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "missing: owner adds SET/DROP DEFAULT policy and fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "missing: owner adds SET/DROP DEFAULT policy and fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "missing: owner adds SET/DROP DEFAULT policy and fixtures"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.rename-table",
+      "product": "mysql",
+      "owner": "T16",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T16.json",
+            "file:internal/domain/rule/ddl/lifecycle_t16_rules.go"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T16.json",
+            "file:internal/domain/rule/ddl/lifecycle_t16_rules.go"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T16.json",
+            "file:internal/domain/rule/ddl/lifecycle_t16_rules.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.multi-action",
+      "product": "mysql",
+      "owner": "T03",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.add-primary-key",
+      "product": "mysql",
+      "owner": "T11",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T11.json"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T11.json"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T11.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.drop-primary-key",
+      "product": "mysql",
+      "owner": "T11",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings",
+            "file:testdata/ddl-golden/T11.json"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings",
+            "file:testdata/ddl-golden/T11.json"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings",
+            "file:testdata/ddl-golden/T11.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.add-foreign-key",
+      "product": "mysql",
+      "owner": "T11",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T11.json"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T11.json"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T11.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.drop-foreign-key",
+      "product": "mysql",
+      "owner": "T11",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T11.json"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T11.json"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T11.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.check-constraints",
+      "product": "mysql",
+      "owner": "T12",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T12.json",
+            "file:testdata/sql-corpus/mysql/ddl/metadata/check_lifecycle.sql",
+            "file:testdata/sql-corpus/mysql/ddl/metadata/check_ignored_57.sql"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T12.json",
+            "file:testdata/sql-corpus/mysql/ddl/metadata/check_lifecycle.sql",
+            "file:testdata/sql-corpus/mysql/ddl/metadata/check_ignored_57.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.partition-destructive",
+      "product": "mysql",
+      "owner": "T13",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T13.json",
+            "file:internal/application/audit/batch_state_t13_test.go",
+            "file:internal/application/audit/batch_state_t13r1_test.go",
+            "file:internal/application/audit/batch_state_t13r1_applicability_test.go",
+            "file:internal/application/audit/batch_state_t13r2_test.go",
+            "file:internal/application/audit/batch_state_t13r3_test.go",
+            "file:internal/domain/rule/ddl/partition_rules.go",
+            "file:internal/domain/rule/ddl/partition_applicability_rules.go",
+            "file:internal/domain/rule/ddl/partition_applicability_rules_t13r2_test.go",
+            "file:internal/domain/rule/ddl/partition_applicability_rules_t13r3_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_partition_destructive.sql",
+            "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_partition_applicability.sql"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T13.json",
+            "file:internal/application/audit/batch_state_t13_test.go",
+            "file:internal/application/audit/batch_state_t13r1_test.go",
+            "file:internal/application/audit/batch_state_t13r1_applicability_test.go",
+            "file:internal/application/audit/batch_state_t13r2_test.go",
+            "file:internal/application/audit/batch_state_t13r3_test.go",
+            "file:internal/domain/rule/ddl/partition_rules.go",
+            "file:internal/domain/rule/ddl/partition_applicability_rules.go",
+            "file:internal/domain/rule/ddl/partition_applicability_rules_t13r2_test.go",
+            "file:internal/domain/rule/ddl/partition_applicability_rules_t13r3_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_partition_destructive.sql",
+            "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_partition_applicability.sql"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T13.json",
+            "file:internal/application/audit/batch_state_t13_test.go",
+            "file:internal/application/audit/batch_state_t13r1_test.go",
+            "file:internal/application/audit/batch_state_t13r1_applicability_test.go",
+            "file:internal/application/audit/batch_state_t13r2_test.go",
+            "file:internal/application/audit/batch_state_t13r3_test.go",
+            "file:internal/domain/rule/ddl/partition_rules.go",
+            "file:internal/domain/rule/ddl/partition_applicability_rules.go",
+            "file:internal/domain/rule/ddl/partition_applicability_rules_t13r2_test.go",
+            "file:internal/domain/rule/ddl/partition_applicability_rules_t13r3_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_partition_destructive.sql",
+            "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_partition_applicability.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.partition-topology",
+      "product": "mysql",
+      "owner": "T14",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T14.json",
+            "file:internal/application/audit/partition_transitions.go",
+            "file:internal/domain/rule/ddl/partition_topology_rules.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_partition_topology.sql",
+            "file:docs/work-plans/t14-partition-topology/CONTRACT.md"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T14.json",
+            "file:internal/application/audit/partition_transitions.go",
+            "file:internal/domain/rule/ddl/partition_topology_rules.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_partition_topology.sql",
+            "file:docs/work-plans/t14-partition-topology/CONTRACT.md"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T14.json",
+            "file:internal/application/audit/partition_transitions.go",
+            "file:internal/domain/rule/ddl/partition_topology_rules.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_partition_topology.sql",
+            "file:docs/work-plans/t14-partition-topology/CONTRACT.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.partition-maintenance",
+      "product": "mysql",
+      "owner": "T14",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T14.json",
+            "file:internal/application/audit/partition_transitions.go",
+            "file:internal/domain/rule/ddl/partition_topology_rules.go",
+            "file:docs/work-plans/t14-partition-topology/CONTRACT.md"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T14.json",
+            "file:internal/application/audit/partition_transitions.go",
+            "file:internal/domain/rule/ddl/partition_topology_rules.go",
+            "file:docs/work-plans/t14-partition-topology/CONTRACT.md"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T14.json",
+            "file:internal/application/audit/partition_transitions.go",
+            "file:internal/domain/rule/ddl/partition_topology_rules.go",
+            "file:docs/work-plans/t14-partition-topology/CONTRACT.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.tablespace-ops",
+      "product": "mysql",
+      "owner": "T25",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml",
+            "file:internal/domain/rule/ddl/common.go"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml",
+            "file:internal/domain/rule/ddl/common.go"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml",
+            "file:internal/domain/rule/ddl/common.go"
+          ]
+        }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "DISCARD TABLESPACE",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml",
+                "file:internal/domain/rule/ddl/common.go"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml",
+                "file:internal/domain/rule/ddl/common.go"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml",
+                "file:internal/domain/rule/ddl/common.go"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "IMPORT TABLESPACE",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml",
+                "file:internal/domain/rule/ddl/common.go"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml",
+                "file:internal/domain/rule/ddl/common.go"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml",
+                "file:internal/domain/rule/ddl/common.go"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.online-ddl",
+      "product": "mysql",
+      "owner": "T15",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
+          ]
+        }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "ALGORITHM=INSTANT/INPLACE/COPY/DEFAULT",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "notice_only",
+              "evidence": [
+                "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "notice_only",
+              "evidence": [
+                "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "notice_only",
+              "evidence": [
+                "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "LOCK=NONE/SHARED/EXCLUSIVE/DEFAULT",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "notice_only",
+              "evidence": [
+                "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "notice_only",
+              "evidence": [
+                "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "notice_only",
+              "evidence": [
+                "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.options",
+      "product": "mysql",
+      "owner": "T15",
+      "status": "mixed_coverage",
+      "parser_status": "recognized",
+      "audit_status": "mixed",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "evidence": [
+            "missing: owner adds option fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "evidence": [
+            "missing: owner adds option fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "evidence": [
+            "missing: owner adds option fixtures"
+          ]
+        }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "ORDER BY",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "CONVERT TO CHARACTER SET",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "DEFAULT CHARACTER SET",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "ROW_FORMAT",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "silent",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "silent",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "silent",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "AUTO_INCREMENT=",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "silent",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "silent",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "silent",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "FORCE",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "ENABLE/DISABLE KEYS",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "notice_only",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "notice_only",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "notice_only",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "COMMENT",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "silent",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "silent",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "silent",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "ENGINE",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "missing: owner adds option fixtures"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-index",
+      "product": "mysql",
+      "owner": "T09",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings",
+            "missing: CREATE-vs-ALTER index parity fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings",
+            "missing: CREATE-vs-ALTER index parity fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings",
+            "missing: CREATE-vs-ALTER index parity fixtures"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-index-advanced",
+      "product": "mysql",
+      "owner": "T10",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T10.json"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T10.json"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata",
+            "file:testdata/ddl-golden/T10.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-table.index-ops",
+      "product": "mysql",
+      "owner": "T10",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata/alter_index_visibility.sql",
+            "file:testdata/sql-corpus/mysql/ddl/metadata/alter_index_visibility.expected.yaml",
+            "file:testdata/ddl-golden/T10.json"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata/alter_index_visibility.sql",
+            "file:testdata/sql-corpus/mysql/ddl/metadata/alter_index_visibility.expected.yaml",
+            "file:testdata/ddl-golden/T10.json"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/metadata/alter_index_visibility.sql",
+            "file:testdata/sql-corpus/mysql/ddl/metadata/alter_index_visibility.expected.yaml",
+            "file:testdata/ddl-golden/T10.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.drop-index",
+      "product": "mysql",
+      "owner": "T09",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "missing: owner adds parity fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "missing: owner adds parity fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "missing: owner adds parity fixtures"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-view",
+      "product": "mysql",
+      "owner": "T18",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:pkg/deltascope/audit_t18_view_first_test.go",
+            "file:internal/application/audit/batch_state_t18_first_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/view_lifecycle_rules.sql"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:pkg/deltascope/audit_t18_view_first_test.go",
+            "file:internal/application/audit/batch_state_t18_first_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/view_lifecycle_rules.sql"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:pkg/deltascope/audit_t18_view_first_test.go",
+            "file:internal/application/audit/batch_state_t18_first_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/view_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-view-check-option",
+      "product": "mysql",
+      "owner": "T18",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:pkg/deltascope/audit_t18_view_first_test.go",
+            "file:internal/infrastructure/parser/tidb/view_t18_first_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:pkg/deltascope/audit_t18_view_first_test.go",
+            "file:internal/infrastructure/parser/tidb/view_t18_first_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:pkg/deltascope/audit_t18_view_first_test.go",
+            "file:internal/infrastructure/parser/tidb/view_t18_first_test.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-view",
+      "product": "mysql",
+      "owner": "T18",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+            "file:pkg/deltascope/audit_t18_view_first_test.go",
+            "file:internal/application/audit/batch_state_t18_first_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+            "file:pkg/deltascope/audit_t18_view_first_test.go",
+            "file:internal/application/audit/batch_state_t18_first_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+            "file:pkg/deltascope/audit_t18_view_first_test.go",
+            "file:internal/application/audit/batch_state_t18_first_test.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.drop-view",
+      "product": "mysql",
+      "owner": "T18",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:pkg/deltascope/audit_t18_view_first_test.go",
+            "file:internal/application/audit/batch_state_t18_first_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/view_lifecycle_rules.sql"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:pkg/deltascope/audit_t18_view_first_test.go",
+            "file:internal/application/audit/batch_state_t18_first_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/view_lifecycle_rules.sql"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:pkg/deltascope/audit_t18_view_first_test.go",
+            "file:internal/application/audit/batch_state_t18_first_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/view_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-procedure",
+      "product": "mysql",
+      "owner": "T27",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "missing: owner adds body-audit fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "missing: owner adds body-audit fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "missing: owner adds body-audit fixtures"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-function",
+      "product": "mysql",
+      "owner": "T27",
+      "status": "parser_unsupported",
+      "parser_status": "unrecognized",
+      "audit_status": "not_applicable",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "missing: owner adds function fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "missing: owner adds function fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "missing: owner adds function fixtures"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-procedure-function",
+      "product": "mysql",
+      "owner": "T27",
+      "status": "parser_unsupported",
+      "parser_status": "unrecognized",
+      "audit_status": "not_applicable",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "missing: owner adds attribute fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "missing: owner adds attribute fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "missing: owner adds attribute fixtures"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.drop-procedure-function",
+      "product": "mysql",
+      "owner": "T27",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.stored-body-analysis",
+      "product": "mysql",
+      "owner": "T28",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "missing: owner adds static/dynamic body boundary fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "missing: owner adds static/dynamic body boundary fixtures"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "missing: owner adds static/dynamic body boundary fixtures"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-trigger",
+      "product": "mysql",
+      "owner": "T29",
+      "status": "parser_unsupported",
+      "parser_status": "unrecognized",
+      "audit_status": "not_applicable",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.drop-trigger",
+      "product": "mysql",
+      "owner": "T29",
+      "status": "parser_unsupported",
+      "parser_status": "unrecognized",
+      "audit_status": "not_applicable",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-event",
+      "product": "mysql",
+      "owner": "T30",
+      "status": "parser_unsupported",
+      "parser_status": "unrecognized",
+      "audit_status": "not_applicable",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-event",
+      "product": "mysql",
+      "owner": "T30",
+      "status": "parser_unsupported",
+      "parser_status": "unrecognized",
+      "audit_status": "not_applicable",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.drop-event",
+      "product": "mysql",
+      "owner": "T30",
+      "status": "parser_unsupported",
+      "parser_status": "unrecognized",
+      "audit_status": "not_applicable",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-tablespace",
+      "product": "mysql",
+      "owner": "T25",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_lifecycle_rules.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_applicability_rules.expected.yaml"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_lifecycle_rules.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_applicability_rules.expected.yaml"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_lifecycle_rules.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_applicability_rules.expected.yaml"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-tablespace",
+      "product": "mysql",
+      "owner": "T25",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_lifecycle_rules.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_applicability_rules.expected.yaml"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_lifecycle_rules.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_applicability_rules.expected.yaml"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_lifecycle_rules.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_applicability_rules.expected.yaml"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.drop-tablespace",
+      "product": "mysql",
+      "owner": "T25",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_lifecycle_rules.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_applicability_rules.expected.yaml"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_lifecycle_rules.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_applicability_rules.expected.yaml"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_lifecycle_rules.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_tablespace_applicability_rules.expected.yaml"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.logfile-group",
+      "product": "mysql",
+      "owner": "T25",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "missing: owner adds engine-boundary classification evidence"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "missing: owner adds engine-boundary classification evidence"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "missing: owner adds engine-boundary classification evidence"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-server",
+      "product": "mysql",
+      "owner": "T26",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "mixed",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "version_gated",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:internal/domain/rule/ddl/mysql_server_rules.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_server_create_rules.expected.yaml"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": "8.0.x",
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/rule/ddl/mysql_server_rules.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_server_create_rules.expected.yaml"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "version_gated",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:internal/domain/rule/ddl/mysql_server_rules.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_server_create_rules.expected.yaml"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-server",
+      "product": "mysql",
+      "owner": "T26",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "mixed",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "version_gated",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:internal/domain/rule/ddl/mysql_server_rules.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_server_alter_rules.expected.yaml"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": "8.0.x",
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/rule/ddl/mysql_server_rules.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_server_alter_rules.expected.yaml"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "version_gated",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:internal/domain/rule/ddl/mysql_server_rules.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_server_alter_rules.expected.yaml"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.drop-server",
+      "product": "mysql",
+      "owner": "T26",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/rule/ddl/mysql_server_rules.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_server_drop_rules.expected.yaml"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": "8.0.x",
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/rule/ddl/mysql_server_rules.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_server_drop_rules.expected.yaml"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/rule/ddl/mysql_server_rules.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_server_drop_rules.expected.yaml"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.spatial-reference-system",
+      "product": "mysql",
+      "owner": "T26",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "mixed",
+      "applicability": [
+        {
+          "anchor": "mysql80",
+          "version_range": "8.0.4+",
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_create_authored_rules.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_drop_rules.expected.yaml"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "version_gated",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_create_authored_rules.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_drop_rules.expected.yaml"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-instance",
+      "product": "mysql",
+      "owner": "T26",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": "5.7.11+",
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"
+          ]
+        }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "ROTATE INNODB MASTER KEY (5.7.11+/8.0)",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7.11+",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go",
+                "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go",
+                "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go",
+                "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "RELOAD TLS (8.0+)",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "not_documented",
+              "product_scope": "version_gated",
+              "parser_status": "recognized",
+              "audit_status": "explicit_unsupported",
+              "evidence": [
+                "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go",
+                "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0+",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go",
+                "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go",
+                "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-resource-group",
+      "product": "mysql",
+      "owner": "T24",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/spec/mysql_resource_group.go",
+            "file:internal/infrastructure/parser/tidb/mysql_resource_group.go",
+            "file:internal/application/audit/batch_state_mysql_resource_group.go",
+            "file:internal/application/audit/batch_state_t24_test.go",
+            "file:internal/domain/rule/ddl/mysql_resource_group_rules.go",
+            "file:internal/infrastructure/metadata/mysql/provider_t24_test.go",
+            "file:testdata/ddl-golden/T24.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_resource_group_lifecycle_rules.sql"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/spec/mysql_resource_group.go",
+            "file:internal/infrastructure/parser/tidb/mysql_resource_group.go",
+            "file:internal/application/audit/batch_state_mysql_resource_group.go",
+            "file:internal/application/audit/batch_state_t24_test.go",
+            "file:internal/domain/rule/ddl/mysql_resource_group_rules.go",
+            "file:internal/infrastructure/metadata/mysql/provider_t24_test.go",
+            "file:testdata/ddl-golden/T24.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_resource_group_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-resource-group",
+      "product": "mysql",
+      "owner": "T24",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/spec/mysql_resource_group.go",
+            "file:internal/infrastructure/parser/tidb/mysql_resource_group.go",
+            "file:internal/application/audit/batch_state_mysql_resource_group.go",
+            "file:internal/application/audit/batch_state_t24_test.go",
+            "file:internal/domain/rule/ddl/mysql_resource_group_rules.go",
+            "file:testdata/ddl-golden/T24.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_resource_group_lifecycle_rules.sql"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/spec/mysql_resource_group.go",
+            "file:internal/infrastructure/parser/tidb/mysql_resource_group.go",
+            "file:internal/application/audit/batch_state_mysql_resource_group.go",
+            "file:internal/application/audit/batch_state_t24_test.go",
+            "file:internal/domain/rule/ddl/mysql_resource_group_rules.go",
+            "file:testdata/ddl-golden/T24.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_resource_group_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.drop-resource-group",
+      "product": "mysql",
+      "owner": "T24",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/spec/mysql_resource_group.go",
+            "file:internal/infrastructure/parser/tidb/mysql_resource_group.go",
+            "file:internal/application/audit/batch_state_mysql_resource_group.go",
+            "file:internal/application/audit/batch_state_t24_test.go",
+            "file:internal/domain/rule/ddl/mysql_resource_group_rules.go",
+            "file:testdata/ddl-golden/T24.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_resource_group_lifecycle_rules.sql"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/spec/mysql_resource_group.go",
+            "file:internal/infrastructure/parser/tidb/mysql_resource_group.go",
+            "file:internal/application/audit/batch_state_mysql_resource_group.go",
+            "file:internal/application/audit/batch_state_t24_test.go",
+            "file:internal/domain/rule/ddl/mysql_resource_group_rules.go",
+            "file:testdata/ddl-golden/T24.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings/mysql_resource_group_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-database",
+      "product": "tidb",
+      "owner": "T17",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_schema.go",
+            "file:internal/domain/rule/ddl/lifecycle_t17_rules.go",
+            "file:testdata/ddl-golden/T17.json",
+            "file:testdata/sql-corpus/tidb/ddl/findings/database_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-database",
+      "product": "tidb",
+      "owner": "T17",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_schema.go",
+            "file:internal/domain/rule/ddl/lifecycle_t17_rules.go",
+            "file:testdata/ddl-golden/T17.json",
+            "file:testdata/sql-corpus/tidb/ddl/findings/database_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.drop-database",
+      "product": "tidb",
+      "owner": "T17",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/tidb/ddl/supported",
+            "file:internal/application/audit/batch_state_schema.go",
+            "file:internal/domain/rule/ddl/lifecycle_t17_rules.go",
+            "file:testdata/ddl-golden/T17.json",
+            "file:testdata/sql-corpus/tidb/ddl/findings/database_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-table",
+      "product": "tidb",
+      "owner": "T06",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T02.json",
+            "file:testdata/sql-corpus/tidb/ddl/findings",
+            "file:testdata/ddl-golden/T06.json",
+            "file:testdata/ddl-inventory/T06-base-traceability.md",
+            "file:testdata/ddl-inventory/T06-CLOSEOUT.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-table-like",
+      "product": "tidb",
+      "owner": "T16",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/tidb/ddl/metadata",
+            "file:testdata/ddl-golden/T16.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-table-select",
+      "product": "tidb",
+      "owner": "T16",
+      "status": "vendor_not_supported",
+      "parser_status": "unrecognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "vendor_boundary",
+          "parser_status": "unrecognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-golden/T16.json",
+            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-table-partitioning",
+      "product": "tidb",
+      "owner": "T14",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/tidb/ddl/findings",
+            "file:testdata/ddl-golden/T14.json",
+            "file:docs/work-plans/t14-partition-topology/CONTRACT.md",
+            "file:docs/work-plans/t20-tidb-placement-lifecycle/CONTRACT.md",
+            "file:internal/application/audit/batch_state_t20r4_test.go",
+            "file:testdata/ddl-golden/T20.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-table-auto-random",
+      "product": "tidb",
+      "owner": "T23",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/spec/auto_random.go",
+            "file:internal/domain/rule/ddl/auto_random_rules.go",
+            "file:internal/domain/rule/ddl/auto_random_t23_test.go",
+            "file:internal/domain/rule/ddl/auto_random_t23opt_test.go",
+            "file:internal/application/audit/batch_state_t23_test.go",
+            "file:internal/application/audit/batch_state_t23opt_test.go",
+            "file:pkg/deltascope/audit_t23_test.go",
+            "file:testdata/ddl-golden/T23.json",
+            "file:testdata/sql-corpus/tidb/ddl/findings/table_options_rules.sql",
+            "file:internal/domain/spec/alter_auto_random.go",
+            "file:internal/domain/rule/ddl/auto_random_alter_rules.go",
+            "file:internal/application/audit/batch_state_auto_random.go",
+            "file:internal/application/audit/batch_state_t23alter_test.go",
+            "file:internal/infrastructure/metadata/mysql/provider_sharding.go",
+            "file:internal/infrastructure/metadata/mysql/provider_t23_test.go",
+            "file:testdata/sql-corpus/tidb/ddl/findings/alter_auto_random_rules.sql",
+            "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_options_rules.sql",
+            "missing: native restricted-fixture evidence awaiting narrowed card approval (ALTER-side probe set folded into the same card)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-temporary-table",
+      "product": "tidb",
+      "owner": "T16",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_namespace.go",
+            "file:testdata/ddl-golden/T16.json",
+            "file:testdata/sql-corpus/tidb/ddl/metadata"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-global-temporary-table",
+      "product": "tidb",
+      "owner": "T16",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T16.json",
+            "file:internal/application/audit/coverage.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-table-ttl",
+      "product": "tidb",
+      "owner": "T19",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_ttl.go",
+            "file:internal/application/audit/batch_state_t19_state_test.go",
+            "file:internal/domain/rule/ddl/ttl_rules.go",
+            "file:internal/infrastructure/metadata/mysql/provider_ttl.go",
+            "file:internal/infrastructure/parser/tidb/ttl_test.go",
+            "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_ttl.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-table-cache",
+      "product": "tidb",
+      "owner": "T23",
+      "status": "parser_unsupported",
+      "parser_status": "unrecognized",
+      "audit_status": "not_applicable",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:internal/infrastructure/parser/tidb/extractor.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-table-placement-hint",
+      "product": "tidb",
+      "owner": "T20",
+      "status": "parser_unsupported",
+      "parser_status": "unrecognized",
+      "audit_status": "not_applicable",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "missing: owner records parser evidence"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.drop-table",
+      "product": "tidb",
+      "owner": "T16",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T16.json",
+            "file:internal/application/audit/batch_state.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.rename-table",
+      "product": "tidb",
+      "owner": "T01",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:docs/decisions/2026-09-22-ddl-multi-target-denylist.md",
+            "file:pkg/deltascope/audit_test.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.truncate-table",
+      "product": "tidb",
+      "owner": "T16",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/tidb/ddl/metadata",
+            "file:testdata/ddl-golden/T16.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.flashback-recover",
+      "product": "tidb",
+      "owner": "T16",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:internal/application/audit/coverage.go",
+            "file:testdata/ddl-golden/T16.json",
+            "missing: dynamic GC/snapshot availability stays unaudited by contract \u2014 no success guarantee claims"
+          ]
+        }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "FLASHBACK TABLE",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "applicability": [
+            {
+              "anchor": "tidb85",
+              "version_range": 8.5,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "explicit_unsupported",
+              "evidence": [
+                "file:internal/application/audit/coverage.go",
+                "file:testdata/ddl-golden/T16.json",
+                "missing: dynamic GC/snapshot availability stays unaudited by contract \u2014 no success guarantee claims"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "FLASHBACK DATABASE",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "applicability": [
+            {
+              "anchor": "tidb85",
+              "version_range": 8.5,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "explicit_unsupported",
+              "evidence": [
+                "file:internal/application/audit/coverage.go",
+                "file:testdata/ddl-golden/T16.json",
+                "missing: dynamic GC/snapshot availability stays unaudited by contract \u2014 no success guarantee claims"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "FLASHBACK CLUSTER",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "applicability": [
+            {
+              "anchor": "tidb85",
+              "version_range": 8.5,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "explicit_unsupported",
+              "evidence": [
+                "file:internal/application/audit/coverage.go",
+                "file:testdata/ddl-golden/T16.json",
+                "missing: dynamic GC/snapshot availability stays unaudited by contract \u2014 no success guarantee claims"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "RECOVER TABLE",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "applicability": [
+            {
+              "anchor": "tidb85",
+              "version_range": 8.5,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "explicit_unsupported",
+              "evidence": [
+                "file:internal/application/audit/coverage.go",
+                "file:testdata/ddl-golden/T16.json",
+                "missing: dynamic GC/snapshot availability stays unaudited by contract \u2014 no success guarantee claims"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-table.columns",
+      "product": "tidb",
+      "owner": "T08",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-table.index-ops",
+      "product": "tidb",
+      "owner": "T10",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/tidb/ddl/metadata/alter_index_visibility.sql",
+            "file:testdata/sql-corpus/tidb/ddl/metadata/alter_index_visibility.expected.yaml",
+            "file:testdata/ddl-golden/T10.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-table.fk-check",
+      "product": "tidb",
+      "owner": "T11",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T11.json",
+            "file:testdata/ddl-golden/T12.json",
+            "file:testdata/sql-corpus/tidb/ddl/metadata/check_lifecycle.sql",
+            "file:testdata/sql-corpus/tidb/ddl/metadata/check_ignored_off.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-table.partition-destructive",
+      "product": "tidb",
+      "owner": "T13",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T13.json",
+            "file:internal/application/audit/batch_state_t13_test.go",
+            "file:internal/application/audit/batch_state_t13r1_test.go",
+            "file:internal/application/audit/batch_state_t13r1_applicability_test.go",
+            "file:internal/application/audit/batch_state_t13r2_test.go",
+            "file:internal/application/audit/batch_state_t13r3_test.go",
+            "file:internal/domain/rule/ddl/partition_rules.go",
+            "file:internal/domain/rule/ddl/partition_applicability_rules.go",
+            "file:internal/domain/rule/ddl/partition_applicability_rules_t13r2_test.go",
+            "file:internal/domain/rule/ddl/partition_applicability_rules_t13r3_test.go",
+            "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_partition_destructive.sql",
+            "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_partition_applicability.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-table.partition-ops",
+      "product": "tidb",
+      "owner": "T14",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-golden/T14.json",
+            "file:internal/application/audit/partition_transitions.go",
+            "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_partition_topology.sql",
+            "file:docs/work-plans/t14-partition-topology/CONTRACT.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-table.ttl",
+      "product": "tidb",
+      "owner": "T19",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_ttl.go",
+            "file:internal/application/audit/batch_state_t19_state_test.go",
+            "file:internal/domain/rule/ddl/ttl_rules.go",
+            "file:internal/infrastructure/parser/tidb/ttl_test.go",
+            "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_ttl.sql",
+            "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_ttl.expected.yaml"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-table.placement-binding",
+      "product": "tidb",
+      "owner": "T20",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/spec/placement.go",
+            "file:internal/application/audit/batch_state_placement.go",
+            "file:internal/domain/rule/ddl/placement_rules.go",
+            "file:internal/application/audit/batch_state_t20r3_test.go",
+            "file:internal/application/audit/batch_state_t20r4_test.go",
+            "file:docs/work-plans/t20-tidb-placement-lifecycle/CONTRACT.md",
+            "file:testdata/ddl-golden/T20.json",
+            "file:testdata/sql-corpus/tidb/ddl/findings/placement_policy_missing.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-table.layout-id",
+      "product": "tidb",
+      "owner": "T23",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/spec/alter_auto_random.go",
+            "file:internal/domain/spec/alter_layout_r6.go",
+            "file:internal/domain/rule/ddl/table_layout_r6_rules.go",
+            "file:internal/application/audit/batch_state_layout_r6.go",
+            "file:internal/application/audit/batch_state_t23r6_test.go",
+            "file:internal/domain/spec/split_compact_r8.go",
+            "file:internal/domain/rule/ddl/table_split_compact_r8_rules.go",
+            "file:internal/infrastructure/metadata/mysql/provider_ttl.go",
+            "file:testdata/ddl-golden/T23.json",
+            "missing: TiFlash real-store success/recovery fixtures pending native"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-table.online-options",
+      "product": "tidb",
+      "owner": "T15",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "missing: owner adds fixtures"
+          ]
+        }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "ALGORITHM= (capability assertion, not selection)",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "applicability": [
+            {
+              "anchor": "tidb85",
+              "version_range": 8.5,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "notice_only",
+              "evidence": [
+                "missing: owner adds fixtures"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "LOCK=",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "applicability": [
+            {
+              "anchor": "tidb85",
+              "version_range": 8.5,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "notice_only",
+              "evidence": [
+                "missing: owner adds fixtures"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "multiple actions per ALTER",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "applicability": [
+            {
+              "anchor": "tidb85",
+              "version_range": 8.5,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "notice_only",
+              "evidence": [
+                "missing: owner adds fixtures"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-index",
+      "product": "tidb",
+      "owner": "T10",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/sql-corpus/tidb/ddl/metadata",
+            "file:testdata/ddl-golden/T10.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.drop-index",
+      "product": "tidb",
+      "owner": "T09",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
+          "evidence": [
+            "missing: owner adds fixtures"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-view",
+      "product": "tidb",
+      "owner": "T18",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:pkg/deltascope/audit_t18_view_first_test.go",
+            "file:testdata/sql-corpus/tidb/ddl/findings/view_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-view",
+      "product": "tidb",
+      "owner": "T18",
+      "status": "vendor_not_supported",
+      "parser_status": "unrecognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "vendor_boundary",
+          "parser_status": "unrecognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md",
+            "file:pkg/deltascope/audit_t18_view_first_test.go"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.drop-view",
+      "product": "tidb",
+      "owner": "T18",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:pkg/deltascope/audit_t18_view_first_test.go",
+            "file:internal/application/audit/batch_state_t18_first_test.go",
+            "file:testdata/sql-corpus/tidb/ddl/findings/view_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-sequence",
+      "product": "tidb",
+      "owner": "T21",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/spec/sequence.go",
+            "file:internal/application/audit/batch_state_sequence.go",
+            "file:internal/application/audit/batch_state_t21_test.go",
+            "file:internal/application/audit/batch_state_t21r1_test.go",
+            "file:internal/domain/rule/ddl/sequence_rules.go",
+            "file:internal/infrastructure/metadata/mysql/provider_t21r1_test.go",
+            "file:internal/application/auditmeta/audit_t21r1_test.go",
+            "file:testdata/ddl-golden/T21.json",
+            "file:testdata/sql-corpus/tidb/ddl/findings/sequence_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-sequence",
+      "product": "tidb",
+      "owner": "T21",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/spec/sequence.go",
+            "file:internal/application/audit/batch_state_sequence.go",
+            "file:internal/application/audit/batch_state_t21_test.go",
+            "file:internal/application/audit/batch_state_t21r1_test.go",
+            "file:internal/domain/rule/ddl/sequence_rules.go",
+            "file:internal/infrastructure/metadata/mysql/provider_t21r1_test.go",
+            "file:internal/application/auditmeta/audit_t21r1_test.go",
+            "file:testdata/ddl-golden/T21.json",
+            "file:testdata/sql-corpus/tidb/ddl/findings/sequence_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.drop-sequence",
+      "product": "tidb",
+      "owner": "T21",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/spec/sequence.go",
+            "file:internal/application/audit/batch_state_sequence.go",
+            "file:internal/application/audit/batch_state_t21_test.go",
+            "file:internal/application/audit/batch_state_t21r1_test.go",
+            "file:internal/domain/rule/ddl/sequence_rules.go",
+            "file:internal/infrastructure/metadata/mysql/provider_t21r1_test.go",
+            "file:internal/application/auditmeta/audit_t21r1_test.go",
+            "file:testdata/ddl-golden/T21.json",
+            "file:testdata/sql-corpus/tidb/ddl/findings/sequence_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-placement-policy",
+      "product": "tidb",
+      "owner": "T20",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_placement.go",
+            "file:internal/domain/rule/ddl/placement_rules.go",
+            "file:internal/application/audit/batch_state_t20r3_test.go",
+            "file:testdata/ddl-golden/T20.json",
+            "file:testdata/sql-corpus/tidb/ddl/findings/placement_policy_bind.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-placement-policy",
+      "product": "tidb",
+      "owner": "T20",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_placement.go",
+            "file:internal/domain/rule/ddl/placement_rules.go",
+            "file:internal/application/audit/batch_state_t20r3_test.go",
+            "file:testdata/ddl-golden/T20.json",
+            "file:testdata/sql-corpus/tidb/ddl/findings/placement_policy_bind.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.drop-placement-policy",
+      "product": "tidb",
+      "owner": "T20",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_placement.go",
+            "file:internal/domain/rule/ddl/placement_rules.go",
+            "file:internal/application/audit/batch_state_t20r3_test.go",
+            "file:testdata/ddl-golden/T20.json",
+            "file:testdata/sql-corpus/tidb/ddl/findings/placement_policy_missing.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-range-placement",
+      "product": "tidb",
+      "owner": "T20",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/application/audit/batch_state_placement.go",
+            "file:internal/domain/rule/ddl/placement_rules.go",
+            "file:internal/application/audit/batch_state_t20r3_test.go",
+            "file:testdata/ddl-golden/T20.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-resource-group",
+      "product": "tidb",
+      "owner": "T22",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/spec/resource_group.go",
+            "file:internal/application/audit/batch_state_resource_group.go",
+            "file:internal/application/audit/batch_state_t22_test.go",
+            "file:internal/application/audit/audit_t22_first_test.go",
+            "file:internal/domain/rule/ddl/resource_group_rules.go",
+            "file:internal/infrastructure/metadata/mysql/provider_t22_test.go",
+            "file:internal/application/auditmeta/audit_t22_test.go",
+            "file:internal/infrastructure/parser/tidb/extractor_t22_test.go",
+            "file:testdata/ddl-golden/T22.json",
+            "file:testdata/sql-corpus/tidb/ddl/findings/resource_group_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-resource-group",
+      "product": "tidb",
+      "owner": "T22",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/spec/resource_group.go",
+            "file:internal/application/audit/batch_state_resource_group.go",
+            "file:internal/application/audit/batch_state_t22_test.go",
+            "file:internal/application/audit/audit_t22_first_test.go",
+            "file:internal/domain/rule/ddl/resource_group_rules.go",
+            "file:internal/infrastructure/metadata/mysql/provider_t22_test.go",
+            "file:internal/application/auditmeta/audit_t22_test.go",
+            "file:internal/infrastructure/parser/tidb/extractor_t22_test.go",
+            "file:testdata/ddl-golden/T22.json",
+            "file:testdata/sql-corpus/tidb/ddl/findings/resource_group_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.drop-resource-group",
+      "product": "tidb",
+      "owner": "T22",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:internal/domain/spec/resource_group.go",
+            "file:internal/application/audit/batch_state_resource_group.go",
+            "file:internal/application/audit/batch_state_t22_test.go",
+            "file:internal/application/audit/audit_t22_first_test.go",
+            "file:internal/domain/rule/ddl/resource_group_rules.go",
+            "file:internal/infrastructure/metadata/mysql/provider_t22_test.go",
+            "file:internal/application/auditmeta/audit_t22_test.go",
+            "file:testdata/ddl-golden/T22.json",
+            "file:testdata/sql-corpus/tidb/ddl/findings/resource_group_lifecycle_rules.sql"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-procedure",
+      "product": "tidb",
+      "owner": "T27",
+      "status": "vendor_not_supported",
+      "parser_status": "unrecognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "vendor_boundary",
+          "parser_status": "unrecognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-function",
+      "product": "tidb",
+      "owner": "T27",
+      "status": "vendor_not_supported",
+      "parser_status": "unrecognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "vendor_boundary",
+          "parser_status": "unrecognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-trigger",
+      "product": "tidb",
+      "owner": "T29",
+      "status": "vendor_not_supported",
+      "parser_status": "unrecognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "vendor_boundary",
+          "parser_status": "unrecognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-event",
+      "product": "tidb",
+      "owner": "T30",
+      "status": "vendor_not_supported",
+      "parser_status": "unrecognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "vendor_boundary",
+          "parser_status": "unrecognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-tablespace",
+      "product": "tidb",
+      "owner": "T25",
+      "status": "vendor_not_supported",
+      "parser_status": "unrecognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "vendor_boundary",
+          "parser_status": "unrecognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.create-server",
+      "product": "tidb",
+      "owner": "T26",
+      "status": "vendor_not_supported",
+      "parser_status": "unrecognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "vendor_boundary",
+          "parser_status": "unrecognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.spatial-reference-system",
+      "product": "tidb",
+      "owner": "T26",
+      "status": "vendor_not_supported",
+      "parser_status": "unrecognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "vendor_boundary",
+          "parser_status": "unrecognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.logfile-group",
+      "product": "tidb",
+      "owner": "T25",
+      "status": "vendor_not_supported",
+      "parser_status": "unrecognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "vendor_boundary",
+          "parser_status": "unrecognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.fulltext-spatial-index",
+      "product": "tidb",
+      "owner": "T10",
+      "status": "vendor_not_supported",
+      "parser_status": "unrecognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "vendor_boundary",
+          "parser_status": "unrecognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.alter-instance",
+      "product": "tidb",
+      "owner": "T32",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "missing: T32 (#111) owns instance-management boundary evidence"
+          ]
+        }
+      ]
+    }
+  ]
+}

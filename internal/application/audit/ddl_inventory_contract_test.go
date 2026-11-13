@@ -25,20 +25,46 @@ type ddlInventoryAcceptance struct {
 	Refs       []string `yaml:"refs"`
 }
 
+// ddlInventoryCell is one applicability cell: official documentation presence
+// and product applicability for one anchor version, with its own parser/audit
+// status and evidence refs.
+type ddlInventoryCell struct {
+	Anchor           string   `yaml:"anchor"`
+	VersionRange     string   `yaml:"version_range"`
+	OfficialPresence string   `yaml:"official_presence"`
+	ProductScope     string   `yaml:"product_scope"`
+	ParserStatus     string   `yaml:"parser_status"`
+	AuditStatus      string   `yaml:"audit_status"`
+	Evidence         []string `yaml:"evidence"`
+}
+
+// ddlInventorySubaction is an explicit per-subaction record used where one row
+// carries subactions with meaningfully different parser/audit behavior.
+type ddlInventorySubaction struct {
+	SubactionID   string             `yaml:"subaction_id"`
+	ParserStatus  string             `yaml:"parser_status"`
+	AuditStatus   string             `yaml:"audit_status"`
+	Applicability []ddlInventoryCell `yaml:"applicability"`
+}
+
 type ddlInventoryRow struct {
-	ID             string                 `yaml:"id"`
-	Product        string                 `yaml:"product"`
-	Versions       []string               `yaml:"versions"`
-	Sources        []string               `yaml:"sources"`
-	Family         string                 `yaml:"family"`
-	Subactions     []string               `yaml:"subactions"`
-	SQLShape       string                 `yaml:"sql_shape"`
-	Prerequisites  string                 `yaml:"prerequisites"`
-	Status         string                 `yaml:"status"`
-	StatusEvidence string                 `yaml:"status_evidence"`
-	Targets        string                 `yaml:"targets"`
-	Acceptance     ddlInventoryAcceptance `yaml:"acceptance"`
-	Owner          string                 `yaml:"owner"`
+	ID              string                  `yaml:"id"`
+	Product         string                  `yaml:"product"`
+	Versions        []string                `yaml:"versions"`
+	Sources         []string                `yaml:"sources"`
+	Family          string                  `yaml:"family"`
+	Subactions      []string                `yaml:"subactions"`
+	SQLShape        string                  `yaml:"sql_shape"`
+	Prerequisites   string                  `yaml:"prerequisites"`
+	Status          string                  `yaml:"status"`
+	ParserStatus    string                  `yaml:"parser_status"`
+	AuditStatus     string                  `yaml:"audit_status"`
+	Applicability   []ddlInventoryCell      `yaml:"applicability"`
+	SubactionStatus []ddlInventorySubaction `yaml:"subaction_status"`
+	StatusEvidence  string                  `yaml:"status_evidence"`
+	Targets         string                  `yaml:"targets"`
+	Acceptance      ddlInventoryAcceptance  `yaml:"acceptance"`
+	Owner           string                  `yaml:"owner"`
 }
 
 type ddlInventorySource struct {
@@ -53,14 +79,18 @@ type ddlInventoryOwner struct {
 }
 
 type ddlInventory struct {
-	Version        int                           `yaml:"version"`
-	Verified       string                        `yaml:"verified"`
-	Purpose        string                        `yaml:"purpose"`
-	Sources        map[string]ddlInventorySource `yaml:"sources"`
-	Statuses       map[string]string             `yaml:"statuses"`
-	Owners         map[string]ddlInventoryOwner  `yaml:"owners"`
-	RequiredRowIDs []string                      `yaml:"required_row_ids"`
-	Rows           []ddlInventoryRow             `yaml:"rows"`
+	Version           int                           `yaml:"version"`
+	Verified          string                        `yaml:"verified"`
+	Purpose           string                        `yaml:"purpose"`
+	Sources           map[string]ddlInventorySource `yaml:"sources"`
+	Statuses          map[string]string             `yaml:"statuses"`
+	ParserStatuses    map[string]string             `yaml:"parser_statuses"`
+	AuditStatuses     map[string]string             `yaml:"audit_statuses"`
+	ProductScopes     map[string]string             `yaml:"product_scopes"`
+	OfficialPresences map[string]string             `yaml:"official_presences"`
+	Owners            map[string]ddlInventoryOwner  `yaml:"owners"`
+	RequiredRowIDs    []string                      `yaml:"required_row_ids"`
+	Rows              []ddlInventoryRow             `yaml:"rows"`
 }
 
 func loadDDLInventory(t *testing.T) ddlInventory {
@@ -148,6 +178,64 @@ func denominatorViolations(inv ddlInventory, baselineIDs map[string]bool) []stri
 	return out
 }
 
+// versionAnchors maps declared version strings to the four anchor identities.
+var versionAnchors = map[string]map[string]string{
+	"mysql": {"5.7": "mysql57", "8.0": "mysql80", "8.4": "mysql84"},
+	"tidb":  {"8.5": "tidb85"},
+}
+
+var knownAnchors = map[string]bool{"mysql57": true, "mysql80": true, "mysql84": true, "tidb85": true}
+
+// deriveAggregateStatus mirrors the reviewer-frozen derivation rules. Order
+// matters: an all-vendor-boundary row is vendor_not_supported; documented forms
+// the parser cannot read take precedence over mixed registered states
+// (parser_unsupported); then the registered-domain audit states classify.
+// Out-of-domain version_gated/vendor_boundary/not_applicable cells must not
+// downgrade a completely audited registered domain.
+func deriveAggregateStatus(cells []ddlInventoryCell) string {
+	registered := 0
+	vendor := 0
+	documented := 0
+	allDocUnrecognized := true
+	states := map[string]bool{}
+	for _, c := range cells {
+		switch c.ProductScope {
+		case "registered":
+			registered++
+			states[c.AuditStatus] = true
+		case "vendor_boundary":
+			vendor++
+		}
+		if c.OfficialPresence == "documented" {
+			documented++
+			if c.ParserStatus != "unrecognized" {
+				allDocUnrecognized = false
+			}
+		}
+	}
+	if vendor > 0 && vendor == len(cells) {
+		return "vendor_not_supported"
+	}
+	if documented > 0 && allDocUnrecognized {
+		return "parser_unsupported"
+	}
+	if registered > 0 && len(states) == 1 {
+		for s := range states {
+			switch s {
+			case "audited":
+				return "semantically_checked"
+			case "notice_only":
+				return "generic_notice"
+			case "explicit_unsupported":
+				return "explicit_unsupported"
+			case "silent":
+				return "parse_only"
+			}
+		}
+	}
+	return "mixed_coverage"
+}
+
 func repoRootFromInventory(t *testing.T) string {
 	t.Helper()
 	abs, err := filepath.Abs(filepath.Join(filepath.Dir(ddlInventoryPath), "..", ".."))
@@ -183,6 +271,16 @@ func TestDDLInventoryContract(t *testing.T) {
 	for _, s := range requiredStatuses {
 		if _, ok := inv.Statuses[s]; !ok {
 			t.Fatalf("statuses missing required class %q", s)
+		}
+	}
+	for name, vocab := range map[string]map[string]string{
+		"parser_statuses":    inv.ParserStatuses,
+		"audit_statuses":     inv.AuditStatuses,
+		"product_scopes":     inv.ProductScopes,
+		"official_presences": inv.OfficialPresences,
+	} {
+		if len(vocab) == 0 {
+			t.Fatalf("%s vocabulary missing or empty", name)
 		}
 	}
 	for key, src := range inv.Sources {
@@ -254,6 +352,70 @@ func TestDDLInventoryContract(t *testing.T) {
 			t.Fatalf("row %q unclassified status %q", row.ID, row.Status)
 		}
 		statusCounts[row.Status]++
+		if _, ok := inv.ParserStatuses[row.ParserStatus]; !ok {
+			t.Fatalf("row %q missing or unsupported parser_status %q", row.ID, row.ParserStatus)
+		}
+		if _, ok := inv.AuditStatuses[row.AuditStatus]; !ok {
+			t.Fatalf("row %q missing or unsupported audit_status %q", row.ID, row.AuditStatus)
+		}
+		checkInventoryCells := func(cells []ddlInventoryCell, label string) map[string]bool {
+			covered := map[string]bool{}
+			if len(cells) == 0 {
+				t.Fatalf("row %q %s has no applicability cells", row.ID, label)
+			}
+			for _, cell := range cells {
+				if !knownAnchors[cell.Anchor] {
+					t.Fatalf("row %q %s cell uses unknown anchor %q", row.ID, label, cell.Anchor)
+				}
+				covered[cell.Anchor] = true
+				if _, ok := inv.OfficialPresences[cell.OfficialPresence]; !ok {
+					t.Fatalf("row %q %s anchor %s unsupported official_presence %q", row.ID, label, cell.Anchor, cell.OfficialPresence)
+				}
+				if _, ok := inv.ProductScopes[cell.ProductScope]; !ok {
+					t.Fatalf("row %q %s anchor %s unsupported product_scope %q", row.ID, label, cell.Anchor, cell.ProductScope)
+				}
+				if _, ok := inv.ParserStatuses[cell.ParserStatus]; !ok {
+					t.Fatalf("row %q %s anchor %s unsupported cell parser_status %q", row.ID, label, cell.Anchor, cell.ParserStatus)
+				}
+				if _, ok := inv.AuditStatuses[cell.AuditStatus]; !ok {
+					t.Fatalf("row %q %s anchor %s unsupported cell audit_status %q", row.ID, label, cell.Anchor, cell.AuditStatus)
+				}
+				if len(cell.Evidence) == 0 {
+					t.Fatalf("row %q %s anchor %s has no evidence refs", row.ID, label, cell.Anchor)
+				}
+			}
+			return covered
+		}
+		covered := checkInventoryCells(row.Applicability, "row")
+		for _, v := range row.Versions {
+			anchor := versionAnchors[row.Product][v]
+			if anchor == "" {
+				t.Fatalf("row %q version %q has no anchor mapping", row.ID, v)
+			}
+			if !covered[anchor] {
+				t.Fatalf("row %q declared version %s lacks an applicability cell for anchor %s", row.ID, v, anchor)
+			}
+		}
+		if derived := deriveAggregateStatus(row.Applicability); derived != row.Status {
+			t.Fatalf("row %q status %q does not match derived aggregate %q", row.ID, row.Status, derived)
+		}
+		for _, sub := range row.SubactionStatus {
+			if sub.SubactionID == "" {
+				t.Fatalf("row %q has a subaction record with no subaction_id", row.ID)
+			}
+			if _, ok := inv.ParserStatuses[sub.ParserStatus]; !ok {
+				t.Fatalf("row %q subaction %q unsupported parser_status %q", row.ID, sub.SubactionID, sub.ParserStatus)
+			}
+			if _, ok := inv.AuditStatuses[sub.AuditStatus]; !ok {
+				t.Fatalf("row %q subaction %q unsupported audit_status %q", row.ID, sub.SubactionID, sub.AuditStatus)
+			}
+			subCovered := checkInventoryCells(sub.Applicability, "subaction "+sub.SubactionID)
+			for _, v := range row.Versions {
+				if !subCovered[versionAnchors[row.Product][v]] {
+					t.Fatalf("row %q subaction %q declared version %s lacks an applicability cell", row.ID, sub.SubactionID, v)
+				}
+			}
+		}
 		if row.StatusEvidence == "" {
 			t.Fatalf("row %q missing status_evidence (write 'unchecked' facts honestly)", row.ID)
 		}
@@ -328,5 +490,64 @@ func TestDDLInventoryDenominatorLocked(t *testing.T) {
 	}
 	for _, v := range got {
 		t.Logf("expected violation: %s", v)
+	}
+}
+
+// TestDDLInventoryAggregateDerivation pins the frozen derivation rules on
+// synthetic cells so a YAML edit cannot quietly change classification
+// semantics.
+func TestDDLInventoryAggregateDerivation(t *testing.T) {
+	t.Parallel()
+	cell := func(presence, scope, parser, audit string) ddlInventoryCell {
+		return ddlInventoryCell{
+			Anchor: "mysql80", VersionRange: "8.0",
+			OfficialPresence: presence, ProductScope: scope,
+			ParserStatus: parser, AuditStatus: audit,
+		}
+	}
+	cases := []struct {
+		name  string
+		cells []ddlInventoryCell
+		want  string
+	}{
+		{"all registered audited", []ddlInventoryCell{
+			cell("documented", "registered", "recognized", "audited"),
+			cell("documented", "registered", "recognized", "audited"),
+		}, "semantically_checked"},
+		{"audited registered plus gated cell", []ddlInventoryCell{
+			cell("documented", "registered", "recognized", "audited"),
+			cell("documented", "version_gated", "recognized", "explicit_unsupported"),
+		}, "semantically_checked"},
+		{"all registered notice only", []ddlInventoryCell{
+			cell("documented", "registered", "recognized", "notice_only"),
+		}, "generic_notice"},
+		{"all registered silent", []ddlInventoryCell{
+			cell("documented", "registered", "recognized", "silent"),
+		}, "parse_only"},
+		{"all registered explicit unsupported", []ddlInventoryCell{
+			cell("documented", "registered", "recognized", "explicit_unsupported"),
+			cell("documented", "version_gated", "recognized", "explicit_unsupported"),
+		}, "explicit_unsupported"},
+		{"mixed registered states", []ddlInventoryCell{
+			cell("documented", "registered", "recognized", "audited"),
+			cell("documented", "registered", "recognized", "silent"),
+		}, "mixed_coverage"},
+		{"documented unrecognized beats mixed", []ddlInventoryCell{
+			cell("documented", "registered", "unrecognized", "not_applicable"),
+			cell("documented", "registered", "recognized", "audited"),
+		}, "mixed_coverage"},
+		{"all documented unrecognized", []ddlInventoryCell{
+			cell("documented", "registered", "unrecognized", "not_applicable"),
+			cell("documented", "registered", "unrecognized", "not_applicable"),
+		}, "parser_unsupported"},
+		{"all vendor boundary", []ddlInventoryCell{
+			cell("not_documented", "vendor_boundary", "unrecognized", "not_applicable"),
+			cell("not_documented", "vendor_boundary", "unrecognized", "not_applicable"),
+		}, "vendor_not_supported"},
+	}
+	for _, tc := range cases {
+		if got := deriveAggregateStatus(tc.cells); got != tc.want {
+			t.Fatalf("%s: derived %q, want %q", tc.name, got, tc.want)
+		}
 	}
 }
