@@ -702,3 +702,55 @@ Review rework corrected three defects in the T04-A slice:
   binary path, `--dialect`/`--sql`/`--config`/`--format` values, declared
   connect target, and `--fail-on` args are bound verbatim, so an isolated
   case cannot silently run the all-off profile or a different connection.
+
+## T03 closeout round — oracle graduation for promoted families (2026-11-13)
+
+The T03 golden manifest was authored while several recognized form
+families were still unaudited aspects. Later tasks promoted those
+families to governed semantics, so twenty cli_cases still pinned
+pre-promotion `unsupported` expectations and failed under the
+`all-rules-disabled` profile with honest `pass`/`complete` output.
+
+Per the established oracle-sync convention (commit `1135e3f5`), the
+stale cases were graduated to assert the governed contract instead:
+`exit=0`, `verdict=pass`, `coverage=complete`, `unsupported=0`,
+`diagnostics=0`, `findings=0`. Each graduated case records its owning
+task:
+
+- T16 — temporary tables (6 cases: mysql create/drop temporary,
+  mixed-batch sibling, tidb create/drop temporary, tidb global
+  temporary ON COMMIT DELETE ROWS)
+- T12 — CHECK lifecycle (mysql add-list CHECK, tidb drop CHECK, tidb
+  inline column CHECK)
+- T15 — ALTER ALGORITHM/LOCK (mysql algorithm+lock combination)
+- T06 — foreign-key refer actions (mysql FK ON DELETE CASCADE)
+- T18 — view options (definer, sql_security, algorithm, check_option,
+  view_columns — 2 cases)
+- T20 — placement policies (or_replace/options, partition-level
+  placement binding — 2 cases)
+- T21 — sequence lifecycle (options, table option comment, multi-target
+  drop — 3 cases)
+- T23 — AUTO_RANDOM (create + alter add column — 2 cases)
+
+Two findings worth recording:
+
+1. §9.A/§9.B of the work order assumed `ALTER TABLE ... DROP PARTITION`
+   and TiDB resource-group DDL were recognized-but-unaudited. Both were
+   promoted to `semantically_checked` by T13/T14 and T22-era work —
+   `ddl.alter.drop_partition.forbid` and the resource-group notices
+   already fire under default policy. Regressing them to transitional
+   `incomplete` would violate "do not weaken existing policy
+   contracts"; the rows keep their audited status and the governed
+   contract applies.
+
+2. The §8 golden oracle (CREATE SEQUENCE vendor boundary + supported
+   ALTER sibling) was already green: the incomplete-coverage core
+   contract (`incomplete > unverified > complete`, bounded unsupported
+   records, exit 1 under `--fail-on none`, parser error exit 2,
+   SDK `ErrUnsupportedStatement`, HTTP 400, MCP isError) shipped in
+   `6b39dca7` and the T03 rework commits. The closeout work was oracle
+   graduation, not product change — `git diff` scope is T03.json +
+   this record only.
+
+Golden Path after graduation: `make ddl-golden TASK=T03` → 118/118
+cases, 1273 assertions, at HEAD `cf6a8bd5`.
