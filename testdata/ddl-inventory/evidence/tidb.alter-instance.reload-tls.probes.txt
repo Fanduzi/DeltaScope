@@ -1,8 +1,9 @@
 row_id: tidb.alter-instance
-subaction_id: ALTER INSTANCE ... RELOAD TLS etc. (instance-management section)
-# dialect: tidb
-# sqls: ['ALTER INSTANCE RELOAD TLS']
-# binary HEAD 5160e2cd, generated 2026-11-13
+subaction_id: ALTER INSTANCE RELOAD TLS
+dialect: tidb
+literal SQL: ALTER INSTANCE RELOAD TLS
+binary HEAD: 489ed932e9ab75d80dc53f4aeca925d5e3877a7e
+generation date: 2026-11-13
 
 === version 8.5 (target 8.5.0) rc=1 ===
 {

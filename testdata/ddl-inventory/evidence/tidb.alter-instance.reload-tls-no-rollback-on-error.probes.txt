@@ -1,0 +1,43 @@
+row_id: tidb.alter-instance
+subaction_id: ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR
+dialect: tidb
+literal SQL: ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR
+binary HEAD: 489ed932e9ab75d80dc53f4aeca925d5e3877a7e
+generation date: 2026-11-13
+
+=== version 8.5 (target 8.5.0) rc=1 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "incomplete"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [],
+   "coverage": {
+    "status": "incomplete"
+   }
+  }
+ ],
+ "unsupported": [
+  {
+   "feature": "alter_instance.reload_tls",
+   "sql": "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR",
+   "reason": "parsed by the shared parser but not covered by audited semantics",
+   "metadata": {
+    "boundary": "unaudited",
+    "no_rollback_on_error": true
+   }
+  }
+ ],
+ "diagnostics": [
+  {
+   "classification": "unsupported_statement",
+   "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+   "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+   "audited": false,
+   "dialect": "tidb"
+  }
+ ]
+}

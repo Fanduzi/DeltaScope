@@ -3809,6 +3809,52 @@
               ]
             }
           ]
+        },
+        {
+          "subaction_id": "RELOAD TLS NO ROLLBACK ON ERROR",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "not_documented",
+              "product_scope": "version_gated",
+              "parser_status": "recognized",
+              "audit_status": "explicit_unsupported",
+              "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-instance.reload-tls-no-rollback-on-error.probes.txt",
+                "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go",
+                "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0+",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-instance.reload-tls-no-rollback-on-error.probes.txt",
+                "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go",
+                "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-instance.reload-tls-no-rollback-on-error.probes.txt",
+                "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go",
+                "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"
+              ]
+            }
+          ]
         }
       ]
     },
@@ -5340,7 +5386,7 @@
       ],
       "subaction_status": [
         {
-          "subaction_id": "ALTER INSTANCE ... RELOAD TLS etc. (instance-management section)",
+          "subaction_id": "ALTER INSTANCE RELOAD TLS",
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "applicability": [
@@ -5352,7 +5398,26 @@
               "parser_status": "recognized",
               "audit_status": "explicit_unsupported",
               "evidence": [
-                "file:testdata/ddl-inventory/evidence/tidb.alter-instance.alter-instance-reload-tls-etc-instance-management-section.probes.txt",
+                "file:testdata/ddl-inventory/evidence/tidb.alter-instance.reload-tls.probes.txt",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "applicability": [
+            {
+              "anchor": "tidb85",
+              "version_range": 8.5,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "explicit_unsupported",
+              "evidence": [
+                "file:testdata/ddl-inventory/evidence/tidb.alter-instance.reload-tls-no-rollback-on-error.probes.txt",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             }

@@ -67,3 +67,33 @@ lets the combined row+subaction aggregate stay derivable.
   evidence, selector refs, and row-cells citing subaction probes.
 - Full regression: `make test`, `go vet ./...`, pg/corpus gates, and the
   live four-anchor golden path unchanged.
+
+## Addendum — R7: ALTER INSTANCE NO ROLLBACK ON ERROR
+
+The reviewer's final cross-check found one declared form family still
+under-expressed: `ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR`, which
+the T26 contract treats as a semantically distinct variant (distinct
+finding name, `no_rollback_on_error` metadata, distinct why/risk prose —
+the suppressed failure may drop the TLS surface even on a "successful"
+return code).
+
+Applied (inventory-only, no product changes):
+
+- `mysql.alter-instance` gained subaction `RELOAD TLS NO ROLLBACK ON
+  ERROR`: mysql57 `not_documented`/`version_gated`/
+  `explicit_unsupported` (bounded unaudited output, same boundary as
+  ordinary RELOAD TLS — the variant is an 8.0+ form), mysql80/mysql84
+  `documented`/`registered`/`audited`. Ordinary RELOAD TLS evidence
+  stays separate. Row stays `semantically_checked`.
+- `tidb.alter-instance` replaced the broad
+  `ALTER INSTANCE ... RELOAD TLS etc.` identifier with two precise
+  records: `ALTER INSTANCE RELOAD TLS` and `ALTER INSTANCE RELOAD TLS
+  NO ROLLBACK ON ERROR`, both `explicit_unsupported` on tidb85 (parser
+  recognized, bounded unaudited output — not executed). Row stays
+  `explicit_unsupported`. T32 (#111) remains the boundary owner.
+- Probe files follow the frozen header: `row_id`, `subaction_id`,
+  `dialect`, `literal SQL`, `binary HEAD`, `generation date`, then
+  per-version sections with exit code, raw JSON findings, unsupported,
+  diagnostics, coverage, verdict.
+- Gate gained R7 negative controls: ordinary↔variant borrow rejection
+  on both products and MySQL→TiDB evidence interchange rejection.

@@ -3326,7 +3326,7 @@ rows:
     versions: ["5.7", "8.0", "8.4"]
     sources: [mysql57, mysql80, mysql84]
     family: instance
-    subactions: ["ROTATE INNODB MASTER KEY (5.7.11+/8.0)", "RELOAD TLS (8.0+)"]
+    subactions: ["ROTATE INNODB MASTER KEY (5.7.11+/8.0)", "RELOAD TLS (8.0+)", "RELOAD TLS NO ROLLBACK ON ERROR"]
     sql_shape: "ALTER INSTANCE ROTATE INNODB MASTER KEY"
     prerequisites: "subaction availability differs by version"
     status: semantically_checked
@@ -3406,6 +3406,31 @@ rows:
             audit_status: audited
             evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-instance.reload-tls-8-0.probes.txt", "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
 
+      - subaction_id: RELOAD TLS NO ROLLBACK ON ERROR
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: 5.7
+            official_presence: not_documented
+            product_scope: version_gated
+            parser_status: recognized
+            audit_status: explicit_unsupported
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-instance.reload-tls-no-rollback-on-error.probes.txt", "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
+          - anchor: mysql80
+            version_range: 8.0+
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-instance.reload-tls-no-rollback-on-error.probes.txt", "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
+          - anchor: mysql84
+            version_range: 8.4
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-instance.reload-tls-no-rollback-on-error.probes.txt", "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
     status_evidence: "2026-11-13 R3 probe: ROTATE INNODB MASTER KEY audited (ddl.mysql.alter_instance.rotate_master_key) on 5.7/8.0; RELOAD TLS audited (ddl.mysql.alter_instance.reload_tls) on 8.0+ and bounded unaudited on 5.7. Earlier: 2026-09-22 ROTATE parser_error, RELOAD TLS zero findings"
     targets: "instance action kind, version applicability"
     acceptance:
@@ -4982,7 +5007,7 @@ rows:
     versions: ["8.5"]
     sources: [tidb85]
     family: instance
-    subactions: ["ALTER INSTANCE ... RELOAD TLS etc. (instance-management section)"]
+    subactions: ["ALTER INSTANCE RELOAD TLS", "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR"]
     sql_shape: "ALTER INSTANCE RELOAD TLS"
     prerequisites: "instance-level capability"
     status: explicit_unsupported
@@ -5001,7 +5026,7 @@ rows:
           - "missing: T32 (#111) owns instance-management boundary evidence"
 
     subaction_status:
-      - subaction_id: ALTER INSTANCE ... RELOAD TLS etc. (instance-management section)
+      - subaction_id: ALTER INSTANCE RELOAD TLS
         parser_status: recognized
         audit_status: explicit_unsupported
         applicability:
@@ -5011,9 +5036,18 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: explicit_unsupported
-            evidence:
-              - file:testdata/ddl-inventory/evidence/tidb.alter-instance.alter-instance-reload-tls-etc-instance-management-section.probes.txt
-              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+            evidence: ["file:testdata/ddl-inventory/evidence/tidb.alter-instance.reload-tls.probes.txt", "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"]
+      - subaction_id: ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        applicability:
+          - anchor: tidb85
+            version_range: 8.5
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: explicit_unsupported
+            evidence: ["file:testdata/ddl-inventory/evidence/tidb.alter-instance.reload-tls-no-rollback-on-error.probes.txt", "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"]
     status_evidence: "2026-11-13 R3 probe (8.5): ALTER INSTANCE emits explicit unsupported evidence (boundary=unaudited). T32/#111 owns implementation; R3 records current behavior only. Earlier: 2026-09-22 silent"
     targets: "instance action kind"
     acceptance:

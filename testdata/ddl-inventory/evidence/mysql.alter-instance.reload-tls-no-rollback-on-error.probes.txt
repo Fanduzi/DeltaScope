@@ -1,0 +1,125 @@
+row_id: mysql.alter-instance
+subaction_id: RELOAD TLS NO ROLLBACK ON ERROR
+dialect: mysql
+literal SQL: ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR
+binary HEAD: 489ed932e9ab75d80dc53f4aeca925d5e3877a7e
+generation date: 2026-11-13
+
+=== version 5.7 (target 5.7.44) rc=1 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "incomplete"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [],
+   "coverage": {
+    "status": "incomplete"
+   }
+  }
+ ],
+ "unsupported": [
+  {
+   "feature": "alter_instance.reload_tls",
+   "sql": "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR",
+   "reason": "parsed by the shared parser but not covered by audited semantics",
+   "metadata": {
+    "boundary": "unaudited",
+    "gate": "version",
+    "no_rollback_on_error": true,
+    "object": "instance"
+   }
+  }
+ ],
+ "diagnostics": [
+  {
+   "classification": "unsupported_statement",
+   "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+   "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+   "audited": false,
+   "dialect": "mysql"
+  }
+ ]
+}
+=== version 8.0 (target 8.0.46) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.mysql.alter_instance.reload_tls",
+     "level": "notice",
+     "message": "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR audited \u2014 outcome unproven",
+     "statement_kind": "ddl",
+     "location": {
+      "line": 1,
+      "column": 1
+     },
+     "metadata": {
+      "form": "reload_tls",
+      "no_rollback_on_error": true,
+      "outcome": "unproven"
+     },
+     "explanation": {
+      "summary": "Check DDL mysql alter instance reload tls",
+      "why": "The TLS-context premise this form needs has no proven supplier, and a successful return code never proves the reload took effect. The NO ROLLBACK ON ERROR variant can report success while suppressing the failure, so the TLS surface may have been dropped or left partially applied.",
+      "risk": "The TLS surface may be unchanged or refreshed, or the suppressed failure may have dropped TLS capability entirely \u2014 the outcome stays bounded by the owed facts.",
+      "suggestion": "Confirm the result against the server's own TLS observables; the audit reports only what is provable."
+     }
+    }
+   ],
+   "coverage": {
+    "status": "unverified"
+   }
+  }
+ ],
+ "unsupported": null,
+ "diagnostics": null
+}
+=== version 8.4 (target 8.4.10) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.mysql.alter_instance.reload_tls",
+     "level": "notice",
+     "message": "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR audited \u2014 outcome unproven",
+     "statement_kind": "ddl",
+     "location": {
+      "line": 1,
+      "column": 1
+     },
+     "metadata": {
+      "form": "reload_tls",
+      "no_rollback_on_error": true,
+      "outcome": "unproven"
+     },
+     "explanation": {
+      "summary": "Check DDL mysql alter instance reload tls",
+      "why": "The TLS-context premise this form needs has no proven supplier, and a successful return code never proves the reload took effect. The NO ROLLBACK ON ERROR variant can report success while suppressing the failure, so the TLS surface may have been dropped or left partially applied.",
+      "risk": "The TLS surface may be unchanged or refreshed, or the suppressed failure may have dropped TLS capability entirely \u2014 the outcome stays bounded by the owed facts.",
+      "suggestion": "Confirm the result against the server's own TLS observables; the audit reports only what is provable."
+     }
+    }
+   ],
+   "coverage": {
+    "status": "unverified"
+   }
+  }
+ ],
+ "unsupported": null,
+ "diagnostics": null
+}

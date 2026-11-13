@@ -744,6 +744,15 @@ func TestDDLInventoryEvidenceGate(t *testing.T) {
 		{"subaction wrong version rejected", "mysql.alter-table.options", "ORDER BY", cell("tidb85", orderByRef), "no probe section for version"},
 		{"subaction probe on wrong row rejected", "mysql.logfile-group", "ADD UNDOFILE", cell("mysql80", orderByRef), "belongs to a different row"},
 		{"row-level cell cannot cite subaction probe", "mysql.alter-table.options", "", cell("mysql80", orderByRef), "cannot cite subaction-bound probe"},
+		// R7 NO ROLLBACK ON ERROR binding: the modifier variant and the
+		// ordinary form must not borrow each other's evidence, and MySQL vs
+		// TiDB evidence cannot be interchanged.
+		{"NO ROLLBACK probe accepted", "mysql.alter-instance", "RELOAD TLS NO ROLLBACK ON ERROR", cell("mysql80", "file:testdata/ddl-inventory/evidence/mysql.alter-instance.reload-tls-no-rollback-on-error.probes.txt"), ""},
+		{"NO ROLLBACK borrowing ordinary RELOAD TLS rejected", "mysql.alter-instance", "RELOAD TLS NO ROLLBACK ON ERROR", cell("mysql80", "file:testdata/ddl-inventory/evidence/mysql.alter-instance.reload-tls-8-0.probes.txt"), "bound to subaction \"RELOAD TLS (8.0+)\", not \"RELOAD TLS NO ROLLBACK ON ERROR\""},
+		{"ordinary RELOAD TLS borrowing NO ROLLBACK rejected", "mysql.alter-instance", "RELOAD TLS (8.0+)", cell("mysql80", "file:testdata/ddl-inventory/evidence/mysql.alter-instance.reload-tls-no-rollback-on-error.probes.txt"), "bound to subaction \"RELOAD TLS NO ROLLBACK ON ERROR\", not \"RELOAD TLS (8.0+)\""},
+		{"MySQL probe cannot satisfy TiDB subaction", "tidb.alter-instance", "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR", cell("tidb85", "file:testdata/ddl-inventory/evidence/mysql.alter-instance.reload-tls-no-rollback-on-error.probes.txt"), "belongs to a different row"},
+		{"TiDB ordinary RELOAD TLS accepted", "tidb.alter-instance", "ALTER INSTANCE RELOAD TLS", cell("tidb85", "file:testdata/ddl-inventory/evidence/tidb.alter-instance.reload-tls.probes.txt"), ""},
+		{"TiDB NO ROLLBACK borrowing ordinary rejected", "tidb.alter-instance", "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR", cell("tidb85", "file:testdata/ddl-inventory/evidence/tidb.alter-instance.reload-tls.probes.txt"), "bound to subaction \"ALTER INSTANCE RELOAD TLS\", not \"ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR\""},
 	}
 	for _, tc := range cases {
 		err := validateCellEvidence(root, tc.rowID, tc.subID, tc.cell, anchorVersion)
