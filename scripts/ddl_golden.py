@@ -2095,7 +2095,10 @@ def t05_a3_contract():
             if old_column:
                 sqls.append("CREATE INDEX ix_old ON t(old_c)")
             finding = None
-            if absent:
+            if absent and "if-exists" not in mode:
+                # A plain DROP on a proven-absent target keeps the
+                # existence blocker; IF EXISTS on the same proven absence
+                # is the accepted T16 proven no-op — no finding fires.
                 finding = (0, drop_rule, {"table": "t", "operation": "drop_table", "exists": False})
             elif old_column:
                 finding = (5, index_rule, {"schema": "golden", "table": "t", "index": "ix_old", "column": "old_c", "exists": False})

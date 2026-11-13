@@ -2520,7 +2520,7 @@ def a3_contract_tests(tmp):
     c["actual"]["parsed"]["coverage"]["status"] = "complete"
     update_stdout(c)
     run("a3 unknown DROP gap deleted rejected", a, "gap")
-    a, c = fresh("mysql84-drop-if-exists-absent")
+    a, c = fresh("mysql84-drop-absent")
     c["actual"]["parsed"]["statements"][0]["findings"] = []
     c["actual"]["parsed"]["verdict"] = "pass"
     c["actual"]["exit"] = 0
