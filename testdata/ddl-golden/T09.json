@@ -13,9 +13,15 @@
       "database": "golden",
       "exec_client": [
         "mysql",
+        "--defaults-extra-file=/etc/deltascope-golden-client.cnf",
         "-uroot",
         "--default-character-set=utf8mb4"
       ],
+      "client_option_file": {
+        "container_path": "/etc/deltascope-golden-client.cnf",
+        "user": "root",
+        "password_source": "ephemeral-run-secret"
+      },
       "needs_database_create": false,
       "exec_password_env": "T09_MYSQL_PASSWORD"
     },
@@ -28,9 +34,15 @@
       "database": "golden",
       "exec_client": [
         "mysql",
+        "--defaults-extra-file=/etc/deltascope-golden-client.cnf",
         "-uroot",
         "--default-character-set=utf8mb4"
       ],
+      "client_option_file": {
+        "container_path": "/etc/deltascope-golden-client.cnf",
+        "user": "root",
+        "password_source": "ephemeral-run-secret"
+      },
       "needs_database_create": false,
       "exec_password_env": "T09_MYSQL_PASSWORD"
     },
@@ -43,9 +55,15 @@
       "database": "golden",
       "exec_client": [
         "mysql",
+        "--defaults-extra-file=/etc/deltascope-golden-client.cnf",
         "-uroot",
         "--default-character-set=utf8mb4"
       ],
+      "client_option_file": {
+        "container_path": "/etc/deltascope-golden-client.cnf",
+        "user": "root",
+        "password_source": "ephemeral-run-secret"
+      },
       "needs_database_create": false,
       "exec_password_env": "T09_MYSQL_PASSWORD"
     },
