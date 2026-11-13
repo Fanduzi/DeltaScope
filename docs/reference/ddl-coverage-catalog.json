@@ -13,10 +13,10 @@
   "summary": {
     "mysql": {
       "total": 62,
-      "finding_covered": 50,
+      "finding_covered": 53,
       "normalized_silent": 0,
       "unsupported_boundary": 0,
-      "parser_error": 12,
+      "parser_error": 9,
       "unclassified": 0
     },
     "postgresql": {
@@ -202,11 +202,11 @@
       "dialect": "mysql",
       "family": "alter_table",
       "form": "ALTER TABLESPACE",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "guidance_code": "parser_upgrade_candidate",
-      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-      "notes": "parser error"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.mysql.tablespace.alter.warn"
+      ],
+      "notes": ""
     },
     {
       "dialect": "mysql",
@@ -567,11 +567,11 @@
       "dialect": "mysql",
       "family": "table_lifecycle",
       "form": "CREATE TABLESPACE",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "guidance_code": "parser_upgrade_candidate",
-      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-      "notes": "parser error"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.mysql.tablespace.create.warn"
+      ],
+      "notes": ""
     },
     {
       "dialect": "mysql",
@@ -604,11 +604,11 @@
       "dialect": "mysql",
       "family": "table_lifecycle",
       "form": "DROP TABLESPACE",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "guidance_code": "parser_upgrade_candidate",
-      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-      "notes": "parser error"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.mysql.tablespace.drop.forbid"
+      ],
+      "notes": ""
     },
     {
       "dialect": "mysql",
