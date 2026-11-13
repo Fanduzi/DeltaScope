@@ -13,9 +13,15 @@
       "database": "golden",
       "exec_client": [
         "mysql",
+        "--defaults-extra-file=/etc/deltascope-golden-client.cnf",
         "-uroot",
         "--default-character-set=utf8mb4"
       ],
+      "client_option_file": {
+        "container_path": "/etc/deltascope-golden-client.cnf",
+        "user": "root",
+        "password_source": "ephemeral-run-secret"
+      },
       "needs_database_create": false,
       "exec_password_env": "T08_MYSQL_PASSWORD"
     },
@@ -28,9 +34,15 @@
       "database": "golden",
       "exec_client": [
         "mysql",
+        "--defaults-extra-file=/etc/deltascope-golden-client.cnf",
         "-uroot",
         "--default-character-set=utf8mb4"
       ],
+      "client_option_file": {
+        "container_path": "/etc/deltascope-golden-client.cnf",
+        "user": "root",
+        "password_source": "ephemeral-run-secret"
+      },
       "needs_database_create": false,
       "exec_password_env": "T08_MYSQL_PASSWORD"
     },
@@ -43,9 +55,15 @@
       "database": "golden",
       "exec_client": [
         "mysql",
+        "--defaults-extra-file=/etc/deltascope-golden-client.cnf",
         "-uroot",
         "--default-character-set=utf8mb4"
       ],
+      "client_option_file": {
+        "container_path": "/etc/deltascope-golden-client.cnf",
+        "user": "root",
+        "password_source": "ephemeral-run-secret"
+      },
       "needs_database_create": false,
       "exec_password_env": "T08_MYSQL_PASSWORD"
     },
@@ -1891,15 +1909,15 @@
       "dialect": "mysql",
       "sql": "ALTER TABLE t MODIFY COLUMN c INT, ALGORITHM=INPLACE;",
       "expect": {
-        "exit": 1,
-        "verdict": "review",
+        "exit": 0,
+        "verdict": "pass",
         "statements": 1,
         "findings": 0,
-        "diagnostics": 1,
-        "unsupported": 1,
-        "coverage": "incomplete",
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
         "statement_coverage": [
-          "incomplete"
+          "complete"
         ],
         "statement_sql": [
           "ALTER TABLE t MODIFY COLUMN c INT, ALGORITHM=INPLACE;"
@@ -1911,13 +1929,7 @@
         "evidence_gap_entries": [],
         "finding_entries": [],
         "finding_metadata": [],
-        "unsupported_entries": [
-          {
-            "index": 0,
-            "feature": "alter_table.algorithm",
-            "reason": "parsed by the shared parser but not covered by audited semantics"
-          }
-        ]
+        "unsupported_entries": []
       }
     }
   ],

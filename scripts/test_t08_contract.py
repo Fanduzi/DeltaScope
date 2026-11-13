@@ -278,13 +278,12 @@ def main():
         c['actual']['structure'][0]['output'] = 'a:1:YES:x00:|b:2:YES:x00:|c:3:YES:x00:|c1:4:YES:x00:|c2:5:YES:x00:'
         check('T08 failed execute side effects claimed', a)
         a, c = take('cli.unsupported-aspect')
-        c['actual']['parsed']['unsupported'] = []
-        c['actual']['parsed']['diagnostics'] = []
-        c['actual']['parsed']['coverage']['status'] = 'complete'
-        c['actual']['parsed']['statements'][0]['coverage']['status'] = 'complete'
-        c['actual']['parsed']['verdict'] = 'pass'
+        c['actual']['parsed']['unsupported'] = [{'statement_index': 0,
+                                                'feature': 'alter_table.algorithm',
+                                                'reason': 'fabricated'}]
+        c['actual']['parsed']['diagnostics'] = [{'severity': 'notice', 'message': 'x'}]
         sync(c)
-        check('T08 unsupported aspect erased', a)
+        check('T08 unsupported aspect fabricated', a)
         a, c = take('cli.parser-neg')
         c['actual']['parsed']['statements'] = [{'index': 0, 'kind': 'ddl',
                                                'raw_sql': 'ALTER TABLE t ALTER COLUMN c SET DEFAULT;',

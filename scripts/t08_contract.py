@@ -780,10 +780,13 @@ def cli_cases():
                  copy.deepcopy(parser_neg_expect)),
         cli_case('offline-no-connect', 'mysql', 'ALTER TABLE t MODIFY COLUMN c INT;',
                  expect(['ALTER TABLE t MODIFY COLUMN c INT;'])),
+        # T15 (issue #94) promoted ALGORITHM=/LOCK= modifiers to the probed
+        # online-DDL adjudicator: MODIFY COLUMN + ALGORITHM=INPLACE is a
+        # combinable combination, so the modifier is consumed rather than
+        # reported as an unaudited aspect. The pre-T15 unsupported-entry
+        # expectation was stale and is graduated to the audited contract.
         cli_case('unsupported-aspect', 'mysql', 'ALTER TABLE t MODIFY COLUMN c INT, ALGORITHM=INPLACE;',
-                 expect(['ALTER TABLE t MODIFY COLUMN c INT, ALGORITHM=INPLACE;'], verdict='review',
-                        coverage='incomplete', diagnostics=1,
-                        unsupported_entries=[{'index': 0, 'feature': 'alter_table.algorithm', 'reason': UNAUDITED_REASON}])),
+                 expect(['ALTER TABLE t MODIFY COLUMN c INT, ALGORITHM=INPLACE;'])),
     ]
 
 
