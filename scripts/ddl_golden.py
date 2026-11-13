@@ -8432,6 +8432,14 @@ def cmd_run(args):
     global RUN_SECRET
     RUN_SECRET = secrets.token_hex(16)
     manifest = load_manifest(args.task)
+    # Anchors may name an exec_password_env for the MYSQL_PWD channel used by
+    # mysql_exec. The ephemeral per-run secret is the only permitted value, so
+    # bind each declared variable to RUN_SECRET for this process; the variable
+    # name (never the value) is what lands in recorded argv/artifact.
+    for _anchor in (manifest.get("anchors") or {}).values():
+        _env_name = _anchor.get("exec_password_env")
+        if _env_name:
+            os.environ[_env_name] = RUN_SECRET
     baseline = load_baseline()
     baseline_errors = baseline_manifest_failures(manifest, baseline)
     if baseline_errors:

@@ -5,49 +5,67 @@
   "description": "Frozen generated/default-expression/visibility semantics; independent T07 acceptance contract",
   "anchors": {
     "mysql57": {
-      "service": "mysql57",
-      "container": "deltascope-ddl-golden-mysql57",
-      "image": "mysql:5.7.44",
-      "product": "mysql",
-      "version_contains": "5.7.44",
-      "database": "golden",
-      "exec_client": [
-        "mysql",
-        "-uroot",
-        "--default-character-set=utf8mb4"
-      ],
-      "needs_database_create": false,
-      "exec_password_env": "T07_MYSQL_PASSWORD"
+     "service": "mysql57",
+     "container": "deltascope-ddl-golden-mysql57",
+     "image": "mysql:5.7.44",
+     "product": "mysql",
+     "version_contains": "5.7.44",
+     "database": "golden",
+     "exec_client": [
+      "mysql",
+      "--defaults-extra-file=/etc/deltascope-golden-client.cnf",
+      "-uroot",
+      "--default-character-set=utf8mb4"
+     ],
+     "client_option_file": {
+      "container_path": "/etc/deltascope-golden-client.cnf",
+      "user": "root",
+      "password_source": "ephemeral-run-secret"
+     },
+     "needs_database_create": false,
+     "exec_password_env": "T07_MYSQL_PASSWORD"
     },
     "mysql80": {
-      "service": "mysql80",
-      "container": "deltascope-ddl-golden-mysql80",
-      "image": "mysql:8.0.46",
-      "product": "mysql",
-      "version_contains": "8.0.46",
-      "database": "golden",
-      "exec_client": [
-        "mysql",
-        "-uroot",
-        "--default-character-set=utf8mb4"
-      ],
-      "needs_database_create": false,
-      "exec_password_env": "T07_MYSQL_PASSWORD"
+     "service": "mysql80",
+     "container": "deltascope-ddl-golden-mysql80",
+     "image": "mysql:8.0.46",
+     "product": "mysql",
+     "version_contains": "8.0.46",
+     "database": "golden",
+     "exec_client": [
+      "mysql",
+      "--defaults-extra-file=/etc/deltascope-golden-client.cnf",
+      "-uroot",
+      "--default-character-set=utf8mb4"
+     ],
+     "client_option_file": {
+      "container_path": "/etc/deltascope-golden-client.cnf",
+      "user": "root",
+      "password_source": "ephemeral-run-secret"
+     },
+     "needs_database_create": false,
+     "exec_password_env": "T07_MYSQL_PASSWORD"
     },
     "mysql84": {
-      "service": "mysql84",
-      "container": "deltascope-ddl-golden-mysql84",
-      "image": "mysql:8.4.10",
-      "product": "mysql",
-      "version_contains": "8.4.10",
-      "database": "golden",
-      "exec_client": [
-        "mysql",
-        "-uroot",
-        "--default-character-set=utf8mb4"
-      ],
-      "needs_database_create": false,
-      "exec_password_env": "T07_MYSQL_PASSWORD"
+     "service": "mysql84",
+     "container": "deltascope-ddl-golden-mysql84",
+     "image": "mysql:8.4.10",
+     "product": "mysql",
+     "version_contains": "8.4.10",
+     "database": "golden",
+     "exec_client": [
+      "mysql",
+      "--defaults-extra-file=/etc/deltascope-golden-client.cnf",
+      "-uroot",
+      "--default-character-set=utf8mb4"
+     ],
+     "client_option_file": {
+      "container_path": "/etc/deltascope-golden-client.cnf",
+      "user": "root",
+      "password_source": "ephemeral-run-secret"
+     },
+     "needs_database_create": false,
+     "exec_password_env": "T07_MYSQL_PASSWORD"
     },
     "tidb85": {
       "service": "tidb85",
