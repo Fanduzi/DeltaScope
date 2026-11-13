@@ -929,8 +929,8 @@ def cli_case_expect_checks(parsed, rc, expect):
         ("verdict", parsed is not None and parsed.get("verdict") == expect["verdict"], f"verdict={parsed.get('verdict') if parsed else None!r}"),
         ("top-level statements", parsed is not None and len(statements) == expect["statements"], f"statements={len(statements)} expected={expect['statements']}"),
         ("zero findings", parsed is not None and findings == expect["findings"], f"findings={findings}"),
-        ("no diagnostics", parsed is not None and len(diagnostics) == expect["diagnostics"], f"diagnostics={diagnostics!r}"),
-        ("no unsupported", parsed is not None and len(unsupported) == expect["unsupported"], f"unsupported={unsupported!r}"),
+        ("diagnostics count", parsed is not None and len(diagnostics) == expect["diagnostics"], f"diagnostics={diagnostics!r}"),
+        ("unsupported count", parsed is not None and len(unsupported) == expect["unsupported"], f"unsupported={unsupported!r}"),
     ]
     if "rule_summary_loaded" in expect:
         got = rule_summary_int_count(parsed, "loaded")

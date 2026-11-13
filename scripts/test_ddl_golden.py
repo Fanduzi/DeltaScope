@@ -6649,6 +6649,26 @@ def t23s_manifest_tests(tmp):
            ctl["anchor"] == "tidb85tikv" and
            (ctl["expect"]["instance_facts"]["tidb_alter_primary_key"] == "false"))
 
+    # Assertion-label regression: a case with one diagnostic and one
+    # unsupported entry must emit count-equality assertion names, never
+    # zero-implying "no ..." labels.
+    parsed = {
+        "verdict": "review",
+        "coverage": {"status": "incomplete"},
+        "statements": [{"index": 0, "findings": [], "coverage": {"status": "incomplete"}}],
+        "global_findings": [],
+        "diagnostics": [{"classification": "unsupported_statement"}],
+        "unsupported": [{"feature": "create_sequence"}],
+    }
+    expect = {"exit": 1, "verdict": "review", "statements": 1,
+              "findings": 0, "diagnostics": 1, "unsupported": 1,
+              "coverage": "incomplete", "statement_coverage": ["incomplete"]}
+    names = [name for name, _ok, _detail in ddl_golden.cli_case_expect_checks(parsed, 1, expect)]
+    report("nonzero diagnostics/unsupported emit count labels",
+           "diagnostics count" in names and "unsupported count" in names)
+    report("nonzero diagnostics/unsupported never emit zero-count labels",
+           "no diagnostics" not in names and "no unsupported" not in names)
+
     return results
 
 
