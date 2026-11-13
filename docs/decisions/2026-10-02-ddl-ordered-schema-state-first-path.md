@@ -168,3 +168,24 @@ The first implementation was reviewed and reworked (`T05-A1-R1`):
   dropped statement, a moved finding, a falsely-completed invalidated
   statement, a tampered oracle answer, or a failed execute step recorded as
   success all fail validation.
+- R1 correction (T05 execution): the TiDB cached-table guard's ALTER
+  RENAME arm (`cachedTableGuardWithholds`) unvouched the pair whenever the
+  destination was not proven live, skipping the `CacheStatusKnown` check
+  the ordinary arm performs. A batch-created source — which starts at the
+  proven upstream Disable default — was tombstoned along with its
+  destination, so the migrated destination published `unknown_table_state`
+  gaps (the T05 TiDB cross-schema rename case). The premise binds only the
+  altered subject: a proven cache status settles the gate either way
+  (Disable lets the rename run; a proven non-Disable refuses it natively —
+  both adjudicated by the pair transition's own verdict), and absent or
+  shapeless sources belong to the pair transition's endpoint fate. Only a
+  present shape whose status is genuinely unobserved may unvouch the pair.
+- R1 oracle reconciliation: the frozen A3 contract pinned a
+  `ddl.table.drop.exists.require` blocker for `DROP TABLE IF EXISTS` on a
+  proven-absent target. The accepted T16 contract defines that form as a
+  proven no-op — upstream returns a 1051 note, not an error — so the two
+  `drop-if-exists-absent` oracles were corrected to clean pass/complete
+  while plain `DROP` on proven absent keeps the blocker. Twenty CLI
+  pre-promotion unsupported oracles were graduated under the established
+  T03/T04 convention: every family is governed by the T06–T23 rule
+  lineage already proven on this branch.

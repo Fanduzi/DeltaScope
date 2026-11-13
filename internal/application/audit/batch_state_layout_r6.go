@@ -83,6 +83,20 @@ func (s *batchState) cachedTableGuardWithholds(alters []spec.Alter, targets []sp
 		if dst != nil && dst.state == tablePresent {
 			return false
 		}
+		// The premise binds only the altered subject — the source. A
+		// proven cache status settles the gate either way: Disable lets
+		// the rename run, a proven non-Disable refuses it natively. Both
+		// are adjudicated inside the pair transition's own endpoint and
+		// cached-table verdicts, so only a present shape whose status is
+		// genuinely unobserved may unvouch the pair.
+		src := s.entries[s.keyFor(s.schema, targets[0])]
+		if src == nil || src.state != tablePresent || src.shape == nil {
+			if src == nil || src.state != tablePresent {
+				return false
+			}
+		} else if spec.AlterLayoutR6FactsForSnapshot(src.shape).CacheStatusKnown {
+			return false
+		}
 	}
 	withheld := false
 	for ti, target := range targets {
