@@ -1,0 +1,64 @@
+# R4 evidence probe for mysql.alter-table.alter-column-default (binary HEAD e2dd4b34+, generated 2026-11-13)
+# sql_shape: ALTER TABLE t ALTER COLUMN c SET DEFAULT 1
+# dialect: mysql
+
+=== version 5.7 (target 5.7.44) rc=1 ===
+{
+ "verdict": "reject",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.alter.set_default.explicit_default_change.forbid",
+     "level": "blocker"
+    }
+   ],
+   "unsupported": null,
+   "diagnostics": null
+  }
+ ]
+}
+=== version 8.0 (target 8.0.46) rc=1 ===
+{
+ "verdict": "reject",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.alter.set_default.explicit_default_change.forbid",
+     "level": "blocker"
+    }
+   ],
+   "unsupported": null,
+   "diagnostics": null
+  }
+ ]
+}
+=== version 8.4 (target 8.4.10) rc=1 ===
+{
+ "verdict": "reject",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.alter.set_default.explicit_default_change.forbid",
+     "level": "blocker"
+    }
+   ],
+   "unsupported": null,
+   "diagnostics": null
+  }
+ ]
+}

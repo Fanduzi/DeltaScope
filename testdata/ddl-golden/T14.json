@@ -1108,7 +1108,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-reorganize",
    "args": [
@@ -1213,7 +1213,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-reorganize",
    "args": [
@@ -1318,7 +1318,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-reorganize",
    "args": [
@@ -1526,7 +1526,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-reorganize-target",
    "expect": {
@@ -1603,7 +1603,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-reorganize-target",
    "expect": {
@@ -1679,7 +1679,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-reorganize-target",
    "expect": {
@@ -1754,7 +1754,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-reorganize-target",
    "expect": {
@@ -1978,7 +1978,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-reorg-truncate-target",
    "args": [
@@ -2065,7 +2065,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-reorg-truncate-target",
    "expect": {
@@ -2160,7 +2160,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-add-drop-target",
    "args": [
@@ -2241,7 +2241,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-add",
    "args": [
@@ -2315,7 +2315,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-add-target",
    "expect": {
@@ -2391,7 +2391,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-add-applicability",
    "expect": {
@@ -2467,7 +2467,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-add",
    "args": [
@@ -2607,7 +2607,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-coalesce",
    "args": [
@@ -2681,7 +2681,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-coalesce-applicability",
    "expect": {
@@ -2757,7 +2757,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-coalesce-applicability",
    "expect": {
@@ -2833,7 +2833,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-partition-by",
    "args": [
@@ -2907,7 +2907,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-partition-by-applicability",
    "expect": {
@@ -2971,7 +2971,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-remove",
    "args": [
@@ -3045,7 +3045,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-remove-applicability",
    "expect": {
@@ -3120,7 +3120,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-rebuild-target",
    "expect": {
@@ -3197,7 +3197,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-rebuild-applicability",
    "expect": {
@@ -3272,7 +3272,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-check-target",
    "expect": {
@@ -3349,7 +3349,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-check-applicability",
    "expect": {
@@ -3424,7 +3424,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-optimize",
    "args": [
@@ -3492,7 +3492,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-repair-applicability",
    "expect": {
@@ -3567,7 +3567,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-discard",
    "args": [
@@ -3635,7 +3635,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-discard-target",
    "expect": {
@@ -3712,7 +3712,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-import-target",
    "expect": {
@@ -3920,7 +3920,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14r1-add-truncate",
    "args": [
@@ -4019,7 +4019,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-add-applicability",
    "expect": {
@@ -4096,7 +4096,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-coalesce-applicability",
    "expect": {
@@ -4173,7 +4173,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-add-target",
    "expect": {
@@ -4233,7 +4233,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-partition-by-applicability",
    "expect": {
@@ -4381,7 +4381,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14r1-discard-applicability",
    "expect": {
@@ -4458,7 +4458,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14-add-target",
    "expect": {
@@ -4537,7 +4537,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14r2-add-truncate-target",
    "expect": {
@@ -4617,7 +4617,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T14_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t14r1-partitionby-truncate",
    "expect": {

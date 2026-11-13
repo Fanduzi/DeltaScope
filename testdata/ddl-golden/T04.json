@@ -44,7 +44,7 @@
    "client_option_file": {
      "container_path": "/etc/deltascope-golden-client.cnf",
      "user": "root",
-     "password": "root"
+     "password_source": "ephemeral-run-secret"
    },
    "needs_database_create": false
   },
@@ -63,7 +63,7 @@
    "client_option_file": {
      "container_path": "/etc/deltascope-golden-client.cnf",
      "user": "root",
-     "password": "root"
+     "password_source": "ephemeral-run-secret"
    },
    "needs_database_create": false
   },
@@ -82,7 +82,7 @@
    "client_option_file": {
      "container_path": "/etc/deltascope-golden-client.cnf",
      "user": "root",
-     "password": "root"
+     "password_source": "ephemeral-run-secret"
    },
    "needs_database_create": false
   },
@@ -121,7 +121,7 @@
    "client_option_file": {
      "container_path": "/etc/deltascope-golden-client.cnf",
      "user": "root",
-     "password": "root"
+     "password_source": "ephemeral-run-secret"
    },
    "needs_database_create": false,
    "auxiliary": "T04-B: innodb_page_size=4096 via --innodb-page-size"
@@ -4564,7 +4564,7 @@
     "port": 23384,
     "user": "root",
     "password_env": "DS_T04_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -4620,7 +4620,7 @@
     "port": 23384,
     "user": "root",
     "password_env": "DS_T04_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -4702,7 +4702,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T04_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -4781,7 +4781,7 @@
     "port": 23357,
     "user": "root",
     "password_env": "DS_T04_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "policy": "t04b-key-length-isolated",
@@ -4816,7 +4816,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T04_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -4879,7 +4879,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T04_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -5010,7 +5010,7 @@
     "port": 23384,
     "user": "root",
     "password_env": "DS_T04_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "expect": {
@@ -5048,7 +5048,7 @@
     "port": 23394,
     "user": "root",
     "password_env": "DS_T04_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "expect": {
@@ -5204,7 +5204,7 @@
     "DS_T04_GOLDEN_PW"
    ],
    "env": {
-    "DS_T04_GOLDEN_PW": "root"
+    "DS_T04_GOLDEN_PW": "${DDL_GOLDEN_RUN_SECRET}"
    },
    "expect": {
     "exit": 3,
@@ -5249,7 +5249,7 @@
     "8.0.46"
    ],
    "env": {
-    "DS_T04_GOLDEN_PW": "root"
+    "DS_T04_GOLDEN_PW": "${DDL_GOLDEN_RUN_SECRET}"
    },
    "expect": {
     "exit": 2,
@@ -5353,7 +5353,7 @@
     "golden"
    ],
    "env": {
-    "DS_T04_GOLDEN_PW": "root"
+    "DS_T04_GOLDEN_PW": "${DDL_GOLDEN_RUN_SECRET}"
    },
    "expect": {
     "exit": 2,

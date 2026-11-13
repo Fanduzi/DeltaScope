@@ -742,7 +742,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T15_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t15-online",
    "expect": {
@@ -826,7 +826,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T15_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t15-online",
    "expect": {
@@ -899,7 +899,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T15_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t15-online",
    "expect": {
@@ -947,7 +947,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T15_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t15-online-applicability",
    "expect": {
@@ -1006,7 +1006,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T15_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t15-online-applicability",
    "expect": {
@@ -1065,7 +1065,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T15_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t15-online-applicability",
    "expect": {
@@ -1124,7 +1124,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T15_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t15-online",
    "expect": {
@@ -1172,7 +1172,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T15_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t15-rebuild",
    "expect": {
@@ -1231,7 +1231,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T15_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t15-rebuild",
    "expect": {
@@ -1290,7 +1290,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T15_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t15-rebuild",
    "expect": {
@@ -1349,7 +1349,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T15_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t15-charset",
    "expect": {
@@ -1422,7 +1422,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T15_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t15-table-option",
    "expect": {
@@ -1486,7 +1486,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T15_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t15-table-option",
    "expect": {

@@ -1,0 +1,28 @@
+# R4 evidence probe for tidb.alter-table.online-options (binary HEAD e2dd4b34+, generated 2026-11-13)
+# sql_shape: ALTER TABLE t ADD COLUMN c INT, ALGORITHM=INSTANT
+# dialect: tidb
+
+=== version 8.5 (target 8.5.0) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.tidb.alter.compat_options.notice",
+     "level": "notice"
+    },
+    {
+     "rule_id": "ddl.alter.add_column.notice",
+     "level": "notice"
+    }
+   ],
+   "unsupported": null,
+   "diagnostics": null
+  }
+ ]
+}

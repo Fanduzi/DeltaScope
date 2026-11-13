@@ -1374,7 +1374,7 @@
     "user": "root",
     "schema": "t25fx",
     "password_env": "DS_T25_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t25-mysql-tablespace",
    "args": [
@@ -1563,7 +1563,7 @@
     "user": "root",
     "schema": "t25fx",
     "password_env": "DS_T25_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t25-mysql-tablespace",
    "args": [
@@ -1747,7 +1747,7 @@
     "user": "root",
     "schema": "t25fx",
     "password_env": "DS_T25_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t25-mysql-tablespace",
    "args": [
@@ -1839,7 +1839,7 @@
     "user": "root",
     "schema": "t25fx",
     "password_env": "DS_T25_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t25-mysql-tablespace",
    "args": [
@@ -1908,7 +1908,7 @@
     "user": "root",
     "schema": "t25fx",
     "password_env": "DS_T25_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t25-mysql-tablespace",
    "args": [
@@ -2025,7 +2025,7 @@
     "user": "root",
     "schema": "t25fx",
     "password_env": "DS_T25_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t25-mysql-tablespace",
    "args": [
@@ -2142,7 +2142,7 @@
     "user": "root",
     "schema": "t25fx",
     "password_env": "DS_T25_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t25-mysql-tablespace",
    "args": [
@@ -2313,7 +2313,7 @@
     "user": "root",
     "schema": "t25fx",
     "password_env": "DS_T25_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t25-mysql-tablespace",
    "args": [
@@ -2428,7 +2428,7 @@
     "user": "root",
     "schema": "t25fx",
     "password_env": "DS_T25_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t25-mysql-tablespace",
    "args": [
@@ -2534,7 +2534,7 @@
     "user": "root",
     "schema": "t25fx",
     "password_env": "DS_T25_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t25-mysql-tablespace",
    "args": [
@@ -2722,7 +2722,7 @@
     "user": "root",
     "schema": "t25fx",
     "password_env": "DS_T25_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t25-mysql-tablespace",
    "args": [
@@ -2791,7 +2791,7 @@
     "user": "root",
     "schema": "t25fx",
     "password_env": "DS_T25_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t25-mysql-tablespace",
    "args": [
@@ -2891,7 +2891,7 @@
     "user": "root",
     "schema": "t25fx",
     "password_env": "DS_T25_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t25-mysql-tablespace",
    "args": [
@@ -2955,7 +2955,7 @@
     "user": "root",
     "schema": "t25fx",
     "password_env": "DS_T25_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t25-mysql-tablespace",
    "args": [

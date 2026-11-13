@@ -1,0 +1,49 @@
+# R4 evidence probe for mysql.logfile-group (binary HEAD e2dd4b34+, generated 2026-11-13)
+# sql_shape: CREATE LOGFILE GROUP lg ADD UNDOFILE 'u.dat' ENGINE = ndb
+# dialect: mysql
+
+=== version 5.7 (target 5.7.44) rc=1 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "incomplete"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [],
+   "unsupported": null,
+   "diagnostics": null
+  }
+ ]
+}
+=== version 8.0 (target 8.0.46) rc=1 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "incomplete"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [],
+   "unsupported": null,
+   "diagnostics": null
+  }
+ ]
+}
+=== version 8.4 (target 8.4.10) rc=1 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "incomplete"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [],
+   "unsupported": null,
+   "diagnostics": null
+  }
+ ]
+}

@@ -1361,7 +1361,7 @@
     "user": "root",
     "schema": "t23fx",
     "password_env": "DS_T23_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t23-layout-id",
    "args": [

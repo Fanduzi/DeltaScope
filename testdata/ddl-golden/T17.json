@@ -389,7 +389,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -502,7 +502,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -593,7 +593,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -650,7 +650,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -725,7 +725,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -790,7 +790,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -860,7 +860,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -914,7 +914,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -978,7 +978,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-cascade",
    "expect": {
@@ -1064,7 +1064,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -1130,7 +1130,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -1190,7 +1190,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -1268,7 +1268,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-denylist",
    "expect": {
@@ -1337,7 +1337,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "all-rules-disabled",
    "expect": {
@@ -1386,7 +1386,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-custom-levels",
    "expect": {
@@ -1461,7 +1461,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-cascade",
    "expect": {
@@ -1535,7 +1535,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -1605,7 +1605,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -1665,7 +1665,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -1729,7 +1729,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -1789,7 +1789,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-schema-lifecycle",
    "expect": {
@@ -2307,7 +2307,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T17_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t17-cascade",
    "expect": {

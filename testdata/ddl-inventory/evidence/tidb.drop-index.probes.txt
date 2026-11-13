@@ -1,0 +1,24 @@
+# R4 evidence probe for tidb.drop-index (binary HEAD e2dd4b34+, generated 2026-11-13)
+# sql_shape: DROP INDEX idx ON t
+# dialect: tidb
+
+=== version 8.5 (target 8.5.0) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.drop_index.notice",
+     "level": "notice"
+    }
+   ],
+   "unsupported": null,
+   "diagnostics": null
+  }
+ ]
+}

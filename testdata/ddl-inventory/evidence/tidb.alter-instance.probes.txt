@@ -1,0 +1,19 @@
+# R4 evidence probe for tidb.alter-instance (binary HEAD e2dd4b34+, generated 2026-11-13)
+# sql_shape: ALTER INSTANCE RELOAD TLS
+# dialect: tidb
+
+=== version 8.5 (target 8.5.0) rc=1 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "incomplete"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [],
+   "unsupported": null,
+   "diagnostics": null
+  }
+ ]
+}

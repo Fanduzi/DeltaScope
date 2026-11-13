@@ -11,10 +11,10 @@ services:
     ports:
       - "127.0.0.1:23357:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${DDL_GOLDEN_MYSQL_ROOT_PASSWORD:?DDL_GOLDEN_MYSQL_ROOT_PASSWORD must be supplied by the golden runner (ephemeral per-run secret)}
       MYSQL_DATABASE: golden
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
       interval: 5s
       timeout: 5s
       retries: 40
@@ -26,10 +26,10 @@ services:
     ports:
       - "127.0.0.1:23380:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${DDL_GOLDEN_MYSQL_ROOT_PASSWORD:?DDL_GOLDEN_MYSQL_ROOT_PASSWORD must be supplied by the golden runner (ephemeral per-run secret)}
       MYSQL_DATABASE: golden
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
       interval: 5s
       timeout: 5s
       retries: 40
@@ -41,10 +41,10 @@ services:
     ports:
       - "127.0.0.1:23384:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${DDL_GOLDEN_MYSQL_ROOT_PASSWORD:?DDL_GOLDEN_MYSQL_ROOT_PASSWORD must be supplied by the golden runner (ephemeral per-run secret)}
       MYSQL_DATABASE: golden
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
       interval: 5s
       timeout: 5s
       retries: 40
@@ -97,10 +97,10 @@ services:
     command:
       - --innodb-page-size=4096
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${DDL_GOLDEN_MYSQL_ROOT_PASSWORD:?DDL_GOLDEN_MYSQL_ROOT_PASSWORD must be supplied by the golden runner (ephemeral per-run secret)}
       MYSQL_DATABASE: golden
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
       interval: 5s
       timeout: 5s
       retries: 40

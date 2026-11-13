@@ -1,0 +1,196 @@
+# R4 evidence probe for mysql.create-table-generated-column (binary HEAD e2dd4b34+, generated 2026-11-13)
+# sql_shape: CREATE TABLE tg (a INT, b INT GENERATED ALWAYS AS (a+1) STORED)
+# dialect: mysql
+
+=== version 5.7 (target 5.7.44) rc=1 ===
+{
+ "verdict": "reject",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.table.comment.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.table.primary_key.require",
+     "level": "blocker"
+    },
+    {
+     "rule_id": "ddl.table.audit_columns.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.table.audit_columns.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.comment.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.comment.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.default.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.default.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.not_null.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.not_null.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.table.engine.allowlist",
+     "level": "blocker"
+    },
+    {
+     "rule_id": "ddl.table.charset.allowlist",
+     "level": "blocker"
+    }
+   ],
+   "unsupported": null,
+   "diagnostics": null
+  }
+ ]
+}
+=== version 8.0 (target 8.0.46) rc=1 ===
+{
+ "verdict": "reject",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.table.comment.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.table.primary_key.require",
+     "level": "blocker"
+    },
+    {
+     "rule_id": "ddl.table.audit_columns.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.table.audit_columns.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.comment.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.comment.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.default.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.default.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.not_null.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.not_null.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.table.engine.allowlist",
+     "level": "blocker"
+    },
+    {
+     "rule_id": "ddl.table.charset.allowlist",
+     "level": "blocker"
+    }
+   ],
+   "unsupported": null,
+   "diagnostics": null
+  }
+ ]
+}
+=== version 8.4 (target 8.4.10) rc=1 ===
+{
+ "verdict": "reject",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.table.comment.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.table.primary_key.require",
+     "level": "blocker"
+    },
+    {
+     "rule_id": "ddl.table.audit_columns.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.table.audit_columns.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.comment.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.comment.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.default.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.default.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.not_null.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.column.not_null.require",
+     "level": "warning"
+    },
+    {
+     "rule_id": "ddl.table.engine.allowlist",
+     "level": "blocker"
+    },
+    {
+     "rule_id": "ddl.table.charset.allowlist",
+     "level": "blocker"
+    }
+   ],
+   "unsupported": null,
+   "diagnostics": null
+  }
+ ]
+}

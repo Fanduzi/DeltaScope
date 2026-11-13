@@ -954,7 +954,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13-drop",
    "expect": {
@@ -1128,7 +1128,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13-deny-x",
    "expect": {
@@ -1209,7 +1209,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13r1-drop-applicability",
    "expect": {
@@ -1379,7 +1379,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13r1-drop-target",
    "expect": {
@@ -1547,7 +1547,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13r1-exchange-counterpart",
    "expect": {
@@ -1630,7 +1630,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13r1-exchange-counterpart",
    "expect": {
@@ -1713,7 +1713,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13r1-exchange-counterpart",
    "expect": {
@@ -1796,7 +1796,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13r1-truncate-rows",
    "expect": {
@@ -1878,7 +1878,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13r1-truncate-rows",
    "expect": {
@@ -1952,7 +1952,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13r1-truncate-rows",
    "expect": {
@@ -2044,7 +2044,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13r1-truncate-rows",
    "expect": {
@@ -2116,7 +2116,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13r1-exchange-counterpart",
    "expect": {
@@ -2263,7 +2263,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13r1-truncate-target",
    "expect": {
@@ -2346,7 +2346,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13r1-truncate-target",
    "expect": {
@@ -2418,7 +2418,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13r1-exchange-target",
    "expect": {
@@ -2546,7 +2546,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13r1-truncate-target",
    "expect": {
@@ -2621,7 +2621,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T13_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t13r1-exchange-counterpart",
    "expect": {

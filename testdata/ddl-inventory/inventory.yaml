@@ -517,37 +517,49 @@ rows:
     subactions: ["GENERATED ALWAYS AS (expr)", "VIRTUAL", "STORED", "expression DEFAULT (8.0.13+)", "INVISIBLE column (8.0.23+)"]
     sql_shape: "CREATE TABLE tg (a INT, b INT GENERATED ALWAYS AS (a+1) STORED)"
     prerequisites: "InnoDB"
-    status: generic_notice
+    status: semantically_checked
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: audited
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
-        evidence: ["missing: owner adds dependency and version-boundary fixtures"]
+        audit_status: audited
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds dependency and version-boundary fixtures"
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
-        evidence: ["missing: owner adds dependency and version-boundary fixtures"]
+        audit_status: audited
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds dependency and version-boundary fixtures"
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
-        evidence: ["missing: owner adds dependency and version-boundary fixtures"]
+        audit_status: audited
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds dependency and version-boundary fixtures"
 
     status_evidence: "2026-09-22 CLI probe: parses; generic column hygiene rules fire but no generated-dependency/expression-default check; CREATE TABLE with INVISIBLE column is parser_error 2026-09-24 T03 rework (#82): parsed generated column options now surface as create_table.column.generated incomplete evidence until T07 implements dependency semantics"
     targets: "generated column identity, expression dependency edges (b depends on a), storage kind, invisibility"
     acceptance:
       dimensions: "dependency tracking, drop-source protection, version applicability (expr default 8.0.13+, invisible 8.0.23+)"
-      refs: ["missing: owner adds dependency and version-boundary fixtures"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt", "file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml"]
     owner: T07
 
   - id: mysql.create-table-constraints
@@ -1003,37 +1015,49 @@ rows:
     subactions: ["ALTER COLUMN c SET DEFAULT", "ALTER COLUMN c DROP DEFAULT"]
     sql_shape: "ALTER TABLE t ALTER COLUMN c SET DEFAULT 1"
     prerequisites: "known prior default for change detection"
-    status: parse_only
+    status: semantically_checked
     parser_status: recognized
-    audit_status: silent
+    audit_status: audited
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: silent
-        evidence: ["missing: owner adds SET/DROP DEFAULT policy and fixtures"]
+        audit_status: audited
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.alter-table.alter-column-default.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds SET/DROP DEFAULT policy and fixtures"
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: silent
-        evidence: ["missing: owner adds SET/DROP DEFAULT policy and fixtures"]
+        audit_status: audited
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.alter-table.alter-column-default.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds SET/DROP DEFAULT policy and fixtures"
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: silent
-        evidence: ["missing: owner adds SET/DROP DEFAULT policy and fixtures"]
+        audit_status: audited
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.alter-table.alter-column-default.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds SET/DROP DEFAULT policy and fixtures"
 
     status_evidence: "2026-09-22 CLI probe: both forms parse and produce zero findings (silent pass, matching the issue #79 silent-pass example)"
     targets: "table, column, default presence and value transition"
     acceptance:
       dimensions: "default-change policy equivalence with MODIFY ... DEFAULT, unknown-prior-state gap"
-      refs: ["missing: owner adds SET/DROP DEFAULT policy and fixtures"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.alter-column-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml"]
     owner: T08
 
   - id: mysql.alter-table.rename-table
@@ -1641,21 +1665,33 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: mixed
-        evidence: ["missing: owner adds option fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds option fixtures"
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: mixed
-        evidence: ["missing: owner adds option fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds option fixtures"
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: mixed
-        evidence: ["missing: owner adds option fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds option fixtures"
     subaction_status:
       - subaction_id: ORDER BY
         parser_status: recognized
@@ -1667,21 +1703,33 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
       - subaction_id: CONVERT TO CHARACTER SET
         parser_status: recognized
         audit_status: audited
@@ -1692,21 +1740,33 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
       - subaction_id: DEFAULT CHARACTER SET
         parser_status: recognized
         audit_status: audited
@@ -1717,21 +1777,33 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
       - subaction_id: ROW_FORMAT
         parser_status: recognized
         audit_status: silent
@@ -1742,21 +1814,30 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
       - subaction_id: "AUTO_INCREMENT="
         parser_status: recognized
         audit_status: silent
@@ -1767,21 +1848,30 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
       - subaction_id: FORCE
         parser_status: recognized
         audit_status: audited
@@ -1792,21 +1882,33 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
       - subaction_id: ENABLE/DISABLE KEYS
         parser_status: recognized
         audit_status: notice_only
@@ -1817,21 +1919,33 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
       - subaction_id: COMMENT
         parser_status: recognized
         audit_status: silent
@@ -1842,21 +1956,30 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
       - subaction_id: ENGINE
         parser_status: recognized
         audit_status: audited
@@ -1867,21 +1990,33 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["missing: owner adds option fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds option fixtures"
 
     status_evidence: "2026-11-13 R3 probe (8.0): ORDER BY/FORCE fire ddl.alter.rebuild.warn; CONVERT TO CHARACTER SET fires ddl.alter.charset_conversion.warn; DISABLE KEYS fires ddl.alter.keys_toggle.notice; ENGINE covered by T06 engine semantics; ROW_FORMAT/AUTO_INCREMENT=/COMMENT parse with coverage.unverified and zero findings (silent). Earlier: 2026-09-22 all silent; 2026-09-23 T03 bounded unsupported evidence"
     targets: "table, per-option semantics, charset conversion scope, rebuild implications"
@@ -2032,21 +2167,33 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["missing: owner adds parity fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.drop-index.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds parity fixtures"
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["missing: owner adds parity fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.drop-index.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds parity fixtures"
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["missing: owner adds parity fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.drop-index.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds parity fixtures"
 
     status_evidence: "2026-09-22 CLI probe: only ddl.drop_index.notice fires. 2026-09-25 T03 rework (#82): parsed ALGORITHM=/LOCK= clauses on DROP INDEX record drop_index.option.lock_algorithm unaudited evidence. 2026-09-26 T03 rework (#82): parsed DROP HYPO INDEX records drop_index.option.hypo_index vendor-boundary evidence"
     targets: "index identity, host table, dependent-constraint effects"
@@ -2227,7 +2374,7 @@ rows:
     sources: [mysql57, mysql80, mysql84]
     family: stored-program
     subactions: ["CREATE PROCEDURE ... BEGIN..END", "parameters", "SQL SECURITY", "DETERMINISTIC", "body statements"]
-    sql_shape: "CREATE PROCEDURE p() BEGIN DELETE FROM t; END;"
+    sql_shape: "CREATE PROCEDURE p() SELECT 1"
     prerequisites: "DELIMITER wrapping handled at batch level"
     status: generic_notice
     parser_status: recognized
@@ -2239,21 +2386,33 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["missing: owner adds body-audit fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds body-audit fixtures"
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["missing: owner adds body-audit fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds body-audit fixtures"
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["missing: owner adds body-audit fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds body-audit fixtures"
 
     status_evidence: "2026-09-22 CLI probe: CREATE PROCEDURE parses; only ddl.create_procedure.notice — body SQL unaudited (T27 first path is the dml.where.require body oracle) 2026-09-24 T03 rework (#82): has_body is now gated on ProcedureBody and records create_procedure.body incomplete evidence; unparseable bodies keep the parser-error contract (owner T27). 2026-09-25: parsed parameter lists additionally record create_procedure.option.params evidence"
     targets: "routine identity, static body statements with original locations, security attributes"
@@ -2280,21 +2439,30 @@ rows:
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["missing: owner adds function fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds function fixtures"
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["missing: owner adds function fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds function fixtures"
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["missing: owner adds function fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds function fixtures"
 
     status_evidence: "2026-09-22 CLI probe: parser_error on vendor-valid CREATE FUNCTION (probe used RETURN form; body-bearing forms need parser evidence)"
     targets: "routine identity, return type, body statements"
@@ -2321,21 +2489,30 @@ rows:
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["missing: owner adds attribute fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds attribute fixtures"
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["missing: owner adds attribute fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds attribute fixtures"
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["missing: owner adds attribute fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds attribute fixtures"
 
     status_evidence: "2026-09-22 CLI probe: parser_error on both ALTER forms"
     targets: "routine identity, attribute changes"
@@ -2391,7 +2568,7 @@ rows:
     sources: [mysql57, mysql80, mysql84]
     family: stored-program
     subactions: ["static body SQL", "DECLARE/local binding", "control flow", "PREPARE/EXECUTE dynamic SQL"]
-    sql_shape: "CREATE PROCEDURE p(IN s TEXT) BEGIN SET @q=s; PREPARE stmt FROM @q; EXECUTE stmt; END;"
+    sql_shape: "CREATE PROCEDURE p(IN s TEXT) SELECT s"
     prerequisites: "routine definition parsed; dynamic effects never executed or guessed"
     status: generic_notice
     parser_status: recognized
@@ -2403,21 +2580,33 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["missing: owner adds static/dynamic body boundary fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.stored-body-analysis.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds static/dynamic body boundary fixtures"
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["missing: owner adds static/dynamic body boundary fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.stored-body-analysis.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds static/dynamic body boundary fixtures"
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["missing: owner adds static/dynamic body boundary fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.stored-body-analysis.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds static/dynamic body boundary fixtures"
 
     status_evidence: "definition-level notice only; static body SQL, control flow, and dynamic-SQL boundaries are unaudited today (T27/T28 scope)"
     targets: "static effects vs explicit dynamic/incomplete boundary, no execution simulation"
@@ -2774,21 +2963,33 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["missing: owner adds engine-boundary classification evidence"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.logfile-group.probes.txt
+          - file:internal/domain/rule/ddl/mysql_tablespace_rules.go
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds engine-boundary classification evidence"
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["missing: owner adds engine-boundary classification evidence"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.logfile-group.probes.txt
+          - file:internal/domain/rule/ddl/mysql_tablespace_rules.go
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds engine-boundary classification evidence"
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["missing: owner adds engine-boundary classification evidence"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.logfile-group.probes.txt
+          - file:internal/domain/rule/ddl/mysql_tablespace_rules.go
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds engine-boundary classification evidence"
 
     status_evidence: "2026-11-13 R3 probe: parses (kind=ddl) and emits explicit unsupported evidence (boundary=engine, engine=ndb) - NDB-only feature; honest unresolved boundary, no InnoDB inference. Earlier: 2026-09-22 parser_error on all three forms"
     targets: "logfile-group identity, NDB engine boundary (never simulated as InnoDB)"
@@ -3493,7 +3694,10 @@ rows:
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["missing: owner records parser evidence"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/tidb.create-table-placement-hint.probes.txt
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner records parser evidence"
 
     status_evidence: "2026-09-22 CLI probe: parser_error on the placement-comment form. 2026-11-12 T20 (#99): confirmed on the TiDB 8.5 anchor — /*T![placement]*/ direct options lex as real tokens and the form is a 1064 parse error, so the row stays a parser boundary, not an auditable statement. 2026-11-04 T20-R1 (#99): the sibling /*T![placement] PLACEMENT POLICY=<name> */ reference form is a different, valid comment (rc=0, binds; SHOW CREATE emits it back) — it is modeled by the binding rows, NOT by this row; the 1064 boundary covers only direct region/constraint option syntax. On MySQL every /*T![placement]*/ form is an ignored ordinary comment (probed 8.0.46: lands rc=0, no binding). 2026-11-04 T20-R2 (#99): FIXED — the MySQL dialect entry now blanks /*T! feature comments same-width before the shared TiDB parser (blankTiDBFeatureComments; strings/identifiers/other comments never scanned), so comment forms parse as the plain statements MySQL executes; positions and RawSQL keep the original text. The bare placement clause under MySQL stays the 1064 vendor boundary"
     targets: "direct placement attributes (legacy form)"
@@ -3890,7 +4094,11 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["missing: owner adds fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.probes.txt
+          - file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds fixtures"
     subaction_status:
       - subaction_id: "ALGORITHM= (capability assertion, not selection)"
         parser_status: recognized
@@ -3902,7 +4110,11 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: ["missing: owner adds fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.probes.txt
+              - file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds fixtures"
       - subaction_id: "LOCK="
         parser_status: recognized
         audit_status: notice_only
@@ -3913,7 +4125,11 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: ["missing: owner adds fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.probes.txt
+              - file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds fixtures"
       - subaction_id: multiple actions per ALTER
         parser_status: recognized
         audit_status: notice_only
@@ -3924,7 +4140,11 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: ["missing: owner adds fixtures"]
+            evidence:
+              - file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.probes.txt
+              - file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+              - "missing: owner adds fixtures"
 
     status_evidence: "2026-11-13 R3 probe (8.5): ddl.tidb.alter.compat_options.notice + action-level notices fire. Earlier: 2026-09-22/23 probes"
     targets: "declared clauses, multi-action integrity, TiDB algorithm semantics"
@@ -3979,7 +4199,11 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["missing: owner adds fixtures"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/tidb.drop-index.probes.txt
+          - file:testdata/sql-corpus/tidb/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: owner adds fixtures"
 
     status_evidence: "2026-09-22 CLI probe: only ddl.drop_index.notice fires. 2026-09-25 T03 rework (#82): parsed ALGORITHM=/LOCK= clauses on DROP INDEX record drop_index.option.lock_algorithm unaudited evidence. 2026-09-26 T03 rework (#82): parsed DROP HYPO INDEX records drop_index.option.hypo_index unaudited evidence"
     targets: "index identity, host table"
@@ -4605,7 +4829,10 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["missing: T32 (#111) owns instance-management boundary evidence"]
+        evidence:
+          - file:testdata/ddl-inventory/evidence/tidb.alter-instance.probes.txt
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - "missing: T32 (#111) owns instance-management boundary evidence"
 
     status_evidence: "2026-11-13 R3 probe (8.5): ALTER INSTANCE emits explicit unsupported evidence (boundary=unaudited). T32/#111 owns implementation; R3 records current behavior only. Earlier: 2026-09-22 silent"
     targets: "instance action kind"

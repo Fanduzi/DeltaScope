@@ -542,7 +542,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -619,7 +619,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -704,7 +704,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -762,7 +762,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -841,7 +841,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -911,7 +911,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -983,7 +983,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -1049,7 +1049,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -1094,7 +1094,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -1150,7 +1150,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -1204,7 +1204,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -1239,7 +1239,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -1314,7 +1314,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -1389,7 +1389,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -1459,7 +1459,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -1539,7 +1539,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -1619,7 +1619,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -1684,7 +1684,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -1745,7 +1745,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -1830,7 +1830,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -1886,7 +1886,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -1956,7 +1956,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -2010,7 +2010,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -2064,7 +2064,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -2120,7 +2120,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -2179,7 +2179,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -2272,7 +2272,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -2347,7 +2347,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -2386,7 +2386,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-denylist",
       "expect": {
@@ -2457,7 +2457,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -2517,7 +2517,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -2588,7 +2588,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -2644,7 +2644,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -2709,7 +2709,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T16_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "policy": "t16-lifecycle",
       "expect": {

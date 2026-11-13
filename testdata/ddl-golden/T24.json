@@ -689,7 +689,7 @@
     "user": "root",
     "schema": "t24fx",
     "password_env": "DS_T24_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t24-mysql-resource-group",
    "args": [
@@ -774,7 +774,7 @@
     "user": "root",
     "schema": "t24fx",
     "password_env": "DS_T24_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t24-mysql-resource-group",
    "args": [
@@ -824,7 +824,7 @@
     "user": "root",
     "schema": "t24fx",
     "password_env": "DS_T24_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t24-mysql-resource-group",
    "args": [
@@ -879,7 +879,7 @@
     "user": "root",
     "schema": "t24fx",
     "password_env": "DS_T24_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t24-mysql-resource-group",
    "args": [
@@ -950,7 +950,7 @@
     "user": "root",
     "schema": "t24fx",
     "password_env": "DS_T24_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t24-mysql-resource-group",
    "args": [

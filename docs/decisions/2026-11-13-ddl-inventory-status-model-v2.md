@@ -1,6 +1,6 @@
 # Decision: official DDL inventory status model v2 — parser/audit/applicability separation (issue #81 R3)
 
-Date: 2026-11-18
+Date: 2026-11-13
 Status: Accepted
 Related milestone/version: issue #81 T02 R3 under parent issue #79
 Related commits: T02 R3 inventory-model commit (this change set)

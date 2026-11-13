@@ -511,7 +511,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T12_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "expect": {
         "exit": 1,
@@ -599,7 +599,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T12_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "expect": {
         "exit": 1,
@@ -675,7 +675,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T12_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "expect": {
         "exit": 1,
@@ -742,7 +742,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T12_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "expect": {
         "exit": 0,
@@ -796,7 +796,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T12_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "expect": {
         "exit": 0,
@@ -870,7 +870,7 @@
         "user": "root",
         "schema": "golden",
         "password_env": "DS_T12_GOLDEN_PW",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "expect": {
         "exit": 1,

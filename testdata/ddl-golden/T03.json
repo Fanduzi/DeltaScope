@@ -19,7 +19,7 @@
       "client_option_file": {
         "container_path": "/etc/deltascope-golden-client.cnf",
         "user": "root",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "needs_database_create": false
     },
@@ -38,7 +38,7 @@
       "client_option_file": {
         "container_path": "/etc/deltascope-golden-client.cnf",
         "user": "root",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "needs_database_create": false
     },
@@ -57,7 +57,7 @@
       "client_option_file": {
         "container_path": "/etc/deltascope-golden-client.cnf",
         "user": "root",
-        "password": "root"
+        "password_source": "ephemeral-run-secret"
       },
       "needs_database_create": false
     },

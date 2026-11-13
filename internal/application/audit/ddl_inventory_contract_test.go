@@ -186,6 +186,81 @@ var versionAnchors = map[string]map[string]string{
 
 var knownAnchors = map[string]bool{"mysql57": true, "mysql80": true, "mysql84": true, "tidb85": true}
 
+// anchorVersion maps each anchor identity back to the declared version string
+// used inside probe-evidence section headers ("=== version <v> ...").
+var anchorVersion = map[string]string{"mysql57": "5.7", "mysql80": "8.0", "mysql84": "8.4", "tidb85": "8.5"}
+
+// ddlInventoryEvidenceDir is the committed per-row probe-evidence directory.
+// Probe files there are row-scoped and version-sectioned, which lets the gate
+// reject evidence copied from the wrong row or missing the cell's version.
+const ddlInventoryEvidenceDir = "testdata/ddl-inventory/evidence/"
+
+// validateCellEvidence enforces the R4 evidence contract on one applicability
+// cell: every cell needs at least one concrete ref (file: or gate:), missing:
+// entries are notes, not evidence; file: refs must exist; probe files under
+// testdata/ddl-inventory/evidence/ must belong to this row and must contain a
+// probe section for the cell's own anchor version; gate: refs must resolve to
+// a committed golden manifest (gate:T<NN>).
+func validateCellEvidence(root, rowID string, cell ddlInventoryCell, anchorVer map[string]string) error {
+	concrete := 0
+	for _, ref := range cell.Evidence {
+		switch {
+		case strings.HasPrefix(ref, "file:"):
+			p := strings.TrimPrefix(ref, "file:")
+			full := filepath.Join(root, p)
+			if _, err := os.Stat(full); err != nil {
+				return fmt.Errorf("cell evidence file does not exist: %s", p)
+			}
+			if strings.HasPrefix(p, ddlInventoryEvidenceDir) {
+				base := filepath.Base(p)
+				if !strings.HasPrefix(base, rowID+".") {
+					return fmt.Errorf("cell evidence %s belongs to a different row (basename must start with %s.)", p, rowID)
+				}
+				want := anchorVer[cell.Anchor]
+				if want == "" {
+					return fmt.Errorf("cell anchor %s has no declared version", cell.Anchor)
+				}
+				content, err := os.ReadFile(full)
+				if err != nil {
+					return fmt.Errorf("cell evidence unreadable: %s", p)
+				}
+				if !strings.Contains(string(content), "=== version "+want+" ") {
+					return fmt.Errorf("cell evidence %s has no probe section for version %s (cell anchor %s)", p, want, cell.Anchor)
+				}
+			}
+			concrete++
+		case strings.HasPrefix(ref, "gate:"):
+			g := strings.TrimPrefix(ref, "gate:")
+			if matched, _ := filepath.Match("T[0-9][0-9]", g); !matched {
+				return fmt.Errorf("cell evidence gate ref %q does not resolve to a declared gate (gate:T<NN> golden manifest)", ref)
+			} else if _, err := os.Stat(filepath.Join(root, "testdata/ddl-golden", g+".json")); err != nil {
+				return fmt.Errorf("cell evidence gate ref %s has no committed golden manifest testdata/ddl-golden/%s.json", ref, g)
+			}
+			concrete++
+		case strings.HasPrefix(ref, "missing:"):
+			// A note, not evidence. Tolerated alongside concrete refs.
+		default:
+			return fmt.Errorf("cell evidence %q lacks a kind prefix (file:/gate:/missing:)", ref)
+		}
+	}
+	if concrete == 0 {
+		return fmt.Errorf("cell has no concrete evidence ref (missing: notes are not evidence)")
+	}
+	return nil
+}
+
+// combinedRowCells returns the row's applicability cells plus every
+// subaction cell. The aggregate must be derivable from the union so a
+// silent or explicit_unsupported registered subaction cannot hide behind a
+// fully-checked parent status.
+func combinedRowCells(row ddlInventoryRow) []ddlInventoryCell {
+	cells := append([]ddlInventoryCell{}, row.Applicability...)
+	for _, sub := range row.SubactionStatus {
+		cells = append(cells, sub.Applicability...)
+	}
+	return cells
+}
+
 // deriveAggregateStatus mirrors the reviewer-frozen derivation rules. Order
 // matters: an all-vendor-boundary row is vendor_not_supported; documented forms
 // the parser cannot read take precedence over mixed registered states
@@ -380,8 +455,8 @@ func TestDDLInventoryContract(t *testing.T) {
 				if _, ok := inv.AuditStatuses[cell.AuditStatus]; !ok {
 					t.Fatalf("row %q %s anchor %s unsupported cell audit_status %q", row.ID, label, cell.Anchor, cell.AuditStatus)
 				}
-				if len(cell.Evidence) == 0 {
-					t.Fatalf("row %q %s anchor %s has no evidence refs", row.ID, label, cell.Anchor)
+				if err := validateCellEvidence(root, row.ID, cell, anchorVersion); err != nil {
+					t.Fatalf("row %q %s anchor %s: %v", row.ID, label, cell.Anchor, err)
 				}
 			}
 			return covered
@@ -398,6 +473,11 @@ func TestDDLInventoryContract(t *testing.T) {
 		}
 		if derived := deriveAggregateStatus(row.Applicability); derived != row.Status {
 			t.Fatalf("row %q status %q does not match derived aggregate %q", row.ID, row.Status, derived)
+		}
+		if len(row.SubactionStatus) > 0 {
+			if combined := deriveAggregateStatus(combinedRowCells(row)); combined != row.Status {
+				t.Fatalf("row %q status %q masks subaction evidence: combined row+subaction derivation is %q", row.ID, row.Status, combined)
+			}
 		}
 		for _, sub := range row.SubactionStatus {
 			if sub.SubactionID == "" {
@@ -549,5 +629,71 @@ func TestDDLInventoryAggregateDerivation(t *testing.T) {
 		if got := deriveAggregateStatus(tc.cells); got != tc.want {
 			t.Fatalf("%s: derived %q, want %q", tc.name, got, tc.want)
 		}
+	}
+}
+
+// TestDDLInventoryEvidenceGate pins the ER1 negative controls: each rejection
+// class must actually fire on synthetic cells, not just pass on the real
+// inventory.
+func TestDDLInventoryEvidenceGate(t *testing.T) {
+	t.Parallel()
+	root := repoRootFromInventory(t)
+	cell := func(anchor string, evidence ...string) ddlInventoryCell {
+		return ddlInventoryCell{
+			Anchor: anchor, VersionRange: anchorVersion[anchor],
+			OfficialPresence: "documented", ProductScope: "registered",
+			ParserStatus: "recognized", AuditStatus: "audited",
+			Evidence: evidence,
+		}
+	}
+	probeRef := "file:testdata/ddl-inventory/evidence/mysql.drop-index.probes.txt"
+	corpusRef := "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml"
+
+	cases := []struct {
+		name    string
+		rowID   string
+		cell    ddlInventoryCell
+		wantErr string
+	}{
+		{"concrete refs accepted", "mysql.drop-index", cell("mysql80", probeRef, corpusRef), ""},
+		{"missing-only rejected", "mysql.drop-index", cell("mysql80", `missing: owner adds fixtures`), "no concrete evidence"},
+		{"empty evidence rejected", "mysql.drop-index", cell("mysql80"), "no concrete evidence"},
+		{"nonexistent file rejected", "mysql.drop-index", cell("mysql80", "file:does/not/exist.go"), "does not exist"},
+		{"unknown gate rejected", "mysql.drop-index", cell("mysql80", "gate:no-such-gate"), "does not resolve"},
+		{"missing gate manifest rejected", "mysql.drop-index", cell("mysql80", "gate:T99"), "no committed golden manifest"},
+		{"valid gate ref accepted", "mysql.drop-index", cell("mysql80", "gate:T02"), ""},
+		{"wrong-row probe rejected", "mysql.create-procedure", cell("mysql80", probeRef), "belongs to a different row"},
+		{"wrong-version probe rejected", "mysql.drop-index", cell("tidb85", probeRef), "no probe section for version"},
+		{"unprefixed ref rejected", "mysql.drop-index", cell("mysql80", "some/path.go"), "kind prefix"},
+		{"audited cell with concrete ref accepted", "mysql.drop-index", cell("mysql80", corpusRef), ""},
+	}
+	for _, tc := range cases {
+		err := validateCellEvidence(root, tc.rowID, tc.cell, anchorVersion)
+		if tc.wantErr == "" && err != nil {
+			t.Fatalf("%s: unexpected error: %v", tc.name, err)
+		}
+		if tc.wantErr != "" {
+			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+				t.Fatalf("%s: want error containing %q, got %v", tc.name, tc.wantErr, err)
+			}
+		}
+	}
+
+	// Parent/subaction masking: a semantically_checked parent cannot hide a
+	// registered silent subaction.
+	row := ddlInventoryRow{
+		ID: "synthetic.mask", Status: "semantically_checked",
+		Applicability: []ddlInventoryCell{cell("mysql80", probeRef)},
+		SubactionStatus: []ddlInventorySubaction{{
+			SubactionID: "SUB", ParserStatus: "recognized", AuditStatus: "mixed",
+			Applicability: []ddlInventoryCell{
+				{Anchor: "mysql80", VersionRange: "8.0", OfficialPresence: "documented",
+					ProductScope: "registered", ParserStatus: "recognized", AuditStatus: "silent",
+					Evidence: []string{probeRef}},
+			},
+		}},
+	}
+	if derived := deriveAggregateStatus(combinedRowCells(row)); derived == row.Status {
+		t.Fatalf("combined derivation must not equal parent status when a registered subaction is silent")
 	}
 }

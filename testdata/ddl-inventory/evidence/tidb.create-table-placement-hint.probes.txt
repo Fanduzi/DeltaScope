@@ -1,0 +1,12 @@
+# R4 evidence probe for tidb.create-table-placement-hint (binary HEAD e2dd4b34+, generated 2026-11-13)
+# sql_shape: CREATE TABLE t (id INT) /*T![placement] PRIMARY_REGION='x' REGIONS='x' */
+# dialect: tidb
+
+=== version 8.5 (target 8.5.0) rc=2 ===
+{
+ "verdict": "",
+ "coverage": {
+  "status": "incomplete"
+ },
+ "statements": []
+}

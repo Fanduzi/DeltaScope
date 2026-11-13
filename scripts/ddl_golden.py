@@ -19,6 +19,7 @@ import json
 import os
 import pathlib
 import re
+import secrets
 import subprocess
 import sys
 import time
@@ -34,6 +35,14 @@ COMPOSE_PROJECT = "deltascope-ddl-golden"
 MANIFEST_DIR = ROOT_DIR / "testdata" / "ddl-golden"
 HEALTH_TIMEOUT_SECONDS = 300
 HEALTH_POLL_SECONDS = 5
+
+# Issue #81 R4: the disposable fixture credential is generated per run and
+# lives only in process memory. Compose interpolates
+# ${DDL_GOLDEN_MYSQL_ROOT_PASSWORD:?} from this process environment and the
+# temporary client option file is provisioned from the same value, so no
+# literal password exists in the repo, manifests, recorded argv, or evidence.
+RUN_SECRET = None
+COMPOSE_SECRET_ENV = "DDL_GOLDEN_MYSQL_ROOT_PASSWORD"
 
 
 def fail_run(message):
@@ -117,10 +126,14 @@ def baseline_executed_failures(artifact, executed, cases, baseline):
 
 
 def compose(*args, timeout=180):
+    env = None
+    if RUN_SECRET:
+        env = {**os.environ, COMPOSE_SECRET_ENV: RUN_SECRET}
     rc, out, err = run_cmd(
         ["docker", "compose", "-p", COMPOSE_PROJECT, "-f", str(COMPOSE_FILE), *args],
         cwd=ROOT_DIR,
         timeout=timeout,
+        env=env,
     )
     return rc, out, err
 
@@ -264,13 +277,28 @@ def manifest_credential_failures(manifest):
         spec = anchor.get("client_option_file")
         if not spec:
             continue
-        for field in ("container_path", "user", "password"):
+        if spec.get("password") is not None:
+            failures.append(f"anchor {key}: client_option_file must not carry a literal password (use password_source)")
+        for field in ("container_path", "user", "password_source"):
             if not spec.get(field):
                 failures.append(f"anchor {key}: client_option_file missing {field}")
+        if spec.get("password_source") and spec["password_source"] != "ephemeral-run-secret":
+            failures.append(f"anchor {key}: unsupported password_source {spec['password_source']!r}")
         expected_flag = f"--defaults-extra-file={spec.get('container_path')}"
         if spec.get("container_path") and expected_flag not in client:
             failures.append(
                 f"anchor {key}: exec_client must reference {expected_flag}")
+    for group in ("cli_cases", "metadata_cases", "error_cases"):
+        for spec in manifest.get(group) or []:
+            cid = spec.get("id") or "<unnamed>"
+            conn = spec.get("connect") or {}
+            if conn.get("password") is not None:
+                failures.append(f"{group} {cid}: connect must not carry a literal password (use password_source)")
+            if conn.get("password_source") and conn["password_source"] != "ephemeral-run-secret":
+                failures.append(f"{group} {cid}: unsupported connect password_source {conn['password_source']!r}")
+            for env_key, env_val in (spec.get("env") or {}).items():
+                if re.search(r"PW|PASSWORD", env_key) and env_val != RUN_SECRET_ENV_SENTINEL:
+                    failures.append(f"{group} {cid}: env {env_key} carries a literal credential value")
     return failures
 
 
@@ -310,9 +338,13 @@ def provision_client_option_files(manifest, work_dir):
         container = anchor.get("client_container") or anchor["container"]
         dest = spec["container_path"]
         local = secrets_dir / f"{key}.cnf"
+        password = spec.get("password") or RUN_SECRET
+        if not password:
+            failures.append(f"anchor {key}: no credential source available for option file")
+            continue
         try:
             local.write_text(
-                f"[client]\nuser={spec['user']}\npassword={spec['password']}\n",
+                f"[client]\nuser={spec['user']}\npassword={password}\n",
                 encoding="utf-8",
             )
             os.chmod(local, 0o600)
@@ -379,6 +411,8 @@ def credential_leak_findings(artifact, manifest):
         spec = anchor.get("client_option_file") or {}
         if spec.get("password"):
             secrets.add(spec["password"])
+    if RUN_SECRET:
+        secrets.add(RUN_SECRET)
     findings = []
     for path, text in _iter_evidence_strings(artifact):
         for pattern in CREDENTIAL_ARG_PATTERNS:
@@ -1173,13 +1207,27 @@ def execute_cli_case(manifest, binary, policies, spec):
     return case
 
 
+RUN_SECRET_ENV_SENTINEL = "${DDL_GOLDEN_RUN_SECRET}"
+
+
+def connect_password(conn):
+    """Resolve a manifest connect credential. Literal passwords are banned:
+    only the declared runtime source may supply the ephemeral value."""
+    if conn.get("password_source") == "ephemeral-run-secret":
+        return RUN_SECRET
+    return conn.get("password")
+
+
 def case_env(spec):
     """Environment for a CLI invocation. `env` entries inject fixed fixture
-    values (for example a password env var name → the compose fixture's root
-    password); the manifest declares them so no secret ever enters the case."""
+    values; the RUN_SECRET_ENV_SENTINEL value resolves to the per-run
+    ephemeral secret so no literal credential is ever committed."""
     env = dict(os.environ)
     for key, value in (spec.get("env") or {}).items():
-        env[key] = str(value)
+        value = str(value)
+        if value == RUN_SECRET_ENV_SENTINEL:
+            value = RUN_SECRET or ""
+        env[key] = value
     return env
 
 
@@ -1434,8 +1482,9 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
         args += ["--schema", conn["schema"]]
     args.extend(spec.get("args") or [])
     env = case_env(spec)
-    if conn.get("password_env") and conn.get("password") is not None:
-        env[conn["password_env"]] = str(conn["password"])
+    conn_password = connect_password(conn)
+    if conn.get("password_env") and conn_password is not None:
+        env[conn["password_env"]] = str(conn_password)
     rc, out, err = run_cmd(args, cwd=ROOT_DIR, timeout=180, env=env)
     case["command"] = args
     case["actual"].update({"exit": rc, "stdout": out, "stderr": err})
@@ -2047,7 +2096,7 @@ def t05_a3_contract():
                 finding = (5, index_rule, {"schema": "golden", "table": "t", "index": "ix_old", "column": "old_c", "exists": False})
             connect = {"host": "127.0.0.1", "port": port, "user": "root", "schema": "golden"}
             if dialect == "mysql":
-                connect.update(password_env="DS_T05_GOLDEN_PW", password="root")
+                connect.update(password_env="DS_T05_GOLDEN_PW", password_source="ephemeral-run-secret")
             case = {"id": f"t05-a3-{anchor}-{mode}", "anchor": anchor, "dialect": dialect,
                     "sql": " ".join(sql + ";" for sql in sqls), "policy": profile,
                     "args": ["--fail-on", "warning"], "connect": connect,
@@ -2185,7 +2234,7 @@ def t05_a4_contract():
     def metadata_case(case_id, anchor, port, dialect, sqls, expect, execute, structure):
         connect = {"host": "127.0.0.1", "port": port, "user": "root", "schema": "golden"}
         if dialect == "mysql":
-            connect.update(password_env="DS_T05_GOLDEN_PW", password="root")
+            connect.update(password_env="DS_T05_GOLDEN_PW", password_source="ephemeral-run-secret")
         return {"id": case_id, "anchor": anchor, "dialect": dialect,
                 "sql": " ".join(sql + ";" for sql in sqls), "policy": profile,
                 "args": ["--fail-on", "blocker"], "connect": connect,
@@ -2480,7 +2529,7 @@ def t05_a5_contract():
     def metadata_case(case_id, anchor, port, dialect, sqls, expect, setup, execute, structure, post_verify):
         connect = {"host": "127.0.0.1", "port": port, "user": "root", "schema": "golden"}
         if dialect == "mysql":
-            connect.update(password_env="DS_T05_GOLDEN_PW", password="root")
+            connect.update(password_env="DS_T05_GOLDEN_PW", password_source="ephemeral-run-secret")
         return {"id": case_id, "anchor": anchor, "dialect": dialect,
                 "sql": " ".join(sql + ";" for sql in sqls), "policy": profile,
                 "args": ["--fail-on", "blocker"], "connect": connect,
@@ -2821,7 +2870,7 @@ def t05_a6_contract():
     def metadata_case(case_id, anchor, port, dialect, sqls, expect, execute, structure):
         connect = {"host": "127.0.0.1", "port": port, "user": "root", "schema": "golden"}
         if dialect == "mysql":
-            connect.update(password_env="DS_T05_GOLDEN_PW", password="root")
+            connect.update(password_env="DS_T05_GOLDEN_PW", password_source="ephemeral-run-secret")
         return {"id": case_id, "anchor": anchor, "dialect": dialect,
                 "sql": " ".join(sql + ";" for sql in sqls), "policy": profile,
                 "args": ["--fail-on", "blocker"], "connect": connect,
@@ -4125,7 +4174,7 @@ T06_ANCHORS = {
         "client_option_file": {
             "container_path": "/etc/deltascope-golden-client.cnf",
             "user": "root",
-            "password": "root",
+            "password_source": "ephemeral-run-secret",
         },
         "needs_database_create": False,
     },
@@ -4142,7 +4191,7 @@ T06_ANCHORS = {
         "client_option_file": {
             "container_path": "/etc/deltascope-golden-client.cnf",
             "user": "root",
-            "password": "root",
+            "password_source": "ephemeral-run-secret",
         },
         "needs_database_create": False,
     },
@@ -4159,7 +4208,7 @@ T06_ANCHORS = {
         "client_option_file": {
             "container_path": "/etc/deltascope-golden-client.cnf",
             "user": "root",
-            "password": "root",
+            "password_source": "ephemeral-run-secret",
         },
         "needs_database_create": False,
     },
@@ -5055,17 +5104,17 @@ def t06_a1_contract():
     connects = {
         "mysql57": {
             "host": "127.0.0.1", "port": 23357, "user": "root",
-            "password_env": "DS_T06_GOLDEN_PW", "password": "root",
+            "password_env": "DS_T06_GOLDEN_PW", "password_source": "ephemeral-run-secret",
             "schema": "golden",
         },
         "mysql80": {
             "host": "127.0.0.1", "port": 23380, "user": "root",
-            "password_env": "DS_T06_GOLDEN_PW", "password": "root",
+            "password_env": "DS_T06_GOLDEN_PW", "password_source": "ephemeral-run-secret",
             "schema": "golden",
         },
         "mysql84": {
             "host": "127.0.0.1", "port": 23384, "user": "root",
-            "password_env": "DS_T06_GOLDEN_PW", "password": "root",
+            "password_env": "DS_T06_GOLDEN_PW", "password_source": "ephemeral-run-secret",
             "schema": "golden",
         },
         "tidb85": {
@@ -8165,7 +8214,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
             command = case.get("command") or []
             conn = spec.get("connect") or {}
             failures.extend(command_binding_failures(case, command, spec, policy_by_name, cli.get("path") or "", connect=conn))
-            secret = conn.get("password")
+            secret = connect_password(conn)
             if secret:
                 # The password must travel via --password-env/--password-file
                 # only. A token equal to the secret is legal solely as the
@@ -8370,6 +8419,8 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
 
 
 def cmd_run(args):
+    global RUN_SECRET
+    RUN_SECRET = secrets.token_hex(16)
     manifest = load_manifest(args.task)
     baseline = load_baseline()
     baseline_errors = baseline_manifest_failures(manifest, baseline)
@@ -8501,6 +8552,7 @@ def cmd_run(args):
     # persisted or validated (issue #81 R3). A finding is an evidence failure.
     artifact["credential_scan"] = {
         "surfaces": ["argv", "stdout", "stderr", "setup_log", "cleanup_log", "artifact_json"],
+        "run_secret_checked": RUN_SECRET is not None,
         "findings": credential_leak_findings(artifact, manifest),
     }
 

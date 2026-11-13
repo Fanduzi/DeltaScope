@@ -33,7 +33,7 @@ MANIFEST = {
             "client_option_file": {
                 "container_path": "/etc/deltascope-golden-client.cnf",
                 "user": "root",
-                "password": "root",
+                "password_source": "ephemeral-run-secret",
             },
         }
     },
@@ -325,8 +325,24 @@ def main():
                                   lambda a: a["exec_client"].remove(
                                       "--defaults-extra-file=/etc/deltascope-golden-client.cnf"),
                                   "defaults-extra-file"))
-        results.append(cred_probe("option file missing password rejected",
-                                  lambda a: a["client_option_file"].pop("password"), "missing password"))
+        results.append(cred_probe("option file missing password_source rejected",
+                                  lambda a: a["client_option_file"].pop("password_source"), "missing password_source"))
+        results.append(cred_probe("literal password in option file rejected",
+                                  lambda a: a["client_option_file"].update(password="root"), "literal password"))
+        def cred_probe_manifest(name, mutate, needle):
+            m = copy.deepcopy(MANIFEST)
+            mutate(m)
+            failures = ddl_golden.manifest_credential_failures(m)
+            ok = any(needle in f for f in failures) if needle else not failures
+            print(("PASS " if ok else "FAIL ") + name + ("" if ok else f": {failures}"))
+            return ok
+
+        results.append(cred_probe_manifest("literal password in connect rejected",
+                                  lambda m: m.update(metadata_cases=[{"id": "c1", "connect": {"host": "h", "password": "root"}}]),
+                                  "literal password"))
+        results.append(cred_probe_manifest("literal credential env rejected",
+                                  lambda m: m.update(metadata_cases=[{"id": "c2", "env": {"DS_PW": "root"}}]),
+                                  "literal credential"))
 
         a = copy.deepcopy(base)
         a["cli"]["path"] = str(tmp / "nonexistent-binary")
@@ -738,7 +754,7 @@ def main():
             "id": "meta-ok", "anchor": "mysqlX", "dialect": "mysql",
             "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);",
             "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
-                        "password_env": "DS_PW", "password": "root", "schema": "golden"},
+                        "password_env": "DS_PW", "password_source": "ephemeral-run-secret", "schema": "golden"},
             "setup": [{"name": "create", "sql": "CREATE TABLE t (c VARCHAR(10))",
                        "verify": [{"assert": "col", "sql": "SELECT COLUMN_TYPE", "expect": "varchar(10)"}]}],
             "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0,
@@ -1344,7 +1360,7 @@ def main():
                 "id": "t05-first", "anchor": "mysqlX", "dialect": "mysql",
                 "sql": T05SQL, "policy": "t05-first-path",
                 "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
-                            "password_env": "DS_PW", "password": "root", "schema": "golden"},
+                            "password_env": "DS_PW", "password_source": "ephemeral-run-secret", "schema": "golden"},
                 "setup": [{"name": "ensure t absent", "expect_rc": 0, "sql": "DROP TABLE IF EXISTS t",
                            "verify": [{"assert": "t absent before audit",
                                        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
@@ -1378,7 +1394,7 @@ def main():
                 "id": "t05-missing-col", "anchor": "mysqlX", "dialect": "mysql",
                 "sql": T05_MISS, "policy": "t05-first-path",
                 "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
-                            "password_env": "DS_PW", "password": "root", "schema": "golden"},
+                            "password_env": "DS_PW", "password_source": "ephemeral-run-secret", "schema": "golden"},
                 "setup": [{"name": "ensure t absent", "expect_rc": 0, "sql": "DROP TABLE IF EXISTS t"}],
                 "expect": {"exit": 1, "verdict": "reject", "statements": 2, "findings": 1,
                            "diagnostics": 0, "unsupported": 0, "coverage": "complete",
@@ -1398,7 +1414,7 @@ def main():
                 "id": "t05-exec", "anchor": "mysqlX", "dialect": "mysql",
                 "sql": T05_EXEC, "policy": "t05-first-path",
                 "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
-                            "password_env": "DS_PW", "password": "root", "schema": "golden"},
+                            "password_env": "DS_PW", "password_source": "ephemeral-run-secret", "schema": "golden"},
                 "setup": [{"name": "ensure t absent", "expect_rc": 0, "sql": "DROP TABLE IF EXISTS t"}],
                 "expect": {"exit": 1, "verdict": "review", "statements": 3, "findings": 0,
                            "diagnostics": 1, "unsupported": 1, "coverage": "incomplete",
@@ -1419,7 +1435,7 @@ def main():
                 "id": "t05-rename", "anchor": "mysqlX", "dialect": "mysql",
                 "sql": T05_RENAME, "policy": "t05-first-path",
                 "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
-                            "password_env": "DS_PW", "password": "root", "schema": "golden"},
+                            "password_env": "DS_PW", "password_source": "ephemeral-run-secret", "schema": "golden"},
                 "setup": [
                     {"name": "create src schema", "expect_rc": 0, "sql": "CREATE DATABASE IF NOT EXISTS src"},
                     {"name": "create dst schema", "expect_rc": 0, "sql": "CREATE DATABASE IF NOT EXISTS dst"},
@@ -1463,7 +1479,7 @@ def main():
                 "id": "t05-rename-unqualified", "anchor": "mysqlX", "dialect": "mysql",
                 "sql": T05_RENAME_UNQ, "policy": "t05-first-path",
                 "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
-                            "password_env": "DS_PW", "password": "root", "schema": "golden"},
+                            "password_env": "DS_PW", "password_source": "ephemeral-run-secret", "schema": "golden"},
                 "setup": [{"name": "ensure endpoints absent", "expect_rc": 0, "sql": "DROP TABLE IF EXISTS src.t",
                            "verify": [{"assert": "golden.t2 absent before audit",
                                        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'",

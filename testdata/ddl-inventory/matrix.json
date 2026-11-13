@@ -10,9 +10,8 @@
     "tidb85"
   ],
   "status_counts": {
-    "semantically_checked": 75,
-    "generic_notice": 14,
-    "parse_only": 1,
+    "semantically_checked": 77,
+    "generic_notice": 13,
     "mixed_coverage": 1,
     "parser_unsupported": 9,
     "explicit_unsupported": 3,
@@ -387,9 +386,9 @@
       "id": "mysql.create-table-generated-column",
       "product": "mysql",
       "owner": "T07",
-      "status": "generic_notice",
+      "status": "semantically_checked",
       "parser_status": "recognized",
-      "audit_status": "notice_only",
+      "audit_status": "audited",
       "applicability": [
         {
           "anchor": "mysql57",
@@ -397,8 +396,11 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "audited",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds dependency and version-boundary fixtures"
           ]
         },
@@ -408,8 +410,11 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "audited",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds dependency and version-boundary fixtures"
           ]
         },
@@ -419,8 +424,11 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "audited",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds dependency and version-boundary fixtures"
           ]
         }
@@ -937,9 +945,9 @@
       "id": "mysql.alter-table.alter-column-default",
       "product": "mysql",
       "owner": "T08",
-      "status": "parse_only",
+      "status": "semantically_checked",
       "parser_status": "recognized",
-      "audit_status": "silent",
+      "audit_status": "audited",
       "applicability": [
         {
           "anchor": "mysql57",
@@ -947,8 +955,11 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "silent",
+          "audit_status": "audited",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.alter-table.alter-column-default.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds SET/DROP DEFAULT policy and fixtures"
           ]
         },
@@ -958,8 +969,11 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "silent",
+          "audit_status": "audited",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.alter-table.alter-column-default.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds SET/DROP DEFAULT policy and fixtures"
           ]
         },
@@ -969,8 +983,11 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "silent",
+          "audit_status": "audited",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.alter-table.alter-column-default.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds SET/DROP DEFAULT policy and fixtures"
           ]
         }
@@ -1737,6 +1754,9 @@
           "parser_status": "recognized",
           "audit_status": "mixed",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds option fixtures"
           ]
         },
@@ -1748,6 +1768,9 @@
           "parser_status": "recognized",
           "audit_status": "mixed",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds option fixtures"
           ]
         },
@@ -1759,6 +1782,9 @@
           "parser_status": "recognized",
           "audit_status": "mixed",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds option fixtures"
           ]
         }
@@ -1777,6 +1803,9 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -1788,6 +1817,9 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -1799,6 +1831,9 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             }
@@ -1817,6 +1852,9 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -1828,6 +1866,9 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -1839,6 +1880,9 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             }
@@ -1857,6 +1901,9 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -1868,6 +1915,9 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -1879,6 +1929,9 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             }
@@ -1897,6 +1950,8 @@
               "parser_status": "recognized",
               "audit_status": "silent",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -1908,6 +1963,8 @@
               "parser_status": "recognized",
               "audit_status": "silent",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -1919,6 +1976,8 @@
               "parser_status": "recognized",
               "audit_status": "silent",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             }
@@ -1937,6 +1996,8 @@
               "parser_status": "recognized",
               "audit_status": "silent",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -1948,6 +2009,8 @@
               "parser_status": "recognized",
               "audit_status": "silent",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -1959,6 +2022,8 @@
               "parser_status": "recognized",
               "audit_status": "silent",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             }
@@ -1977,6 +2042,9 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -1988,6 +2056,9 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -1999,6 +2070,9 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             }
@@ -2017,6 +2091,9 @@
               "parser_status": "recognized",
               "audit_status": "notice_only",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -2028,6 +2105,9 @@
               "parser_status": "recognized",
               "audit_status": "notice_only",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -2039,6 +2119,9 @@
               "parser_status": "recognized",
               "audit_status": "notice_only",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             }
@@ -2057,6 +2140,8 @@
               "parser_status": "recognized",
               "audit_status": "silent",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -2068,6 +2153,8 @@
               "parser_status": "recognized",
               "audit_status": "silent",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -2079,6 +2166,8 @@
               "parser_status": "recognized",
               "audit_status": "silent",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             }
@@ -2097,6 +2186,9 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -2108,6 +2200,9 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             },
@@ -2119,6 +2214,9 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds option fixtures"
               ]
             }
@@ -2283,6 +2381,9 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.drop-index.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds parity fixtures"
           ]
         },
@@ -2294,6 +2395,9 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.drop-index.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds parity fixtures"
           ]
         },
@@ -2305,6 +2409,9 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.drop-index.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds parity fixtures"
           ]
         }
@@ -2519,6 +2626,9 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds body-audit fixtures"
           ]
         },
@@ -2530,6 +2640,9 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds body-audit fixtures"
           ]
         },
@@ -2541,6 +2654,9 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds body-audit fixtures"
           ]
         }
@@ -2562,6 +2678,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds function fixtures"
           ]
         },
@@ -2573,6 +2691,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds function fixtures"
           ]
         },
@@ -2584,6 +2704,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds function fixtures"
           ]
         }
@@ -2605,6 +2727,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds attribute fixtures"
           ]
         },
@@ -2616,6 +2740,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds attribute fixtures"
           ]
         },
@@ -2627,6 +2753,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds attribute fixtures"
           ]
         }
@@ -2691,6 +2819,9 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.stored-body-analysis.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds static/dynamic body boundary fixtures"
           ]
         },
@@ -2702,6 +2833,9 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.stored-body-analysis.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds static/dynamic body boundary fixtures"
           ]
         },
@@ -2713,6 +2847,9 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.stored-body-analysis.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds static/dynamic body boundary fixtures"
           ]
         }
@@ -3087,6 +3224,9 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.logfile-group.probes.txt",
+            "file:internal/domain/rule/ddl/mysql_tablespace_rules.go",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds engine-boundary classification evidence"
           ]
         },
@@ -3098,6 +3238,9 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.logfile-group.probes.txt",
+            "file:internal/domain/rule/ddl/mysql_tablespace_rules.go",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds engine-boundary classification evidence"
           ]
         },
@@ -3109,6 +3252,9 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.logfile-group.probes.txt",
+            "file:internal/domain/rule/ddl/mysql_tablespace_rules.go",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds engine-boundary classification evidence"
           ]
         }
@@ -3868,6 +4014,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.create-table-placement-hint.probes.txt",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner records parser evidence"
           ]
         }
@@ -4268,6 +4416,9 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.probes.txt",
+            "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds fixtures"
           ]
         }
@@ -4286,6 +4437,9 @@
               "parser_status": "recognized",
               "audit_status": "notice_only",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.probes.txt",
+                "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds fixtures"
               ]
             }
@@ -4304,6 +4458,9 @@
               "parser_status": "recognized",
               "audit_status": "notice_only",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.probes.txt",
+                "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds fixtures"
               ]
             }
@@ -4322,6 +4479,9 @@
               "parser_status": "recognized",
               "audit_status": "notice_only",
               "evidence": [
+                "file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.probes.txt",
+                "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml",
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "missing: owner adds fixtures"
               ]
             }
@@ -4367,6 +4527,9 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.drop-index.probes.txt",
+            "file:testdata/sql-corpus/tidb/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: owner adds fixtures"
           ]
         }
@@ -4919,6 +5082,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.alter-instance.probes.txt",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "missing: T32 (#111) owns instance-management boundary evidence"
           ]
         }

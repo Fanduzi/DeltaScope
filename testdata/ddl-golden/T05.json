@@ -232,7 +232,7 @@
    "client_option_file": {
      "container_path": "/etc/deltascope-golden-client.cnf",
      "user": "root",
-     "password": "root"
+     "password_source": "ephemeral-run-secret"
    },
    "needs_database_create": false
   },
@@ -251,7 +251,7 @@
    "client_option_file": {
      "container_path": "/etc/deltascope-golden-client.cnf",
      "user": "root",
-     "password": "root"
+     "password_source": "ephemeral-run-secret"
    },
    "needs_database_create": false
   },
@@ -270,7 +270,7 @@
    "client_option_file": {
      "container_path": "/etc/deltascope-golden-client.cnf",
      "user": "root",
-     "password": "root"
+     "password_source": "ephemeral-run-secret"
    },
    "needs_database_create": false
   },
@@ -5586,7 +5586,7 @@
     "port": 23357,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -5686,7 +5686,7 @@
     "port": 23380,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -5786,7 +5786,7 @@
     "port": 23384,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -5886,7 +5886,7 @@
     "port": 23384,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -5956,7 +5956,7 @@
     "port": 23384,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -6015,7 +6015,7 @@
     "port": 23384,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -6083,7 +6083,7 @@
     "port": 23384,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -6520,7 +6520,7 @@
     "port": 23357,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -6703,7 +6703,7 @@
     "port": 23357,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -6886,7 +6886,7 @@
     "port": 23357,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -7080,7 +7080,7 @@
     "port": 23380,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -7263,7 +7263,7 @@
     "port": 23380,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -7446,7 +7446,7 @@
     "port": 23380,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -7640,7 +7640,7 @@
     "port": 23384,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -7823,7 +7823,7 @@
     "port": 23384,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -8006,7 +8006,7 @@
     "port": 23384,
     "user": "root",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root",
+    "password_source": "ephemeral-run-secret",
     "schema": "golden"
    },
    "setup": [
@@ -8759,7 +8759,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -8912,7 +8912,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -9065,7 +9065,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -9218,7 +9218,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -9371,7 +9371,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -9524,7 +9524,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -9677,7 +9677,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -9789,7 +9789,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -9902,7 +9902,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -10793,7 +10793,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -10955,7 +10955,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -11096,7 +11096,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -11258,7 +11258,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -11399,7 +11399,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -11561,7 +11561,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -11702,7 +11702,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -11879,7 +11879,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -12056,7 +12056,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -12252,7 +12252,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -13569,7 +13569,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -13760,7 +13760,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -13978,7 +13978,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -14169,7 +14169,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -14387,7 +14387,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -14578,7 +14578,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -15201,7 +15201,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -15392,7 +15392,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -15610,7 +15610,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -15801,7 +15801,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -16424,7 +16424,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -16660,7 +16660,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -16896,7 +16896,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -17036,7 +17036,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -17920,7 +17920,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -18058,7 +18058,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -18269,7 +18269,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -18519,7 +18519,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -18730,7 +18730,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -18980,7 +18980,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -19191,7 +19191,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -19898,7 +19898,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -20139,7 +20139,7 @@
     "user": "root",
     "schema": "golden",
     "password_env": "DS_T05_GOLDEN_PW",
-    "password": "root"
+    "password_source": "ephemeral-run-secret"
    },
    "setup": [
     {
@@ -20859,7 +20859,7 @@
     "DS_T05_GOLDEN_PW"
    ],
    "env": {
-    "DS_T05_GOLDEN_PW": "root"
+    "DS_T05_GOLDEN_PW": "${DDL_GOLDEN_RUN_SECRET}"
    },
    "expect": {
     "exit": 3,

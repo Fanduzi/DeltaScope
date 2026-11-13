@@ -1,0 +1,64 @@
+# R4 evidence probe for mysql.drop-index (binary HEAD e2dd4b34+, generated 2026-11-13)
+# sql_shape: DROP INDEX idx ON t
+# dialect: mysql
+
+=== version 5.7 (target 5.7.44) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.drop_index.notice",
+     "level": "notice"
+    }
+   ],
+   "unsupported": null,
+   "diagnostics": null
+  }
+ ]
+}
+=== version 8.0 (target 8.0.46) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.drop_index.notice",
+     "level": "notice"
+    }
+   ],
+   "unsupported": null,
+   "diagnostics": null
+  }
+ ]
+}
+=== version 8.4 (target 8.4.10) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.drop_index.notice",
+     "level": "notice"
+    }
+   ],
+   "unsupported": null,
+   "diagnostics": null
+  }
+ ]
+}
