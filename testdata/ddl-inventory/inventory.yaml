@@ -909,27 +909,27 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["file:scripts/test_cli_metadata_e2e.sh", "missing: offline unverified evidence-gap assertions (T04)"]
+        evidence: ["file:scripts/test_cli_metadata_e2e.sh", "file:testdata/ddl-golden/T04.json", "file:internal/domain/rule/catalog/catalog.go", "file:internal/domain/rule/ddl/common.go"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["file:scripts/test_cli_metadata_e2e.sh", "missing: offline unverified evidence-gap assertions (T04)"]
+        evidence: ["file:scripts/test_cli_metadata_e2e.sh", "file:testdata/ddl-golden/T04.json", "file:internal/domain/rule/catalog/catalog.go", "file:internal/domain/rule/ddl/common.go"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["file:scripts/test_cli_metadata_e2e.sh", "missing: offline unverified evidence-gap assertions (T04)"]
+        evidence: ["file:scripts/test_cli_metadata_e2e.sh", "file:testdata/ddl-golden/T04.json", "file:internal/domain/rule/catalog/catalog.go", "file:internal/domain/rule/ddl/common.go"]
 
-    status_evidence: "2026-09-22 CLI probe (offline): only ddl.alter.modify_column.notice; modify_column.compatibility.require and nullability-transition rules exist but need metadata facts (verified in metadata e2e)"
+    status_evidence: "2026-09-22 CLI probe (offline): only ddl.alter.modify_column.notice; modify_column.compatibility.require and nullability-transition rules exist but need metadata facts (verified in metadata e2e). T04 (#83): offline runs without prior-column facts now emit a named ddl.alter.modify_column.compatibility.require evidence gap (reason missing_source_column, required_facts [source_column.definition]) driving coverage=unverified and a review floor with warning-equivalent threshold weight; the disabled-rule control stays complete/pass with zero gaps, and anchored mysql84 metadata cases prove the complete pass/reject arms against real VARCHAR(10)/VARCHAR(200) fixtures (Golden T04.json: 163/163)."
     targets: "table, column, old vs new definition, nullability transition"
     acceptance:
       dimensions: "narrowing/compatibility evidence, unverified-without-metadata path"
-      refs: ["file:scripts/test_cli_metadata_e2e.sh", "missing: offline unverified evidence-gap assertions (T04)"]
+      refs: ["file:scripts/test_cli_metadata_e2e.sh", "file:testdata/ddl-golden/T04.json", "file:internal/domain/rule/catalog/catalog.go", "file:internal/domain/rule/ddl/common.go"]
     owner: T08
 
   - id: mysql.alter-table.change-column

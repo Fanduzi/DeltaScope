@@ -42,9 +42,9 @@
     "-uroot"
    ],
    "client_option_file": {
-     "container_path": "/etc/deltascope-golden-client.cnf",
-     "user": "root",
-     "password_source": "ephemeral-run-secret"
+    "container_path": "/etc/deltascope-golden-client.cnf",
+    "user": "root",
+    "password_source": "ephemeral-run-secret"
    },
    "needs_database_create": false
   },
@@ -61,9 +61,9 @@
     "-uroot"
    ],
    "client_option_file": {
-     "container_path": "/etc/deltascope-golden-client.cnf",
-     "user": "root",
-     "password_source": "ephemeral-run-secret"
+    "container_path": "/etc/deltascope-golden-client.cnf",
+    "user": "root",
+    "password_source": "ephemeral-run-secret"
    },
    "needs_database_create": false
   },
@@ -80,9 +80,9 @@
     "-uroot"
    ],
    "client_option_file": {
-     "container_path": "/etc/deltascope-golden-client.cnf",
-     "user": "root",
-     "password_source": "ephemeral-run-secret"
+    "container_path": "/etc/deltascope-golden-client.cnf",
+    "user": "root",
+    "password_source": "ephemeral-run-secret"
    },
    "needs_database_create": false
   },
@@ -119,9 +119,9 @@
     "-uroot"
    ],
    "client_option_file": {
-     "container_path": "/etc/deltascope-golden-client.cnf",
-     "user": "root",
-     "password_source": "ephemeral-run-secret"
+    "container_path": "/etc/deltascope-golden-client.cnf",
+    "user": "root",
+    "password_source": "ephemeral-run-secret"
    },
    "needs_database_create": false,
    "auxiliary": "T04-B: innodb_page_size=4096 via --innodb-page-size"
@@ -301,23 +301,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
-    ],
-    "unsupported_features": [
-     "alter_table.drop_check"
+     "complete"
     ],
     "statement_sql": [
      "ALTER TABLE t DROP CHECK chk;"
-    ]
-   }
+    ],
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-create-table-placement-policy",
@@ -490,23 +489,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
-    ],
-    "unsupported_features": [
-     "create_sequence.options"
+     "complete"
     ],
     "statement_sql": [
      "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1;"
-    ]
-   }
+    ],
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-alter-algorithm-lock",
@@ -517,24 +515,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 2,
-    "unsupported": 2,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
-    ],
-    "unsupported_features": [
-     "alter_table.algorithm",
-     "alter_table.lock"
+     "complete"
     ],
     "statement_sql": [
      "ALTER TABLE t ALGORITHM=INPLACE, LOCK=NONE;"
-    ]
-   }
+    ],
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-alter-placement-policy",
@@ -592,29 +588,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
-    ],
-    "unsupported_features": [
-     "create_table.temporary"
+     "complete"
     ],
     "statement_sql": [
      "CREATE TEMPORARY TABLE t (id INT PRIMARY KEY);"
     ],
-    "unsupported_entries": [
-     {
-      "feature": "create_table.temporary",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-create-temporary-table",
@@ -625,29 +614,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
-    ],
-    "unsupported_features": [
-     "create_table.temporary"
+     "complete"
     ],
     "statement_sql": [
      "CREATE TEMPORARY TABLE t (id INT);"
     ],
-    "unsupported_entries": [
-     {
-      "feature": "create_table.temporary",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "tidb-create-global-temporary-table",
@@ -658,29 +640,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
-    ],
-    "unsupported_features": [
-     "create_table.temporary.global"
+     "complete"
     ],
     "statement_sql": [
      "CREATE GLOBAL TEMPORARY TABLE t (id INT PRIMARY KEY) ON COMMIT DELETE ROWS;"
     ],
-    "unsupported_entries": [
-     {
-      "feature": "create_table.temporary.global",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-create-global-temporary-table",
@@ -724,29 +699,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
-    ],
-    "unsupported_features": [
-     "drop_table.temporary"
+     "complete"
     ],
     "statement_sql": [
      "DROP TEMPORARY TABLE t;"
     ],
-    "unsupported_entries": [
-     {
-      "feature": "drop_table.temporary",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "tidb-create-table-auto-random",
@@ -757,29 +725,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
-    ],
-    "unsupported_features": [
-     "create_table.column.auto_random"
+     "complete"
     ],
     "statement_sql": [
      "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);"
     ],
-    "unsupported_entries": [
-     {
-      "feature": "create_table.column.auto_random",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-create-table-auto-random",
@@ -823,29 +784,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
-    ],
-    "unsupported_features": [
-     "alter_table.add_columns.column.auto_random"
+     "complete"
     ],
     "statement_sql": [
      "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;"
     ],
-    "unsupported_entries": [
-     {
-      "feature": "alter_table.add_columns.column.auto_random",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-create-procedure-body",
@@ -948,29 +902,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
-    ],
-    "unsupported_features": [
-     "create_table.column.check"
+     "complete"
     ],
     "statement_sql": [
      "CREATE TABLE t (id INT CHECK (id > 0));"
     ],
-    "unsupported_entries": [
-     {
-      "feature": "create_table.column.check",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-create-table-inline-unique",
@@ -1069,29 +1016,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
-    ],
-    "unsupported_features": [
-     "drop_table.temporary"
+     "complete"
     ],
     "statement_sql": [
      "DROP TEMPORARY TABLE t;"
     ],
-    "unsupported_entries": [
-     {
-      "feature": "drop_table.temporary",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-alter-add-column-auto-random",
@@ -1544,29 +1484,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "ALTER TABLE t ADD (c INT, CHECK (c > 0));"
     ],
-    "unsupported_features": [
-     "alter_table.add_constraint.check"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "alter_table.add_constraint.check",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-create-table-mixed-uniqueness",
@@ -1877,33 +1810,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "DROP SEQUENCE s1, s2;"
     ],
-    "unsupported_features": [
-     "drop_sequence.unaudited_targets"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "drop_sequence.unaudited_targets",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "targets",
-       "omitted": 1
-      }
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-grant-multi",
@@ -1951,32 +1873,24 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 2,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
      "complete",
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "ALTER TABLE t ADD COLUMN c INT;",
      "CREATE TEMPORARY TABLE x (id INT);"
     ],
-    "unsupported_features": [
-     "create_table.temporary"
-    ],
-    "unsupported_entries": [
-     {
-      "index": 1,
-      "feature": "create_table.temporary",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-alter-user-current-auth",
@@ -2249,36 +2163,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES p(id) ON DELETE CASCADE);"
     ],
-    "unsupported_features": [
-     "create_table.constraint.foreign_key.parts"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "create_table.constraint.foreign_key.parts",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "constraint_parts",
-       "constraint_type": "foreign_key",
-       "local_parts": 0,
-       "referenced_parts": 0,
-       "refer_actions": 1
-      }
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-create-table-partition-placement",
@@ -2322,29 +2222,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY=p);"
     ],
-    "unsupported_features": [
-     "create_table.option.placement_policy"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "create_table.option.placement_policy",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-alter-user-current-function",
@@ -2909,32 +2802,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "CREATE DEFINER='a'@'%' VIEW v AS SELECT 1;"
     ],
-    "unsupported": 1,
-    "unsupported_features": [
-     "create_view.option.definer"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "create_view.option.definer",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "option"
-      }
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-create-view-combined",
@@ -2945,49 +2828,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 5,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "CREATE ALGORITHM=TEMPTABLE DEFINER='a'@'%' SQL SECURITY INVOKER VIEW v (a) AS SELECT 1 WITH LOCAL CHECK OPTION;"
     ],
-    "unsupported": 5,
-    "unsupported_features": [
-     "create_view.option.check_option",
-     "create_view.option.definer",
-     "create_view.option.sql_security",
-     "create_view.option.view_algorithm",
-     "create_view.option.view_columns"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "create_view.option.check_option",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     },
-     {
-      "feature": "create_view.option.definer",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     },
-     {
-      "feature": "create_view.option.sql_security",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     },
-     {
-      "feature": "create_view.option.view_algorithm",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     },
-     {
-      "feature": "create_view.option.view_columns",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-grant-with-grant",
@@ -3186,32 +3042,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "CREATE SEQUENCE s COMMENT 'x';"
     ],
-    "unsupported": 1,
-    "unsupported_features": [
-     "create_sequence.option.comment"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "create_sequence.option.comment",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "option"
-      }
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-create-user-identified",
@@ -3338,40 +3184,22 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 2,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "CREATE OR REPLACE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1';"
     ],
-    "unsupported": 2,
-    "unsupported_features": [
-     "create_placement_policy.option.or_replace",
-     "create_placement_policy.options"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "create_placement_policy.option.or_replace",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "option"
-      }
-     },
-     {
-      "feature": "create_placement_policy.options",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "option"
-      }
-     }
-    ]
-   }
+    "evidence_gaps": 0
+   },
+   "graduated": "T04-R1: pre-promotion oracle; family governed per T03 matrix (T06/T11/T12/T14/T15/T16/T18/T20/T21/T23)"
   },
   {
    "id": "mysql-union-paren-select-into",

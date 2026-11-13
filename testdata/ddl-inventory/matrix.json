@@ -837,7 +837,9 @@
           "audit_status": "notice_only",
           "evidence": [
             "file:scripts/test_cli_metadata_e2e.sh",
-            "missing: offline unverified evidence-gap assertions (T04)"
+            "file:testdata/ddl-golden/T04.json",
+            "file:internal/domain/rule/catalog/catalog.go",
+            "file:internal/domain/rule/ddl/common.go"
           ]
         },
         {
@@ -849,7 +851,9 @@
           "audit_status": "notice_only",
           "evidence": [
             "file:scripts/test_cli_metadata_e2e.sh",
-            "missing: offline unverified evidence-gap assertions (T04)"
+            "file:testdata/ddl-golden/T04.json",
+            "file:internal/domain/rule/catalog/catalog.go",
+            "file:internal/domain/rule/ddl/common.go"
           ]
         },
         {
@@ -861,7 +865,9 @@
           "audit_status": "notice_only",
           "evidence": [
             "file:scripts/test_cli_metadata_e2e.sh",
-            "missing: offline unverified evidence-gap assertions (T04)"
+            "file:testdata/ddl-golden/T04.json",
+            "file:internal/domain/rule/catalog/catalog.go",
+            "file:internal/domain/rule/ddl/common.go"
           ]
         }
       ]

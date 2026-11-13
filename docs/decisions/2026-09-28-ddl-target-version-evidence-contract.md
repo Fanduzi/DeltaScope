@@ -179,3 +179,20 @@ the failure mode #79 requires the audit model to expose.
   `8.0.11-TiDB-v8.5.0` → `tidb 8.5.0`, plus auxiliary MySQL 8.4.10 at
   `innodb_page_size=4096` and TiDB 8.5.0 at `max-index-length=12288`,
   all verified against live containers.
+
+## Addendum — auxiliary-anchor image locks and oracle graduation
+
+- The two T04-B auxiliary anchors now carry locked image identities in
+  a dedicated `auxiliary_anchors` section of
+  `testdata/ddl-golden/anchors-baseline.json` (same digests/platforms
+  as `mysql84`/`tidb85`). The runner resolves locks from
+  `required_anchors` then `auxiliary_anchors`; required-anchor
+  semantics are unchanged, so aux fixtures stay opt-in per manifest
+  and never enlarge other tasks' denominators.
+- Twenty `cli_cases` were graduated from pre-promotion
+  `unsupported` expectations to governed `complete`/`pass` oracles,
+  mirroring the T03 graduation: the families (CHECK constraints,
+  algorithm/lock, temporary tables, view options, foreign-key parts,
+  AUTO_RANDOM, placement policies, sequences, partition placement)
+  are all audited by the T06–T23 rule lineage already proven in the
+  T03 matrix, so expecting `unsupported` was stale.
