@@ -6672,6 +6672,34 @@ def t23s_manifest_tests(tmp):
     report("nonzero diagnostics/unsupported never emit zero-count labels",
            "no diagnostics" not in names and "no unsupported" not in names)
 
+    # Assertion-label regression (T06-R2): the findings count-equality
+    # assertion must use the truthful "finding count" label for zero, one,
+    # and multiple expected findings — never "zero findings".
+    def finding_count_names(n):
+        parsed = {
+            "verdict": "pass",
+            "coverage": {"status": "complete"},
+            "statements": [{"index": 0, "findings": [
+                {"rule_id": "ddl.table.primary_key.require"} for _ in range(n)],
+                "coverage": {"status": "complete"}}],
+            "global_findings": [],
+            "diagnostics": [],
+            "unsupported": [],
+        }
+        expect = {"exit": 0, "verdict": "pass", "statements": 1,
+                  "findings": n, "diagnostics": 0, "unsupported": 0,
+                  "coverage": "complete", "statement_coverage": ["complete"]}
+        return [name for name, _ok, _detail in ddl_golden.cli_case_expect_checks(parsed, 0, expect)]
+
+    report("zero findings emits truthful finding-count label",
+           "finding count" in finding_count_names(0))
+    report("one finding emits truthful finding-count label",
+           "finding count" in finding_count_names(1))
+    report("multiple findings emit truthful finding-count label",
+           "finding count" in finding_count_names(3))
+    report("nonzero findings never emit zero-findings label",
+           all("zero findings" not in finding_count_names(n) for n in (0, 1, 3)))
+
     return results
 
 

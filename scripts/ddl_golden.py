@@ -933,7 +933,7 @@ def cli_case_expect_checks(parsed, rc, expect):
         ("exit code", parsed is not None and rc == expect["exit"], f"rc={rc} expected={expect['exit']}"),
         ("verdict", parsed is not None and parsed.get("verdict") == expect["verdict"], f"verdict={parsed.get('verdict') if parsed else None!r}"),
         ("top-level statements", parsed is not None and len(statements) == expect["statements"], f"statements={len(statements)} expected={expect['statements']}"),
-        ("zero findings", parsed is not None and findings == expect["findings"], f"findings={findings}"),
+        ("finding count", parsed is not None and findings == expect["findings"], f"findings={findings}"),
         ("diagnostics count", parsed is not None and len(diagnostics) == expect["diagnostics"], f"diagnostics={diagnostics!r}"),
         ("unsupported count", parsed is not None and len(unsupported) == expect["unsupported"], f"unsupported={unsupported!r}"),
     ]
