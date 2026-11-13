@@ -10,8 +10,8 @@
     "tidb85"
   ],
   "status_counts": {
-    "semantically_checked": 77,
-    "generic_notice": 13,
+    "semantically_checked": 76,
+    "generic_notice": 14,
     "mixed_coverage": 1,
     "parser_unsupported": 9,
     "explicit_unsupported": 3,
@@ -386,9 +386,9 @@
       "id": "mysql.create-table-generated-column",
       "product": "mysql",
       "owner": "T07",
-      "status": "semantically_checked",
+      "status": "generic_notice",
       "parser_status": "recognized",
-      "audit_status": "audited",
+      "audit_status": "notice_only",
       "applicability": [
         {
           "anchor": "mysql57",
@@ -396,12 +396,12 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "notice_only",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt",
             "file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds dependency and version-boundary fixtures"
+            "missing: owner adds generated-column-specific dependency/expression/version-boundary fixtures"
           ]
         },
         {
@@ -410,12 +410,12 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "notice_only",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt",
             "file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds dependency and version-boundary fixtures"
+            "missing: owner adds generated-column-specific dependency/expression/version-boundary fixtures"
           ]
         },
         {
@@ -424,12 +424,12 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "notice_only",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt",
             "file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds dependency and version-boundary fixtures"
+            "missing: owner adds generated-column-specific dependency/expression/version-boundary fixtures"
           ]
         }
       ]

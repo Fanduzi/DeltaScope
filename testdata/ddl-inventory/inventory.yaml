@@ -517,45 +517,45 @@ rows:
     subactions: ["GENERATED ALWAYS AS (expr)", "VIRTUAL", "STORED", "expression DEFAULT (8.0.13+)", "INVISIBLE column (8.0.23+)"]
     sql_shape: "CREATE TABLE tg (a INT, b INT GENERATED ALWAYS AS (a+1) STORED)"
     prerequisites: "InnoDB"
-    status: semantically_checked
+    status: generic_notice
     parser_status: recognized
-    audit_status: audited
+    audit_status: notice_only
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: audited
+        audit_status: notice_only
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds dependency and version-boundary fixtures"
+          - "missing: owner adds generated-column-specific dependency/expression/version-boundary fixtures"
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: audited
+        audit_status: notice_only
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds dependency and version-boundary fixtures"
+          - "missing: owner adds generated-column-specific dependency/expression/version-boundary fixtures"
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: audited
+        audit_status: notice_only
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds dependency and version-boundary fixtures"
+          - "missing: owner adds generated-column-specific dependency/expression/version-boundary fixtures"
 
-    status_evidence: "2026-09-22 CLI probe: parses; generic column hygiene rules fire but no generated-dependency/expression-default check; CREATE TABLE with INVISIBLE column is parser_error 2026-09-24 T03 rework (#82): parsed generated column options now surface as create_table.column.generated incomplete evidence until T07 implements dependency semantics"
+    status_evidence: "2026-11-13 R5 correction (reviewer-ordered): parses on all anchors; generic CREATE TABLE rules fire (charset.allowlist, engine.allowlist, primary_key.require, column.default.require) but none govern generated-column semantics — no expression-safety, STORED/VIRTUAL distinction, or dependency-edge check exists, so the row is conservatively notice_only, not audited; CREATE TABLE with INVISIBLE column is parser_error; T07 owns generated-column semantic coverage (#86)"
     targets: "generated column identity, expression dependency edges (b depends on a), storage kind, invisibility"
     acceptance:
       dimensions: "dependency tracking, drop-source protection, version applicability (expr default 8.0.13+, invisible 8.0.23+)"
