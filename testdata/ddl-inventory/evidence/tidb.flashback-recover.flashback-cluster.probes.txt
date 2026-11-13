@@ -1,0 +1,26 @@
+row_id: tidb.flashback-recover
+subaction_id: FLASHBACK CLUSTER
+# dialect: tidb
+# sqls: ['FLASHBACK CLUSTER']
+# binary HEAD 5160e2cd, generated 2026-11-13
+
+=== version 8.5 (target 8.5.0) rc=2 ===
+{
+ "verdict": "",
+ "coverage": {
+  "status": "incomplete"
+ },
+ "statements": [],
+ "unsupported": null,
+ "diagnostics": [
+  {
+   "classification": "parser_error",
+   "reason": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred",
+   "action_hint": "verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available",
+   "audited": false,
+   "dialect": "tidb",
+   "line": 1,
+   "column": 1
+  }
+ ]
+}

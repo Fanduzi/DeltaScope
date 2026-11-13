@@ -1,6 +1,7 @@
-# R4 evidence probe for tidb.alter-instance (binary HEAD e2dd4b34+, generated 2026-11-13)
+row_id: tidb.alter-instance
 # sql_shape: ALTER INSTANCE RELOAD TLS
 # dialect: tidb
+# binary HEAD 5160e2cd, generated 2026-11-13
 
 === version 8.5 (target 8.5.0) rc=1 ===
 {
@@ -12,8 +13,28 @@
   {
    "index": 0,
    "findings": [],
-   "unsupported": null,
-   "diagnostics": null
+   "coverage": {
+    "status": "incomplete"
+   }
+  }
+ ],
+ "unsupported": [
+  {
+   "feature": "alter_instance.reload_tls",
+   "sql": "ALTER INSTANCE RELOAD TLS",
+   "reason": "parsed by the shared parser but not covered by audited semantics",
+   "metadata": {
+    "boundary": "unaudited"
+   }
+  }
+ ],
+ "diagnostics": [
+  {
+   "classification": "unsupported_statement",
+   "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+   "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+   "audited": false,
+   "dialect": "tidb"
   }
  ]
 }

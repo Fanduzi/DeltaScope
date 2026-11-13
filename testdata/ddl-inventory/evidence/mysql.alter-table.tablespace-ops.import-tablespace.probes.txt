@@ -1,0 +1,75 @@
+row_id: mysql.alter-table.tablespace-ops
+subaction_id: IMPORT TABLESPACE
+# dialect: mysql
+# sqls: ['ALTER TABLE t IMPORT TABLESPACE']
+# binary HEAD 5160e2cd, generated 2026-11-13
+
+=== version 5.7 (target 5.7.44) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.alter.import_tablespace.warn",
+     "level": "warning"
+    }
+   ],
+   "coverage": {
+    "status": "unverified"
+   }
+  }
+ ],
+ "unsupported": null,
+ "diagnostics": null
+}
+=== version 8.0 (target 8.0.46) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.alter.import_tablespace.warn",
+     "level": "warning"
+    }
+   ],
+   "coverage": {
+    "status": "unverified"
+   }
+  }
+ ],
+ "unsupported": null,
+ "diagnostics": null
+}
+=== version 8.4 (target 8.4.10) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.alter.import_tablespace.warn",
+     "level": "warning"
+    }
+   ],
+   "coverage": {
+    "status": "unverified"
+   }
+  }
+ ],
+ "unsupported": null,
+ "diagnostics": null
+}

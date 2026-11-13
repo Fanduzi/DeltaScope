@@ -1,0 +1,79 @@
+row_id: mysql.alter-table.online-ddl
+subaction_id: ALGORITHM=INSTANT/INPLACE/COPY/DEFAULT
+# dialect: mysql
+# sqls: ['ALTER TABLE t ADD COLUMN c INT, ALGORITHM=INSTANT']
+# binary HEAD 5160e2cd, generated 2026-11-13
+
+=== version 5.7 (target 5.7.44) rc=1 ===
+{
+ "verdict": "reject",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.alter.online_ddl.applicability",
+     "level": "blocker"
+    },
+    {
+     "rule_id": "ddl.alter.add_column.notice",
+     "level": "notice"
+    }
+   ],
+   "coverage": {
+    "status": "unverified"
+   }
+  }
+ ],
+ "unsupported": null,
+ "diagnostics": null
+}
+=== version 8.0 (target 8.0.46) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.alter.add_column.notice",
+     "level": "notice"
+    }
+   ],
+   "coverage": {
+    "status": "unverified"
+   }
+  }
+ ],
+ "unsupported": null,
+ "diagnostics": null
+}
+=== version 8.4 (target 8.4.10) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.alter.add_column.notice",
+     "level": "notice"
+    }
+   ],
+   "coverage": {
+    "status": "unverified"
+   }
+  }
+ ],
+ "unsupported": null,
+ "diagnostics": null
+}

@@ -1,6 +1,7 @@
-# R4 evidence probe for tidb.alter-table.online-options (binary HEAD e2dd4b34+, generated 2026-11-13)
+row_id: tidb.alter-table.online-options
 # sql_shape: ALTER TABLE t ADD COLUMN c INT, ALGORITHM=INSTANT
 # dialect: tidb
+# binary HEAD 5160e2cd, generated 2026-11-13
 
 === version 8.5 (target 8.5.0) rc=0 ===
 {
@@ -21,8 +22,11 @@
      "level": "notice"
     }
    ],
-   "unsupported": null,
-   "diagnostics": null
+   "coverage": {
+    "status": "unverified"
+   }
   }
- ]
+ ],
+ "unsupported": null,
+ "diagnostics": null
 }

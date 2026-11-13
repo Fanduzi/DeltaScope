@@ -1053,6 +1053,69 @@ rows:
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - "missing: owner adds SET/DROP DEFAULT policy and fixtures"
 
+    subaction_status:
+      - subaction_id: ALTER COLUMN c SET DEFAULT
+        parser_status: recognized
+        audit_status: audited
+        applicability:
+          - anchor: mysql57
+            version_range: 5.7
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.alter-column-default.alter-column-c-set-default.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - anchor: mysql80
+            version_range: 8.0
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.alter-column-default.alter-column-c-set-default.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - anchor: mysql84
+            version_range: 8.4
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.alter-column-default.alter-column-c-set-default.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+      - subaction_id: ALTER COLUMN c DROP DEFAULT
+        parser_status: recognized
+        audit_status: audited
+        applicability:
+          - anchor: mysql57
+            version_range: 5.7
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.alter-column-default.alter-column-c-drop-default.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - anchor: mysql80
+            version_range: 8.0
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.alter-column-default.alter-column-c-drop-default.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - anchor: mysql84
+            version_range: 8.4
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.alter-column-default.alter-column-c-drop-default.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
     status_evidence: "2026-09-22 CLI probe: both forms parse and produce zero findings (silent pass, matching the issue #79 silent-pass example)"
     targets: "table, column, default presence and value transition"
     acceptance:
@@ -1507,21 +1570,21 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml", "file:internal/domain/rule/ddl/common.go"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.tablespace-ops.discard-tablespace.probes.txt", "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml", "file:internal/domain/rule/ddl/common.go"]
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml", "file:internal/domain/rule/ddl/common.go"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.tablespace-ops.discard-tablespace.probes.txt", "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml", "file:internal/domain/rule/ddl/common.go"]
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml", "file:internal/domain/rule/ddl/common.go"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.tablespace-ops.discard-tablespace.probes.txt", "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml", "file:internal/domain/rule/ddl/common.go"]
       - subaction_id: IMPORT TABLESPACE
         parser_status: recognized
         audit_status: audited
@@ -1532,21 +1595,21 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml", "file:internal/domain/rule/ddl/common.go"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.tablespace-ops.import-tablespace.probes.txt", "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml", "file:internal/domain/rule/ddl/common.go"]
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml", "file:internal/domain/rule/ddl/common.go"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.tablespace-ops.import-tablespace.probes.txt", "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml", "file:internal/domain/rule/ddl/common.go"]
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml", "file:internal/domain/rule/ddl/common.go"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.tablespace-ops.import-tablespace.probes.txt", "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.expected.yaml", "file:internal/domain/rule/ddl/common.go"]
 
     status_evidence: "2026-11-13 R3 probe: DISCARD fires ddl.alter.discard_tablespace.forbid; IMPORT fires ddl.alter.import_tablespace.warn. Earlier: 2026-09-22 silent parse"
     targets: "table, discard-vs-import distinction, data-file loss risk"
@@ -1599,21 +1662,21 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: ["file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.algorithm-instant-inplace-copy-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: ["file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.algorithm-instant-inplace-copy-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: ["file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.algorithm-instant-inplace-copy-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
       - subaction_id: "LOCK=NONE/SHARED/EXCLUSIVE/DEFAULT"
         parser_status: recognized
         audit_status: notice_only
@@ -1624,21 +1687,21 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: ["file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.lock-none-shared-exclusive-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: ["file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.lock-none-shared-exclusive-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: ["file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.lock-none-shared-exclusive-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
 
     status_evidence: "2026-11-13 R3 probe: ALGORITHM/LOCK clauses parse; action-level notices fire (ddl.alter.add_column.notice); no dedicated ALGORITHM/LOCK governance rule (T03 bounded evidence). Earlier: 2026-09-22/24 probes"
     targets: "action list plus declared algorithm/lock, versioned applicability"
@@ -1704,7 +1767,7 @@ rows:
             parser_status: recognized
             audit_status: audited
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.order-by.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -1715,7 +1778,7 @@ rows:
             parser_status: recognized
             audit_status: audited
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.order-by.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -1726,7 +1789,7 @@ rows:
             parser_status: recognized
             audit_status: audited
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.order-by.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -1741,7 +1804,7 @@ rows:
             parser_status: recognized
             audit_status: audited
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.convert-to-character-set.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -1752,7 +1815,7 @@ rows:
             parser_status: recognized
             audit_status: audited
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.convert-to-character-set.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -1763,22 +1826,22 @@ rows:
             parser_status: recognized
             audit_status: audited
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.convert-to-character-set.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
       - subaction_id: DEFAULT CHARACTER SET
         parser_status: recognized
-        audit_status: audited
+        audit_status: silent
         applicability:
           - anchor: mysql57
             version_range: 5.7
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
+            audit_status: silent
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.default-character-set.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -1787,9 +1850,9 @@ rows:
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
+            audit_status: silent
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.default-character-set.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -1798,9 +1861,9 @@ rows:
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
+            audit_status: silent
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.default-character-set.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -1815,7 +1878,7 @@ rows:
             parser_status: recognized
             audit_status: silent
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.row-format.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
           - anchor: mysql80
@@ -1825,7 +1888,7 @@ rows:
             parser_status: recognized
             audit_status: silent
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.row-format.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
           - anchor: mysql84
@@ -1835,7 +1898,7 @@ rows:
             parser_status: recognized
             audit_status: silent
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.row-format.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
       - subaction_id: "AUTO_INCREMENT="
@@ -1849,7 +1912,7 @@ rows:
             parser_status: recognized
             audit_status: silent
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.auto-increment.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
           - anchor: mysql80
@@ -1859,7 +1922,7 @@ rows:
             parser_status: recognized
             audit_status: silent
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.auto-increment.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
           - anchor: mysql84
@@ -1869,7 +1932,7 @@ rows:
             parser_status: recognized
             audit_status: silent
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.auto-increment.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
       - subaction_id: FORCE
@@ -1883,7 +1946,7 @@ rows:
             parser_status: recognized
             audit_status: audited
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.force.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -1894,7 +1957,7 @@ rows:
             parser_status: recognized
             audit_status: audited
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.force.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -1905,7 +1968,7 @@ rows:
             parser_status: recognized
             audit_status: audited
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.force.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -1920,7 +1983,7 @@ rows:
             parser_status: recognized
             audit_status: notice_only
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.enable-disable-keys.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -1931,7 +1994,7 @@ rows:
             parser_status: recognized
             audit_status: notice_only
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.enable-disable-keys.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -1942,7 +2005,7 @@ rows:
             parser_status: recognized
             audit_status: notice_only
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.enable-disable-keys.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -1957,7 +2020,7 @@ rows:
             parser_status: recognized
             audit_status: silent
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.comment.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
           - anchor: mysql80
@@ -1967,7 +2030,7 @@ rows:
             parser_status: recognized
             audit_status: silent
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.comment.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
           - anchor: mysql84
@@ -1977,21 +2040,21 @@ rows:
             parser_status: recognized
             audit_status: silent
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.comment.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
       - subaction_id: ENGINE
         parser_status: recognized
-        audit_status: audited
+        audit_status: silent
         applicability:
           - anchor: mysql57
             version_range: 5.7
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
+            audit_status: silent
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.engine.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -2000,9 +2063,9 @@ rows:
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
+            audit_status: silent
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.engine.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -2011,9 +2074,9 @@ rows:
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
+            audit_status: silent
             evidence:
-              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt
+              - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.engine.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds option fixtures"
@@ -2991,6 +3054,109 @@ rows:
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - "missing: owner adds engine-boundary classification evidence"
 
+    subaction_status:
+      - subaction_id: CREATE/ALTER/DROP LOGFILE GROUP
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        applicability:
+          - anchor: mysql57
+            version_range: 5.7
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: explicit_unsupported
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.logfile-group.create-alter-drop-logfile-group.probes.txt
+              - file:internal/domain/rule/ddl/mysql_tablespace_rules.go
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - anchor: mysql80
+            version_range: 8.0
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: explicit_unsupported
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.logfile-group.create-alter-drop-logfile-group.probes.txt
+              - file:internal/domain/rule/ddl/mysql_tablespace_rules.go
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - anchor: mysql84
+            version_range: 8.4
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: explicit_unsupported
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.logfile-group.create-alter-drop-logfile-group.probes.txt
+              - file:internal/domain/rule/ddl/mysql_tablespace_rules.go
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+      - subaction_id: ADD UNDOFILE
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        applicability:
+          - anchor: mysql57
+            version_range: 5.7
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: explicit_unsupported
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.logfile-group.add-undofile.probes.txt
+              - file:internal/domain/rule/ddl/mysql_tablespace_rules.go
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - anchor: mysql80
+            version_range: 8.0
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: explicit_unsupported
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.logfile-group.add-undofile.probes.txt
+              - file:internal/domain/rule/ddl/mysql_tablespace_rules.go
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - anchor: mysql84
+            version_range: 8.4
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: explicit_unsupported
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.logfile-group.add-undofile.probes.txt
+              - file:internal/domain/rule/ddl/mysql_tablespace_rules.go
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+      - subaction_id: ENGINE=NDB
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        applicability:
+          - anchor: mysql57
+            version_range: 5.7
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: explicit_unsupported
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.logfile-group.engine-ndb.probes.txt
+              - file:internal/domain/rule/ddl/mysql_tablespace_rules.go
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - anchor: mysql80
+            version_range: 8.0
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: explicit_unsupported
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.logfile-group.engine-ndb.probes.txt
+              - file:internal/domain/rule/ddl/mysql_tablespace_rules.go
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - anchor: mysql84
+            version_range: 8.4
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: explicit_unsupported
+            evidence:
+              - file:testdata/ddl-inventory/evidence/mysql.logfile-group.engine-ndb.probes.txt
+              - file:internal/domain/rule/ddl/mysql_tablespace_rules.go
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
     status_evidence: "2026-11-13 R3 probe: parses (kind=ddl) and emits explicit unsupported evidence (boundary=engine, engine=ndb) - NDB-only feature; honest unresolved boundary, no InnoDB inference. Earlier: 2026-09-22 parser_error on all three forms"
     targets: "logfile-group identity, NDB engine boundary (never simulated as InnoDB)"
     acceptance:
@@ -3199,21 +3365,21 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-instance.rotate-innodb-master-key-5-7-11-8-0.probes.txt", "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-instance.rotate-innodb-master-key-5-7-11-8-0.probes.txt", "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-instance.rotate-innodb-master-key-5-7-11-8-0.probes.txt", "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
       - subaction_id: RELOAD TLS (8.0+)
         parser_status: recognized
         audit_status: mixed
@@ -3224,21 +3390,21 @@ rows:
             product_scope: version_gated
             parser_status: recognized
             audit_status: explicit_unsupported
-            evidence: ["file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-instance.reload-tls-8-0.probes.txt", "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
           - anchor: mysql80
             version_range: 8.0+
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-instance.reload-tls-8-0.probes.txt", "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: ["file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
+            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-instance.reload-tls-8-0.probes.txt", "file:internal/domain/rule/ddl/mysql_alter_instance_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_alter_instance_rules.expected.yaml"]
 
     status_evidence: "2026-11-13 R3 probe: ROTATE INNODB MASTER KEY audited (ddl.mysql.alter_instance.rotate_master_key) on 5.7/8.0; RELOAD TLS audited (ddl.mysql.alter_instance.reload_tls) on 8.0+ and bounded unaudited on 5.7. Earlier: 2026-09-22 ROTATE parser_error, RELOAD TLS zero findings"
     targets: "instance action kind, version applicability"
@@ -3795,16 +3961,16 @@ rows:
     subactions: ["FLASHBACK TABLE", "FLASHBACK DATABASE", "FLASHBACK CLUSTER", "RECOVER TABLE"]
     sql_shape: "FLASHBACK TABLE t1 TO t2"
     prerequisites: "GC window and snapshot availability — dynamic, never simulated"
-    status: explicit_unsupported
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: explicit_unsupported
+    audit_status: mixed
     applicability:
       - anchor: tidb85
         version_range: 8.5
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: explicit_unsupported
+        audit_status: mixed
         evidence: ["file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
     subaction_status:
       - subaction_id: FLASHBACK TABLE
@@ -3817,7 +3983,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: explicit_unsupported
-            evidence: ["file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
+            evidence: ["file:testdata/ddl-inventory/evidence/tidb.flashback-recover.flashback-table.probes.txt", "file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
       - subaction_id: FLASHBACK DATABASE
         parser_status: recognized
         audit_status: explicit_unsupported
@@ -3828,18 +3994,18 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: explicit_unsupported
-            evidence: ["file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
+            evidence: ["file:testdata/ddl-inventory/evidence/tidb.flashback-recover.flashback-database.probes.txt", "file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
       - subaction_id: FLASHBACK CLUSTER
-        parser_status: recognized
-        audit_status: explicit_unsupported
+        parser_status: unrecognized
+        audit_status: not_applicable
         applicability:
           - anchor: tidb85
             version_range: 8.5
             official_presence: documented
             product_scope: registered
-            parser_status: recognized
-            audit_status: explicit_unsupported
-            evidence: ["file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
+            parser_status: unrecognized
+            audit_status: not_applicable
+            evidence: ["file:testdata/ddl-inventory/evidence/tidb.flashback-recover.flashback-cluster.probes.txt", "file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
       - subaction_id: RECOVER TABLE
         parser_status: recognized
         audit_status: explicit_unsupported
@@ -3850,9 +4016,9 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: explicit_unsupported
-            evidence: ["file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
+            evidence: ["file:testdata/ddl-inventory/evidence/tidb.flashback-recover.recover-table.probes.txt", "file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
 
-    status_evidence: "2026-11-13 R3 probe (8.5): FLASHBACK TABLE/DATABASE/CLUSTER and RECOVER TABLE all emit explicit unsupported evidence (feature records) - not silent. Earlier: 2026-09-22 silent; T03 unsupported evidence"
+    status_evidence: "2026-11-13 R3 probe (8.5): FLASHBACK TABLE/DATABASE/CLUSTER and RECOVER TABLE TABLE/DATABASE/RECOVER emit explicit unsupported feature records; FLASHBACK CLUSTER fails parse (parser_error) -> row mixed_coverage. Earlier: 2026-09-22 silent; T03 unsupported evidence"
     targets: "restored object identity, source-of-restore semantics, recoverability limits"
     acceptance:
       dimensions: "object identity and boundary facts, no success guarantee claims"
@@ -4111,7 +4277,7 @@ rows:
             parser_status: recognized
             audit_status: notice_only
             evidence:
-              - file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.probes.txt
+              - file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.algorithm-capability-assertion-not-selection.probes.txt
               - file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds fixtures"
@@ -4126,7 +4292,7 @@ rows:
             parser_status: recognized
             audit_status: notice_only
             evidence:
-              - file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.probes.txt
+              - file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.lock.probes.txt
               - file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds fixtures"
@@ -4141,7 +4307,7 @@ rows:
             parser_status: recognized
             audit_status: notice_only
             evidence:
-              - file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.probes.txt
+              - file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.multiple-actions-per-alter.probes.txt
               - file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
               - "missing: owner adds fixtures"
@@ -4834,6 +5000,20 @@ rows:
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - "missing: T32 (#111) owns instance-management boundary evidence"
 
+    subaction_status:
+      - subaction_id: ALTER INSTANCE ... RELOAD TLS etc. (instance-management section)
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        applicability:
+          - anchor: tidb85
+            version_range: 8.5
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: explicit_unsupported
+            evidence:
+              - file:testdata/ddl-inventory/evidence/tidb.alter-instance.alter-instance-reload-tls-etc-instance-management-section.probes.txt
+              - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
     status_evidence: "2026-11-13 R3 probe (8.5): ALTER INSTANCE emits explicit unsupported evidence (boundary=unaudited). T32/#111 owns implementation; R3 records current behavior only. Earlier: 2026-09-22 silent"
     targets: "instance action kind"
     acceptance:

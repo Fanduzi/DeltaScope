@@ -1,0 +1,33 @@
+row_id: tidb.alter-table.online-options
+subaction_id: multiple actions per ALTER
+# dialect: tidb
+# sqls: ['ALTER TABLE t ADD COLUMN c INT, DROP COLUMN d']
+# binary HEAD 5160e2cd, generated 2026-11-13
+
+=== version 8.5 (target 8.5.0) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.alter.add_column.notice",
+     "level": "notice"
+    },
+    {
+     "rule_id": "ddl.alter.drop_column.notice",
+     "level": "notice"
+    }
+   ],
+   "coverage": {
+    "status": "unverified"
+   }
+  }
+ ],
+ "unsupported": null,
+ "diagnostics": null
+}

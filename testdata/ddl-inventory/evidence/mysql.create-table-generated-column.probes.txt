@@ -1,6 +1,7 @@
-# R4 evidence probe for mysql.create-table-generated-column (binary HEAD e2dd4b34+, generated 2026-11-13)
+row_id: mysql.create-table-generated-column
 # sql_shape: CREATE TABLE tg (a INT, b INT GENERATED ALWAYS AS (a+1) STORED)
 # dialect: mysql
+# binary HEAD 5160e2cd, generated 2026-11-13
 
 === version 5.7 (target 5.7.44) rc=1 ===
 {
@@ -61,10 +62,13 @@
      "level": "blocker"
     }
    ],
-   "unsupported": null,
-   "diagnostics": null
+   "coverage": {
+    "status": "unverified"
+   }
   }
- ]
+ ],
+ "unsupported": null,
+ "diagnostics": null
 }
 === version 8.0 (target 8.0.46) rc=1 ===
 {
@@ -125,10 +129,13 @@
      "level": "blocker"
     }
    ],
-   "unsupported": null,
-   "diagnostics": null
+   "coverage": {
+    "status": "unverified"
+   }
   }
- ]
+ ],
+ "unsupported": null,
+ "diagnostics": null
 }
 === version 8.4 (target 8.4.10) rc=1 ===
 {
@@ -189,8 +196,11 @@
      "level": "blocker"
     }
    ],
-   "unsupported": null,
-   "diagnostics": null
+   "coverage": {
+    "status": "unverified"
+   }
   }
- ]
+ ],
+ "unsupported": null,
+ "diagnostics": null
 }

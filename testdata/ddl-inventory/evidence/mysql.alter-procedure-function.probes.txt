@@ -1,6 +1,7 @@
-# R4 evidence probe for mysql.alter-procedure-function (binary HEAD e2dd4b34+, generated 2026-11-13)
+row_id: mysql.alter-procedure-function
 # sql_shape: ALTER PROCEDURE p SQL SECURITY INVOKER
 # dialect: mysql
+# binary HEAD 5160e2cd, generated 2026-11-13
 
 === version 5.7 (target 5.7.44) rc=2 ===
 {
@@ -8,7 +9,21 @@
  "coverage": {
   "status": "incomplete"
  },
- "statements": []
+ "statements": [],
+ "unsupported": null,
+ "diagnostics": [
+  {
+   "classification": "parser_error",
+   "reason": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred",
+   "action_hint": "verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available",
+   "audited": false,
+   "dialect": "mysql",
+   "guidance_code": "parser_upgrade_candidate",
+   "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+   "line": 1,
+   "column": 1
+  }
+ ]
 }
 === version 8.0 (target 8.0.46) rc=2 ===
 {
@@ -16,7 +31,21 @@
  "coverage": {
   "status": "incomplete"
  },
- "statements": []
+ "statements": [],
+ "unsupported": null,
+ "diagnostics": [
+  {
+   "classification": "parser_error",
+   "reason": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred",
+   "action_hint": "verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available",
+   "audited": false,
+   "dialect": "mysql",
+   "guidance_code": "parser_upgrade_candidate",
+   "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+   "line": 1,
+   "column": 1
+  }
+ ]
 }
 === version 8.4 (target 8.4.10) rc=2 ===
 {
@@ -24,5 +53,19 @@
  "coverage": {
   "status": "incomplete"
  },
- "statements": []
+ "statements": [],
+ "unsupported": null,
+ "diagnostics": [
+  {
+   "classification": "parser_error",
+   "reason": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred",
+   "action_hint": "verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available",
+   "audited": false,
+   "dialect": "mysql",
+   "guidance_code": "parser_upgrade_candidate",
+   "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+   "line": 1,
+   "column": 1
+  }
+ ]
 }

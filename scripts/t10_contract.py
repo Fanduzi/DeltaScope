@@ -30,7 +30,7 @@ def connect(anchor):
     out = {"host": "127.0.0.1", "port": spec["port"], "user": "root", "schema": "golden"}
     if spec["pw"]:
         out["password_env"] = "DS_T10_GOLDEN_PW"
-        out["password"] = "root"
+        out["password_source"] = "ephemeral-run-secret"
     return out
 
 

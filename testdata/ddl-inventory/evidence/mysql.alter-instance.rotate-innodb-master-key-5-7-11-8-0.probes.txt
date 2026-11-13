@@ -1,0 +1,75 @@
+row_id: mysql.alter-instance
+subaction_id: ROTATE INNODB MASTER KEY (5.7.11+/8.0)
+# dialect: mysql
+# sqls: ['ALTER INSTANCE ROTATE INNODB MASTER KEY']
+# binary HEAD 5160e2cd, generated 2026-11-13
+
+=== version 5.7 (target 5.7.44) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.mysql.alter_instance.rotate_master_key",
+     "level": "notice"
+    }
+   ],
+   "coverage": {
+    "status": "unverified"
+   }
+  }
+ ],
+ "unsupported": null,
+ "diagnostics": null
+}
+=== version 8.0 (target 8.0.46) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.mysql.alter_instance.rotate_master_key",
+     "level": "notice"
+    }
+   ],
+   "coverage": {
+    "status": "unverified"
+   }
+  }
+ ],
+ "unsupported": null,
+ "diagnostics": null
+}
+=== version 8.4 (target 8.4.10) rc=0 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "unverified"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [
+    {
+     "rule_id": "ddl.mysql.alter_instance.rotate_master_key",
+     "level": "notice"
+    }
+   ],
+   "coverage": {
+    "status": "unverified"
+   }
+  }
+ ],
+ "unsupported": null,
+ "diagnostics": null
+}

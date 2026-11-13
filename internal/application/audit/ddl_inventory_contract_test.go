@@ -195,21 +195,43 @@ var anchorVersion = map[string]string{"mysql57": "5.7", "mysql80": "8.0", "mysql
 // reject evidence copied from the wrong row or missing the cell's version.
 const ddlInventoryEvidenceDir = "testdata/ddl-inventory/evidence/"
 
-// validateCellEvidence enforces the R4 evidence contract on one applicability
-// cell: every cell needs at least one concrete ref (file: or gate:), missing:
-// entries are notes, not evidence; file: refs must exist; probe files under
-// testdata/ddl-inventory/evidence/ must belong to this row and must contain a
-// probe section for the cell's own anchor version; gate: refs must resolve to
-// a committed golden manifest (gate:T<NN>).
-func validateCellEvidence(root, rowID string, cell ddlInventoryCell, anchorVer map[string]string) error {
+// validateCellEvidence enforces the R4/R6 evidence contract on one
+// applicability cell: every cell needs at least one concrete ref (file: or
+// gate:), missing: entries are notes, not evidence; file: refs must exist;
+// probe files under testdata/ddl-inventory/evidence/ must belong to this row
+// and must contain a probe section for the cell's own anchor version; gate:
+// refs must resolve to a committed golden manifest (gate:T<NN>).
+//
+// R6 addition — subaction binding: when subID is non-empty the cell must also
+// carry at least one subaction-bound ref, so one subaction cannot borrow
+// another subaction's evidence and row-level probes cannot mask missing
+// subaction evidence. Bound forms: an evidence/ probe file whose header
+// declares the exact `subaction_id: <subID>`, or a `file:<path>#<subID>`
+// selector whose literal is present in the referenced file.
+func validateCellEvidence(root, rowID, subID string, cell ddlInventoryCell, anchorVer map[string]string) error {
 	concrete := 0
+	bound := 0
 	for _, ref := range cell.Evidence {
 		switch {
 		case strings.HasPrefix(ref, "file:"):
 			p := strings.TrimPrefix(ref, "file:")
+			sel := ""
+			if i := strings.LastIndex(p, "#"); i >= 0 {
+				sel = p[i+1:]
+				p = p[:i]
+			}
 			full := filepath.Join(root, p)
-			if _, err := os.Stat(full); err != nil {
+			info, err := os.Stat(full)
+			if err != nil {
 				return fmt.Errorf("cell evidence file does not exist: %s", p)
+			}
+			var text string
+			if !info.IsDir() {
+				content, err := os.ReadFile(full)
+				if err != nil {
+					return fmt.Errorf("cell evidence unreadable: %s", p)
+				}
+				text = string(content)
 			}
 			if strings.HasPrefix(p, ddlInventoryEvidenceDir) {
 				base := filepath.Base(p)
@@ -220,12 +242,31 @@ func validateCellEvidence(root, rowID string, cell ddlInventoryCell, anchorVer m
 				if want == "" {
 					return fmt.Errorf("cell anchor %s has no declared version", cell.Anchor)
 				}
-				content, err := os.ReadFile(full)
-				if err != nil {
-					return fmt.Errorf("cell evidence unreadable: %s", p)
-				}
-				if !strings.Contains(string(content), "=== version "+want+" ") {
+				if !strings.Contains(text, "=== version "+want+" ") {
 					return fmt.Errorf("cell evidence %s has no probe section for version %s (cell anchor %s)", p, want, cell.Anchor)
+				}
+				rowHdr := evidenceHeaderValue(text, "row_id:")
+				if rowHdr != "" && rowHdr != rowID {
+					return fmt.Errorf("cell evidence %s is bound to row %q, not %q", p, rowHdr, rowID)
+				}
+				subHdr := evidenceHeaderValue(text, "subaction_id:")
+				switch {
+				case subID == "" && subHdr != "":
+					return fmt.Errorf("row-level cell cannot cite subaction-bound probe %s (declares subaction_id %q)", p, subHdr)
+				case subID != "" && subHdr == "":
+					return fmt.Errorf("cell evidence %s is a row-level probe; subaction %q requires subaction-bound evidence", p, subID)
+				case subID != "" && subHdr != subID:
+					return fmt.Errorf("cell evidence %s is bound to subaction %q, not %q", p, subHdr, subID)
+				case subID != "":
+					bound++
+				}
+			}
+			if sel != "" {
+				if !strings.Contains(text, sel) {
+					return fmt.Errorf("cell evidence selector %q not present in %s", sel, p)
+				}
+				if subID != "" && sel == subID {
+					bound++
 				}
 			}
 			concrete++
@@ -246,7 +287,24 @@ func validateCellEvidence(root, rowID string, cell ddlInventoryCell, anchorVer m
 	if concrete == 0 {
 		return fmt.Errorf("cell has no concrete evidence ref (missing: notes are not evidence)")
 	}
+	if subID != "" && bound == 0 {
+		return fmt.Errorf("subaction %q cell has no subaction-bound evidence (needs an evidence/ probe declaring subaction_id: %s or a file:<path>#%s selector)", subID, subID, subID)
+	}
 	return nil
+}
+
+// evidenceHeaderValue returns the value of a top-of-file `key: value` header
+// line, or "" when the file does not declare it.
+func evidenceHeaderValue(text, key string) string {
+	for _, line := range strings.Split(text, "\n") {
+		if strings.HasPrefix(line, "===") {
+			break
+		}
+		if v, ok := strings.CutPrefix(line, key); ok {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
 }
 
 // combinedRowCells returns the row's applicability cells plus every
@@ -433,7 +491,7 @@ func TestDDLInventoryContract(t *testing.T) {
 		if _, ok := inv.AuditStatuses[row.AuditStatus]; !ok {
 			t.Fatalf("row %q missing or unsupported audit_status %q", row.ID, row.AuditStatus)
 		}
-		checkInventoryCells := func(cells []ddlInventoryCell, label string) map[string]bool {
+		checkInventoryCells := func(cells []ddlInventoryCell, label, subID string) map[string]bool {
 			covered := map[string]bool{}
 			if len(cells) == 0 {
 				t.Fatalf("row %q %s has no applicability cells", row.ID, label)
@@ -455,13 +513,13 @@ func TestDDLInventoryContract(t *testing.T) {
 				if _, ok := inv.AuditStatuses[cell.AuditStatus]; !ok {
 					t.Fatalf("row %q %s anchor %s unsupported cell audit_status %q", row.ID, label, cell.Anchor, cell.AuditStatus)
 				}
-				if err := validateCellEvidence(root, row.ID, cell, anchorVersion); err != nil {
+				if err := validateCellEvidence(root, row.ID, subID, cell, anchorVersion); err != nil {
 					t.Fatalf("row %q %s anchor %s: %v", row.ID, label, cell.Anchor, err)
 				}
 			}
 			return covered
 		}
-		covered := checkInventoryCells(row.Applicability, "row")
+		covered := checkInventoryCells(row.Applicability, "row", "")
 		for _, v := range row.Versions {
 			anchor := versionAnchors[row.Product][v]
 			if anchor == "" {
@@ -489,7 +547,7 @@ func TestDDLInventoryContract(t *testing.T) {
 			if _, ok := inv.AuditStatuses[sub.AuditStatus]; !ok {
 				t.Fatalf("row %q subaction %q unsupported audit_status %q", row.ID, sub.SubactionID, sub.AuditStatus)
 			}
-			subCovered := checkInventoryCells(sub.Applicability, "subaction "+sub.SubactionID)
+			subCovered := checkInventoryCells(sub.Applicability, "subaction "+sub.SubactionID, sub.SubactionID)
 			for _, v := range row.Versions {
 				if !subCovered[versionAnchors[row.Product][v]] {
 					t.Fatalf("row %q subaction %q declared version %s lacks an applicability cell", row.ID, sub.SubactionID, v)
@@ -649,26 +707,46 @@ func TestDDLInventoryEvidenceGate(t *testing.T) {
 	probeRef := "file:testdata/ddl-inventory/evidence/mysql.drop-index.probes.txt"
 	corpusRef := "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml"
 
+	orderByRef := "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.order-by.probes.txt"
+	convertRef := "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.convert-to-character-set.probes.txt"
+	setDefRef := "file:testdata/ddl-inventory/evidence/mysql.alter-table.alter-column-default.alter-column-c-set-default.probes.txt"
+	dropDefRef := "file:testdata/ddl-inventory/evidence/mysql.alter-table.alter-column-default.alter-column-c-drop-default.probes.txt"
+	catalogRef := "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+	tablespaceSel := "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_tablespace_rules.sql#DISCARD TABLESPACE"
+
 	cases := []struct {
 		name    string
 		rowID   string
+		subID   string
 		cell    ddlInventoryCell
 		wantErr string
 	}{
-		{"concrete refs accepted", "mysql.drop-index", cell("mysql80", probeRef, corpusRef), ""},
-		{"missing-only rejected", "mysql.drop-index", cell("mysql80", `missing: owner adds fixtures`), "no concrete evidence"},
-		{"empty evidence rejected", "mysql.drop-index", cell("mysql80"), "no concrete evidence"},
-		{"nonexistent file rejected", "mysql.drop-index", cell("mysql80", "file:does/not/exist.go"), "does not exist"},
-		{"unknown gate rejected", "mysql.drop-index", cell("mysql80", "gate:no-such-gate"), "does not resolve"},
-		{"missing gate manifest rejected", "mysql.drop-index", cell("mysql80", "gate:T99"), "no committed golden manifest"},
-		{"valid gate ref accepted", "mysql.drop-index", cell("mysql80", "gate:T02"), ""},
-		{"wrong-row probe rejected", "mysql.create-procedure", cell("mysql80", probeRef), "belongs to a different row"},
-		{"wrong-version probe rejected", "mysql.drop-index", cell("tidb85", probeRef), "no probe section for version"},
-		{"unprefixed ref rejected", "mysql.drop-index", cell("mysql80", "some/path.go"), "kind prefix"},
-		{"audited cell with concrete ref accepted", "mysql.drop-index", cell("mysql80", corpusRef), ""},
+		{"concrete refs accepted", "mysql.drop-index", "", cell("mysql80", probeRef, corpusRef), ""},
+		{"missing-only rejected", "mysql.drop-index", "", cell("mysql80", `missing: owner adds fixtures`), "no concrete evidence"},
+		{"empty evidence rejected", "mysql.drop-index", "", cell("mysql80"), "no concrete evidence"},
+		{"nonexistent file rejected", "mysql.drop-index", "", cell("mysql80", "file:does/not/exist.go"), "does not exist"},
+		{"unknown gate rejected", "mysql.drop-index", "", cell("mysql80", "gate:no-such-gate"), "does not resolve"},
+		{"missing gate manifest rejected", "mysql.drop-index", "", cell("mysql80", "gate:T99"), "no committed golden manifest"},
+		{"valid gate ref accepted", "mysql.drop-index", "", cell("mysql80", "gate:T02"), ""},
+		{"wrong-row probe rejected", "mysql.create-procedure", "", cell("mysql80", probeRef), "belongs to a different row"},
+		{"wrong-version probe rejected", "mysql.drop-index", "", cell("tidb85", probeRef), "no probe section for version"},
+		{"unprefixed ref rejected", "mysql.drop-index", "", cell("mysql80", "some/path.go"), "kind prefix"},
+		{"audited cell with concrete ref accepted", "mysql.drop-index", "", cell("mysql80", corpusRef), ""},
+		// R6 subaction binding: evidence must bind to the exact subaction, not
+		// just the row.
+		{"valid subaction probe accepted", "mysql.alter-table.options", "ORDER BY", cell("mysql80", orderByRef, catalogRef), ""},
+		{"SET DEFAULT subaction probe accepted", "mysql.alter-table.alter-column-default", "ALTER COLUMN c SET DEFAULT", cell("mysql80", setDefRef), ""},
+		{"subaction selector accepted", "mysql.alter-table.tablespace-ops", "DISCARD TABLESPACE", cell("mysql80", tablespaceSel), ""},
+		{"wrong-subaction probe rejected", "mysql.alter-table.options", "ORDER BY", cell("mysql80", convertRef), "bound to subaction \"CONVERT TO CHARACTER SET\", not \"ORDER BY\""},
+		{"SET DEFAULT borrowing DROP DEFAULT rejected", "mysql.alter-table.alter-column-default", "ALTER COLUMN c SET DEFAULT", cell("mysql80", dropDefRef), "bound to subaction \"ALTER COLUMN c DROP DEFAULT\", not \"ALTER COLUMN c SET DEFAULT\""},
+		{"row-level probe cannot satisfy subaction", "mysql.alter-table.options", "ORDER BY", cell("mysql80", "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.probes.txt"), "row-level probe"},
+		{"subaction cell without bound ref rejected", "mysql.alter-table.options", "ORDER BY", cell("mysql80", catalogRef, corpusRef), "no subaction-bound evidence"},
+		{"subaction wrong version rejected", "mysql.alter-table.options", "ORDER BY", cell("tidb85", orderByRef), "no probe section for version"},
+		{"subaction probe on wrong row rejected", "mysql.logfile-group", "ADD UNDOFILE", cell("mysql80", orderByRef), "belongs to a different row"},
+		{"row-level cell cannot cite subaction probe", "mysql.alter-table.options", "", cell("mysql80", orderByRef), "cannot cite subaction-bound probe"},
 	}
 	for _, tc := range cases {
-		err := validateCellEvidence(root, tc.rowID, tc.cell, anchorVersion)
+		err := validateCellEvidence(root, tc.rowID, tc.subID, tc.cell, anchorVersion)
 		if tc.wantErr == "" && err != nil {
 			t.Fatalf("%s: unexpected error: %v", tc.name, err)
 		}

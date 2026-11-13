@@ -1,6 +1,7 @@
-# R4 evidence probe for mysql.logfile-group (binary HEAD e2dd4b34+, generated 2026-11-13)
+row_id: mysql.logfile-group
 # sql_shape: CREATE LOGFILE GROUP lg ADD UNDOFILE 'u.dat' ENGINE = ndb
 # dialect: mysql
+# binary HEAD 5160e2cd, generated 2026-11-13
 
 === version 5.7 (target 5.7.44) rc=1 ===
 {
@@ -12,8 +13,29 @@
   {
    "index": 0,
    "findings": [],
-   "unsupported": null,
-   "diagnostics": null
+   "coverage": {
+    "status": "incomplete"
+   }
+  }
+ ],
+ "unsupported": [
+  {
+   "feature": "create_logfile_group",
+   "sql": "CREATE LOGFILE GROUP lg ADD UNDOFILE 'u.dat' ENGINE = ndb",
+   "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+   "metadata": {
+    "boundary": "engine",
+    "engine": "ndb"
+   }
+  }
+ ],
+ "diagnostics": [
+  {
+   "classification": "unsupported_statement",
+   "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+   "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+   "audited": false,
+   "dialect": "mysql"
   }
  ]
 }
@@ -27,8 +49,29 @@
   {
    "index": 0,
    "findings": [],
-   "unsupported": null,
-   "diagnostics": null
+   "coverage": {
+    "status": "incomplete"
+   }
+  }
+ ],
+ "unsupported": [
+  {
+   "feature": "create_logfile_group",
+   "sql": "CREATE LOGFILE GROUP lg ADD UNDOFILE 'u.dat' ENGINE = ndb",
+   "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+   "metadata": {
+    "boundary": "engine",
+    "engine": "ndb"
+   }
+  }
+ ],
+ "diagnostics": [
+  {
+   "classification": "unsupported_statement",
+   "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+   "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+   "audited": false,
+   "dialect": "mysql"
   }
  ]
 }
@@ -42,8 +85,29 @@
   {
    "index": 0,
    "findings": [],
-   "unsupported": null,
-   "diagnostics": null
+   "coverage": {
+    "status": "incomplete"
+   }
+  }
+ ],
+ "unsupported": [
+  {
+   "feature": "create_logfile_group",
+   "sql": "CREATE LOGFILE GROUP lg ADD UNDOFILE 'u.dat' ENGINE = ndb",
+   "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+   "metadata": {
+    "boundary": "engine",
+    "engine": "ndb"
+   }
+  }
+ ],
+ "diagnostics": [
+  {
+   "classification": "unsupported_statement",
+   "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+   "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+   "audited": false,
+   "dialect": "mysql"
   }
  ]
 }

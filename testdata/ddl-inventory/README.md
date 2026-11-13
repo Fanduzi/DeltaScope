@@ -90,6 +90,18 @@ resolve to a committed golden manifest (`gate:T<NN>` →
 the union of row and subaction cells, so a `semantically_checked` parent
 cannot mask a silent or explicit_unsupported registered subaction.
 
+R6 — subaction-bound evidence: cells inside a `subaction_status` record
+must additionally carry at least one ref bound to that exact subaction,
+so one subaction cannot borrow another's evidence and row-level probes
+cannot mask missing subaction evidence. Bound forms: an `evidence/`
+probe file named `<row-id>.<subaction-slug>.probes.txt` whose header
+declares `row_id: <row-id>` and `subaction_id: <exact-subaction-id>`
+plus per-version `=== version <v> ` sections, or a
+`file:<path>#<subaction-id>` selector whose literal is present in the
+referenced file. A subaction cell citing a row-level probe or a probe
+declaring a different `subaction_id` fails the gate; a row-level cell
+citing a subaction-bound probe likewise fails.
+
 Rows owned by future tasks may record
 incomplete implementation — they are assigned, not counted as coverage.
 

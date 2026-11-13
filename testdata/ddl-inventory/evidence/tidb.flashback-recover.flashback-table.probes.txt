@@ -1,0 +1,38 @@
+row_id: tidb.flashback-recover
+subaction_id: FLASHBACK TABLE
+# dialect: tidb
+# sqls: ['FLASHBACK TABLE t']
+# binary HEAD 5160e2cd, generated 2026-11-13
+
+=== version 8.5 (target 8.5.0) rc=1 ===
+{
+ "verdict": "review",
+ "coverage": {
+  "status": "incomplete"
+ },
+ "statements": [
+  {
+   "index": 0,
+   "findings": [],
+   "coverage": {
+    "status": "incomplete"
+   }
+  }
+ ],
+ "unsupported": [
+  {
+   "feature": "flashback_table",
+   "sql": "FLASHBACK TABLE t",
+   "reason": "parsed by the shared parser but not covered by audited semantics"
+  }
+ ],
+ "diagnostics": [
+  {
+   "classification": "unsupported_statement",
+   "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+   "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+   "audited": false,
+   "dialect": "tidb"
+  }
+ ]
+}

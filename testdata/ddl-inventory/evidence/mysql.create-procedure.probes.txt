@@ -1,6 +1,7 @@
-# R4 evidence probe for mysql.create-procedure (binary HEAD e2dd4b34+, generated 2026-11-13)
+row_id: mysql.create-procedure
 # sql_shape: CREATE PROCEDURE p() SELECT 1
 # dialect: mysql
+# binary HEAD 5160e2cd, generated 2026-11-13
 
 === version 5.7 (target 5.7.44) rc=1 ===
 {
@@ -17,8 +18,28 @@
      "level": "notice"
     }
    ],
-   "unsupported": null,
-   "diagnostics": null
+   "coverage": {
+    "status": "incomplete"
+   }
+  }
+ ],
+ "unsupported": [
+  {
+   "feature": "create_procedure.body",
+   "sql": "CREATE PROCEDURE p() SELECT 1",
+   "reason": "parsed by the shared parser but not covered by audited semantics",
+   "metadata": {
+    "aspect": "option"
+   }
+  }
+ ],
+ "diagnostics": [
+  {
+   "classification": "unsupported_statement",
+   "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+   "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+   "audited": false,
+   "dialect": "mysql"
   }
  ]
 }
@@ -37,8 +58,28 @@
      "level": "notice"
     }
    ],
-   "unsupported": null,
-   "diagnostics": null
+   "coverage": {
+    "status": "incomplete"
+   }
+  }
+ ],
+ "unsupported": [
+  {
+   "feature": "create_procedure.body",
+   "sql": "CREATE PROCEDURE p() SELECT 1",
+   "reason": "parsed by the shared parser but not covered by audited semantics",
+   "metadata": {
+    "aspect": "option"
+   }
+  }
+ ],
+ "diagnostics": [
+  {
+   "classification": "unsupported_statement",
+   "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+   "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+   "audited": false,
+   "dialect": "mysql"
   }
  ]
 }
@@ -57,8 +98,28 @@
      "level": "notice"
     }
    ],
-   "unsupported": null,
-   "diagnostics": null
+   "coverage": {
+    "status": "incomplete"
+   }
+  }
+ ],
+ "unsupported": [
+  {
+   "feature": "create_procedure.body",
+   "sql": "CREATE PROCEDURE p() SELECT 1",
+   "reason": "parsed by the shared parser but not covered by audited semantics",
+   "metadata": {
+    "aspect": "option"
+   }
+  }
+ ],
+ "diagnostics": [
+  {
+   "classification": "unsupported_statement",
+   "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+   "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+   "audited": false,
+   "dialect": "mysql"
   }
  ]
 }
