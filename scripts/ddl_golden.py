@@ -223,10 +223,15 @@ def prove_anchor_identity(manifest, baseline):
     record of whatever happened to be present.
     """
     required = baseline.get("required_anchors") or {}
+    auxiliary = baseline.get("auxiliary_anchors") or {}
     facts = {}
     failures = []
     for key, anchor in manifest["anchors"].items():
-        spec = required.get(key)
+        # Auxiliary anchors (e.g. T04-B page-size/index-length fixtures) carry
+        # locked digests in their own baseline section: they are pinned with
+        # the same force as required anchors but never forced into other
+        # task manifests.
+        spec = required.get(key) or auxiliary.get(key)
         locked = (spec or {}).get("expected_image_digest", "")
         locked_platform = (spec or {}).get("platform")
         entry = image_facts(anchor["image"])
@@ -7891,6 +7896,8 @@ def image_identity_failures(case_id, anchor_key, db, baseline):
     identity, and a running-container image equal to the inspected image ID."""
     failures = []
     spec = ((baseline or {}).get("required_anchors") or {}).get(anchor_key)
+    if spec is None:
+        spec = ((baseline or {}).get("auxiliary_anchors") or {}).get(anchor_key)
     if spec is not None:
         locked = spec.get("expected_image_digest")
         if not locked:

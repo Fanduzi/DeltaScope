@@ -73,7 +73,10 @@ def fixture_database(anchor, key, baseline=None, version=None):
     proof; for locked baseline anchors the digest/platform come from the
     baseline spec so fixtures stay consistent with the lock.
     """
-    spec = ((baseline or {}).get("required_anchors") or {}).get(key) or {}
+    spec = ((baseline or {}).get("required_anchors") or {}).get(key)
+    if spec is None:
+        spec = ((baseline or {}).get("auxiliary_anchors") or {}).get(key)
+    spec = spec or {}
     return {
         "product": anchor["product"], "image": anchor["image"],
         "image_digest": spec.get("expected_image_digest") or anchor["image"].split(":")[0] + "@sha256:stub",
