@@ -54,10 +54,31 @@ MANIFEST = {
 # match a reduced artifact.
 BASELINE = {
     "required_anchors": {
-        "mysqlX": {"product": "mysql", "version_contains": "9.9.9", "image": "mysql:9.9.9"}
+        "mysqlX": {"product": "mysql", "version_contains": "9.9.9", "image": "mysql:9.9.9",
+                   "expected_image_digest": "mysql@sha256:deadbeef", "platform": "linux/test64"}
     },
     "required_cli_dialects": ["mysql"],
 }
+
+
+def fixture_database(anchor, key, baseline=None, version=None):
+    """Synthetic-but-complete anchor database record for fixture artifacts.
+
+    Mirrors the fields the runner merges from the run-level image identity
+    proof; for locked baseline anchors the digest/platform come from the
+    baseline spec so fixtures stay consistent with the lock.
+    """
+    spec = ((baseline or {}).get("required_anchors") or {}).get(key) or {}
+    return {
+        "product": anchor["product"], "image": anchor["image"],
+        "image_digest": spec.get("expected_image_digest") or anchor["image"].split(":")[0] + "@sha256:stub",
+        "image_id": "sha256:" + "ab" * 32,
+        "container_image": "sha256:" + "ab" * 32,
+        "platform": spec.get("platform") or "linux/test64",
+        "container": anchor["container"], "reachable": True,
+        "version": version or anchor["version_contains"],
+        "schema": anchor.get("database"),
+    }
 
 
 def make_artifact(tmp: pathlib.Path) -> dict:
@@ -87,7 +108,7 @@ def make_artifact(tmp: pathlib.Path) -> dict:
                 "input_sql": [s["sql"] for s in MANIFEST["ddl_steps"]],
                 "expected": {"steps": [{"name": "create", "rc": 0, "verify": [{"assert": "table exists", "sql": "SELECT COUNT(*)", "expect": "1"}]}]},
                 "actual": {
-                    "database": {"product": "mysql", "image": "mysql:9.9.9", "image_digest": "mysql@sha256:deadbeef", "container": "golden-test-mysqlX", "reachable": True, "version": "9.9.9"},
+                    "database": fixture_database(MANIFEST["anchors"]["mysqlX"], "mysqlX", BASELINE),
                     "steps": [{"name": "create", "sql": "CREATE TABLE golden_t (id INT PRIMARY KEY)", "rc": 0, "stdout": "", "stderr": "", "verify": [{"assert": "table exists", "sql": "SELECT COUNT(*)", "rc": 0, "output": "1", "stderr": ""}]}],
                 },
                 "assertions": [{"name": "a", "ok": True, "detail": "d"}],
@@ -119,8 +140,9 @@ def make_artifact(tmp: pathlib.Path) -> dict:
     }
 
 
-def check(name, artifact, expect_failures, manifest=None):
-    failures = ddl_golden.validate_artifact(artifact, manifest or MANIFEST, baseline=BASELINE)
+def check(name, artifact, expect_failures, manifest=None, baseline=None):
+    failures = ddl_golden.validate_artifact(artifact, manifest or MANIFEST,
+                                            baseline=baseline if baseline is not None else BASELINE)
     has_failure = len(failures) > 0
     if expect_failures and not has_failure:
         print(f"FAIL {name}: validator accepted artifact that must be rejected")
@@ -166,6 +188,91 @@ def main():
         a = copy.deepcopy(base)
         a["cases"][0]["actual"]["database"]["image_digest"] = ""
         results.append(check("missing image digest rejected", a, "image digest"))
+
+        # Issue #81 R2 — immutable image identity fail-closed checks.
+        a = copy.deepcopy(base)
+        a["cases"][0]["actual"]["database"]["image_digest"] = "mysql@sha256:other"
+        results.append(check("digest differing from locked baseline rejected", a, "!= locked"))
+
+        a = copy.deepcopy(base)
+        a["cases"][0]["actual"]["database"]["image_id"] = ""
+        results.append(check("empty image id rejected", a, "empty image_id"))
+
+        a = copy.deepcopy(base)
+        a["cases"][0]["actual"]["database"]["platform"] = ""
+        results.append(check("empty platform rejected", a, "empty platform"))
+
+        a = copy.deepcopy(base)
+        a["cases"][0]["actual"]["database"]["container_image"] = "sha256:" + "cd" * 32
+        results.append(check("container image id mismatch rejected", a, "container image"))
+
+        a = copy.deepcopy(base)
+        a["cases"][0]["actual"]["database"]["platform"] = "linux/other"
+        results.append(check("platform differing from locked baseline rejected", a, "platform"))
+
+        a = copy.deepcopy(base)
+        unlocked = {"required_anchors": {"mysqlX": {"product": "mysql", "version_contains": "9.9.9", "image": "mysql:9.9.9"}},
+                    "required_cli_dialects": ["mysql"]}
+        results.append(check("missing locked expected digest rejected", a, "no locked expected_image_digest", baseline=unlocked))
+
+        # Issue #81 R2 — syntax-negative pre/post object-absence proof.
+        mg = copy.deepcopy(MANIFEST)
+        mg["syntax_negative"]["post_state_check"] = {"sql": "SELECT COUNT(*)", "expect": "0"}
+        a = copy.deepcopy(base)
+        a["cases"][1]["actual"]["pre_query"] = {"sql": "SELECT COUNT(*)", "rc": 0, "stdout": "0", "stderr": ""}
+        a["cases"][1]["actual"]["post_query"] = {"sql": "SELECT COUNT(*)", "rc": 0, "stdout": "0", "stderr": ""}
+        results.append(check("valid post-state negative artifact passes", a, "", manifest=mg))
+
+        a = copy.deepcopy(a)
+        del a["cases"][1]["actual"]["pre_query"]
+        results.append(check("missing pre-state record rejected", a, "pre_query", manifest=mg))
+
+        a = copy.deepcopy(base)
+        a["cases"][1]["actual"]["pre_query"] = {"sql": "SELECT COUNT(*)", "rc": 0, "stdout": "0", "stderr": ""}
+        a["cases"][1]["actual"]["post_query"] = {"sql": "SELECT COUNT(*)", "rc": 0, "stdout": "1", "stderr": ""}
+        results.append(check("post-state object present rejected", a, "post_query", manifest=mg))
+
+        a = copy.deepcopy(base)
+        a["cases"][1]["actual"]["pre_query"] = {"sql": "SELECT COUNT(*)", "rc": 1, "stdout": "", "stderr": "err"}
+        a["cases"][1]["actual"]["post_query"] = {"sql": "SELECT COUNT(*)", "rc": 0, "stdout": "0", "stderr": ""}
+        results.append(check("pre-state query failure rejected", a, "pre_query", manifest=mg))
+
+        # Run-level image identity proof (issue #81 R2): each failure mode must
+        # produce a blocker before fixture SQL executes, so docker inspect
+        # failures or re-pointed tags can never degrade to PASS.
+        def identity_probe(facts=None, digests=None, container=None, probe_baseline=None):
+            good_facts = facts or {"image_id": "sha256:" + "ab" * 32, "platform": "linux/test64"}
+            seen = container if container is not None else good_facts["image_id"]
+            with mock.patch.object(ddl_golden, "image_facts", return_value=good_facts), \
+                    mock.patch.object(ddl_golden, "image_digests",
+                                      return_value=["mysql@sha256:deadbeef"] if digests is None else digests), \
+                    mock.patch.object(ddl_golden, "container_image", return_value=seen):
+                return ddl_golden.prove_anchor_identity(
+                    MANIFEST, BASELINE if probe_baseline is None else probe_baseline)
+
+        def probe(name, needle="", **kwargs):
+            _, failures = identity_probe(**kwargs)
+            if needle:
+                ok = any(needle in f for f in failures)
+            else:
+                ok = not failures
+            print(("PASS " if ok else "FAIL ") + name + ("" if ok else f": {failures}"))
+            return ok
+
+        results.append(probe("image identity proof passes on consistent evidence"))
+        results.append(probe("image inspect failure blocked", "empty image id",
+                             facts={"image_id": "", "platform": ""}))
+        results.append(probe("resolved digest mismatch blocked", "differs from locked baseline",
+                             digests=["mysql@sha256:other"]))
+        results.append(probe("container image id mismatch blocked", "running container",
+                             container="sha256:" + "cd" * 32))
+        results.append(probe("missing container identity blocked", "unavailable", container=""))
+        results.append(probe("platform mismatch blocked", "platform differs",
+                             facts={"image_id": "sha256:" + "ab" * 32, "platform": "linux/other"}))
+        unlocked = {"required_anchors": {"mysqlX": {"product": "mysql", "version_contains": "9.9.9", "image": "mysql:9.9.9"}},
+                    "required_cli_dialects": ["mysql"]}
+        results.append(probe("missing locked digest blocked", "no locked expected_image_digest",
+                             probe_baseline=unlocked))
 
         a = copy.deepcopy(base)
         a["cli"]["path"] = str(tmp / "nonexistent-binary")
@@ -673,9 +780,7 @@ def main():
                             "--user", "root", "--password-env", "DS_PW", "--schema", "golden"],
                 "expected": copy.deepcopy(mg["metadata_cases"][0]["expect"]),
                 "actual": {
-                    "database": {"product": "mysql", "image": "mysql:9.9.9",
-                                 "image_digest": "mysql@sha256:beef", "container": "c",
-                                 "reachable": True, "version": "9.9.9"},
+                    "database": fixture_database(MANIFEST["anchors"]["mysqlX"], "mysqlX", BASELINE),
                     "setup": [{"name": "create", "sql": "CREATE TABLE t (c VARCHAR(10))", "rc": 0,
                                "stdout": "", "stderr": "",
                                "verify": [{"assert": "col", "sql": "SELECT COLUMN_TYPE",
@@ -1001,9 +1106,9 @@ def main():
                             "--schema", "golden"],
                 "expected": copy.deepcopy(mvg["metadata_cases"][0]["expect"]),
                 "actual": {
-                    "database": {"product": "tidb", "image": "tidb:v8.5.0",
-                                 "image_digest": "tidb@sha256:beef", "container": "c",
-                                 "reachable": True, "version": TIDB_BANNER},
+                    "database": fixture_database({"product": "tidb", "image": "tidb:v8.5.0",
+                                                  "container": "c", "version_contains": TIDB_BANNER,
+                                                  "database": "golden"}, "tidbX", BASELINE),
                     "setup": [], "exit": 0, "stdout": json.dumps(tidb_parsed), "stderr": "",
                     "parsed": copy.deepcopy(tidb_parsed),
                     "version_evidence": {"target_raw": None, "target_canonical": None,
@@ -1357,9 +1462,7 @@ def main():
 
         def t05_meta_record(case_id, spec_id, sql, expect, parsed, extra_actual=None):
             actual = {
-                "database": {"product": "mysql", "image": "mysql:9.9.9",
-                             "image_digest": "mysql@sha256:beef", "container": "c",
-                             "reachable": True, "version": "9.9.9"},
+                "database": fixture_database(MANIFEST["anchors"]["mysqlX"], "mysqlX", BASELINE),
                 "setup": [], "exit": expect["exit"], "stdout": json.dumps(parsed), "stderr": "",
                 "parsed": copy.deepcopy(parsed),
                 "post_verify": [], "execute": [], "structure": [], "teardown": [],
@@ -1855,10 +1958,7 @@ def t08_oracle_migration_tests(tmp):
     def db_baseline_cases(task, manifest, templates):
         cases = []
         for key, anchor in manifest["anchors"].items():
-            database = {"product": anchor["product"], "image": anchor["image"],
-                        "image_digest": anchor["image"].split(":")[0] + "@sha256:stub",
-                        "container": anchor["container"], "reachable": True,
-                        "version": anchor["version_contains"]}
+            database = fixture_database(anchor, key, baseline)
             for suffix, template in zip(("ddl", "syntax_negative"), templates):
                 case = copy.deepcopy(template)
                 case.update(case_id=f"{task}.db.{key}.{suffix}", anchor=key)
@@ -1912,10 +2012,7 @@ def t08_oracle_migration_tests(tmp):
                                  "patch": patch, "source": "target", "validated_range": validated}
         actual = {"exit": expected["exit"], "stdout": json.dumps(parsed),
                   "stderr": "", "parsed": parsed,
-                  "database": {"product": anchor["product"], "image": anchor["image"],
-                               "image_digest": anchor["image"].split(":")[0] + "@sha256:stub",
-                               "container": anchor["container"], "reachable": True,
-                               "version": anchor["version_contains"]},
+                  "database": fixture_database(anchor, spec["anchor"], baseline),
                   "setup": step_records(spec.get("setup", [])),
                   "execute": step_records(spec.get("execute", [])),
                   "teardown": step_records(spec.get("teardown", [])),
@@ -2199,9 +2296,7 @@ def a3_contract_tests(tmp):
     templates = copy.deepcopy(artifact["cases"][:2])
     artifact["cases"] = []
     for key, anchor in manifest["anchors"].items():
-        database = {"product": anchor["product"], "image": anchor["image"],
-                    "image_digest": anchor["image"].split(":")[0] + "@sha256:stub",
-                    "container": anchor["container"], "reachable": True, "version": anchor["version_contains"]}
+        database = fixture_database(anchor, key, baseline)
         for suffix, template in zip(("ddl", "syntax_negative"), templates):
             case = copy.deepcopy(template)
             case.update(case_id=f"T05.db.{key}.{suffix}", anchor=key)
@@ -2261,9 +2356,7 @@ def a3_contract_tests(tmp):
                 for field in ("host", "port", "user", "password_env", "schema"):
                     if field in spec["connect"]:
                         command += ["--" + field.replace("_", "-"), str(spec["connect"][field])]
-                case["actual"]["database"] = {"product": anchor["product"], "image": anchor["image"],
-                    "image_digest": anchor["image"].split(":")[0] + "@sha256:stub",
-                    "container": anchor["container"], "reachable": True, "version": anchor["version_contains"]}
+                case["actual"]["database"] = fixture_database(anchor, spec["anchor"], baseline)
                 for field in ("setup", "execute", "teardown"):
                     case["actual"][field] = step_records(spec[field])
                 for field in ("post_verify", "structure"):
@@ -2418,6 +2511,9 @@ def a3_contract_tests(tmp):
             mock.patch.object(ddl_golden, "image_digest", return_value="mysql@sha256:stub"), \
             mock.patch.object(ddl_golden, "run_cmd", return_value=(0, c["actual"]["stdout"], "")):
         recorded = ddl_golden.execute_metadata_case(manifest, "mysql84", str(binary), policies, spec)
+    # cmd_run merges run-level identity facts into each case db record; mirror
+    # that merge here so the runner-produced record validates standalone.
+    recorded["actual"]["database"].update(fixture_database(manifest["anchors"]["mysql84"], "mysql84", baseline))
     drop_position = calls.index("DROP TABLE t")
     immediate = calls[drop_position + 1:drop_position + 3] == [table_query, "CREATE TABLE t (id INT PRIMARY KEY)"]
     print(("PASS " if immediate else "FAIL ") + "a3 runner queries absence before recreating")
@@ -2819,9 +2915,7 @@ def t06_contract_tests(tmp):
         banner = anchor["version_contains"]
         if anchor["product"] == "tidb":
             banner = "5.7.25-TiDB-v8.5.0"
-        database = {"product": anchor["product"], "image": anchor["image"],
-                    "image_digest": anchor["image"].split(":")[0] + "@sha256:stub",
-                    "container": anchor["container"], "reachable": True, "version": banner}
+        database = fixture_database(anchor, key, baseline, version=banner)
         artifact["cases"].append({
             "case_id": f"T06.db.{key}.ddl", "kind": "db_ddl", "anchor": key,
             "input_sql": [s["sql"] for s in manifest["ddl_steps"]],
@@ -2932,10 +3026,7 @@ def t06_contract_tests(tmp):
                 case["anchor"] = spec["anchor"]
                 case["connect"] = {k: v for k, v in spec["connect"].items() if k != "password"}
                 command += connect_argv(spec["connect"])
-                case["actual"]["database"] = {
-                    "product": anchor["product"], "image": anchor["image"],
-                    "image_digest": anchor["image"].split(":")[0] + "@sha256:stub",
-                    "container": anchor["container"], "reachable": True, "version": banner}
+                case["actual"]["database"] = fixture_database(anchor, spec["anchor"], baseline, version=banner)
                 canonical = ddl_golden.canonical_observed_version(anchor["product"], banner)
                 major, minor, patch = (int(part) for part in canonical["version"].split("."))
                 parsed["version"] = {"product": canonical["product"], "version": canonical["version"],
@@ -3156,6 +3247,8 @@ def t06_contract_tests(tmp):
             mock.patch.object(ddl_golden, "image_digest", return_value="mysql@sha256:stub"), \
             mock.patch.object(ddl_golden, "run_cmd", return_value=(1, reject_stdout, "")):
         recorded = ddl_golden.execute_metadata_case(manifest, "mysql84", str(binary), policies, spec)
+    # Mirror cmd_run's merge of run-level image identity facts (issue #81 R2).
+    recorded["actual"]["database"].update(fixture_database(manifest["anchors"]["mysql84"], "mysql84", baseline))
     observed = [sql for sql in calls if sql.startswith("show variables like 'sql_")]
     fact_check = len(observed) == 2 and recorded["status"] == "pass"
     print(("PASS " if fact_check else "FAIL ") + "t06 runner reads GIPK facts on the no-PK reject path")

@@ -3,7 +3,7 @@
 # recorded into the golden artifact and verified against these pins.
 services:
   mysql57:
-    image: mysql:5.7.44
+    image: mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb
     platform: linux/amd64
     container_name: deltascope-ddl-golden-mysql57
     # Loopback-only publish: T04-B (#83) version-identity metadata cases run
@@ -21,7 +21,7 @@ services:
       start_period: 20s
 
   mysql80:
-    image: mysql:8.0.46
+    image: mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
     container_name: deltascope-ddl-golden-mysql80
     ports:
       - "127.0.0.1:23380:3306"
@@ -36,7 +36,7 @@ services:
       start_period: 20s
 
   mysql84:
-    image: mysql:8.4.10
+    image: mysql@sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6
     container_name: deltascope-ddl-golden-mysql84
     ports:
       - "127.0.0.1:23384:3306"
@@ -51,7 +51,7 @@ services:
       start_period: 20s
 
   tidb85:
-    image: pingcap/tidb:v8.5.0
+    image: pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57
     container_name: deltascope-ddl-golden-tidb85
     # Loopback publish of the MySQL protocol port so the host CLI can audit
     # against the TiDB compatibility banner directly (T04-B/#83).
@@ -68,7 +68,7 @@ services:
       start_period: 15s
 
   tidb85-client:
-    image: mysql:8.4.10
+    image: mysql@sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6
     container_name: deltascope-ddl-golden-tidb85-client
     depends_on:
       tidb85:

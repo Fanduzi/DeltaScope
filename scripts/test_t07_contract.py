@@ -50,9 +50,11 @@ def fixture(tmp):
     artifact['cli']['sha256']=runner.sha256_file(binary)
     policies=runner.make_policies(str(binary),tmp,manifest)
     artifact.update(task_id='T07',policies=list(policies.values()),policy_profile=policies['all-rules-disabled'],cases=[],required_case_ids=manifest['required_case_ids'])
+    baseline=runner.load_baseline()
     def database(anchor):
         source=manifest['anchors'][anchor];banner='8.0.11-TiDB-v8.5.0' if anchor=='tidb85' else source['version_contains']
-        return {'product':source['product'],'image':source['image'],'image_digest':source['image'].split(':')[0]+'@sha256:constructed-validator-control','container':source['container'],'reachable':True,'version':banner}
+        spec=(baseline.get('required_anchors') or {}).get(anchor) or {}
+        return {'product':source['product'],'image':source['image'],'image_digest':spec.get('expected_image_digest') or source['image'].split(':')[0]+'@sha256:constructed-validator-control','image_id':'sha256:'+'ab'*32,'container_image':'sha256:'+'ab'*32,'platform':spec.get('platform') or 'linux/test64','container':source['container'],'reachable':True,'version':banner,'schema':source.get('database')}
     def common(case_id,kind,input_sql,expected):
         return {'case_id':case_id,'kind':kind,'input_sql':input_sql,'expected':copy.deepcopy(expected),'assertions':[{'name':'constructed control','ok':True,'detail':'not a product or database execution'}],'status':'pass'}
     for anchor in contract.VERSIONS:

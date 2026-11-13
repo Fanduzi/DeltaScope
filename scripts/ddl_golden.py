@@ -160,7 +160,7 @@ def image_facts(image):
     Issue #81 requires every anchor case to record the image ID and
     platform/architecture alongside the resolved repo digest so a run can be
     tied to an immutable local image identity. Empty strings when inspect
-    fails — reachability/version assertions still govern the case outcome.
+    fails — the run-level identity proof treats empty fields as failures.
     """
     rc, out, _ = run_cmd(
         ["docker", "image", "inspect", image, "--format", "{{.Id}} {{.Os}}/{{.Architecture}}"],
@@ -172,22 +172,106 @@ def image_facts(image):
     return {"image_id": parts[0], "platform": parts[1] if len(parts) > 1 else ""}
 
 
-def mysql_exec(anchor, sql, database=None, silent=True):
-    """Execute fixed fixture SQL through the anchor's dedicated mysql client."""
+def image_digests(image):
+    """Return the full RepoDigests list for an image reference."""
+    rc, out, _ = run_cmd(["docker", "image", "inspect", image, "--format", "{{json .RepoDigests}}"], timeout=30)
+    if rc != 0:
+        return []
+    try:
+        return json.loads(out.strip() or "[]")
+    except json.JSONDecodeError:
+        return []
+
+
+def container_image(container):
+    """Return the image ID the running container was created from."""
+    rc, out, _ = run_cmd(["docker", "inspect", container, "--format", "{{.Image}}"], timeout=30)
+    return out.strip() if rc == 0 else ""
+
+
+def prove_anchor_identity(manifest, baseline):
+    """Prove immutable image identity for every anchor before fixture SQL runs.
+
+    Issue #81 R2: the locked baseline owns the expected repo digest and the
+    expected platform for each required anchor. Recording the digest a run
+    happened to resolve is not proof the run used the approved image, so this
+    binds three identities together while the containers exist but before any
+    fixture statement executes:
+
+    - locked digest: the manifest anchor's image reference must resolve to a
+      RepoDigest equal to the baseline lock;
+    - inspected image: docker's image ID and os/arch for that reference must
+      be non-empty and match the baseline platform lock;
+    - running container: the database container's .Image must be the same
+      image ID, so a re-pointed tag cannot stand in for the pinned image.
+
+    Returns (facts_by_anchor, failures). Any failure is an external blocker:
+    the run must stop before executing fixture SQL rather than degrade to a
+    record of whatever happened to be present.
+    """
+    required = baseline.get("required_anchors") or {}
+    facts = {}
+    failures = []
+    for key, anchor in manifest["anchors"].items():
+        spec = required.get(key)
+        locked = (spec or {}).get("expected_image_digest", "")
+        locked_platform = (spec or {}).get("platform")
+        entry = image_facts(anchor["image"])
+        entry.update({
+            "schema": anchor.get("database"),
+            "expected_image_digest": locked or None,
+            "locked_platform": locked_platform,
+            "resolved_image_digests": image_digests(anchor["image"]),
+            "container_image": container_image(anchor["container"]),
+        })
+        checks = [
+            ("baseline has no locked expected_image_digest", spec is not None and not locked),
+            ("image inspect failed: empty image id", not entry["image_id"]),
+            ("image inspect failed: empty platform", not entry["platform"]),
+            ("resolved repo digest differs from locked baseline",
+             locked and locked not in entry["resolved_image_digests"]),
+            ("running container image identity unavailable", not entry["container_image"]),
+            ("running container image id differs from inspected image",
+             bool(entry["container_image"]) and entry["container_image"] != entry["image_id"]),
+            ("platform differs from locked baseline",
+             bool(locked_platform) and entry["platform"] != locked_platform),
+        ]
+        for label, bad in checks:
+            if bad:
+                failures.append(
+                    f"anchor {key}: {label} "
+                    f"(locked={locked!r} resolved={entry['resolved_image_digests']!r} "
+                    f"image_id={entry['image_id']!r} container={entry['container_image']!r} "
+                    f"platform={entry['platform']!r})")
+        facts[key] = entry
+    return facts, failures
+
+
+def mysql_exec_argv(anchor, sql, database=None, silent=True):
+    """Build the docker-exec argv mysql_exec would run (for case evidence)."""
     client = list(anchor["exec_client"])
     if database:
         client.append(database)
     flag = "-Nse" if silent else "-e"
     client += [flag, sql]
     target = anchor.get("client_container") or anchor["container"]
+    argv = ["docker", "exec"]
+    if anchor.get("exec_password_env"):
+        argv += ["--env", "MYSQL_PWD"]
+    return argv + [target, *client]
+
+
+def mysql_exec(anchor, sql, database=None, silent=True):
+    """Execute fixed fixture SQL through the anchor's dedicated mysql client."""
+    argv = mysql_exec_argv(anchor, sql, database=database, silent=silent)
     password_env = anchor.get("exec_password_env")
     if password_env:
         password = os.environ.get(password_env)
         if password is None:
             return 1, "", "required fixture credential environment is unavailable"
         env = {**os.environ, "MYSQL_PWD": password}
-        return run_cmd(["docker", "exec", "--env", "MYSQL_PWD", target, *client], timeout=120, env=env)
-    return run_cmd(["docker", "exec", target, *client], timeout=120)
+        return run_cmd(argv, timeout=120, env=env)
+    return run_cmd(argv, timeout=120)
 
 
 def build_cli(work_dir):
@@ -554,6 +638,7 @@ def execute_ddl_case(manifest, anchor_key):
 def execute_negative_case(manifest, anchor_key):
     anchor = manifest["anchors"][anchor_key]
     negative = manifest["syntax_negative"]
+    post_state = negative.get("post_state_check") or {}
     case_id = f"{manifest['task_id']}.db.{anchor_key}.syntax_negative"
     case = {
         "case_id": case_id,
@@ -565,11 +650,26 @@ def execute_negative_case(manifest, anchor_key):
         "assertions": [],
         "status": "pass",
     }
-    rc, out, err = mysql_exec(anchor, negative["sql"], database=anchor["database"], silent=False)
+    database = anchor["database"]
+    # Issue #81 R2: prove the fixture object does not exist before the broken
+    # statement and still does not exist after it, so the syntax error cannot
+    # hide a partial side effect.
+    if post_state:
+        query = post_state["sql"]
+        pre_rc, pre_out, pre_err = mysql_exec(anchor, query, database=database)
+        case["actual"]["pre_query"] = {
+            "sql": query,
+            "argv": mysql_exec_argv(anchor, query, database=database),
+            "rc": pre_rc,
+            "stdout": pre_out.strip(),
+            "stderr": pre_err.strip(),
+        }
+    case["actual"]["argv"] = mysql_exec_argv(anchor, negative["sql"], database=database, silent=False)
+    rc, out, err = mysql_exec(anchor, negative["sql"], database=database, silent=False)
     combined = (out + err).strip()
     match = re.search(r"ERROR\s+(\d+)", combined)
     error_class = match.group(1) if match else ""
-    case["actual"] = {"rc": rc, "stdout": out.strip(), "stderr": err.strip(), "error_class": error_class}
+    case["actual"].update({"rc": rc, "stdout": out.strip(), "stderr": err.strip(), "error_class": error_class})
     case["assertions"].append({
         "name": "nonzero syntax failure",
         "ok": rc != 0,
@@ -586,6 +686,23 @@ def execute_negative_case(manifest, anchor_key):
         "ok": not leaked,
         "detail": f"forbidden markers found: {leaked!r}",
     })
+    if post_state:
+        query = post_state["sql"]
+        post_rc, post_out, post_err = mysql_exec(anchor, query, database=database)
+        case["actual"]["post_query"] = {
+            "sql": query,
+            "argv": mysql_exec_argv(anchor, query, database=database),
+            "rc": post_rc,
+            "stdout": post_out.strip(),
+            "stderr": post_err.strip(),
+        }
+        want = str(post_state["expect"])
+        for label, qrc, qout in (("pre_query", pre_rc, pre_out), ("post_query", post_rc, post_out)):
+            case["assertions"].append({
+                "name": f"{label}: object absent",
+                "ok": qrc == 0 and qout.strip() == want,
+                "detail": f"rc={qrc} output={qout.strip()!r} expected={want!r}",
+            })
     if not all(a["ok"] for a in case["assertions"]):
         case["status"] = "fail"
     return case
@@ -7559,6 +7676,33 @@ def t06_a15_artifact_failures(artifact, manifest):
     return failures
 
 
+def image_identity_failures(case_id, anchor_key, db, baseline):
+    """Fail-closed checks that a recorded database anchor carries the immutable
+    image identity proven before fixture execution (issue #81 R2):
+    locked-digest match for baseline anchors, non-empty inspected image
+    identity, and a running-container image equal to the inspected image ID."""
+    failures = []
+    spec = ((baseline or {}).get("required_anchors") or {}).get(anchor_key)
+    if spec is not None:
+        locked = spec.get("expected_image_digest")
+        if not locked:
+            failures.append(f"case {case_id}: baseline anchor {anchor_key} has no locked expected_image_digest")
+        elif db.get("image_digest") != locked:
+            failures.append(f"case {case_id}: image digest {db.get('image_digest')!r} != locked {locked!r}")
+        locked_platform = spec.get("platform")
+        if locked_platform and db.get("platform") != locked_platform:
+            failures.append(f"case {case_id}: platform {db.get('platform')!r} != locked {locked_platform!r}")
+    if not db.get("image_id"):
+        failures.append(f"case {case_id}: empty image_id")
+    if not db.get("platform"):
+        failures.append(f"case {case_id}: empty platform")
+    if not db.get("container_image"):
+        failures.append(f"case {case_id}: empty container_image")
+    elif db["container_image"] != db.get("image_id"):
+        failures.append(f"case {case_id}: container image {db['container_image']!r} != image_id {db.get('image_id')!r}")
+    return failures
+
+
 def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     """Re-check an emitted artifact. Returns a list of failure strings."""
     failures = []
@@ -7746,6 +7890,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                 failures.append(f"case {case_id}: version mismatch {db.get('version')!r} expected contains {anchor['version_contains']!r}")
             if not (db.get("image_digest") or "").startswith(anchor["image"].split(":")[0] + "@"):
                 failures.append(f"case {case_id}: missing/mismatched image digest {db.get('image_digest')!r}")
+            failures.extend(image_identity_failures(case_id, anchor_key, db, baseline))
             steps = actual.get("steps") or []
             if len(steps) != len(manifest["ddl_steps"]):
                 failures.append(f"case {case_id}: step count {len(steps)} != manifest steps {len(manifest['ddl_steps'])}")
@@ -7789,6 +7934,16 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
             for marker in negative["expect"].get("forbidden_markers") or []:
                 if marker in combined:
                     failures.append(f"case {case_id}: forbidden marker present: {marker!r}")
+            post_state = negative.get("post_state_check") or {}
+            if post_state:
+                for label in ("pre_query", "post_query"):
+                    rec = actual.get(label) or {}
+                    if rec.get("sql") != post_state["sql"]:
+                        failures.append(f"case {case_id}: {label} sql differs from manifest post_state_check")
+                    if rec.get("rc") != 0:
+                        failures.append(f"case {case_id}: {label} rc {rec.get('rc')} != 0")
+                    if str(rec.get("stdout") or "").strip() != str(post_state["expect"]):
+                        failures.append(f"case {case_id}: {label} output {rec.get('stdout')!r} != expected {post_state['expect']!r}")
         elif kind == "cli_audit":
             spec = cli_case_spec_for(manifest, case)
             if spec is None:
@@ -7834,6 +7989,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                 failures.append(f"case {case_id}: version mismatch {db.get('version')!r} expected contains {anchor['version_contains']!r}")
             if not (db.get("image_digest") or "").startswith(anchor["image"].split(":")[0] + "@"):
                 failures.append(f"case {case_id}: missing/mismatched image digest {db.get('image_digest')!r}")
+            failures.extend(image_identity_failures(case_id, anchor_key, db, baseline))
             command = case.get("command") or []
             conn = spec.get("connect") or {}
             failures.extend(command_binding_failures(case, command, spec, policy_by_name, cli.get("path") or "", connect=conn))
@@ -8107,32 +8263,49 @@ def cmd_run(args):
             if unhealthy:
                 artifact["external_blocker"] = f"required database containers not healthy: {unhealthy}"
             else:
-                for anchor_key, anchor_def in manifest["anchors"].items():
-                    if anchor_def.get("infra_only"):
-                        continue
-                    artifact["cases"].append(execute_ddl_case(manifest, anchor_key))
-                    artifact["cases"].append(execute_negative_case(manifest, anchor_key))
-                for spec in cli_case_specs(manifest):
-                    artifact["cases"].append(execute_cli_case(manifest, cli["path"], policies, spec))
-                for spec in metadata_case_specs(manifest):
-                    artifact["cases"].append(execute_metadata_case(manifest, spec["anchor"], cli["path"], policies, spec))
-                for spec in error_case_specs(manifest):
-                    artifact["cases"].append(execute_error_case(manifest, cli["path"], policies, spec))
-                # Anchor identity evidence (issue #81): image ID, platform and
-                # the fixture schema are collected once per anchor at run
-                # level — never inside a case path, so a fixture failure can
-                # still prove zero subprocess calls. Facts are merged into
-                # each case's database record for per-case inspectability.
-                anchor_facts = {}
-                for anchor_key, anchor_def in manifest["anchors"].items():
-                    facts = image_facts(anchor_def["image"])
-                    facts["schema"] = anchor_def.get("database")
-                    anchor_facts[anchor_key] = facts
+                # Immutable anchor identity proof (issue #81 R2): bind the
+                # locked baseline digest, the inspected image and the running
+                # container's .Image together before any fixture SQL runs, so
+                # a missing or re-pointed image can never degrade to PASS.
+                anchor_facts, identity_failures = prove_anchor_identity(manifest, baseline)
                 artifact["anchor_facts"] = anchor_facts
+                if identity_failures:
+                    artifact["external_blocker"] = "anchor image identity proof failed: " + "; ".join(identity_failures)
+                else:
+                    for anchor_key, anchor_def in manifest["anchors"].items():
+                        if anchor_def.get("infra_only"):
+                            continue
+                        artifact["cases"].append(execute_ddl_case(manifest, anchor_key))
+                        artifact["cases"].append(execute_negative_case(manifest, anchor_key))
+                    for spec in cli_case_specs(manifest):
+                        artifact["cases"].append(execute_cli_case(manifest, cli["path"], policies, spec))
+                    for spec in metadata_case_specs(manifest):
+                        artifact["cases"].append(execute_metadata_case(manifest, spec["anchor"], cli["path"], policies, spec))
+                    for spec in error_case_specs(manifest):
+                        artifact["cases"].append(execute_error_case(manifest, cli["path"], policies, spec))
                 for case in artifact["cases"]:
                     db = (case.get("actual") or {}).get("database")
                     if db and case.get("anchor") in anchor_facts:
-                        db.update(anchor_facts[case["anchor"]])
+                        facts = anchor_facts[case["anchor"]]
+                        db.update(facts)
+                        if case.get("kind") == "db_ddl":
+                            locked = facts.get("expected_image_digest")
+                            case["assertions"].append({
+                                "name": "image digest matches locked baseline",
+                                "ok": bool(locked) and locked in (facts.get("resolved_image_digests") or []),
+                                "detail": f"locked={locked!r} resolved={facts.get('resolved_image_digests')!r}",
+                            })
+                            case["assertions"].append({
+                                "name": "running container image identity",
+                                "ok": facts.get("container_image") == facts.get("image_id"),
+                                "detail": f"container={facts.get('container_image')!r} image_id={facts.get('image_id')!r}",
+                            })
+                            locked_platform = facts.get("locked_platform")
+                            case["assertions"].append({
+                                "name": "platform recorded and matches baseline",
+                                "ok": bool(facts.get("platform")) and (not locked_platform or facts["platform"] == locked_platform),
+                                "detail": f"platform={facts.get('platform')!r} locked={locked_platform!r}",
+                            })
     finally:
         artifact["cleanup"] = compose_cleanup()
         artifact["executed_count"] = len(artifact["cases"])

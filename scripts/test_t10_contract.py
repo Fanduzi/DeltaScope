@@ -86,12 +86,17 @@ def fixture(tmp):
                     policy_profile=policies['all-rules-disabled'], cases=[],
                     required_case_ids=manifest['required_case_ids'])
 
+    baseline = runner.load_baseline()
     def database(anchor):
         source = manifest['anchors'][anchor]
         banner = '8.0.11-TiDB-v8.5.0' if anchor == 'tidb85' else source['version_contains']
+        spec = (baseline.get('required_anchors') or {}).get(anchor) or {}
         return {'product': source['product'], 'image': source['image'],
-                'image_digest': source['image'].split(':')[0] + '@sha256:constructed-validator-control',
-                'container': source['container'], 'reachable': True, 'version': banner}
+                'image_digest': spec.get('expected_image_digest') or source['image'].split(':')[0] + '@sha256:constructed-validator-control',
+                'image_id': 'sha256:' + 'ab' * 32, 'container_image': 'sha256:' + 'ab' * 32,
+                'platform': spec.get('platform') or 'linux/test64',
+                'container': source['container'], 'reachable': True, 'version': banner,
+                'schema': source.get('database')}
 
     def common(case_id, kind, input_sql, expected):
         return {'case_id': case_id, 'kind': kind, 'input_sql': input_sql,

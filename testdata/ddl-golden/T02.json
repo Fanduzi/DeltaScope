@@ -110,6 +110,10 @@
         "Connection refused",
         "already exists"
       ]
+    },
+    "post_state_check": {
+      "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'golden' AND TABLE_NAME = 'golden_broken'",
+      "expect": "0"
     }
   },
   "cli_audit": {
