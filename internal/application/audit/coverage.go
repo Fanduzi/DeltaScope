@@ -487,8 +487,31 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 			continue
 		}
 		vendor := dialect == spec.DialectMySQL
-		if len(declaration.Unmodeled) == 0 && declaration.Source != spec.TTLClauseSourceUnproven && dialect == spec.DialectTiDB {
-			continue
+		if dialect == spec.DialectTiDB && len(declaration.Unmodeled) == 0 && declaration.Source != spec.TTLClauseSourceUnproven {
+			// A fully modeled TiDB TTL declaration is audited — unless the
+			// CREATE-side outcome proves a native refusal (temporary table,
+			// self-referencing foreign key, invalid interval, ...). A proven
+			// refusal is a vendor boundary, never a silent pass (issue #98
+			// ER5: natively refused forms must not report complete/pass).
+			effectiveSchema := ""
+			if ddl.Table != nil {
+				effectiveSchema = ddl.Table.Schema
+			}
+			var instanceFacts *spec.InstanceFacts
+			var likeSource *spec.TableSnapshot
+			if statement.Metadata != nil {
+				instanceFacts = statement.Metadata.Instance
+				likeSource = statement.Metadata.SourceTable
+			}
+			if reason := spec.TTLCreateRefusalReason(dialect, ddl, effectiveSchema, instanceFacts, likeSource); reason == "" {
+				continue
+			} else {
+				gaps = append(gaps, aspectGap(
+					fmt.Sprintf("%s.ttl.%s", ddl.Operation, declaration.Member), true,
+					map[string]any{"aspect": "ttl", "member": declaration.Member, "refusal": reason},
+				))
+				continue
+			}
 		}
 		gaps = append(gaps, aspectGap(
 			fmt.Sprintf("%s.ttl.%s", ddl.Operation, declaration.Member), vendor,

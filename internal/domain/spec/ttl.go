@@ -23,27 +23,46 @@ const (
 // resolved schema; it binds unqualified foreign-key parents for the
 // self-reference check TiDB runs after TTLInfo lands on the TableInfo.
 func TTLCreateOutcome(dialect Dialect, ddl *DDL, effectiveSchema string, facts *InstanceFacts, likeSource *TableSnapshot) TTLDefinitionOutcome {
+	outcome, _ := ttlCreateOutcomeReason(dialect, ddl, effectiveSchema, facts, likeSource)
+	return outcome
+}
+
+// TTLCreateRefusalReason returns the proven refusal reason when
+// TTLCreateOutcome is TTLDefinitionRefused — "temporary_table",
+// "declaration", "self_foreign_key", "like_source_temporary", or the
+// landing-outcome member — and "" otherwise. The coverage surface uses it
+// to publish a bounded vendor-boundary aspect for a CREATE whose TTL the
+// server provably refuses instead of reporting a silent pass (issue #98).
+func TTLCreateRefusalReason(dialect Dialect, ddl *DDL, effectiveSchema string, facts *InstanceFacts, likeSource *TableSnapshot) string {
+	outcome, reason := ttlCreateOutcomeReason(dialect, ddl, effectiveSchema, facts, likeSource)
+	if outcome != TTLDefinitionRefused {
+		return ""
+	}
+	return reason
+}
+
+func ttlCreateOutcomeReason(dialect Dialect, ddl *DDL, effectiveSchema string, facts *InstanceFacts, likeSource *TableSnapshot) (TTLDefinitionOutcome, string) {
 	if dialect != DialectTiDB || ddl == nil {
-		return TTLDefinitionUnproven
+		return TTLDefinitionUnproven, ""
 	}
 	if ddl.TemporaryScope != "" {
-		return TTLDefinitionRefused
+		return TTLDefinitionRefused, "temporary_table"
 	}
 	declaration, ok := ttlDefinitionDeclaration(ddl.TTL)
 	if !ok {
-		return TTLDefinitionRefused
+		return TTLDefinitionRefused, "declaration"
 	}
 	if ttlSelfForeignKey(ddl, effectiveSchema) {
-		return TTLDefinitionRefused
+		return TTLDefinitionRefused, "self_foreign_key"
 	}
 	shape := &TableSnapshot{Exists: true, ReferencedBy: []Table{}, TTLKnown: true}
 	switch {
 	case ddl.HasReferTable:
 		if likeSource == nil {
-			return TTLDefinitionUnproven
+			return TTLDefinitionUnproven, ""
 		}
 		if likeSource.Temporary || likeSource.GlobalTemporary {
-			return TTLDefinitionRefused
+			return TTLDefinitionRefused, "like_source_temporary"
 		}
 		shape.Columns = likeSource.Columns
 		shape.ColumnsTailUnknown = likeSource.ColumnsTailUnknown
@@ -85,7 +104,14 @@ func TTLCreateOutcome(dialect Dialect, ddl *DDL, effectiveSchema string, facts *
 			}
 		}
 	}
-	return TTLDefinitionLandingOutcome(shape, declaration)
+	if ttlIntervalOutcome(declaration) == TTLDefinitionRefused {
+		return TTLDefinitionRefused, "interval"
+	}
+	outcome := TTLDefinitionLandingOutcome(shape, declaration)
+	if outcome == TTLDefinitionRefused {
+		return outcome, "landing"
+	}
+	return outcome, ""
 }
 
 // TTLForeignKeyParentOutcome applies TiDB's checkTableForeignKey parent

@@ -100,7 +100,8 @@
     "Connection refused",
     "doesn't exist",
     "already exists"
-   ]
+   ],
+   "rc_nonzero": true
   }
  },
  "policy": {
@@ -164,7 +165,26 @@
       "level": "warning"
      }
     ],
-    "fail_on_triggered": false
+    "fail_on_triggered": false,
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "metadata": {
+       "enabled": true,
+       "modify_enabled": false,
+       "table": "t",
+       "ttl": true
+      }
+     }
+    ]
    },
    "post_verify": [
     {
@@ -338,7 +358,26 @@
       "level": "warning"
      }
     ],
-    "fail_on_triggered": false
+    "fail_on_triggered": false,
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "metadata": {
+       "enabled": true,
+       "modify_enabled": false,
+       "table": "ttl_new",
+       "ttl": true
+      }
+     }
+    ]
    },
    "post_verify": [
     {
@@ -400,17 +439,35 @@
     }
    ],
    "expect": {
-    "exit": 0,
-    "verdict": "pass",
+    "exit": 1,
+    "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 0,
-    "unsupported": 0,
-    "coverage": "complete",
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
     "statement_coverage": [
-     "complete"
+     "incomplete"
     ],
     "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "CREATE GLOBAL TEMPORARY TABLE ttl_tmp (created_at DATETIME) TTL=created_at+INTERVAL 30 DAY ON COMMIT DELETE ROWS;"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "create_table.ttl.ttl",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "aspect": "ttl",
+       "member": "ttl",
+       "refusal": "temporary_table"
+      }
+     }
+    ],
     "finding_entries": [],
     "fail_on_triggered": false
    },
@@ -641,7 +698,12 @@
      {
       "index": 0,
       "feature": "alter_table.table_option.ttl.ttl_enable",
-      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl_enable"
+      }
      }
     ],
     "fail_on_triggered": false
@@ -666,6 +728,127 @@
      "sql": "DROP DATABASE IF EXISTS t19m_comment",
      "expect_rc": 0,
      "verify": []
+    }
+   ]
+  },
+  {
+   "id": "tidb85-alter-firstpath",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL = created_at + INTERVAL 30 DAY;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t19m_alter_applied"
+   },
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "setup": [
+    {
+     "name": "create-owned-fixture",
+     "sql": "CREATE DATABASE t19m_alter_applied;CREATE TABLE t19m_alter_applied.t (id INT PRIMARY KEY, created_at DATETIME)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "clean target exists",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t19m_alter_applied' AND TABLE_NAME='t'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "level": "warning"
+     }
+    ],
+    "fail_on_triggered": true,
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "metadata": {
+       "enabled": true,
+       "modify_enabled": false,
+       "table": "t",
+       "ttl": true
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not change the table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t19m_alter_applied' AND TABLE_NAME='t'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited TTL alteration",
+     "sql": "ALTER TABLE t19m_alter_applied.t TTL = created_at + INTERVAL 30 DAY;",
+     "expect_rc": 0
+    },
+    {
+     "name": "native TTL catalog receipt",
+     "sql": "SHOW CREATE TABLE t19m_alter_applied.t",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t19m_alter_applied' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "temporal column intact",
+     "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='t19m_alter_applied' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": "datetime"
+    },
+    {
+     "assert": "no inbound foreign keys reference the table",
+     "sql": "SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE WHERE REFERENCED_TABLE_SCHEMA='t19m_alter_applied' AND REFERENCED_TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP DATABASE IF EXISTS t19m_alter_applied",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual schema",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t19m_alter_applied'",
+       "expect": "0"
+      }
+     ]
     }
    ]
   }
@@ -705,11 +888,30 @@
       "level": "warning"
      }
     ],
-    "fail_on_triggered": false
+    "fail_on_triggered": false,
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "metadata": {
+       "enabled": true,
+       "modify_enabled": false,
+       "table": "ttl_new",
+       "ttl": true
+      }
+     }
+    ]
    }
   },
   {
-   "id": "tidb-create-temp-silent",
+   "id": "tidb-create-temp-refused",
    "dialect": "tidb",
    "sql": "CREATE TEMPORARY TABLE ttl_t (created_at DATETIME) TTL=created_at+INTERVAL 30 DAY;",
    "policy": "t19-ttl",
@@ -718,15 +920,15 @@
     "blocker"
    ],
    "expect": {
-    "exit": 0,
-    "verdict": "pass",
+    "exit": 1,
+    "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 0,
-    "unsupported": 0,
-    "coverage": "complete",
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
     "statement_coverage": [
-     "complete"
+     "incomplete"
     ],
     "evidence_gaps": 0,
     "statement_indices": [
@@ -735,12 +937,24 @@
     "statement_sql": [
      "CREATE TEMPORARY TABLE ttl_t (created_at DATETIME) TTL=created_at+INTERVAL 30 DAY;"
     ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "create_table.ttl.ttl",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "aspect": "ttl",
+       "member": "ttl",
+       "refusal": "temporary_table"
+      }
+     }
+    ],
     "finding_entries": [],
     "fail_on_triggered": false
    }
   },
   {
-   "id": "tidb-create-interval-silent",
+   "id": "tidb-create-interval-refused",
    "dialect": "tidb",
    "sql": "CREATE TABLE ttl_bad (created_at DATETIME) TTL=created_at+INTERVAL 'abc' DAY;",
    "policy": "t19-ttl",
@@ -749,15 +963,15 @@
     "blocker"
    ],
    "expect": {
-    "exit": 0,
-    "verdict": "pass",
+    "exit": 1,
+    "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 0,
-    "unsupported": 0,
-    "coverage": "complete",
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
     "statement_coverage": [
-     "complete"
+     "incomplete"
     ],
     "evidence_gaps": 0,
     "statement_indices": [
@@ -766,12 +980,24 @@
     "statement_sql": [
      "CREATE TABLE ttl_bad (created_at DATETIME) TTL=created_at+INTERVAL 'abc' DAY;"
     ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "create_table.ttl.ttl",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "aspect": "ttl",
+       "member": "ttl",
+       "refusal": "interval"
+      }
+     }
+    ],
     "finding_entries": [],
     "fail_on_triggered": false
    }
   },
   {
-   "id": "tidb-create-self-fk-silent",
+   "id": "tidb-create-self-fk-refused",
    "dialect": "tidb",
    "sql": "CREATE TABLE ttl_fk (id INT PRIMARY KEY, parent_id INT, created_at DATETIME, FOREIGN KEY (parent_id) REFERENCES ttl_fk(id)) TTL=created_at+INTERVAL 1 DAY;",
    "policy": "t19-ttl",
@@ -780,15 +1006,15 @@
     "blocker"
    ],
    "expect": {
-    "exit": 0,
-    "verdict": "pass",
+    "exit": 1,
+    "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 0,
-    "unsupported": 0,
-    "coverage": "complete",
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
     "statement_coverage": [
-     "complete"
+     "incomplete"
     ],
     "evidence_gaps": 0,
     "statement_indices": [
@@ -796,6 +1022,18 @@
     ],
     "statement_sql": [
      "CREATE TABLE ttl_fk (id INT PRIMARY KEY, parent_id INT, created_at DATETIME, FOREIGN KEY (parent_id) REFERENCES ttl_fk(id)) TTL=created_at+INTERVAL 1 DAY;"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "create_table.ttl.ttl",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "aspect": "ttl",
+       "member": "ttl",
+       "refusal": "self_foreign_key"
+      }
+     }
     ],
     "finding_entries": [],
     "fail_on_triggered": false
@@ -946,7 +1184,12 @@
      {
       "index": 0,
       "feature": "alter_table.table_option.ttl.ttl_enable",
-      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl_enable"
+      }
      }
     ],
     "fail_on_triggered": false
@@ -993,6 +1236,156 @@
     "fail_on_triggered": false
    },
    "id": "mysql-quoted-ttl-parser-error"
+  },
+  {
+   "id": "tidb-comment-exec-gap",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t /*T![ttl] TTL_ENABLE='ON' */;",
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.ttl"
+      ]
+     }
+    ],
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "ALTER TABLE t /*T![ttl] TTL_ENABLE='ON' */;"
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "tidb-enable-off-gap",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL_ENABLE='OFF';",
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.ttl"
+      ]
+     }
+    ],
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "ALTER TABLE t TTL_ENABLE='OFF';"
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "tidb-create-comment-warn",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE ttl_c (created_at DATETIME) /*T![ttl] TTL=created_at+INTERVAL 1 DAY*/;",
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "CREATE TABLE ttl_c (created_at DATETIME) /*T![ttl] TTL=created_at+INTERVAL 1 DAY*/;"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "level": "warning"
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "mysql-create-comment-silent",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE ttl_c (created_at DATETIME) /*T![ttl] TTL=created_at+INTERVAL 1 DAY*/;",
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "CREATE TABLE ttl_c (created_at DATETIME) /*T![ttl] TTL=created_at+INTERVAL 1 DAY*/;"
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   }
   }
  ],
  "required_case_ids": [
@@ -1012,14 +1405,19 @@
   "T19.meta.tidb85-remove-ttl",
   "T19.meta.mysql80-comment-noop",
   "T19.cli.tidb-create-warn",
-  "T19.cli.tidb-create-temp-silent",
-  "T19.cli.tidb-create-interval-silent",
-  "T19.cli.tidb-create-self-fk-silent",
+  "T19.cli.tidb-create-temp-refused",
+  "T19.cli.tidb-create-interval-refused",
+  "T19.cli.tidb-create-self-fk-refused",
   "T19.cli.tidb-create-clustered-gap",
   "T19.cli.tidb-alter-gap",
   "T19.cli.tidb-remove-silent",
   "T19.cli.mysql-comment-noop",
   "T19.cli.tidb-quoted-ttl-parser-error",
-  "T19.cli.mysql-quoted-ttl-parser-error"
+  "T19.cli.mysql-quoted-ttl-parser-error",
+  "T19.meta.tidb85-alter-firstpath",
+  "T19.cli.tidb-comment-exec-gap",
+  "T19.cli.tidb-enable-off-gap",
+  "T19.cli.tidb-create-comment-warn",
+  "T19.cli.mysql-create-comment-silent"
  ]
 }
