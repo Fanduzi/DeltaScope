@@ -851,6 +851,361 @@
      ]
     }
    ]
+  },
+  {
+   "id": "tidb85-job-interval-on-enabled",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL_JOB_INTERVAL = '4h';",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t19m_job_on"
+   },
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-enabled-ttl-fixture",
+     "sql": "CREATE DATABASE t19m_job_on;CREATE TABLE t19m_job_on.t (id INT PRIMARY KEY, created_at DATETIME) TTL=created_at+INTERVAL 30 DAY",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "default job interval is 1h before alter",
+       "sql": "SHOW CREATE TABLE t19m_job_on.t",
+       "contains": "TTL_JOB_INTERVAL='1h'"
+      },
+      {
+       "assert": "ttl enabled before alter",
+       "sql": "SHOW CREATE TABLE t19m_job_on.t",
+       "contains": "TTL_ENABLE='ON'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "level": "warning"
+     }
+    ],
+    "fail_on_triggered": false,
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "metadata": {
+       "enabled": true,
+       "modify_enabled": true,
+       "table": "t",
+       "ttl": true
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "job interval still default 1h (audit is read-only)",
+     "sql": "SHOW CREATE TABLE t19m_job_on.t",
+     "contains": "TTL_JOB_INTERVAL='1h'"
+    },
+    {
+     "assert": "ttl still enabled (audit is read-only)",
+     "sql": "SHOW CREATE TABLE t19m_job_on.t",
+     "contains": "TTL_ENABLE='ON'"
+    }
+   ]
+  },
+  {
+   "id": "tidb85-job-interval-on-disabled",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL_JOB_INTERVAL = '4h';",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t19m_job_off"
+   },
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-disabled-ttl-fixture",
+     "sql": "CREATE DATABASE t19m_job_off;CREATE TABLE t19m_job_off.t (id INT PRIMARY KEY, created_at DATETIME) TTL=created_at+INTERVAL 30 DAY;ALTER TABLE t19m_job_off.t TTL_ENABLE='OFF'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "ttl disabled before alter",
+       "sql": "SHOW CREATE TABLE t19m_job_off.t",
+       "contains": "TTL_ENABLE='OFF'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "fail_on_triggered": false
+   },
+   "post_verify": [
+    {
+     "assert": "job interval still default 1h (audit is read-only)",
+     "sql": "SHOW CREATE TABLE t19m_job_off.t",
+     "contains": "TTL_JOB_INTERVAL='1h'"
+    },
+    {
+     "assert": "ttl remains disabled (audit is read-only)",
+     "sql": "SHOW CREATE TABLE t19m_job_off.t",
+     "contains": "TTL_ENABLE='OFF'"
+    }
+   ]
+  },
+  {
+   "id": "tidb85-enable-off-to-on",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL_ENABLE='ON';",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t19m_eoff"
+   },
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-off-ttl-fixture",
+     "sql": "CREATE DATABASE t19m_eoff;CREATE TABLE t19m_eoff.t (id INT PRIMARY KEY, created_at DATETIME) TTL=created_at+INTERVAL 30 DAY;ALTER TABLE t19m_eoff.t TTL_ENABLE='OFF'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "ttl disabled before alter",
+       "sql": "SHOW CREATE TABLE t19m_eoff.t",
+       "contains": "TTL_ENABLE='OFF'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "level": "warning"
+     }
+    ],
+    "fail_on_triggered": false,
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "metadata": {
+       "enabled": true,
+       "modify_enabled": false,
+       "table": "t",
+       "ttl": true
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "ttl still disabled (audit is read-only)",
+     "sql": "SHOW CREATE TABLE t19m_eoff.t",
+     "contains": "TTL_ENABLE='OFF'"
+    }
+   ]
+  },
+  {
+   "id": "tidb85-enable-on-to-off",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL_ENABLE='OFF';",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t19m_eon"
+   },
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-on-ttl-fixture",
+     "sql": "CREATE DATABASE t19m_eon;CREATE TABLE t19m_eon.t (id INT PRIMARY KEY, created_at DATETIME) TTL=created_at+INTERVAL 30 DAY",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "ttl enabled before alter",
+       "sql": "SHOW CREATE TABLE t19m_eon.t",
+       "contains": "TTL_ENABLE='ON'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "fail_on_triggered": false
+   },
+   "post_verify": [
+    {
+     "assert": "ttl still enabled (audit is read-only)",
+     "sql": "SHOW CREATE TABLE t19m_eon.t",
+     "contains": "TTL_ENABLE='ON'"
+    }
+   ]
+  },
+  {
+   "id": "tidb85-remove-readd",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL=created_at+INTERVAL 30 DAY;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t19m_readd"
+   },
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-then-remove-ttl-fixture",
+     "sql": "CREATE DATABASE t19m_readd;CREATE TABLE t19m_readd.t (id INT PRIMARY KEY, created_at DATETIME) TTL=created_at+INTERVAL 30 DAY;ALTER TABLE t19m_readd.t REMOVE TTL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "table still present after remove",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t19m_readd' AND TABLE_NAME='t'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "level": "warning"
+     }
+    ],
+    "fail_on_triggered": false,
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "metadata": {
+       "enabled": true,
+       "modify_enabled": false,
+       "table": "t",
+       "ttl": true
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "no ttl member persisted after remove (audit is read-only)",
+     "sql": "SHOW CREATE TABLE t19m_readd.t",
+     "expect": "t\tCREATE TABLE `t` (\\n  `id` int NOT NULL,\\n  `created_at` datetime DEFAULT NULL,\\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin"
+    }
+   ]
   }
  ],
  "cli_cases": [
@@ -1386,6 +1741,167 @@
     "finding_entries": [],
     "fail_on_triggered": false
    }
+  },
+  {
+   "id": "tidb-dual-warn",
+   "dialect": "tidb",
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "sql": "CREATE TABLE ttl_a (id INT, created_at DATETIME) TTL=created_at+INTERVAL 30 DAY;\nCREATE TABLE ttl_b (id INT, created_at DATETIME) TTL=created_at+INTERVAL 30 DAY;",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0,
+     1
+    ],
+    "statement_sql": [
+     "CREATE TABLE ttl_a (id INT, created_at DATETIME) TTL=created_at+INTERVAL 30 DAY;",
+     "CREATE TABLE ttl_b (id INT, created_at DATETIME) TTL=created_at+INTERVAL 30 DAY;"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "level": "warning"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "level": "warning"
+     }
+    ],
+    "fail_on_triggered": false,
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 1,
+      "line": 2,
+      "column": 1
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "metadata": {
+       "enabled": true,
+       "modify_enabled": false,
+       "table": "ttl_a",
+       "ttl": true
+      }
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "metadata": {
+       "enabled": true,
+       "modify_enabled": false,
+       "table": "ttl_b",
+       "ttl": true
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-enable-cycle-batch",
+   "dialect": "tidb",
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "sql": "CREATE TABLE ttl_cyc (id INT, created_at DATETIME) TTL=created_at+INTERVAL 30 DAY;\nALTER TABLE ttl_cyc TTL_ENABLE='OFF';\nALTER TABLE ttl_cyc TTL_ENABLE='ON';",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "statement_sql": [
+     "CREATE TABLE ttl_cyc (id INT, created_at DATETIME) TTL=created_at+INTERVAL 30 DAY;",
+     "ALTER TABLE ttl_cyc TTL_ENABLE='OFF';",
+     "ALTER TABLE ttl_cyc TTL_ENABLE='ON';"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "level": "warning"
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "level": "warning"
+     }
+    ],
+    "fail_on_triggered": false,
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 2,
+      "line": 3,
+      "column": 1
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "metadata": {
+       "enabled": true,
+       "modify_enabled": false,
+       "table": "ttl_cyc",
+       "ttl": true
+      }
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "metadata": {
+       "enabled": true,
+       "modify_enabled": false,
+       "table": "ttl_cyc",
+       "ttl": true
+      }
+     }
+    ]
+   }
   }
  ],
  "required_case_ids": [
@@ -1418,6 +1934,13 @@
   "T19.cli.tidb-comment-exec-gap",
   "T19.cli.tidb-enable-off-gap",
   "T19.cli.tidb-create-comment-warn",
-  "T19.cli.mysql-create-comment-silent"
+  "T19.cli.mysql-create-comment-silent",
+  "T19.meta.tidb85-job-interval-on-enabled",
+  "T19.meta.tidb85-job-interval-on-disabled",
+  "T19.meta.tidb85-enable-off-to-on",
+  "T19.meta.tidb85-enable-on-to-off",
+  "T19.meta.tidb85-remove-readd",
+  "T19.cli.tidb-dual-warn",
+  "T19.cli.tidb-enable-cycle-batch"
  ]
 }
