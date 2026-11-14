@@ -347,9 +347,13 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "tidb explain explore", sql: "EXPLAIN EXPLORE SELECT * FROM t;", dialect: spec.DialectTiDB, wantFeature: "explain_explore", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
 		// Sequence option lists graduated to typed declarations in T21 —
 		// modeled facts, no longer unaudited aspects under TiDB.
-		// Placement-policy member sets and schema bindings are modeled facts
-		// since T20 — no longer unaudited aspects under TiDB.
+		// Placement-policy member sets and table/range bindings are modeled
+		// facts since T20. Schema-level declarations sit at the T17/T20
+		// contract boundary: T20's lifecycle audit is not yet accepted, so
+		// create_schema/alter_schema placement stays an unaudited aspect.
 		{name: "mysql alter schema placement vendor", sql: "ALTER DATABASE d1 PLACEMENT POLICY=p1;", dialect: spec.DialectMySQL, wantFeature: "alter_schema.option.placement_policy", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "tidb alter schema placement unaudited", sql: "ALTER DATABASE d1 PLACEMENT POLICY=p1;", dialect: spec.DialectTiDB, wantFeature: "alter_schema.option.placement_policy", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb create schema placement unaudited", sql: "CREATE DATABASE d1 PLACEMENT POLICY=p1;", dialect: spec.DialectTiDB, wantFeature: "create_schema.option.placement_policy", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		// Local temporary tables graduated to fully modeled semantics in T16
 		// (session namespace, shadowing, lifecycle transitions) — plain
 		// CREATE TEMPORARY and DROP TEMPORARY no longer land here.
@@ -613,7 +617,6 @@ func TestAuditSQLT03RecognizedOutOfSurfaceStaysComplete(t *testing.T) {
 		{name: "tidb create placement policy or replace", sql: "CREATE OR REPLACE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1';", dialect: spec.DialectTiDB},
 		{name: "tidb alter placement policy options", sql: "ALTER PLACEMENT POLICY p1 REGIONS='us-west-1';", dialect: spec.DialectTiDB},
 		{name: "tidb drop placement policy if exists", sql: "DROP PLACEMENT POLICY IF EXISTS p1;", dialect: spec.DialectTiDB},
-		{name: "tidb alter schema placement", sql: "ALTER DATABASE d1 PLACEMENT POLICY=p1;", dialect: spec.DialectTiDB},
 		{name: "tidb alter range global placement", sql: "ALTER RANGE global PLACEMENT POLICY=p1;", dialect: spec.DialectTiDB},
 		{name: "tidb create table placement", sql: "CREATE TABLE t (id INT) PLACEMENT POLICY=p;", dialect: spec.DialectTiDB},
 		{name: "tidb create table partition placement", sql: "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY=p);", dialect: spec.DialectTiDB},

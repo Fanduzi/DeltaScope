@@ -219,9 +219,16 @@ func extractedOptionGap(dialect spec.Dialect, op spec.DDLOperation, name string)
 	switch name {
 	case "placement_policy":
 		// Placement policies are a TiDB feature: vendor boundary under
-		// MySQL. Under TiDB the binding is modeled and audited (T20) — the
-		// ordered state and placement rule consume the declared option.
-		return dialect == spec.DialectMySQL, dialect == spec.DialectMySQL
+		// MySQL. Under TiDB, table-level bindings are modeled and audited
+		// (T20) — the ordered state and placement rule consume the
+		// declared option. Schema-level declarations sit at the T17/T20
+		// contract boundary: T20's full lifecycle audit is not yet
+		// accepted, so create_schema/alter_schema placement stays a
+		// recognized-but-unaudited aspect rather than silent acceptance.
+		if dialect == spec.DialectMySQL {
+			return true, true
+		}
+		return op == spec.DDLOperationCreateSchema || op == spec.DDLOperationAlterSchema, false
 	case "encryption":
 		// Schema-level ENCRYPTION is modeled on schema ops (version-gated
 		// transitions, T17); on CREATE TABLE it stays the T15 extracted-but-
@@ -431,10 +438,12 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 		// to routines, which TiDB does not have — a vendor boundary there.
 		vendor := dialect == spec.DialectMySQL && (option == "placement_policy" || option == "partition_update_indexes" || option == "split_index" || option == "resource_group_name" || option == "hypo_index" || option == "tiflash_replica" || tidbOnlyTableOption(option, dialect))
 		vendor = vendor || (dialect == spec.DialectTiDB && option == "routine_object")
-		if dialect == spec.DialectTiDB && option == "placement_policy" {
+		if dialect == spec.DialectTiDB && option == "placement_policy" &&
+			(ddl.Operation == spec.DDLOperationAlterTable || ddl.Operation == spec.DDLOperationCreateTable) {
 			// Partition-definition bindings are modeled facts since T20 —
 			// the name stays in UnextractedOptions only so MySQL keeps its
-			// vendor boundary.
+			// vendor boundary. Schema-level placement (T17 boundary, T20
+			// not yet accepted) still surfaces as an unaudited aspect.
 			continue
 		}
 		gaps = append(gaps, aspectGap(

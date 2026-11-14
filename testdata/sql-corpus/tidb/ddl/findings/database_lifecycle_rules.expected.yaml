@@ -6,7 +6,7 @@ expect:
   statements:
     count: 14
   unsupported:
-    count: 1
+    count: 2
   findings:
     include:
       - ddl.database.create.exists.forbid

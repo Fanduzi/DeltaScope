@@ -210,3 +210,19 @@ the database charset is not a server default. Unknown attributes are
 withheld independently of schema existence or batch ownership.
 The R1 refusal, withholding, resolver-error, and known-present no-op
 decisions remain unchanged.
+
+## Amendment — T17 acceptance: schema placement stays at the T17/T20 boundary
+
+The T20 implementation (committed, not yet independently accepted)
+promoted *all* TiDB placement bindings — including `create_schema` and
+`alter_schema` declarations — to modeled facts and skipped their
+coverage aspects. Under the T17 acceptance contract the schema-level
+declaration is held at the boundary instead: `PLACEMENT POLICY` on
+`CREATE|ALTER DATABASE|SCHEMA` reports `create_schema.option.placement_policy`
+/`alter_schema.option.placement_policy` with
+`UnsupportedUnauditedReason` on TiDB and `UnsupportedVendorBoundaryReason`
+on MySQL. Table- and partition-level bindings keep the T20-modeled
+treatment. The withheld-state adjudication above is unchanged: a schema
+statement carrying an unvouchable placement premise withholds the
+attribute rather than fabricating success, and the placement-policy
+existence/effect lifecycle remains deferred to T20's own acceptance.
