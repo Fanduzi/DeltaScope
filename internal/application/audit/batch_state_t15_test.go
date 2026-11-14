@@ -514,8 +514,10 @@ ALTER TABLE t DROP COLUMN s;
 // statement's post-state stays withheld — extraction is not acceptance.
 func TestT15MySQLLongTailOptionUnaudited(t *testing.T) {
 	t.Parallel()
+	// T15-R2 ER1: stats_* graduated to consumed — PACK_KEYS stays the
+	// audited-but-unconsumed representative of the long tail.
 	result := t15Audit(t, spec.DialectMySQL, `
-ALTER TABLE t STATS_PERSISTENT=1;
+ALTER TABLE t PACK_KEYS=1;
 ALTER TABLE t DROP COLUMN s;
 `,
 		t15ProviderFor(spec.DialectMySQL, "8.0.46", map[string]*spec.TableSnapshot{"t": t15InnoDBShape("t")}),
@@ -657,4 +659,193 @@ func TestT15KeyBlockSizeApplicability(t *testing.T) {
 			t.Fatalf("missing row_format must carry a gap, got %#v", result.Statements[0].EvidenceGaps)
 		}
 	})
+}
+
+// ---- T15-R2 ER1: MySQL STATS_* options are audited, not unsupported -----
+
+// ALTER TABLE t STATS_PERSISTENT=1 regressed to a bounded
+// alter_table.option.stats_persistent unsupported aspect (R1 case
+// t15-cli-stats-persistent-gap), yet MySQL 5.7/8.0/8.4 officially accept
+// the stats options on ALTER. The declaration is consumed by
+// ddl.alter.table_option.warn like the other accepted-but-risky options
+// and carries no unsupported evidence.
+func TestT15MySQLStatsOptionsAudited(t *testing.T) {
+	t.Parallel()
+	result := t15Audit(t, spec.DialectMySQL, `
+ALTER TABLE t STATS_PERSISTENT=1;
+ALTER TABLE t STATS_AUTO_RECALC=DEFAULT;
+ALTER TABLE t STATS_SAMPLE_PAGES=16;
+`,
+		t15ProviderFor(spec.DialectMySQL, "8.0.46", map[string]*spec.TableSnapshot{"t": t15InnoDBShape("t")}),
+		map[string]t05RuleConfig{
+			"ddl.alter.table_option.warn": {level: "warning"},
+		})
+	want := []string{"stats_persistent", "stats_auto_recalc", "stats_sample_pages"}
+	for i, name := range want {
+		stmt := result.Statements[i]
+		if stmt.Coverage.Status != report.CoverageComplete {
+			t.Fatalf("%s must audit complete, got %+v", name, stmt.Coverage)
+		}
+		findings := t05FindingsByRule(result, i, "ddl.alter.table_option.warn")
+		if len(findings) != 1 || findings[0].Metadata["option"] != name {
+			t.Fatalf("expected one table_option.warn finding for %s, got %#v", name, findings)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("stats option must not emit unsupported evidence, got %#v", result.Unsupported)
+		}
+	}
+}
+
+// The TiDB arm is the opposite verdict: CREATE accepts-and-ignores the
+// stats options while ALTER natively refuses them (probed 8200), so the
+// ALTER forms keep the proven vendor-refusal aspect and the pre-state.
+func TestT15TiDBStatsOptionsRefusedAspect(t *testing.T) {
+	t.Parallel()
+	result := t15Audit(t, spec.DialectTiDB, `
+CREATE TABLE t (id INT) STATS_PERSISTENT=1;
+ALTER TABLE t STATS_AUTO_RECALC=DEFAULT;
+`,
+		t15ProviderFor(spec.DialectTiDB, "8.0.11-TiDB-v8.5.0", map[string]*spec.TableSnapshot{"t": t15InnoDBShape("t")}),
+		map[string]t05RuleConfig{})
+	if len(result.Unsupported) == 0 {
+		t.Fatalf("TiDB ALTER stats option must carry the vendor aspect")
+	}
+	var alterAspect bool
+	for _, u := range result.Unsupported {
+		if u.Feature == "alter_table.option.stats_auto_recalc" && strings.Contains(u.Metadata["aspect"].(string), "option") {
+			alterAspect = true
+		}
+	}
+	if !alterAspect {
+		t.Fatalf("missing alter_table.option.stats_auto_recalc vendor aspect, got %#v", result.Unsupported)
+	}
+}
+
+// ---- AC4 (R2): option-change statistics invalidation --------------------
+
+// t15StatsShape seeds every data-derived fact a rebuild recomputes:
+// table_rows/data_length/index_length/avg_row_length/auto_increment plus
+// PK and secondary cardinalities.
+func t15StatsShape(name string) *spec.TableSnapshot {
+	cardinality := int64(5)
+	shape := t15InnoDBShape(name)
+	shape.Options["data_length"] = "100"
+	shape.Options["index_length"] = "40"
+	shape.Options["avg_row_length"] = "50"
+	shape.Options["auto_increment"] = "3"
+	shape.PrimaryKey = &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"id"}, Cardinality: &cardinality}
+	shape.Indexes = []spec.Index{{Name: "idx_s", Kind: spec.IndexKindSecondary, Columns: []string{"s"}, Cardinality: &cardinality}}
+	return shape
+}
+
+func t15ShapeOf(t *testing.T, state *batchState, name string) *spec.TableSnapshot {
+	t.Helper()
+	entry := state.entries[state.keyFor("golden", spec.Table{Name: name})]
+	if entry == nil || entry.shape == nil {
+		t.Fatalf("expected a present shape for %s", name)
+	}
+	return entry.shape
+}
+
+func t15AssertStatsInvalidated(t *testing.T, shape *spec.TableSnapshot, what string) {
+	t.Helper()
+	for _, key := range []string{"table_rows", "data_length", "index_length", "avg_row_length", "auto_increment"} {
+		if _, ok := shape.Options[key]; ok {
+			t.Fatalf("%s must drop Options[%s], got %+v", what, key, shape.Options)
+		}
+	}
+	if shape.PrimaryKey != nil && shape.PrimaryKey.Cardinality != nil {
+		t.Fatalf("%s must drop PK cardinality", what)
+	}
+	for i, index := range shape.Indexes {
+		if index.Cardinality != nil {
+			t.Fatalf("%s must drop index %d cardinality", what, i)
+		}
+	}
+}
+
+// A rebuilding option change recomputes server statistics — the cached
+// facts cannot vouch afterwards. An instant declaration (COMMENT, a stats
+// directive, the default charset) keeps them.
+func TestT15AC4RebuildOptionInvalidatesStats(t *testing.T) {
+	t.Parallel()
+	rebuilds := map[string]string{
+		"engine":       "ALTER TABLE t ENGINE=MyISAM;",
+		"row_format":   "ALTER TABLE t ROW_FORMAT=COMPRESSED;",
+		"convert":      "ALTER TABLE t CONVERT TO CHARACTER SET utf8mb4;",
+		"compression":  "ALTER TABLE t COMPRESSION='zlib';",
+		"encryption":   "ALTER TABLE t ENCRYPTION='Y';",
+		"tablespace":   "ALTER TABLE t TABLESPACE=innodb_file_per_table;",
+		"key_block":    "ALTER TABLE t KEY_BLOCK_SIZE=4;",
+		"multi_option": "ALTER TABLE t COMMENT='x', ENGINE=MyISAM;",
+		"order_by":     "ALTER TABLE t ORDER BY id;",
+		"force":        "ALTER TABLE t FORCE;",
+	}
+	for what, sql := range rebuilds {
+		what, sql := what, sql
+		t.Run(what, func(t *testing.T) {
+			t.Parallel()
+			state := t11r1Apply(t, spec.DialectMySQL,
+				map[string]*spec.TableSnapshot{"t": t15StatsShape("t")}, nil, sql)
+			t15AssertStatsInvalidated(t, t15ShapeOf(t, state, "t"), what)
+		})
+	}
+	instant := map[string]string{
+		"comment":       "ALTER TABLE t COMMENT='x';",
+		"stats":         "ALTER TABLE t STATS_PERSISTENT=1;",
+		"default_cs":    "ALTER TABLE t DEFAULT CHARACTER SET=utf8mb4;",
+		"insert_method": "ALTER TABLE t INSERT_METHOD=LAST;",
+	}
+	for what, sql := range instant {
+		what, sql := what, sql
+		t.Run(what, func(t *testing.T) {
+			t.Parallel()
+			state := t11r1Apply(t, spec.DialectMySQL,
+				map[string]*spec.TableSnapshot{"t": t15StatsShape("t")}, nil, sql)
+			shape := t15ShapeOf(t, state, "t")
+			if shape.Options["table_rows"] != "2" {
+				t.Fatalf("%s must keep table_rows, got %+v", what, shape.Options)
+			}
+		})
+	}
+}
+
+// A keys toggle is real MyISAM key maintenance: index cardinality falls
+// while the row-bearing statistics stay provable. A proven InnoDB engine
+// ignores the toggle — every fact is still vouched.
+func TestT15AC4KeysToggleDropsIndexCardinalityOnly(t *testing.T) {
+	t.Parallel()
+	for _, action := range []string{"DISABLE KEYS", "ENABLE KEYS"} {
+		action := action
+		t.Run("myisam/"+action, func(t *testing.T) {
+			t.Parallel()
+			seed := t15StatsShape("t")
+			seed.Options["engine"] = "MyISAM"
+			state := t11r1Apply(t, spec.DialectMySQL,
+				map[string]*spec.TableSnapshot{"t": seed}, nil,
+				"ALTER TABLE t "+action+";")
+			shape := t15ShapeOf(t, state, "t")
+			if shape.Options["table_rows"] != "2" {
+				t.Fatalf("%s must keep table_rows, got %+v", action, shape.Options)
+			}
+			if shape.PrimaryKey != nil && shape.PrimaryKey.Cardinality != nil {
+				t.Fatalf("%s must drop PK cardinality", action)
+			}
+			for i, index := range shape.Indexes {
+				if index.Cardinality != nil {
+					t.Fatalf("%s must drop index %d cardinality", action, i)
+				}
+			}
+		})
+		t.Run("innodb/"+action, func(t *testing.T) {
+			t.Parallel()
+			state := t11r1Apply(t, spec.DialectMySQL,
+				map[string]*spec.TableSnapshot{"t": t15StatsShape("t")}, nil,
+				"ALTER TABLE t "+action+";")
+			shape := t15ShapeOf(t, state, "t")
+			if shape.Options["table_rows"] != "2" || shape.PrimaryKey == nil || shape.PrimaryKey.Cardinality == nil {
+				t.Fatalf("%s on proven InnoDB must keep every fact, got %+v", action, shape)
+			}
+		})
+	}
 }

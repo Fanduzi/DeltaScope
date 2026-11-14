@@ -2170,6 +2170,34 @@ func (s *batchState) applyMaintenanceAlter(alter *spec.Alter, targets []spec.Tab
 		return
 	}
 	key := s.keyFor(s.schema, targets[0])
+	// T15-R2 AC4: ORDER BY/FORCE rebuild the table wholesale; a MyISAM
+	// keys toggle rebuilds its indexes — dependent statistics fall.
+	if s.dialect == spec.DialectMySQL {
+		entry := s.entries[key]
+		if entry != nil && entry.state == tablePresent && entry.shape != nil {
+			shape := cloneTableSnapshot(entry.shape)
+			switch alter.Action {
+			case "order_by_columns", "force":
+				clearMutationStats(shape)
+				clearModifyAffectedStats(shape)
+			case "enable_keys", "disable_keys":
+				// MyISAM key maintenance rebuilds indexes only — row
+				// counts still stand, index cardinality does not. A
+				// proven non-MyISAM engine ignores the toggle (server
+				// warning), an unproven engine cannot vouch it stayed.
+				if engine := shape.Options["engine"]; engine == "" || strings.EqualFold(engine, "myisam") {
+					if shape.PrimaryKey != nil {
+						shape.PrimaryKey.Cardinality = nil
+					}
+					for i := range shape.Indexes {
+						shape.Indexes[i].Cardinality = nil
+					}
+				}
+			}
+			s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
+			return
+		}
+	}
 	s.publishExecutedAlter(key, s.entries[key], targets)
 }
 
@@ -2298,6 +2326,12 @@ func (s *batchState) applyTableOptionAlter(alter *spec.Alter, targets []spec.Tab
 	case entry.state == tablePresent && entry.shape != nil:
 		shape := cloneTableSnapshot(entry.shape)
 		applyTableOptionEffects(s.dialect, alter, shape)
+		// T15-R2 AC4: a physically rebuilding option recomputes the
+		// server statistics — the cached values can no longer vouch.
+		if alterOptionRebuilds(alter) {
+			clearMutationStats(shape)
+			clearModifyAffectedStats(shape)
+		}
 		// An undecidable layout option may have applied or been refused —
 		// the table stays but its catalog value is unvouched, so the
 		// projected key is dropped rather than guessed either way.
@@ -2391,6 +2425,23 @@ func applyTableOptionEffects(dialect spec.Dialect, alter *spec.Alter, shape *spe
 		}
 		shape.Table.Comment = value
 	}
+}
+
+// alterOptionRebuilds reports whether any declared option forces a
+// physical table rebuild on MySQL — engine/row-format/layout compression,
+// encryption, key block size, tablespace, and CONVERT rewrites. Instant
+// declarations (default charset/collation, auto_increment, comment,
+// stats directives, insert_method) do not rebuild.
+func alterOptionRebuilds(alter *spec.Alter) bool {
+	for _, name := range []string{
+		"engine", "row_format", "key_block_size", "compression",
+		"encryption", "tablespace", "convert_to_charset", "convert_to_collate",
+	} {
+		if _, ok := alter.Options[name]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 // charsetOfCollation derives the charset a collation name binds — the

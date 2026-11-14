@@ -768,7 +768,7 @@ func (r alterTableOptionApplicabilityRule) EvidenceGaps(statement spec.Statement
 // alterTableOptionWarnRule warns on accepted-but-risky option
 // declarations the state layer records as declared: page compression,
 // runtime-dependent encryption and tablespace bindings, key block size,
-// and MERGE-only insert methods.
+// MERGE-only insert methods, and InnoDB statistics directives.
 type alterTableOptionWarnRule struct {
 	level rule.Level
 }
@@ -787,7 +787,7 @@ func (r alterTableOptionWarnRule) AppliesTo(statement spec.Statement) bool {
 		return false
 	}
 	for _, alter := range tableOptionAlterSpecs(statement) {
-		for _, name := range []string{"compression", "encryption", "tablespace", "insert_method", "key_block_size"} {
+		for _, name := range []string{"compression", "encryption", "tablespace", "insert_method", "key_block_size", "stats_persistent", "stats_auto_recalc", "stats_sample_pages"} {
 			if _, ok := alter.Options[name]; ok {
 				return true
 			}
@@ -824,6 +824,14 @@ func (r alterTableOptionWarnRule) Evaluate(ctx context.Context, statement spec.S
 				message = fmt.Sprintf("table option insert_method=%q only takes effect on MERGE tables", value)
 			case "key_block_size":
 				message = fmt.Sprintf("table option key_block_size=%s only takes effect with ROW_FORMAT=COMPRESSED or on MyISAM", value)
+			case "stats_persistent":
+				// The grammar discards the authored 0/1/DEFAULT value —
+				// record the declaration, never a fabricated number.
+				message = "table option stats_persistent controls whether InnoDB statistics persist across restarts"
+			case "stats_auto_recalc":
+				message = fmt.Sprintf("table option stats_auto_recalc=%s controls automatic statistics recalculation", value)
+			case "stats_sample_pages":
+				message = fmt.Sprintf("table option stats_sample_pages=%s controls index statistics sampling depth", value)
 			default:
 				continue
 			}

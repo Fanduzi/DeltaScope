@@ -332,6 +332,12 @@ var mysqlAlterConsumedOptions = map[string]struct{}{
 	"encryption":         {},
 	"tablespace":         {},
 	"insert_method":      {},
+	// T15-R2 ER1: the InnoDB statistics options are official ALTER TABLE
+	// options on MySQL 5.7/8.0/8.4 (accepted declarations, warn-owned) —
+	// classifying them unaudited contradicted the T15 statistics scope.
+	"stats_persistent":   {},
+	"stats_auto_recalc":  {},
+	"stats_sample_pages": {},
 }
 
 // tidbAlterConsumedOptions are extracted ALTER option names TiDB accepts

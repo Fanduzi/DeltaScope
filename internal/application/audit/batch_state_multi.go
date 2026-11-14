@@ -126,6 +126,15 @@ func (s *batchState) prepareMultiAction(statement spec.Statement, targets []spec
 			applyTableOptionEffects(s.dialect, &ddl.Alter[i], working)
 		}
 	}
+	// T15-R2 AC4: a rebuilding option anywhere in the action list
+	// recomputes the server statistics — the cached values fall.
+	for i := range ddl.Alter {
+		if ddl.Alter[i].Action == "table_option" && alterOptionRebuilds(&ddl.Alter[i]) {
+			clearMutationStats(working)
+			clearModifyAffectedStats(working)
+			break
+		}
+	}
 	// Placement binds publish with the same atomic successor: the policy
 	// premise was already proven at the statement gate, and the bound
 	// identity feeds the policy's inbound-reference set (T20/#99).

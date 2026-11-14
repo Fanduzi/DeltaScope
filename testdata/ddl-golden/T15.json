@@ -533,27 +533,22 @@
    "sql": "ALTER TABLE t STATS_PERSISTENT=1;",
    "policy": "t15-table-option",
    "expect": {
-    "exit": 1,
+    "exit": 0,
     "verdict": "review",
     "statements": 1,
-    "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "evidence_gaps": 0,
-    "unsupported_entries": [
+    "finding_entries": [
      {
       "index": 0,
-      "feature": "alter_table.option.stats_persistent",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "action": "table_option",
-       "aspect": "option",
-       "option": "stats_persistent"
-      }
+      "rule_id": "ddl.alter.table_option.warn",
+      "level": "warning"
      }
     ]
    }
@@ -1543,9 +1538,7 @@
     "host": "127.0.0.1",
     "port": 24000,
     "user": "root",
-    "schema": "golden",
-    "password_env": "",
-    "password": ""
+    "schema": "golden"
    },
    "policy": "t15-tidb-online",
    "expect": {
@@ -1602,9 +1595,7 @@
     "host": "127.0.0.1",
     "port": 24000,
     "user": "root",
-    "schema": "golden",
-    "password_env": "",
-    "password": ""
+    "schema": "golden"
    },
    "policy": "all-rules-disabled",
    "expect": {
@@ -1650,9 +1641,7 @@
     "host": "127.0.0.1",
     "port": 24000,
     "user": "root",
-    "schema": "golden",
-    "password_env": "",
-    "password": ""
+    "schema": "golden"
    },
    "policy": "t15-charset",
    "expect": {
@@ -1709,9 +1698,7 @@
     "host": "127.0.0.1",
     "port": 24000,
     "user": "root",
-    "schema": "golden",
-    "password_env": "",
-    "password": ""
+    "schema": "golden"
    },
    "policy": "all-rules-disabled",
    "expect": {
