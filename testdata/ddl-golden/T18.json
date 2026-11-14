@@ -118,7 +118,8 @@
     "Connection refused",
     "doesn't exist",
     "already exists"
-   ]
+   ],
+   "rc_nonzero": true
   }
  },
  "policy": {
@@ -257,7 +258,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18fx",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-first",
    "args": [
@@ -346,7 +348,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18fx",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-first",
    "args": [
@@ -430,7 +433,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18fx",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-first",
    "args": [
@@ -499,7 +503,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18fx",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-blanket",
    "args": [
@@ -568,7 +573,8 @@
     "port": 23357,
     "user": "root",
     "schema": "t18m_create_plain",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -696,7 +702,8 @@
     "port": 23357,
     "user": "root",
     "schema": "t18m_replace_edges",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -828,7 +835,8 @@
     "port": 23357,
     "user": "root",
     "schema": "t18m_replace_table_refusal",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -965,7 +973,8 @@
     "port": 23357,
     "user": "root",
     "schema": "t18m_source_drop_column",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -1094,7 +1103,8 @@
     "port": 23357,
     "user": "root",
     "schema": "t18m_source_rename",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -1223,7 +1233,8 @@
     "port": 23357,
     "user": "root",
     "schema": "t18m_schema_recreate",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -1355,7 +1366,8 @@
     "port": 23357,
     "user": "root",
     "schema": "t18m_qualified_target_current_source",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -1476,7 +1488,8 @@
     "port": 23357,
     "user": "root",
     "schema": "t18m_missing_source",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -1622,7 +1635,8 @@
     "port": 23357,
     "user": "root",
     "schema": "t18m_drop_missing_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -1751,7 +1765,8 @@
     "port": 23357,
     "user": "root",
     "schema": "t18m_drop_wrongkind_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -1899,7 +1914,8 @@
     "port": 23357,
     "user": "root",
     "schema": "t18m_drop_if_wrongkind_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -2031,7 +2047,8 @@
     "port": 23357,
     "user": "root",
     "schema": "t18m_drop_duplicate_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -2165,7 +2182,8 @@
     "port": 23357,
     "user": "root",
     "schema": "t18m_drop_if_missing_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -2289,7 +2307,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_create_plain",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -2417,7 +2436,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_replace_edges",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -2549,7 +2569,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_replace_table_refusal",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -2686,7 +2707,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_source_drop_column",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -2815,7 +2837,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_source_rename",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -2944,7 +2967,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_schema_recreate",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -3076,7 +3100,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_qualified_target_current_source",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -3197,7 +3222,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_missing_source",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -3343,7 +3369,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_drop_missing_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -3477,7 +3504,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_drop_wrongkind_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -3635,7 +3663,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_drop_if_wrongkind_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -3767,7 +3796,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_drop_duplicate_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -3901,7 +3931,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_drop_if_missing_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -4025,7 +4056,8 @@
     "port": 23384,
     "user": "root",
     "schema": "t18m_create_plain",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -4153,7 +4185,8 @@
     "port": 23384,
     "user": "root",
     "schema": "t18m_replace_edges",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -4285,7 +4318,8 @@
     "port": 23384,
     "user": "root",
     "schema": "t18m_replace_table_refusal",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -4422,7 +4456,8 @@
     "port": 23384,
     "user": "root",
     "schema": "t18m_source_drop_column",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -4551,7 +4586,8 @@
     "port": 23384,
     "user": "root",
     "schema": "t18m_source_rename",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -4680,7 +4716,8 @@
     "port": 23384,
     "user": "root",
     "schema": "t18m_schema_recreate",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -4812,7 +4849,8 @@
     "port": 23384,
     "user": "root",
     "schema": "t18m_qualified_target_current_source",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -4933,7 +4971,8 @@
     "port": 23384,
     "user": "root",
     "schema": "t18m_missing_source",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -5079,7 +5118,8 @@
     "port": 23384,
     "user": "root",
     "schema": "t18m_drop_missing_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -5213,7 +5253,8 @@
     "port": 23384,
     "user": "root",
     "schema": "t18m_drop_wrongkind_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -5371,7 +5412,8 @@
     "port": 23384,
     "user": "root",
     "schema": "t18m_drop_if_wrongkind_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -5503,7 +5545,8 @@
     "port": 23384,
     "user": "root",
     "schema": "t18m_drop_duplicate_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -5637,7 +5680,8 @@
     "port": 23384,
     "user": "root",
     "schema": "t18m_drop_if_missing_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -7479,7 +7523,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_where",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -7600,7 +7645,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_columns",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -7721,7 +7767,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_named_expression",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -7842,7 +7889,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_join",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -7963,7 +8011,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_cte",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -8084,7 +8133,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_derived",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -8205,7 +8255,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_union",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -8326,7 +8377,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_constant",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -8447,7 +8499,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_where_column_refusal",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -8580,7 +8633,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_explicit_count_refusal",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -8706,7 +8760,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_explicit_duplicate_refusal",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -8832,7 +8887,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_self_reference_refusal",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -8958,7 +9014,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_full_lifecycle",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -9171,7 +9228,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_alter_refusal_preserves",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -9308,7 +9366,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_alter_missing_target",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -9429,7 +9488,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_alter_table_target",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -9550,7 +9610,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_frozen_star",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -9687,7 +9748,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_invisible_star",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -9821,7 +9883,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_quoted_dot_identities",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -9950,7 +10013,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_temporary_source_refusal",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -10079,7 +10143,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_temporary_shadow",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -10219,7 +10284,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_invoker",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -10334,7 +10400,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_current_user_invoker",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -10449,7 +10516,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_named_invoker",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -10577,7 +10645,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_alter_inherits_invoker",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -10701,7 +10770,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_replace_resets_invoker",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -10822,7 +10892,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_algorithm_temporary",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -10955,7 +11026,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_algorithm_merge_fallback",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -11081,7 +11153,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_algorithm_undefined",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -11202,7 +11275,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_check_bare",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -11323,7 +11397,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_check_local",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -11444,7 +11519,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_check_cascaded",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -11565,7 +11641,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_check_aggregate_refusal",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -11698,7 +11775,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_check_temporary_refusal",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -11829,7 +11907,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_check_temptable_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -11936,7 +12015,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_notice_policy_refusal_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-notice",
    "args": [
@@ -12073,7 +12153,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_off_policy_refusal_state",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "all-rules-disabled",
    "args": [
@@ -12194,7 +12275,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_nonfirst_protected_target",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-protected",
    "args": [
@@ -12332,7 +12414,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_private_leaf",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-protected",
    "args": [
@@ -12965,7 +13048,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_cte_unused_missing",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -13086,7 +13170,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_cte_unused_column",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -13207,7 +13292,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_cte_self_base",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -13328,7 +13414,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_cte_forward_refusal",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -13949,7 +14036,8 @@
     "port": 23357,
     "user": "root",
     "schema": "t18m_review_orderby_refusal",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -14125,7 +14213,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_review_orderby_refusal",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -14301,7 +14390,8 @@
     "port": 23384,
     "user": "root",
     "schema": "t18m_review_orderby_refusal",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -14652,7 +14742,8 @@
     "port": 23357,
     "user": "root",
     "schema": "t18m_review_keyword_definer",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -14794,7 +14885,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t18m_review_keyword_definer",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -14936,7 +15028,8 @@
     "port": 23384,
     "user": "root",
     "schema": "t18m_review_keyword_definer",
-    "password_env": "DS_T18_GOLDEN_PW"
+    "password_env": "DS_T18_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t18-full",
    "args": [
@@ -15713,7 +15806,10 @@
      {
       "index": 0,
       "feature": "view.dependencies.limit",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "dependency_limit"
+      }
      }
     ],
     "fail_on_triggered": false
@@ -15754,7 +15850,10 @@
      {
       "index": 0,
       "feature": "create_view.option.view_query_shape",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
      }
     ],
     "fail_on_triggered": false
@@ -15795,7 +15894,10 @@
      {
       "index": 0,
       "feature": "create_view.option.view_query_shape",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
      }
     ],
     "fail_on_triggered": false
@@ -15836,7 +15938,10 @@
      {
       "index": 0,
       "feature": "create_view.option.view_query_shape",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
      }
     ],
     "fail_on_triggered": false
@@ -15877,7 +15982,10 @@
      {
       "index": 0,
       "feature": "create_view.option.view_query_shape",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
      }
     ],
     "fail_on_triggered": false
@@ -15918,7 +16026,10 @@
      {
       "index": 0,
       "feature": "create_view.option.view_query_shape",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
      }
     ],
     "fail_on_triggered": false
@@ -15959,7 +16070,10 @@
      {
       "index": 0,
       "feature": "create_view.option.view_query_shape",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
      }
     ],
     "fail_on_triggered": false
@@ -16000,7 +16114,10 @@
      {
       "index": 0,
       "feature": "create_view.option.view_query_shape",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
      }
     ],
     "fail_on_triggered": false
@@ -16041,7 +16158,10 @@
      {
       "index": 0,
       "feature": "create_view.option.view_query_shape",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
      }
     ],
     "fail_on_triggered": false

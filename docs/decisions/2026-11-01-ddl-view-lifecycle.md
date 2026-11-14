@@ -159,3 +159,24 @@ No database execution, query-result inference, authorization engine, account or
 privilege changes, full query optimizer, arbitrary stored-routine expansion,
 unrelated DDL family, release operation or T19 work is introduced. Four anchors
 are bounded observations, not a claim about every patch or server configuration.
+
+## R1 errata — oracle credential wiring and assertion tightening
+
+The frozen T18 manifest shipped 92 `metadata_cases`/`cli_cases` connect
+blocks carrying `password_env` without `password_source`, so the runner
+resolved no credential channel and every metadata case exited rc=2
+("invalid password source"). The R1 correction adds
+`"password_source": "ephemeral-run-secret"` to those 92 blocks — the
+same pattern T16/T17 already use — so the runner injects the per-run
+ephemeral secret into both fixture SQL and the audited CLI. This is an
+oracle wiring fix only: no rule, AST, coverage or expected semantic was
+touched.
+
+Independent validation then exposed two oracle assertions that were
+weaker than the recorded actuals: `syntax_negative.expect` lacked
+`"rc_nonzero": true`, and nine `cli_cases` `unsupported_entries`
+declared feature/reason but not the emitted `metadata.aspect`
+(`option` for the eight query-shape boundaries, `dependency_limit` for
+the zero-source CTE DAG budget). The oracle now declares both, so the
+validator binds metadata instead of ignoring it. Golden after the
+tightening: 150/150 cases, 3,799 assertions on the frozen product SHA.
