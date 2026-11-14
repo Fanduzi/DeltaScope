@@ -2777,9 +2777,7 @@
         "host": "127.0.0.1",
         "port": 24000,
         "user": "root",
-        "schema": "golden",
-        "password_env": "",
-        "password": ""
+        "schema": "golden"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -2852,9 +2850,7 @@
         "host": "127.0.0.1",
         "port": 24000,
         "user": "root",
-        "schema": "golden",
-        "password_env": "",
-        "password": ""
+        "schema": "golden"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -2908,9 +2904,7 @@
         "host": "127.0.0.1",
         "port": 24000,
         "user": "root",
-        "schema": "golden",
-        "password_env": "",
-        "password": ""
+        "schema": "golden"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -2965,9 +2959,7 @@
         "host": "127.0.0.1",
         "port": 24000,
         "user": "root",
-        "schema": "golden",
-        "password_env": "",
-        "password": ""
+        "schema": "golden"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -3022,9 +3014,7 @@
         "host": "127.0.0.1",
         "port": 24000,
         "user": "root",
-        "schema": "golden",
-        "password_env": "",
-        "password": ""
+        "schema": "golden"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -3079,9 +3069,7 @@
         "host": "127.0.0.1",
         "port": 24000,
         "user": "root",
-        "schema": "golden",
-        "password_env": "",
-        "password": ""
+        "schema": "golden"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -3128,9 +3116,7 @@
         "host": "127.0.0.1",
         "port": 24000,
         "user": "root",
-        "schema": "golden",
-        "password_env": "",
-        "password": ""
+        "schema": "golden"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -3188,9 +3174,7 @@
         "host": "127.0.0.1",
         "port": 24000,
         "user": "root",
-        "schema": "golden",
-        "password_env": "",
-        "password": ""
+        "schema": "golden"
       },
       "policy": "t16-lifecycle",
       "expect": {
@@ -3261,9 +3245,7 @@
         "host": "127.0.0.1",
         "port": 24000,
         "user": "root",
-        "schema": "golden",
-        "password_env": "",
-        "password": ""
+        "schema": "golden"
       },
       "policy": "t16-lifecycle",
       "expect": {
