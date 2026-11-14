@@ -608,7 +608,8 @@
     "port": 23380,
     "user": "root",
     "schema": "t19m_comment",
-    "password_env": "DS_T19_GOLDEN_PW"
+    "password_env": "DS_T19_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
    },
    "policy": "t19-ttl",
    "args": [
@@ -950,6 +951,48 @@
     ],
     "fail_on_triggered": false
    }
+  },
+  {
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL = 'created_at + INTERVAL 30 DAY';",
+   "policy": "t19-ttl",
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": [],
+    "evidence_gaps": 0,
+    "statement_indices": [],
+    "statement_sql": [],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   },
+   "id": "tidb-quoted-ttl-parser-error"
+  },
+  {
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t TTL = 'created_at + INTERVAL 30 DAY';",
+   "policy": "t19-ttl",
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": [],
+    "evidence_gaps": 0,
+    "statement_indices": [],
+    "statement_sql": [],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   },
+   "id": "mysql-quoted-ttl-parser-error"
   }
  ],
  "required_case_ids": [
@@ -975,6 +1018,8 @@
   "T19.cli.tidb-create-clustered-gap",
   "T19.cli.tidb-alter-gap",
   "T19.cli.tidb-remove-silent",
-  "T19.cli.mysql-comment-noop"
+  "T19.cli.mysql-comment-noop",
+  "T19.cli.tidb-quoted-ttl-parser-error",
+  "T19.cli.mysql-quoted-ttl-parser-error"
  ]
 }

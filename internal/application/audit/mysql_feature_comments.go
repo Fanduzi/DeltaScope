@@ -1,5 +1,7 @@
 package audit
 
+import "strings"
+
 // blankTiDBFeatureComments rewrites /*T! ... */ TiDB feature comments to
 // same-width whitespace. MySQL has no feature-comment syntax: the server
 // treats /*T! as an ordinary comment and ignores its contents, while the
@@ -11,6 +13,12 @@ package audit
 // identifiers, or other comments is content, never a comment opener.
 // /*! executable comments, /*+ optimizer hints, and plain /* comments are
 // untouched. Newlines are preserved so line numbers do not shift.
+//
+// /*T![ttl] ... */ regions are preserved, not blanked: the server ignores
+// them identically, but a TTL clause is an authored automatic-deletion
+// configuration whose inert form must stay visible to the audit surface as
+// a vendor-boundary entry rather than disappear into a silent pass
+// (issue #98 T19).
 func blankTiDBFeatureComments(sql string) string {
 	out := []byte(nil)
 	state := scanNormal
@@ -34,7 +42,8 @@ func blankTiDBFeatureComments(sql string) string {
 			case sql[i] == '#':
 				state = scanLineComment
 				i++
-			case i+3 < len(sql) && sql[i:i+4] == "/*T!":
+			case i+3 < len(sql) && sql[i:i+4] == "/*T!" &&
+				!(i+9 <= len(sql) && strings.EqualFold(sql[i:i+9], "/*T![ttl]")):
 				if out == nil {
 					out = []byte(sql)
 				}

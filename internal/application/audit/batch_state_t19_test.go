@@ -5,6 +5,8 @@ package audit
 // ordered-state assertions live beside it in the same batch lifecycle.
 
 import (
+	"errors"
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
@@ -146,6 +148,67 @@ func TestT19TTLRuleParity(t *testing.T) {
 					t.Fatalf("unproven outcome owes gap %q, got %#v", tc.gapFact, gaps)
 				}
 			})
+		}
+	})
+}
+
+// MySQL has no /*T! feature-comment syntax, so a /*T![ttl] clause is an
+// authored-but-inert table option: the audit surface must keep the clause
+// visible as a vendor boundary instead of blanking it into a silent pass
+// (issue #98 manifest case mysql-comment-noop).
+func TestT19MySQLTTLFeatureCommentVendorBoundary(t *testing.T) {
+	audit := func(t *testing.T, sql string, dialect spec.Dialect) report.Result {
+		t.Helper()
+		result, err := AuditSQL(t.Context(), Request{
+			SQL:     sql,
+			Dialect: dialect,
+			Schema:  "golden",
+		})
+		if err != nil && !errors.Is(err, ErrUnsupportedStatement) {
+			t.Fatalf("audit: %v", err)
+		}
+		return result
+	}
+	boundary := func(result report.Result) []spec.UnsupportedDetail {
+		var hits []spec.UnsupportedDetail
+		for _, entry := range result.Unsupported {
+			if strings.Contains(entry.Feature, ".ttl.") {
+				hits = append(hits, entry)
+			}
+		}
+		return hits
+	}
+
+	t.Run("alter feature comment stays a vendor boundary", func(t *testing.T) {
+		result := audit(t, "ALTER TABLE t /*T![ttl] TTL_ENABLE='ON' */;", spec.DialectMySQL)
+		hits := boundary(result)
+		if len(hits) != 1 || hits[0].Feature != "alter_table.table_option.ttl.ttl_enable" ||
+			hits[0].Reason != spec.UnsupportedVendorBoundaryReason {
+			t.Fatalf("expected the ttl_enable vendor boundary, got %#v", result.Unsupported)
+		}
+		if result.Statements[0].Coverage.Status != report.CoverageIncomplete {
+			t.Fatalf("coverage = %+v, want incomplete", result.Statements[0].Coverage)
+		}
+	})
+
+	t.Run("tidb feature comment stays executable evidence", func(t *testing.T) {
+		result := audit(t, "ALTER TABLE t /*T![ttl] TTL_ENABLE='ON' */;", spec.DialectTiDB)
+		if hits := boundary(result); len(hits) != 0 {
+			t.Fatalf("TiDB feature comment must not vendor-refuse, got %#v", hits)
+		}
+	})
+
+	t.Run("placement comment still ignored under mysql", func(t *testing.T) {
+		result := audit(t, "ALTER TABLE t /*T![placement] PLACEMENT POLICY=p */;", spec.DialectMySQL)
+		if hits := boundary(result); len(hits) != 0 {
+			t.Fatalf("placement comment must stay silent under MySQL, got %#v", hits)
+		}
+	})
+
+	t.Run("ordinary comment never fabricates a ttl member", func(t *testing.T) {
+		result := audit(t, "ALTER TABLE t /* ttl_enable='ON' */;", spec.DialectMySQL)
+		if hits := boundary(result); len(hits) != 0 {
+			t.Fatalf("ordinary comment must not vendor-refuse, got %#v", hits)
 		}
 	})
 }
