@@ -1206,6 +1206,398 @@
      "expect": "t\tCREATE TABLE `t` (\\n  `id` int NOT NULL,\\n  `created_at` datetime DEFAULT NULL,\\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin"
     }
    ]
+  },
+  {
+   "id": "tidb85-enable-off-no-ttl-refused",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL_ENABLE='OFF'",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t19r4_eoff"
+   },
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "fixture",
+     "sql": "CREATE DATABASE t19r4_eoff;CREATE TABLE t19r4_eoff.t (id INT PRIMARY KEY, note VARCHAR(16))",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "table exists",
+       "sql": "SHOW TABLES IN t19r4_eoff LIKE 't'",
+       "expect": "t"
+      },
+      {
+       "assert": "engine row in show create",
+       "sql": "SHOW CREATE TABLE t19r4_eoff.t",
+       "contains": "ENGINE=InnoDB"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "ALTER TABLE t TTL_ENABLE='OFF'"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.table_option.ttl.ttl_enable",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl_enable",
+       "refusal": "no_ttl_config"
+      }
+     }
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   },
+   "post_verify": [
+    {
+     "assert": "audit read-only: table intact",
+     "sql": "SHOW TABLES IN t19r4_eoff LIKE 't'",
+     "expect": "t"
+    }
+   ]
+  },
+  {
+   "id": "tidb85-enable-on-no-ttl-refused",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL_ENABLE='ON'",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t19r4_eon"
+   },
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "fixture",
+     "sql": "CREATE DATABASE t19r4_eon;CREATE TABLE t19r4_eon.t (id INT PRIMARY KEY, note VARCHAR(16))",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "table exists",
+       "sql": "SHOW TABLES IN t19r4_eon LIKE 't'",
+       "expect": "t"
+      },
+      {
+       "assert": "engine row in show create",
+       "sql": "SHOW CREATE TABLE t19r4_eon.t",
+       "contains": "ENGINE=InnoDB"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "ALTER TABLE t TTL_ENABLE='ON'"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.table_option.ttl.ttl_enable",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl_enable",
+       "refusal": "no_ttl_config"
+      }
+     }
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   },
+   "post_verify": [
+    {
+     "assert": "audit read-only: table intact",
+     "sql": "SHOW TABLES IN t19r4_eon LIKE 't'",
+     "expect": "t"
+    }
+   ]
+  },
+  {
+   "id": "tidb85-job-interval-no-ttl-refused",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL_JOB_INTERVAL='2h'",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t19r4_ji"
+   },
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "fixture",
+     "sql": "CREATE DATABASE t19r4_ji;CREATE TABLE t19r4_ji.t (id INT PRIMARY KEY, note VARCHAR(16))",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "table exists",
+       "sql": "SHOW TABLES IN t19r4_ji LIKE 't'",
+       "expect": "t"
+      },
+      {
+       "assert": "engine row in show create",
+       "sql": "SHOW CREATE TABLE t19r4_ji.t",
+       "contains": "ENGINE=InnoDB"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "ALTER TABLE t TTL_JOB_INTERVAL='2h'"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.table_option.ttl.ttl_job_interval",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl_job_interval",
+       "refusal": "no_ttl_config"
+      }
+     }
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   },
+   "post_verify": [
+    {
+     "assert": "audit read-only: table intact",
+     "sql": "SHOW TABLES IN t19r4_ji LIKE 't'",
+     "expect": "t"
+    }
+   ]
+  },
+  {
+   "id": "tidb85-remove-then-enable-refused",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t REMOVE TTL;ALTER TABLE t TTL_ENABLE='OFF'",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t19r4_rm2"
+   },
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "fixture",
+     "sql": "CREATE DATABASE t19r4_rm2;CREATE TABLE t19r4_rm2.t (id INT PRIMARY KEY, created_at DATETIME) TTL=created_at+INTERVAL 30 DAY",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "ttl enabled before alter",
+       "sql": "SHOW CREATE TABLE t19r4_rm2.t",
+       "contains": "TTL_ENABLE='ON'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "complete",
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0,
+     1
+    ],
+    "statement_sql": [
+     "ALTER TABLE t REMOVE TTL;",
+     "ALTER TABLE t TTL_ENABLE='OFF'"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 1,
+      "feature": "alter_table.table_option.ttl.ttl_enable",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl_enable",
+       "refusal": "no_ttl_config"
+      }
+     }
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   },
+   "post_verify": [
+    {
+     "assert": "audit read-only: ttl still enabled natively",
+     "sql": "SHOW CREATE TABLE t19r4_rm2.t",
+     "contains": "TTL_ENABLE='ON'"
+    }
+   ]
+  },
+  {
+   "id": "tidb85-alter-ttl-legal-on-no-ttl",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL=created_at+INTERVAL 1 DAY;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t19r4_legal2"
+   },
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "fixture",
+     "sql": "CREATE DATABASE t19r4_legal2;CREATE TABLE t19r4_legal2.t (id INT PRIMARY KEY, created_at DATETIME)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "table exists",
+       "sql": "SHOW TABLES IN t19r4_legal2 LIKE 't'",
+       "expect": "t"
+      },
+      {
+       "assert": "engine row in show create",
+       "sql": "SHOW CREATE TABLE t19r4_legal2.t",
+       "contains": "ENGINE=InnoDB"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "level": "warning"
+     }
+    ],
+    "fail_on_triggered": false,
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.ttl.warn",
+      "metadata": {
+       "enabled": true,
+       "modify_enabled": false,
+       "table": "t",
+       "ttl": true
+      }
+     }
+    ],
+    "statement_sql": [
+     "ALTER TABLE t TTL=created_at+INTERVAL 1 DAY;"
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit read-only: table intact",
+     "sql": "SHOW TABLES IN t19r4_legal2 LIKE 't'",
+     "expect": "t"
+    }
+   ]
   }
  ],
  "cli_cases": [
@@ -1902,9 +2294,117 @@
      }
     ]
    }
+  },
+  {
+   "id": "tidb-enable-no-ttl-prospective",
+   "dialect": "tidb",
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "sql": "CREATE TABLE t2 (id INT PRIMARY KEY, created_at DATETIME);\nALTER TABLE t2 TTL_ENABLE='OFF';",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "complete",
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0,
+     1
+    ],
+    "statement_sql": [
+     "CREATE TABLE t2 (id INT PRIMARY KEY, created_at DATETIME);",
+     "ALTER TABLE t2 TTL_ENABLE='OFF';"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 1,
+      "feature": "alter_table.table_option.ttl.ttl_enable",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl_enable",
+       "refusal": "no_ttl_config"
+      }
+     }
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "mysql-enable-comment-guard",
+   "dialect": "mysql",
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "sql": "ALTER TABLE t4 /*T![ttl] TTL_ENABLE='OFF' */;",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "ALTER TABLE t4 /*T![ttl] TTL_ENABLE='OFF' */;"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.table_option.ttl.ttl_enable",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl_enable"
+      }
+     }
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   }
   }
  ],
  "required_case_ids": [
+  "T19.cli.mysql-comment-noop",
+  "T19.cli.mysql-create-comment-silent",
+  "T19.cli.mysql-enable-comment-guard",
+  "T19.cli.mysql-quoted-ttl-parser-error",
+  "T19.cli.tidb-alter-gap",
+  "T19.cli.tidb-comment-exec-gap",
+  "T19.cli.tidb-create-clustered-gap",
+  "T19.cli.tidb-create-comment-warn",
+  "T19.cli.tidb-create-interval-refused",
+  "T19.cli.tidb-create-self-fk-refused",
+  "T19.cli.tidb-create-temp-refused",
+  "T19.cli.tidb-create-warn",
+  "T19.cli.tidb-dual-warn",
+  "T19.cli.tidb-enable-cycle-batch",
+  "T19.cli.tidb-enable-no-ttl-prospective",
+  "T19.cli.tidb-enable-off-gap",
+  "T19.cli.tidb-quoted-ttl-parser-error",
+  "T19.cli.tidb-remove-silent",
   "T19.db.mysql57.ddl",
   "T19.db.mysql57.syntax_negative",
   "T19.db.mysql80.ddl",
@@ -1913,34 +2413,23 @@
   "T19.db.mysql84.syntax_negative",
   "T19.db.tidb85.ddl",
   "T19.db.tidb85.syntax_negative",
+  "T19.meta.mysql80-comment-noop",
   "T19.meta.tidb85-alter-applied",
+  "T19.meta.tidb85-alter-firstpath",
   "T19.meta.tidb85-alter-inbound-refused",
+  "T19.meta.tidb85-alter-ttl-legal-on-no-ttl",
   "T19.meta.tidb85-create-applied",
   "T19.meta.tidb85-create-temporary-refused",
-  "T19.meta.tidb85-fk-into-ttl-parent-refused",
-  "T19.meta.tidb85-remove-ttl",
-  "T19.meta.mysql80-comment-noop",
-  "T19.cli.tidb-create-warn",
-  "T19.cli.tidb-create-temp-refused",
-  "T19.cli.tidb-create-interval-refused",
-  "T19.cli.tidb-create-self-fk-refused",
-  "T19.cli.tidb-create-clustered-gap",
-  "T19.cli.tidb-alter-gap",
-  "T19.cli.tidb-remove-silent",
-  "T19.cli.mysql-comment-noop",
-  "T19.cli.tidb-quoted-ttl-parser-error",
-  "T19.cli.mysql-quoted-ttl-parser-error",
-  "T19.meta.tidb85-alter-firstpath",
-  "T19.cli.tidb-comment-exec-gap",
-  "T19.cli.tidb-enable-off-gap",
-  "T19.cli.tidb-create-comment-warn",
-  "T19.cli.mysql-create-comment-silent",
-  "T19.meta.tidb85-job-interval-on-enabled",
-  "T19.meta.tidb85-job-interval-on-disabled",
+  "T19.meta.tidb85-enable-off-no-ttl-refused",
   "T19.meta.tidb85-enable-off-to-on",
+  "T19.meta.tidb85-enable-on-no-ttl-refused",
   "T19.meta.tidb85-enable-on-to-off",
+  "T19.meta.tidb85-fk-into-ttl-parent-refused",
+  "T19.meta.tidb85-job-interval-no-ttl-refused",
+  "T19.meta.tidb85-job-interval-on-disabled",
+  "T19.meta.tidb85-job-interval-on-enabled",
   "T19.meta.tidb85-remove-readd",
-  "T19.cli.tidb-dual-warn",
-  "T19.cli.tidb-enable-cycle-batch"
+  "T19.meta.tidb85-remove-then-enable-refused",
+  "T19.meta.tidb85-remove-ttl"
  ]
 }
