@@ -197,7 +197,13 @@ func alterTTLOutcome(statement spec.Statement, declaration spec.TTLDeclaration) 
 		}
 		return ttlRuleOutcome{warning: true}
 	case "ttl_job_interval":
-		if prior == nil || prior.Enabled == nil {
+		if prior == nil {
+			// The bound pre-state proves the table has no TTL config: TiDB
+			// refuses natively (ERROR 8150). The coverage layer publishes the
+			// vendor boundary; no facts remain outstanding (issue #98 R4).
+			return ttlRuleOutcome{}
+		}
+		if prior.Enabled == nil {
 			return ttlRuleOutcome{facts: []string{"target_table.ttl_enable"}}
 		}
 		return ttlRuleOutcome{warning: *prior.Enabled, modifyEnabled: *prior.Enabled}

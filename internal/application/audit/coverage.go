@@ -719,8 +719,17 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 			// Under MySQL every ALTER TTL clause — bare or feature-comment —
 			// remains a vendor boundary until a native receipt proves a
 			// different comment semantics. Under TiDB modeled members carry no
-			// aspect; unmodeled members keep the bounded evidence gap.
+			// aspect — unless the bound pre-state proves a native refusal
+			// (ERROR 8150 no_ttl_config on a table without TTL), which is a
+			// vendor boundary, never a silent pass (issue #98 R4); unmodeled
+			// members keep the bounded evidence gap.
 			if dialect == spec.DialectTiDB && len(declaration.Unmodeled) == 0 && declaration.Source != spec.TTLClauseSourceUnproven {
+				if reason := spec.TTLAlterRefusalReason(dialect, declaration, ttlAlterPriorSnapshot(statement)); reason != "" {
+					gaps = append(gaps, aspectGap(
+						fmt.Sprintf("%s.%s.ttl.%s", ddl.Operation, alter.Action, declaration.Member), true,
+						map[string]any{"aspect": "ttl", "action": alter.Action, "member": declaration.Member, "refusal": reason},
+					))
+				}
 				continue
 			}
 			gaps = append(gaps, aspectGap(
@@ -936,4 +945,22 @@ func statementCoverage(dialect spec.Dialect, statement spec.Statement) (report.C
 		return report.Coverage{Status: report.CoverageIncomplete}, gaps
 	}
 	return report.Coverage{Status: report.CoverageComplete}, nil
+}
+
+// ttlAlterPriorSnapshot resolves the bound pre-state snapshot consulted by the
+// ALTER TTL refusal decision: the single unambiguous TargetTables binding
+// wins, then the legacy primary TargetTable snapshot. Multiple or ambiguous
+// bindings and absent metadata return nil — unvouched, not proven — so the
+// refusal path can never fire on inferred state (issue #98 R4).
+func ttlAlterPriorSnapshot(statement spec.Statement) *spec.TableSnapshot {
+	if statement.Metadata == nil {
+		return nil
+	}
+	if n := len(statement.Metadata.TargetTables); n > 0 {
+		if n != 1 || statement.Metadata.TargetTables[0].Ambiguous {
+			return nil
+		}
+		return statement.Metadata.TargetTables[0].Snapshot
+	}
+	return statement.Metadata.TargetTable
 }

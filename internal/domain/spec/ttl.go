@@ -41,6 +41,29 @@ func TTLCreateRefusalReason(dialect Dialect, ddl *DDL, effectiveSchema string, f
 	return reason
 }
 
+// TTLAlterRefusalReason returns the proven refusal reason — currently
+// "no_ttl_config" (TiDB native ERROR 8150) — when the statement's bound
+// pre-state proves the target exists without a TTL config and the clause is
+// a fully modeled standalone TTL_ENABLE or TTL_JOB_INTERVAL member. All four
+// premises must hold: the table exists, its prior TTL state was reliably
+// obtained, that state is explicitly no-TTL, and the member is one TiDB
+// refuses on such a table. Unknown prior state and REMOVE TTL (a native
+// no-op) return "": the evidence-gap contract, not a refusal, applies there
+// (issue #98 R4).
+func TTLAlterRefusalReason(dialect Dialect, declaration TTLDeclaration, prior *TableSnapshot) string {
+	if dialect != DialectTiDB || prior == nil || !prior.Exists || !prior.TTLKnown || prior.TTL != nil {
+		return ""
+	}
+	switch declaration.Member {
+	case "ttl_enable", "ttl_job_interval":
+		if len(declaration.Unmodeled) > 0 || declaration.Source == TTLClauseSourceUnproven {
+			return ""
+		}
+		return "no_ttl_config"
+	}
+	return ""
+}
+
 func ttlCreateOutcomeReason(dialect Dialect, ddl *DDL, effectiveSchema string, facts *InstanceFacts, likeSource *TableSnapshot) (TTLDefinitionOutcome, string) {
 	if dialect != DialectTiDB || ddl == nil {
 		return TTLDefinitionUnproven, ""

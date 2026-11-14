@@ -212,3 +212,147 @@ func TestT19MySQLTTLFeatureCommentVendorBoundary(t *testing.T) {
 		}
 	})
 }
+
+// The #98 R4 blocker: when the bound pre-state proves the target exists
+// without a TTL config, a standalone TTL_ENABLE / TTL_JOB_INTERVAL member is
+// a proven TiDB refusal (native ERROR 8150) — a bounded vendor boundary, never
+// a silent pass and never an inferred outcome on unvouched state.
+func TestT19AlterTTLNoTTLConfigRefusal(t *testing.T) {
+	boundary := func(result report.Result, index int) *spec.UnsupportedDetail {
+		t.Helper()
+		for i := range result.Unsupported {
+			entry := &result.Unsupported[i]
+			if entry.Index != index {
+				continue
+			}
+			if entry.Reason == spec.UnsupportedVendorBoundaryReason &&
+				entry.Metadata["aspect"] == "ttl" && entry.Metadata["refusal"] == "no_ttl_config" {
+				return entry
+			}
+		}
+		return nil
+	}
+	policy := t10Policy(t, t10Rule{id: t19RuleTTLWarn, level: "warning"})
+	noTTL := t19TTLShape("t")
+
+	t.Run("metadata proven no TTL refuses each member form", func(t *testing.T) {
+		for _, tc := range []struct {
+			name string
+			sql  string
+			feat string
+		}{
+			{name: "enable off", sql: "ALTER TABLE t TTL_ENABLE='OFF'", feat: "alter_table.table_option.ttl.ttl_enable"},
+			{name: "enable on", sql: "ALTER TABLE t TTL_ENABLE='ON'", feat: "alter_table.table_option.ttl.ttl_enable"},
+			{name: "job interval", sql: "ALTER TABLE t TTL_JOB_INTERVAL='2h'", feat: "alter_table.table_option.ttl.ttl_job_interval"},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				provider := &t10Provider{version: "8.0.11-TiDB-v8.5.0", tables: map[string]*spec.TableSnapshot{"t": noTTL}}
+				result := t10Audit(t, spec.DialectTiDB, tc.sql, provider, policy)
+				entry := boundary(result, 0)
+				if entry == nil {
+					t.Fatalf("expected no_ttl_config vendor boundary, got unsupported=%#v", result.Unsupported)
+				}
+				if entry.Feature != tc.feat {
+					t.Fatalf("feature = %q, want %q", entry.Feature, tc.feat)
+				}
+				if result.Statements[0].Coverage.Status != report.CoverageIncomplete || result.Verdict != report.VerdictReview {
+					t.Fatalf("coverage=%s verdict=%s, want incomplete/review", result.Statements[0].Coverage.Status, result.Verdict)
+				}
+				if warns := t05FindingsByRule(result, 0, t19RuleTTLWarn); len(warns) != 0 {
+					t.Fatalf("refused ALTER must not fabricate findings, got %#v", warns)
+				}
+			})
+		}
+	})
+
+	t.Run("unknown prior keeps evidence gap without boundary", func(t *testing.T) {
+		unknown := t19TTLShape("t")
+		unknown.TTLKnown = false
+		provider := &t10Provider{version: "8.0.11-TiDB-v8.5.0", tables: map[string]*spec.TableSnapshot{"t": unknown}}
+		result := t10Audit(t, spec.DialectTiDB, "ALTER TABLE t TTL_ENABLE='OFF'", provider, policy)
+		if entry := boundary(result, 0); entry != nil {
+			t.Fatalf("unknown prior must not infer refusal, got %#v", entry)
+		}
+		if gaps := t05GapsByRule(result, 0, t19RuleTTLWarn); len(gaps) == 0 {
+			t.Fatalf("unknown prior owes an evidence gap, got none")
+		}
+	})
+
+	t.Run("TTL-present controls keep R3 semantics", func(t *testing.T) {
+		on := true
+		off := false
+		for _, tc := range []struct {
+			name    string
+			enabled *bool
+			sql     string
+			warns   int
+		}{
+			{name: "on to off silent", enabled: &on, sql: "ALTER TABLE t TTL_ENABLE='OFF'"},
+			{name: "off to on warns", enabled: &off, sql: "ALTER TABLE t TTL_ENABLE='ON'", warns: 1},
+			{name: "job interval on warns", enabled: &on, sql: "ALTER TABLE t TTL_JOB_INTERVAL='2h'", warns: 1},
+			{name: "job interval off silent", enabled: &off, sql: "ALTER TABLE t TTL_JOB_INTERVAL='2h'"},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				shape := t19TTLShape("t")
+				shape.TTL = &spec.TTLConfig{TimeColumn: "created_at", IntervalValue: "1", IntervalUnit: "day", Enabled: tc.enabled, JobInterval: "1h"}
+				provider := &t10Provider{version: "8.0.11-TiDB-v8.5.0", tables: map[string]*spec.TableSnapshot{"t": shape}}
+				result := t10Audit(t, spec.DialectTiDB, tc.sql, provider, policy)
+				if entry := boundary(result, 0); entry != nil {
+					t.Fatalf("TTL-present table must not refuse, got %#v", entry)
+				}
+				if warns := t05FindingsByRule(result, 0, t19RuleTTLWarn); len(warns) != tc.warns {
+					t.Fatalf("warnings = %#v, want %d", warns, tc.warns)
+				}
+			})
+		}
+	})
+
+	t.Run("prospective state inherits the refusal premise", func(t *testing.T) {
+		provider := &t10Provider{version: "8.0.11-TiDB-v8.5.0"}
+		for _, tc := range []struct {
+			name    string
+			sql     string
+			index   int
+			refused bool
+		}{
+			{name: "create plain then enable", sql: "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME); ALTER TABLE t TTL_ENABLE='ON'", index: 1, refused: true},
+			{name: "create ttl then enable", sql: "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME) TTL=created_at+INTERVAL 1 DAY; ALTER TABLE t TTL_ENABLE='OFF'", index: 1},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				result := t10Audit(t, spec.DialectTiDB, tc.sql, provider, policy)
+				entry := boundary(result, tc.index)
+				if tc.refused && entry == nil {
+					t.Fatalf("statement %d must refuse on proven no TTL, got %#v", tc.index, result.Unsupported)
+				}
+				if !tc.refused && entry != nil {
+					t.Fatalf("statement %d must not refuse, got %#v", tc.index, entry)
+				}
+			})
+		}
+	})
+
+	t.Run("remove then enable refuses on inherited no TTL", func(t *testing.T) {
+		on := true
+		shape := t19TTLShape("t")
+		shape.TTL = &spec.TTLConfig{TimeColumn: "created_at", IntervalValue: "1", IntervalUnit: "day", Enabled: &on, JobInterval: "1h"}
+		provider := &t10Provider{version: "8.0.11-TiDB-v8.5.0", tables: map[string]*spec.TableSnapshot{"t": shape}}
+		result := t10Audit(t, spec.DialectTiDB, "ALTER TABLE t REMOVE TTL; ALTER TABLE t TTL_ENABLE='OFF'", provider, policy)
+		if entry := boundary(result, 1); entry == nil {
+			t.Fatalf("REMOVE-then-ENABLE must refuse on proven no TTL, got %#v", result.Unsupported)
+		}
+	})
+
+	t.Run("refused ALTER leaves successor state unpolluted", func(t *testing.T) {
+		provider := &t10Provider{version: "8.0.11-TiDB-v8.5.0"}
+		_, statements := t17Enrich(t, spec.DialectTiDB,
+			"CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME); ALTER TABLE t TTL_ENABLE='ON'; ALTER TABLE t ADD COLUMN note INT;",
+			"golden", &spec.VersionIdentity{Product: spec.VersionProductTiDB, Version: "8.5.0", Major: 8, Minor: 5, Patch: 0, ValidatedRange: true}, provider)
+		if len(statements) != 3 || len(statements[2].Metadata.TargetTables) != 1 {
+			t.Fatalf("successor bindings = %#v", statements[2].Metadata)
+		}
+		snapshot := statements[2].Metadata.TargetTables[0].Snapshot
+		if snapshot == nil || !snapshot.TTLKnown || snapshot.TTL != nil {
+			t.Fatalf("successor must keep proven no TTL, got %#v", snapshot)
+		}
+	})
+}
