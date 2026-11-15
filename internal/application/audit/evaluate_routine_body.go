@@ -19,12 +19,13 @@ import (
 const routineRootMember = -1
 
 // evaluateRoutineBody audits each statically bounded body member of a
-// stored-routine definition through the shared registry. Member findings
-// keep their own rule IDs and levels; their locations are translated
-// from parent-raw space into file space using the parent's line/column,
-// and every finding is tagged with the owning routine and member index
-// (T27/#106). Unparseable members surface as unsupported details instead
-// of being silently skipped.
+// stored-routine or trigger definition through the shared registry.
+// Member findings keep their own rule IDs and levels; their locations
+// are translated from parent-raw space into file space using the
+// parent's line/column, and every finding is tagged with the owning
+// routine or trigger and member index (T27/#106, T29/#108). Unparseable
+// members surface as unsupported details instead of being silently
+// skipped.
 //
 // T28/#107: control-flow members recurse — inner members audit through
 // the same machinery while variable bindings merge conservatively
@@ -105,6 +106,12 @@ func (w *routineBodyWalker) walkMember(bs spec.RoutineBodyStatement, env map[str
 		return
 	}
 	switch {
+	case bs.Statement.Unsupported != nil:
+		// A member already marked bounded never executes a payload
+		// path — the boundary wins over any typed classification (T29:
+		// event-illegal OLD/NEW uses bound their member while siblings
+		// still audit).
+		w.evalMemberStatement(bs.Statement, env, memberIdx)
 	case bs.Compound != nil:
 		w.walkCompound(bs.Compound, env, memberIdx)
 	case bs.Declare != nil:

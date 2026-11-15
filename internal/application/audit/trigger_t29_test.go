@@ -23,9 +23,10 @@ func t29Registry(t *testing.T) *rule.Registry {
 	t.Helper()
 	registry := rule.NewRegistry()
 	cfg := policy.Policy{Rules: map[string]policy.RulePolicy{
-		"dml.where.require":         {Enabled: true},
-		"ddl.create_trigger.notice": {Enabled: true},
-		"ddl.drop_trigger.notice":   {Enabled: true},
+		"dml.where.require":                           {Enabled: true},
+		"ddl.create_trigger.notice":                   {Enabled: true},
+		"ddl.drop_trigger.notice":                     {Enabled: true},
+		"ddl.create_trigger.ordering.version.require": {Enabled: true},
 	}}
 	if err := dml.Register(registry, cfg); err != nil {
 		t.Fatalf("register dml: %v", err)
@@ -108,15 +109,25 @@ func TestT29OldNewLegalNotMissingTable(t *testing.T) {
 
 func TestT29OldOnInsertInvalidBounded(t *testing.T) {
 	res := t29Evaluate(t, "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW UPDATE t SET x = OLD.y WHERE id = 1", spec.DialectMySQL)
-	if u := t29Feature(res, "trigger.body.old_new"); u == nil {
+	u := t29Feature(res, "trigger.body.old_new")
+	if u == nil {
 		t.Fatal("OLD in an INSERT trigger must surface trigger.body.old_new")
+	}
+	cols, _ := u.Metadata["old_columns"].([]string)
+	if len(cols) != 1 || cols[0] != "y" {
+		t.Fatalf("old_columns must pin the OLD column dependency, got %v", u.Metadata["old_columns"])
 	}
 }
 
 func TestT29NewOnDeleteInvalidBounded(t *testing.T) {
 	res := t29Evaluate(t, "CREATE TRIGGER tr AFTER DELETE ON t FOR EACH ROW INSERT INTO audit_log VALUES(NEW.id)", spec.DialectMySQL)
-	if u := t29Feature(res, "trigger.body.old_new"); u == nil {
+	u := t29Feature(res, "trigger.body.old_new")
+	if u == nil {
 		t.Fatal("NEW in a DELETE trigger must surface trigger.body.old_new")
+	}
+	cols, _ := u.Metadata["new_columns"].([]string)
+	if len(cols) != 1 || cols[0] != "id" {
+		t.Fatalf("new_columns must pin the NEW column dependency, got %v", u.Metadata["new_columns"])
 	}
 }
 
@@ -161,5 +172,78 @@ func TestT29OrderClauseModeled(t *testing.T) {
 	}
 	if !blocker {
 		t.Fatalf("FOLLOWS form must still audit its body, got %+v", res.Statements[0].Findings)
+	}
+}
+
+func TestT29IllegalOldNewMemberBoundsWhileSiblingsAudit(t *testing.T) {
+	res := t29Evaluate(t, "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW BEGIN DELETE FROM audit_log; UPDATE t SET x = OLD.y; END", spec.DialectMySQL)
+	var blocker bool
+	for _, f := range res.Statements[0].Findings {
+		if f.RuleID == "dml.where.require" && f.Metadata["trigger_member"] == 0 {
+			blocker = true
+		}
+	}
+	if !blocker {
+		t.Fatalf("sibling member 0 must still audit its static risk, got %+v", res.Statements[0].Findings)
+	}
+	u := t29Feature(res, "trigger.body.old_new")
+	if u == nil {
+		t.Fatal("illegal OLD use must bound the offending member, not the statement")
+	}
+	if u.Metadata["trigger_member"] != 1 {
+		t.Fatalf("the boundary must name member 1, got %v", u.Metadata)
+	}
+}
+
+func TestT29OrderingVersionBoundary(t *testing.T) {
+	const orderingSQL = "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW FOLLOWS other DELETE FROM audit_log"
+	mysql := func(version string, major, minor, patch int) *spec.VersionIdentity {
+		return &spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: version, Major: major, Minor: minor, Patch: patch, ValidatedRange: true}
+	}
+	for _, tc := range []struct {
+		name        string
+		version     *spec.VersionIdentity
+		wantFinding bool
+		wantGap     bool
+	}{
+		{name: "pre-5.7.2 incompatible", version: mysql("5.7.0", 5, 7, 0), wantFinding: true},
+		{name: "5.7.44 supported", version: mysql("5.7.44", 5, 7, 44)},
+		{name: "8.0.46 supported", version: mysql("8.0.46", 8, 0, 46)},
+		{name: "missing version gap", version: nil, wantGap: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			parsed, err := Parse(context.Background(), orderingSQL, spec.DialectMySQL)
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			stmts, err := Extract(context.Background(), parsed)
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			if tc.version != nil {
+				stmts[0].Metadata = &spec.Metadata{Version: tc.version}
+			}
+			res, err := EvaluateStatements(context.Background(), t29Registry(t), stmts)
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			var orderingFinding, versionGap bool
+			for _, f := range res.Statements[0].Findings {
+				if f.RuleID == "ddl.create_trigger.ordering.version.require" {
+					orderingFinding = true
+				}
+			}
+			for _, g := range res.Statements[0].EvidenceGaps {
+				if g.RuleID == "ddl.create_trigger.ordering.version.require" && g.ReasonCode == "missing_target_version" {
+					versionGap = true
+				}
+			}
+			if orderingFinding != tc.wantFinding {
+				t.Fatalf("ordering finding=%v want %v (findings %+v)", orderingFinding, tc.wantFinding, res.Statements[0].Findings)
+			}
+			if versionGap != tc.wantGap {
+				t.Fatalf("version gap=%v want %v (gaps %+v)", versionGap, tc.wantGap, res.Statements[0].EvidenceGaps)
+			}
+		})
 	}
 }

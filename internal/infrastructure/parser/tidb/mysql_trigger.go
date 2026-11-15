@@ -1,6 +1,7 @@
 package tidbparser
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -53,7 +54,7 @@ func parseMySQLTrigger(sqlText string) (ast.StmtNode, []error, bool) {
 }
 
 func parseMySQLCreateTrigger(sqlText string, toks []sqlTok) (ast.StmtNode, []error, bool) {
-	decl := &spec.TriggerDeclaration{Kind: "create"}
+	decl := &spec.TriggerDeclaration{Kind: spec.TriggerKindCreate}
 	i := 1
 	// Optional DEFINER clause — shape recorded, payload never stored.
 	if i < len(toks) && toks[i].wordIs(sqlText, "definer") {
@@ -81,19 +82,12 @@ func parseMySQLCreateTrigger(sqlText string, toks []sqlTok) (ast.StmtNode, []err
 	if i >= len(toks) || toks[i].kind == tokPunct {
 		return nil, nil, false
 	}
-	name := routineNameToken(sqlText, toks[i])
-	if name == "" {
+	nameSchema, nameIdent, nameNext, nameOK := triggerQualifiedName(sqlText, toks, i)
+	if !nameOK {
 		return nil, nil, false
 	}
-	decl.Name.Name = name
-	i++
-	if i+1 < len(toks) && toks[i].kind == tokPunct && toks[i].text(sqlText) == "." {
-		if next := routineNameToken(sqlText, toks[i+1]); next != "" {
-			decl.Name.Schema = name
-			decl.Name.Name = next
-			i += 2
-		}
-	}
+	decl.Name.Schema, decl.Name.Name = nameSchema, nameIdent
+	i = nameNext
 	// Timing + event.
 	if i >= len(toks) {
 		return nil, nil, false
@@ -129,28 +123,21 @@ func parseMySQLCreateTrigger(sqlText string, toks []sqlTok) (ast.StmtNode, []err
 	if i >= len(toks) || toks[i].kind == tokPunct {
 		return nil, nil, false
 	}
-	target := routineNameToken(sqlText, toks[i])
-	if target == "" {
+	targetSchema, targetName, targetNext, targetOK := triggerQualifiedName(sqlText, toks, i)
+	if !targetOK {
 		return nil, nil, false
 	}
-	decl.Target.Name = target
-	i++
-	if i+1 < len(toks) && toks[i].kind == tokPunct && toks[i].text(sqlText) == "." {
-		if next := routineNameToken(sqlText, toks[i+1]); next != "" {
-			decl.Target.Schema = target
-			decl.Target.Name = next
-			i += 2
-		}
-	}
+	decl.Target.Schema, decl.Target.Name = targetSchema, targetName
+	i = targetNext
 	if i+2 >= len(toks) || !toks[i].wordIs(sqlText, "for") || !toks[i+1].wordIs(sqlText, "each") || !toks[i+2].wordIs(sqlText, "row") {
 		return nil, nil, false
 	}
 	i += 3
-	// Optional FOLLOWS|PRECEDES <trigger> (MySQL 8.0.23+).
+	// Optional FOLLOWS|PRECEDES <trigger> (MySQL 5.7.2+, WL#3253).
 	if i+1 < len(toks) && (toks[i].wordIs(sqlText, "follows") || toks[i].wordIs(sqlText, "precedes")) {
 		kind := strings.ToLower(toks[i].text(sqlText))
 		if sib := routineNameToken(sqlText, toks[i+1]); sib != "" {
-			decl.Order = &spec.TriggerOrder{Kind: kind, Name: sib}
+			decl.Order = &spec.TriggerOrder{Kind: spec.TriggerOrderKind(kind), Name: sib}
 			i += 2
 		}
 	}
@@ -186,7 +173,7 @@ func parseMySQLCreateTrigger(sqlText string, toks []sqlTok) (ast.StmtNode, []err
 }
 
 func parseMySQLDropTrigger(sqlText string, toks []sqlTok) (ast.StmtNode, []error, bool) {
-	decl := &spec.TriggerDeclaration{Kind: "drop"}
+	decl := &spec.TriggerDeclaration{Kind: spec.TriggerKindDrop}
 	i := 1
 	if i >= len(toks) || !toks[i].wordIs(sqlText, "trigger") {
 		return nil, nil, false
@@ -199,19 +186,12 @@ func parseMySQLDropTrigger(sqlText string, toks []sqlTok) (ast.StmtNode, []error
 	if i >= len(toks) || toks[i].kind == tokPunct {
 		return nil, nil, false
 	}
-	name := routineNameToken(sqlText, toks[i])
-	if name == "" {
+	nameSchema, nameIdent, nameNext, nameOK := triggerQualifiedName(sqlText, toks, i)
+	if !nameOK {
 		return nil, nil, false
 	}
-	decl.Name.Name = name
-	i++
-	if i+1 < len(toks) && toks[i].kind == tokPunct && toks[i].text(sqlText) == "." {
-		if next := routineNameToken(sqlText, toks[i+1]); next != "" {
-			decl.Name.Schema = name
-			decl.Name.Name = next
-			i += 2
-		}
-	}
+	decl.Name.Schema, decl.Name.Name = nameSchema, nameIdent
+	i = nameNext
 	if i != len(toks) {
 		return nil, nil, false
 	}
@@ -226,35 +206,76 @@ func finishTriggerStatement(sqlText string, decl *spec.TriggerDeclaration, inner
 	return node, nil, true
 }
 
-// retagTriggerMemberFeatures rewrites routine.body.* member features
-// into the trigger namespace — the member machinery is shared but the
-// evidence names the owning object family (T29).
-func retagTriggerMemberFeatures(body *spec.RoutineBody) {
+// triggerQualifiedName reads one [schema.]name pair starting at toks[i]
+// and returns the normalized parts plus the index just past the pair.
+func triggerQualifiedName(sqlText string, toks []sqlTok, i int) (schema, name string, next int, ok bool) {
+	if i >= len(toks) || toks[i].kind == tokPunct {
+		return "", "", i, false
+	}
+	name = routineNameToken(sqlText, toks[i])
+	if name == "" {
+		return "", "", i, false
+	}
+	next = i + 1
+	if next+1 < len(toks) && toks[next].kind == tokPunct && toks[next].text(sqlText) == "." {
+		if sibling := routineNameToken(sqlText, toks[next+1]); sibling != "" {
+			schema, name, next = name, sibling, next+2
+		}
+	}
+	return schema, name, next, true
+}
+
+// eachTriggerBodyMember visits every member of a trigger body: flat
+// members, compound branches and bodies, and handler/cursor executable
+// members — matching the walk the evaluator performs.
+func eachTriggerBodyMember(body *spec.RoutineBody, fn func(*spec.RoutineBodyStatement)) {
 	for i := range body.Statements {
 		bs := &body.Statements[i]
-		if u := bs.Statement.Unsupported; u != nil {
-			u.Feature = strings.Replace(u.Feature, "routine.body.", "trigger.body.", 1)
-		}
+		fn(bs)
 		if c := bs.Compound; c != nil {
 			for _, br := range c.Branches {
-				retagTriggerMemberFeatures(br)
+				eachTriggerBodyMember(br, fn)
 			}
 			if c.Body != nil {
-				retagTriggerMemberFeatures(c.Body)
+				eachTriggerBodyMember(c.Body, fn)
 			}
 		}
 		if d := bs.Declare; d != nil && d.Member != nil {
-			if u := d.Member.Statement.Unsupported; u != nil {
-				u.Feature = strings.Replace(u.Feature, "routine.body.", "trigger.body.", 1)
+			fn(d.Member)
+			if c := d.Member.Compound; c != nil {
+				for _, br := range c.Branches {
+					eachTriggerBodyMember(br, fn)
+				}
+				if c.Body != nil {
+					eachTriggerBodyMember(c.Body, fn)
+				}
 			}
 		}
 	}
 }
 
-// scanTriggerOldNew records OLD.<col>/NEW.<col> pseudo-column usage:
-// an old|new word immediately followed by a '.' token. Bare names are
-// ordinary identifiers — only the qualified shape is a pseudo-column.
+// retagTriggerMemberFeatures rewrites routine.body.* member features
+// into the trigger namespace — the member machinery is shared but the
+// evidence names the owning object family (T29).
+func retagTriggerMemberFeatures(body *spec.RoutineBody) {
+	eachTriggerBodyMember(body, func(bs *spec.RoutineBodyStatement) {
+		if u := bs.Statement.Unsupported; u != nil {
+			u.Feature = strings.Replace(u.Feature, "routine.body.", "trigger.body.", 1)
+		}
+	})
+}
+
+// scanTriggerOldNew records OLD.<col>/NEW.<col> pseudo-column usage on
+// the declaration: an old|new word immediately followed by a '.' token.
+// Bare names are ordinary identifiers — only the qualified shape is a
+// pseudo-column. Referenced columns land sorted-unique so the column
+// dependencies the body reads stay explicit.
 func scanTriggerOldNew(sqlText string, toks []sqlTok, decl *spec.TriggerDeclaration) {
+	decl.UsesOld, decl.UsesNew, decl.OldColumns, decl.NewColumns = triggerOldNewUse(sqlText, toks)
+}
+
+// triggerOldNewUse collects OLD.<col>/NEW.<col> usage in one token span.
+func triggerOldNewUse(sqlText string, toks []sqlTok) (usesOld, usesNew bool, oldCols, newCols []string) {
 	for j := 0; j+1 < len(toks); j++ {
 		if toks[j+1].kind != tokPunct || toks[j+1].text(sqlText) != "." {
 			continue
@@ -262,11 +283,68 @@ func scanTriggerOldNew(sqlText string, toks []sqlTok, decl *spec.TriggerDeclarat
 		if toks[j].kind != tokWord {
 			continue
 		}
+		column := ""
+		if j+2 < len(toks) && toks[j+2].kind == tokWord {
+			column = toks[j+2].identText(sqlText)
+		}
 		switch strings.ToLower(toks[j].text(sqlText)) {
 		case "old":
-			decl.UsesOld = true
+			usesOld = true
+			if column != "" {
+				oldCols = appendUniqueSorted(oldCols, column)
+			}
 		case "new":
-			decl.UsesNew = true
+			usesNew = true
+			if column != "" {
+				newCols = appendUniqueSorted(newCols, column)
+			}
 		}
 	}
+	return usesOld, usesNew, oldCols, newCols
+}
+
+// applyTriggerOldNewBounds marks every modeled body member whose
+// pseudo-column use is impossible under the declared event as bounded
+// trigger.body.old_new evidence — the violating member stays explicit
+// while sibling members still audit (T29).
+func applyTriggerOldNewBounds(decl *spec.TriggerDeclaration) {
+	if decl == nil || decl.Body == nil || decl.Kind != spec.TriggerKindCreate {
+		return
+	}
+	eachTriggerBodyMember(decl.Body, func(bs *spec.RoutineBodyStatement) {
+		if bs.Compound != nil || bs.Declare != nil || bs.Statement.Unsupported != nil {
+			return
+		}
+		memberToks, _ := tokenizeSQLState(bs.Statement.RawSQL)
+		usesOld, usesNew, oldCols, newCols := triggerOldNewUse(bs.Statement.RawSQL, memberToks)
+		if !(usesOld && !decl.Event.AllowsOld()) && !(usesNew && !decl.Event.AllowsNew()) {
+			return
+		}
+		meta := map[string]any{
+			"trigger": decl.Name.Name, "event": string(decl.Event),
+			"uses_old": usesOld, "uses_new": usesNew,
+		}
+		if usesOld {
+			meta["old_columns"] = oldCols
+		}
+		if usesNew {
+			meta["new_columns"] = newCols
+		}
+		bs.Statement.Unsupported = &spec.UnsupportedDetail{
+			Feature:  "trigger.body.old_new",
+			Reason:   spec.UnsupportedUnauditedReason,
+			Metadata: meta,
+		}
+	})
+}
+
+func appendUniqueSorted(list []string, value string) []string {
+	i := sort.SearchStrings(list, value)
+	if i < len(list) && list[i] == value {
+		return list
+	}
+	list = append(list, "")
+	copy(list[i+1:], list[i:])
+	list[i] = value
+	return list
 }

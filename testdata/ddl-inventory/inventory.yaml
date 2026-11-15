@@ -2729,37 +2729,55 @@ rows:
     subactions: ["BEFORE/AFTER INSERT/UPDATE/DELETE", "FOR EACH ROW", "FOLLOWS/PRECEDES", "OLD/NEW bindings"]
     sql_shape: "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log"
     prerequisites: "target table exists; OLD/NEW resolution inside body"
-    status: parser_unsupported
-    parser_status: unrecognized
-    audit_status: not_applicable
+    status: mixed_coverage
+    parser_status: recognized
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        parser_status: recognized
+        audit_status: mixed
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-trigger.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/trigger_body_analysis.expected.yaml
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/trigger_t29_test.go
+          - gate:T29
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        parser_status: recognized
+        audit_status: mixed
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-trigger.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/trigger_body_analysis.expected.yaml
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/trigger_t29_test.go
+          - gate:T29
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        parser_status: recognized
+        audit_status: mixed
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-trigger.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/trigger_body_analysis.expected.yaml
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/trigger_t29_test.go
+          - gate:T29
 
-    status_evidence: "2026-09-22 CLI probe: parser_error on vendor-valid CREATE TRIGGER (T29 first path is the body-where blocker oracle)"
-    targets: "trigger identity, event context, body targets distinct from trigger target"
+    status_evidence: "2026-11-15 T29 (#108): CREATE TRIGGER claimed — DEFINER, timing (BEFORE/AFTER), event (INSERT/UPDATE/DELETE), target, FOR EACH ROW, and FOLLOWS/PRECEDES ordering are modeled in the declaration; the body audits through the shared routine-member machinery with trigger-scoped evidence and metadata (trigger/trigger_member). OLD.<col>/NEW.<col> resolve against the event, not table names: event-legal uses bind to the trigger target and audit normally, illegal uses (OLD on INSERT, NEW on DELETE) produce trigger.body.old_new bounded evidence instead of fabricated missing-table findings. Audited members and explicit boundaries coexist, so the cell stays mixed. Golden: T29.json 25 cases/258 assertions on mysql57/80/84 + tidb85 vendor boundary"
+    targets: "trigger identity, timing, event, ordering, OLD/NEW bindings, body targets distinct from trigger target"
     acceptance:
-      dimensions: "body findings vs trigger target separation, OLD/NEW not misread as tables"
-      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+      dimensions: "body findings vs trigger target separation, OLD/NEW not misread as tables, no trigger execution on create"
+      refs: ["gate:T29", "file:testdata/ddl-golden/T29.json", "file:internal/application/audit/trigger_t29_test.go", "file:testdata/sql-corpus/mysql/ddl/findings/trigger_body_analysis.expected.yaml"]
     owner: T29
 
   - id: mysql.drop-trigger
@@ -2770,37 +2788,52 @@ rows:
     subactions: ["DROP TRIGGER", "IF EXISTS"]
     sql_shape: "DROP TRIGGER tr"
     prerequisites: "none"
-    status: parser_unsupported
-    parser_status: unrecognized
-    audit_status: not_applicable
+    status: generic_notice
+    parser_status: recognized
+    audit_status: notice_only
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        parser_status: recognized
+        audit_status: notice_only
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.drop-trigger.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/trigger_t29_test.go
+          - gate:T29
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        parser_status: recognized
+        audit_status: notice_only
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.drop-trigger.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/trigger_t29_test.go
+          - gate:T29
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        parser_status: recognized
+        audit_status: notice_only
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.drop-trigger.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/trigger_t29_test.go
+          - gate:T29
 
-    status_evidence: "2026-09-22 CLI probe: parser_error"
-    targets: "trigger identity"
+    status_evidence: "2026-11-15 T29 (#108): DROP TRIGGER claimed — ddl.drop_trigger.notice fires and IF EXISTS is modeled; lifecycle is symmetric with CREATE TRIGGER on all three MySQL anchors. Golden: T29.json mysql-drop-lifecycle"
+    targets: "trigger identity, IF EXISTS"
     acceptance:
-      dimensions: "lifecycle classification"
-      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+      dimensions: "drop lifecycle parity"
+      refs: ["gate:T29", "file:testdata/ddl-golden/T29.json", "file:internal/application/audit/trigger_t29_test.go"]
     owner: T29
 
   - id: mysql.create-event
@@ -4873,13 +4906,13 @@ rows:
         product_scope: vendor_boundary
         parser_status: unrecognized
         audit_status: explicit_unsupported
-        evidence: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+        evidence: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md", "gate:T29"]
 
-    status_evidence: "vendor boundary; parser_error observed"
+    status_evidence: "TiDB does not implement triggers; the shape is recognised and emits unsupported evidence (create_trigger/drop_trigger with boundary:vendor metadata) — parser acceptance never counts as support. 2026-11-15 T29 (#108): boundary enforced for both CREATE and DROP TRIGGER; bodies are never folded for tidb. Golden: T29.json tidb-create-vendor/tidb-drop-vendor"
     targets: "explicit vendor boundary"
     acceptance:
       dimensions: "boundary classification"
-      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md", "gate:T29", "file:testdata/ddl-golden/T29.json"]
     owner: T29
 
   - id: tidb.create-event

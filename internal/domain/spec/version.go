@@ -242,6 +242,64 @@ func RenameColumnVersionSupportFor(version *VersionIdentity) RenameColumnVersion
 	}
 }
 
+const (
+	// TriggerOrderMinimumSupportedVersion is the MySQL release that added
+	// multiple triggers per event plus the FOLLOWS/PRECEDES ordering
+	// clause (WL#3253).
+	TriggerOrderMinimumSupportedVersion = "5.7.2"
+
+	triggerOrderGapMissingVersion = "missing_target_version"
+	triggerOrderGapOutOfRange     = "target_version_out_of_validated_range"
+	triggerOrderFactVersion       = "target.version"
+	triggerOrderFactValidated     = "target.version.validated_range"
+)
+
+// TriggerOrderVersionSupport is the shared trigger-ordering applicability
+// result. Supported and Incompatible are mutually exclusive; a gap leaves
+// both false because the version fact is missing or out of series.
+type TriggerOrderVersionSupport struct {
+	Supported    bool
+	Incompatible bool
+	GapReason    string
+	GapFacts     []string
+}
+
+// TriggerOrderVersionSupportFor classifies whether one already-parsed
+// version identity can use FOLLOWS/PRECEDES ordering. MySQL 5.7.2+
+// inside 5.7 and every 8.x are supported; MySQL 5.7.0/5.7.1 are
+// incompatible. Nil, empty, or out-of-series identities are gaps.
+// TiDB trigger statements never reach this check — they stay vendor
+// boundaries upstream.
+func TriggerOrderVersionSupportFor(version *VersionIdentity) TriggerOrderVersionSupport {
+	if version == nil || strings.TrimSpace(version.Product) == "" || strings.TrimSpace(version.Version) == "" {
+		return TriggerOrderVersionSupport{
+			GapReason: triggerOrderGapMissingVersion,
+			GapFacts:  []string{triggerOrderFactVersion},
+		}
+	}
+	if !version.ValidatedRange {
+		return TriggerOrderVersionSupport{
+			GapReason: triggerOrderGapOutOfRange,
+			GapFacts:  []string{triggerOrderFactValidated},
+		}
+	}
+	if strings.EqualFold(strings.TrimSpace(version.Product), VersionProductMySQL) {
+		if version.Major >= 8 {
+			return TriggerOrderVersionSupport{Supported: true}
+		}
+		if version.Major == 5 && version.Minor == 7 {
+			if version.Patch >= 2 {
+				return TriggerOrderVersionSupport{Supported: true}
+			}
+			return TriggerOrderVersionSupport{Incompatible: true}
+		}
+	}
+	return TriggerOrderVersionSupport{
+		GapReason: triggerOrderGapOutOfRange,
+		GapFacts:  []string{triggerOrderFactValidated},
+	}
+}
+
 // CHECK constraint version boundaries (documented; anchors probe ≥8.0.46 so
 // sub-anchor versions inherit the documented boundary only, never probe
 // evidence). MySQL 8.0.16 first enforces CHECK constraints; 8.0.19 adds the

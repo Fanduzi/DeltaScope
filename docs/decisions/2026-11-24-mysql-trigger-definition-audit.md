@@ -27,18 +27,29 @@ depends on the event.
 2. `TriggerDeclaration` models timing, event, bound target, DEFINER
    shape, `FOLLOWS`/`PRECEDES` order, and `UsesOld`/`UsesNew` lexical
    facts: only the qualified `OLD.<col>`/`NEW.<col>` shape counts —
-   bare names stay ordinary identifiers. `OldNewValid()` binds legality
-   to the declared event: INSERT reads NEW only, DELETE reads OLD only,
-   UPDATE reads both. Illegal use surfaces `trigger.body.old_new`
-   bounded evidence; legal use never fabricates a missing-table
-   reference.
+   bare names stay ordinary identifiers. Referenced columns are
+   captured as sorted-unique `OldColumns`/`NewColumns` so the column
+   dependencies the body reads are explicit evidence. `OldNewValid()`
+   binds legality to the declared event: INSERT reads NEW only,
+   DELETE reads OLD only, UPDATE reads both. Illegal use surfaces
+   `trigger.body.old_new` bounded evidence carrying the offending
+   column list — attached at the offending *member* so sibling members
+   keep auditing rather than the whole statement degrading; legal use
+   never fabricates a missing-table reference.
+4. `FOLLOWS`/`PRECEDES` ordering is version-gated evidence, not
+   assumed syntax: `ddl.create_trigger.ordering.version.require`
+   consults `spec.TriggerOrderVersionSupport` (ordering is a MySQL
+   5.7.2+ feature, WL#3253). A known-incompatible target version is a
+   determined blocker; a missing target version is an explicit
+   `missing_target_version` evidence gap requiring `target.version`,
+   never a silent pass.
 3. The audit walker evaluates trigger bodies under a `trigger` scope —
    identical semantics to routine bodies (no execution, no prospective
    state mutation, bounded-member env invalidation) — minting
    `trigger.body.*` features and `trigger`/`trigger_member` metadata.
    The byte-level statement splitter treats `trigger` like the routine
    heads so member semicolons never split the CREATE.
-4. Lifecycle notices `ddl.create_trigger.notice` and
+5. Lifecycle notices `ddl.create_trigger.notice` and
    `ddl.drop_trigger.notice` follow the routine convention; both
    operations join the ordered-state inert set (a trigger definition
    never mutates table state at audit time).
@@ -57,8 +68,9 @@ depends on the event.
 ## Deferred scope
 
 - OLD/NEW resolution binds to the trigger's *event semantics*, not to
-  target-column metadata — column existence and type checks need
-  catalog metadata and stay downstream.
+  target-column metadata — column names are recorded as dependencies,
+  but existence and type checks need catalog metadata and stay
+  downstream.
 - `FOR EACH ROW` is required by the MySQL grammar; non-row forms stay
   unclaimed parser errors.
 - No runtime semantics: the audit never triggers INSERT/UPDATE/DELETE
@@ -67,15 +79,31 @@ depends on the event.
 
 ## Verification
 
-- `go test ./internal/application/audit -run TestT29`: 8/8 PASS —
+- `go test ./internal/application/audit -run TestT29`: 10/10 PASS —
   body DELETE blocker with `trigger` metadata, compound-member audit,
-  legal/illegal OLD/NEW legs, lifecycle notice, FOLLOWS body audit,
-  and both TiDB vendor-boundary legs.
+  legal/illegal OLD/NEW legs with column-dependency metadata,
+  lifecycle notice, FOLLOWS body audit, both TiDB vendor-boundary
+  legs, member-level OLD/NEW bounding with sibling-member survival,
+  and the ordering version boundary (5.7.0 incompatible blocker,
+  5.7.44/8.0.46 supported, missing-version evidence gap).
 - `go test ./...`: all packages ok after contract evolution
   (parser-error census drops the trigger family, cross-dialect census
   moves both forms to finding-covered/vendor-boundary, catalog and
   corpus fixtures regenerated).
-- Corpus fixture `trigger_body_analysis` pins two notices, one body
-  blocker, and the `trigger.body.old_new` boundary.
-- Golden manifest, native anchor fixtures, and inventory evidence
-  land in the T29 close-out (gates pending at commit time).
+- Corpus fixtures `trigger_body_analysis` (two notices, one body
+  blocker, `trigger.body.old_new` boundary) and
+  `trigger_ordering_version` (5.7.0 metadata target pins the
+  ordering-version blocker).
+- Golden `make ddl-golden TASK=T29`: 27/27 cases, 294 assertions —
+  16 CLI cases (golden-path blocker, safe/compound bodies, legal and
+  illegal OLD/NEW, sibling-member survival, DEFINER,
+  FOLLOWS/PRECEDES with missing-version gaps and a 5.7.0 determined
+  negative, drop lifecycle, multi-statement positions,
+  parser-negative, TiDB vendor legs), 3
+  metadata cases proving audit creates no trigger before native
+  stdin-batch creation receipts on mysql57/80/84, and per-anchor ddl
+  plus syntax-negative rows including tidb85.
+- `make ddl-inventory-gate` passes with the trigger rows moved to
+  `mixed_coverage`/`generic_notice`/`vendor_not_supported` carrying
+  probes, corpus, catalog, test, and gate evidence; matrix.json
+  regenerated.

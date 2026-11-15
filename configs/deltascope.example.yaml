@@ -982,6 +982,11 @@ rules:
     level: notice
     params:
 
+  ddl.create_trigger.ordering.version.require:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.routine.variable_shadowing.warn:
     enabled: true
     level: warning

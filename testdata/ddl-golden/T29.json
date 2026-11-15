@@ -1,0 +1,1117 @@
+{
+ "task_id": "T29",
+ "issue": 108,
+ "policy_profile": "all-rules-disabled",
+ "description": "MySQL CREATE/DROP TRIGGER declarations, OLD/NEW pseudo-column event binding, shared routine-body audit, and TiDB vendor boundaries.",
+ "anchors": {
+  "mysql57": {
+   "service": "mysql57",
+   "container": "deltascope-ddl-golden-mysql57",
+   "image": "mysql:5.7.44",
+   "product": "mysql",
+   "version_contains": "5.7.44",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T27_MYSQL_PASSWORD"
+  },
+  "mysql80": {
+   "service": "mysql80",
+   "container": "deltascope-ddl-golden-mysql80",
+   "image": "mysql:8.0.46",
+   "product": "mysql",
+   "version_contains": "8.0.46",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T27_MYSQL_PASSWORD"
+  },
+  "mysql84": {
+   "service": "mysql84",
+   "container": "deltascope-ddl-golden-mysql84",
+   "image": "mysql:8.4.10",
+   "product": "mysql",
+   "version_contains": "8.4.10",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T27_MYSQL_PASSWORD"
+  },
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": true
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "clear-task-fixture",
+   "sql": "DROP DATABASE IF EXISTS t29fx",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "seed-fixture-schema",
+   "sql": "CREATE DATABASE t29fx;CREATE TABLE t29fx.t (id INT PRIMARY KEY);CREATE TABLE t29fx.audit_log (id INT)",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "fixture tables exist for trigger targets and body targets",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t29fx' AND TABLE_NAME IN ('t','audit_log')",
+     "expect": "2"
+    }
+   ]
+  }
+ ],
+ "syntax_negative": {
+  "sql": "CREATE TRIGGER t29fx.tr BEFORE INSERT ON t29fx.t FOR EACH ROW",
+  "expect": {
+   "error_class": "1064",
+   "rc_nonzero": true,
+   "forbidden_markers": [
+    "Access denied",
+    "Connection refused",
+    "doesn't exist",
+    "already exists"
+   ]
+  },
+  "post_state_check": {
+   "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='t29fx'",
+   "expect": "0"
+  }
+ },
+ "policy": {
+  "profiles": {
+   "t29-where": {
+    "enable": {
+     "dml.where.require": {
+      "level": "blocker"
+     },
+     "ddl.create_trigger.notice": {
+      "enabled": true,
+      "level": "notice"
+     },
+     "ddl.drop_trigger.notice": {
+      "enabled": true,
+      "level": "notice"
+     },
+     "ddl.create_trigger.ordering.version.require": {
+      "enabled": true,
+      "level": "blocker"
+     }
+    }
+   }
+  }
+ },
+ "cli_cases": [
+  {
+   "id": "mysql-body-blocker",
+   "dialect": "mysql",
+   "sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_trigger.notice",
+      "level": "notice"
+     },
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "metadata": {
+       "operation": "delete",
+       "trigger": "tr",
+       "trigger_member": 0
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 51
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "notes": "Golden path: one top-level trigger; the shared body audit emits the where blocker on member 0 with trigger scope metadata while the lifecycle notice stays at the trigger head."
+  },
+  {
+   "id": "mysql-safe-body",
+   "dialect": "mysql",
+   "sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW UPDATE audit_log SET n = n + 1 WHERE id = NEW.id",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_trigger.notice",
+      "level": "notice"
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "Safe body: WHERE-qualified UPDATE with a legal NEW.id reference audits cleanly; only the lifecycle notice fires."
+  },
+  {
+   "id": "mysql-compound-body",
+   "dialect": "mysql",
+   "sql": "CREATE TRIGGER tr AFTER UPDATE ON t FOR EACH ROW BEGIN DELETE FROM audit_log; UPDATE t SET x = OLD.y WHERE id = 1; END",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "metadata": {
+       "operation": "delete",
+       "trigger": "tr",
+       "trigger_member": 0
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 56
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "notes": "Compound body: the first member DELETE lacks WHERE (blocker); the second member UPDATE carries WHERE and a legal OLD.y reference (no finding)."
+  },
+  {
+   "id": "mysql-oldnew-legal",
+   "dialect": "mysql",
+   "sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW SET NEW.a = 1",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_trigger.notice",
+      "level": "notice"
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "Legal pseudo-column: NEW.a on INSERT is event-legal and bound to the trigger target, not a missing table; the SET member is modelled so coverage stays complete."
+  },
+  {
+   "id": "mysql-old-on-insert",
+   "dialect": "mysql",
+   "sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW UPDATE t SET x = OLD.y",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "trigger.body.old_new",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "event": "insert",
+       "trigger": "tr",
+       "trigger_member": 0,
+       "uses_new": false,
+       "uses_old": true,
+       "old_columns": [
+        "y"
+       ]
+      }
+     }
+    ],
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_trigger.notice",
+      "level": "notice"
+     }
+    ]
+   },
+   "notes": "Illegal pseudo-column: OLD on INSERT has no row image; the statement stays bounded incomplete rather than auditing a fabricated body. The illegal member stays bounded while the lifecycle notice still fires \u2014 siblings are never swallowed."
+  },
+  {
+   "id": "mysql-new-on-delete",
+   "dialect": "mysql",
+   "sql": "CREATE TRIGGER tr AFTER DELETE ON t FOR EACH ROW INSERT INTO audit_log VALUES (NEW.id)",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "trigger.body.old_new",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "event": "delete",
+       "trigger": "tr",
+       "trigger_member": 0,
+       "uses_new": true,
+       "uses_old": false,
+       "new_columns": [
+        "id"
+       ]
+      }
+     }
+    ],
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_trigger.notice",
+      "level": "notice"
+     }
+    ]
+   },
+   "notes": "Illegal pseudo-column: NEW on DELETE has no new image; bounded incomplete for the same reason as OLD on INSERT. The illegal member stays bounded while the lifecycle notice still fires."
+  },
+  {
+   "id": "mysql-old-new-sibling-blocker",
+   "dialect": "mysql",
+   "sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW BEGIN DELETE FROM audit_log; UPDATE t SET x = OLD.y; END",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "metadata": {
+       "operation": "delete",
+       "trigger": "tr",
+       "trigger_member": 0
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 57
+     }
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "trigger.body.old_new",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "event": "insert",
+       "trigger": "tr",
+       "trigger_member": 1,
+       "uses_new": false,
+       "uses_old": true,
+       "old_columns": [
+        "y"
+       ]
+      }
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "notes": "Static risk and illegal pseudo-context stay separate: member 0 DELETE still blocks while member 1 OLD-under-INSERT stays bounded \u2014 the boundary never swallows sibling findings."
+  },
+  {
+   "id": "mysql-definer",
+   "dialect": "mysql",
+   "sql": "CREATE DEFINER=`root`@`%` TRIGGER tr BEFORE DELETE ON t FOR EACH ROW DELETE FROM audit_log",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "metadata": {
+       "operation": "delete",
+       "trigger": "tr",
+       "trigger_member": 0
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 70
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "notes": "DEFINER clause is claimed as part of the trigger head; the body still audits through shared member analysis."
+  },
+  {
+   "id": "mysql-follows",
+   "dialect": "mysql",
+   "sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW FOLLOWS other DELETE FROM audit_log",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 65
+     }
+    ],
+    "fail_on_triggered": true,
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_trigger.ordering.version.require",
+      "reason_code": "missing_target_version",
+      "required_facts": [
+       "target.version"
+      ]
+     }
+    ]
+   },
+   "notes": "Ordering attribute FOLLOWS (MySQL 8.0+) is modelled in the declaration; the body keeps auditing normally. Without a pinned target version the ordering clause is an explicit missing_target_version evidence gap rather than a silent pass."
+  },
+  {
+   "id": "mysql-precedes",
+   "dialect": "mysql",
+   "sql": "CREATE TRIGGER tr AFTER DELETE ON t FOR EACH ROW PRECEDES other DELETE FROM audit_log",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 65
+     }
+    ],
+    "fail_on_triggered": true,
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_trigger.ordering.version.require",
+      "reason_code": "missing_target_version",
+      "required_facts": [
+       "target.version"
+      ]
+     }
+    ]
+   },
+   "notes": "Ordering attribute PRECEDES is modelled symmetrically to FOLLOWS. Without a pinned target version the ordering clause is an explicit missing_target_version evidence gap rather than a silent pass."
+  },
+  {
+   "id": "mysql-order-version-incompatible",
+   "dialect": "mysql",
+   "sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW FOLLOWS other DELETE FROM audit_log",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "blocker",
+    "--target-version",
+    "5.7.0"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 3,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_trigger.notice",
+      "level": "notice"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.create_trigger.ordering.version.require",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_trigger.ordering.version.require",
+      "metadata": {
+       "ordering": "follows",
+       "sibling_trigger": "other",
+       "minimum_supported_version": "5.7.2"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "notes": "Version boundary: FOLLOWS/PRECEDES is a MySQL 5.7.2+ feature (WL#3253) \u2014 a 5.7.0 target is a determined negative blocker, distinct from a missing-version evidence gap."
+  },
+  {
+   "id": "mysql-drop-lifecycle",
+   "dialect": "mysql",
+   "sql": "DROP TRIGGER IF EXISTS tr",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.drop_trigger.notice",
+      "level": "notice"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.drop_trigger.notice",
+      "metadata": {
+       "object_name": "tr",
+       "object_type": "trigger",
+       "operation": "drop_trigger"
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "DROP TRIGGER lifecycle is claimed and noticed; IF EXISTS is modelled."
+  },
+  {
+   "id": "mysql-multi-statement",
+   "dialect": "mysql",
+   "sql": "SELECT 1; CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "statement_sql": [
+     "SELECT 1;",
+     "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log"
+    ],
+    "finding_locations": [
+     {
+      "index": 1,
+      "line": 1,
+      "column": 61
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "notes": "Statement boundary: the trigger body semicolon-free tail does not merge with the preceding statement and member positions stay source-exact on a non-first statement."
+  },
+  {
+   "id": "mysql-parser-negative",
+   "dialect": "mysql",
+   "sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "fail_on_triggered": false
+   },
+   "notes": "Malformed trigger (missing body) is a hard parser error, not a bounded unsupported entry."
+  },
+  {
+   "id": "tidb-create-vendor",
+   "dialect": "tidb",
+   "sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW SELECT 1",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_trigger",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "boundary": "vendor",
+       "object": "trigger"
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "TiDB vendor boundary: the shape is recognised but CREATE TRIGGER is outside the supported TiDB surface; the body is not audited."
+  },
+  {
+   "id": "tidb-drop-vendor",
+   "dialect": "tidb",
+   "sql": "DROP TRIGGER tr",
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "drop_trigger",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "boundary": "vendor",
+       "object": "trigger"
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "TiDB vendor boundary for the drop half of the lifecycle."
+  }
+ ],
+ "metadata_cases": [
+  {
+   "id": "mysql57-trigger-lifecycle",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "t29meta_57",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-owned-fixture",
+     "sql": "CREATE DATABASE t29meta_57;CREATE TABLE t29meta_57.t (id INT PRIMARY KEY);CREATE TABLE t29meta_57.audit_log (id INT)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture tables ready",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t29meta_57' AND TABLE_NAME IN ('t','audit_log')",
+       "expect": "2"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "metadata": {
+       "operation": "delete",
+       "trigger": "tr",
+       "trigger_member": 0
+      }
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create the trigger",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='t29meta_57'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "native compound-body trigger creation receipt",
+     "via": "stdin",
+     "sql": "DELIMITER //\nCREATE TRIGGER t29meta_57.tr AFTER INSERT ON t29meta_57.t FOR EACH ROW BEGIN INSERT INTO t29meta_57.audit_log VALUES(NEW.id); END//\nDELIMITER ;\n",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one trigger created natively",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='t29meta_57' AND TRIGGER_NAME='tr'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP DATABASE IF EXISTS t29meta_57",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual schema",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t29meta_57'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mysql80-trigger-lifecycle",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t29meta_80",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-owned-fixture",
+     "sql": "CREATE DATABASE t29meta_80;CREATE TABLE t29meta_80.t (id INT PRIMARY KEY);CREATE TABLE t29meta_80.audit_log (id INT)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture tables ready",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t29meta_80' AND TABLE_NAME IN ('t','audit_log')",
+       "expect": "2"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "metadata": {
+       "operation": "delete",
+       "trigger": "tr",
+       "trigger_member": 0
+      }
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create the trigger",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='t29meta_80'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "native compound-body trigger creation receipt",
+     "via": "stdin",
+     "sql": "DELIMITER //\nCREATE TRIGGER t29meta_80.tr AFTER INSERT ON t29meta_80.t FOR EACH ROW BEGIN INSERT INTO t29meta_80.audit_log VALUES(NEW.id); END//\nDELIMITER ;\n",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one trigger created natively",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='t29meta_80' AND TRIGGER_NAME='tr'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP DATABASE IF EXISTS t29meta_80",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual schema",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t29meta_80'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mysql84-trigger-lifecycle",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "t29meta_84",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "policy": "t29-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-owned-fixture",
+     "sql": "CREATE DATABASE t29meta_84;CREATE TABLE t29meta_84.t (id INT PRIMARY KEY);CREATE TABLE t29meta_84.audit_log (id INT)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture tables ready",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t29meta_84' AND TABLE_NAME IN ('t','audit_log')",
+       "expect": "2"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "metadata": {
+       "operation": "delete",
+       "trigger": "tr",
+       "trigger_member": 0
+      }
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create the trigger",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='t29meta_84'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "native compound-body trigger creation receipt",
+     "via": "stdin",
+     "sql": "DELIMITER //\nCREATE TRIGGER t29meta_84.tr AFTER INSERT ON t29meta_84.t FOR EACH ROW BEGIN INSERT INTO t29meta_84.audit_log VALUES(NEW.id); END//\nDELIMITER ;\n",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one trigger created natively",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='t29meta_84' AND TRIGGER_NAME='tr'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP DATABASE IF EXISTS t29meta_84",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual schema",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t29meta_84'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "required_case_ids": [
+  "T29.cli.mysql-body-blocker",
+  "T29.cli.mysql-safe-body",
+  "T29.cli.mysql-compound-body",
+  "T29.cli.mysql-oldnew-legal",
+  "T29.cli.mysql-old-on-insert",
+  "T29.cli.mysql-new-on-delete",
+  "T29.cli.mysql-old-new-sibling-blocker",
+  "T29.cli.mysql-definer",
+  "T29.cli.mysql-follows",
+  "T29.cli.mysql-precedes",
+  "T29.cli.mysql-order-version-incompatible",
+  "T29.cli.mysql-drop-lifecycle",
+  "T29.cli.mysql-multi-statement",
+  "T29.cli.mysql-parser-negative",
+  "T29.cli.tidb-create-vendor",
+  "T29.cli.tidb-drop-vendor",
+  "T29.meta.mysql57-trigger-lifecycle",
+  "T29.meta.mysql80-trigger-lifecycle",
+  "T29.meta.mysql84-trigger-lifecycle",
+  "T29.db.mysql57.ddl",
+  "T29.db.mysql57.syntax_negative",
+  "T29.db.mysql80.ddl",
+  "T29.db.mysql80.syntax_negative",
+  "T29.db.mysql84.ddl",
+  "T29.db.mysql84.syntax_negative",
+  "T29.db.tidb85.ddl",
+  "T29.db.tidb85.syntax_negative"
+ ]
+}

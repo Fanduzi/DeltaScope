@@ -941,6 +941,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		// T29: trigger lifecycle notices.
 		{ruleID: ruleIDCreateTriggerNotice, construct: newMySQLTiDBCreateTriggerNoticeRule},
 		{ruleID: ruleIDDropTriggerNotice, construct: newMySQLTiDBDropTriggerNoticeRule},
+		{ruleID: ruleIDCreateTriggerOrderVersionRequire, construct: newTriggerOrderVersionRule},
 		// T28: routine-body variable shadowing analysis.
 		{ruleID: ruleIDRoutineVariableShadowingWarn, construct: newMySQLTiDBRoutineVariableShadowingRule},
 		{ruleID: ruleIDCreateUserNotice, construct: newCreateUserNoticeRule},

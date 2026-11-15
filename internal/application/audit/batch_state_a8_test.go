@@ -557,7 +557,7 @@ func TestT05A8WhitelistAndExecution(t *testing.T) {
 				statement := t05A8ValidProcedure()
 				statement.Dialect = dialect
 				statement.DDL.Operation = operation
-				if !procedureLifecyclePreservesTableState(statement) {
+				if !definitionLifecyclePreservesTableState(statement) {
 					t.Errorf("%s/%s: valid procedure not whitelisted", dialect, operation)
 				}
 			}
@@ -569,11 +569,11 @@ func TestT05A8WhitelistAndExecution(t *testing.T) {
 		statement.Unsupported = &spec.UnsupportedDetail{Feature: "execute_prepared", Reason: spec.UnsupportedVendorBoundaryReason}
 		statement.DDL.ObjectName = "arbitrary_name"
 		statement.DDL.Options = map[string]string{"has_body": "true", "params": "true"}
-		if !procedureLifecyclePreservesTableState(statement) {
+		if !definitionLifecyclePreservesTableState(statement) {
 			t.Error("identity must come only from the typed operation, not names/features/body aspects")
 		}
 		statement.DDL.Targets = []spec.Table{}
-		if !procedureLifecyclePreservesTableState(statement) {
+		if !definitionLifecyclePreservesTableState(statement) {
 			t.Error("empty-but-nonnil Targets must stay whitelisted")
 		}
 	})
@@ -605,7 +605,7 @@ func TestT05A8WhitelistAndExecution(t *testing.T) {
 		t.Run("predicate_negative/"+tc.name, func(t *testing.T) {
 			statement := t05A8ValidProcedure()
 			tc.mutate(&statement)
-			if procedureLifecyclePreservesTableState(statement) {
+			if definitionLifecyclePreservesTableState(statement) {
 				t.Errorf("mutation %s must not match the procedure whitelist", tc.name)
 			}
 		})
@@ -630,7 +630,7 @@ func TestT05A8WhitelistAndExecution(t *testing.T) {
 				Feature: "create_procedure", Reason: spec.UnsupportedVendorBoundaryReason,
 			},
 		}
-		if procedureLifecyclePreservesTableState(statement) {
+		if definitionLifecyclePreservesTableState(statement) {
 			t.Fatal("table-bound procedure must not match the whitelist")
 		}
 		if err := state.apply(ctx, statement); err != nil {

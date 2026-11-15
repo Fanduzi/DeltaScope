@@ -58,11 +58,12 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 			return report.Result{}, err
 		}
 
-		// A stored-routine definition audits its statically bounded body
-		// through the same registry: member findings bind to the parent
-		// statement index and the body's original source positions; member
-		// unsupported forms and evidence gaps degrade the parent's coverage
-		// exactly like top-level equivalents (T27/#106).
+		// A stored-routine or trigger definition audits its statically
+		// bounded body through the same registry: member findings bind to
+		// the parent statement index and the body's original source
+		// positions; member unsupported forms and evidence gaps degrade
+		// the parent's coverage exactly like top-level equivalents
+		// (T27/#106, T29/#108).
 		var bodyFindings []rule.Finding
 		var bodyUnsupported []spec.UnsupportedDetail
 		if statement.DDL != nil && ((statement.DDL.Routine != nil && statement.DDL.Routine.Body != nil) ||

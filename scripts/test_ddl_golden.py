@@ -760,6 +760,15 @@ def main():
             "cli_cases member slice without routine metadata rejected",
             member_artifact("EXECUTE s", {}), "sql identity", manifest=m))
 
+        # T29 (#108): trigger-body member entries carry the same verbatim
+        # member slice contract under trigger/trigger_member metadata.
+        results.append(check(
+            "cli_cases trigger member slice passes",
+            member_artifact("EXECUTE s", {"trigger": "tr", "trigger_member": 0}), "", manifest=m))
+        results.append(check(
+            "cli_cases fabricated trigger member slice rejected",
+            member_artifact("EXECUTE evil", {"trigger": "tr", "trigger_member": 0}), "sql identity", manifest=m))
+
         # ------------------------------------------------------------------
         # T04 (#83): evidence-gap, metadata-backed, and error-case contracts.
         # Gaps are a separate result channel — the validator must reject a

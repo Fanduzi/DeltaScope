@@ -13,10 +13,10 @@
   "summary": {
     "mysql": {
       "total": 63,
-      "finding_covered": 57,
+      "finding_covered": 59,
       "normalized_silent": 0,
       "unsupported_boundary": 0,
-      "parser_error": 6,
+      "parser_error": 4,
       "unclassified": 0
     },
     "postgresql": {
@@ -39,8 +39,8 @@
       "total": 57,
       "finding_covered": 43,
       "normalized_silent": 1,
-      "unsupported_boundary": 8,
-      "parser_error": 5,
+      "unsupported_boundary": 10,
+      "parser_error": 3,
       "unclassified": 0
     }
   },
@@ -644,17 +644,21 @@
       "dialect": "mysql",
       "family": "trigger_lifecycle",
       "form": "CREATE TRIGGER",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "notes": "parser error"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_trigger.notice"
+      ],
+      "notes": ""
     },
     {
       "dialect": "mysql",
       "family": "trigger_lifecycle",
       "form": "DROP TRIGGER",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "notes": "parser error"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.drop_trigger.notice"
+      ],
+      "notes": ""
     },
     {
       "dialect": "mysql",
@@ -4179,17 +4183,17 @@
       "dialect": "tidb",
       "family": "trigger_lifecycle",
       "form": "CREATE TRIGGER",
-      "classification": "parser_error",
+      "classification": "unsupported_boundary",
       "finding_rule_ids": [],
-      "notes": "parser error"
+      "notes": "recognized product boundary"
     },
     {
       "dialect": "tidb",
       "family": "trigger_lifecycle",
       "form": "DROP TRIGGER",
-      "classification": "parser_error",
+      "classification": "unsupported_boundary",
       "finding_rule_ids": [],
-      "notes": "parser error"
+      "notes": "recognized product boundary"
     },
     {
       "dialect": "tidb",

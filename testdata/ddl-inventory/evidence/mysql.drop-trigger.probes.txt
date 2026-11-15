@@ -1,0 +1,242 @@
+row_id: mysql.drop-trigger
+# sql_shape: DROP TRIGGER tr
+# dialect: mysql
+# binary HEAD 6e40e1be, generated 2026-11-15
+
+=== version 5.7 (target 5.7.44) rc=0 ===
+{
+    "verdict": "pass",
+    "coverage": {
+        "status": "complete"
+    },
+    "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 1
+    },
+    "statements": [
+        {
+            "index": 0,
+            "kind": "ddl",
+            "raw_sql": "DROP TRIGGER tr",
+            "normalized_sql": "DROP TRIGGER tr",
+            "findings": [
+                {
+                    "rule_id": "ddl.drop_trigger.notice",
+                    "level": "notice",
+                    "message": "DROP TRIGGER \"tr\" removes a trigger",
+                    "statement_kind": "ddl",
+                    "location": {
+                        "line": 1,
+                        "column": 1
+                    },
+                    "suggestion": "verify no application flow depends on this trigger before dropping",
+                    "metadata": {
+                        "object_name": "tr",
+                        "object_type": "trigger",
+                        "operation": "drop_trigger"
+                    },
+                    "explanation": {
+                        "summary": "Check DDL drop trigger notice",
+                        "why": "The statement matched the shipped governance rule for this pattern.",
+                        "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                        "suggestion": "verify no application flow depends on this trigger before dropping"
+                    }
+                }
+            ],
+            "coverage": {
+                "status": "complete"
+            }
+        }
+    ],
+    "version": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "target",
+        "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+        "loaded": 516,
+        "applicable": 1,
+        "skipped": [
+            {
+                "reason": "dialect_mismatch",
+                "count": 190
+            }
+        ]
+    },
+    "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+            "column_exists",
+            "table_exists"
+        ]
+    }
+}
+
+=== version 8.0 (target 8.0.46) rc=0 ===
+{
+    "verdict": "pass",
+    "coverage": {
+        "status": "complete"
+    },
+    "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 1
+    },
+    "statements": [
+        {
+            "index": 0,
+            "kind": "ddl",
+            "raw_sql": "DROP TRIGGER tr",
+            "normalized_sql": "DROP TRIGGER tr",
+            "findings": [
+                {
+                    "rule_id": "ddl.drop_trigger.notice",
+                    "level": "notice",
+                    "message": "DROP TRIGGER \"tr\" removes a trigger",
+                    "statement_kind": "ddl",
+                    "location": {
+                        "line": 1,
+                        "column": 1
+                    },
+                    "suggestion": "verify no application flow depends on this trigger before dropping",
+                    "metadata": {
+                        "object_name": "tr",
+                        "object_type": "trigger",
+                        "operation": "drop_trigger"
+                    },
+                    "explanation": {
+                        "summary": "Check DDL drop trigger notice",
+                        "why": "The statement matched the shipped governance rule for this pattern.",
+                        "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                        "suggestion": "verify no application flow depends on this trigger before dropping"
+                    }
+                }
+            ],
+            "coverage": {
+                "status": "complete"
+            }
+        }
+    ],
+    "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "target",
+        "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+        "loaded": 516,
+        "applicable": 1,
+        "skipped": [
+            {
+                "reason": "dialect_mismatch",
+                "count": 190
+            }
+        ]
+    },
+    "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+            "column_exists",
+            "table_exists"
+        ]
+    }
+}
+
+=== version 8.4 (target 8.4.10) rc=0 ===
+{
+    "verdict": "pass",
+    "coverage": {
+        "status": "complete"
+    },
+    "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 1
+    },
+    "statements": [
+        {
+            "index": 0,
+            "kind": "ddl",
+            "raw_sql": "DROP TRIGGER tr",
+            "normalized_sql": "DROP TRIGGER tr",
+            "findings": [
+                {
+                    "rule_id": "ddl.drop_trigger.notice",
+                    "level": "notice",
+                    "message": "DROP TRIGGER \"tr\" removes a trigger",
+                    "statement_kind": "ddl",
+                    "location": {
+                        "line": 1,
+                        "column": 1
+                    },
+                    "suggestion": "verify no application flow depends on this trigger before dropping",
+                    "metadata": {
+                        "object_name": "tr",
+                        "object_type": "trigger",
+                        "operation": "drop_trigger"
+                    },
+                    "explanation": {
+                        "summary": "Check DDL drop trigger notice",
+                        "why": "The statement matched the shipped governance rule for this pattern.",
+                        "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                        "suggestion": "verify no application flow depends on this trigger before dropping"
+                    }
+                }
+            ],
+            "coverage": {
+                "status": "complete"
+            }
+        }
+    ],
+    "version": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "target",
+        "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+        "loaded": 516,
+        "applicable": 1,
+        "skipped": [
+            {
+                "reason": "dialect_mismatch",
+                "count": 190
+            }
+        ]
+    },
+    "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+            "column_exists",
+            "table_exists"
+        ]
+    }
+}
+

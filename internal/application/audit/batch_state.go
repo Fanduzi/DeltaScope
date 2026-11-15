@@ -460,7 +460,7 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 	if s.spatialTouching(statement) {
 		s.srsDepsStale = true
 	}
-	if procedureLifecyclePreservesTableState(statement) {
+	if definitionLifecyclePreservesTableState(statement) {
 		return ctx.Err()
 	}
 	if statement.DDL != nil && statement.DDL.Server != nil {
@@ -705,7 +705,11 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 	return nil
 }
 
-func procedureLifecyclePreservesTableState(statement spec.Statement) bool {
+// definitionLifecyclePreservesTableState reports whether the statement
+// is an inert object definition — procedures, functions, and triggers
+// whose create/alter/drop lifecycle never mutates table state (T29
+// widened the set beyond routines to triggers).
+func definitionLifecyclePreservesTableState(statement spec.Statement) bool {
 	if !orderedStateDialect(statement.Dialect) || statement.Kind != spec.KindDDL || statement.DDL == nil ||
 		statement.ResourceLimit != nil || statement.DML != nil || statement.DDL.Table != nil || len(statement.DDL.Targets) != 0 {
 		return false

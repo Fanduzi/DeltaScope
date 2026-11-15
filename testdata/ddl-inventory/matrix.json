@@ -11,9 +11,9 @@
   ],
   "status_counts": {
     "semantically_checked": 76,
-    "generic_notice": 13,
-    "mixed_coverage": 5,
-    "parser_unsupported": 7,
+    "generic_notice": 14,
+    "mixed_coverage": 6,
+    "parser_unsupported": 5,
     "explicit_unsupported": 2,
     "vendor_not_supported": 11
   },
@@ -3013,19 +3013,24 @@
       "id": "mysql.create-trigger",
       "product": "mysql",
       "owner": "T29",
-      "status": "parser_unsupported",
-      "parser_status": "unrecognized",
-      "audit_status": "not_applicable",
+      "status": "mixed_coverage",
+      "parser_status": "recognized",
+      "audit_status": "mixed",
       "applicability": [
         {
           "anchor": "mysql57",
           "version_range": 5.7,
           "official_presence": "documented",
           "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:testdata/ddl-inventory/evidence/mysql.create-trigger.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/trigger_body_analysis.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/trigger_t29_test.go",
+            "gate:T29"
           ]
         },
         {
@@ -3033,10 +3038,15 @@
           "version_range": 8.0,
           "official_presence": "documented",
           "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:testdata/ddl-inventory/evidence/mysql.create-trigger.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/trigger_body_analysis.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/trigger_t29_test.go",
+            "gate:T29"
           ]
         },
         {
@@ -3044,10 +3054,15 @@
           "version_range": 8.4,
           "official_presence": "documented",
           "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:testdata/ddl-inventory/evidence/mysql.create-trigger.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/trigger_body_analysis.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/trigger_t29_test.go",
+            "gate:T29"
           ]
         }
       ]
@@ -3056,19 +3071,23 @@
       "id": "mysql.drop-trigger",
       "product": "mysql",
       "owner": "T29",
-      "status": "parser_unsupported",
-      "parser_status": "unrecognized",
-      "audit_status": "not_applicable",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
       "applicability": [
         {
           "anchor": "mysql57",
           "version_range": 5.7,
           "official_presence": "documented",
           "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:testdata/ddl-inventory/evidence/mysql.drop-trigger.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/trigger_t29_test.go",
+            "gate:T29"
           ]
         },
         {
@@ -3076,10 +3095,14 @@
           "version_range": 8.0,
           "official_presence": "documented",
           "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:testdata/ddl-inventory/evidence/mysql.drop-trigger.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/trigger_t29_test.go",
+            "gate:T29"
           ]
         },
         {
@@ -3087,10 +3110,14 @@
           "version_range": 8.4,
           "official_presence": "documented",
           "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:testdata/ddl-inventory/evidence/mysql.drop-trigger.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/trigger_t29_test.go",
+            "gate:T29"
           ]
         }
       ]
@@ -5287,7 +5314,8 @@
           "parser_status": "unrecognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"
+            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md",
+            "gate:T29"
           ]
         }
       ]

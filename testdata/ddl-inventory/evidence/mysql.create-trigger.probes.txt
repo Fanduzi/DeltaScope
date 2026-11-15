@@ -1,0 +1,308 @@
+row_id: mysql.create-trigger
+# sql_shape: CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log
+# dialect: mysql
+# binary HEAD 6e40e1be, generated 2026-11-15
+
+=== version 5.7 (target 5.7.44) rc=1 ===
+{
+    "verdict": "reject",
+    "coverage": {
+        "status": "complete"
+    },
+    "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 1
+    },
+    "statements": [
+        {
+            "index": 0,
+            "kind": "ddl",
+            "raw_sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log",
+            "normalized_sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log",
+            "findings": [
+                {
+                    "rule_id": "ddl.create_trigger.notice",
+                    "level": "notice",
+                    "message": "CREATE TRIGGER \"tr\" registers a new trigger",
+                    "statement_kind": "ddl",
+                    "location": {
+                        "line": 1,
+                        "column": 1
+                    },
+                    "suggestion": "review trigger timing, event, and body effects before deploying",
+                    "metadata": {
+                        "object_name": "tr",
+                        "object_type": "trigger",
+                        "operation": "create_trigger"
+                    },
+                    "explanation": {
+                        "summary": "Check DDL create trigger notice",
+                        "why": "The statement matched the shipped governance rule for this pattern.",
+                        "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                        "suggestion": "review trigger timing, event, and body effects before deploying"
+                    }
+                },
+                {
+                    "rule_id": "dml.where.require",
+                    "level": "blocker",
+                    "message": "UPDATE and DELETE statements must include a WHERE clause",
+                    "statement_kind": "ddl",
+                    "location": {
+                        "line": 1,
+                        "column": 51
+                    },
+                    "suggestion": "add a WHERE clause that narrows the affected rows",
+                    "metadata": {
+                        "operation": "delete",
+                        "trigger": "tr",
+                        "trigger_member": 0
+                    },
+                    "explanation": {
+                        "summary": "Require DML where require",
+                        "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                        "risk": "Ignoring this rule can allow high-impact data changes to proceed with less safety review.",
+                        "suggestion": "add a WHERE clause that narrows the affected rows"
+                    }
+                }
+            ],
+            "coverage": {
+                "status": "complete"
+            }
+        }
+    ],
+    "version": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "target",
+        "validated_range": true
+    },
+    "fail_on_triggered": true,
+    "rule_summary": {
+        "loaded": 516,
+        "applicable": 8,
+        "skipped": [
+            {
+                "reason": "dialect_mismatch",
+                "count": 190
+            }
+        ]
+    },
+    "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+            "column_exists",
+            "table_exists"
+        ]
+    }
+}
+
+=== version 8.0 (target 8.0.46) rc=1 ===
+{
+    "verdict": "reject",
+    "coverage": {
+        "status": "complete"
+    },
+    "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 1
+    },
+    "statements": [
+        {
+            "index": 0,
+            "kind": "ddl",
+            "raw_sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log",
+            "normalized_sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log",
+            "findings": [
+                {
+                    "rule_id": "ddl.create_trigger.notice",
+                    "level": "notice",
+                    "message": "CREATE TRIGGER \"tr\" registers a new trigger",
+                    "statement_kind": "ddl",
+                    "location": {
+                        "line": 1,
+                        "column": 1
+                    },
+                    "suggestion": "review trigger timing, event, and body effects before deploying",
+                    "metadata": {
+                        "object_name": "tr",
+                        "object_type": "trigger",
+                        "operation": "create_trigger"
+                    },
+                    "explanation": {
+                        "summary": "Check DDL create trigger notice",
+                        "why": "The statement matched the shipped governance rule for this pattern.",
+                        "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                        "suggestion": "review trigger timing, event, and body effects before deploying"
+                    }
+                },
+                {
+                    "rule_id": "dml.where.require",
+                    "level": "blocker",
+                    "message": "UPDATE and DELETE statements must include a WHERE clause",
+                    "statement_kind": "ddl",
+                    "location": {
+                        "line": 1,
+                        "column": 51
+                    },
+                    "suggestion": "add a WHERE clause that narrows the affected rows",
+                    "metadata": {
+                        "operation": "delete",
+                        "trigger": "tr",
+                        "trigger_member": 0
+                    },
+                    "explanation": {
+                        "summary": "Require DML where require",
+                        "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                        "risk": "Ignoring this rule can allow high-impact data changes to proceed with less safety review.",
+                        "suggestion": "add a WHERE clause that narrows the affected rows"
+                    }
+                }
+            ],
+            "coverage": {
+                "status": "complete"
+            }
+        }
+    ],
+    "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "target",
+        "validated_range": true
+    },
+    "fail_on_triggered": true,
+    "rule_summary": {
+        "loaded": 516,
+        "applicable": 8,
+        "skipped": [
+            {
+                "reason": "dialect_mismatch",
+                "count": 190
+            }
+        ]
+    },
+    "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+            "column_exists",
+            "table_exists"
+        ]
+    }
+}
+
+=== version 8.4 (target 8.4.10) rc=1 ===
+{
+    "verdict": "reject",
+    "coverage": {
+        "status": "complete"
+    },
+    "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 1
+    },
+    "statements": [
+        {
+            "index": 0,
+            "kind": "ddl",
+            "raw_sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log",
+            "normalized_sql": "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log",
+            "findings": [
+                {
+                    "rule_id": "ddl.create_trigger.notice",
+                    "level": "notice",
+                    "message": "CREATE TRIGGER \"tr\" registers a new trigger",
+                    "statement_kind": "ddl",
+                    "location": {
+                        "line": 1,
+                        "column": 1
+                    },
+                    "suggestion": "review trigger timing, event, and body effects before deploying",
+                    "metadata": {
+                        "object_name": "tr",
+                        "object_type": "trigger",
+                        "operation": "create_trigger"
+                    },
+                    "explanation": {
+                        "summary": "Check DDL create trigger notice",
+                        "why": "The statement matched the shipped governance rule for this pattern.",
+                        "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                        "suggestion": "review trigger timing, event, and body effects before deploying"
+                    }
+                },
+                {
+                    "rule_id": "dml.where.require",
+                    "level": "blocker",
+                    "message": "UPDATE and DELETE statements must include a WHERE clause",
+                    "statement_kind": "ddl",
+                    "location": {
+                        "line": 1,
+                        "column": 51
+                    },
+                    "suggestion": "add a WHERE clause that narrows the affected rows",
+                    "metadata": {
+                        "operation": "delete",
+                        "trigger": "tr",
+                        "trigger_member": 0
+                    },
+                    "explanation": {
+                        "summary": "Require DML where require",
+                        "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                        "risk": "Ignoring this rule can allow high-impact data changes to proceed with less safety review.",
+                        "suggestion": "add a WHERE clause that narrows the affected rows"
+                    }
+                }
+            ],
+            "coverage": {
+                "status": "complete"
+            }
+        }
+    ],
+    "version": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "target",
+        "validated_range": true
+    },
+    "fail_on_triggered": true,
+    "rule_summary": {
+        "loaded": 516,
+        "applicable": 8,
+        "skipped": [
+            {
+                "reason": "dialect_mismatch",
+                "count": 190
+            }
+        ]
+    },
+    "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+            "column_exists",
+            "table_exists"
+        ]
+    }
+}
+

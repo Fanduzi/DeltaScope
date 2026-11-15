@@ -175,16 +175,12 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 			retagTriggerMemberFeatures(decl.Body)
 		}
 		applyCoverageBoundary(dialect, &statement, e.node)
-		if dialect == spec.DialectMySQL && !decl.OldNewValid() {
+		if dialect == spec.DialectMySQL {
 			// OLD/NEW legality is a static event fact — an INSERT body
 			// may never read OLD and a DELETE body never reads NEW.
-			statement.Unsupported = &spec.UnsupportedDetail{
-				Feature: "trigger.body.old_new", Reason: spec.UnsupportedUnauditedReason,
-				Metadata: map[string]any{
-					"trigger": decl.Name.Name, "event": string(decl.Event),
-					"uses_old": decl.UsesOld, "uses_new": decl.UsesNew,
-				},
-			}
+			// Marking lands on the violating member so sibling member
+			// findings and the lifecycle notice still surface (T29).
+			applyTriggerOldNewBounds(decl)
 		}
 		if dialect == spec.DialectTiDB {
 			statement.Unsupported = &spec.UnsupportedDetail{
