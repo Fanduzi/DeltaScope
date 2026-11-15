@@ -1598,6 +1598,294 @@
      "expect": "t"
     }
    ]
+  },
+  {
+   "id": "tidb85-composite-enable-notll-refused",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL_ENABLE='ON', ADD COLUMN c INT",
+   "policy": "t19-ttl",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t19r6_eon"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "fixture",
+     "sql": "CREATE DATABASE t19r6_eon;CREATE TABLE t19r6_eon.t (id INT PRIMARY KEY, note VARCHAR(16))",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "table exists",
+       "sql": "SHOW TABLES IN t19r6_eon LIKE 't'",
+       "expect": "t"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "ALTER TABLE t TTL_ENABLE='ON', ADD COLUMN c INT"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.table_option.ttl.ttl_enable",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl_enable",
+       "refusal": "no_ttl_config"
+      }
+     }
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   },
+   "post_verify": [
+    {
+     "assert": "audit read-only: composite never applied",
+     "sql": "SHOW CREATE TABLE t19r6_eon.t",
+     "contains": "`note` varchar(16)"
+    }
+   ]
+  },
+  {
+   "id": "tidb85-composite-enable-ttl-refused",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL_ENABLE='OFF', ADD COLUMN c INT",
+   "policy": "t19-ttl",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t19r6_eoff"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "fixture",
+     "sql": "CREATE DATABASE t19r6_eoff;CREATE TABLE t19r6_eoff.t (id INT PRIMARY KEY, created_at DATETIME) TTL=created_at+INTERVAL 30 DAY",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "ttl config present",
+       "sql": "SHOW CREATE TABLE t19r6_eoff.t",
+       "contains": "TTL=`created_at`"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "ALTER TABLE t TTL_ENABLE='OFF', ADD COLUMN c INT"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.table_option.ttl.ttl_enable",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl_enable",
+       "refusal": "multi_schema_change"
+      }
+     }
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   },
+   "post_verify": [
+    {
+     "assert": "audit read-only: composite never applied",
+     "sql": "SHOW CREATE TABLE t19r6_eoff.t",
+     "contains": "TTL=`created_at`"
+    }
+   ]
+  },
+  {
+   "id": "tidb85-composite-interval-ttl-refused",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL_JOB_INTERVAL='2h', DROP COLUMN note",
+   "policy": "t19-ttl",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t19r6_int"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "fixture",
+     "sql": "CREATE DATABASE t19r6_int;CREATE TABLE t19r6_int.t (id INT PRIMARY KEY, created_at DATETIME, note INT) TTL=created_at+INTERVAL 30 DAY",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "note column present",
+       "sql": "SHOW CREATE TABLE t19r6_int.t",
+       "contains": "`note` int"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "ALTER TABLE t TTL_JOB_INTERVAL='2h', DROP COLUMN note"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.table_option.ttl.ttl_job_interval",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl_job_interval",
+       "refusal": "multi_schema_change"
+      }
+     }
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   },
+   "post_verify": [
+    {
+     "assert": "audit read-only: composite never applied",
+     "sql": "SHOW CREATE TABLE t19r6_int.t",
+     "contains": "`note` int"
+    }
+   ]
+  },
+  {
+   "id": "tidb85-composite-ttldef-ttl-refused",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TTL=updated_at+INTERVAL 10 DAY, ADD COLUMN c INT",
+   "policy": "t19-ttl",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t19r6_def"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "fixture",
+     "sql": "CREATE DATABASE t19r6_def;CREATE TABLE t19r6_def.t (id INT PRIMARY KEY, created_at DATETIME, updated_at DATETIME) TTL=created_at+INTERVAL 30 DAY",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "ttl config present",
+       "sql": "SHOW CREATE TABLE t19r6_def.t",
+       "contains": "TTL=`created_at`"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "ALTER TABLE t TTL=updated_at+INTERVAL 10 DAY, ADD COLUMN c INT"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.table_option.ttl.ttl",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl",
+       "refusal": "multi_schema_change"
+      }
+     }
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   },
+   "post_verify": [
+    {
+     "assert": "audit read-only: composite never applied",
+     "sql": "SHOW CREATE TABLE t19r6_def.t",
+     "contains": "TTL=`created_at`"
+    }
+   ]
   }
  ],
  "cli_cases": [
@@ -2384,6 +2672,152 @@
     "finding_entries": [],
     "fail_on_triggered": false
    }
+  },
+  {
+   "id": "tidb-composite-enable-offline-refused",
+   "dialect": "tidb",
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "sql": "ALTER TABLE t TTL_ENABLE='ON', ADD COLUMN c INT;",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "ALTER TABLE t TTL_ENABLE='ON', ADD COLUMN c INT;"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.table_option.ttl.ttl_enable",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl_enable",
+       "refusal": "composite"
+      }
+     }
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "tidb-composite-ttldef-offline-refused",
+   "dialect": "tidb",
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "sql": "ALTER TABLE t TTL=created_at+INTERVAL 30 DAY, ADD COLUMN c INT;",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "ALTER TABLE t TTL=created_at+INTERVAL 30 DAY, ADD COLUMN c INT;"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.table_option.ttl.ttl",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl",
+       "refusal": "composite"
+      }
+     }
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "tidb-composite-dual-member-refused",
+   "dialect": "tidb",
+   "policy": "t19-ttl",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME) TTL=created_at+INTERVAL 1 DAY;\nALTER TABLE t TTL_ENABLE='OFF', TTL_JOB_INTERVAL='2h';",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 2,
+    "unsupported": 2,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "unverified",
+     "incomplete"
+    ],
+    "evidence_gaps": 1,
+    "statement_indices": [
+     0,
+     1
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME) TTL=created_at+INTERVAL 1 DAY;",
+     "ALTER TABLE t TTL_ENABLE='OFF', TTL_JOB_INTERVAL='2h';"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 1,
+      "feature": "alter_table.table_option.ttl.ttl_enable",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl_enable",
+       "refusal": "composite"
+      }
+     },
+     {
+      "index": 1,
+      "feature": "alter_table.table_option.ttl.ttl_job_interval",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "ttl",
+       "member": "ttl_job_interval",
+       "refusal": "composite"
+      }
+     }
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   }
   }
  ],
  "required_case_ids": [
@@ -2430,6 +2864,13 @@
   "T19.meta.tidb85-job-interval-on-enabled",
   "T19.meta.tidb85-remove-readd",
   "T19.meta.tidb85-remove-then-enable-refused",
-  "T19.meta.tidb85-remove-ttl"
+  "T19.meta.tidb85-remove-ttl",
+  "T19.cli.tidb-composite-dual-member-refused",
+  "T19.cli.tidb-composite-enable-offline-refused",
+  "T19.cli.tidb-composite-ttldef-offline-refused",
+  "T19.meta.tidb85-composite-enable-notll-refused",
+  "T19.meta.tidb85-composite-enable-ttl-refused",
+  "T19.meta.tidb85-composite-interval-ttl-refused",
+  "T19.meta.tidb85-composite-ttldef-ttl-refused"
  ]
 }
