@@ -1,0 +1,8 @@
+row_id: postgresql.drop-transform
+subaction_id: DROP TRANSFORM
+# sql_shape: DROP TRANSFORM FOR int LANGUAGE sql
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP TRANSFORM FOR int LANGUAGE sql","normalized_sql":"DROP TRANSFORM FOR int LANGUAGE sql","findings":[{"rule_id":"ddl.pg.drop_transform.warn","level":"warning","message":"PostgreSQL transform \"int4@sql\" dropped","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"if_exists":"false","object_name":"int4@sql","object_type":"transform","operation":"drop_transform"},"explanation":{"summary":"Warn on DDL pg drop transform warn","why":"DROP TRANSFORM permanently removes a transform that maps between a data type and a procedural language.","risk":"Dropping a transform breaks any PL functions that rely on the type-language mapping for data conversion.","suggestion":"Ensure no PL functions depend on this type-language transform before dropping."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

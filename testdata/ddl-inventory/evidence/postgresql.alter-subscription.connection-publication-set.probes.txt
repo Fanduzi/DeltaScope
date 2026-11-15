@@ -1,0 +1,8 @@
+row_id: postgresql.alter-subscription
+subaction_id: CONNECTION/PUBLICATION/SET
+# sql_shape: ALTER SUBSCRIPTION sub CONNECTION 'host=y'
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER SUBSCRIPTION sub CONNECTION 'host=y'","normalized_sql":"ALTER SUBSCRIPTION sub CONNECTION 'host=y'","findings":[{"rule_id":"ddl.pg.alter_subscription.notice","level":"notice","message":"PostgreSQL subscription \"sub\" altered — review replication configuration change","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"connection","has_connection":"true","object_name":"sub","object_type":"subscription","operation":"alter_subscription"},"explanation":{"summary":"Check DDL pg alter subscription notice","why":"ALTER SUBSCRIPTION modifies the replication connection, publication set, or run state of a subscription.","risk":"Changes to subscription configuration may interrupt replication, change the data set being replicated, or alter connection parameters.","suggestion":"Verify that the subscription change is compatible with the publisher and that replication will continue as expected."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

@@ -1,0 +1,8 @@
+row_id: postgresql.drop-type
+subaction_id: DROP TYPE
+# sql_shape: DROP TYPE mood
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP TYPE mood","normalized_sql":"DROP TYPE mood","findings":[{"rule_id":"ddl.pg.drop_type.advisory","level":"warning","message":"PostgreSQL type \"mood\" dropped — dependent schema objects may break","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"if_exists":"false","object_name":"mood","object_type":"type","operation":"drop_type"},"explanation":{"summary":"Check DDL pg drop type advisory","why":"DROP TYPE removes a type that tables, functions, casts, views, or application contracts may depend on.","risk":"Dependent objects can fail immediately, and restoring dropped type state may require coordinated schema recovery.","suggestion":"Verify no schema objects or application code depend on this type before dropping it."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

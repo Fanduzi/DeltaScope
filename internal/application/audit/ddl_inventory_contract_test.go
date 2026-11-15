@@ -178,17 +178,18 @@ func denominatorViolations(inv ddlInventory, baselineIDs map[string]bool) []stri
 	return out
 }
 
-// versionAnchors maps declared version strings to the four anchor identities.
+// versionAnchors maps declared version strings to the anchor identities.
 var versionAnchors = map[string]map[string]string{
-	"mysql": {"5.7": "mysql57", "8.0": "mysql80", "8.4": "mysql84"},
-	"tidb":  {"8.5": "tidb85"},
+	"mysql":      {"5.7": "mysql57", "8.0": "mysql80", "8.4": "mysql84"},
+	"tidb":       {"8.5": "tidb85"},
+	"postgresql": {"17": "postgresql17"},
 }
 
-var knownAnchors = map[string]bool{"mysql57": true, "mysql80": true, "mysql84": true, "tidb85": true}
+var knownAnchors = map[string]bool{"mysql57": true, "mysql80": true, "mysql84": true, "tidb85": true, "postgresql17": true}
 
 // anchorVersion maps each anchor identity back to the declared version string
 // used inside probe-evidence section headers ("=== version <v> ...").
-var anchorVersion = map[string]string{"mysql57": "5.7", "mysql80": "8.0", "mysql84": "8.4", "tidb85": "8.5"}
+var anchorVersion = map[string]string{"mysql57": "5.7", "mysql80": "8.0", "mysql84": "8.4", "tidb85": "8.5", "postgresql17": "17"}
 
 // ddlInventoryEvidenceDir is the committed per-row probe-evidence directory.
 // Probe files there are row-scoped and version-sectioned, which lets the gate
@@ -440,7 +441,7 @@ func TestDDLInventoryContract(t *testing.T) {
 		}
 		seen[row.ID] = true
 
-		if row.Product != "mysql" && row.Product != "tidb" {
+		if row.Product != "mysql" && row.Product != "tidb" && row.Product != "postgresql" {
 			t.Fatalf("row %q invalid product %q", row.ID, row.Product)
 		}
 		if len(row.Versions) == 0 {
@@ -457,7 +458,8 @@ func TestDDLInventoryContract(t *testing.T) {
 			sourceSet[s] = true
 		}
 		for _, v := range row.Versions {
-			if row.Product == "mysql" {
+			switch row.Product {
+			case "mysql":
 				src, ok := mysqlVersions[v]
 				if !ok {
 					t.Fatalf("row %q invalid mysql version %q", row.ID, v)
@@ -465,12 +467,19 @@ func TestDDLInventoryContract(t *testing.T) {
 				if !sourceSet[src] {
 					t.Fatalf("row %q version %s lacks its official source %s", row.ID, v, src)
 				}
-			} else {
+			case "tidb":
 				if v != "8.5" {
 					t.Fatalf("row %q invalid tidb version %q", row.ID, v)
 				}
 				if !sourceSet["tidb85"] {
 					t.Fatalf("row %q lacks tidb85 source", row.ID)
+				}
+			default:
+				if v != "17" {
+					t.Fatalf("row %q invalid postgresql version %q", row.ID, v)
+				}
+				if !sourceSet["postgresql17"] {
+					t.Fatalf("row %q lacks postgresql17 source", row.ID)
 				}
 			}
 		}

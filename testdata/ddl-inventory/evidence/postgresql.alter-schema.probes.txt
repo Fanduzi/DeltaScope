@@ -1,0 +1,7 @@
+row_id: postgresql.alter-schema
+# sql_shape: ALTER SCHEMA app RENAME TO app2
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER SCHEMA app RENAME TO app2","normalized_sql":"ALTER SCHEMA app RENAME TO app2","findings":[{"rule_id":"ddl.pg.alter_schema.rename.notice","level":"notice","message":"ALTER SCHEMA \"app\" RENAME changes namespace resolution on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"app","object_type":"schema","operation":"alter_schema"},"explanation":{"summary":"Check DDL pg alter schema rename notice","why":"Renaming a schema changes how PostgreSQL resolves unqualified object names for every object it contains.","risk":"Downstream queries, views, and application code that reference the old schema name will break until updated.","suggestion":"Before renaming, search for all references to the old schema name across application code, views, and functions."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

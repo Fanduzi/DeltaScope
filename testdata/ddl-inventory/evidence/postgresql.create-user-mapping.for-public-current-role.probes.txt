@@ -1,0 +1,8 @@
+row_id: postgresql.create-user-mapping
+subaction_id: FOR PUBLIC / CURRENT_ROLE
+# sql_shape: CREATE USER MAPPING FOR PUBLIC SERVER srv
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE USER MAPPING FOR PUBLIC SERVER srv","normalized_sql":"CREATE USER MAPPING FOR PUBLIC SERVER srv","findings":[{"rule_id":"ddl.pg.create_user_mapping.notice","level":"notice","message":"PostgreSQL user mapping \"public@srv\" created — review remote authentication mapping","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"public@srv","object_type":"user_mapping","operation":"create_user_mapping","server":"srv"},"explanation":{"summary":"Check DDL pg create user mapping notice","why":"CREATE USER MAPPING associates a local role with authentication credentials for a foreign server.","risk":"User mappings control which local roles can access which foreign servers and with what credentials. Misconfigured mappings may grant unintended remote access.","suggestion":"Confirm the mapped role, server, and authentication options are appropriate for the intended access pattern."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

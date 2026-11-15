@@ -1,0 +1,8 @@
+row_id: postgresql.create-materialized-view
+subaction_id: CREATE MATERIALIZED VIEW
+# sql_shape: CREATE MATERIALIZED VIEW mv AS SELECT * FROM users
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE MATERIALIZED VIEW mv AS SELECT * FROM users","normalized_sql":"CREATE MATERIALIZED VIEW mv AS SELECT * FROM users","coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":0,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

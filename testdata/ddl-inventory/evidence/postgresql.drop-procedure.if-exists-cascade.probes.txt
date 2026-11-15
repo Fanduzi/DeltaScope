@@ -1,0 +1,8 @@
+row_id: postgresql.drop-procedure
+subaction_id: IF EXISTS CASCADE
+# sql_shape: DROP PROCEDURE IF EXISTS p() CASCADE
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP PROCEDURE IF EXISTS p() CASCADE","normalized_sql":"DROP PROCEDURE IF EXISTS p() CASCADE","findings":[{"rule_id":"ddl.pg.drop_procedure.advisory","level":"notice","message":"DROP PROCEDURE \"p\" removes a routine that may have active dependents on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"p","object_type":"procedure","operation":"drop_procedure"},"explanation":{"summary":"Check DDL pg drop procedure advisory","why":"Dropping a procedure that is called by application code or other routines will cause runtime failures.","risk":"Any application or routine calling this procedure will raise an error. If CASCADE is used, dependent objects are silently destroyed.","suggestion":"Before dropping: 1) Search the codebase for CALL statements referencing this procedure. 2) Update or remove those references first. 3) Deploy the drop during a maintenance window with rollback readiness."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

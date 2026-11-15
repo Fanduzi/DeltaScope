@@ -1,0 +1,7 @@
+row_id: postgresql.revoke
+# sql_shape: REVOKE SELECT ON TABLE users FROM app
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"REVOKE SELECT ON TABLE users FROM app","normalized_sql":"REVOKE SELECT ON TABLE users FROM app","findings":[{"rule_id":"ddl.pg.revoke.table_privilege.notice","level":"notice","message":"REVOKE on table \"users\" — table privilege revoked on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"grantees":"app","object_name":"users","object_type":"table","operation":"revoke_table","privileges":"select"},"explanation":{"summary":"Check DDL pg revoke table privilege notice","why":"REVOKE removes table-level privileges from roles, changing who can access or modify table data.","risk":"Revoking privileges may break application queries or reporting pipelines that depend on the removed access.","suggestion":"Before revoking, verify no application or service relies on the privileges being removed."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

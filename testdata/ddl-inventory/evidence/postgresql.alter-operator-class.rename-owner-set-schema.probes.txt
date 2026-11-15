@@ -1,0 +1,8 @@
+row_id: postgresql.alter-operator-class
+subaction_id: RENAME/OWNER/SET SCHEMA
+# sql_shape: ALTER OPERATOR CLASS int4_ops USING btree RENAME TO int4_ops2
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER OPERATOR CLASS int4_ops USING btree RENAME TO int4_ops2","normalized_sql":"ALTER OPERATOR CLASS int4_ops USING btree RENAME TO int4_ops2","findings":[{"rule_id":"ddl.pg.alter_operator_class.notice","level":"notice","message":"PostgreSQL operator class \"int4_ops\" altered — operator class configuration changed","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"access_method":"btree","action":"rename","new_name":"int4_ops2","object_name":"int4_ops","object_type":"operator_class","operation":"alter_operator_class"},"explanation":{"summary":"Check DDL pg alter operator class notice","why":"ALTER OPERATOR CLASS changes the configuration of an existing operator class, such as renaming it, changing its owner, or moving it to a different schema.","risk":"Changing operator class configuration may affect index behavior and query planning that depends on the class.","suggestion":"Review the change to ensure index behavior remains correct."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

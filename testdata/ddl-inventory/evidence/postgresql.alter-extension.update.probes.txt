@@ -1,0 +1,8 @@
+row_id: postgresql.alter-extension
+subaction_id: UPDATE
+# sql_shape: ALTER EXTENSION pg_trgm UPDATE TO '1.7'
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER EXTENSION pg_trgm UPDATE TO '1.7'","normalized_sql":"ALTER EXTENSION pg_trgm UPDATE TO '1.7'","findings":[{"rule_id":"ddl.pg.alter_extension.update.notice","level":"notice","message":"PostgreSQL extension \"pg_trgm\" updated — review version change impact","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"update","object_name":"pg_trgm","object_type":"extension","operation":"alter_extension","version":"1.7"},"explanation":{"summary":"Check DDL pg alter extension update notice","why":"ALTER EXTENSION UPDATE changes the extension version, which may alter available functions, operators, or behavior.","risk":"Version upgrades can introduce breaking changes in function signatures, default behaviors, or deprecate previously stable features.","suggestion":"Review the extension changelog and test application behavior against the new version before deployment."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":4,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

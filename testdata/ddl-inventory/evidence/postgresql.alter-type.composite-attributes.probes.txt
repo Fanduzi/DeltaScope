@@ -1,0 +1,8 @@
+row_id: postgresql.alter-type
+subaction_id: composite attributes
+# sql_shape: ALTER TYPE pair ADD ATTRIBUTE c int
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TYPE pair ADD ATTRIBUTE c int","normalized_sql":"ALTER TYPE pair ADD ATTRIBUTE c int","findings":[{"rule_id":"ddl.pg.alter_type.add_attribute.notice","level":"notice","message":"PostgreSQL composite type \"pair\" attribute added — review schema contract change","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"add_attribute","attribute":"c","attribute_type":"pg_catalog.int4","object_name":"pair","object_type":"type","operation":"alter_type","type_kind":"composite"},"explanation":{"summary":"Check DDL pg alter type add attribute notice","why":"ALTER TYPE ... ADD ATTRIBUTE extends a composite type that tables, functions, and application code may depend on.","risk":"New attributes may break existing row-format consumers or require coordinated deployment with application changes.","suggestion":"Confirm the attribute name and type are stable and that downstream consumers can tolerate the structural change."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":7,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

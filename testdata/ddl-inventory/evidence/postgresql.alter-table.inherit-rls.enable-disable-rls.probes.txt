@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.inherit-rls
+subaction_id: ENABLE/DISABLE RLS
+# sql_shape: ALTER TABLE users ENABLE ROW LEVEL SECURITY
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users ENABLE ROW LEVEL SECURITY","normalized_sql":"ALTER TABLE users ENABLE ROW LEVEL SECURITY","findings":[{"rule_id":"ddl.pg.alter.enable_rls.notice","level":"notice","message":"ALTER TABLE %q ENABLE ROW LEVEL SECURITY activates row-level security on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"enable_rls","operation":"alter_table","table":"users","target":""},"explanation":{"summary":"Check DDL pg alter enable rls notice","why":"Enabling RLS requires policies to be defined, otherwise the table may become inaccessible to non-owners.","risk":"Without policies, RLS blocks all non-owner and non-superuser access to the table.","suggestion":"Ensure at least one policy exists before or immediately after enabling RLS."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":20,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

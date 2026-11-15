@@ -1,0 +1,7 @@
+row_id: postgresql.drop-domain
+# sql_shape: DROP DOMAIN us_postal
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP DOMAIN us_postal","normalized_sql":"DROP DOMAIN us_postal","findings":[{"rule_id":"ddl.pg.drop_domain.advisory","level":"warning","message":"PostgreSQL domain \"us_postal\" dropped — dependent columns may break","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"if_exists":"false","object_name":"us_postal","object_type":"domain","operation":"drop_domain"},"explanation":{"summary":"Check DDL pg drop domain advisory","why":"DROP DOMAIN removes a type that table columns may depend on, breaking those column definitions.","risk":"Columns using the domain lose their constraint boundary immediately, and restoring the domain state may require coordinated schema recovery.","suggestion":"Verify no table columns or application code depend on this domain before dropping it."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

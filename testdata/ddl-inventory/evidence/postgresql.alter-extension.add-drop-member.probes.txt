@@ -1,0 +1,8 @@
+row_id: postgresql.alter-extension
+subaction_id: ADD/DROP member
+# sql_shape: ALTER EXTENSION pg_trgm ADD TABLE users
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER EXTENSION pg_trgm ADD TABLE users","normalized_sql":"ALTER EXTENSION pg_trgm ADD TABLE users","findings":[{"rule_id":"ddl.pg.alter_extension.add_member.notice","level":"notice","message":"PostgreSQL extension \"pg_trgm\" member added — review extension dependency change","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"add_member","member":"users","member_type":"table","object_name":"pg_trgm","object_type":"extension","operation":"alter_extension"},"explanation":{"summary":"Check DDL pg alter extension add member notice","why":"ALTER EXTENSION ADD member includes an existing database object into the extension, making it dependent on the extension.","risk":"Objects added to an extension become owned by the extension and will be dropped if the extension is dropped.","suggestion":"Confirm the object membership is intentional and that dependent applications account for the coupling."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":4,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

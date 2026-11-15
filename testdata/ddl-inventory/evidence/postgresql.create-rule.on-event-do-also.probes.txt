@@ -1,0 +1,8 @@
+row_id: postgresql.create-rule
+subaction_id: ON event DO ALSO
+# sql_shape: CREATE RULE r AS ON INSERT TO users DO ALSO INSERT INTO audit VALUES (NEW.id)
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE RULE r AS ON INSERT TO users DO ALSO INSERT INTO audit VALUES (NEW.id)","normalized_sql":"CREATE RULE r AS ON INSERT TO users DO ALSO INSERT INTO audit VALUES (NEW.id)","findings":[{"rule_id":"ddl.pg.create_rule.notice","level":"notice","message":"PostgreSQL rewrite rule \"r\" created — query rewriting hook registered","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"event":"insert","object_name":"r","object_type":"rule","operation":"create_rule","table":"users"},"explanation":{"summary":"Check DDL pg create rule notice","why":"CREATE RULE defines a rewriting rule that intercepts queries on a target table and replaces or augments them with alternative actions.","risk":"Rewrite rules can silently alter query behavior, making debugging difficult. They are legacy features superseded by triggers in most cases.","suggestion":"Consider using triggers instead of rules. If rules are required, document their behavior clearly."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

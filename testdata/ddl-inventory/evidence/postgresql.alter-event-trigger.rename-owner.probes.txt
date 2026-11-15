@@ -1,0 +1,8 @@
+row_id: postgresql.alter-event-trigger
+subaction_id: RENAME/OWNER
+# sql_shape: ALTER EVENT TRIGGER et RENAME TO et2
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER EVENT TRIGGER et RENAME TO et2","normalized_sql":"ALTER EVENT TRIGGER et RENAME TO et2","findings":[{"rule_id":"ddl.pg.alter_event_trigger.notice","level":"notice","message":"PostgreSQL event trigger \"et\" altered — DDL event hook configuration changed","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"rename","new_name":"et2","object_name":"et","object_type":"event_trigger","operation":"alter_event_trigger"},"explanation":{"summary":"Check DDL pg alter event trigger notice","why":"ALTER EVENT TRIGGER changes the configuration of a DDL event trigger, such as enabling, renaming, or adjusting replica/always modes.","risk":"Changing event trigger configuration may affect DDL audit logging, governance hooks, or monitoring expectations.","suggestion":"Review the change to ensure event trigger governance remains effective."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

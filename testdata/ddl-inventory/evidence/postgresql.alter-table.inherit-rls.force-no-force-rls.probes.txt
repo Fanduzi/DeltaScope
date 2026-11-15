@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.inherit-rls
+subaction_id: FORCE/NO FORCE RLS
+# sql_shape: ALTER TABLE users FORCE ROW LEVEL SECURITY
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users FORCE ROW LEVEL SECURITY","normalized_sql":"ALTER TABLE users FORCE ROW LEVEL SECURITY","findings":[{"rule_id":"ddl.pg.alter.force_rls.notice","level":"notice","message":"ALTER TABLE %q FORCE ROW LEVEL SECURITY applies RLS to table owner on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"force_rls","operation":"alter_table","table":"users","target":""},"explanation":{"summary":"Check DDL pg alter force rls notice","why":"Force RLS makes policies apply to the table owner, overriding default owner exemptions.","risk":"The table owner may lose access to their own data if policies do not explicitly allow owner access.","suggestion":"Ensure owner-access policies are in place before forcing RLS."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":20,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

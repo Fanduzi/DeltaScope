@@ -1,0 +1,8 @@
+row_id: postgresql.alter-index
+subaction_id: SET TABLESPACE
+# sql_shape: ALTER INDEX idx SET TABLESPACE fast
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER INDEX idx SET TABLESPACE fast","normalized_sql":"ALTER INDEX idx SET TABLESPACE fast","findings":[{"rule_id":"ddl.pg.alter_index.set_tablespace.notice","level":"notice","message":"ALTER INDEX \"idx\" SET TABLESPACE moves index storage on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"idx","object_type":"index","operation":"alter_index"},"explanation":{"summary":"Check DDL pg alter index set tablespace notice","why":"Moving an index to a different tablespace changes its physical storage location.","risk":"The operation rewrites the index to the new tablespace, which can be I/O-intensive on large indexes.","suggestion":"Schedule tablespace moves during low-traffic windows and verify the target tablespace has sufficient space."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

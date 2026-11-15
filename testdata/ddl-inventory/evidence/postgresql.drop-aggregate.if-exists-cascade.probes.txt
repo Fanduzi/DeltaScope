@@ -1,0 +1,8 @@
+row_id: postgresql.drop-aggregate
+subaction_id: IF EXISTS CASCADE
+# sql_shape: DROP AGGREGATE IF EXISTS mysum(int) CASCADE
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP AGGREGATE IF EXISTS mysum(int) CASCADE","normalized_sql":"DROP AGGREGATE IF EXISTS mysum(int) CASCADE","findings":[{"rule_id":"ddl.pg.drop_aggregate.warn","level":"warning","message":"PostgreSQL aggregate \"mysum\" dropped — custom aggregation removed","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"cascade":"true","if_exists":"true","object_name":"mysum","object_type":"aggregate","operation":"drop_aggregate"},"explanation":{"summary":"Warn on DDL pg drop aggregate warn","why":"DROP AGGREGATE permanently removes a custom aggregate function from the database.","risk":"Dropping an aggregate invalidates any queries that use it. Dependent queries will fail until the aggregate is restored or rewritten.","suggestion":"Ensure no queries depend on this aggregate before dropping."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

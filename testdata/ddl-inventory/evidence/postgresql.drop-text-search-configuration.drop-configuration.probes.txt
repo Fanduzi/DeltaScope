@@ -1,0 +1,8 @@
+row_id: postgresql.drop-text-search-configuration
+subaction_id: DROP CONFIGURATION
+# sql_shape: DROP TEXT SEARCH CONFIGURATION cfg
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP TEXT SEARCH CONFIGURATION cfg","normalized_sql":"DROP TEXT SEARCH CONFIGURATION cfg","findings":[{"rule_id":"ddl.pg.drop_text_search_configuration.warn","level":"warning","message":"PostgreSQL text search configuration \"cfg\" dropped","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"if_exists":"false","object_name":"cfg","object_type":"text_search_configuration","operation":"drop_text_search_configuration"},"explanation":{"summary":"Warn on DDL pg drop text search configuration warn","why":"DROP TEXT SEARCH CONFIGURATION permanently removes a text search configuration from the database.","risk":"Dropping a text search configuration breaks any full-text search indexes or queries that depend on it.","suggestion":"Ensure no full-text search operations depend on this configuration before dropping."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

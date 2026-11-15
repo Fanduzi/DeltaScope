@@ -1,0 +1,7 @@
+row_id: postgresql.create-type
+# sql_shape: CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')","normalized_sql":"CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')","findings":[{"rule_id":"ddl.pg.create_type.enum.notice","level":"notice","message":"PostgreSQL enum type \"mood\" created — review schema contract change","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"mood","object_type":"type","operation":"create_type","type_kind":"enum"},"explanation":{"summary":"Check DDL pg create type enum notice","why":"CREATE TYPE ... AS ENUM introduces a shared schema contract that application code and table columns may depend on.","risk":"Enum labels are harder to evolve than ordinary lookup-table rows, and future changes may require coordinated deploys.","suggestion":"Confirm the enum is preferable to a lookup table and that label names are stable before deployment."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

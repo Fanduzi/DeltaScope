@@ -1,0 +1,7 @@
+row_id: postgresql.drop-index
+# sql_shape: DROP INDEX idx
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP INDEX idx","normalized_sql":"DROP INDEX idx","findings":[{"rule_id":"ddl.pg.drop_index.advisory","level":"notice","message":"DROP INDEX \"idx\" acquires an ACCESS EXCLUSIVE lock on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"index":"idx","operation":"drop_index"},"explanation":{"summary":"Check DDL pg drop index advisory","why":"PostgreSQL DROP INDEX takes an ACCESS EXCLUSIVE lock, blocking all reads and writes on the indexed table until the index metadata is removed.","risk":"Concurrent queries that reference the indexed columns may stall until the lock is released.","suggestion":"For production migrations, schedule DROP INDEX during a maintenance window or use a two-step approach: 1) CONCURRENTLY CREATE a replacement index if restructuring. 2) DROP the old index during low-traffic period."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

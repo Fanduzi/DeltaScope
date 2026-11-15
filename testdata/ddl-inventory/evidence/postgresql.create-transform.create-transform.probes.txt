@@ -1,0 +1,8 @@
+row_id: postgresql.create-transform
+subaction_id: CREATE TRANSFORM
+# sql_shape: CREATE TRANSFORM FOR int LANGUAGE sql (FROM SQL WITH FUNCTION fromsql(internal), TO SQL WITH FUNCTION tosql(internal))
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TRANSFORM FOR int LANGUAGE sql (FROM SQL WITH FUNCTION fromsql(internal), TO SQL WITH FUNCTION tosql(internal))","normalized_sql":"CREATE TRANSFORM FOR int LANGUAGE sql (FROM SQL WITH FUNCTION fromsql(internal), TO SQL WITH FUNCTION tosql(internal))","findings":[{"rule_id":"ddl.pg.create_transform.notice","level":"notice","message":"PostgreSQL transform \"int4@sql\" created","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"int4@sql","object_type":"transform","operation":"create_transform"},"explanation":{"summary":"Check DDL pg create transform notice","why":"CREATE TRANSFORM registers a mapping between a data type and a procedural language for automatic type conversion.","risk":"New transforms change how data flows between SQL and PL languages. Incorrect transforms can silently corrupt data conversion.","suggestion":"Verify the type-language mapping is correct and the transform is needed before deploying."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

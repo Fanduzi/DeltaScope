@@ -1,0 +1,8 @@
+row_id: postgresql.create-schema
+subaction_id: CREATE SCHEMA
+# sql_shape: CREATE SCHEMA app
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE SCHEMA app","normalized_sql":"CREATE SCHEMA app","findings":[{"rule_id":"ddl.pg.create_schema.notice","level":"notice","message":"CREATE SCHEMA \"app\" changes namespace and security boundaries on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"app","object_type":"schema","operation":"create_schema"},"explanation":{"summary":"Check DDL pg create schema notice","why":"Creating a schema adds a new namespace that affects object resolution, search_path behavior, and security boundaries.","risk":"New schemas change how PostgreSQL resolves unqualified object names and may expose or hide objects unexpectedly depending on search_path configuration.","suggestion":"Review whether the schema name follows naming conventions and whether GRANTs are needed to control access."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

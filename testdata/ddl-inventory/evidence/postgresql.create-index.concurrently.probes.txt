@@ -1,0 +1,8 @@
+row_id: postgresql.create-index
+subaction_id: CONCURRENTLY
+# sql_shape: CREATE INDEX CONCURRENTLY idx ON users (email)
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE INDEX CONCURRENTLY idx ON users (email)","normalized_sql":"CREATE INDEX CONCURRENTLY idx ON users (email)","findings":[{"rule_id":"ddl.index.secondary.prefix.require","level":"warning","message":"secondary index \"idx\" must use prefix \"idx_\"","statement_kind":"ddl","location":{"line":1,"column":1},"suggestion":"rename the index to start with \"idx_\"","metadata":{"index":"idx","kind":"secondary","prefix":"idx_","table":"users"},"explanation":{"summary":"Require DDL index secondary prefix require","why":"The statement is missing a clause, option, or object that the shipped policy requires.","risk":"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.","suggestion":"rename the index to start with \"idx_\""}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":12,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

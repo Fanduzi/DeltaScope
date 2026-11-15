@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.options
+subaction_id: SET/RESET storage parameters
+# sql_shape: ALTER TABLE users SET (fillfactor = 70)
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users SET (fillfactor = 70)","normalized_sql":"ALTER TABLE users SET (fillfactor = 70)","findings":[{"rule_id":"ddl.pg.alter.set_reloptions.warn","level":"warning","message":"ALTER TABLE SET (...) on PostgreSQL — 1 storage option(s) changed","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"set_reloptions","has_reloptions":"true","operation":"alter_table","option_count":"1","table":"users"},"explanation":{"summary":"Warn on DDL pg alter set reloptions warn","why":"SET (reloptions) changes table storage parameters such as fillfactor or autovacuum settings. These affect how PostgreSQL stores and maintains the table on disk.","risk":"Incorrect storage parameters can degrade performance or cause unexpected behavior. Some options require a table rewrite (e.g. fillfactor) or take effect only after the next VACUUM.","suggestion":"Review each storage parameter change against the table's workload profile. Apply fillfactor changes during a maintenance window if the table is large."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":20,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

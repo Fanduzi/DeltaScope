@@ -1,0 +1,7 @@
+row_id: postgresql.drop-operator
+# sql_shape: DROP OPERATOR === (int, int)
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP OPERATOR === (int, int)","normalized_sql":"DROP OPERATOR === (int, int)","findings":[{"rule_id":"ddl.pg.drop_operator.warn","level":"warning","message":"PostgreSQL operator \"===\" dropped — custom operator removed","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"if_exists":"false","object_name":"===","object_type":"operator","operation":"drop_operator"},"explanation":{"summary":"Warn on DDL pg drop operator warn","why":"DROP OPERATOR permanently removes a custom operator from the database.","risk":"Dropping an operator invalidates any queries that use it. Dependent queries will fail until the operator is restored.","suggestion":"Ensure no queries depend on this operator before dropping."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

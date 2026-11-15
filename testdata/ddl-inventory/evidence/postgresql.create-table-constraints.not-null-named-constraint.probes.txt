@@ -1,0 +1,8 @@
+row_id: postgresql.create-table-constraints
+subaction_id: NOT NULL named constraint
+# sql_shape: CREATE TABLE users (id bigint, CONSTRAINT nn NOT NULL id)
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=2 ===
+{"verdict":"","coverage":{"status":"incomplete"},"summary":{"statements":0,"blockers":0,"warnings":0,"notices":0},"diagnostics":[{"classification":"parser_error","reason":"statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred","action_hint":"verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available","audited":false,"dialect":"postgresql","line":1,"column":1}],"fail_on_triggered":false,"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

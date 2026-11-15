@@ -1,0 +1,8 @@
+row_id: postgresql.create-policy
+subaction_id: PERMISSIVE/RESTRICTIVE
+# sql_shape: CREATE POLICY p ON users AS RESTRICTIVE FOR SELECT TO app USING (true)
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE POLICY p ON users AS RESTRICTIVE FOR SELECT TO app USING (true)","normalized_sql":"CREATE POLICY p ON users AS RESTRICTIVE FOR SELECT TO app USING (true)","findings":[{"rule_id":"ddl.pg.create_policy.notice","level":"notice","message":"CREATE POLICY \"p\" defines row-level security policy on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"p","object_type":"policy","operation":"create_policy"},"explanation":{"summary":"Check DDL pg create policy notice","why":"Creating a policy adds a row-level security rule that controls data access at the row level.","risk":"Policies control which rows users can see or modify. Misconfigured policies may silently expose or restrict data.","suggestion":"Review the policy name and ensure the USING/WITH CHECK expressions match intended access patterns."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

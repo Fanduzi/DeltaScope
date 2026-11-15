@@ -1,0 +1,7 @@
+row_id: postgresql.alter-table.rename-owner
+# sql_shape: ALTER TABLE users RENAME TO members
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=1 ===
+{"verdict":"reject","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":1,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users RENAME TO members","normalized_sql":"ALTER TABLE users RENAME TO members","findings":[{"rule_id":"ddl.alter.rename_table.forbid","level":"blocker","message":"ALTER TABLE rename table is forbidden for \"users\"","statement_kind":"ddl","location":{"line":1,"column":1},"suggestion":"avoid rename table in this change or relax the policy intentionally","metadata":{"action":"rename_table","name":"users","table":"users"},"explanation":{"summary":"Forbid DDL alter rename table forbid","why":"The statement uses a construct that the shipped policy explicitly forbids.","risk":"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.","suggestion":"avoid rename table in this change or relax the policy intentionally"}}],"coverage":{"status":"complete"}}],"fail_on_triggered":true,"rule_summary":{"loaded":521,"applicable":21,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

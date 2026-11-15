@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.column-attributes
+subaction_id: SET n_distinct / RESET
+# sql_shape: ALTER TABLE users ALTER COLUMN email SET (n_distinct = 100)
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users ALTER COLUMN email SET (n_distinct = 100)","normalized_sql":"ALTER TABLE users ALTER COLUMN email SET (n_distinct = 100)","findings":[{"rule_id":"ddl.pg.alter.set_column_options.notice","level":"notice","message":"ALTER TABLE ALTER COLUMN SET (...) on PostgreSQL — 1 column option(s) changed","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"set_column_options","column":"email","has_column_options":"true","operation":"alter_table","option_count":"1","table":"users"},"explanation":{"summary":"Check DDL pg alter set column options notice","why":"SET (column options) changes per-column storage parameters such as n_distinct. These affect planner statistics and query optimization.","risk":"Incorrect column options can degrade query performance by misguiding the planner. Changes take effect after the next ANALYZE.","suggestion":"Review each column option change against the table's query workload. Re-analyze the table after changes to apply updated statistics."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":20,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

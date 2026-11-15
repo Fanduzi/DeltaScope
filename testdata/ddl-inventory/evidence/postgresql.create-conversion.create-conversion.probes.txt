@@ -1,0 +1,8 @@
+row_id: postgresql.create-conversion
+subaction_id: CREATE CONVERSION
+# sql_shape: CREATE CONVERSION conv FOR 'UTF8' TO 'LATIN1' FROM iso8859_1_to_utf8
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE CONVERSION conv FOR 'UTF8' TO 'LATIN1' FROM iso8859_1_to_utf8","normalized_sql":"CREATE CONVERSION conv FOR 'UTF8' TO 'LATIN1' FROM iso8859_1_to_utf8","findings":[{"rule_id":"ddl.pg.create_conversion.notice","level":"notice","message":"PostgreSQL conversion \"conv\" created — encoding conversion defined","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"conv","object_type":"conversion","operation":"create_conversion"},"explanation":{"summary":"Check DDL pg create conversion notice","why":"CREATE CONVERSION defines a custom encoding conversion that transforms text between character sets.","risk":"Custom conversions affect how text data is converted between encodings. Removing or changing them breaks dependent conversion operations.","suggestion":"Verify that the conversion source and target encodings match application expectations."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

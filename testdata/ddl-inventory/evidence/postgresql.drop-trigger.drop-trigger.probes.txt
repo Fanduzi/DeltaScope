@@ -1,0 +1,8 @@
+row_id: postgresql.drop-trigger
+subaction_id: DROP TRIGGER
+# sql_shape: DROP TRIGGER trg ON users
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP TRIGGER trg ON users","normalized_sql":"DROP TRIGGER trg ON users","findings":[{"rule_id":"ddl.pg.drop_trigger.advisory","level":"notice","message":"DROP TRIGGER \"trg\" removes a trigger on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"trg","object_type":"trigger","operation":"drop_trigger"},"explanation":{"summary":"Check DDL pg drop trigger advisory","why":"Dropping a trigger removes procedural logic that may be relied upon by application workflows.","risk":"Removing a trigger silently disables event-driven behavior without downstream notification.","suggestion":"Verify no application workflows depend on this trigger before dropping."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

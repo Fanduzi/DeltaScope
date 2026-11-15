@@ -1,0 +1,8 @@
+row_id: postgresql.create-event-trigger
+subaction_id: sql_drop / table_rewrite
+# sql_shape: CREATE EVENT TRIGGER et ON sql_drop EXECUTE FUNCTION et_fn()
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE EVENT TRIGGER et ON sql_drop EXECUTE FUNCTION et_fn()","normalized_sql":"CREATE EVENT TRIGGER et ON sql_drop EXECUTE FUNCTION et_fn()","findings":[{"rule_id":"ddl.pg.create_event_trigger.notice","level":"notice","message":"PostgreSQL event trigger \"et\" created — DDL event hook registered","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"event":"sql_drop","function":"et_fn","object_name":"et","object_type":"event_trigger","operation":"create_event_trigger"},"explanation":{"summary":"Check DDL pg create event trigger notice","why":"Event triggers fire on DDL events such as ddl_command_start and ddl_command_end. They execute a user-defined function when the event occurs.","risk":"Event triggers can intercept, log, or block DDL operations. Misconfigured event triggers may disrupt schema changes or introduce unexpected side effects.","suggestion":"Verify that the event trigger function is reviewed and the event scope is intentional."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

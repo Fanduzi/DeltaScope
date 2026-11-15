@@ -1,0 +1,8 @@
+row_id: postgresql.comment
+subaction_id: IS NULL
+# sql_shape: COMMENT ON TABLE users IS NULL
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"COMMENT ON TABLE users IS NULL","normalized_sql":"COMMENT ON TABLE users IS NULL","findings":[{"rule_id":"ddl.pg.comment_on.remove.notice","level":"notice","message":"PostgreSQL comment removed from \"users\" — metadata annotation cleared","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"is_null":"true","object_name":"users","object_type":"comment","operation":"comment_on","target_name":"users","target_type":"table"},"explanation":{"summary":"Check DDL pg comment on remove notice","why":"COMMENT ON ... IS NULL removes the descriptive metadata from a database object.","risk":"Removing comments may reduce documentation coverage for the schema.","suggestion":"Verify that the comment removal is intentional and not accidental."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

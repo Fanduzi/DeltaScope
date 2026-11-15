@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.column-attributes
+subaction_id: SET STATISTICS
+# sql_shape: ALTER TABLE users ALTER COLUMN email SET STATISTICS 100
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users ALTER COLUMN email SET STATISTICS 100","normalized_sql":"ALTER TABLE users ALTER COLUMN email SET STATISTICS 100","findings":[{"rule_id":"ddl.pg.alter.set_column_statistics.notice","level":"notice","message":"ALTER TABLE ALTER COLUMN SET STATISTICS on PostgreSQL — statistics target kind: value","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"set_statistics","column":"email","has_statistics_target":"true","operation":"alter_table","statistics_target_kind":"value","table":"users"},"explanation":{"summary":"Check DDL pg alter set column statistics notice","why":"SET STATISTICS changes the statistics target for the planner's column statistics. A higher target improves estimate accuracy but increases ANALYZE time.","risk":"Setting statistics too high on many columns can slow ANALYZE significantly. Setting too low may cause poor query plans.","suggestion":"Review whether the statistics target change is necessary for this column's query patterns. The default target (-1) uses the system default."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":20,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

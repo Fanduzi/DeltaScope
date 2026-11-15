@@ -1,0 +1,8 @@
+row_id: postgresql.alter-domain
+subaction_id: SET/DROP DEFAULT
+# sql_shape: ALTER DOMAIN us_postal SET DEFAULT '00000'
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER DOMAIN us_postal SET DEFAULT '00000'","normalized_sql":"ALTER DOMAIN us_postal SET DEFAULT '00000'","findings":[{"rule_id":"ddl.pg.alter_domain.default.notice","level":"notice","message":"PostgreSQL domain \"us_postal\" default changed — review default state transition","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"set_default","has_default":"true","object_name":"us_postal","object_type":"domain","operation":"alter_domain"},"explanation":{"summary":"Check DDL pg alter domain default notice","why":"ALTER DOMAIN SET/DROP DEFAULT changes the implicit value for columns using this domain that lack an explicit column-level default.","risk":"Changing the domain default does not affect existing rows but changes the implicit value for future inserts on all dependent columns.","suggestion":"Confirm the default transition is intentional and compatible with application insert logic."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":4,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

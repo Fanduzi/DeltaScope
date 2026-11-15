@@ -1,0 +1,8 @@
+row_id: postgresql.drop-access-method
+subaction_id: DROP ACCESS METHOD
+# sql_shape: DROP ACCESS METHOD heap2
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP ACCESS METHOD heap2","normalized_sql":"DROP ACCESS METHOD heap2","findings":[{"rule_id":"ddl.pg.drop_access_method.warn","level":"warning","message":"PostgreSQL access method \"heap2\" dropped","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"if_exists":"false","object_name":"heap2","object_type":"access_method","operation":"drop_access_method"},"explanation":{"summary":"Warn on DDL pg drop access method warn","why":"DROP ACCESS METHOD permanently removes a table access method that defines how tables are stored and accessed.","risk":"Dropping an access method breaks any tables that use it for storage. Existing tables become inaccessible.","suggestion":"Ensure no tables use this access method before dropping."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

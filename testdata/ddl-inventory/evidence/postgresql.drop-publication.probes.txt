@@ -1,0 +1,7 @@
+row_id: postgresql.drop-publication
+# sql_shape: DROP PUBLICATION pub
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP PUBLICATION pub","normalized_sql":"DROP PUBLICATION pub","findings":[{"rule_id":"ddl.pg.drop_publication.warn","level":"warning","message":"PostgreSQL publication \"pub\" dropped — subscribers will stop receiving changes","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"if_exists":"false","object_name":"pub","object_type":"publication","operation":"drop_publication"},"explanation":{"summary":"Warn on DDL pg drop publication warn","why":"DROP PUBLICATION removes the publication, causing all associated subscriptions to stop receiving changes.","risk":"Existing subscriptions referencing this publication will enter an error state and replication will halt.","suggestion":"Verify all subscribers have been redirected or are prepared for replication to stop before dropping."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

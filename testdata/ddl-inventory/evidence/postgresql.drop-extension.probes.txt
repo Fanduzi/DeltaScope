@@ -1,0 +1,7 @@
+row_id: postgresql.drop-extension
+# sql_shape: DROP EXTENSION pg_trgm
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP EXTENSION pg_trgm","normalized_sql":"DROP EXTENSION pg_trgm","findings":[{"rule_id":"ddl.pg.drop_extension.advisory","level":"warning","message":"PostgreSQL extension \"pg_trgm\" dropped — dependent objects may break","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"if_exists":"false","object_name":"pg_trgm","object_type":"extension","operation":"drop_extension"},"explanation":{"summary":"Check DDL pg drop extension advisory","why":"DROP EXTENSION removes server-side functionality that functions, indexes, or application code may depend on.","risk":"Dependent objects using extension-provided types, functions, or operators will fail immediately after the extension is removed.","suggestion":"Verify no schema objects or application code depend on this extension before dropping it."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

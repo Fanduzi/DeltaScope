@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.options
+subaction_id: REPLICA IDENTITY
+# sql_shape: ALTER TABLE users REPLICA IDENTITY FULL
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users REPLICA IDENTITY FULL","normalized_sql":"ALTER TABLE users REPLICA IDENTITY FULL","findings":[{"rule_id":"ddl.pg.alter.replica_identity_full.warn","level":"warning","message":"REPLICA IDENTITY FULL enabled on PostgreSQL — logical replication may emit full row images","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"replica_identity","identity":"full","operation":"alter_table","table":"users"},"explanation":{"summary":"Warn on DDL pg alter replica identity full warn","why":"REPLICA IDENTITY FULL causes PostgreSQL to use the entire old row as replica identity for UPDATE and DELETE when no suitable key is available.","risk":"Logical replication or CDC streams can grow significantly for wide or high-churn tables.","suggestion":"Prefer DEFAULT or USING INDEX when a stable key exists. Use FULL only when downstream consumers require it and the write volume is acceptable."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":22,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

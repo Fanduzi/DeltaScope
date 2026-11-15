@@ -1,0 +1,8 @@
+row_id: postgresql.create-type
+subaction_id: composite
+# sql_shape: CREATE TYPE pair AS (a int, b text)
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TYPE pair AS (a int, b text)","normalized_sql":"CREATE TYPE pair AS (a int, b text)","findings":[{"rule_id":"ddl.pg.create_type.composite.notice","level":"notice","message":"PostgreSQL composite type \"pair\" created — review schema contract change","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"attribute_names":"a,b","attributes":"2","object_name":"pair","object_type":"type","operation":"create_type","type_kind":"composite"},"explanation":{"summary":"Check DDL pg create type composite notice","why":"CREATE TYPE ... AS (...) introduces a structured type that tables, functions, and application code may depend on.","risk":"Composite type changes (adding, dropping, or altering attributes) are deferred operations that require coordinated deploys once the type is in use.","suggestion":"Confirm the attribute list is stable and that downstream consumers can tolerate the new type before deployment."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

@@ -1,0 +1,7 @@
+row_id: postgresql.create-domain
+# sql_shape: CREATE DOMAIN us_postal AS text CHECK (VALUE ~ '^[0-9]{5}$')
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE DOMAIN us_postal AS text CHECK (VALUE ~ '^[0-9]{5}$')","normalized_sql":"CREATE DOMAIN us_postal AS text CHECK (VALUE ~ '^[0-9]{5}$')","findings":[{"rule_id":"ddl.pg.create_domain.notice","level":"notice","message":"PostgreSQL domain \"us_postal\" created — review reusable type constraint boundary","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"base_type":"text","has_check":"true","object_name":"us_postal","object_type":"domain","operation":"create_domain"},"explanation":{"summary":"Check DDL pg create domain notice","why":"CREATE DOMAIN introduces a reusable type constraint that application code and table columns may depend on.","risk":"Domain constraints are schema-level contracts; changing them later affects all columns using the domain.","suggestion":"Confirm the domain name, base type, and constraint set are stable before deployment."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

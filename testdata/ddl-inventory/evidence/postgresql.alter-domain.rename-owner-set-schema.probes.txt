@@ -1,0 +1,8 @@
+row_id: postgresql.alter-domain
+subaction_id: RENAME/OWNER/SET SCHEMA
+# sql_shape: ALTER DOMAIN us_postal RENAME TO postal
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER DOMAIN us_postal RENAME TO postal","normalized_sql":"ALTER DOMAIN us_postal RENAME TO postal","findings":[{"rule_id":"ddl.pg.alter_domain.rename.notice","level":"notice","message":"PostgreSQL domain \"us_postal\" renamed — review schema reference impact","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"rename","new_name":"postal","object_name":"us_postal","object_type":"domain","operation":"alter_domain"},"explanation":{"summary":"Check DDL pg alter domain rename notice","why":"ALTER DOMAIN RENAME changes the domain name that dependent columns, application code, and schema scripts reference.","risk":"Existing column definitions continue using the domain, but application code, migration scripts, and documentation referencing the old name will break.","suggestion":"Coordinate the rename with all downstream references before deployment."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":4,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

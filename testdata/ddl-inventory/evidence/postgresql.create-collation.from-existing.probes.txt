@@ -1,0 +1,8 @@
+row_id: postgresql.create-collation
+subaction_id: FROM existing
+# sql_shape: CREATE COLLATION german2 FROM german
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE COLLATION german2 FROM german","normalized_sql":"CREATE COLLATION german2 FROM german","findings":[{"rule_id":"ddl.pg.create_collation.notice","level":"notice","message":"PostgreSQL collation \"german2\" created — string sort ordering defined","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"german2","object_type":"collation","operation":"create_collation"},"explanation":{"summary":"Check DDL pg create collation notice","why":"CREATE COLLATION defines a custom collation that controls how strings are sorted and compared in the database.","risk":"Custom collations affect query results and index ordering. Applications may behave differently if the collation definition changes or is removed.","suggestion":"Verify that the collation locale and provider are intentional and match application expectations."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

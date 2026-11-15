@@ -1,0 +1,8 @@
+row_id: postgresql.alter-type
+subaction_id: RENAME/OWNER/SET SCHEMA
+# sql_shape: ALTER TYPE mood RENAME TO feeling
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TYPE mood RENAME TO feeling","normalized_sql":"ALTER TYPE mood RENAME TO feeling","findings":[{"rule_id":"ddl.pg.alter_type.composite_rename.notice","level":"notice","message":"PostgreSQL type \"mood\" renamed — references may break","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"rename","new_name":"feeling","object_name":"mood","object_type":"type","operation":"alter_type","type_kind":"composite"},"explanation":{"summary":"Check DDL pg alter type composite rename notice","why":"ALTER TYPE ... RENAME TO changes the type name that columns, functions, casts, and application code reference.","risk":"Existing schema objects and application queries that reference the old type name will fail after this change.","suggestion":"Coordinate the rename with all dependent objects and application code. Use a multi-step migration if needed."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":7,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

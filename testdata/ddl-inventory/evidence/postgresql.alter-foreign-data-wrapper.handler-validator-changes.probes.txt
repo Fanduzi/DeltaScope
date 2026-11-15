@@ -1,0 +1,8 @@
+row_id: postgresql.alter-foreign-data-wrapper
+subaction_id: HANDLER/VALIDATOR changes
+# sql_shape: ALTER FOREIGN DATA WRAPPER fdw HANDLER new_handler
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER FOREIGN DATA WRAPPER fdw HANDLER new_handler","normalized_sql":"ALTER FOREIGN DATA WRAPPER fdw HANDLER new_handler","findings":[{"rule_id":"ddl.pg.alter_foreign_data_wrapper.notice","level":"notice","message":"PostgreSQL foreign data wrapper \"fdw\" altered — review external data access configuration change","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"has_handler":"true","object_name":"fdw","object_type":"foreign_data_wrapper","operation":"alter_foreign_data_wrapper"},"explanation":{"summary":"Check DDL pg alter foreign data wrapper notice","why":"ALTER FOREIGN DATA WRAPPER modifies the handler, validator, or options of an existing FDW.","risk":"Changes to FDW configuration affect all servers and foreign tables that use this wrapper.","suggestion":"Verify existing foreign servers and tables still function correctly after the FDW change."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

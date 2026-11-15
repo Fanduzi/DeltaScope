@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.constraints
+subaction_id: ADD CHECK
+# sql_shape: ALTER TABLE users ADD CONSTRAINT chk CHECK (id > 0)
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users ADD CONSTRAINT chk CHECK (id \u003e 0)","normalized_sql":"ALTER TABLE users ADD CONSTRAINT chk CHECK (id \u003e 0)","findings":[{"rule_id":"ddl.pg.alter.add_check.not_valid.require","level":"warning","message":"CHECK constraint \"chk\" without NOT VALID validates all existing rows immediately on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"add_constraint","constraint":"chk","constraint_type":"check","not_valid":false,"table":"users"},"explanation":{"summary":"Require DDL pg alter add check not valid require","why":"PostgreSQL validates a CHECK constraint against all existing rows at ADD CONSTRAINT time when NOT VALID is absent.","risk":"On large tables the validation scan can hold an ACCESS EXCLUSIVE lock, blocking reads and writes until it completes.","suggestion":"Use a two-step approach: 1) ADD CONSTRAINT ... NOT VALID to register the constraint without scanning existing rows. 2) VALIDATE CONSTRAINT in a separate step — it holds only a SHARE UPDATE EXCLUSIVE lock."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":22,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

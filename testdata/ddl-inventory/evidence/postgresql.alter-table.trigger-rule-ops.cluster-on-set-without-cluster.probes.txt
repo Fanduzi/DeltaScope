@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.trigger-rule-ops
+subaction_id: CLUSTER ON / SET WITHOUT CLUSTER
+# sql_shape: ALTER TABLE users CLUSTER ON users_pkey
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users CLUSTER ON users_pkey","normalized_sql":"ALTER TABLE users CLUSTER ON users_pkey","findings":[{"rule_id":"ddl.pg.alter.cluster_on.notice","level":"notice","message":"ALTER TABLE CLUSTER ON on PostgreSQL — cluster index true assigned","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"cluster_on","has_cluster_index":"true","index":"users_pkey","operation":"alter_table","table":"users"},"explanation":{"summary":"Check DDL pg alter cluster on notice","why":"CLUSTER ON designates an index as the clustering index for the table. Future CLUSTER commands will reorder the table physically according to this index.","risk":"The CLUSTER command requires an ACCESS EXCLUSIVE lock and rewrites the entire table. On large tables this can cause significant downtime.","suggestion":"Verify the selected index is appropriate for the table's access patterns. Schedule CLUSTER operations during maintenance windows for large tables."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":20,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

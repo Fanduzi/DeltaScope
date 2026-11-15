@@ -1,0 +1,8 @@
+row_id: postgresql.security-label
+subaction_id: SECURITY LABEL
+# sql_shape: SECURITY LABEL ON TABLE users IS 'classified'
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"SECURITY LABEL ON TABLE users IS 'classified'","normalized_sql":"SECURITY LABEL ON TABLE users IS 'classified'","findings":[{"rule_id":"ddl.pg.security_label.notice","level":"notice","message":"PostgreSQL security label set on \"users\" — mandatory access control annotation applied","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"is_null":"false","object_name":"users","object_type":"security_label","operation":"security_label","target_name":"users","target_type":"table"},"explanation":{"summary":"Check DDL pg security label notice","why":"SECURITY LABEL assigns a security classification to a database object for use with mandatory access control frameworks such as SELinux.","risk":"Security labels control data access through external security frameworks. Misapplied labels may restrict or expose data unintentionally.","suggestion":"Confirm the security label is appropriate for the object's sensitivity level and the target provider policy."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.trigger-rule-ops
+subaction_id: ENABLE/DISABLE RULE
+# sql_shape: ALTER TABLE users ENABLE RULE r
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users ENABLE RULE r","normalized_sql":"ALTER TABLE users ENABLE RULE r","findings":[{"rule_id":"ddl.pg.alter.enable_rule.notice","level":"notice","message":"Rule r enabled on PostgreSQL — query rewriting re-activated","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"enable_rule","operation":"alter_table","rule":"r","table":"users"},"explanation":{"summary":"Check DDL pg alter enable rule notice","why":"ENABLE RULE re-activates the named rewrite rule for all subsequent queries targeting the table. Query routing or transformation logic will resume immediately.","risk":"Applications that relied on the rule being disabled will now observe query rewriting behavior that was previously absent.","suggestion":"Confirm the rule logic is compatible with current query patterns and application expectations before enabling."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":20,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

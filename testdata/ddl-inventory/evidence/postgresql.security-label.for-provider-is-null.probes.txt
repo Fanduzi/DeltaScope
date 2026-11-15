@@ -1,0 +1,8 @@
+row_id: postgresql.security-label
+subaction_id: FOR provider / IS NULL
+# sql_shape: SECURITY LABEL FOR selinux ON TABLE users IS NULL
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"SECURITY LABEL FOR selinux ON TABLE users IS NULL","normalized_sql":"SECURITY LABEL FOR selinux ON TABLE users IS NULL","findings":[{"rule_id":"ddl.pg.security_label.remove.notice","level":"notice","message":"PostgreSQL security label removed from \"users\" — mandatory access control annotation cleared","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"is_null":"true","object_name":"users","object_type":"security_label","operation":"security_label","provider":"selinux","target_name":"users","target_type":"table"},"explanation":{"summary":"Check DDL pg security label remove notice","why":"SECURITY LABEL ... IS NULL removes the security classification from a database object.","risk":"Removing security labels may expose data that was previously protected by mandatory access control policies.","suggestion":"Verify that the label removal is intentional and the object no longer requires MAC protection."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

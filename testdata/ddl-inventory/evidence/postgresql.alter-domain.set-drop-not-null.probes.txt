@@ -1,0 +1,8 @@
+row_id: postgresql.alter-domain
+subaction_id: SET/DROP NOT NULL
+# sql_shape: ALTER DOMAIN us_postal SET NOT NULL
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER DOMAIN us_postal SET NOT NULL","normalized_sql":"ALTER DOMAIN us_postal SET NOT NULL","findings":[{"rule_id":"ddl.pg.alter_domain.not_null.notice","level":"notice","message":"PostgreSQL domain \"us_postal\" nullability changed — review NOT NULL constraint transition","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"set_not_null","not_null":"true","object_name":"us_postal","object_type":"domain","operation":"alter_domain"},"explanation":{"summary":"Check DDL pg alter domain not null notice","why":"ALTER DOMAIN SET/DROP NOT NULL changes the nullability contract for all columns using this domain.","risk":"Adding NOT NULL may reject existing nulls in dependent columns; dropping NOT NULL weakens a schema contract that applications may rely on.","suggestion":"Verify existing data satisfies the new nullability state before deployment."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":4,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

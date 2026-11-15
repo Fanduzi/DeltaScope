@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.options
+subaction_id: SET ACCESS METHOD
+# sql_shape: ALTER TABLE users SET ACCESS METHOD heap
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users SET ACCESS METHOD heap","normalized_sql":"ALTER TABLE users SET ACCESS METHOD heap","findings":[{"rule_id":"ddl.pg.alter.set_access_method.warn","level":"warning","message":"ALTER TABLE SET ACCESS METHOD heap on PostgreSQL — table will be rewritten","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"access_method":"heap","action":"set_access_method","is_default":"false","operation":"alter_table","table":"users"},"explanation":{"summary":"Warn on DDL pg alter set access method warn","why":"SET ACCESS METHOD changes how the table's data is stored on disk. PostgreSQL rewrites the entire table using the new access method, requiring an ACCESS EXCLUSIVE lock.","risk":"The table is inaccessible during the rewrite. All data is copied, which can be expensive for large tables. Changing to an incompatible access method may cause data loss or corruption.","suggestion":"Verify the target access method is installed and compatible with the table's schema. Schedule during a maintenance window and test on a non-production copy first."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":20,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

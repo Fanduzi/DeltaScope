@@ -1,0 +1,8 @@
+row_id: postgresql.alter-publication
+subaction_id: ADD/DROP/SET TABLE
+# sql_shape: ALTER PUBLICATION pub ADD TABLE orders
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER PUBLICATION pub ADD TABLE orders","normalized_sql":"ALTER PUBLICATION pub ADD TABLE orders","findings":[{"rule_id":"ddl.pg.alter_publication.notice","level":"notice","message":"PostgreSQL publication \"pub\" altered — review replication scope change","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"add_table","object_name":"pub","object_type":"publication","operation":"alter_publication"},"explanation":{"summary":"Check DDL pg alter publication notice","why":"ALTER PUBLICATION changes which tables or schemas are included in the publication.","risk":"Adding or removing tables from a publication affects which data changes are sent to subscribers.","suggestion":"Verify that subscriber-side expectations still hold after the publication membership change."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

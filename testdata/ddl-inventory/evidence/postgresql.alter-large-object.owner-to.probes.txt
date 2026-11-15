@@ -1,0 +1,8 @@
+row_id: postgresql.alter-large-object
+subaction_id: OWNER TO
+# sql_shape: ALTER LARGE OBJECT 12345 OWNER TO admin
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER LARGE OBJECT 12345 OWNER TO admin","normalized_sql":"ALTER LARGE OBJECT 12345 OWNER TO admin","findings":[{"rule_id":"ddl.pg.alter_large_object.owner.notice","level":"notice","message":"PostgreSQL large object \"12345\" owner changed","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"set_owner","object_name":"12345","object_type":"large_object","operation":"alter_large_object","owner":"admin"},"explanation":{"summary":"Check DDL pg alter large object owner notice","why":"ALTER LARGE OBJECT changes the owner of a large object (OID). Large objects store binary data outside normal tables.","risk":"Changing the owner of a large object affects which roles can read, write, or manage it.","suggestion":"Verify the new owner is the correct role for managing this large object's lifecycle."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

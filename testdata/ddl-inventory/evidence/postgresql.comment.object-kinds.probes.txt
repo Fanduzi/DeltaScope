@@ -1,0 +1,8 @@
+row_id: postgresql.comment
+subaction_id: object kinds
+# sql_shape: COMMENT ON INDEX idx IS 'lookup'
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"COMMENT ON INDEX idx IS 'lookup'","normalized_sql":"COMMENT ON INDEX idx IS 'lookup'","findings":[{"rule_id":"ddl.pg.comment_on.notice","level":"notice","message":"PostgreSQL comment set on \"idx\" — metadata annotation added","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"is_null":"false","object_name":"idx","object_type":"comment","operation":"comment_on","target_name":"idx","target_type":"index"},"explanation":{"summary":"Check DDL pg comment on notice","why":"COMMENT ON attaches descriptive metadata to a database object. Comments are visible in information_schema and psql \\d+ output.","risk":"Comments may contain sensitive information or assumptions about schema design that could mislead future developers.","suggestion":"Review that the comment does not contain sensitive information and accurately describes the object."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

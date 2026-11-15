@@ -1,0 +1,8 @@
+row_id: postgresql.alter-schema
+subaction_id: OWNER TO
+# sql_shape: ALTER SCHEMA app OWNER TO admin
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER SCHEMA app OWNER TO admin","normalized_sql":"ALTER SCHEMA app OWNER TO admin","findings":[{"rule_id":"ddl.pg.alter_schema.owner.notice","level":"notice","message":"ALTER SCHEMA \"app\" OWNER TO changes schema ownership on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"app","object_type":"schema","operation":"alter_schema"},"explanation":{"summary":"Check DDL pg alter schema owner notice","why":"Changing schema ownership transfers all privileges and default permissions associated with the schema.","risk":"The new owner gains full control over the schema and can drop or modify contained objects.","suggestion":"Verify the new owner role has appropriate permissions and that no access control policies are violated."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

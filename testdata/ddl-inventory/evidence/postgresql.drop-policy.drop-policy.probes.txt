@@ -1,0 +1,8 @@
+row_id: postgresql.drop-policy
+subaction_id: DROP POLICY
+# sql_shape: DROP POLICY p ON users
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP POLICY p ON users","normalized_sql":"DROP POLICY p ON users","findings":[{"rule_id":"ddl.pg.drop_policy.warn","level":"warning","message":"DROP POLICY \"p\" removes row-level security policy on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"p","object_type":"policy","operation":"drop_policy"},"explanation":{"summary":"Warn on DDL pg drop policy warn","why":"Dropping a policy removes row-level access control. If RLS is still enabled, the table may become inaccessible to non-owners.","risk":"Removing a policy while RLS is enabled can lock out non-owner users from the table entirely.","suggestion":"Ensure RLS is disabled or another policy covers the same access patterns before dropping."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

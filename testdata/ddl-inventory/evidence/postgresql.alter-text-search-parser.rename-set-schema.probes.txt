@@ -1,0 +1,8 @@
+row_id: postgresql.alter-text-search-parser
+subaction_id: RENAME/SET SCHEMA
+# sql_shape: ALTER TEXT SEARCH PARSER p RENAME TO p2
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TEXT SEARCH PARSER p RENAME TO p2","normalized_sql":"ALTER TEXT SEARCH PARSER p RENAME TO p2","findings":[{"rule_id":"ddl.pg.alter_text_search_parser.notice","level":"notice","message":"PostgreSQL text search parser \"p\" altered","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"rename","new_name":"p2","object_name":"p","object_type":"text_search_parser","operation":"alter_text_search_parser"},"explanation":{"summary":"Check DDL pg alter text search parser notice","why":"ALTER TEXT SEARCH PARSER changes a text search parser, such as renaming it or moving it to a different schema.","risk":"Changing a text search parser may affect full-text search behavior for configurations that depend on it.","suggestion":"Review the change to ensure full-text search behavior remains correct."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

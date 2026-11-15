@@ -1,0 +1,7 @@
+row_id: postgresql.alter-foreign-table
+# sql_shape: ALTER FOREIGN TABLE ft OPTIONS (ADD opt 'v')
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER FOREIGN TABLE ft OPTIONS (ADD opt 'v')","normalized_sql":"ALTER FOREIGN TABLE ft OPTIONS (ADD opt 'v')","findings":[{"rule_id":"ddl.pg.alter_foreign_table.notice","level":"notice","message":"PostgreSQL foreign table \"ft\" altered — review foreign table configuration change","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"alter_options","if_exists":"false","object_name":"ft","object_type":"foreign_table","operation":"alter_foreign_table"},"explanation":{"summary":"Check DDL pg alter foreign table notice","why":"ALTER FOREIGN TABLE modifies the definition of a foreign table, including column mappings and server options.","risk":"Changes to foreign table options may affect how data is fetched from the remote server or how columns are mapped.","suggestion":"Verify the remote schema still matches the foreign table definition after the change."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

@@ -1,0 +1,8 @@
+row_id: postgresql.create-text-search-parser
+subaction_id: CREATE PARSER
+# sql_shape: CREATE TEXT SEARCH PARSER p (START = prsd_start, GETTOKEN = prsd_nexttoken, END = prsd_end, LEXTYPES = prsd_lextype)
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TEXT SEARCH PARSER p (START = prsd_start, GETTOKEN = prsd_nexttoken, END = prsd_end, LEXTYPES = prsd_lextype)","normalized_sql":"CREATE TEXT SEARCH PARSER p (START = prsd_start, GETTOKEN = prsd_nexttoken, END = prsd_end, LEXTYPES = prsd_lextype)","findings":[{"rule_id":"ddl.pg.create_text_search_parser.notice","level":"notice","message":"PostgreSQL text search parser \"p\" created","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"p","object_type":"text_search_parser","operation":"create_text_search_parser"},"explanation":{"summary":"Check DDL pg create text search parser notice","why":"CREATE TEXT SEARCH PARSER defines a new text search parser for splitting documents into tokens during full-text search.","risk":"Text search parsers affect how documents are tokenized. Removing or changing them can break full-text search functionality.","suggestion":"Verify that the parser name and function signatures match application text search requirements."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

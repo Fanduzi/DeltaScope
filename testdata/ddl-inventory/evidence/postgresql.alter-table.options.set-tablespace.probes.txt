@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.options
+subaction_id: SET TABLESPACE
+# sql_shape: ALTER TABLE users SET TABLESPACE fast
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users SET TABLESPACE fast","normalized_sql":"ALTER TABLE users SET TABLESPACE fast","findings":[{"rule_id":"ddl.pg.alter.set_tablespace.notice","level":"notice","message":"ALTER TABLE SET TABLESPACE fast on PostgreSQL — table files will be moved","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"set_tablespace","operation":"alter_table","table":"users","tablespace":"fast"},"explanation":{"summary":"Check DDL pg alter set tablespace notice","why":"SET TABLESPACE moves all data files for the table to the named tablespace. This requires an ACCESS EXCLUSIVE lock and copies all data to the new location.","risk":"The table is inaccessible during the move. On large tables this can cause significant downtime. The target tablespace must have enough disk space.","suggestion":"Schedule during a maintenance window. Verify the target tablespace exists and has sufficient capacity. Consider whether the move is necessary or if the current tablespace is adequate."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":20,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

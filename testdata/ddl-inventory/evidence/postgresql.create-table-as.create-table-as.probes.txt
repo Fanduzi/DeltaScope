@@ -1,0 +1,8 @@
+row_id: postgresql.create-table-as
+subaction_id: CREATE TABLE AS
+# sql_shape: CREATE TABLE users_copy AS SELECT * FROM users
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=1 ===
+{"verdict":"review","coverage":{"status":"incomplete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"unknown","raw_sql":"CREATE TABLE users_copy AS SELECT * FROM users","normalized_sql":"CREATE TABLE users_copy AS SELECT * FROM users","coverage":{"status":"incomplete"}}],"unsupported":[{"feature":"create_table_as","sql":"CREATE TABLE users_copy AS SELECT * FROM users","reason":"postgresql create table as select is unsupported in v1"}],"diagnostics":[{"classification":"unsupported_statement","reason":"DeltaScope recognized this statement or feature but does not audit it yet","action_hint":"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release","audited":false,"dialect":"postgresql"}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":0,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

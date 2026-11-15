@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.options
+subaction_id: SET LOGGED/UNLOGGED
+# sql_shape: ALTER TABLE users SET LOGGED
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users SET LOGGED","normalized_sql":"ALTER TABLE users SET LOGGED","findings":[{"rule_id":"ddl.pg.alter.set_logged.notice","level":"notice","message":"ALTER TABLE SET LOGGED on table %q — table will be crash-safe on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"set_logged","operation":"alter_table","table":"users","target":""},"explanation":{"summary":"Check DDL pg alter set logged notice","why":"SET LOGGED marks the table as logged, meaning writes are written to the write-ahead log and survive crashes. This is the default for permanent tables.","risk":"Temporary or unlogged tables switched to logged will begin generating WAL. On large tables this may increase WAL volume significantly.","suggestion":"Verify that the increased WAL volume is acceptable for the replication and backup infrastructure."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":20,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

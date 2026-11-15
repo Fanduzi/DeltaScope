@@ -1,0 +1,8 @@
+row_id: postgresql.create-role
+subaction_id: USER alias
+# sql_shape: CREATE USER app LOGIN
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=1 ===
+{"verdict":"review","coverage":{"status":"incomplete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"unknown","raw_sql":"CREATE USER app LOGIN","normalized_sql":"CREATE USER app LOGIN","coverage":{"status":"incomplete"}}],"unsupported":[{"feature":"unknown","sql":"CREATE USER app LOGIN","reason":"postgresql statement type is not in the approved v1 subset"}],"diagnostics":[{"classification":"unsupported_statement","reason":"DeltaScope recognized this statement or feature but does not audit it yet","action_hint":"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release","audited":false,"dialect":"postgresql"}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":0,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

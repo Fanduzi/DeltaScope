@@ -1,0 +1,8 @@
+row_id: postgresql.drop-function
+subaction_id: DROP FUNCTION
+# sql_shape: DROP FUNCTION add(int,int)
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP FUNCTION add(int,int)","normalized_sql":"DROP FUNCTION add(int,int)","findings":[{"rule_id":"ddl.pg.drop_function.advisory","level":"notice","message":"DROP FUNCTION \"add\" removes a routine that may have active dependents on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"add","object_type":"function","operation":"drop_function"},"explanation":{"summary":"Check DDL pg drop function advisory","why":"Dropping a function that is referenced by views, triggers, other functions, or application code will cause those dependents to fail at runtime.","risk":"Any view, trigger, CHECK constraint, or application query calling this function will raise an error. If CASCADE is used, dependent objects are silently destroyed.","suggestion":"Before dropping: 1) Query pg_depend to find all objects referencing this function. 2) Update or drop dependents first. 3) Deploy the drop during a maintenance window with rollback readiness."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

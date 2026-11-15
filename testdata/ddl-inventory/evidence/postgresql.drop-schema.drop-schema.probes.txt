@@ -1,0 +1,8 @@
+row_id: postgresql.drop-schema
+subaction_id: DROP SCHEMA
+# sql_shape: DROP SCHEMA app
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP SCHEMA app","normalized_sql":"DROP SCHEMA app","findings":[{"rule_id":"ddl.pg.drop_schema.advisory","level":"notice","message":"DROP SCHEMA \"app\" removes all contained objects on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"app","object_type":"schema","operation":"drop_schema"},"explanation":{"summary":"Check DDL pg drop schema advisory","why":"DROP SCHEMA irreversibly removes the schema and every object it contains (tables, views, sequences, functions).","risk":"All dependent objects are destroyed. Downstream queries and application code referencing objects in this schema will break.","suggestion":"Verify no application or service references objects in this schema before dropping. Consider a two-step approach: 1) Move needed objects to another schema. 2) Drop the empty schema during a maintenance window."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

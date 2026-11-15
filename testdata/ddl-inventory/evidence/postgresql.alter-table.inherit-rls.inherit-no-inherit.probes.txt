@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.inherit-rls
+subaction_id: INHERIT/NO INHERIT
+# sql_shape: ALTER TABLE users INHERIT parents
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users INHERIT parents","normalized_sql":"ALTER TABLE users INHERIT parents","findings":[{"rule_id":"ddl.pg.alter.add_inherit.notice","level":"notice","message":"ALTER TABLE INHERIT — table inheritance added on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"add_inherit","operation":"alter_table","parent_table":"parents","relationship":"inheritance","table":"users"},"explanation":{"summary":"Check DDL pg alter add inherit notice","why":"INHERIT adds a parent table to the child table's inheritance hierarchy. The child table will include columns from the parent in queries.","risk":"Applications querying the child table may observe additional columns from the parent. Triggers and policies on the parent may affect the child.","suggestion":"Verify the inheritance relationship is intended and that application queries handle the expanded column set correctly."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":20,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

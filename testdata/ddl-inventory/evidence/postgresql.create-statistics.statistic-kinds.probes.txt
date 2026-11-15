@@ -1,0 +1,8 @@
+row_id: postgresql.create-statistics
+subaction_id: statistic kinds
+# sql_shape: CREATE STATISTICS st (dependencies, ndistinct, mcv) ON a, b FROM users
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE STATISTICS st (dependencies, ndistinct, mcv) ON a, b FROM users","normalized_sql":"CREATE STATISTICS st (dependencies, ndistinct, mcv) ON a, b FROM users","findings":[{"rule_id":"ddl.pg.create_statistics.notice","level":"notice","message":"PostgreSQL extended statistics \"st\" created — query planner correlation tracking defined","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"st","object_type":"statistics","operation":"create_statistics","target_table":"users"},"explanation":{"summary":"Check DDL pg create statistics notice","why":"CREATE STATISTICS defines extended statistics objects that help the query planner estimate cardinality for correlated columns.","risk":"Extended statistics affect query plan choices. Dropping or changing them may cause the planner to pick different execution paths.","suggestion":"Verify that the statistics target columns and kinds match the intended workload patterns."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

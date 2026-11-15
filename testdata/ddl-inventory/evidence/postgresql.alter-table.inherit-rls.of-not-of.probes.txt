@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.inherit-rls
+subaction_id: OF/NOT OF
+# sql_shape: ALTER TABLE users OF t_pair
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users OF t_pair","normalized_sql":"ALTER TABLE users OF t_pair","findings":[{"rule_id":"ddl.pg.alter.add_of_type.notice","level":"notice","message":"ALTER TABLE OF — typed table association added on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"add_of_type","operation":"alter_table","relationship":"typed_table","table":"users","type":"t_pair"},"explanation":{"summary":"Check DDL pg alter add of type notice","why":"OF associates the table with a composite type. The table's column structure must match the type's attributes.","risk":"The table must already have columns matching the composite type. Future ALTER TABLE operations may be constrained by the type association.","suggestion":"Verify the table's current column structure matches the composite type before associating."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":20,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

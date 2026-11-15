@@ -1,0 +1,7 @@
+row_id: postgresql.alter-conversion
+# sql_shape: ALTER CONVERSION conv RENAME TO conv2
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER CONVERSION conv RENAME TO conv2","normalized_sql":"ALTER CONVERSION conv RENAME TO conv2","findings":[{"rule_id":"ddl.pg.alter_conversion.notice","level":"notice","message":"PostgreSQL conversion \"conv\" altered — encoding conversion configuration changed","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"rename","new_name":"conv2","object_name":"conv","object_type":"conversion","operation":"alter_conversion"},"explanation":{"summary":"Check DDL pg alter conversion notice","why":"ALTER CONVERSION changes the configuration of an existing conversion, such as renaming it, changing its owner, or moving it to a different schema.","risk":"Changing conversion configuration may affect text encoding behavior that depends on the conversion.","suggestion":"Review the change to ensure encoding behavior remains correct for dependent operations."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

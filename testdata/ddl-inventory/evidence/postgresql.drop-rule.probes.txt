@@ -1,0 +1,7 @@
+row_id: postgresql.drop-rule
+# sql_shape: DROP RULE r ON users
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP RULE r ON users","normalized_sql":"DROP RULE r ON users","findings":[{"rule_id":"ddl.pg.drop_rule.warn","level":"warning","message":"PostgreSQL rewrite rule \"r\" dropped — query rewriting hook removed","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"if_exists":"false","object_name":"r","object_type":"rule","operation":"drop_rule"},"explanation":{"summary":"Warn on DDL pg drop rule warn","why":"DROP RULE permanently removes a rewrite rule from the database.","risk":"Dropping rules changes how queries are processed on the target table. Applications that relied on the rule's behavior may be affected.","suggestion":"Verify that no application logic depends on the rule's query rewriting before dropping."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

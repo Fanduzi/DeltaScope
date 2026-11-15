@@ -1,0 +1,8 @@
+row_id: postgresql.alter-operator
+subaction_id: OWNER/SET SCHEMA
+# sql_shape: ALTER OPERATOR === (int, int) OWNER TO admin
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER OPERATOR === (int, int) OWNER TO admin","normalized_sql":"ALTER OPERATOR === (int, int) OWNER TO admin","findings":[{"rule_id":"ddl.pg.alter_operator.notice","level":"notice","message":"PostgreSQL operator \"===\" altered — operator configuration changed","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"set_owner","object_name":"===","object_type":"operator","operation":"alter_operator","owner":"admin"},"explanation":{"summary":"Check DDL pg alter operator notice","why":"ALTER OPERATOR changes the configuration of an existing operator, such as changing its owner or moving it to a different schema.","risk":"Changing operator configuration may affect queries and application behavior that depends on the operator.","suggestion":"Review the change to ensure dependent queries remain correct."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

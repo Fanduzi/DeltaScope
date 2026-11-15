@@ -1,0 +1,8 @@
+row_id: postgresql.create-trigger
+subaction_id: REFERENCING / WHEN
+# sql_shape: CREATE TRIGGER trg BEFORE UPDATE ON users REFERENCING OLD TABLE AS ot FOR EACH ROW WHEN (OLD.id <> NEW.id) EXECUTE FUNCTION trg_fn()
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TRIGGER trg BEFORE UPDATE ON users REFERENCING OLD TABLE AS ot FOR EACH ROW WHEN (OLD.id \u003c\u003e NEW.id) EXECUTE FUNCTION trg_fn()","normalized_sql":"CREATE TRIGGER trg BEFORE UPDATE ON users REFERENCING OLD TABLE AS ot FOR EACH ROW WHEN (OLD.id \u003c\u003e NEW.id) EXECUTE FUNCTION trg_fn()","findings":[{"rule_id":"ddl.pg.create_trigger.notice","level":"notice","message":"CREATE TRIGGER \"trg\" defines a trigger on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"trg","object_type":"trigger","operation":"create_trigger"},"explanation":{"summary":"Check DDL pg create trigger notice","why":"Creating a trigger attaches procedural logic that fires on table events.","risk":"Triggers add implicit behavior that can be hard to trace and debug across table interactions.","suggestion":"Review the trigger name and verify the event timing and function match intended behavior."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":3,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

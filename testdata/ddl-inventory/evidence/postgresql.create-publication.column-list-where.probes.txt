@@ -1,0 +1,8 @@
+row_id: postgresql.create-publication
+subaction_id: column list / WHERE
+# sql_shape: CREATE PUBLICATION pub FOR TABLE users (id, name) WHERE (active)
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE PUBLICATION pub FOR TABLE users (id, name) WHERE (active)","normalized_sql":"CREATE PUBLICATION pub FOR TABLE users (id, name) WHERE (active)","findings":[{"rule_id":"ddl.pg.create_publication.notice","level":"notice","message":"PostgreSQL publication \"pub\" created — review logical replication change","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"pub","object_type":"publication","operation":"create_publication"},"explanation":{"summary":"Check DDL pg create publication notice","why":"CREATE PUBLICATION defines a publication for logical replication, controlling which table changes are replicated to subscribers.","risk":"Publications change the replication topology and may expose data to downstream systems that were not previously receiving changes.","suggestion":"Confirm the publication scope is intended and that downstream subscribers are prepared to receive the replicated data."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

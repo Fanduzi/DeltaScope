@@ -1,0 +1,8 @@
+row_id: postgresql.alter-default-privileges
+subaction_id: FOR ROLE / IN SCHEMA
+# sql_shape: ALTER DEFAULT PRIVILEGES FOR ROLE admin IN SCHEMA app GRANT SELECT ON TABLES TO ro
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=1 ===
+{"verdict":"review","coverage":{"status":"incomplete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"unknown","raw_sql":"ALTER DEFAULT PRIVILEGES FOR ROLE admin IN SCHEMA app GRANT SELECT ON TABLES TO ro","normalized_sql":"ALTER DEFAULT PRIVILEGES FOR ROLE admin IN SCHEMA app GRANT SELECT ON TABLES TO ro","coverage":{"status":"incomplete"}}],"unsupported":[{"feature":"alter_default_privileges","sql":"ALTER DEFAULT PRIVILEGES FOR ROLE admin IN SCHEMA app GRANT SELECT ON TABLES TO ro","reason":"postgresql alter default privileges is deferred"}],"diagnostics":[{"classification":"unsupported_statement","reason":"DeltaScope recognized this statement or feature but does not audit it yet","action_hint":"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release","audited":false,"dialect":"postgresql"}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":0,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

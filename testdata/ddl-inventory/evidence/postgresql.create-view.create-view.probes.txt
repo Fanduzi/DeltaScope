@@ -1,0 +1,8 @@
+row_id: postgresql.create-view
+subaction_id: CREATE VIEW
+# sql_shape: CREATE VIEW active_users AS SELECT * FROM users WHERE active
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=1 ===
+{"verdict":"reject","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":1,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE VIEW active_users AS SELECT * FROM users WHERE active","normalized_sql":"CREATE VIEW active_users AS SELECT * FROM users WHERE active","findings":[{"rule_id":"ddl.view.create.forbid","level":"blocker","message":"create view is forbidden for \"active_users\"","statement_kind":"ddl","location":{"line":1,"column":1},"suggestion":"avoid create view in this change or relax the policy intentionally","metadata":{"operation":"create_view","table":"active_users"},"explanation":{"summary":"Forbid DDL view create forbid","why":"The statement uses a construct that the shipped policy explicitly forbids.","risk":"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.","suggestion":"avoid create view in this change or relax the policy intentionally"}}],"coverage":{"status":"complete"}}],"fail_on_triggered":true,"rule_summary":{"loaded":521,"applicable":5,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

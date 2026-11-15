@@ -1,0 +1,8 @@
+row_id: postgresql.create-language
+subaction_id: OR REPLACE TRUSTED
+# sql_shape: CREATE OR REPLACE TRUSTED LANGUAGE plperl
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE OR REPLACE TRUSTED LANGUAGE plperl","normalized_sql":"CREATE OR REPLACE TRUSTED LANGUAGE plperl","findings":[{"rule_id":"ddl.pg.create_extension.notice","level":"notice","message":"PostgreSQL extension \"plperl\" created — review server-side dependency change","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"if_not_exists":"true","object_name":"plperl","object_type":"extension","operation":"create_extension"},"explanation":{"summary":"Check DDL pg create extension notice","why":"CREATE EXTENSION introduces server-side functionality that application code, indexes, or schema objects may depend on.","risk":"Extensions change the available functions, operators, and index methods on the database server, affecting portability and upgrade paths.","suggestion":"Confirm the extension is required and that target environments have it available before deployment."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

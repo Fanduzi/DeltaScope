@@ -1,0 +1,8 @@
+row_id: postgresql.alter-event-trigger
+subaction_id: DISABLE/ENABLE
+# sql_shape: ALTER EVENT TRIGGER et DISABLE
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER EVENT TRIGGER et DISABLE","normalized_sql":"ALTER EVENT TRIGGER et DISABLE","findings":[{"rule_id":"ddl.pg.alter_event_trigger.disable.warn","level":"warning","message":"PostgreSQL event trigger \"et\" disabled — DDL event hook deactivated","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"disable","object_name":"et","object_type":"event_trigger","operation":"alter_event_trigger"},"explanation":{"summary":"Warn on DDL pg alter event trigger disable warn","why":"ALTER EVENT TRIGGER DISABLE deactivates an event trigger, removing its DDL event interception.","risk":"Disabling event triggers may bypass audit logging or DDL governance that depends on the trigger. This can mask unauthorized schema changes.","suggestion":"Verify that disabling the event trigger does not compromise DDL audit or governance requirements."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

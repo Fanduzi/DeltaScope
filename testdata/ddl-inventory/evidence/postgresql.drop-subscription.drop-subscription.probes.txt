@@ -1,0 +1,8 @@
+row_id: postgresql.drop-subscription
+subaction_id: DROP SUBSCRIPTION
+# sql_shape: DROP SUBSCRIPTION sub
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP SUBSCRIPTION sub","normalized_sql":"DROP SUBSCRIPTION sub","findings":[{"rule_id":"ddl.pg.drop_subscription.warn","level":"warning","message":"PostgreSQL subscription \"sub\" dropped — replication terminated","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"if_exists":"false","object_name":"sub","object_type":"subscription","operation":"drop_subscription"},"explanation":{"summary":"Warn on DDL pg drop subscription warn","why":"DROP SUBSCRIPTION removes the subscription, terminating replication and cleaning up the replication slot by default.","risk":"Data changes on the publisher will no longer be replicated. The replication slot is dropped unless retained explicitly.","suggestion":"Verify that downstream dependencies on the replicated data have been migrated or are no longer needed."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

@@ -1,0 +1,8 @@
+row_id: postgresql.create-text-search-configuration
+subaction_id: COPY
+# sql_shape: CREATE TEXT SEARCH CONFIGURATION cfg (COPY = english)
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TEXT SEARCH CONFIGURATION cfg (COPY = english)","normalized_sql":"CREATE TEXT SEARCH CONFIGURATION cfg (COPY = english)","findings":[{"rule_id":"ddl.pg.create_text_search_configuration.notice","level":"notice","message":"PostgreSQL text search configuration \"cfg\" created","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"cfg","object_type":"text_search_configuration","operation":"create_text_search_configuration"},"explanation":{"summary":"Check DDL pg create text search configuration notice","why":"CREATE TEXT SEARCH CONFIGURATION defines a new text search configuration for controlling how documents are parsed and processed.","risk":"Text search configurations affect how full-text search indexes and queries behave. Removing or changing them can break search functionality.","suggestion":"Verify that the configuration name and copy source match application text search requirements."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

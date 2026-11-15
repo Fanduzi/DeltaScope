@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.options
+subaction_id: SET WITHOUT OIDS dead form
+# sql_shape: ALTER TABLE users SET WITHOUT OIDS
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users SET WITHOUT OIDS","normalized_sql":"ALTER TABLE users SET WITHOUT OIDS","coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":19,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

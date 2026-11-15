@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.constraints
+subaction_id: VALIDATE CONSTRAINT
+# sql_shape: ALTER TABLE users VALIDATE CONSTRAINT fk
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users VALIDATE CONSTRAINT fk","normalized_sql":"ALTER TABLE users VALIDATE CONSTRAINT fk","findings":[{"rule_id":"ddl.pg.alter.validate_constraint.advisory","level":"notice","message":"VALIDATE CONSTRAINT \"fk\" scans existing rows on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"validate_constraint","operation":"alter_table","table":"users","target":"fk"},"explanation":{"summary":"Check DDL pg alter validate constraint advisory","why":"VALIDATE CONSTRAINT checks all existing rows against the constraint definition. It holds a SHARE UPDATE EXCLUSIVE lock, which is less restrictive than ACCESS EXCLUSIVE but still blocks certain DDL.","risk":"On large tables the validation scan can take significant time, though it does not block reads or writes.","suggestion":"Schedule VALIDATE CONSTRAINT during low-traffic periods for large tables. Ensure the constraint was added with NOT VALID first for safe phased deployment."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":20,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

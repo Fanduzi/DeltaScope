@@ -1,0 +1,7 @@
+row_id: postgresql.drop-collation
+# sql_shape: DROP COLLATION german
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP COLLATION german","normalized_sql":"DROP COLLATION german","findings":[{"rule_id":"ddl.pg.drop_collation.warn","level":"warning","message":"PostgreSQL collation \"german\" dropped — string sort ordering removed","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"if_exists":"false","object_name":"german","object_type":"collation","operation":"drop_collation"},"explanation":{"summary":"Warn on DDL pg drop collation warn","why":"DROP COLLATION permanently removes a custom collation from the database.","risk":"Dropping a collation invalidates any columns, indexes, or queries that reference it. Dependent objects will fail until the collation is restored or references are updated.","suggestion":"Ensure no columns, indexes, or queries depend on this collation before dropping."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

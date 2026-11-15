@@ -1,0 +1,8 @@
+row_id: postgresql.alter-materialized-view
+subaction_id: RENAME/SET SCHEMA/OWNER
+# sql_shape: ALTER MATERIALIZED VIEW mv RENAME TO mv2
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER MATERIALIZED VIEW mv RENAME TO mv2","normalized_sql":"ALTER MATERIALIZED VIEW mv RENAME TO mv2","findings":[{"rule_id":"ddl.pg.alter_materialized_view.rename.notice","level":"notice","message":"ALTER MATERIALIZED VIEW \"mv\" RENAME changes materialized view identification on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"object_name":"mv","object_type":"materialized view","operation":"alter_materialized_view"},"explanation":{"summary":"Check DDL pg alter materialized view rename notice","why":"Renaming a materialized view changes how downstream queries and reporting pipelines reference it.","risk":"Queries, dashboards, or ETL steps that reference the old materialized view name will fail after renaming.","suggestion":"Update all downstream references before renaming. Consider creating a view with the old name as an alias during transition."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

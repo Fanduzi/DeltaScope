@@ -1,0 +1,8 @@
+row_id: postgresql.grant
+subaction_id: WITH GRANT OPTION
+# sql_shape: GRANT SELECT ON TABLE users TO app WITH GRANT OPTION
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"GRANT SELECT ON TABLE users TO app WITH GRANT OPTION","normalized_sql":"GRANT SELECT ON TABLE users TO app WITH GRANT OPTION","findings":[{"rule_id":"ddl.pg.grant.table_privilege.notice","level":"notice","message":"GRANT on table \"users\" — review table privilege assignment on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"grantees":"app","object_name":"users","object_type":"table","operation":"grant_table","privileges":"select"},"explanation":{"summary":"Check DDL pg grant table privilege notice","why":"GRANT assigns table-level privileges to roles, changing who can read, write, or manage table data.","risk":"Overly broad grants may allow unauthorized data access or modification if roles are shared or compromised.","suggestion":"Follow least-privilege: grant only the privileges each role needs and review periodically."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":2,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

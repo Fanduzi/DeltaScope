@@ -1,0 +1,8 @@
+row_id: postgresql.alter-table.rename-owner
+subaction_id: OWNER TO
+# sql_shape: ALTER TABLE users OWNER TO admin
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER TABLE users OWNER TO admin","normalized_sql":"ALTER TABLE users OWNER TO admin","findings":[{"rule_id":"ddl.pg.alter.owner.advisory","level":"notice","message":"ALTER TABLE OWNER TO changes ownership of table %q on PostgreSQL","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"action":"change_owner","operation":"alter_table","table":"users","target":""},"explanation":{"summary":"Check DDL pg alter owner advisory","why":"OWNER TO transfers table ownership to a different role. Permissions, default privileges, and role-based access policies may be affected.","risk":"The new owner gains full control over the table. Scripts or policies expecting the previous owner may behave differently.","suggestion":"Verify the new role has appropriate permissions and that no automation depends on the current owner."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":20,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+

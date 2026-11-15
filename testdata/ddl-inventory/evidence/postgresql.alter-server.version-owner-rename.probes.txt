@@ -1,0 +1,8 @@
+row_id: postgresql.alter-server
+subaction_id: VERSION / OWNER / RENAME
+# sql_shape: ALTER SERVER srv VERSION '17'
+# dialect: postgresql
+# binary HEAD 1c49a0c4e3, generated 2026-11-24
+=== version 17 (target 17.x) rc=0 ===
+{"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":1},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER SERVER srv VERSION '17'","normalized_sql":"ALTER SERVER srv VERSION '17'","findings":[{"rule_id":"ddl.pg.alter_foreign_server.notice","level":"notice","message":"PostgreSQL foreign server \"srv\" altered — review connection configuration change","statement_kind":"ddl","location":{"line":1,"column":1},"metadata":{"has_version":"true","object_name":"srv","object_type":"foreign_server","operation":"alter_foreign_server"},"explanation":{"summary":"Check DDL pg alter foreign server notice","why":"ALTER SERVER modifies the configuration of a foreign server, including connection options and version.","risk":"Changes to server options may affect all foreign tables and user mappings that reference this server.","suggestion":"Verify that existing foreign tables and user mappings still function correctly after the change."}}],"coverage":{"status":"complete"}}],"fail_on_triggered":false,"rule_summary":{"loaded":521,"applicable":1,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+
