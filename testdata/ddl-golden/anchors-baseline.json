@@ -113,7 +113,7 @@
  ],
  "manifest_scopes": {
   "postgresql": {
-   "description": "PostgreSQL-scope manifests (issue #115, T34+): these tasks prove only the postgresql17 anchor and the postgresql CLI dialect — the mysql/tidb anchor set is not part of their denominator. Declared by manifest field anchor_scope.",
+   "description": "PostgreSQL-scope manifests (issue #115, T34+): these tasks prove only the postgresql17 anchor and the postgresql CLI dialect \u2014 the mysql/tidb anchor set is not part of their denominator. Declared by manifest field anchor_scope.",
    "required_anchors": {
     "postgres17": {
      "product": "postgresql",
@@ -125,6 +125,21 @@
    },
    "required_cli_dialects": [
     "postgresql"
+   ]
+  },
+  "tidb": {
+   "description": "TiDB-scope manifests (issue #133, T53): these tasks prove only the tidb85 anchor and the tidb CLI dialect \u2014 TiDB-specific forms such as IMPORT INTO run on a vendor-native anchor rather than the shared mysql set. Declared by manifest field anchor_scope.",
+   "required_anchors": {
+    "tidb85": {
+     "product": "tidb",
+     "version_contains": "v8.5.0",
+     "image": "pingcap/tidb:v8.5.0",
+     "expected_image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+     "platform": "linux/arm64"
+    }
+   },
+   "required_cli_dialects": [
+    "tidb"
    ]
   }
  }

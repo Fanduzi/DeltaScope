@@ -1,0 +1,2413 @@
+{
+ "task_id": "T53",
+ "issue": 137,
+ "anchor_scope": "tidb",
+ "policy_profile": "all-enabled",
+ "description": "TiDB-specific DML acceptance on the tidb85 anchor: mutation and query verbs executed natively plus IMPORT INTO (and other vendor gaps) pinned as expected refusals/parser boundaries.",
+ "anchors": {
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": true
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "drop-stale-fixture",
+   "sql": "DROP TABLE IF EXISTS t53fx; DROP TABLE IF EXISTS t53fx_b",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create-fixtures",
+   "sql": "CREATE TABLE t53fx (id INT PRIMARY KEY, a INT, b VARCHAR(20)); CREATE TABLE t53fx_b (id INT PRIMARY KEY, b VARCHAR(20))",
+   "via": "stdin",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "fixtures exist",
+     "sql": "SELECT count(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name IN ('t53fx','t53fx_b')",
+     "expect": "2"
+    }
+   ]
+  },
+  {
+   "name": "create-meta-fixture",
+   "sql": "CREATE TABLE t53m (id INT PRIMARY KEY, a INT); INSERT INTO t53m VALUES (1,5)",
+   "via": "stdin",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "seed-rows",
+   "sql": "INSERT INTO t53fx VALUES (1,10,'x'),(2,20,'y'); INSERT INTO t53fx_b VALUES (1,'bx'),(2,'by')",
+   "via": "stdin",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "seeded",
+     "sql": "SELECT (SELECT count(*) FROM golden.t53fx)+(SELECT count(*) FROM golden.t53fx_b)",
+     "expect": "4"
+    }
+   ]
+  },
+  {
+   "name": "update-no-where",
+   "sql": "UPDATE t53fx SET a=a+1",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "all rows updated",
+     "sql": "SELECT count(*) FROM golden.t53fx WHERE a>10",
+     "expect": "2"
+    },
+    {
+     "assert": "t53 bumped",
+     "sql": "SELECT count(*) FROM golden.t53fx WHERE a>10",
+     "expect": "2"
+    }
+   ]
+  },
+  {
+   "name": "delete-where",
+   "sql": "DELETE FROM t53fx WHERE id=2",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "one row left",
+     "sql": "SELECT count(*) FROM golden.t53fx",
+     "expect": "1"
+    }
+   ]
+  },
+  {
+   "name": "import-into-missing",
+   "sql": "IMPORT INTO t53fx(a,b) FROM '/nonexistent-t53.csv'",
+   "expect_rc": 1,
+   "verify": []
+  },
+  {
+   "name": "cleanup",
+   "sql": "DROP TABLE t53fx; DROP TABLE t53fx_b; DROP TABLE t53m",
+   "via": "stdin",
+   "expect_rc": 0,
+   "verify": []
+  }
+ ],
+ "syntax_negative": {
+  "sql": "IMPORT INTO FROM",
+  "expect": {
+   "rc_nonzero": true,
+   "error_class": "1064",
+   "forbidden_markers": [
+    "Access denied",
+    "Unknown database",
+    "Can't connect",
+    "Connection refused"
+   ]
+  }
+ },
+ "policy": {
+  "enable": {
+   "ddl.alter.add_column.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.add_column.notice": {
+    "enabled": true
+   },
+   "ddl.alter.add_constraint.notice": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.columns.max_count": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.duplicate.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.fulltext.contains.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.fulltext.prefix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.fulltext.suffix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.redundant_left_prefix.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.redundant_unique_overlap.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.secondary.contains.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.secondary.prefix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.secondary.suffix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.unique.contains.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.unique.prefix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.unique.suffix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.add_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.add_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.alter_check.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.alter_check.version.require": {
+    "enabled": true
+   },
+   "ddl.alter.alter_index.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.compatibility.require": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.explicit_auto_increment_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.explicit_default_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.explicit_nullability_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.target.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.target_type_family.allowlist": {
+    "enabled": true
+   },
+   "ddl.alter.charset_conversion.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.charset_conversion.warn": {
+    "enabled": true
+   },
+   "ddl.alter.check_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.check_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.check_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.coalesce_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.coalesce_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.column.dependency.require": {
+    "enabled": true
+   },
+   "ddl.alter.column_position.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.discard_partition_tablespace.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.discard_partition_tablespace.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.discard_partition_tablespace.target": {
+    "enabled": true
+   },
+   "ddl.alter.discard_tablespace.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.discard_tablespace.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_check.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_column.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_column.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_column.notice": {
+    "enabled": true
+   },
+   "ddl.alter.drop_default.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_default.explicit_default_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_default.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_expression.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_foreign_key.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_foreign_key.notice": {
+    "enabled": true
+   },
+   "ddl.alter.drop_identity.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_index.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_index.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_index.notice": {
+    "enabled": true
+   },
+   "ddl.alter.drop_not_null.explicit_nullability_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_not_null.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.drop_partition.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.drop_primary_key.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_primary_key.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.exchange_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.exchange_partition.counterpart": {
+    "enabled": true
+   },
+   "ddl.alter.exchange_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.exchange_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.import_partition_tablespace.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.import_partition_tablespace.target": {
+    "enabled": true
+   },
+   "ddl.alter.import_partition_tablespace.warn": {
+    "enabled": true
+   },
+   "ddl.alter.import_tablespace.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.import_tablespace.warn": {
+    "enabled": true
+   },
+   "ddl.alter.keys_toggle.notice": {
+    "enabled": true
+   },
+   "ddl.alter.merge.mysql.require": {
+    "enabled": true
+   },
+   "ddl.alter.merge.tidb.require": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.compatibility.require": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.explicit_auto_increment_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.explicit_default_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.explicit_nullability_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.notice": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.target_type_family.allowlist": {
+    "enabled": true
+   },
+   "ddl.alter.online_ddl.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.online_ddl.warn": {
+    "enabled": true
+   },
+   "ddl.alter.optimize_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.optimize_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.optimize_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.partition_by.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.partition_by.warn": {
+    "enabled": true
+   },
+   "ddl.alter.rebuild.warn": {
+    "enabled": true
+   },
+   "ddl.alter.rebuild_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.rebuild_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.rebuild_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.remove_partitioning.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.remove_partitioning.warn": {
+    "enabled": true
+   },
+   "ddl.alter.rename_column.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.rename_column.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.rename_column.target.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.rename_column.version.require": {
+    "enabled": true
+   },
+   "ddl.alter.rename_index.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.rename_index.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.rename_table.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.reorganize_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.reorganize_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.reorganize_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.repair_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.repair_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.repair_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.set_data_type.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.set_default.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.set_default.explicit_default_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.set_default.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.set_generated.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.set_not_null.explicit_nullability_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.set_not_null.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.table_option.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.table_option.compatibility.require": {
+    "enabled": true
+   },
+   "ddl.alter.table_option.warn": {
+    "enabled": true
+   },
+   "ddl.alter.truncate_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.truncate_partition.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.truncate_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter_database.notice": {
+    "enabled": true
+   },
+   "ddl.alter_event.notice": {
+    "enabled": true
+   },
+   "ddl.alter_function.notice": {
+    "enabled": true
+   },
+   "ddl.alter_placement_policy.notice": {
+    "enabled": true
+   },
+   "ddl.alter_procedure.notice": {
+    "enabled": true
+   },
+   "ddl.alter_resource_group.notice": {
+    "enabled": true
+   },
+   "ddl.alter_sequence.notice": {
+    "enabled": true
+   },
+   "ddl.alter_user.notice": {
+    "enabled": true
+   },
+   "ddl.column.advanced.compatibility.require": {
+    "enabled": true
+   },
+   "ddl.column.bit.forbid": {
+    "enabled": true
+   },
+   "ddl.column.blob_text.forbid": {
+    "enabled": true
+   },
+   "ddl.column.char.max_length": {
+    "enabled": true
+   },
+   "ddl.column.charset.allowlist": {
+    "enabled": true
+   },
+   "ddl.column.charset_collation.match.require": {
+    "enabled": true
+   },
+   "ddl.column.collation.allowlist": {
+    "enabled": true
+   },
+   "ddl.column.comment.require": {
+    "enabled": true
+   },
+   "ddl.column.default.require": {
+    "enabled": true
+   },
+   "ddl.column.float_double.forbid": {
+    "enabled": true
+   },
+   "ddl.column.json.forbid": {
+    "enabled": true
+   },
+   "ddl.column.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.column.name.keyword.forbid": {
+    "enabled": true
+   },
+   "ddl.column.name.max_length": {
+    "enabled": true
+   },
+   "ddl.column.name.pattern.require": {
+    "enabled": true
+   },
+   "ddl.column.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.column.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.column.not_null.require": {
+    "enabled": true
+   },
+   "ddl.column.timestamp.forbid": {
+    "enabled": true
+   },
+   "ddl.column.varchar.max_length": {
+    "enabled": true
+   },
+   "ddl.constraint.check.ignored.notice": {
+    "enabled": true
+   },
+   "ddl.constraint.check.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.constraint.check.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.check.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.check.not_enforced.notice": {
+    "enabled": true
+   },
+   "ddl.constraint.foreign_key.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.constraint.foreign_key.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.foreign_key.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.primary_key.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.constraint.primary_key.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.primary_key.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.unique_key.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.constraint.unique_key.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.unique_key.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.create_event.notice": {
+    "enabled": true
+   },
+   "ddl.create_function.notice": {
+    "enabled": true
+   },
+   "ddl.create_index.columns.exists.require": {
+    "enabled": true
+   },
+   "ddl.create_index.notice": {
+    "enabled": true
+   },
+   "ddl.create_placement_policy.notice": {
+    "enabled": true
+   },
+   "ddl.create_procedure.notice": {
+    "enabled": true
+   },
+   "ddl.create_resource_group.notice": {
+    "enabled": true
+   },
+   "ddl.create_role.notice": {
+    "enabled": true
+   },
+   "ddl.create_sequence.notice": {
+    "enabled": true
+   },
+   "ddl.create_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.create_trigger.ordering.version.require": {
+    "enabled": true
+   },
+   "ddl.create_user.notice": {
+    "enabled": true
+   },
+   "ddl.database.alter.exists.require": {
+    "enabled": true
+   },
+   "ddl.database.create.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.database.create.notice": {
+    "enabled": true
+   },
+   "ddl.database.denylist.forbid": {
+    "enabled": true
+   },
+   "ddl.database.drop.exists.require": {
+    "enabled": true
+   },
+   "ddl.database.drop.warn": {
+    "enabled": true
+   },
+   "ddl.database.option.encryption.applicability": {
+    "enabled": true
+   },
+   "ddl.database.system.modify.forbid": {
+    "enabled": true
+   },
+   "ddl.drop_event.notice": {
+    "enabled": true
+   },
+   "ddl.drop_function.notice": {
+    "enabled": true
+   },
+   "ddl.drop_index.notice": {
+    "enabled": true
+   },
+   "ddl.drop_placement_policy.notice": {
+    "enabled": true
+   },
+   "ddl.drop_procedure.notice": {
+    "enabled": true
+   },
+   "ddl.drop_resource_group.notice": {
+    "enabled": true
+   },
+   "ddl.drop_role.notice": {
+    "enabled": true
+   },
+   "ddl.drop_sequence.notice": {
+    "enabled": true
+   },
+   "ddl.drop_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.drop_user.notice": {
+    "enabled": true
+   },
+   "ddl.event.enabled_execution.warn": {
+    "enabled": true
+   },
+   "ddl.grant.notice": {
+    "enabled": true
+   },
+   "ddl.index.advanced.compatibility.require": {
+    "enabled": true
+   },
+   "ddl.index.columns.max_count": {
+    "enabled": true
+   },
+   "ddl.index.duplicate.forbid": {
+    "enabled": true
+   },
+   "ddl.index.fulltext.contains.require": {
+    "enabled": true
+   },
+   "ddl.index.fulltext.prefix.require": {
+    "enabled": true
+   },
+   "ddl.index.fulltext.suffix.require": {
+    "enabled": true
+   },
+   "ddl.index.invisible.forbid": {
+    "enabled": true
+   },
+   "ddl.index.key_length.max_bytes.require": {
+    "enabled": true
+   },
+   "ddl.index.name.keyword.forbid": {
+    "enabled": true
+   },
+   "ddl.index.name.pattern.require": {
+    "enabled": true
+   },
+   "ddl.index.redundant_left_prefix.forbid": {
+    "enabled": true
+   },
+   "ddl.index.redundant_unique_overlap.forbid": {
+    "enabled": true
+   },
+   "ddl.index.secondary.contains.require": {
+    "enabled": true
+   },
+   "ddl.index.secondary.prefix.require": {
+    "enabled": true
+   },
+   "ddl.index.secondary.suffix.require": {
+    "enabled": true
+   },
+   "ddl.index.total.max_count": {
+    "enabled": true
+   },
+   "ddl.index.unique.contains.require": {
+    "enabled": true
+   },
+   "ddl.index.unique.prefix.require": {
+    "enabled": true
+   },
+   "ddl.index.unique.suffix.require": {
+    "enabled": true
+   },
+   "ddl.mysql.alter_instance.privilege": {
+    "enabled": true
+   },
+   "ddl.mysql.alter_instance.reload_tls": {
+    "enabled": true
+   },
+   "ddl.mysql.alter_instance.rotate_master_key": {
+    "enabled": true
+   },
+   "ddl.mysql.resource_group.affinity.warn": {
+    "enabled": true
+   },
+   "ddl.mysql.resource_group.force.warn": {
+    "enabled": true
+   },
+   "ddl.mysql.resource_group.priority.warn": {
+    "enabled": true
+   },
+   "ddl.mysql.resource_group.valid": {
+    "enabled": true
+   },
+   "ddl.mysql.server.alter.notice": {
+    "enabled": true
+   },
+   "ddl.mysql.server.create.notice": {
+    "enabled": true
+   },
+   "ddl.mysql.server.drop.notice": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.duplicate_attribute": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.existence": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.exists_noop": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.missing_attribute": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.name_conflict": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.organization_conflict": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.privilege": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.srid0": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.absent": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.absent_noop": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.dependency": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.privilege": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.reserved": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.srid0": {
+    "enabled": true
+   },
+   "ddl.mysql.tablespace.alter.warn": {
+    "enabled": true
+   },
+   "ddl.mysql.tablespace.applicability": {
+    "enabled": true
+   },
+   "ddl.mysql.tablespace.create.warn": {
+    "enabled": true
+   },
+   "ddl.mysql.tablespace.drop.forbid": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_check.not_valid.require": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_column.non_null_default.rewrite.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_column.non_null_no_default.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_column.nullable.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_exclusion_constraint.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_identity.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_inherit.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_of_type.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.attach_partition.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.cluster_on.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.constraint_deferrable.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.constraint_initially_deferred.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.detach_partition.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.detach_partition_finalize.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.disable_rls.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.disable_rule.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.disable_trigger.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.drop_column.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.drop_constraint.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.drop_inherit.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.drop_of_type.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_always_rule.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_always_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_replica_rule.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_replica_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_rls.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_rule.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.force_rls.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.move_all_tablespace.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.no_force_rls.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.not_valid_constraint.validate.require": {
+    "enabled": true
+   },
+   "ddl.pg.alter.owner.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.replica_identity_full.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.replica_identity_nothing.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.replica_identity_using_index.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.reset_column_options.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.reset_reloptions.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_access_method.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_column_compression.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_column_options.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_column_statistics.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_column_storage.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_data_type.rewrite.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_expression.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_logged.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_reloptions.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_schema.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_tablespace.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_unlogged.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_without_cluster.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.validate_constraint.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter_aggregate.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_collation.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_conversion.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_domain.constraint.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_domain.default.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_domain.not_null.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_domain.rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_event_trigger.disable.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_event_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_extension.add_member.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_extension.drop_member.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_extension.set_schema.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_extension.update.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_foreign_data_wrapper.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_foreign_server.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_foreign_table.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_index.rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_index.set_tablespace.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_large_object.owner.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_materialized_view.rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_materialized_view.set_schema.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_operator.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_operator_class.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_operator_family.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_policy.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_publication.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_rule.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_schema.owner.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_schema.rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_sequence.cycle.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_sequence.restart.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_statistics.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_subscription.disable.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_subscription.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_text_search_configuration.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_text_search_dictionary.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_text_search_parser.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_text_search_template.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.add_attribute.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.add_value.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.add_value.position.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.alter_attribute_type.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.composite_rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.composite_set_schema.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.drop_attribute.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.rename_attribute.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_user_mapping.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_view.rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_view.set_schema.notice": {
+    "enabled": true
+   },
+   "ddl.pg.comment_on.notice": {
+    "enabled": true
+   },
+   "ddl.pg.comment_on.remove.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_access_method.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_aggregate.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_collation.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_constraint_trigger.warn": {
+    "enabled": true
+   },
+   "ddl.pg.create_conversion.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_domain.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_event_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_extension.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.create_extension.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_foreign_data_wrapper.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_foreign_server.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_foreign_table.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_function.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_function.security_definer.warn": {
+    "enabled": true
+   },
+   "ddl.pg.create_index.concurrently.require": {
+    "enabled": true
+   },
+   "ddl.pg.create_operator.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_operator_class.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_operator_family.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_or_replace_function.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.create_or_replace_view.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.create_policy.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_procedure.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_publication.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_rule.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_schema.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_sequence.cycle.warn": {
+    "enabled": true
+   },
+   "ddl.pg.create_statistics.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_subscription.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_temp_view.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_text_search_configuration.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_text_search_dictionary.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_text_search_parser.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_text_search_template.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_transform.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_type.composite.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_type.enum.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_user_mapping.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_view.check_option.notice": {
+    "enabled": true
+   },
+   "ddl.pg.drop_access_method.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_aggregate.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_collation.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_conversion.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_domain.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_domain.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_event_trigger.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_extension.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_extension.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_foreign_data_wrapper.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_foreign_server.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_foreign_table.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_function.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_index.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_materialized_view.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_materialized_view.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_operator.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_operator_class.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_operator_family.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_policy.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_procedure.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_publication.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_rule.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_schema.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_schema.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_sequence.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_sequence.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_statistics.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_subscription.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_text_search_configuration.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_text_search_dictionary.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_text_search_parser.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_text_search_template.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_transform.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_trigger.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_type.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_type.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_user_mapping.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_view.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.grant.table_privilege.all.warn": {
+    "enabled": true
+   },
+   "ddl.pg.grant.table_privilege.notice": {
+    "enabled": true
+   },
+   "ddl.pg.refresh_materialized_view.concurrently.warn": {
+    "enabled": true
+   },
+   "ddl.pg.refresh_materialized_view.no_data.notice": {
+    "enabled": true
+   },
+   "ddl.pg.revoke.table_privilege.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.revoke.table_privilege.notice": {
+    "enabled": true
+   },
+   "ddl.pg.security_label.notice": {
+    "enabled": true
+   },
+   "ddl.pg.security_label.remove.notice": {
+    "enabled": true
+   },
+   "ddl.pg.table.foreign_key.cross_schema.advisory": {
+    "enabled": true
+   },
+   "ddl.rename_table.notice": {
+    "enabled": true
+   },
+   "ddl.revoke.notice": {
+    "enabled": true
+   },
+   "ddl.routine.variable_shadowing.warn": {
+    "enabled": true
+   },
+   "ddl.table.audit_columns.require": {
+    "enabled": true
+   },
+   "ddl.table.auto_increment.init_value.require": {
+    "enabled": true
+   },
+   "ddl.table.charset.allowlist": {
+    "enabled": true
+   },
+   "ddl.table.collation.allowlist": {
+    "enabled": true
+   },
+   "ddl.table.columns.min_count": {
+    "enabled": true
+   },
+   "ddl.table.comment.max_length": {
+    "enabled": true
+   },
+   "ddl.table.comment.require": {
+    "enabled": true
+   },
+   "ddl.table.compact.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.create_as.forbid": {
+    "enabled": true
+   },
+   "ddl.table.create_as.source.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.create_like.forbid": {
+    "enabled": true
+   },
+   "ddl.table.denylist.forbid": {
+    "enabled": true
+   },
+   "ddl.table.drop.adaptive_hash.warn": {
+    "enabled": true
+   },
+   "ddl.table.drop.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.drop.forbid": {
+    "enabled": true
+   },
+   "ddl.table.drop.rows.max_count": {
+    "enabled": true
+   },
+   "ddl.table.engine.allowlist": {
+    "enabled": true
+   },
+   "ddl.table.exists.alter.require": {
+    "enabled": true
+   },
+   "ddl.table.exists.create.forbid": {
+    "enabled": true
+   },
+   "ddl.table.foreign_key.forbid": {
+    "enabled": true
+   },
+   "ddl.table.like.source.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.table.name.keyword.forbid": {
+    "enabled": true
+   },
+   "ddl.table.name.max_length": {
+    "enabled": true
+   },
+   "ddl.table.name.pattern.require": {
+    "enabled": true
+   },
+   "ddl.table.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.table.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.table.partition.forbid": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.auto_increment.require": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.bigint.require": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.columns.max_count": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.not_null.require": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.require": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.unsigned.require": {
+    "enabled": true
+   },
+   "ddl.table.rename.dest.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.table.rename.source.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.row_format.allowlist": {
+    "enabled": true
+   },
+   "ddl.table.row_size.max_bytes.require": {
+    "enabled": true
+   },
+   "ddl.table.split_region.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.truncate.adaptive_hash.warn": {
+    "enabled": true
+   },
+   "ddl.table.truncate.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.truncate.forbid": {
+    "enabled": true
+   },
+   "ddl.table.truncate.inbound_fk": {
+    "enabled": true
+   },
+   "ddl.table.truncate.rows.max_count": {
+    "enabled": true
+   },
+   "ddl.tidb.alter.auto_random.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.alter.compat_options.notice": {
+    "enabled": true
+   },
+   "ddl.tidb.alter.table_options.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.alter_table.placement_policy.notice": {
+    "enabled": true
+   },
+   "ddl.tidb.local_temporary.alter": {
+    "enabled": true
+   },
+   "ddl.tidb.local_temporary.like": {
+    "enabled": true
+   },
+   "ddl.tidb.local_temporary.rename": {
+    "enabled": true
+   },
+   "ddl.tidb.placement.exists.require": {
+    "enabled": true
+   },
+   "ddl.tidb.placement.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.resource_group.burstable.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.resource_group.runaway.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.resource_group.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.sequence.cycle.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.sequence.references.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.sequence.restart.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.sequence.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.attributes.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.auto_random.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.cache.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.compact.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.options.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.split_region.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.tiflash.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.ttl.warn": {
+    "enabled": true
+   },
+   "ddl.view.algorithm.warn": {
+    "enabled": true
+   },
+   "ddl.view.check_option.valid": {
+    "enabled": true
+   },
+   "ddl.view.create.forbid": {
+    "enabled": true
+   },
+   "ddl.view.drop.forbid": {
+    "enabled": true
+   },
+   "ddl.view.options.ignored.warn": {
+    "enabled": true
+   },
+   "ddl.view.security.definer.warn": {
+    "enabled": true
+   },
+   "ddl.view.source.valid": {
+    "enabled": true
+   },
+   "ddl.view.target.valid": {
+    "enabled": true
+   },
+   "dml.impact.estimate": {
+    "enabled": true
+   },
+   "dml.impact.ratio.max_percent": {
+    "enabled": true
+   },
+   "dml.impact.rows.max_count": {
+    "enabled": true
+   },
+   "dml.insert.on_duplicate.forbid": {
+    "enabled": true
+   },
+   "dml.insert.rows.max_count": {
+    "enabled": true
+   },
+   "dml.insert.select.forbid": {
+    "enabled": true
+   },
+   "dml.join.on.require": {
+    "enabled": true
+   },
+   "dml.limit.forbid": {
+    "enabled": true
+   },
+   "dml.order_by.forbid": {
+    "enabled": true
+   },
+   "dml.replace.forbid": {
+    "enabled": true
+   },
+   "dml.subquery.forbid": {
+    "enabled": true
+   },
+   "dml.table.denylist.forbid": {
+    "enabled": true
+   },
+   "dml.table.exists.require": {
+    "enabled": true
+   },
+   "dml.where.require": {
+    "enabled": true
+   }
+  }
+ },
+ "metadata_cases": [
+  {
+   "id": "t53-tidb85-select-metadata",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "SELECT a FROM golden.t53m WHERE id=1; DELETE FROM golden.t53_no_such WHERE id=1",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "policy": "all-enabled",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "SELECT a FROM golden.t53m WHERE id=1;",
+     "DELETE FROM golden.t53_no_such WHERE id=1"
+    ],
+    "finding_entries": [
+     {
+      "index": 1,
+      "rule_id": "dml.table.exists.require",
+      "level": "blocker"
+     }
+    ]
+   }
+  }
+ ],
+ "cli_cases": [
+  {
+   "id": "tidb-insert-values",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "INSERT INTO t VALUES (1,'a'),(2,'b')",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "INSERT INTO t VALUES (1,'a'),(2,'b')"
+    ]
+   }
+  },
+  {
+   "id": "tidb-insert-select",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "INSERT INTO s SELECT * FROM t",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "INSERT INTO s SELECT * FROM t"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "dml.insert.select.forbid",
+      "level": "blocker"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-insert-on-dup",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "INSERT INTO t (id) VALUES (1) ON DUPLICATE KEY UPDATE id=VALUES(id)",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "INSERT INTO t (id) VALUES (1) ON DUPLICATE KEY UPDATE id=VALUES(id)"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "dml.insert.on_duplicate.forbid",
+      "level": "blocker"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-replace",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "REPLACE INTO t VALUES (1,'x')",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "REPLACE INTO t VALUES (1,'x')"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "dml.replace.forbid",
+      "level": "blocker"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-update-where",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "UPDATE t SET a=1 WHERE id>0",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "UPDATE t SET a=1 WHERE id>0"
+    ]
+   }
+  },
+  {
+   "id": "tidb-update-no-where",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "UPDATE t SET a=1",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "UPDATE t SET a=1"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "dml.impact.ratio.max_percent",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-update-limit",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "UPDATE t SET a=1 ORDER BY id LIMIT 2",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 4,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "UPDATE t SET a=1 ORDER BY id LIMIT 2"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "dml.impact.ratio.max_percent",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "dml.limit.forbid",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "dml.order_by.forbid",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-delete-where",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "DELETE FROM t WHERE id<0",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DELETE FROM t WHERE id<0"
+    ]
+   }
+  },
+  {
+   "id": "tidb-delete-no-where",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "DELETE FROM t",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DELETE FROM t"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "dml.impact.ratio.max_percent",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-delete-multi",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "DELETE a FROM t a JOIN s b ON a.id=b.id",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DELETE a FROM t a JOIN s b ON a.id=b.id"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-select-plain",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "SELECT a FROM t WHERE id=1",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "SELECT a FROM t WHERE id=1"
+    ]
+   }
+  },
+  {
+   "id": "tidb-select-for-update",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "SELECT a FROM t FOR UPDATE",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "SELECT a FROM t FOR UPDATE"
+    ]
+   }
+  },
+  {
+   "id": "tidb-union",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "SELECT a FROM t UNION ALL SELECT 1",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "SELECT a FROM t UNION ALL SELECT 1"
+    ]
+   }
+  },
+  {
+   "id": "tidb-with-cte",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "WITH c AS (SELECT 1) SELECT * FROM c",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "WITH c AS (SELECT 1) SELECT * FROM c"
+    ]
+   }
+  },
+  {
+   "id": "tidb-table-stmt",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "TABLE t",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "TABLE t"
+    ]
+   }
+  },
+  {
+   "id": "tidb-values-stmt",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "VALUES ROW(1), ROW(2)",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "VALUES ROW(1), ROW(2)"
+    ]
+   }
+  },
+  {
+   "id": "tidb-do",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "DO 1+1",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DO 1+1"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "do",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "diagnostics_entries": [
+     {
+      "classification": "unsupported_statement",
+      "reason": "DeltaScope recognized this statement or feature but does not audit it yet"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-call",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "CALL p(1)",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CALL p(1)"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "call",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "diagnostics_entries": [
+     {
+      "classification": "unsupported_statement",
+      "reason": "DeltaScope recognized this statement or feature but does not audit it yet"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-handler",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "HANDLER t OPEN",
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": [],
+    "statement_sql": [],
+    "diagnostics_entries": [
+     {
+      "classification": "parser_error",
+      "reason": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-load-data",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "LOAD DATA INFILE '/tmp/x.csv' INTO TABLE t",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "LOAD DATA INFILE '/tmp/x.csv' INTO TABLE t"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "load_data",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "diagnostics_entries": [
+     {
+      "classification": "unsupported_statement",
+      "reason": "DeltaScope recognized this statement or feature but does not audit it yet"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-load-xml",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "LOAD XML INFILE '/tmp/x.xml' INTO TABLE t",
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": [],
+    "statement_sql": [],
+    "diagnostics_entries": [
+     {
+      "classification": "parser_error",
+      "reason": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-import-into",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "IMPORT INTO t FROM '/tmp/x.csv'",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "IMPORT INTO t FROM '/tmp/x.csv'"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "import_into",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "diagnostics_entries": [
+     {
+      "classification": "unsupported_statement",
+      "reason": "DeltaScope recognized this statement or feature but does not audit it yet"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-import-into-csv",
+   "dialect": "tidb",
+   "policy": "all-enabled",
+   "sql": "IMPORT INTO t (a,b) FROM '/data/x.csv' WITH thread=4, detached",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "IMPORT INTO t (a,b) FROM '/data/x.csv' WITH thread=4, detached"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "import_into",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "diagnostics_entries": [
+     {
+      "classification": "unsupported_statement",
+      "reason": "DeltaScope recognized this statement or feature but does not audit it yet"
+     }
+    ]
+   }
+  }
+ ],
+ "required_case_ids": [
+  "T53.db.tidb85.ddl",
+  "T53.db.tidb85.syntax_negative",
+  "T53.cli.tidb-insert-values",
+  "T53.cli.tidb-insert-select",
+  "T53.cli.tidb-insert-on-dup",
+  "T53.cli.tidb-replace",
+  "T53.cli.tidb-update-where",
+  "T53.cli.tidb-update-no-where",
+  "T53.cli.tidb-update-limit",
+  "T53.cli.tidb-delete-where",
+  "T53.cli.tidb-delete-no-where",
+  "T53.cli.tidb-delete-multi",
+  "T53.cli.tidb-select-plain",
+  "T53.cli.tidb-select-for-update",
+  "T53.cli.tidb-union",
+  "T53.cli.tidb-with-cte",
+  "T53.cli.tidb-table-stmt",
+  "T53.cli.tidb-values-stmt",
+  "T53.cli.tidb-do",
+  "T53.cli.tidb-call",
+  "T53.cli.tidb-handler",
+  "T53.cli.tidb-load-data",
+  "T53.cli.tidb-load-xml",
+  "T53.cli.tidb-import-into",
+  "T53.cli.tidb-import-into-csv",
+  "T53.meta.t53-tidb85-select-metadata"
+ ]
+}
