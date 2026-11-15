@@ -810,29 +810,23 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
-    "unsupported_features": [
-     "create_procedure.body"
-    ],
+    "unsupported_features": [],
+    "unsupported_entries": [],
     "statement_sql": [
      "CREATE PROCEDURE p() SELECT 1;"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "create_procedure.body",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
     ]
-   }
+   },
+   "graduated": "governed by T27 stored-body analysis; previously expected the retired create_procedure.body boundary"
   },
   {
    "id": "mysql-create-table-generated-column",
@@ -953,19 +947,31 @@
    }
   },
   {
-   "id": "mysql-create-procedure-parser-error",
+   "id": "mysql-create-procedure-compound-body",
    "dialect": "mysql",
    "sql": "CREATE PROCEDURE p() BEGIN SELECT 1; END;",
    "expect": {
-    "exit": 2,
-    "verdict": "",
-    "statements": 0,
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
     "findings": 0,
-    "diagnostics": 2,
+    "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "incomplete",
-    "statement_coverage": []
-   }
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE PROCEDURE p() BEGIN SELECT 1; END;"
+    ],
+    "unsupported_features": [],
+    "unsupported_entries": []
+   },
+   "graduated": "governed by T27 stored-body analysis; renamed from mysql-create-procedure-parser-error which expected the retired compound-body parser error",
+   "args": [
+    "--fail-on",
+    "none"
+   ]
   },
   {
    "id": "tidb-create-table-ordinary",
@@ -5251,7 +5257,7 @@
   "T04.cli.mysql-create-table-inline-reference",
   "T04.cli.tidb-create-table-inline-check",
   "T04.cli.mysql-create-table-inline-unique",
-  "T04.cli.mysql-create-procedure-parser-error",
+  "T04.cli.mysql-create-procedure-compound-body",
   "T04.cli.tidb-create-table-ordinary",
   "T04.cli.mysql-drop-table-ordinary",
   "T04.cli.mysql-drop-temporary-table",

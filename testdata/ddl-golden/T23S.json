@@ -1,7 +1,7 @@
 {
  "task_id": "T23S",
  "issue": 102,
- "description": "T23S remaining-native-specials manifest (issue #102): real TiKV-backed TiFlash replica lifecycle plus the alter-primary-key=true startup-config matrix. Baseline anchors and their db/CLI coverage are preserved verbatim; the increment adds three infra_only anchors (PD/TiKV/TiFlash), one TiKV-backed TiDB server, and one unistore alter-primary-key=true aux TiDB. Authorization-gated — not runnable until the resource increment is approved.",
+ "description": "T23S remaining-native-specials manifest (issue #102): real TiKV-backed TiFlash replica lifecycle plus the alter-primary-key=true startup-config matrix. Baseline anchors and their db/CLI coverage are preserved verbatim; the increment adds three infra_only anchors (PD/TiKV/TiFlash), one TiKV-backed TiDB server, and one unistore alter-primary-key=true aux TiDB. The resource increment was authorized and proven by the attempt-1 native run (21/21 real TiFlash PASS, docs/verification/t23s-native-specials/); the lane is part of the canonical TASK=all suite.",
  "policy_profile": "t23-layout-id",
  "policy": {
   "enable": {

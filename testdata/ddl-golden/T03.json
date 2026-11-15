@@ -2,7 +2,7 @@
  "task_id": "T03",
  "issue": "https://github.com/Fanduzi/DeltaScope/issues/82",
  "policy_profile": "all-rules-disabled",
- "description": "Incomplete-coverage golden path: the shared parser accepts CREATE SEQUENCE but MySQL does not support it, so the statement stays in the result as incomplete coverage with bounded unsupported evidence while a supported ALTER stays complete. DB steps prove uniform CREATE/ALTER/DROP legality on all four anchors; CLI cases prove the incomplete audit contract under an all-rules-disabled policy, including --fail-on none still exiting 1, recognized-but-unaudited ALTER sub-actions and nested options, vendor boundaries, execution-capable EXPLAIN ANALYZE/TRACE/EXECUTE, and the read-only EXPLAIN counter-example, and the remaining recognized-but-unaudited boundary families: temporary-table scope (local/global, create/drop), AUTO_RANDOM column attributes, MySQL procedure bodies, dropped column options (inline REFERENCES/CHECK/UNIQUE), plus T07-promoted generated-column facts and ordinary-table contrasts and the procedure parser-error contract (exit 2). Fourth rework adds current-user ALTER USER targets, account secondary-option families, explicit zero-length index prefixes, foreign-key key-part and refer-action evidence, and nested partition options, with exact bounded-metadata pins. Fifth rework adds CURRENT_USER() account targets, ALTER index/constraint duplicate-part deduplication, partial-index WHERE predicates, unmodeled IndexOption members (invisible/comment/key_block_size/etc), CREATE TABLE SPLIT INDEX and partition UPDATE INDEXES markers, plus multi-occurrence metadata pins and unsupported[].sql index-range validation.",
+ "description": "Incomplete-coverage golden path: the shared parser accepts CREATE SEQUENCE but MySQL does not support it, so the statement stays in the result as incomplete coverage with bounded unsupported evidence while a supported ALTER stays complete. DB steps prove uniform CREATE/ALTER/DROP legality on all four anchors; CLI cases prove the incomplete audit contract under an all-rules-disabled policy, including --fail-on none still exiting 1, recognized-but-unaudited ALTER sub-actions and nested options, vendor boundaries, execution-capable EXPLAIN ANALYZE/TRACE/EXECUTE, and the read-only EXPLAIN counter-example, and the remaining recognized-but-unaudited boundary families: temporary-table scope (local/global, create/drop), AUTO_RANDOM column attributes, dropped column options (inline REFERENCES/CHECK/UNIQUE), plus T07-promoted generated-column facts and ordinary-table contrasts. Fourth rework adds current-user ALTER USER targets, account secondary-option families, explicit zero-length index prefixes, foreign-key key-part and refer-action evidence, and nested partition options, with exact bounded-metadata pins. Fifth rework adds CURRENT_USER() account targets, ALTER index/constraint duplicate-part deduplication, partial-index WHERE predicates, unmodeled IndexOption members (invisible/comment/key_block_size/etc), CREATE TABLE SPLIT INDEX and partition UPDATE INDEXES markers, plus multi-occurrence metadata pins and unsupported[].sql index-range validation.",
  "anchors": {
   "mysql57": {
    "service": "mysql57",
@@ -735,29 +735,23 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
-    "unsupported_features": [
-     "create_procedure.body"
-    ],
+    "unsupported_features": [],
+    "unsupported_entries": [],
     "statement_sql": [
      "CREATE PROCEDURE p() SELECT 1;"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "create_procedure.body",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
     ]
-   }
+   },
+   "graduated": "governed by T27 stored-body analysis; previously expected the retired create_procedure.body boundary"
   },
   {
    "id": "mysql-create-table-generated-column",
@@ -877,19 +871,29 @@
    }
   },
   {
-   "id": "mysql-create-procedure-parser-error",
+   "id": "mysql-create-procedure-compound-body",
    "dialect": "mysql",
    "sql": "CREATE PROCEDURE p() BEGIN SELECT 1; END;",
    "expect": {
-    "exit": 2,
-    "verdict": "",
-    "statements": 0,
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
     "findings": 0,
-    "diagnostics": 2,
+    "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "incomplete",
-    "statement_coverage": []
-   }
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE PROCEDURE p() BEGIN SELECT 1; END;"
+    ]
+   },
+   "graduated": "governed by T27 stored-body analysis; renamed from mysql-create-procedure-parser-error which expected the retired compound-body parser error",
+   "args": [
+    "--fail-on",
+    "none"
+   ]
   },
   {
    "id": "tidb-create-table-ordinary",
@@ -3528,7 +3532,7 @@
   "T03.cli.mysql-create-table-inline-reference",
   "T03.cli.tidb-create-table-inline-check",
   "T03.cli.mysql-create-table-inline-unique",
-  "T03.cli.mysql-create-procedure-parser-error",
+  "T03.cli.mysql-create-procedure-compound-body",
   "T03.cli.tidb-create-table-ordinary",
   "T03.cli.mysql-drop-table-ordinary",
   "T03.cli.mysql-drop-temporary-table",

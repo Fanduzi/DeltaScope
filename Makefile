@@ -22,6 +22,13 @@ sql-corpus-gates:
 # docker/ddl-golden-compose.yaml, emits an inspectable artifact, and validates
 # it. Fails on missing TASK/ARTIFACT_DIR, zero cases, unexecuted required
 # cases, unreachable/version-mismatched databases, or stale binary evidence.
+# TASK=all runs every canonical T*.json manifest sequentially — each task with
+# its own compose lifecycle — and aggregates the per-task artifacts (T31/#110).
+# `scripts/ddl_golden.py reaggregate --artifact-dir <dir>` rebuilds the all/
+# aggregate from persisted per-task artifacts without re-running Docker; it
+# refuses missing canonical artifacts and mixed-HEAD evidence.
+# The T17/T18 supplementary Go checks below only fire for those single-task
+# invocations; under TASK=all they are covered by `make test` instead.
 ddl-golden:
 	@test -n "$(TASK)" || (echo "TASK is required (e.g. make ddl-golden TASK=T02 ARTIFACT_DIR=/tmp/ddl-golden)" >&2; exit 1)
 	@test -n "$(ARTIFACT_DIR)" || (echo "ARTIFACT_DIR is required (e.g. ARTIFACT_DIR=/tmp/ddl-golden)" >&2; exit 1)

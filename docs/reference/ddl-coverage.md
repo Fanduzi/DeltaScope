@@ -42,8 +42,8 @@ This catalog has explicit boundaries. It is **not**:
 
 | Dialect | Total | finding_covered | normalized_silent | unsupported_boundary | parser_error | unclassified |
 |---------|------:|----------------:|------------------:|--------------------:|-------------:|-------------:|
-| MySQL | 62 | 48 | 0 | 0 | 14 | 0 |
-| TiDB | 55 | 43 | 1 | 4 | 7 | 0 |
+| MySQL | 63 | 62 | 0 | 0 | 1 | 0 |
+| TiDB | 57 | 43 | 1 | 12 | 1 | 0 |
 | PostgreSQL | 290 | 277 | 8 | 0 | 5 | 0 |
 | PG ALTER TABLE residual | 66 | 59 | 3 | 0 | 4 | 0 |
 
@@ -157,11 +157,10 @@ All filters are optional. When multiple filters are provided, they combine as AN
 #### Text Output (default)
 
 ```text
-DIALECT  CLASSIFICATION  FAMILY          FORM                         GUIDANCE
-mysql    parser_error    routine_lifecycle  ALTER PROCEDURE            parser_upgrade_candidate
-mysql    parser_error    routine_lifecycle  CREATE FUNCTION            parser_upgrade_candidate
+DIALECT  CLASSIFICATION  FAMILY       FORM                    GUIDANCE
+mysql    parser_error    alter_table  ALTER TABLESPACE ENGINE parser_upgrade_candidate
 
-2 entries
+1 entries
 ```
 
 Text output is designed for human review. It is stable enough for casual use, but JSON is the machine-readable contract.
@@ -172,8 +171,8 @@ Text output is designed for human review. It is stable enough for casual use, bu
 {
   "version": "v0.270.0",
   "summary": {
-    "total": 2,
-    "returned": 2,
+    "total": 1,
+    "returned": 1,
     "filters": {
       "dialect": "mysql",
       "classification": "parser_error"
@@ -182,8 +181,8 @@ Text output is designed for human review. It is stable enough for casual use, bu
   "entries": [
     {
       "dialect": "mysql",
-      "family": "routine_lifecycle",
-      "form": "ALTER PROCEDURE",
+      "family": "alter_table",
+      "form": "ALTER TABLESPACE ENGINE",
       "classification": "parser_error",
       "finding_rule_ids": null,
       "guidance_code": "parser_upgrade_candidate",

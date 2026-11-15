@@ -8,16 +8,19 @@ import (
 )
 
 // simpleSQL is a basic CREATE TABLE for benchmarking single-statement audit.
-const simpleSQL = "CREATE TABLE users (id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(255) UNIQUE)"
+// The column-level UNIQUE sugar is a bounded unsupported aspect; the table-level
+// UNIQUE KEY form audits through covered semantics so the benchmark measures the
+// supported path rather than the unsupported-statement error channel.
+const simpleSQL = "CREATE TABLE users (id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(255), UNIQUE KEY uk_email (email))"
 
 // complexSQL contains multiple statements with various features to stress the evaluation loop.
 const complexSQL = `CREATE TABLE users (
 	id INT PRIMARY KEY,
 	name VARCHAR(100) NOT NULL,
-	email VARCHAR(255) UNIQUE,
+	email VARCHAR(255),
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	INDEX idx_name (name),
-	INDEX idx_email (email)
+	UNIQUE KEY idx_email (email)
 );
 CREATE TABLE orders (
 	id INT PRIMARY KEY,
@@ -36,7 +39,7 @@ INSERT INTO users (id, name, email) VALUES (1, 'test', 'test@example.com');
 const multiStatementSQL = `CREATE TABLE t1 (id INT PRIMARY KEY, c1 VARCHAR(100));
 CREATE TABLE t2 (id INT PRIMARY KEY, c1 VARCHAR(100), c2 INT DEFAULT 0);
 CREATE TABLE t3 (id INT PRIMARY KEY, c1 VARCHAR(100) NOT NULL, c2 INT, c3 TEXT);
-CREATE TABLE t4 (id INT PRIMARY KEY, c1 VARCHAR(255) UNIQUE, c2 DECIMAL(10,2));
+CREATE TABLE t4 (id INT PRIMARY KEY, c1 VARCHAR(255), c2 DECIMAL(10,2), UNIQUE KEY uk_c1 (c1));
 CREATE TABLE t5 (id INT PRIMARY KEY, c1 INT, c2 VARCHAR(100), INDEX idx_c1 (c1));
 CREATE TABLE t6 (id INT PRIMARY KEY, c1 VARCHAR(100), c2 TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE t7 (id INT PRIMARY KEY, c1 VARCHAR(100), c2 VARCHAR(255), c3 INT, UNIQUE KEY uk_c2 (c2));
@@ -88,6 +91,36 @@ func BenchmarkAuditMultiStatement(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, err := service.Audit(ctx, Request{
 			SQL:     multiStatementSQL,
+			Dialect: spec.DialectMySQL,
+		})
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// routineBodySQL exercises the T27-T30 stored-body analysis path: a compound
+// procedure body whose members classify, re-parse, and evaluate through the
+// shared member machinery (issue #110 perf comparison — body lane).
+const routineBodySQL = `CREATE PROCEDURE p_cleanup() BEGIN
+	DELETE FROM audit_log WHERE created < '2020-01-01';
+	UPDATE stats SET n = n + 1 WHERE k = 'x';
+	SET @done := 1;
+	IF @done THEN
+		INSERT INTO log_done VALUES (1);
+	END IF;
+END;`
+
+// BenchmarkAuditRoutineBody measures body-member analysis throughput.
+func BenchmarkAuditRoutineBody(b *testing.B) {
+	service := NewService()
+	ctx := context.Background()
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_, err := service.Audit(ctx, Request{
+			SQL:     routineBodySQL,
 			Dialect: spec.DialectMySQL,
 		})
 		if err != nil {

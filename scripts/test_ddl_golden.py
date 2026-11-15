@@ -1987,6 +1987,8 @@ def main():
         results.extend(t23_instance_fact_tests(tmp))
         results.extend(t23n_verify_primitive_tests(tmp))
         results.extend(t23s_manifest_tests(tmp))
+        results.extend(t31_all_mode_tests())
+        results.extend(t24_evidence_tests(tmp))
 
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")
@@ -6739,6 +6741,205 @@ def t23s_manifest_tests(tmp):
     report("nonzero findings never emit zero-findings label",
            all("zero findings" not in finding_count_names(n) for n in (0, 1, 3)))
 
+    return results
+
+
+def t31_all_mode_tests():
+    """TASK=all oracle contracts (issue #110): the canonical manifest set is
+    discovered without platform-variant lanes, and the aggregate validator
+    rejects empty suites, zero-case tasks, validation failures, skipped
+    cases, and dishonest counters."""
+    results = []
+    report = lambda name, ok: (results.append(bool(ok)),
+                               print(("PASS " if ok else "FAIL ") + name))
+
+    tasks = ddl_golden.discover_all_manifests()
+    report("TASK=all discovers the canonical milestone set",
+           tasks == sorted(tasks) and "T02" in tasks and "T30" in tasks
+           and "T23S" in tasks and len(tasks) == 30)
+    report("TASK=all excludes platform-variant lanes",
+           "T21-arm64" not in tasks)
+
+    def aggregate(entries, executed=None, task_ids=None):
+        return {"task_id": "all", "tasks": entries,
+                "task_ids": task_ids if task_ids is not None else [e["task_id"] for e in entries],
+                "executed_count": sum(e["executed_count"] for e in entries) if executed is None else executed}
+
+    def entry(task, executed, failures=None):
+        return {"task_id": task, "executed_count": executed, "passed": executed,
+                "assertions": executed * 3, "failures": list(failures or []),
+                "artifact": f"/x/{task}/artifact.json", "external_blocker": None}
+
+    per_task = {"TX": {"cases": [{"case_id": "TX.cli.a", "status": "pass"}]},
+                "TY": {"cases": [{"case_id": "TY.cli.a", "status": "pass"}]}}
+    ok_agg = aggregate([entry("TX", 1), entry("TY", 1)])
+    report("valid all-run aggregate passes",
+           ddl_golden.validate_all_artifact(ok_agg, per_task) == [])
+
+    report("empty task list rejected",
+           ddl_golden.validate_all_artifact(aggregate([]), {}) != [])
+    report("zero-case task rejected",
+           ddl_golden.validate_all_artifact(
+               aggregate([entry("TX", 0), entry("TY", 1)]), per_task) != [])
+    report("task validation failure propagates",
+           ddl_golden.validate_all_artifact(
+               aggregate([entry("TX", 1, ["expect mismatch"]), entry("TY", 1)]),
+               per_task) != [])
+    skipped = dict(per_task)
+    skipped["TX"] = {"cases": [{"case_id": "TX.cli.a", "status": "skipped"}]}
+    report("skipped case status rejected",
+           ddl_golden.validate_all_artifact(ok_agg, skipped) != [])
+    report("dishonest aggregate counter rejected",
+           ddl_golden.validate_all_artifact(
+               aggregate([entry("TX", 1), entry("TY", 1)], executed=99), per_task) != [])
+    report("discovered-but-never-executed task rejected",
+           ddl_golden.validate_all_artifact(
+               aggregate([entry("TX", 1)], task_ids=["TX", "TY"]), per_task) != [])
+    baseline = ddl_golden.load_baseline()
+    report("baseline locks the canonical task denominator",
+           sorted(baseline.get("required_all_tasks") or []) == tasks)
+
+    # reaggregate must refuse before touching Docker: a missing canonical
+    # artifact aborts via SystemExit (fail_run), and per-task artifacts built
+    # at different git HEADs can never be merged into one milestone record.
+    import argparse, tempfile
+    empty = tempfile.mkdtemp()
+    try:
+        ddl_golden.cmd_reaggregate(argparse.Namespace(artifact_dir=empty))
+        report("reaggregate refuses a missing canonical artifact", False)
+    except SystemExit:
+        report("reaggregate refuses a missing canonical artifact", True)
+
+    import json as _json
+    for task in tasks:
+        tdir = pathlib.Path(empty) / task
+        tdir.mkdir(parents=True, exist_ok=True)
+        (tdir / "artifact.json").write_text(_json.dumps(
+            {"task_id": task, "head_sha": "deadbeef" if task != tasks[-1] else "cafebabe",
+             "executed_count": 0, "cases": []}))
+    try:
+        ddl_golden.cmd_reaggregate(argparse.Namespace(artifact_dir=empty))
+        report("reaggregate refuses mixed-HEAD evidence", False)
+    except SystemExit:
+        report("reaggregate refuses mixed-HEAD evidence", True)
+    return results
+
+
+def t24_evidence_tests(tmp):
+    """T24 deployment-evidence capture contract (issue #103): the runner must
+    probe the LIVE anchor for target-bound facts and write the evidence file
+    the --deployment-evidence-file arg pins — a committed copy binds the wrong
+    server_uuid and is provenance only. Column headers must never reach the
+    facts, a dead probe must fail closed, and the artifact validator must
+    refuse a step record missing the captured facts."""
+    results = []
+    report = lambda name, ok: (results.append(bool(ok)),
+                               print(("PASS " if ok else "FAIL ") + name))
+
+    anchor = {"container": "c", "database": "golden", "product": "mysql",
+              "exec_client": ["mysql"]}
+    spec = {"path": str(tmp / "ev.json"), "source": "test-source"}
+
+    def exec_ok(a, sql, database=None, silent=True, via_stdin=False):
+        if "@@server_uuid" in sql:
+            return 0, "@@server_uuid\n1111-uuid", ""
+        if "@@version" in sql:
+            return 0, "@@version\n8.0.46", ""
+        return 1, "", "?"
+
+    def run_ok(argv, timeout=None):
+        if argv[-1] == "nproc":
+            return 0, "8\n", ""
+        return 0, "CapEff:\t00000000a80425fb\n", ""  # bit 23 (CAP_SYS_NICE) clear
+
+    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=exec_ok), \
+         mock.patch.object(ddl_golden, "run_cmd", side_effect=run_ok):
+        ev, probes = ddl_golden.capture_deployment_evidence(anchor, spec)
+    report("deployment evidence captures live target facts",
+           ev == {"host_vcpus": 8, "priority_capable": False, "product": "mysql",
+                  "source": "test-source", "target": "1111-uuid", "version": "8.0.46"})
+    report("evidence facts strip the client column header",
+           ev is not None and ev["target"] == "1111-uuid" and "\n" not in ev["target"])
+    report("evidence file written at the pinned path",
+           (tmp / "ev.json").exists() and
+           json.loads((tmp / "ev.json").read_text())["target"] == "1111-uuid")
+
+    def run_sysnice(argv, timeout=None):
+        if argv[-1] == "nproc":
+            return 0, "4\n", ""
+        return 0, "CapEff:\t00000000a88425fb\n", ""  # bit 23 set
+
+    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=exec_ok), \
+         mock.patch.object(ddl_golden, "run_cmd", side_effect=run_sysnice):
+        ev2, _ = ddl_golden.capture_deployment_evidence(anchor, spec)
+    report("CAP_SYS_NICE bit maps priority_capable=true",
+           ev2 is not None and ev2["priority_capable"] is True and ev2["host_vcpus"] == 4)
+
+    def exec_dead(a, sql, database=None, silent=True, via_stdin=False):
+        return 1, "", "gone"
+
+    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=exec_dead), \
+         mock.patch.object(ddl_golden, "run_cmd", side_effect=run_ok):
+        ev3, probes3 = ddl_golden.capture_deployment_evidence(anchor, spec)
+    report("unreadable anchor facts fail closed",
+           ev3 is None and probes3 and all("stdout" in p for p in probes3))
+
+    # Validator path: a metadata case whose manifest declares a
+    # deployment_evidence setup step must match the recorded capture.
+    m = copy.deepcopy(MANIFEST)
+    m["metadata_cases"] = [{
+        "id": "rg-lc", "anchor": "mysqlX", "dialect": "mysql",
+        "sql": "CREATE RESOURCE GROUP g TYPE=USER", "policy": "all-rules-disabled",
+        "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
+                    "password_source": "ephemeral-run-secret", "schema": "golden"},
+        "setup": [{"name": "capture-deployment-evidence",
+                   "deployment_evidence": {"path": "testdata/x.json", "source": "s"}}],
+        "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0,
+                   "diagnostics": 0, "unsupported": 0, "coverage": "complete",
+                   "statement_coverage": ["complete"], "evidence_gaps": 0,
+                   "fail_on_triggered": False},
+    }]
+    m["required_case_ids"] = list(m["required_case_ids"]) + ["TX.meta.rg-lc"]
+    facts = {"host_vcpus": 8, "priority_capable": False, "product": "mysql",
+             "source": "s", "target": "1111-uuid", "version": "8.0.46"}
+
+    def artifact_with(rec):
+        a = make_artifact(tmp)
+        a["executed_count"] += 1
+        a["required_case_ids"] = list(m["required_case_ids"])
+        parsed = {"verdict": "pass", "coverage": {"status": "complete"},
+                  "statements": [{"index": 0,
+                                  "raw_sql": "CREATE RESOURCE GROUP g TYPE=USER",
+                                  "findings": [], "coverage": {"status": "complete"}}],
+                  "global_findings": [], "diagnostics": [], "unsupported": [],
+                  "fail_on_triggered": False}
+        a["cases"].append({
+            "case_id": "TX.meta.rg-lc", "kind": "cli_metadata", "cli_case": "rg-lc",
+            "anchor": "mysqlX", "dialect": "mysql",
+            "input_sql": "CREATE RESOURCE GROUP g TYPE=USER",
+            "policy_profile": "all-rules-disabled",
+            "command": [str(a["cli"]["path"]), "audit", "--dialect", "mysql", "--sql",
+                        "CREATE RESOURCE GROUP g TYPE=USER", "--config", str(tmp / "p.yaml"),
+                        "--format", "json", "--host", "127.0.0.1", "--port", "23384",
+                        "--user", "root", "--schema", "golden"],
+            "connect": {"host": "127.0.0.1", "port": 23384},
+            "expected": m["metadata_cases"][0]["expect"],
+            "actual": {"database": fixture_database(MANIFEST["anchors"]["mysqlX"], "mysqlX", BASELINE),
+                       "setup": [rec], "exit": 0,
+                       "stdout": json.dumps(parsed), "stderr": "", "parsed": parsed},
+            "assertions": [{"name": "a", "ok": True, "detail": "d"}],
+            "status": "pass"})
+        return a
+
+    good = {"name": "capture-deployment-evidence",
+            "deployment_evidence": "testdata/x.json", "facts": dict(facts), "probes": []}
+    results.append(check("t24 captured deployment evidence step passes",
+                         artifact_with(good), "", manifest=m))
+    bad = {"name": "capture-deployment-evidence",
+           "deployment_evidence": "testdata/x.json",
+           "facts": {"host_vcpus": 8, "version": "8.0.46"}, "probes": []}
+    results.append(check("t24 evidence record missing target rejected",
+                         artifact_with(bad), "deployment-evidence", manifest=m))
     return results
 
 

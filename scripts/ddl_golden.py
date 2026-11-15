@@ -6,6 +6,11 @@ per-anchor database services, executes the manifest's database and CLI cases,
 records every raw return code / metadata query result / JSON payload, tears the
 stack down deterministically, and then validates the emitted artifact.
 
+`run --task all` (T31/#110) replays that full lifecycle for every canonical
+`T<digits>[LETTERS]` manifest in sequence — the canonical set is locked by
+`required_all_tasks` in anchors-baseline.json — and emits an `all/` aggregate
+artifact over the per-task artifacts.
+
 `validate` mode re-checks an existing artifact without touching Docker: it
 rejects zero cases, missing expected fields, unexecuted required cases,
 unreachable or version-mismatched databases, fabricated PASS records, and
@@ -1324,6 +1329,56 @@ def _fixture_key(step):
     return step.get("fixture_key") or "default"
 
 
+def capture_deployment_evidence(anchor, spec):
+    """Probe the live anchor for the target-bound deployment facts a
+    --deployment-evidence-file case needs (T24/#103): the file must carry the
+    container's CURRENT server_uuid — a committed copy is provenance only,
+    never a reusable credential — so the runner regenerates it per run.
+    Facts: target=@@server_uuid, version=@@version, host_vcpus=nproc inside
+    the container, priority_capable=CAP_SYS_NICE(bit 23) in /proc/1 CapEff,
+    product/source from the manifest declaration."""
+    container = anchor["container"]
+    probes = []
+
+    def probe(name, argv=None, sql=None):
+        if sql is not None:
+            rc, out, err = mysql_exec(anchor, sql, database=anchor["database"], silent=False)
+            probes.append({"name": name, "sql": sql, "rc": rc, "stdout": out.strip(), "stderr": err.strip()})
+        else:
+            rc, out, err = run_cmd(["docker", "exec", container, *argv])
+            probes.append({"name": name, "argv": argv, "rc": rc, "stdout": out.strip(), "stderr": err.strip()})
+        value = out.strip().rsplit("\n", 1)[-1].strip() if sql is not None else out.strip()
+        return rc, value
+
+    uuid_rc, server_uuid = probe("server_uuid", sql="SELECT @@server_uuid")
+    ver_rc, version = probe("version", sql="SELECT @@version")
+    nproc_rc, nproc = probe("host_vcpus", argv=["nproc"])
+    cap_rc, capline = probe("priority_caps", argv=["sh", "-c", "grep CapEff /proc/1/status"])
+    if any(rc != 0 for rc in (uuid_rc, ver_rc, nproc_rc, cap_rc)):
+        return None, probes
+    try:
+        host_vcpus = int(nproc)
+        cap_eff = int(capline.rsplit("\t", 1)[-1].strip(), 16)
+    except (ValueError, IndexError):
+        return None, probes
+    evidence = {
+        "host_vcpus": host_vcpus,
+        "priority_capable": bool(cap_eff & (1 << 23)),  # CAP_SYS_NICE
+        "product": anchor["product"],
+        "source": spec["source"],
+        "target": server_uuid,
+        "version": version,
+    }
+    path = ROOT_DIR / spec["path"]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        json.dump(evidence, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+    probes.append({"name": "evidence_file", "path": spec["path"], "rc": 0,
+                   "stdout": "written", "stderr": ""})
+    return evidence, probes
+
+
 def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
     fixture_spec = spec.get("fixture") or {}
     if manifest.get("task_id") != "T07" and not fixture_spec:
@@ -1451,6 +1506,21 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
         return case
 
     for step in spec.get("setup") or []:
+        if step.get("deployment_evidence"):
+            ev, probes = capture_deployment_evidence(anchor, step["deployment_evidence"])
+            record = {"name": step["name"],
+                      "deployment_evidence": step["deployment_evidence"].get("path"),
+                      "facts": ev, "probes": probes}
+            case["actual"]["setup"].append(record)
+            ok = ev is not None and all(p["rc"] == 0 for p in probes)
+            case["assertions"].append({
+                "name": f"setup {step['name']} deployment evidence capture",
+                "ok": ok,
+                "detail": f"probes={probes!r} facts={ev!r}"})
+            if not ok:
+                case["status"] = "fail"
+                return case
+            continue
         if fixture is not None and step.get("creates_fixture") and _fixture_key(step) not in fixture["absent"]:
             case["assertions"].append({"name": f"{task_id} prior fixture absence required", "ok": False, "detail": f"no successful absence proof for {_fixture_key(step)!r}"})
             case["status"] = "fail"
@@ -8275,6 +8345,15 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                 if i >= len(setups):
                     break
                 step = setups[i]
+                if mstep.get("deployment_evidence"):
+                    recorded_path = step.get("deployment_evidence")
+                    facts = step.get("facts") or {}
+                    if (recorded_path != mstep["deployment_evidence"].get("path")
+                            or not facts.get("target") or not facts.get("version")
+                            or not isinstance(facts.get("host_vcpus"), int)
+                            or "priority_capable" not in facts):
+                        failures.append(f"case {case_id}: deployment-evidence step {mstep['name']} path/facts mismatch")
+                    continue
                 if step.get("sql") != mstep["sql"] or step.get("rc") != mstep.get("expect_rc", 0):
                     failures.append(f"case {case_id}: setup step {mstep['name']} identity/rc mismatch")
                 verifies = step.get("verify") or []
@@ -8448,44 +8527,17 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     return failures
 
 
-def cmd_run(args):
-    global RUN_SECRET
-    RUN_SECRET = secrets.token_hex(16)
-    manifest = load_manifest(args.task)
-    # Anchors may name an exec_password_env for the MYSQL_PWD channel used by
-    # mysql_exec. The ephemeral per-run secret is the only permitted value, so
-    # bind each declared variable to RUN_SECRET for this process; the variable
-    # name (never the value) is what lands in recorded argv/artifact.
-    for _anchor in (manifest.get("anchors") or {}).values():
-        _env_name = _anchor.get("exec_password_env")
-        if _env_name:
-            os.environ[_env_name] = RUN_SECRET
-    baseline = load_baseline()
-    baseline_errors = baseline_manifest_failures(manifest, baseline)
-    if baseline_errors:
-        fail_run(f"manifest violates locked baseline: {baseline_errors}")
-    credential_errors = manifest_credential_failures(manifest)
-    if credential_errors:
-        fail_run(f"manifest violates credential-safe wiring: {credential_errors}")
-    artifact_root = pathlib.Path(args.artifact_dir).resolve() / args.task
-    artifact_root.mkdir(parents=True, exist_ok=True)
-    cases_dir = artifact_root / "cases"
-    cases_dir.mkdir(exist_ok=True)
+def bind_run_secret_env(manifest):
+    """Bind each anchor's declared exec_password_env name to RUN_SECRET so
+    mysql_exec argv records the variable name, never the value."""
+    for anchor in (manifest.get("anchors") or {}).values():
+        env_name = anchor.get("exec_password_env")
+        if env_name:
+            os.environ[env_name] = RUN_SECRET
 
-    head_rc, head_sha, _ = run_cmd(["git", "rev-parse", "HEAD"], cwd=ROOT_DIR)
-    if head_rc != 0:
-        fail_run("cannot resolve git HEAD")
-    head_sha = head_sha.strip()
 
-    rc, _, _ = run_cmd(["docker", "version"], timeout=30)
-    if rc != 0:
-        fail_run("Docker unavailable (external blocker)")
-
-    cli = build_cli(artifact_root / "bin")
-    cli["build"]["head_sha"] = head_sha
-    policies = make_policies(cli["path"], artifact_root, manifest)
-
-    artifact = {
+def new_task_artifact(manifest, cli, policies, head_sha):
+    return {
         "task_id": manifest["task_id"],
         "issue": manifest.get("issue"),
         "head_sha": head_sha,
@@ -8499,101 +8551,63 @@ def cmd_run(args):
         "cleanup": {},
     }
 
-    services = []
-    containers = []
+
+def manifest_services_containers(manifest):
+    services, containers = [], []
     for anchor in manifest["anchors"].values():
         services.append(anchor["service"])
         containers.append(anchor["container"])
         if anchor.get("client_service"):
             services.append(anchor["client_service"])
             containers.append(anchor["client_container"])
+    return services, containers
 
-    try:
-        rc, out, err = compose("up", "-d", *services, timeout=300)
-        # Setup log is required anchor evidence (issue #81): keep the raw
-        # compose-up output so readiness is inspectable, not just asserted.
-        artifact["setup"] = {
-            "command": ["docker", "compose", "up", "-d", *services],
-            "rc": rc,
-            "stdout": out,
-            "stderr": err,
-        }
-        if rc != 0:
-            artifact["external_blocker"] = f"compose up failed: {err.strip()}"
-        else:
-            health = wait_for_healthy(containers)
-            artifact["container_health"] = health
-            unhealthy = {c: s for c, s in health.items() if s not in ("healthy", "running")}
-            if unhealthy:
-                artifact["external_blocker"] = f"required database containers not healthy: {unhealthy}"
-            else:
-                # Immutable anchor identity proof (issue #81 R2): bind the
-                # locked baseline digest, the inspected image and the running
-                # container's .Image together before any fixture SQL runs, so
-                # a missing or re-pointed image can never degrade to PASS.
-                anchor_facts, identity_failures = prove_anchor_identity(manifest, baseline)
-                artifact["anchor_facts"] = anchor_facts
-                if identity_failures:
-                    artifact["external_blocker"] = "anchor image identity proof failed: " + "; ".join(identity_failures)
-                else:
-                    # Credential-safe client wiring (issue #81 R3): install a
-                    # restricted option file inside each client container so
-                    # recorded argv carries a file path, never a password.
-                    option_facts, option_failures = provision_client_option_files(
-                        manifest, artifact_root)
-                    artifact["client_option_files"] = option_facts
-                    if option_failures:
-                        artifact["external_blocker"] = "client option-file provisioning failed: " + "; ".join(option_failures)
-                    else:
-                        for anchor_key, anchor_def in manifest["anchors"].items():
-                            if anchor_def.get("infra_only"):
-                                continue
-                            artifact["cases"].append(execute_ddl_case(manifest, anchor_key))
-                            artifact["cases"].append(execute_negative_case(manifest, anchor_key))
-                        for spec in cli_case_specs(manifest):
-                            artifact["cases"].append(execute_cli_case(manifest, cli["path"], policies, spec))
-                        for spec in metadata_case_specs(manifest):
-                            artifact["cases"].append(execute_metadata_case(manifest, spec["anchor"], cli["path"], policies, spec))
-                        for spec in error_case_specs(manifest):
-                            artifact["cases"].append(execute_error_case(manifest, cli["path"], policies, spec))
-                for case in artifact["cases"]:
-                    db = (case.get("actual") or {}).get("database")
-                    if db and case.get("anchor") in anchor_facts:
-                        facts = anchor_facts[case["anchor"]]
-                        db.update(facts)
-                        if case.get("kind") == "db_ddl":
-                            locked = facts.get("expected_image_digest")
-                            case["assertions"].append({
-                                "name": "image digest matches locked baseline",
-                                "ok": bool(locked) and locked in (facts.get("resolved_image_digests") or []),
-                                "detail": f"locked={locked!r} resolved={facts.get('resolved_image_digests')!r}",
-                            })
-                            case["assertions"].append({
-                                "name": "running container image identity",
-                                "ok": facts.get("container_image") == facts.get("image_id"),
-                                "detail": f"container={facts.get('container_image')!r} image_id={facts.get('image_id')!r}",
-                            })
-                            locked_platform = facts.get("locked_platform")
-                            case["assertions"].append({
-                                "name": "platform recorded and matches baseline",
-                                "ok": bool(facts.get("platform")) and (not locked_platform or facts["platform"] == locked_platform),
-                                "detail": f"platform={facts.get('platform')!r} locked={locked_platform!r}",
-                            })
-    finally:
-        option_file_cleanup = cleanup_client_option_files(manifest)
-        artifact["cleanup"] = compose_cleanup()
-        artifact["cleanup"]["client_option_files"] = option_file_cleanup
-        artifact["executed_count"] = len(artifact["cases"])
-        artifact["generated_at"] = utc_now()
 
-    # Credential-leak scan over the fully serialized artifact before it is
-    # persisted or validated (issue #81 R3). A finding is an evidence failure.
-    artifact["credential_scan"] = {
-        "surfaces": ["argv", "stdout", "stderr", "setup_log", "cleanup_log", "artifact_json"],
-        "run_secret_checked": RUN_SECRET is not None,
-        "findings": credential_leak_findings(artifact, manifest),
-    }
+def execute_manifest_cases(manifest, cli_path, policies):
+    cases = []
+    for anchor_key, anchor_def in manifest["anchors"].items():
+        if anchor_def.get("infra_only"):
+            continue
+        cases.append(execute_ddl_case(manifest, anchor_key))
+        cases.append(execute_negative_case(manifest, anchor_key))
+    for spec in cli_case_specs(manifest):
+        cases.append(execute_cli_case(manifest, cli_path, policies, spec))
+    for spec in metadata_case_specs(manifest):
+        cases.append(execute_metadata_case(manifest, spec["anchor"], cli_path, policies, spec))
+    for spec in error_case_specs(manifest):
+        cases.append(execute_error_case(manifest, cli_path, policies, spec))
+    return cases
 
+
+def enrich_case_anchor_facts(artifact, anchor_facts):
+    for case in artifact["cases"]:
+        db = (case.get("actual") or {}).get("database")
+        if db and case.get("anchor") in anchor_facts:
+            facts = anchor_facts[case["anchor"]]
+            db.update(facts)
+            if case.get("kind") == "db_ddl":
+                locked = facts.get("expected_image_digest")
+                case["assertions"].append({
+                    "name": "image digest matches locked baseline",
+                    "ok": bool(locked) and locked in (facts.get("resolved_image_digests") or []),
+                    "detail": f"locked={locked!r} resolved={facts.get('resolved_image_digests')!r}",
+                })
+                case["assertions"].append({
+                    "name": "running container image identity",
+                    "ok": facts.get("container_image") == facts.get("image_id"),
+                    "detail": f"container={facts.get('container_image')!r} image_id={facts.get('image_id')!r}",
+                })
+                locked_platform = facts.get("platform")
+                case["assertions"].append({
+                    "name": "platform recorded and matches baseline",
+                    "ok": bool(facts.get("platform")) and (not locked_platform or facts["platform"] == locked_platform),
+                    "detail": f"platform={facts.get('platform')!r} locked={locked_platform!r}",
+                })
+
+
+def persist_artifact(artifact, artifact_root):
+    cases_dir = artifact_root / "cases"
+    cases_dir.mkdir(exist_ok=True)
     artifact_path = artifact_root / "artifact.json"
     with artifact_path.open("w", encoding="utf-8") as handle:
         json.dump(artifact, handle, indent=2, ensure_ascii=False)
@@ -8603,13 +8617,373 @@ def cmd_run(args):
         with raw_path.open("w", encoding="utf-8") as handle:
             json.dump(case, handle, indent=2, ensure_ascii=False)
             handle.write("\n")
+    return artifact_path
 
-    failures = validate_artifact(artifact, manifest, baseline=baseline)
+
+def run_manifest_suite(manifest, cli, artifact_root, head_sha, baseline, *, setup, health):
+    """Execute one manifest's full case suite against already-healthy
+    services. Compose lifecycle stays with the caller: TASK=<id> owns it
+    directly, TASK=all replays it per manifest so each task keeps its own
+    setup/health/identity proof, option-file wiring, credential scan and
+    validation."""
+    artifact_root.mkdir(parents=True, exist_ok=True)
+    policies = make_policies(cli["path"], artifact_root, manifest)
+    artifact = new_task_artifact(manifest, cli, policies, head_sha)
+    artifact["setup"] = setup
+    _, containers = manifest_services_containers(manifest)
+    artifact["container_health"] = {c: health.get(c, "missing") for c in containers}
+    unhealthy = {c: s for c, s in artifact["container_health"].items() if s not in ("healthy", "running")}
+    anchor_facts = {}
+    if setup.get("rc") != 0:
+        artifact["external_blocker"] = f"compose up failed: {setup.get('stderr', '').strip()}"
+    elif unhealthy:
+        artifact["external_blocker"] = f"required database containers not healthy: {unhealthy}"
+    else:
+        anchor_facts, identity_failures = prove_anchor_identity(manifest, baseline)
+        artifact["anchor_facts"] = anchor_facts
+        if identity_failures:
+            artifact["external_blocker"] = "anchor image identity proof failed: " + "; ".join(identity_failures)
+        else:
+            option_facts, option_failures = provision_client_option_files(manifest, artifact_root)
+            artifact["client_option_files"] = option_facts
+            if option_failures:
+                artifact["external_blocker"] = "client option-file provisioning failed: " + "; ".join(option_failures)
+            else:
+                artifact["cases"] = execute_manifest_cases(manifest, cli["path"], policies)
+        enrich_case_anchor_facts(artifact, anchor_facts)
+    artifact["executed_count"] = len(artifact["cases"])
+    artifact["generated_at"] = utc_now()
+    artifact["credential_scan"] = {
+        "surfaces": ["argv", "stdout", "stderr", "setup_log", "cleanup_log", "artifact_json"],
+        "run_secret_checked": RUN_SECRET is not None,
+        "findings": credential_leak_findings(artifact, manifest),
+    }
+    return artifact
+
+
+def finalize_task_artifact(artifact, manifest, artifact_root, baseline):
+    """Persist the fully-evidenced task artifact (cleanup attached by the
+    caller) and run the manifest validator against it."""
+    artifact["generated_at"] = utc_now()
+    artifact_path = persist_artifact(artifact, artifact_root)
+    return artifact_path, validate_artifact(artifact, manifest, baseline=baseline)
+
+
+def cmd_run(args):
+    global RUN_SECRET
+    if args.task == "all":
+        return cmd_run_all(args)
+    RUN_SECRET = secrets.token_hex(16)
+    manifest = load_manifest(args.task)
+    # Anchors may name an exec_password_env for the MYSQL_PWD channel used by
+    # mysql_exec. The ephemeral per-run secret is the only permitted value, so
+    # bind each declared variable to RUN_SECRET for this process; the variable
+    # name (never the value) is what lands in recorded argv/artifact.
+    bind_run_secret_env(manifest)
+    baseline = load_baseline()
+    baseline_errors = baseline_manifest_failures(manifest, baseline)
+    if baseline_errors:
+        fail_run(f"manifest violates locked baseline: {baseline_errors}")
+    credential_errors = manifest_credential_failures(manifest)
+    if credential_errors:
+        fail_run(f"manifest violates credential-safe wiring: {credential_errors}")
+    artifact_root = pathlib.Path(args.artifact_dir).resolve() / args.task
+    artifact_root.mkdir(parents=True, exist_ok=True)
+
+    head_rc, head_sha, _ = run_cmd(["git", "rev-parse", "HEAD"], cwd=ROOT_DIR)
+    if head_rc != 0:
+        fail_run("cannot resolve git HEAD")
+    head_sha = head_sha.strip()
+
+    rc, _, _ = run_cmd(["docker", "version"], timeout=30)
+    if rc != 0:
+        fail_run("Docker unavailable (external blocker)")
+
+    cli = build_cli(artifact_root / "bin")
+    cli["build"]["head_sha"] = head_sha
+
+    services, containers = manifest_services_containers(manifest)
+    artifact = None
+    artifact_path = artifact_root / "artifact.json"
+    failures = ["runner aborted before case execution"]
+    try:
+        rc, out, err = compose("up", "-d", *services, timeout=300)
+        setup = {"command": ["docker", "compose", "up", "-d", *services],
+                 "rc": rc, "stdout": out, "stderr": err}
+        health = wait_for_healthy(containers) if rc == 0 else {}
+        artifact = run_manifest_suite(
+            manifest, cli, artifact_root, head_sha, baseline, setup=setup, health=health)
+    finally:
+        option_file_cleanup = cleanup_client_option_files(manifest)
+        cleanup = compose_cleanup()
+        cleanup["client_option_files"] = option_file_cleanup
+        if artifact is not None:
+            artifact["cleanup"] = cleanup
+            artifact_path, failures = finalize_task_artifact(
+                artifact, manifest, artifact_root, baseline)
+
     executed = artifact["executed_count"]
     assertions = sum(len(c.get("assertions") or []) for c in artifact["cases"])
     passed = sum(1 for c in artifact["cases"] if c.get("status") == "pass")
     print(f"[ddl-golden] task={args.task} head={head_sha[:12]} cases={executed} passed={passed} assertions={assertions}")
     print(f"[ddl-golden] artifact={artifact_path}")
+    if failures:
+        for item in failures:
+            print(f"[ddl-golden][FAIL] {item}", file=sys.stderr)
+        return 1
+    print("[ddl-golden] PASS")
+    return 0
+
+
+ALL_TASK_PATTERN = re.compile(r"^T\d+[A-Z]*$")
+
+
+def discover_all_manifests():
+    """Canonical task manifests under testdata/ddl-golden/: every T<digits>
+    (optionally letter-suffixed like T23S) manifest whose task_id matches
+    its filename. Platform-variant lanes such as T21-arm64 encode a host
+    platform in their id and are not canonical — they are separate lanes,
+    never silently folded into the milestone suite (T31/#110)."""
+    tasks = []
+    for path in sorted(MANIFEST_DIR.glob("T*.json")):
+        task = path.stem
+        if not ALL_TASK_PATTERN.match(task):
+            continue
+        with path.open("r", encoding="utf-8") as handle:
+            if json.load(handle).get("task_id") == task:
+                tasks.append(task)
+    return tasks
+
+
+def validate_all_artifact(aggregate, per_task):
+    """TASK=all oracle (issue #110): every canonical manifest executed a
+    non-empty suite, every task artifact validated clean, no case was
+    skipped or missing, and the aggregate counters are honest sums."""
+    failures = []
+    if not aggregate["tasks"]:
+        failures.append("TASK=all executed zero task manifests")
+        return failures
+    executed_tasks = {entry["task_id"] for entry in aggregate["tasks"]}
+    missing = [t for t in aggregate["task_ids"] if t not in executed_tasks]
+    if missing:
+        failures.append(f"canonical task(s) discovered but never executed: {missing}")
+    total_cases = 0
+    for entry in aggregate["tasks"]:
+        task = entry["task_id"]
+        if entry["executed_count"] <= 0:
+            failures.append(f"{task}: zero executed cases")
+        total_cases += entry["executed_count"]
+        if entry["failures"]:
+            failures.extend(f"{task}: {item}" for item in entry["failures"])
+        skipped = [c["case_id"] for c in (per_task.get(task, {}).get("cases") or [])
+                   if c.get("status") in ("missing", "skipped", "skip")]
+        if skipped:
+            failures.append(f"{task}: skipped/missing cases must not exist: {skipped}")
+    if aggregate["executed_count"] != total_cases:
+        failures.append(
+            f"aggregate executed_count {aggregate['executed_count']} != sum of task cases {total_cases}")
+    return failures
+
+
+def cmd_run_all(args):
+    global RUN_SECRET
+    RUN_SECRET = secrets.token_hex(16)
+    tasks = discover_all_manifests()
+    if not tasks:
+        fail_run("TASK=all found no canonical task manifests")
+    baseline = load_baseline()
+    # The canonical task list is locked in the baseline file — discovery reads
+    # the same directory a drift would edit, so a deleted or renamed manifest
+    # must be a hard error here, not a silently smaller milestone denominator.
+    required = baseline.get("required_all_tasks")
+    if not required:
+        fail_run("baseline required_all_tasks missing: cannot prove the canonical task denominator")
+    discovered = set(tasks)
+    locked = set(required)
+    if discovered != locked:
+        fail_run(
+            "canonical task set drifted from locked baseline: "
+            f"missing={sorted(locked - discovered)} extra={sorted(discovered - locked)}")
+    artifact_base = pathlib.Path(args.artifact_dir).resolve()
+
+    head_rc, head_sha, _ = run_cmd(["git", "rev-parse", "HEAD"], cwd=ROOT_DIR)
+    if head_rc != 0:
+        fail_run("cannot resolve git HEAD")
+    head_sha = head_sha.strip()
+
+    rc, _, _ = run_cmd(["docker", "version"], timeout=30)
+    if rc != 0:
+        fail_run("Docker unavailable (external blocker)")
+
+    all_root = artifact_base / "all"
+    all_root.mkdir(parents=True, exist_ok=True)
+    cli = build_cli(all_root / "bin")
+    cli["build"]["head_sha"] = head_sha
+
+    aggregate = {
+        "task_id": "all",
+        "issue": 110,
+        "head_sha": head_sha,
+        "generated_at": utc_now(),
+        "cli": cli,
+        "task_ids": tasks,
+        "tasks": [],
+        "executed_count": 0,
+        "cleanup": {},
+    }
+    per_task = {}
+    # Each manifest replays its own full lifecycle — compose up for only its
+    # services, health, identity proof, option files, cases, then down — so a
+    # TASK=all run is exactly the per-task golden record repeated, and peak
+    # resource use stays bounded by a single manifest's anchor set (T31/#110).
+    for task in tasks:
+        manifest = load_manifest(task)
+        bind_run_secret_env(manifest)
+        artifact_root = artifact_base / task
+        pre_failures = (baseline_manifest_failures(manifest, baseline)
+                        + manifest_credential_failures(manifest))
+        if pre_failures:
+            aggregate["tasks"].append({
+                "task_id": task, "executed_count": 0, "passed": 0,
+                "assertions": 0, "failures": pre_failures,
+                "artifact": None, "external_blocker": "manifest precondition failed",
+            })
+            continue
+        artifact = None
+        suite_exc = None
+        try:
+            try:
+                services, containers = manifest_services_containers(manifest)
+                rc, out, err = compose("up", "-d", *services, timeout=300)
+                setup = {"command": ["docker", "compose", "up", "-d", *services],
+                         "rc": rc, "stdout": out, "stderr": err}
+                health = wait_for_healthy(containers) if rc == 0 else {}
+                artifact = run_manifest_suite(
+                    manifest, cli, artifact_root, head_sha, baseline,
+                    setup=setup, health=health)
+            except Exception as exc:  # noqa: BLE001 — a raised suite/stack must not abort remaining tasks
+                suite_exc = exc
+        finally:
+            option_file_cleanup = cleanup_client_option_files(manifest)
+            cleanup = compose_cleanup()
+            cleanup["client_option_files"] = option_file_cleanup
+            if artifact is not None:
+                artifact["cleanup"] = cleanup
+                artifact_path, failures = finalize_task_artifact(
+                    artifact, manifest, artifact_root, baseline)
+                per_task[task] = artifact
+                aggregate["tasks"].append({
+                    "task_id": task,
+                    "executed_count": artifact["executed_count"],
+                    "passed": sum(1 for c in artifact["cases"] if c.get("status") == "pass"),
+                    "assertions": sum(len(c.get("assertions") or []) for c in artifact["cases"]),
+                    "failures": failures,
+                    "artifact": str(artifact_path),
+                    "external_blocker": artifact.get("external_blocker"),
+                })
+                aggregate["executed_count"] += artifact["executed_count"]
+                print(f"[ddl-golden] {task}: cases={artifact['executed_count']} "
+                      f"failed_assertion_cases={sum(1 for c in artifact['cases'] if c.get('status') != 'pass')} "
+                      f"failures={len(failures)}")
+            else:
+                detail = f"runner aborted before case execution: {suite_exc}" if suite_exc \
+                    else "runner aborted before case execution"
+                aggregate["tasks"].append({
+                    "task_id": task, "executed_count": 0, "passed": 0,
+                    "assertions": 0,
+                    "failures": [detail],
+                    "artifact": None, "external_blocker": "suite raised",
+                })
+                print(f"[ddl-golden] {task}: {detail} — continuing")
+    aggregate["cleanup"] = {"strategy": "per-task compose down -v",
+                            "loop_completed": True,
+                            "note": "per-task compose-down failures surface through that task's entry failures"}
+    aggregate["generated_at"] = utc_now()
+
+    aggregate_path = all_root / "artifact.json"
+    with aggregate_path.open("w", encoding="utf-8") as handle:
+        json.dump(aggregate, handle, indent=2, ensure_ascii=False)
+        handle.write("\n")
+
+    failures = validate_all_artifact(aggregate, per_task)
+    passed = sum(e["passed"] for e in aggregate["tasks"])
+    assertions = sum(e["assertions"] for e in aggregate["tasks"])
+    print(f"[ddl-golden] task=all head={head_sha[:12]} tasks={len(aggregate['tasks'])} "
+          f"cases={aggregate['executed_count']} passed={passed} assertions={assertions}")
+    print(f"[ddl-golden] artifact={aggregate_path}")
+    if failures:
+        for item in failures:
+            print(f"[ddl-golden][FAIL] {item}", file=sys.stderr)
+        return 1
+    print("[ddl-golden] PASS")
+    return 0
+
+def cmd_reaggregate(args):
+    """Rebuild the `all/` aggregate from already-persisted per-task artifacts
+    (T31/#110): when a manifest's stale expectations are re-pinned and the
+    single task re-run green, the milestone record should not need a full
+    re-run — but aggregation is still fail-closed. Every canonical task must
+    have a persisted artifact, every artifact must come from the same git
+    HEAD and the same CLI build sha, and the rebuilt aggregate goes through
+    the same `validate_all_artifact` oracle."""
+    baseline = load_baseline()
+    required = baseline.get("required_all_tasks") or []
+    if not required:
+        fail_run("baseline required_all_tasks missing: cannot prove the canonical task denominator")
+    artifact_base = pathlib.Path(args.artifact_dir).resolve()
+    tasks = sorted(required)
+    aggregate = {
+        "task_id": "all",
+        "issue": 110,
+        "generated_at": utc_now(),
+        "task_ids": tasks,
+        "tasks": [],
+        "executed_count": 0,
+        "reaggregated": True,
+        "cleanup": {"strategy": "reaggregated from persisted per-task artifacts", "completed": True},
+    }
+    per_task = {}
+    head_sha = None
+    binary_sha = None
+    for task in tasks:
+        artifact_path = artifact_base / task / "artifact.json"
+        if not artifact_path.is_file():
+            fail_run(f"canonical task {task} has no persisted artifact at {artifact_path} — run TASK={task} first")
+        artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
+        manifest = load_manifest(task)
+        if head_sha is None:
+            head_sha = artifact.get("head_sha")
+            binary_sha = ((artifact.get("cli") or {}).get("build") or {}).get("sha256")
+        elif artifact.get("head_sha") != head_sha:
+            fail_run(f"{task} artifact head_sha {artifact.get('head_sha')} != {head_sha} — refusing to mix evidence across commits")
+        elif (((artifact.get("cli") or {}).get("build") or {}).get("sha256")) != binary_sha:
+            fail_run(f"{task} artifact was produced by a different CLI build — refusing to mix evidence")
+        artifact["cleanup"] = artifact.get("cleanup") or {}
+        _, failures = finalize_task_artifact(artifact, manifest, artifact_base / task, baseline)
+        per_task[task] = artifact
+        aggregate["tasks"].append({
+            "task_id": task,
+            "executed_count": artifact["executed_count"],
+            "passed": sum(1 for c in artifact["cases"] if c.get("status") == "pass"),
+            "assertions": sum(len(c.get("assertions") or []) for c in artifact["cases"]),
+            "failures": failures,
+            "artifact": str(artifact_path),
+            "external_blocker": artifact.get("external_blocker"),
+        })
+        aggregate["executed_count"] += artifact["executed_count"]
+    aggregate["head_sha"] = head_sha
+    all_root = artifact_base / "all"
+    all_root.mkdir(parents=True, exist_ok=True)
+    aggregate_path = all_root / "artifact.json"
+    with aggregate_path.open("w", encoding="utf-8") as handle:
+        json.dump(aggregate, handle, indent=2, ensure_ascii=False)
+        handle.write("\n")
+    failures = validate_all_artifact(aggregate, per_task)
+    passed = sum(e["passed"] for e in aggregate["tasks"])
+    assertions = sum(e["assertions"] for e in aggregate["tasks"])
+    print(f"[ddl-golden] reaggregate head={str(head_sha)[:12]} tasks={len(aggregate['tasks'])} "
+          f"cases={aggregate['executed_count']} passed={passed} assertions={assertions}")
+    print(f"[ddl-golden] artifact={aggregate_path}")
     if failures:
         for item in failures:
             print(f"[ddl-golden][FAIL] {item}", file=sys.stderr)
@@ -8625,9 +8999,33 @@ def cmd_validate(args):
     with artifact_path.open("r", encoding="utf-8") as handle:
         artifact = json.load(handle)
     task = artifact.get("task_id") or args.task
-    manifest = load_manifest(task)
     baseline = load_baseline()
-    failures = validate_artifact(artifact, manifest, baseline=baseline, verify_binary=not args.no_binary_check)
+    if task == "all":
+        # Re-validate the aggregate against its sibling per-task artifacts so a
+        # later `validate` call cannot pass a stale or edited aggregate file:
+        # the canonical denominator is re-locked from the baseline, a clean
+        # entry with an unresolvable artifact path fails, and each resolvable
+        # per-task artifact is re-checked against its own manifest oracle.
+        failures = []
+        required = baseline.get("required_all_tasks") or []
+        if sorted(artifact.get("task_ids") or []) != sorted(required):
+            failures.append("aggregate task_ids drifted from locked required_all_tasks")
+        per_task = {}
+        for entry in artifact.get("tasks") or []:
+            tid = entry["task_id"]
+            p = pathlib.Path(entry.get("artifact") or "")
+            if not p.is_file():
+                failures.append(f"{tid}: recorded artifact file missing: {p}")
+                continue
+            per_task[tid] = json.loads(p.read_text(encoding="utf-8"))
+            per_task_failures = validate_artifact(
+                per_task[tid], load_manifest(tid), baseline=baseline,
+                verify_binary=not args.no_binary_check)
+            failures.extend(f"{tid}: {f}" for f in per_task_failures)
+        failures.extend(validate_all_artifact(artifact, per_task))
+    else:
+        manifest = load_manifest(task)
+        failures = validate_artifact(artifact, manifest, baseline=baseline, verify_binary=not args.no_binary_check)
     if failures:
         for item in failures:
             print(f"[ddl-golden][FAIL] {item}", file=sys.stderr)
@@ -8646,9 +9044,13 @@ def main():
     val.add_argument("--artifact", required=True)
     val.add_argument("--task", default="")
     val.add_argument("--no-binary-check", action="store_true")
+    agg = sub.add_parser("reaggregate")
+    agg.add_argument("--artifact-dir", required=True)
     args = parser.parse_args()
     if args.command == "run":
         return cmd_run(args)
+    if args.command == "reaggregate":
+        return cmd_reaggregate(args)
     return cmd_validate(args)
 
 

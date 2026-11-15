@@ -48,6 +48,52 @@
    "image": "pingcap/tidb:v8.5.0",
    "expected_image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
    "platform": "linux/arm64"
+  },
+  "tidb85tikv": {
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "image": "pingcap/tidb:v8.5.0",
+   "expected_image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+   "platform": "linux/arm64"
+  },
+  "tidb85apk": {
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "image": "pingcap/tidb:v8.5.0",
+   "expected_image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+   "platform": "linux/arm64"
   }
- }
+ },
+ "required_all_tasks": [
+  "T02",
+  "T03",
+  "T04",
+  "T05",
+  "T06",
+  "T07",
+  "T08",
+  "T09",
+  "T10",
+  "T11",
+  "T12",
+  "T13",
+  "T14",
+  "T15",
+  "T16",
+  "T17",
+  "T18",
+  "T19",
+  "T20",
+  "T21",
+  "T22",
+  "T23",
+  "T23S",
+  "T24",
+  "T25",
+  "T26",
+  "T27",
+  "T28",
+  "T29",
+  "T30"
+ ]
 }

@@ -2,7 +2,7 @@
  "task_id": "T26",
  "issue": 105,
  "policy_profile": "all-rules-disabled",
- "description": "T26 MySQL SERVER + spatial reference system low-frequency DDL (issue #105) \u2014 recognition, named boundaries, output redaction, plus the T26-SERVER-DROP-01 audited slice. The four baseline anchors and their db_* required cases are declared so a future separately-authorized native run executes unchanged. cli_cases pin: the two MySQL identifier-form DROP SERVER units (drop/drop-if-exists) audited under the isolated server-drop profile \u2014 review verdict, unverified coverage, one notice, and the bounded existence+drop_privilege gap set; CREATE/ALTER SERVER as named unaudited boundaries on mysql and vendor boundaries on tidb; six SRS forms (create, create+IF NOT EXISTS, create OR REPLACE, drop, drop+IF EXISTS, plus bare create) as implementation boundaries on mysql and vendor on tidb; strict whole-input rejects (trailing junk, missing FDW clause, negative/overflow SRID, OR REPLACE + IF NOT EXISTS contradiction) as parser errors; ALTER INSTANCE inventory subactions RELOAD TLS (with NO ROLLBACK ON ERROR member recorded) and ROTATE INNODB MASTER KEY as precise named boundaries; and fixed-shape output redaction proving no credential/definition payload reaches raw_sql, normalized_sql, unsupported[].sql, or markdown.",
+ "description": "T26 MySQL SERVER + spatial reference system low-frequency DDL (issue #105) — recognition, named boundaries, output redaction, plus the T26-SERVER-DROP-01 audited slice. The four baseline anchors and their db_* required cases are declared so a future separately-authorized native run executes unchanged. cli_cases pin: the two MySQL identifier-form DROP SERVER units (drop/drop-if-exists) audited under the isolated server-drop profile — review verdict, unverified coverage, one notice, and the bounded existence+drop_privilege gap set; CREATE/ALTER SERVER as named unaudited boundaries on mysql and vendor boundaries on tidb; six SRS forms (create, create+IF NOT EXISTS, create OR REPLACE, drop, drop+IF EXISTS, plus bare create) as version-gated unaudited boundaries on mysql (implementation boundary once the SRS version applicability premise is proven) and vendor on tidb; strict whole-input rejects (trailing junk, missing FDW clause, negative/overflow SRID, OR REPLACE + IF NOT EXISTS contradiction) as parser errors; ALTER INSTANCE inventory subactions RELOAD TLS (with NO ROLLBACK ON ERROR member recorded) and ROTATE INNODB MASTER KEY as precise named boundaries; and fixed-shape output redaction proving no credential/definition payload reaches raw_sql, normalized_sql, unsupported[].sql, or markdown.",
  "anchors": {
   "mysql57": {
    "service": "mysql57",
@@ -367,15 +367,19 @@
       "feature": "create_spatial_reference_system",
       "reason": "parsed by the shared parser but not covered by audited semantics",
       "metadata": {
-       "boundary": "implementation",
-       "object": "spatial_reference_system"
+       "boundary": "unaudited",
+       "gap_fact": "srs.version_applicability",
+       "gate": "version",
+       "object": "spatial_reference_system",
+       "version_reason": "version_unproven"
       }
      }
     ],
     "statement_sql": [
      "CREATE SPATIAL REFERENCE SYSTEM 4120 <attributes redacted>"
     ]
-   }
+   },
+   "graduated": "bounded metadata re-pinned under T26-SRS version-applicability gating; previously expected a version-free implementation boundary"
   },
   {
    "id": "mysql-create-srs-ine",
@@ -397,15 +401,19 @@
       "feature": "create_spatial_reference_system",
       "reason": "parsed by the shared parser but not covered by audited semantics",
       "metadata": {
-       "boundary": "implementation",
-       "object": "spatial_reference_system"
+       "boundary": "unaudited",
+       "gap_fact": "srs.version_applicability",
+       "gate": "version",
+       "object": "spatial_reference_system",
+       "version_reason": "version_unproven"
       }
      }
     ],
     "statement_sql": [
      "CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4120 <attributes redacted>"
     ]
-   }
+   },
+   "graduated": "bounded metadata re-pinned under T26-SRS version-applicability gating; previously expected a version-free implementation boundary"
   },
   {
    "id": "mysql-create-srs-or-replace",
@@ -427,15 +435,19 @@
       "feature": "create_spatial_reference_system",
       "reason": "parsed by the shared parser but not covered by audited semantics",
       "metadata": {
-       "boundary": "implementation",
-       "object": "spatial_reference_system"
+       "boundary": "unaudited",
+       "gap_fact": "srs.version_applicability",
+       "gate": "version",
+       "object": "spatial_reference_system",
+       "version_reason": "version_unproven"
       }
      }
     ],
     "statement_sql": [
      "CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 40001 <attributes redacted>"
     ]
-   }
+   },
+   "graduated": "bounded metadata re-pinned under T26-SRS version-applicability gating; previously expected a version-free implementation boundary"
   },
   {
    "id": "mysql-create-srs-bare",
@@ -457,15 +469,19 @@
       "feature": "create_spatial_reference_system",
       "reason": "parsed by the shared parser but not covered by audited semantics",
       "metadata": {
-       "boundary": "implementation",
-       "object": "spatial_reference_system"
+       "boundary": "unaudited",
+       "gap_fact": "srs.version_applicability",
+       "gate": "version",
+       "object": "spatial_reference_system",
+       "version_reason": "version_unproven"
       }
      }
     ],
     "statement_sql": [
      "CREATE SPATIAL REFERENCE SYSTEM 4120"
     ]
-   }
+   },
+   "graduated": "bounded metadata re-pinned under T26-SRS version-applicability gating; previously expected a version-free implementation boundary"
   },
   {
    "id": "mysql-drop-srs",
@@ -487,15 +503,19 @@
       "feature": "drop_spatial_reference_system",
       "reason": "parsed by the shared parser but not covered by audited semantics",
       "metadata": {
-       "boundary": "implementation",
-       "object": "spatial_reference_system"
+       "boundary": "unaudited",
+       "gap_fact": "srs.version_applicability",
+       "gate": "version",
+       "object": "spatial_reference_system",
+       "version_reason": "version_unproven"
       }
      }
     ],
     "statement_sql": [
      "DROP SPATIAL REFERENCE SYSTEM 40001"
     ]
-   }
+   },
+   "graduated": "bounded metadata re-pinned under T26-SRS version-applicability gating; previously expected a version-free implementation boundary"
   },
   {
    "id": "mysql-drop-srs-if-exists",
@@ -517,15 +537,19 @@
       "feature": "drop_spatial_reference_system",
       "reason": "parsed by the shared parser but not covered by audited semantics",
       "metadata": {
-       "boundary": "implementation",
-       "object": "spatial_reference_system"
+       "boundary": "unaudited",
+       "gap_fact": "srs.version_applicability",
+       "gate": "version",
+       "object": "spatial_reference_system",
+       "version_reason": "version_unproven"
       }
      }
     ],
     "statement_sql": [
      "DROP SPATIAL REFERENCE SYSTEM IF EXISTS 40001"
     ]
-   }
+   },
+   "graduated": "bounded metadata re-pinned under T26-SRS version-applicability gating; previously expected a version-free implementation boundary"
   },
   {
    "id": "tidb-create-srs",
@@ -644,14 +668,18 @@
       "feature": "alter_instance.reload_tls",
       "reason": "parsed by the shared parser but not covered by audited semantics",
       "metadata": {
-       "no_rollback_on_error": true
+       "boundary": "unaudited",
+       "gate": "version",
+       "no_rollback_on_error": true,
+       "object": "instance"
       }
      }
     ],
     "statement_sql": [
      "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR"
     ]
-   }
+   },
+   "graduated": "bounded metadata re-pinned under T26-SRS version-applicability gating; previously expected a version-free implementation boundary"
   },
   {
    "id": "mysql-alter-instance-rotate",

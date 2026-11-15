@@ -42,8 +42,8 @@ DDL 覆盖目录回答一个核心问题：对于给定的 DDL 形态，DeltaSco
 
 | 方言 | 总计 | finding_covered | normalized_silent | unsupported_boundary | parser_error | unclassified |
 |------|-----:|----------------:|------------------:|--------------------:|-------------:|-------------:|
-| MySQL | 62 | 48 | 0 | 0 | 14 | 0 |
-| TiDB | 55 | 43 | 1 | 4 | 7 | 0 |
+| MySQL | 63 | 62 | 0 | 0 | 1 | 0 |
+| TiDB | 57 | 43 | 1 | 12 | 1 | 0 |
 | PostgreSQL | 290 | 277 | 8 | 0 | 5 | 0 |
 | PG ALTER TABLE residual | 66 | 59 | 3 | 0 | 4 | 0 |
 
@@ -155,10 +155,9 @@ deltascope ddl-coverage [flags]
 
 ```text
 DIALECT  CLASSIFICATION  FAMILY          FORM                         GUIDANCE
-mysql    parser_error    routine_lifecycle  ALTER PROCEDURE            parser_upgrade_candidate
-mysql    parser_error    routine_lifecycle  CREATE FUNCTION            parser_upgrade_candidate
+mysql    parser_error    alter_table  ALTER TABLESPACE ENGINE parser_upgrade_candidate
 
-2 entries
+1 entries
 ```
 
 文本输出面向人工审查，稳定性足以满足日常使用，但 JSON 才是机器可读的稳定契约。
@@ -169,8 +168,8 @@ mysql    parser_error    routine_lifecycle  CREATE FUNCTION            parser_up
 {
   "version": "v0.270.0",
   "summary": {
-    "total": 2,
-    "returned": 2,
+    "total": 1,
+    "returned": 1,
     "filters": {
       "dialect": "mysql",
       "classification": "parser_error"
@@ -179,8 +178,8 @@ mysql    parser_error    routine_lifecycle  CREATE FUNCTION            parser_up
   "entries": [
     {
       "dialect": "mysql",
-      "family": "routine_lifecycle",
-      "form": "ALTER PROCEDURE",
+      "family": "alter_table",
+      "form": "ALTER TABLESPACE ENGINE",
       "classification": "parser_error",
       "finding_rule_ids": null,
       "guidance_code": "parser_upgrade_candidate",

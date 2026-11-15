@@ -22,3 +22,4 @@ docs/plans_zh/
 /skills-lock.json
 /docker/tls-e2e/certs/
 .codegraph/
+testdata/ddl-golden/evidence/

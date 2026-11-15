@@ -701,6 +701,13 @@
    "pending_native": true,
    "setup": [
     {
+     "name": "capture-deployment-evidence",
+     "deployment_evidence": {
+      "path": "testdata/ddl-golden/evidence/t24-mysql80.json",
+      "source": "t24-native:mysql80:runner-probed (uuid/nproc/CapEff)"
+     }
+    },
+    {
      "name": "clear-fixture-group",
      "sql": "SELECT COUNT(*) FROM information_schema.RESOURCE_GROUPS WHERE resource_group_name='t24fx_rg'",
      "verify": [
@@ -890,6 +897,13 @@
    ],
    "pending_native": true,
    "setup": [
+    {
+     "name": "capture-deployment-evidence",
+     "deployment_evidence": {
+      "path": "testdata/ddl-golden/evidence/t24-mysql84.json",
+      "source": "t24-native:mysql84:runner-probed (uuid/nproc/CapEff)"
+     }
+    },
     {
      "name": "clear-fixture-group",
      "sql": "SELECT COUNT(*) FROM information_schema.RESOURCE_GROUPS WHERE resource_group_name='t24fx_def'",

@@ -441,6 +441,7 @@
   },
   {
    "id": "tidb85-schema-bind",
+   "graduated": "schema-level placement re-bounded by 36e616f8 (T17/T20 boundary); previously expected no unsupported entry",
    "anchor": "tidb85",
    "dialect": "tidb",
    "sql": "ALTER DATABASE t20m_schema_bind_d PLACEMENT POLICY=t20m_p;",
@@ -464,15 +465,15 @@
     }
    ],
    "expect": {
-    "exit": 0,
+    "exit": 1,
     "verdict": "review",
     "statements": 1,
     "findings": 1,
-    "diagnostics": 0,
-    "unsupported": 0,
-    "coverage": "unverified",
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
     "statement_coverage": [
-     "unverified"
+     "incomplete"
     ],
     "evidence_gaps": 1,
     "fail_on_triggered": false,
@@ -483,6 +484,16 @@
       "level": "warning"
      }
     ],
+    "unsupported_features": [
+     "alter_schema.option.placement_policy"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_schema.option.placement_policy",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+
     "evidence_gap_entries": [
      {
       "index": 0,
@@ -679,6 +690,7 @@
   },
   {
    "id": "tidb85-alterdb-partial",
+   "graduated": "schema-level placement re-bounded by 36e616f8 (T17/T20 boundary); previously expected no unsupported entry",
    "anchor": "tidb85",
    "dialect": "tidb",
    "sql": "ALTER DATABASE t20m_alterdb_d CHARACTER SET latin1 PLACEMENT POLICY=t20m_missing;",
@@ -706,12 +718,22 @@
     "verdict": "reject",
     "statements": 1,
     "findings": 1,
-    "diagnostics": 0,
-    "unsupported": 0,
-    "coverage": "complete",
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
     "statement_coverage": [
-     "complete"
+     "incomplete"
     ],
+    "unsupported_features": [
+     "alter_schema.option.placement_policy"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_schema.option.placement_policy",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+
     "evidence_gaps": 0,
     "fail_on_triggered": true,
     "finding_entries": [
