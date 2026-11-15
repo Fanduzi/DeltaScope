@@ -1,0 +1,13 @@
+row_id: mysql.dml.load-xml
+# sql_shape: LOAD XML INFILE '/tmp/x.xml' INTO TABLE t
+# dialect: mysql
+# binary HEAD cad11b487b33, generated 2026-11-15
+
+=== version 5.7 (target 5.7.44) rc=2 ===
+{"verdict":"","coverage":{"status":"incomplete"},"summary":{"statements":0,"blockers":0,"warnings":0,"notices":0},"diagnostics":[{"classification":"parser_error","reason":"statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred","action_hint":"verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available","audited":false,"dialect":"mysql","line":1,"column":1}],"fail_on_triggered":false,"context":{"mode":"offline","dialect":"mysql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+
+=== version 8.0 (target 8.0.46) rc=2 ===
+{"verdict":"","coverage":{"status":"incomplete"},"summary":{"statements":0,"blockers":0,"warnings":0,"notices":0},"diagnostics":[{"classification":"parser_error","reason":"statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred","action_hint":"verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available","audited":false,"dialect":"mysql","line":1,"column":1}],"fail_on_triggered":false,"context":{"mode":"offline","dialect":"mysql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+
+=== version 8.4 (target 8.4.10) rc=2 ===
+{"verdict":"","coverage":{"status":"incomplete"},"summary":{"statements":0,"blockers":0,"warnings":0,"notices":0},"diagnostics":[{"classification":"parser_error","reason":"statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred","action_hint":"verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available","audited":false,"dialect":"mysql","line":1,"column":1}],"fail_on_triggered":false,"context":{"mode":"offline","dialect":"mysql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}

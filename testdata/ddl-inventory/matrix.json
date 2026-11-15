@@ -10,13 +10,13 @@
     "tidb85"
   ],
   "status_counts": {
-    "semantically_checked": 152,
+    "semantically_checked": 163,
     "generic_notice": 20,
     "mixed_coverage": 43,
-    "explicit_unsupported": 28,
+    "explicit_unsupported": 41,
     "vendor_not_supported": 11,
-    "parser_unsupported": 2,
-    "parse_only": 1
+    "parser_unsupported": 8,
+    "parse_only": 15
   },
   "rows": [
     {
@@ -17072,6 +17072,1304 @@
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.call",
+      "product": "mysql",
+      "owner": "T52",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.delete",
+      "product": "mysql",
+      "owner": "T51",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.do",
+      "product": "mysql",
+      "owner": "T52",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.except",
+      "product": "mysql",
+      "owner": "T52",
+      "status": "parse_only",
+      "parser_status": "recognized",
+      "audit_status": "silent",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "not_documented",
+          "product_scope": "version_gated",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.handler",
+      "product": "mysql",
+      "owner": "T52",
+      "status": "parser_unsupported",
+      "parser_status": "unrecognized",
+      "audit_status": "not_applicable",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.import-table",
+      "product": "mysql",
+      "owner": "T52",
+      "status": "parser_unsupported",
+      "parser_status": "unrecognized",
+      "audit_status": "not_applicable",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "not_documented",
+          "product_scope": "version_gated",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.insert",
+      "product": "mysql",
+      "owner": "T51",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.intersect",
+      "product": "mysql",
+      "owner": "T52",
+      "status": "parse_only",
+      "parser_status": "recognized",
+      "audit_status": "silent",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "not_documented",
+          "product_scope": "version_gated",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.load-data",
+      "product": "mysql",
+      "owner": "T52",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.load-xml",
+      "product": "mysql",
+      "owner": "T52",
+      "status": "parser_unsupported",
+      "parser_status": "unrecognized",
+      "audit_status": "not_applicable",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.replace",
+      "product": "mysql",
+      "owner": "T51",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.select",
+      "product": "mysql",
+      "owner": "T52",
+      "status": "parse_only",
+      "parser_status": "recognized",
+      "audit_status": "silent",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.table",
+      "product": "mysql",
+      "owner": "T52",
+      "status": "parse_only",
+      "parser_status": "recognized",
+      "audit_status": "silent",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "not_documented",
+          "product_scope": "version_gated",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.union",
+      "product": "mysql",
+      "owner": "T52",
+      "status": "parse_only",
+      "parser_status": "recognized",
+      "audit_status": "silent",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.update",
+      "product": "mysql",
+      "owner": "T51",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.values",
+      "product": "mysql",
+      "owner": "T52",
+      "status": "parse_only",
+      "parser_status": "recognized",
+      "audit_status": "silent",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "not_documented",
+          "product_scope": "version_gated",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.dml.with",
+      "product": "mysql",
+      "owner": "T52",
+      "status": "parse_only",
+      "parser_status": "recognized",
+      "audit_status": "silent",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "not_documented",
+          "product_scope": "version_gated",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.call",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.call.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.delete",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.delete.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.do",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.do.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.except",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "parse_only",
+      "parser_status": "recognized",
+      "audit_status": "silent",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.except.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.handler",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "parser_unsupported",
+      "parser_status": "unrecognized",
+      "audit_status": "not_applicable",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.handler.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.import-into",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.import-into.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.import-table",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "parser_unsupported",
+      "parser_status": "unrecognized",
+      "audit_status": "not_applicable",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.import-table.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.insert",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.insert.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.intersect",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "parse_only",
+      "parser_status": "recognized",
+      "audit_status": "silent",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.intersect.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.load-data",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.load-data.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.load-xml",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "parser_unsupported",
+      "parser_status": "unrecognized",
+      "audit_status": "not_applicable",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "unrecognized",
+          "audit_status": "not_applicable",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.load-xml.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.replace",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.replace.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.select",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "parse_only",
+      "parser_status": "recognized",
+      "audit_status": "silent",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.select.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.table",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "parse_only",
+      "parser_status": "recognized",
+      "audit_status": "silent",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.table.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.union",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "parse_only",
+      "parser_status": "recognized",
+      "audit_status": "silent",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.union.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.update",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.update.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.values",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "parse_only",
+      "parser_status": "recognized",
+      "audit_status": "silent",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.values.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tidb.dml.with",
+      "product": "tidb",
+      "owner": "T53",
+      "status": "parse_only",
+      "parser_status": "recognized",
+      "audit_status": "silent",
+      "applicability": [
+        {
+          "anchor": "tidb85",
+          "version_range": 8.5,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/tidb.dml.with.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "postgresql.dml.copy",
+      "product": "postgresql",
+      "owner": "T54",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "postgresql17",
+          "version_range": 17,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.copy.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "postgresql.dml.delete",
+      "product": "postgresql",
+      "owner": "T54",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "postgresql17",
+          "version_range": 17,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.delete.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "postgresql.dml.insert",
+      "product": "postgresql",
+      "owner": "T54",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "postgresql17",
+          "version_range": 17,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.insert.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "postgresql.dml.merge",
+      "product": "postgresql",
+      "owner": "T54",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "postgresql17",
+          "version_range": 17,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.merge.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "postgresql.dml.select",
+      "product": "postgresql",
+      "owner": "T54",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "postgresql17",
+          "version_range": 17,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.select.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "postgresql.dml.table",
+      "product": "postgresql",
+      "owner": "T54",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "postgresql17",
+          "version_range": 17,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.table.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "postgresql.dml.update",
+      "product": "postgresql",
+      "owner": "T54",
+      "status": "semantically_checked",
+      "parser_status": "recognized",
+      "audit_status": "audited",
+      "applicability": [
+        {
+          "anchor": "postgresql17",
+          "version_range": 17,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.update.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "postgresql.dml.values",
+      "product": "postgresql",
+      "owner": "T54",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "postgresql17",
+          "version_range": 17,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.values.probes.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "postgresql.dml.with",
+      "product": "postgresql",
+      "owner": "T54",
+      "status": "explicit_unsupported",
+      "parser_status": "recognized",
+      "audit_status": "explicit_unsupported",
+      "applicability": [
+        {
+          "anchor": "postgresql17",
+          "version_range": 17,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.with.probes.txt"
           ]
         }
       ]

@@ -40,6 +40,19 @@ sources:
     url: "https://www.postgresql.org/docs/17/sql-commands.html"
     verified: "2026-11-24"
     note: "PostgreSQL 17 SQL command reference; parser anchored on libpg_query 17 (pg_query_go v6) — PG18-only forms are an explicit out-of-scope boundary"
+  mysql57-dml:
+    url: "https://docs.oracle.com/cd/E17952_01/mysql-5.7-en/sql-data-manipulation-statements.html"
+    verified: "2026-11-15"
+    note: "frozen MySQL 5.7 manual mirror DML chapter (dev.mysql.com 5.7 URL redirects to 9.7)"
+  mysql80-dml:
+    url: "https://dev.mysql.com/doc/refman/8.0/en/sql-data-manipulation-statements.html"
+    verified: "2026-11-15"
+  mysql84-dml:
+    url: "https://dev.mysql.com/doc/refman/8.4/en/sql-data-manipulation-statements.html"
+    verified: "2026-11-15"
+  tidb85-dml:
+    url: "https://raw.githubusercontent.com/pingcap/docs/release-8.5/sql-statements/sql-statement-overview.md"
+    verified: "2026-11-15"
 
 statuses:
   semantically_checked: "feature-specific semantic/policy check exists AND cited acceptance evidence exists"
@@ -120,6 +133,13 @@ owners:
   T47: {issue: 130, title: "PG ROLE/GRANT/REVOKE/annotation/tablespace/large-object/ALTER SYSTEM acceptance"}
   T48: {issue: 131, title: "PG residual cell classification closure"}
   T49: {issue: 132, title: "PG aggregate, validate and milestone closure"}
+  T50: {issue: 134, title: "official DML inventory denominator + probe classification"}
+  T51: {issue: 135, title: "MySQL mutation-verb DML acceptance"}
+  T52: {issue: 136, title: "MySQL query/utility-verb DML acceptance"}
+  T53: {issue: 137, title: "TiDB 8.5 DML acceptance"}
+  T54: {issue: 138, title: "PostgreSQL 17 DML acceptance"}
+  T55: {issue: 139, title: "DML residual cell classification closure"}
+  T56: {issue: 140, title: "DML aggregate, validate and milestone closure"}
 
 # required_row_ids is the tamper-evident denominator: the gate requires the
 # row set to equal this list exactly, so deleting a row without updating the
@@ -383,6 +403,50 @@ required_row_ids:
   - postgresql.alter-large-object
   - postgresql.alter-system
 
+  - mysql.dml.call
+  - mysql.dml.delete
+  - mysql.dml.do
+  - mysql.dml.except
+  - mysql.dml.handler
+  - mysql.dml.import-table
+  - mysql.dml.insert
+  - mysql.dml.intersect
+  - mysql.dml.load-data
+  - mysql.dml.load-xml
+  - mysql.dml.replace
+  - mysql.dml.select
+  - mysql.dml.table
+  - mysql.dml.union
+  - mysql.dml.update
+  - mysql.dml.values
+  - mysql.dml.with
+  - tidb.dml.call
+  - tidb.dml.delete
+  - tidb.dml.do
+  - tidb.dml.except
+  - tidb.dml.handler
+  - tidb.dml.import-into
+  - tidb.dml.import-table
+  - tidb.dml.insert
+  - tidb.dml.intersect
+  - tidb.dml.load-data
+  - tidb.dml.load-xml
+  - tidb.dml.replace
+  - tidb.dml.select
+  - tidb.dml.table
+  - tidb.dml.union
+  - tidb.dml.update
+  - tidb.dml.values
+  - tidb.dml.with
+  - postgresql.dml.copy
+  - postgresql.dml.delete
+  - postgresql.dml.insert
+  - postgresql.dml.merge
+  - postgresql.dml.select
+  - postgresql.dml.table
+  - postgresql.dml.update
+  - postgresql.dml.values
+  - postgresql.dml.with
 rows:
   # ================= MySQL: database/schema lifecycle =================
   - id: mysql.create-database
@@ -14165,3 +14229,1431 @@ rows:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-system.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
     owner: T47
+  # ================= MySQL mutation/query DML =================
+  - id: mysql.dml.call
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["CALL proc()", "CALL proc(args)", "CALL proc() multi-result"]
+    sql_shape: "CALL p()"
+    prerequisites: "none"
+    status: explicit_unsupported
+    parser_status: recognized
+    audit_status: explicit_unsupported
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=explicit_unsupported · mysql80=explicit_unsupported · mysql84=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    targets: "official call statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt"]
+    owner: T52
+
+  - id: mysql.dml.delete
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["single-table", "LOW_PRIORITY/QUICK/IGNORE", "PARTITION", "WHERE", "ORDER BY+LIMIT", "multi-table DELETE"]
+    sql_shape: "DELETE FROM t WHERE id=1"
+    prerequisites: "none"
+    status: semantically_checked
+    parser_status: recognized
+    audit_status: audited
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=audited · mysql80=audited · mysql84=audited · feature findings: mysql57:dml.where.require,dml.impact.ratio.max_percent | mysql80:dml.where.require,dml.impact.ratio.max_percent | mysql84:dml.where.require,dml.impact.ratio.max_percent. Denominator row pending T51–T54 golden evidence."
+    targets: "official delete statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt"]
+    owner: T51
+
+  - id: mysql.dml.do
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["DO expr", "DO expr, expr"]
+    sql_shape: "DO SLEEP(0)"
+    prerequisites: "none"
+    status: explicit_unsupported
+    parser_status: recognized
+    audit_status: explicit_unsupported
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=explicit_unsupported · mysql80=explicit_unsupported · mysql84=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    targets: "official do statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt"]
+    owner: T52
+
+  - id: mysql.dml.except
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["q EXCEPT q", "EXCEPT ALL", "EXCEPT DISTINCT"]
+    sql_shape: "SELECT 1 EXCEPT SELECT 2"
+    prerequisites: "none"
+    status: parse_only
+    parser_status: recognized
+    audit_status: silent
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: not_documented
+        product_scope: version_gated
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Denominator row pending T51–T54 golden evidence."
+    targets: "official except statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt"]
+    owner: T52
+
+  - id: mysql.dml.handler
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["HANDLER t OPEN", "HANDLER t READ", "HANDLER t CLOSE"]
+    sql_shape: "HANDLER t OPEN"
+    prerequisites: "none"
+    status: parser_unsupported
+    parser_status: unrecognized
+    audit_status: not_applicable
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: documented
+        product_scope: registered
+        parser_status: unrecognized
+        audit_status: not_applicable
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: unrecognized
+        audit_status: not_applicable
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: unrecognized
+        audit_status: not_applicable
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=parser_error · mysql80=parser_error · mysql84=parser_error. Denominator row pending T51–T54 golden evidence."
+    targets: "official handler statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt"]
+    owner: T52
+
+  - id: mysql.dml.import-table
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["IMPORT TABLE FROM file", "IMPORT TABLE FROM f1, f2"]
+    sql_shape: "IMPORT TABLE FROM '/tmp/x.sdi'"
+    prerequisites: "none"
+    status: parser_unsupported
+    parser_status: unrecognized
+    audit_status: not_applicable
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: not_documented
+        product_scope: version_gated
+        parser_status: unrecognized
+        audit_status: not_applicable
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: unrecognized
+        audit_status: not_applicable
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: unrecognized
+        audit_status: not_applicable
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=parser_error · mysql80=parser_error · mysql84=parser_error. Denominator row pending T51–T54 golden evidence."
+    targets: "official import-table statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt"]
+    owner: T52
+
+  - id: mysql.dml.insert
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["VALUES", "SET", "INSERT ... SELECT", "ON DUPLICATE KEY UPDATE", "LOW_PRIORITY/DELAYED/HIGH_PRIORITY", "IGNORE", "PARTITION"]
+    sql_shape: "INSERT INTO t (a) VALUES (1)"
+    prerequisites: "none"
+    status: semantically_checked
+    parser_status: recognized
+    audit_status: audited
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=audited · mysql80=audited · mysql84=audited · feature findings: mysql57:dml.insert.select.forbid | mysql80:dml.insert.select.forbid | mysql84:dml.insert.select.forbid. Denominator row pending T51–T54 golden evidence."
+    targets: "official insert statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt"]
+    owner: T51
+
+  - id: mysql.dml.intersect
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["q INTERSECT q", "INTERSECT ALL", "INTERSECT DISTINCT"]
+    sql_shape: "SELECT 1 INTERSECT SELECT 2"
+    prerequisites: "none"
+    status: parse_only
+    parser_status: recognized
+    audit_status: silent
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: not_documented
+        product_scope: version_gated
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Denominator row pending T51–T54 golden evidence."
+    targets: "official intersect statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt"]
+    owner: T52
+
+  - id: mysql.dml.load-data
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["INFILE", "LOW_PRIORITY/CONCURRENT", "LOCAL", "REPLACE/IGNORE", "PARTITION", "SET col=expr", "FIELDS/LINES"]
+    sql_shape: "LOAD DATA INFILE '/tmp/x.csv' INTO TABLE t"
+    prerequisites: "none"
+    status: explicit_unsupported
+    parser_status: recognized
+    audit_status: explicit_unsupported
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=explicit_unsupported · mysql80=explicit_unsupported · mysql84=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    targets: "official load-data statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt"]
+    owner: T52
+
+  - id: mysql.dml.load-xml
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["INFILE", "LOW_PRIORITY/CONCURRENT", "LOCAL", "IGNORE", "ROWS IDENTIFIED BY"]
+    sql_shape: "LOAD XML INFILE '/tmp/x.xml' INTO TABLE t"
+    prerequisites: "none"
+    status: parser_unsupported
+    parser_status: unrecognized
+    audit_status: not_applicable
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: documented
+        product_scope: registered
+        parser_status: unrecognized
+        audit_status: not_applicable
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: unrecognized
+        audit_status: not_applicable
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: unrecognized
+        audit_status: not_applicable
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=parser_error · mysql80=parser_error · mysql84=parser_error. Denominator row pending T51–T54 golden evidence."
+    targets: "official load-xml statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt"]
+    owner: T52
+
+  - id: mysql.dml.replace
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["REPLACE ... VALUES", "REPLACE ... SET", "REPLACE ... SELECT", "LOW_PRIORITY/DELAYED", "PARTITION"]
+    sql_shape: "REPLACE INTO t (a) VALUES (1)"
+    prerequisites: "none"
+    status: semantically_checked
+    parser_status: recognized
+    audit_status: audited
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=audited · mysql80=audited · mysql84=audited · feature findings: mysql57:dml.replace.forbid | mysql80:dml.replace.forbid | mysql84:dml.replace.forbid. Denominator row pending T51–T54 golden evidence."
+    targets: "official replace statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt"]
+    owner: T51
+
+  - id: mysql.dml.select
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["plain", "JOIN (INNER/LEFT/RIGHT/NATURAL)", "subqueries (scalar/IN/EXISTS/derived/lateral)", "parenthesized query expressions", "GROUP BY/HAVING", "ORDER BY/LIMIT", "FOR UPDATE/SHARE/NOWAIT/SKIP LOCKED", "SELECT ... INTO (var/OUTFILE/DUMPFILE)", "DISTINCT", "PROCEDURE ANALYSE (8.0.deprecated)"]
+    sql_shape: "SELECT a FROM t WHERE id=1"
+    prerequisites: "none"
+    status: parse_only
+    parser_status: recognized
+    audit_status: silent
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Denominator row pending T51–T54 golden evidence."
+    targets: "official select statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt"]
+    owner: T52
+
+  - id: mysql.dml.table
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["TABLE t", "TABLE t ORDER BY/LIMIT"]
+    sql_shape: "TABLE t"
+    prerequisites: "none"
+    status: parse_only
+    parser_status: recognized
+    audit_status: silent
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: not_documented
+        product_scope: version_gated
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Denominator row pending T51–T54 golden evidence."
+    targets: "official table statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt"]
+    owner: T52
+
+  - id: mysql.dml.union
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["UNION", "UNION ALL", "UNION DISTINCT", "UNION ... ORDER BY/LIMIT"]
+    sql_shape: "SELECT 1 UNION SELECT 2"
+    prerequisites: "none"
+    status: parse_only
+    parser_status: recognized
+    audit_status: silent
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Denominator row pending T51–T54 golden evidence."
+    targets: "official union statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt"]
+    owner: T52
+
+  - id: mysql.dml.update
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["single-table", "multi-table", "LOW_PRIORITY", "IGNORE", "WHERE", "ORDER BY+LIMIT"]
+    sql_shape: "UPDATE t SET a=1 WHERE id=1"
+    prerequisites: "none"
+    status: semantically_checked
+    parser_status: recognized
+    audit_status: audited
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=audited · mysql80=audited · mysql84=audited · feature findings: mysql57:dml.where.require,dml.impact.ratio.max_percent | mysql80:dml.where.require,dml.impact.ratio.max_percent | mysql84:dml.where.require,dml.impact.ratio.max_percent. Denominator row pending T51–T54 golden evidence."
+    targets: "official update statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt"]
+    owner: T51
+
+  - id: mysql.dml.values
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["VALUES ROW(...)", "VALUES ROW(...), ROW(...)"]
+    sql_shape: "VALUES ROW(1)"
+    prerequisites: "none"
+    status: parse_only
+    parser_status: recognized
+    audit_status: silent
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: not_documented
+        product_scope: version_gated
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Denominator row pending T51–T54 golden evidence."
+    targets: "official values statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt"]
+    owner: T52
+
+  - id: mysql.dml.with
+    product: mysql
+    versions: ["5.7","8.0","8.4"]
+    sources: [mysql57, mysql80, mysql84, mysql57-dml, mysql80-dml, mysql84-dml]
+    family: dml
+    subactions: ["WITH cte AS (...)", "WITH RECURSIVE", "multiple CTEs", "CTE in subquery"]
+    sql_shape: "WITH c AS (SELECT 1) SELECT * FROM c"
+    prerequisites: "none"
+    status: parse_only
+    parser_status: recognized
+    audit_status: silent
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: not_documented
+        product_scope: version_gated
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt"]
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt"]
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Denominator row pending T51–T54 golden evidence."
+    targets: "official with statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt"]
+    owner: T52
+
+  # ================= TiDB DML =================
+  - id: tidb.dml.call
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["CALL proc()"]
+    sql_shape: "CALL p()"
+    prerequisites: "none"
+    status: explicit_unsupported
+    parser_status: recognized
+    audit_status: explicit_unsupported
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.call.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    targets: "official call statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.call.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.delete
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["single/multi-table", "modifiers", "ORDER BY+LIMIT"]
+    sql_shape: "DELETE FROM t WHERE id=1"
+    prerequisites: "none"
+    status: semantically_checked
+    parser_status: recognized
+    audit_status: audited
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.delete.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=audited · feature findings: tidb85:dml.where.require,dml.impact.ratio.max_percent. Denominator row pending T51–T54 golden evidence."
+    targets: "official delete statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.delete.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.do
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["DO expr"]
+    sql_shape: "DO 1"
+    prerequisites: "none"
+    status: explicit_unsupported
+    parser_status: recognized
+    audit_status: explicit_unsupported
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.do.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    targets: "official do statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.do.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.except
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["EXCEPT"]
+    sql_shape: "SELECT 1 EXCEPT SELECT 2"
+    prerequisites: "none"
+    status: parse_only
+    parser_status: recognized
+    audit_status: silent
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.except.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Denominator row pending T51–T54 golden evidence."
+    targets: "official except statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.except.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.handler
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["HANDLER t OPEN/READ/CLOSE"]
+    sql_shape: "HANDLER t OPEN"
+    prerequisites: "none"
+    status: parser_unsupported
+    parser_status: unrecognized
+    audit_status: not_applicable
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: unrecognized
+        audit_status: not_applicable
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.handler.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=parser_error. Denominator row pending T51–T54 golden evidence."
+    targets: "official handler statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.handler.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.import-into
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["IMPORT INTO t FROM file"]
+    sql_shape: "IMPORT INTO t FROM '/tmp/x.csv'"
+    prerequisites: "none"
+    status: explicit_unsupported
+    parser_status: recognized
+    audit_status: explicit_unsupported
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.import-into.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    targets: "official import-into statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.import-into.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.import-table
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["IMPORT TABLE FROM"]
+    sql_shape: "IMPORT TABLE FROM '/tmp/x'"
+    prerequisites: "none"
+    status: parser_unsupported
+    parser_status: unrecognized
+    audit_status: not_applicable
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: unrecognized
+        audit_status: not_applicable
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.import-table.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=parser_error. Denominator row pending T51–T54 golden evidence."
+    targets: "official import-table statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.import-table.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.insert
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["VALUES/SET/SELECT/ON DUPLICATE/modifiers"]
+    sql_shape: "INSERT INTO t (a) VALUES (1)"
+    prerequisites: "none"
+    status: semantically_checked
+    parser_status: recognized
+    audit_status: audited
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.insert.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=audited · feature findings: tidb85:dml.insert.select.forbid. Denominator row pending T51–T54 golden evidence."
+    targets: "official insert statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.insert.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.intersect
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["INTERSECT"]
+    sql_shape: "SELECT 1 INTERSECT SELECT 2"
+    prerequisites: "none"
+    status: parse_only
+    parser_status: recognized
+    audit_status: silent
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.intersect.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Denominator row pending T51–T54 golden evidence."
+    targets: "official intersect statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.intersect.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.load-data
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["INFILE/LOCAL/modifiers/PARTITION/SET"]
+    sql_shape: "LOAD DATA INFILE '/tmp/x.csv' INTO TABLE t"
+    prerequisites: "none"
+    status: explicit_unsupported
+    parser_status: recognized
+    audit_status: explicit_unsupported
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.load-data.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    targets: "official load-data statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.load-data.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.load-xml
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["INFILE/modifiers"]
+    sql_shape: "LOAD XML INFILE '/tmp/x.xml' INTO TABLE t"
+    prerequisites: "none"
+    status: parser_unsupported
+    parser_status: unrecognized
+    audit_status: not_applicable
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: unrecognized
+        audit_status: not_applicable
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.load-xml.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=parser_error. Denominator row pending T51–T54 golden evidence."
+    targets: "official load-xml statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.load-xml.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.replace
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["REPLACE ... VALUES/SET/SELECT"]
+    sql_shape: "REPLACE INTO t (a) VALUES (1)"
+    prerequisites: "none"
+    status: semantically_checked
+    parser_status: recognized
+    audit_status: audited
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.replace.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=audited · feature findings: tidb85:dml.replace.forbid. Denominator row pending T51–T54 golden evidence."
+    targets: "official replace statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.replace.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.select
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["plain/join/subquery/locking/INTO"]
+    sql_shape: "SELECT a FROM t WHERE id=1"
+    prerequisites: "none"
+    status: parse_only
+    parser_status: recognized
+    audit_status: silent
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.select.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Denominator row pending T51–T54 golden evidence."
+    targets: "official select statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.select.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.table
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["TABLE t"]
+    sql_shape: "TABLE t"
+    prerequisites: "none"
+    status: parse_only
+    parser_status: recognized
+    audit_status: silent
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.table.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Denominator row pending T51–T54 golden evidence."
+    targets: "official table statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.table.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.union
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["UNION/UNION ALL"]
+    sql_shape: "SELECT 1 UNION SELECT 2"
+    prerequisites: "none"
+    status: parse_only
+    parser_status: recognized
+    audit_status: silent
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.union.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Denominator row pending T51–T54 golden evidence."
+    targets: "official union statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.union.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.update
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["single/multi-table/modifiers/ORDER BY+LIMIT"]
+    sql_shape: "UPDATE t SET a=1 WHERE id=1"
+    prerequisites: "none"
+    status: semantically_checked
+    parser_status: recognized
+    audit_status: audited
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.update.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=audited · feature findings: tidb85:dml.where.require,dml.impact.ratio.max_percent. Denominator row pending T51–T54 golden evidence."
+    targets: "official update statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.update.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.values
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["VALUES ROW()"]
+    sql_shape: "VALUES ROW(1)"
+    prerequisites: "none"
+    status: parse_only
+    parser_status: recognized
+    audit_status: silent
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.values.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Denominator row pending T51–T54 golden evidence."
+    targets: "official values statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.values.probes.txt"]
+    owner: T53
+
+  - id: tidb.dml.with
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-dml]
+    family: dml
+    subactions: ["WITH/RECURSIVE"]
+    sql_shape: "WITH c AS (SELECT 1) SELECT * FROM c"
+    prerequisites: "none"
+    status: parse_only
+    parser_status: recognized
+    audit_status: silent
+    applicability:
+      - anchor: tidb85
+        version_range: 8.5
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: silent
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.with.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Denominator row pending T51–T54 golden evidence."
+    targets: "official with statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.with.probes.txt"]
+    owner: T53
+
+  # ================= PostgreSQL DML =================
+  - id: postgresql.dml.copy
+    product: postgresql
+    versions: ["17"]
+    sources: [postgresql17]
+    family: dml
+    subactions: ["COPY t FROM file", "COPY t TO file", "COPY (query) TO", "FORMAT options"]
+    sql_shape: "COPY t TO '/tmp/x.csv'"
+    prerequisites: "none"
+    status: explicit_unsupported
+    parser_status: recognized
+    audit_status: explicit_unsupported
+    applicability:
+      - anchor: postgresql17
+        version_range: 17
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.copy.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    targets: "official copy statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.copy.probes.txt"]
+    owner: T54
+
+  - id: postgresql.dml.delete
+    product: postgresql
+    versions: ["17"]
+    sources: [postgresql17]
+    family: dml
+    subactions: ["WHERE", "USING", "ONLY", "RETURNING", "WHERE CURRENT OF"]
+    sql_shape: "DELETE FROM t WHERE id=1"
+    prerequisites: "none"
+    status: semantically_checked
+    parser_status: recognized
+    audit_status: audited
+    applicability:
+      - anchor: postgresql17
+        version_range: 17
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.delete.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=audited · feature findings: postgresql17:dml.where.require,dml.impact.ratio.max_percent. Denominator row pending T51–T54 golden evidence."
+    targets: "official delete statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.delete.probes.txt"]
+    owner: T54
+
+  - id: postgresql.dml.insert
+    product: postgresql
+    versions: ["17"]
+    sources: [postgresql17]
+    family: dml
+    subactions: ["VALUES", "SELECT", "ON CONFLICT DO NOTHING/DO UPDATE", "RETURNING", "OVERRIDING"]
+    sql_shape: "INSERT INTO t (a) VALUES (1)"
+    prerequisites: "none"
+    status: semantically_checked
+    parser_status: recognized
+    audit_status: audited
+    applicability:
+      - anchor: postgresql17
+        version_range: 17
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.insert.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=audited · feature findings: postgresql17:dml.insert.select.forbid. Denominator row pending T51–T54 golden evidence."
+    targets: "official insert statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.insert.probes.txt"]
+    owner: T54
+
+  - id: postgresql.dml.merge
+    product: postgresql
+    versions: ["17"]
+    sources: [postgresql17]
+    family: dml
+    subactions: ["WHEN MATCHED/NOT MATCHED", "WHEN NOT MATCHED BY SOURCE (17)", "RETURNING"]
+    sql_shape: "MERGE INTO t USING s ON t.id=s.id WHEN MATCHED THEN UPDATE SET a=1"
+    prerequisites: "none"
+    status: explicit_unsupported
+    parser_status: recognized
+    audit_status: explicit_unsupported
+    applicability:
+      - anchor: postgresql17
+        version_range: 17
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.merge.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    targets: "official merge statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.merge.probes.txt"]
+    owner: T54
+
+  - id: postgresql.dml.select
+    product: postgresql
+    versions: ["17"]
+    sources: [postgresql17]
+    family: dml
+    subactions: ["plain", "joins", "subqueries", "FOR UPDATE/NO KEY UPDATE/SHARE/KEY SHARE", "DISTINCT ON", "LATERAL", "TABLESAMPLE", "INTO (select-into-table)"]
+    sql_shape: "SELECT a FROM t WHERE id=1"
+    prerequisites: "none"
+    status: explicit_unsupported
+    parser_status: recognized
+    audit_status: explicit_unsupported
+    applicability:
+      - anchor: postgresql17
+        version_range: 17
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.select.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    targets: "official select statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.select.probes.txt"]
+    owner: T54
+
+  - id: postgresql.dml.table
+    product: postgresql
+    versions: ["17"]
+    sources: [postgresql17]
+    family: dml
+    subactions: ["TABLE t"]
+    sql_shape: "TABLE t"
+    prerequisites: "none"
+    status: explicit_unsupported
+    parser_status: recognized
+    audit_status: explicit_unsupported
+    applicability:
+      - anchor: postgresql17
+        version_range: 17
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.table.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    targets: "official table statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.table.probes.txt"]
+    owner: T54
+
+  - id: postgresql.dml.update
+    product: postgresql
+    versions: ["17"]
+    sources: [postgresql17]
+    family: dml
+    subactions: ["SET", "FROM", "WHERE", "ONLY", "RETURNING", "WHERE CURRENT OF"]
+    sql_shape: "UPDATE t SET a=1 WHERE id=1"
+    prerequisites: "none"
+    status: semantically_checked
+    parser_status: recognized
+    audit_status: audited
+    applicability:
+      - anchor: postgresql17
+        version_range: 17
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: audited
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.update.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=audited · feature findings: postgresql17:dml.where.require,dml.impact.ratio.max_percent. Denominator row pending T51–T54 golden evidence."
+    targets: "official update statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.update.probes.txt"]
+    owner: T54
+
+  - id: postgresql.dml.values
+    product: postgresql
+    versions: ["17"]
+    sources: [postgresql17]
+    family: dml
+    subactions: ["VALUES (...)"]
+    sql_shape: "VALUES (1)"
+    prerequisites: "none"
+    status: explicit_unsupported
+    parser_status: recognized
+    audit_status: explicit_unsupported
+    applicability:
+      - anchor: postgresql17
+        version_range: 17
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.values.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    targets: "official values statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.values.probes.txt"]
+    owner: T54
+
+  - id: postgresql.dml.with
+    product: postgresql
+    versions: ["17"]
+    sources: [postgresql17]
+    family: dml
+    subactions: ["WITH cte", "RECURSIVE", "data-modifying CTE (INSERT/UPDATE/DELETE inside WITH)", "MATERIALIZED"]
+    sql_shape: "WITH c AS (SELECT 1) SELECT * FROM c"
+    prerequisites: "none"
+    status: explicit_unsupported
+    parser_status: recognized
+    audit_status: explicit_unsupported
+    applicability:
+      - anchor: postgresql17
+        version_range: 17
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: explicit_unsupported
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.with.probes.txt"]
+
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    targets: "official with statement family forms"
+    acceptance:
+      dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.with.probes.txt"]
+    owner: T54

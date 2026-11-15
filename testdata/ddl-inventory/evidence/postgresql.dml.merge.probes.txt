@@ -1,0 +1,7 @@
+row_id: postgresql.dml.merge
+# sql_shape: MERGE INTO t USING s ON t.id=s.id WHEN MATCHED THEN UPDATE SET a=1
+# dialect: postgresql
+# binary HEAD cad11b487b33, generated 2026-11-15
+
+=== version 17 (target 17.7.0) rc=1 ===
+{"verdict":"review","coverage":{"status":"incomplete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"unknown","raw_sql":"MERGE INTO t USING s ON t.id=s.id WHEN MATCHED THEN UPDATE SET a=1","normalized_sql":"MERGE INTO t USING s ON t.id=s.id WHEN MATCHED THEN UPDATE SET a=1","coverage":{"status":"incomplete"}}],"unsupported":[{"feature":"unknown","sql":"MERGE INTO t USING s ON t.id=s.id WHEN MATCHED THEN UPDATE SET a=1","reason":"postgresql statement type is not in the approved v1 subset"}],"diagnostics":[{"classification":"unsupported_statement","reason":"DeltaScope recognized this statement or feature but does not audit it yet","action_hint":"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release","audited":false,"dialect":"postgresql"}],"version":{"version":"17.7.0","major":17,"minor":7,"patch":0,"source":"target","validated_range":false},"fail_on_triggered":false,"rule_summary":{"loaded":525,"applicable":0,"skipped":[]},"context":{"mode":"offline","dialect":"postgresql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
