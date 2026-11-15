@@ -1,0 +1,3933 @@
+{
+ "task_id": "T47",
+ "issue": 130,
+ "anchor_scope": "postgresql",
+ "policy_profile": "pg-acceptance",
+ "description": "ROLE/GRANT/REVOKE/annotation/tablespace/large-object/ALTER SYSTEM acceptance on postgresql17 (#130): privilege chain (roles, grants, default privileges, owned objects, comments, security labels) plus tablespace/large-object/alter-system boundaries execute natively.",
+ "policy": {
+  "enable": {
+   "ddl.alter.add_column.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.add_column.notice": {
+    "enabled": true
+   },
+   "ddl.alter.add_constraint.notice": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.columns.max_count": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.duplicate.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.fulltext.contains.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.fulltext.prefix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.fulltext.suffix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.redundant_left_prefix.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.redundant_unique_overlap.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.secondary.contains.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.secondary.prefix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.secondary.suffix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.unique.contains.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.unique.prefix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.unique.suffix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.add_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.add_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.alter_check.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.alter_check.version.require": {
+    "enabled": true
+   },
+   "ddl.alter.alter_index.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.compatibility.require": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.explicit_auto_increment_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.explicit_default_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.explicit_nullability_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.target.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.target_type_family.allowlist": {
+    "enabled": true
+   },
+   "ddl.alter.charset_conversion.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.charset_conversion.warn": {
+    "enabled": true
+   },
+   "ddl.alter.check_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.check_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.check_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.coalesce_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.coalesce_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.column.dependency.require": {
+    "enabled": true
+   },
+   "ddl.alter.column_position.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.discard_partition_tablespace.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.discard_partition_tablespace.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.discard_partition_tablespace.target": {
+    "enabled": true
+   },
+   "ddl.alter.discard_tablespace.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.discard_tablespace.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_check.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_column.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_column.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_column.notice": {
+    "enabled": true
+   },
+   "ddl.alter.drop_default.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_default.explicit_default_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_default.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_expression.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_foreign_key.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_foreign_key.notice": {
+    "enabled": true
+   },
+   "ddl.alter.drop_identity.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_index.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_index.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_index.notice": {
+    "enabled": true
+   },
+   "ddl.alter.drop_not_null.explicit_nullability_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_not_null.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.drop_partition.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.drop_primary_key.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_primary_key.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.exchange_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.exchange_partition.counterpart": {
+    "enabled": true
+   },
+   "ddl.alter.exchange_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.exchange_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.import_partition_tablespace.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.import_partition_tablespace.target": {
+    "enabled": true
+   },
+   "ddl.alter.import_partition_tablespace.warn": {
+    "enabled": true
+   },
+   "ddl.alter.import_tablespace.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.import_tablespace.warn": {
+    "enabled": true
+   },
+   "ddl.alter.keys_toggle.notice": {
+    "enabled": true
+   },
+   "ddl.alter.merge.mysql.require": {
+    "enabled": true
+   },
+   "ddl.alter.merge.tidb.require": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.compatibility.require": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.explicit_auto_increment_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.explicit_default_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.explicit_nullability_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.notice": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.target_type_family.allowlist": {
+    "enabled": true
+   },
+   "ddl.alter.online_ddl.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.online_ddl.warn": {
+    "enabled": true
+   },
+   "ddl.alter.optimize_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.optimize_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.optimize_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.partition_by.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.partition_by.warn": {
+    "enabled": true
+   },
+   "ddl.alter.rebuild.warn": {
+    "enabled": true
+   },
+   "ddl.alter.rebuild_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.rebuild_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.rebuild_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.remove_partitioning.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.remove_partitioning.warn": {
+    "enabled": true
+   },
+   "ddl.alter.rename_column.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.rename_column.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.rename_column.target.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.rename_column.version.require": {
+    "enabled": true
+   },
+   "ddl.alter.rename_index.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.rename_index.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.rename_table.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.reorganize_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.reorganize_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.reorganize_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.repair_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.repair_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.repair_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.set_data_type.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.set_default.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.set_default.explicit_default_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.set_default.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.set_generated.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.set_not_null.explicit_nullability_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.set_not_null.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.table_option.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.table_option.compatibility.require": {
+    "enabled": true
+   },
+   "ddl.alter.table_option.warn": {
+    "enabled": true
+   },
+   "ddl.alter.truncate_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.truncate_partition.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.truncate_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter_database.notice": {
+    "enabled": true
+   },
+   "ddl.alter_event.notice": {
+    "enabled": true
+   },
+   "ddl.alter_function.notice": {
+    "enabled": true
+   },
+   "ddl.alter_placement_policy.notice": {
+    "enabled": true
+   },
+   "ddl.alter_procedure.notice": {
+    "enabled": true
+   },
+   "ddl.alter_resource_group.notice": {
+    "enabled": true
+   },
+   "ddl.alter_sequence.notice": {
+    "enabled": true
+   },
+   "ddl.alter_user.notice": {
+    "enabled": true
+   },
+   "ddl.column.advanced.compatibility.require": {
+    "enabled": true
+   },
+   "ddl.column.bit.forbid": {
+    "enabled": true
+   },
+   "ddl.column.blob_text.forbid": {
+    "enabled": true
+   },
+   "ddl.column.char.max_length": {
+    "enabled": true
+   },
+   "ddl.column.charset.allowlist": {
+    "enabled": true
+   },
+   "ddl.column.charset_collation.match.require": {
+    "enabled": true
+   },
+   "ddl.column.collation.allowlist": {
+    "enabled": true
+   },
+   "ddl.column.comment.require": {
+    "enabled": true
+   },
+   "ddl.column.default.require": {
+    "enabled": true
+   },
+   "ddl.column.float_double.forbid": {
+    "enabled": true
+   },
+   "ddl.column.json.forbid": {
+    "enabled": true
+   },
+   "ddl.column.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.column.name.keyword.forbid": {
+    "enabled": true
+   },
+   "ddl.column.name.max_length": {
+    "enabled": true
+   },
+   "ddl.column.name.pattern.require": {
+    "enabled": true
+   },
+   "ddl.column.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.column.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.column.not_null.require": {
+    "enabled": true
+   },
+   "ddl.column.timestamp.forbid": {
+    "enabled": true
+   },
+   "ddl.column.varchar.max_length": {
+    "enabled": true
+   },
+   "ddl.constraint.check.ignored.notice": {
+    "enabled": true
+   },
+   "ddl.constraint.check.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.constraint.check.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.check.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.check.not_enforced.notice": {
+    "enabled": true
+   },
+   "ddl.constraint.foreign_key.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.constraint.foreign_key.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.foreign_key.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.primary_key.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.constraint.primary_key.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.primary_key.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.unique_key.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.constraint.unique_key.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.unique_key.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.create_event.notice": {
+    "enabled": true
+   },
+   "ddl.create_function.notice": {
+    "enabled": true
+   },
+   "ddl.create_index.columns.exists.require": {
+    "enabled": true
+   },
+   "ddl.create_index.notice": {
+    "enabled": true
+   },
+   "ddl.create_placement_policy.notice": {
+    "enabled": true
+   },
+   "ddl.create_procedure.notice": {
+    "enabled": true
+   },
+   "ddl.create_resource_group.notice": {
+    "enabled": true
+   },
+   "ddl.create_role.notice": {
+    "enabled": true
+   },
+   "ddl.create_sequence.notice": {
+    "enabled": true
+   },
+   "ddl.create_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.create_trigger.ordering.version.require": {
+    "enabled": true
+   },
+   "ddl.create_user.notice": {
+    "enabled": true
+   },
+   "ddl.database.alter.exists.require": {
+    "enabled": true
+   },
+   "ddl.database.create.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.database.create.notice": {
+    "enabled": true
+   },
+   "ddl.database.denylist.forbid": {
+    "enabled": true
+   },
+   "ddl.database.drop.exists.require": {
+    "enabled": true
+   },
+   "ddl.database.drop.warn": {
+    "enabled": true
+   },
+   "ddl.database.option.encryption.applicability": {
+    "enabled": true
+   },
+   "ddl.database.system.modify.forbid": {
+    "enabled": true
+   },
+   "ddl.drop_event.notice": {
+    "enabled": true
+   },
+   "ddl.drop_function.notice": {
+    "enabled": true
+   },
+   "ddl.drop_index.notice": {
+    "enabled": true
+   },
+   "ddl.drop_placement_policy.notice": {
+    "enabled": true
+   },
+   "ddl.drop_procedure.notice": {
+    "enabled": true
+   },
+   "ddl.drop_resource_group.notice": {
+    "enabled": true
+   },
+   "ddl.drop_role.notice": {
+    "enabled": true
+   },
+   "ddl.drop_sequence.notice": {
+    "enabled": true
+   },
+   "ddl.drop_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.drop_user.notice": {
+    "enabled": true
+   },
+   "ddl.event.enabled_execution.warn": {
+    "enabled": true
+   },
+   "ddl.grant.notice": {
+    "enabled": true
+   },
+   "ddl.index.advanced.compatibility.require": {
+    "enabled": true
+   },
+   "ddl.index.columns.max_count": {
+    "enabled": true
+   },
+   "ddl.index.duplicate.forbid": {
+    "enabled": true
+   },
+   "ddl.index.fulltext.contains.require": {
+    "enabled": true
+   },
+   "ddl.index.fulltext.prefix.require": {
+    "enabled": true
+   },
+   "ddl.index.fulltext.suffix.require": {
+    "enabled": true
+   },
+   "ddl.index.invisible.forbid": {
+    "enabled": true
+   },
+   "ddl.index.key_length.max_bytes.require": {
+    "enabled": true
+   },
+   "ddl.index.name.keyword.forbid": {
+    "enabled": true
+   },
+   "ddl.index.name.pattern.require": {
+    "enabled": true
+   },
+   "ddl.index.redundant_left_prefix.forbid": {
+    "enabled": true
+   },
+   "ddl.index.redundant_unique_overlap.forbid": {
+    "enabled": true
+   },
+   "ddl.index.secondary.contains.require": {
+    "enabled": true
+   },
+   "ddl.index.secondary.prefix.require": {
+    "enabled": true
+   },
+   "ddl.index.secondary.suffix.require": {
+    "enabled": true
+   },
+   "ddl.index.total.max_count": {
+    "enabled": true
+   },
+   "ddl.index.unique.contains.require": {
+    "enabled": true
+   },
+   "ddl.index.unique.prefix.require": {
+    "enabled": true
+   },
+   "ddl.index.unique.suffix.require": {
+    "enabled": true
+   },
+   "ddl.mysql.alter_instance.privilege": {
+    "enabled": true
+   },
+   "ddl.mysql.alter_instance.reload_tls": {
+    "enabled": true
+   },
+   "ddl.mysql.alter_instance.rotate_master_key": {
+    "enabled": true
+   },
+   "ddl.mysql.resource_group.affinity.warn": {
+    "enabled": true
+   },
+   "ddl.mysql.resource_group.force.warn": {
+    "enabled": true
+   },
+   "ddl.mysql.resource_group.priority.warn": {
+    "enabled": true
+   },
+   "ddl.mysql.resource_group.valid": {
+    "enabled": true
+   },
+   "ddl.mysql.server.alter.notice": {
+    "enabled": true
+   },
+   "ddl.mysql.server.create.notice": {
+    "enabled": true
+   },
+   "ddl.mysql.server.drop.notice": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.duplicate_attribute": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.existence": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.exists_noop": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.missing_attribute": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.name_conflict": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.organization_conflict": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.privilege": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.srid0": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.absent": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.absent_noop": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.dependency": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.privilege": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.reserved": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.srid0": {
+    "enabled": true
+   },
+   "ddl.mysql.tablespace.alter.warn": {
+    "enabled": true
+   },
+   "ddl.mysql.tablespace.applicability": {
+    "enabled": true
+   },
+   "ddl.mysql.tablespace.create.warn": {
+    "enabled": true
+   },
+   "ddl.mysql.tablespace.drop.forbid": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_check.not_valid.require": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_column.non_null_default.rewrite.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_column.non_null_no_default.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_column.nullable.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_exclusion_constraint.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_identity.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_inherit.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_of_type.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.attach_partition.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.cluster_on.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.constraint_deferrable.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.constraint_initially_deferred.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.detach_partition.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.detach_partition_finalize.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.disable_rls.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.disable_rule.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.disable_trigger.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.drop_column.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.drop_constraint.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.drop_inherit.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.drop_of_type.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_always_rule.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_always_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_replica_rule.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_replica_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_rls.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_rule.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.force_rls.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.move_all_tablespace.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.no_force_rls.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.not_valid_constraint.validate.require": {
+    "enabled": true
+   },
+   "ddl.pg.alter.owner.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.replica_identity_full.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.replica_identity_nothing.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.replica_identity_using_index.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.reset_column_options.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.reset_reloptions.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_access_method.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_column_compression.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_column_options.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_column_statistics.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_column_storage.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_data_type.rewrite.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_expression.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_logged.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_reloptions.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_schema.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_tablespace.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_unlogged.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_without_cluster.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.validate_constraint.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter_aggregate.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_collation.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_conversion.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_domain.constraint.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_domain.default.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_domain.not_null.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_domain.rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_event_trigger.disable.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_event_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_extension.add_member.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_extension.drop_member.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_extension.set_schema.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_extension.update.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_foreign_data_wrapper.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_foreign_server.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_foreign_table.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_index.rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_index.set_tablespace.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_large_object.owner.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_materialized_view.rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_materialized_view.set_schema.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_operator.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_operator_class.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_operator_family.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_policy.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_publication.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_rule.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_schema.owner.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_schema.rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_sequence.cycle.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_sequence.restart.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_statistics.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_subscription.disable.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_subscription.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_text_search_configuration.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_text_search_dictionary.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_text_search_parser.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_text_search_template.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.add_attribute.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.add_value.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.add_value.position.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.alter_attribute_type.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.composite_rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.composite_set_schema.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.drop_attribute.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.rename_attribute.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_user_mapping.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_view.rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_view.set_schema.notice": {
+    "enabled": true
+   },
+   "ddl.pg.comment_on.notice": {
+    "enabled": true
+   },
+   "ddl.pg.comment_on.remove.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_access_method.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_aggregate.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_collation.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_constraint_trigger.warn": {
+    "enabled": true
+   },
+   "ddl.pg.create_conversion.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_domain.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_event_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_extension.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.create_extension.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_foreign_data_wrapper.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_foreign_server.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_foreign_table.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_function.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_function.security_definer.warn": {
+    "enabled": true
+   },
+   "ddl.pg.create_index.concurrently.require": {
+    "enabled": true
+   },
+   "ddl.pg.create_operator.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_operator_class.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_operator_family.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_or_replace_function.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.create_or_replace_view.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.create_policy.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_procedure.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_publication.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_rule.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_schema.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_sequence.cycle.warn": {
+    "enabled": true
+   },
+   "ddl.pg.create_statistics.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_subscription.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_temp_view.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_text_search_configuration.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_text_search_dictionary.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_text_search_parser.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_text_search_template.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_transform.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_type.composite.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_type.enum.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_user_mapping.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_view.check_option.notice": {
+    "enabled": true
+   },
+   "ddl.pg.drop_access_method.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_aggregate.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_collation.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_conversion.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_domain.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_domain.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_event_trigger.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_extension.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_extension.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_foreign_data_wrapper.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_foreign_server.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_foreign_table.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_function.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_index.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_materialized_view.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_materialized_view.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_operator.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_operator_class.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_operator_family.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_policy.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_procedure.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_publication.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_rule.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_schema.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_schema.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_sequence.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_sequence.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_statistics.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_subscription.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_text_search_configuration.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_text_search_dictionary.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_text_search_parser.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_text_search_template.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_transform.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_trigger.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_type.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_type.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_user_mapping.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_view.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.grant.table_privilege.all.warn": {
+    "enabled": true
+   },
+   "ddl.pg.grant.table_privilege.notice": {
+    "enabled": true
+   },
+   "ddl.pg.refresh_materialized_view.concurrently.warn": {
+    "enabled": true
+   },
+   "ddl.pg.refresh_materialized_view.no_data.notice": {
+    "enabled": true
+   },
+   "ddl.pg.revoke.table_privilege.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.revoke.table_privilege.notice": {
+    "enabled": true
+   },
+   "ddl.pg.security_label.notice": {
+    "enabled": true
+   },
+   "ddl.pg.security_label.remove.notice": {
+    "enabled": true
+   },
+   "ddl.pg.table.foreign_key.cross_schema.advisory": {
+    "enabled": true
+   },
+   "ddl.rename_table.notice": {
+    "enabled": true
+   },
+   "ddl.revoke.notice": {
+    "enabled": true
+   },
+   "ddl.routine.variable_shadowing.warn": {
+    "enabled": true
+   },
+   "ddl.table.audit_columns.require": {
+    "enabled": true
+   },
+   "ddl.table.auto_increment.init_value.require": {
+    "enabled": true
+   },
+   "ddl.table.charset.allowlist": {
+    "enabled": true
+   },
+   "ddl.table.collation.allowlist": {
+    "enabled": true
+   },
+   "ddl.table.columns.min_count": {
+    "enabled": true
+   },
+   "ddl.table.comment.max_length": {
+    "enabled": true
+   },
+   "ddl.table.comment.require": {
+    "enabled": true
+   },
+   "ddl.table.compact.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.create_as.forbid": {
+    "enabled": true
+   },
+   "ddl.table.create_as.source.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.create_like.forbid": {
+    "enabled": true
+   },
+   "ddl.table.denylist.forbid": {
+    "enabled": true
+   },
+   "ddl.table.drop.adaptive_hash.warn": {
+    "enabled": true
+   },
+   "ddl.table.drop.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.drop.forbid": {
+    "enabled": true
+   },
+   "ddl.table.drop.rows.max_count": {
+    "enabled": true
+   },
+   "ddl.table.engine.allowlist": {
+    "enabled": true
+   },
+   "ddl.table.exists.alter.require": {
+    "enabled": true
+   },
+   "ddl.table.exists.create.forbid": {
+    "enabled": true
+   },
+   "ddl.table.foreign_key.forbid": {
+    "enabled": true
+   },
+   "ddl.table.like.source.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.table.name.keyword.forbid": {
+    "enabled": true
+   },
+   "ddl.table.name.max_length": {
+    "enabled": true
+   },
+   "ddl.table.name.pattern.require": {
+    "enabled": true
+   },
+   "ddl.table.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.table.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.table.partition.forbid": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.auto_increment.require": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.bigint.require": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.columns.max_count": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.not_null.require": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.require": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.unsigned.require": {
+    "enabled": true
+   },
+   "ddl.table.rename.dest.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.table.rename.source.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.row_format.allowlist": {
+    "enabled": true
+   },
+   "ddl.table.row_size.max_bytes.require": {
+    "enabled": true
+   },
+   "ddl.table.split_region.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.truncate.adaptive_hash.warn": {
+    "enabled": true
+   },
+   "ddl.table.truncate.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.truncate.forbid": {
+    "enabled": true
+   },
+   "ddl.table.truncate.inbound_fk": {
+    "enabled": true
+   },
+   "ddl.table.truncate.rows.max_count": {
+    "enabled": true
+   },
+   "ddl.tidb.alter.auto_random.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.alter.compat_options.notice": {
+    "enabled": true
+   },
+   "ddl.tidb.alter.table_options.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.alter_table.placement_policy.notice": {
+    "enabled": true
+   },
+   "ddl.tidb.local_temporary.alter": {
+    "enabled": true
+   },
+   "ddl.tidb.local_temporary.like": {
+    "enabled": true
+   },
+   "ddl.tidb.local_temporary.rename": {
+    "enabled": true
+   },
+   "ddl.tidb.placement.exists.require": {
+    "enabled": true
+   },
+   "ddl.tidb.placement.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.resource_group.burstable.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.resource_group.runaway.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.resource_group.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.sequence.cycle.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.sequence.references.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.sequence.restart.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.sequence.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.attributes.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.auto_random.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.cache.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.compact.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.options.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.split_region.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.tiflash.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.ttl.warn": {
+    "enabled": true
+   },
+   "ddl.view.algorithm.warn": {
+    "enabled": true
+   },
+   "ddl.view.check_option.valid": {
+    "enabled": true
+   },
+   "ddl.view.create.forbid": {
+    "enabled": true
+   },
+   "ddl.view.drop.forbid": {
+    "enabled": true
+   },
+   "ddl.view.options.ignored.warn": {
+    "enabled": true
+   },
+   "ddl.view.security.definer.warn": {
+    "enabled": true
+   },
+   "ddl.view.source.valid": {
+    "enabled": true
+   },
+   "ddl.view.target.valid": {
+    "enabled": true
+   },
+   "dml.impact.estimate": {
+    "enabled": true
+   },
+   "dml.impact.ratio.max_percent": {
+    "enabled": true
+   },
+   "dml.impact.rows.max_count": {
+    "enabled": true
+   },
+   "dml.insert.on_duplicate.forbid": {
+    "enabled": true
+   },
+   "dml.insert.rows.max_count": {
+    "enabled": true
+   },
+   "dml.insert.select.forbid": {
+    "enabled": true
+   },
+   "dml.join.on.require": {
+    "enabled": true
+   },
+   "dml.limit.forbid": {
+    "enabled": true
+   },
+   "dml.order_by.forbid": {
+    "enabled": true
+   },
+   "dml.replace.forbid": {
+    "enabled": true
+   },
+   "dml.subquery.forbid": {
+    "enabled": true
+   },
+   "dml.table.denylist.forbid": {
+    "enabled": true
+   },
+   "dml.table.exists.require": {
+    "enabled": true
+   },
+   "dml.where.require": {
+    "enabled": true
+   }
+  }
+ },
+ "anchors": {
+  "postgres17": {
+   "service": "postgres17",
+   "container": "deltascope-ddl-golden-postgres17",
+   "image": "postgres:17.7",
+   "product": "postgresql",
+   "version_contains": "PostgreSQL 17.7",
+   "database": "postgres",
+   "exec_client": [
+    "psql",
+    "-U",
+    "postgres",
+    "-X",
+    "-v",
+    "ON_ERROR_STOP=1",
+    "-v",
+    "VERBOSITY=verbose"
+   ],
+   "exec_flag": "-c",
+   "exec_silent_flag": "-tAXc",
+   "error_class_pattern": "ERROR:\\s+(\\w+):",
+   "needs_database_create": false
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "create roles",
+   "sql": "CREATE ROLE t47_admin LOGIN; CREATE ROLE t47_app LOGIN PASSWORD NULL; CREATE ROLE t47_read NOLOGIN",
+   "expect_rc": 0,
+   "via": "stdin",
+   "verify": []
+  },
+  {
+   "name": "create role options",
+   "sql": "CREATE ROLE t47_mgr WITH LOGIN CREATEDB IN ROLE t47_admin",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "user/group aliases",
+   "sql": "CREATE USER t47_u; CREATE GROUP t47_g",
+   "expect_rc": 0,
+   "via": "stdin",
+   "verify": []
+  },
+  {
+   "name": "alter role options",
+   "sql": "ALTER ROLE t47_app WITH NOSUPERUSER NOINHERIT CONNECTION LIMIT 5",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "alter role rename",
+   "sql": "ALTER ROLE t47_u RENAME TO t47_u2",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "alter role set param",
+   "sql": "ALTER ROLE t47_app SET work_mem = '16MB'",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "grant role membership",
+   "sql": "GRANT t47_read TO t47_app WITH ADMIN OPTION",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "fixture objects",
+   "sql": "CREATE SCHEMA t47; CREATE TABLE t47.t (id int PRIMARY KEY, v text); CREATE SEQUENCE t47.s; CREATE FUNCTION t47.f() RETURNS int LANGUAGE sql AS 'SELECT 1'",
+   "expect_rc": 0,
+   "via": "stdin",
+   "verify": []
+  },
+  {
+   "name": "grant table privs",
+   "sql": "GRANT SELECT, INSERT ON t47.t TO t47_app WITH GRANT OPTION",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "grant columns",
+   "sql": "GRANT SELECT (id), UPDATE (v) ON t47.t TO t47_read",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "grant all tables in schema",
+   "sql": "GRANT SELECT ON ALL TABLES IN SCHEMA t47 TO t47_read",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "grant sequences/functions/db/schema/types",
+   "sql": "GRANT USAGE ON SEQUENCE t47.s TO t47_read; GRANT EXECUTE ON FUNCTION t47.f() TO t47_read; GRANT USAGE ON SCHEMA t47 TO t47_read",
+   "expect_rc": 0,
+   "via": "stdin",
+   "verify": []
+  },
+  {
+   "name": "grant database/tablespace/large-objects",
+   "sql": "CREATE TABLESPACE t47_ts LOCATION '/tmp/t47_ts'; GRANT CREATE ON TABLESPACE t47_ts TO t47_app; GRANT CREATE ON DATABASE postgres TO t47_app; GRANT SELECT ON LARGE OBJECT 1 TO t47_read",
+   "expect_rc": 1,
+   "verify": []
+  },
+  {
+   "name": "grant granted-by/set",
+   "sql": "GRANT SELECT ON t47.t TO t47_app GRANTED BY CURRENT_USER",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "revoke grant option",
+   "sql": "REVOKE GRANT OPTION FOR INSERT ON t47.t FROM t47_app",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "revoke privileges",
+   "sql": "REVOKE UPDATE (v) ON t47.t FROM t47_read; REVOKE SELECT ON t47.t FROM t47_app CASCADE",
+   "expect_rc": 0,
+   "via": "stdin",
+   "verify": []
+  },
+  {
+   "name": "revoke role",
+   "sql": "REVOKE t47_read FROM t47_app",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "alter default privileges",
+   "sql": "ALTER DEFAULT PRIVILEGES FOR ROLE t47_admin IN SCHEMA t47 GRANT SELECT ON TABLES TO t47_read",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "alter default privileges revoke",
+   "sql": "ALTER DEFAULT PRIVILEGES FOR ROLE t47_admin IN SCHEMA t47 REVOKE SELECT ON TABLES FROM t47_read",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "comment objects",
+   "sql": "COMMENT ON TABLE t47.t IS 'fixture'; COMMENT ON COLUMN t47.t.id IS 'pk col'; COMMENT ON SCHEMA t47 IS 'scope'",
+   "expect_rc": 0,
+   "via": "stdin",
+   "verify": []
+  },
+  {
+   "name": "comment null",
+   "sql": "COMMENT ON TABLE t47.t IS NULL",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "security label",
+   "sql": "SECURITY LABEL FOR selinux ON TABLE t47.t IS 'system_u:object_r:sepgsql_table_t:s0'",
+   "expect_rc": 1,
+   "verify": []
+  },
+  {
+   "name": "security label provider attempt",
+   "sql": "SECURITY LABEL ON TABLE t47.t IS 'x'",
+   "expect_rc": 1,
+   "verify": []
+  },
+  {
+   "name": "mkdir tablespace dir",
+   "sql": "CREATE TABLE t47_dirprobe (x int); COPY t47_dirprobe TO PROGRAM 'mkdir -p /tmp/t47_ts'; DROP TABLE t47_dirprobe",
+   "expect_rc": 0,
+   "via": "stdin",
+   "verify": []
+  },
+  {
+   "name": "tablespace lifecycle",
+   "sql": "CREATE TABLESPACE t47_ts LOCATION '/tmp/t47_ts'",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "alter tablespace options/rename/owner",
+   "sql": "ALTER TABLESPACE t47_ts SET (seq_page_cost = 0.9); ALTER TABLESPACE t47_ts RENAME TO t47_ts2",
+   "expect_rc": 0,
+   "via": "stdin",
+   "verify": []
+  },
+  {
+   "name": "drop tablespace",
+   "sql": "DROP TABLESPACE t47_ts2",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "large object alter",
+   "sql": "SELECT lo_create(0); ALTER LARGE OBJECT 0 OWNER TO t47_app",
+   "expect_rc": 1,
+   "verify": []
+  },
+  {
+   "name": "language lifecycle",
+   "sql": "CREATE OR REPLACE TRUSTED PROCEDURAL LANGUAGE t47_lang HANDLER plpgsql_call_handler INLINE plpgsql_inline_handler VALIDATOR plpgsql_validator",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "alter language rename/owner",
+   "sql": "ALTER LANGUAGE t47_lang RENAME TO t47_lang2",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "drop language",
+   "sql": "DROP LANGUAGE t47_lang2",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "alter system set",
+   "sql": "ALTER SYSTEM SET application_name = 't47_golden'",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "alter system reset",
+   "sql": "ALTER SYSTEM RESET application_name",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "drop owned",
+   "sql": "DROP OWNED BY t47_app CASCADE",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "reassign owned",
+   "sql": "CREATE ROLE t47_new LOGIN; REASSIGN OWNED BY t47_mgr TO t47_new",
+   "expect_rc": 0,
+   "via": "stdin",
+   "verify": []
+  },
+  {
+   "name": "drop schema",
+   "sql": "DROP SCHEMA IF EXISTS t47 CASCADE",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "drop roles",
+   "sql": "DROP ROLE t47_mgr, t47_app, t47_read, t47_admin, t47_u2, t47_g, t47_new",
+   "expect_rc": 0,
+   "via": "stdin",
+   "verify": []
+  }
+ ],
+ "syntax_negative": {
+  "sql": "GRANT SELECT ON",
+  "expect": {
+   "error_class": "42601",
+   "forbidden_markers": [
+    "FATAL",
+    "password",
+    "Access denied",
+    "authentication failed"
+   ]
+  },
+  "post_state_check": {
+   "sql": "SELECT count(*) FROM information_schema.role_table_grants WHERE grantee='ghost_t47'",
+   "expect": "0"
+  }
+ },
+ "cli_cases": [
+  {
+   "id": "create-role",
+   "dialect": "postgresql",
+   "sql": "CREATE ROLE app LOGIN PASSWORD 'secret'",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE ROLE app LOGIN PASSWORD 'secret'"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-role-create-role",
+   "dialect": "postgresql",
+   "sql": "CREATE ROLE app",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE ROLE app"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-role-options",
+   "dialect": "postgresql",
+   "sql": "CREATE ROLE app LOGIN PASSWORD 'secret' CREATEDB IN ROLE parent",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE ROLE app LOGIN PASSWORD 'secret' CREATEDB IN ROLE parent"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-role-user-alias",
+   "dialect": "postgresql",
+   "sql": "CREATE USER app LOGIN",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE USER app LOGIN"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-role-group-alias",
+   "dialect": "postgresql",
+   "sql": "CREATE GROUP grp",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE GROUP grp"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-role",
+   "dialect": "postgresql",
+   "sql": "ALTER ROLE app SET statement_timeout = '5s'",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER ROLE app SET statement_timeout = '5s'"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-role-set-reset-configuration",
+   "dialect": "postgresql",
+   "sql": "ALTER ROLE app SET statement_timeout = '5s'",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER ROLE app SET statement_timeout = '5s'"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-role-with-options",
+   "dialect": "postgresql",
+   "sql": "ALTER ROLE app WITH CREATEROLE",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER ROLE app WITH CREATEROLE"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-role-rename-to",
+   "dialect": "postgresql",
+   "sql": "ALTER ROLE app RENAME TO app2",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER ROLE app RENAME TO app2"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "rename",
+      "reason": "postgresql rename statement relation target is missing"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-role-user-group-all-aliases",
+   "dialect": "postgresql",
+   "sql": "ALTER USER app SET work_mem = '64MB'",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER USER app SET work_mem = '64MB'"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-role-in-database-scope",
+   "dialect": "postgresql",
+   "sql": "ALTER ROLE app IN DATABASE db SET search_path = 'app'",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER ROLE app IN DATABASE db SET search_path = 'app'"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-role",
+   "dialect": "postgresql",
+   "sql": "DROP ROLE app",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP ROLE app"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-role-drop-role",
+   "dialect": "postgresql",
+   "sql": "DROP ROLE app",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP ROLE app"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-role-user-group-aliases-if-exists",
+   "dialect": "postgresql",
+   "sql": "DROP USER IF EXISTS app",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP USER IF EXISTS app"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "grant",
+   "dialect": "postgresql",
+   "sql": "GRANT SELECT, INSERT ON TABLE users TO app",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "GRANT SELECT, INSERT ON TABLE users TO app"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.grant.table_privilege.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "grant-on-table",
+   "dialect": "postgresql",
+   "sql": "GRANT SELECT, INSERT ON TABLE users TO app",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "GRANT SELECT, INSERT ON TABLE users TO app"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.grant.table_privilege.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "grant-all-tables-in-schema",
+   "dialect": "postgresql",
+   "sql": "GRANT SELECT ON ALL TABLES IN SCHEMA app TO ro",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "GRANT SELECT ON ALL TABLES IN SCHEMA app TO ro"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "grant_all_tables_in_schema",
+      "reason": "postgresql grant all tables in schema is deferred"
+     }
+    ]
+   }
+  },
+  {
+   "id": "grant-columns",
+   "dialect": "postgresql",
+   "sql": "GRANT SELECT (id, email) ON TABLE users TO app",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "GRANT SELECT (id, email) ON TABLE users TO app"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.grant.table_privilege.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "grant-with-grant-option",
+   "dialect": "postgresql",
+   "sql": "GRANT SELECT ON TABLE users TO app WITH GRANT OPTION",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "GRANT SELECT ON TABLE users TO app WITH GRANT OPTION"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.grant.table_privilege.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "grant-sequences-functions-database-schema-types",
+   "dialect": "postgresql",
+   "sql": "GRANT USAGE ON SEQUENCE s TO app",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "GRANT USAGE ON SEQUENCE s TO app"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "grant_table",
+      "reason": "postgresql grant object type OBJECT_SEQUENCE is deferred"
+     }
+    ]
+   }
+  },
+  {
+   "id": "grant-role-membership",
+   "dialect": "postgresql",
+   "sql": "GRANT admin TO app WITH ADMIN OPTION",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "GRANT admin TO app WITH ADMIN OPTION"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "grant_role",
+      "reason": "postgresql role membership grant/revoke is deferred"
+     }
+    ]
+   }
+  },
+  {
+   "id": "grant-tablespace-large-objects",
+   "dialect": "postgresql",
+   "sql": "GRANT CREATE ON TABLESPACE fast TO app",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "GRANT CREATE ON TABLESPACE fast TO app"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "grant_table",
+      "reason": "postgresql grant object type OBJECT_TABLESPACE is deferred"
+     }
+    ]
+   }
+  },
+  {
+   "id": "grant-granted-by",
+   "dialect": "postgresql",
+   "sql": "GRANT SELECT ON users TO app GRANTED BY admin",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "GRANT SELECT ON users TO app GRANTED BY admin"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.grant.table_privilege.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "revoke",
+   "dialect": "postgresql",
+   "sql": "REVOKE SELECT ON TABLE users FROM app",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "REVOKE SELECT ON TABLE users FROM app"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.revoke.table_privilege.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "revoke-revoke-privileges",
+   "dialect": "postgresql",
+   "sql": "REVOKE SELECT ON TABLE users FROM app",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "REVOKE SELECT ON TABLE users FROM app"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.revoke.table_privilege.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "revoke-grant-option-for",
+   "dialect": "postgresql",
+   "sql": "REVOKE GRANT OPTION FOR SELECT ON users FROM app",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "REVOKE GRANT OPTION FOR SELECT ON users FROM app"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.revoke.table_privilege.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "revoke-cascade-restrict",
+   "dialect": "postgresql",
+   "sql": "REVOKE ALL ON users FROM app CASCADE",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "REVOKE ALL ON users FROM app CASCADE"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.revoke.table_privilege.notice",
+      "level": "notice"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.revoke.table_privilege.cascade.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "revoke-role-membership",
+   "dialect": "postgresql",
+   "sql": "REVOKE admin FROM app",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "REVOKE admin FROM app"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "grant_role",
+      "reason": "postgresql role membership grant/revoke is deferred"
+     }
+    ]
+   }
+  },
+  {
+   "id": "revoke-object-kinds",
+   "dialect": "postgresql",
+   "sql": "REVOKE USAGE ON SCHEMA app FROM ro",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "REVOKE USAGE ON SCHEMA app FROM ro"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "grant_table",
+      "reason": "postgresql grant object type OBJECT_SCHEMA is deferred"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-default-privileges",
+   "dialect": "postgresql",
+   "sql": "ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO app",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO app"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_default_privileges",
+      "reason": "postgresql alter default privileges is deferred"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-default-privileges-grant-defaults",
+   "dialect": "postgresql",
+   "sql": "ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO ro",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO ro"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_default_privileges",
+      "reason": "postgresql alter default privileges is deferred"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-default-privileges-revoke-defaults",
+   "dialect": "postgresql",
+   "sql": "ALTER DEFAULT PRIVILEGES REVOKE SELECT ON TABLES FROM ro",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER DEFAULT PRIVILEGES REVOKE SELECT ON TABLES FROM ro"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_default_privileges",
+      "reason": "postgresql alter default privileges is deferred"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-default-privileges-for-role-in-schema",
+   "dialect": "postgresql",
+   "sql": "ALTER DEFAULT PRIVILEGES FOR ROLE admin IN SCHEMA app GRANT SELECT ON TABLES TO ro",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER DEFAULT PRIVILEGES FOR ROLE admin IN SCHEMA app GRANT SELECT ON TABLES TO ro"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_default_privileges",
+      "reason": "postgresql alter default privileges is deferred"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-default-privileges-object-types",
+   "dialect": "postgresql",
+   "sql": "ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO app",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER DEFAULT PRIVILEGES GRANT USAGE ON SEQUENCES TO app"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_default_privileges",
+      "reason": "postgresql alter default privileges is deferred"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-owned",
+   "dialect": "postgresql",
+   "sql": "DROP OWNED BY app",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP OWNED BY app"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-owned-drop-owned",
+   "dialect": "postgresql",
+   "sql": "DROP OWNED BY app",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP OWNED BY app"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-owned-multi-role-cascade",
+   "dialect": "postgresql",
+   "sql": "DROP OWNED BY app, svc CASCADE",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP OWNED BY app, svc CASCADE"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "reassign-owned",
+   "dialect": "postgresql",
+   "sql": "REASSIGN OWNED BY old_role TO new_role",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "REASSIGN OWNED BY old_role TO new_role"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "reassign-owned-reassign-owned",
+   "dialect": "postgresql",
+   "sql": "REASSIGN OWNED BY old_role TO new_role",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "REASSIGN OWNED BY old_role TO new_role"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "reassign-owned-multi-source",
+   "dialect": "postgresql",
+   "sql": "REASSIGN OWNED BY a, b TO c",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "REASSIGN OWNED BY a, b TO c"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "comment",
+   "dialect": "postgresql",
+   "sql": "COMMENT ON TABLE users IS 'application accounts'",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "COMMENT ON TABLE users IS 'application accounts'"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.comment_on.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "comment-on-table-column",
+   "dialect": "postgresql",
+   "sql": "COMMENT ON COLUMN users.email IS 'primary contact'",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "COMMENT ON COLUMN users.email IS 'primary contact'"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.comment_on.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "comment-is-null",
+   "dialect": "postgresql",
+   "sql": "COMMENT ON TABLE users IS NULL",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "COMMENT ON TABLE users IS NULL"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.comment_on.remove.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "comment-object-kinds",
+   "dialect": "postgresql",
+   "sql": "COMMENT ON INDEX idx IS 'lookup'",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "COMMENT ON INDEX idx IS 'lookup'"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.comment_on.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "security-label",
+   "dialect": "postgresql",
+   "sql": "SECURITY LABEL ON TABLE users IS 'classified'",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "SECURITY LABEL ON TABLE users IS 'classified'"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.security_label.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "security-label-security-label",
+   "dialect": "postgresql",
+   "sql": "SECURITY LABEL ON TABLE users IS 'classified'",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "SECURITY LABEL ON TABLE users IS 'classified'"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.security_label.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "security-label-for-provider-is-null",
+   "dialect": "postgresql",
+   "sql": "SECURITY LABEL FOR selinux ON TABLE users IS NULL",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "SECURITY LABEL FOR selinux ON TABLE users IS NULL"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.security_label.remove.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-tablespace",
+   "dialect": "postgresql",
+   "sql": "CREATE TABLESPACE fast LOCATION '/data/fast'",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLESPACE fast LOCATION '/data/fast'"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-tablespace-create-tablespace",
+   "dialect": "postgresql",
+   "sql": "CREATE TABLESPACE fast LOCATION '/data/fast'",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLESPACE fast LOCATION '/data/fast'"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-tablespace-owner-options",
+   "dialect": "postgresql",
+   "sql": "CREATE TABLESPACE fast OWNER admin LOCATION '/data/fast' WITH (seq_page_cost = 1.0)",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLESPACE fast OWNER admin LOCATION '/data/fast' WITH (seq_page_cost = 1.0)"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-tablespace",
+   "dialect": "postgresql",
+   "sql": "ALTER TABLESPACE fast SET (seq_page_cost = 1.0)",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLESPACE fast SET (seq_page_cost = 1.0)"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-tablespace-set-reset-options",
+   "dialect": "postgresql",
+   "sql": "ALTER TABLESPACE fast SET (seq_page_cost = 1.0)",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLESPACE fast SET (seq_page_cost = 1.0)"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-tablespace-rename-owner",
+   "dialect": "postgresql",
+   "sql": "ALTER TABLESPACE fast RENAME TO fast2",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLESPACE fast RENAME TO fast2"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "rename",
+      "reason": "postgresql rename statement relation target is missing"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-tablespace",
+   "dialect": "postgresql",
+   "sql": "DROP TABLESPACE fast",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP TABLESPACE fast"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-tablespace-drop-tablespace",
+   "dialect": "postgresql",
+   "sql": "DROP TABLESPACE fast",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP TABLESPACE fast"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-tablespace-if-exists",
+   "dialect": "postgresql",
+   "sql": "DROP TABLESPACE IF EXISTS fast",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP TABLESPACE IF EXISTS fast"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-language",
+   "dialect": "postgresql",
+   "sql": "CREATE LANGUAGE plpython3u",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE LANGUAGE plpython3u"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_extension.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-language-create-language",
+   "dialect": "postgresql",
+   "sql": "CREATE LANGUAGE plpython3u",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE LANGUAGE plpython3u"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_extension.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-language-or-replace-trusted",
+   "dialect": "postgresql",
+   "sql": "CREATE OR REPLACE TRUSTED LANGUAGE plperl",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE OR REPLACE TRUSTED LANGUAGE plperl"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_extension.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-language-handler-form",
+   "dialect": "postgresql",
+   "sql": "CREATE LANGUAGE mylang HANDLER my_handler INLINE my_inline VALIDATOR my_validator",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE LANGUAGE mylang HANDLER my_handler INLINE my_inline VALIDATOR my_validator"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-language",
+   "dialect": "postgresql",
+   "sql": "ALTER LANGUAGE plpython3u RENAME TO plpy3u",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER LANGUAGE plpython3u RENAME TO plpy3u"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "rename",
+      "reason": "postgresql rename statement relation target is missing"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-language-rename-owner",
+   "dialect": "postgresql",
+   "sql": "ALTER LANGUAGE plpython3u RENAME TO plpy3u",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER LANGUAGE plpython3u RENAME TO plpy3u"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "rename",
+      "reason": "postgresql rename statement relation target is missing"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-language",
+   "dialect": "postgresql",
+   "sql": "DROP LANGUAGE plpython3u",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP LANGUAGE plpython3u"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "drop",
+      "reason": "postgresql drop target is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-language-drop-language",
+   "dialect": "postgresql",
+   "sql": "DROP LANGUAGE plpython3u",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP LANGUAGE plpython3u"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "drop",
+      "reason": "postgresql drop target is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-language-if-exists-cascade",
+   "dialect": "postgresql",
+   "sql": "DROP LANGUAGE IF EXISTS plpython3u CASCADE",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP LANGUAGE IF EXISTS plpython3u CASCADE"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "drop",
+      "reason": "postgresql drop target is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-large-object",
+   "dialect": "postgresql",
+   "sql": "ALTER LARGE OBJECT 12345 OWNER TO admin",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER LARGE OBJECT 12345 OWNER TO admin"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.alter_large_object.owner.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-large-object-owner-to",
+   "dialect": "postgresql",
+   "sql": "ALTER LARGE OBJECT 12345 OWNER TO admin",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER LARGE OBJECT 12345 OWNER TO admin"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.alter_large_object.owner.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-system",
+   "dialect": "postgresql",
+   "sql": "ALTER SYSTEM SET shared_buffers = '1GB'",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER SYSTEM SET shared_buffers = '1GB'"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-system-set-parameter",
+   "dialect": "postgresql",
+   "sql": "ALTER SYSTEM SET work_mem = '64MB'",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER SYSTEM SET work_mem = '64MB'"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-system-reset",
+   "dialect": "postgresql",
+   "sql": "ALTER SYSTEM RESET work_mem",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER SYSTEM RESET work_mem"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-system-reset-all",
+   "dialect": "postgresql",
+   "sql": "ALTER SYSTEM RESET ALL",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER SYSTEM RESET ALL"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  }
+ ],
+ "metadata_cases": [
+  {
+   "id": "pg-live-grant-table",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "sql": "GRANT SELECT ON golden.t TO golden_reader",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 25432,
+    "user": "postgres",
+    "database": "postgres",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "create fixture",
+     "sql": "CREATE ROLE golden_reader LOGIN; CREATE SCHEMA golden; CREATE TABLE golden.t (id int)",
+     "expect_rc": 0,
+     "via": "stdin"
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.grant.table_privilege.notice",
+      "level": "notice"
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "grant not applied by audit",
+     "sql": "SELECT count(*) FROM information_schema.role_table_grants WHERE grantee='golden_reader' AND table_name='t'",
+     "expect": "0",
+     "use_database": true
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP SCHEMA IF EXISTS golden CASCADE; DROP ROLE IF EXISTS golden_reader",
+     "expect_rc": 0,
+     "via": "stdin"
+    }
+   ]
+  }
+ ],
+ "required_case_ids": [
+  "T47.db.postgres17.ddl",
+  "T47.db.postgres17.syntax_negative",
+  "T47.cli.create-role",
+  "T47.cli.create-role-create-role",
+  "T47.cli.create-role-options",
+  "T47.cli.create-role-user-alias",
+  "T47.cli.create-role-group-alias",
+  "T47.cli.alter-role",
+  "T47.cli.alter-role-set-reset-configuration",
+  "T47.cli.alter-role-with-options",
+  "T47.cli.alter-role-rename-to",
+  "T47.cli.alter-role-user-group-all-aliases",
+  "T47.cli.alter-role-in-database-scope",
+  "T47.cli.drop-role",
+  "T47.cli.drop-role-drop-role",
+  "T47.cli.drop-role-user-group-aliases-if-exists",
+  "T47.cli.grant",
+  "T47.cli.grant-on-table",
+  "T47.cli.grant-all-tables-in-schema",
+  "T47.cli.grant-columns",
+  "T47.cli.grant-with-grant-option",
+  "T47.cli.grant-sequences-functions-database-schema-types",
+  "T47.cli.grant-role-membership",
+  "T47.cli.grant-tablespace-large-objects",
+  "T47.cli.grant-granted-by",
+  "T47.cli.revoke",
+  "T47.cli.revoke-revoke-privileges",
+  "T47.cli.revoke-grant-option-for",
+  "T47.cli.revoke-cascade-restrict",
+  "T47.cli.revoke-role-membership",
+  "T47.cli.revoke-object-kinds",
+  "T47.cli.alter-default-privileges",
+  "T47.cli.alter-default-privileges-grant-defaults",
+  "T47.cli.alter-default-privileges-revoke-defaults",
+  "T47.cli.alter-default-privileges-for-role-in-schema",
+  "T47.cli.alter-default-privileges-object-types",
+  "T47.cli.drop-owned",
+  "T47.cli.drop-owned-drop-owned",
+  "T47.cli.drop-owned-multi-role-cascade",
+  "T47.cli.reassign-owned",
+  "T47.cli.reassign-owned-reassign-owned",
+  "T47.cli.reassign-owned-multi-source",
+  "T47.cli.comment",
+  "T47.cli.comment-on-table-column",
+  "T47.cli.comment-is-null",
+  "T47.cli.comment-object-kinds",
+  "T47.cli.security-label",
+  "T47.cli.security-label-security-label",
+  "T47.cli.security-label-for-provider-is-null",
+  "T47.cli.create-tablespace",
+  "T47.cli.create-tablespace-create-tablespace",
+  "T47.cli.create-tablespace-owner-options",
+  "T47.cli.alter-tablespace",
+  "T47.cli.alter-tablespace-set-reset-options",
+  "T47.cli.alter-tablespace-rename-owner",
+  "T47.cli.drop-tablespace",
+  "T47.cli.drop-tablespace-drop-tablespace",
+  "T47.cli.drop-tablespace-if-exists",
+  "T47.cli.create-language",
+  "T47.cli.create-language-create-language",
+  "T47.cli.create-language-or-replace-trusted",
+  "T47.cli.create-language-handler-form",
+  "T47.cli.alter-language",
+  "T47.cli.alter-language-rename-owner",
+  "T47.cli.drop-language",
+  "T47.cli.drop-language-drop-language",
+  "T47.cli.drop-language-if-exists-cascade",
+  "T47.cli.alter-large-object",
+  "T47.cli.alter-large-object-owner-to",
+  "T47.cli.alter-system",
+  "T47.cli.alter-system-set-parameter",
+  "T47.cli.alter-system-reset",
+  "T47.cli.alter-system-reset-all",
+  "T47.meta.pg-live-grant-table"
+ ]
+}
