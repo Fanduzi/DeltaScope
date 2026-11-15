@@ -7675,7 +7675,8 @@
               "audit_status": "silent",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.add-primary-key.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json"
               ]
             }
           ]
@@ -7740,7 +7741,7 @@
         {
           "subaction_id": "ADD CHECK NOT VALID",
           "parser_status": "recognized",
-          "audit_status": "silent",
+          "audit_status": "audited",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -7748,10 +7749,11 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.add-check-not-valid.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json"
               ]
             }
           ]
@@ -8341,7 +8343,8 @@
               "audit_status": "silent",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.set-without-oids-dead-form.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json"
               ]
             }
           ]
@@ -10114,7 +10117,8 @@
           "audit_status": "silent",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/postgresql.create-materialized-view.probes.txt",
-            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:testdata/ddl-golden/T40.json"
           ]
         }
       ],
@@ -10133,7 +10137,8 @@
               "audit_status": "silent",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-materialized-view.create-materialized-view.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T40.json"
               ]
             }
           ]
@@ -10152,7 +10157,8 @@
               "audit_status": "silent",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-materialized-view.with-no-data.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T40.json"
               ]
             }
           ]
@@ -10171,7 +10177,8 @@
               "audit_status": "silent",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-materialized-view.using-with-tablespace.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T40.json"
               ]
             }
           ]
@@ -10376,7 +10383,8 @@
               "audit_status": "silent",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.refresh-materialized-view.concurrently.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T40.json"
               ]
             }
           ]
@@ -12859,7 +12867,8 @@
               "audit_status": "silent",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-sequence.create-sequence.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T43.json"
               ]
             }
           ]
@@ -12897,7 +12906,8 @@
               "audit_status": "silent",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-sequence.owned-by-temp-if-not-exists.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T43.json"
               ]
             }
           ]
@@ -12978,7 +12988,8 @@
               "audit_status": "silent",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-sequence.owned-by-rename-set-schema.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T43.json"
               ]
             }
           ]

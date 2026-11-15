@@ -6912,7 +6912,7 @@ rows:
     status: mixed_coverage
     parser_status: partial
     audit_status: mixed
-    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 13 shapes -> 6 audited, 3 not_applicable, 1 notice_only, 3 silent; golden manifests and native execution evidence land with the owner task"
+    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 13 shapes -> 6 audited, 3 not_applicable, 1 notice_only, 3 silent; golden manifests and native execution evidence land with the owner task. 2026-11-15 T48 (#131) closure: golden T37 pins enable-all-policy answers — ADD CHECK NOT VALID emits ddl.pg.alter.not_valid_constraint.validate.require (warning) and is promoted to audited; ADD PRIMARY KEY stays a recorded rule gap (zero findings, coverage complete under 531-rule policy, native exec verified); ALTER CONSTRAINT NOT ENFORCED, NOT NULL NOT VALID and INHERIT/NO INHERIT remain not_applicable parser-boundary cells owned by the parser-upgrade backlog"
     targets: all constraint kinds, validation state, deferrability
     applicability:
       - anchor: postgresql17
@@ -6933,7 +6933,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.add-primary-key.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.add-primary-key.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json]
       - subaction_id: ADD UNIQUE
         parser_status: recognized
         audit_status: audited
@@ -6969,15 +6969,15 @@ rows:
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.add-check.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
       - subaction_id: ADD CHECK NOT VALID
         parser_status: recognized
-        audit_status: silent
+        audit_status: audited
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.add-check-not-valid.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: audited
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.add-check-not-valid.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json]
       - subaction_id: DROP CONSTRAINT
         parser_status: recognized
         audit_status: audited
@@ -7299,7 +7299,7 @@ rows:
     status: mixed_coverage
     parser_status: recognized
     audit_status: mixed
-    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 8 shapes -> 7 audited, 1 silent; golden manifests and native execution evidence land with the owner task"
+    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 8 shapes -> 7 audited, 1 silent; golden manifests and native execution evidence land with the owner task. 2026-11-15 T48 (#131) closure: golden T37 pins SET WITHOUT OIDS as a dead form — parses and audits to zero findings under the enable-all policy (recorded rule gap, native exec verified), no silent-pass ambiguity remains"
     targets: storage parameters, tablespace, logging, replica identity
     applicability:
       - anchor: postgresql17
@@ -7386,7 +7386,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.set-without-oids-dead-form.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.set-without-oids-dead-form.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
@@ -8759,7 +8759,7 @@ rows:
     status: parse_only
     parser_status: recognized
     audit_status: silent
-    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 4 shapes -> 4 silent; golden manifests and native execution evidence land with the owner task"
+    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 4 shapes -> 4 silent; golden manifests and native execution evidence land with the owner task. 2026-11-15 T48 (#131) closure: golden T40 pins all create-materialized-view shapes — zero findings under the enable-all policy while native exec proves WITH NO DATA/storage-parameter/partitioned variants; recorded rule gap, not unobserved behavior"
     targets: matview query, data population, storage
     applicability:
       - anchor: postgresql17
@@ -8768,7 +8768,7 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-materialized-view.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+        evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-materialized-view.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json]
     subaction_status:
       - subaction_id: CREATE MATERIALIZED VIEW
         parser_status: recognized
@@ -8780,7 +8780,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-materialized-view.create-materialized-view.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-materialized-view.create-materialized-view.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json]
       - subaction_id: WITH NO DATA
         parser_status: recognized
         audit_status: silent
@@ -8791,7 +8791,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-materialized-view.with-no-data.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-materialized-view.with-no-data.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json]
       - subaction_id: USING/WITH/TABLESPACE
         parser_status: recognized
         audit_status: silent
@@ -8802,7 +8802,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-materialized-view.using-with-tablespace.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-materialized-view.using-with-tablespace.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.create-materialized-view.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
@@ -8933,7 +8933,7 @@ rows:
     status: mixed_coverage
     parser_status: recognized
     audit_status: mixed
-    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 4 shapes -> 3 audited, 1 silent; golden manifests and native execution evidence land with the owner task"
+    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 4 shapes -> 3 audited, 1 silent; golden manifests and native execution evidence land with the owner task. 2026-11-15 T48 (#131) closure: golden T40 pins CONCURRENTLY as zero-finding (recorded rule gap) while WITH NO DATA and bare refresh emit feature warnings; native exec verifies both refresh forms"
     targets: refresh mode, data population
     applicability:
       - anchor: postgresql17
@@ -8965,7 +8965,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.refresh-materialized-view.concurrently.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.refresh-materialized-view.concurrently.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json]
       - subaction_id: WITH NO DATA
         parser_status: recognized
         audit_status: audited
@@ -10871,7 +10871,7 @@ rows:
     status: mixed_coverage
     parser_status: recognized
     audit_status: mixed
-    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 4 shapes -> 1 audited, 3 silent; golden manifests and native execution evidence land with the owner task"
+    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 4 shapes -> 1 audited, 3 silent; golden manifests and native execution evidence land with the owner task. 2026-11-15 T48 (#131) closure: golden T43 pins create-sequence shapes — bare/OWNED BY/TEMP/IF NOT EXISTS stay zero-finding (recorded rule gap), CYCLE warns via ddl.pg.create_sequence.cycle.warn; native exec covers restart/nextval/ownership"
     targets: sequence options, ownership binding, temporary scope
     applicability:
       - anchor: postgresql17
@@ -10892,7 +10892,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-sequence.create-sequence.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-sequence.create-sequence.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T43.json]
       - subaction_id: options
         parser_status: recognized
         audit_status: audited
@@ -10914,7 +10914,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-sequence.owned-by-temp-if-not-exists.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-sequence.owned-by-temp-if-not-exists.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T43.json]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.create-sequence.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
@@ -10934,7 +10934,7 @@ rows:
     status: mixed_coverage
     parser_status: recognized
     audit_status: mixed
-    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 5 shapes -> 4 audited, 1 silent; golden manifests and native execution evidence land with the owner task"
+    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 5 shapes -> 4 audited, 1 silent; golden manifests and native execution evidence land with the owner task. 2026-11-15 T48 (#131) closure: golden T43 pins alter-sequence shapes — OWNED BY/RENAME/SET SCHEMA stay zero-finding (recorded rule gap), RESTART/options warn via ddl.pg.alter_sequence.*; native exec verifies rename/schema moves"
     targets: restart, option changes, ownership
     applicability:
       - anchor: postgresql17
@@ -10977,7 +10977,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: silent
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-sequence.owned-by-rename-set-schema.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-sequence.owned-by-rename-set-schema.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T43.json]
       - subaction_id: IF EXISTS
         parser_status: recognized
         audit_status: audited
