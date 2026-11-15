@@ -128,7 +128,10 @@ silent stale pin.
   missing-artifact/mixed-HEAD refusal, and live deployment-evidence
   capture/validator rejections.
 - `make ddl-golden TASK=all ARTIFACT_DIR=/tmp/ddl-golden` — sequential run over
-  30 canonical manifests with per-task lifecycles.
+  31 canonical manifests (T32 joined the locked set under issue #111) with
+  per-task lifecycles; final milestone run at `8816924f` passed 31 tasks,
+  2565 cases, 50875 assertions, and `validate --task all` re-checked the
+  aggregate artifact clean.
 - `go test ./...` — 39 packages, no failures.
 - `make sql-corpus-gates` — 790/790 supported rule-dialect targets covered.
 - `make ddl-inventory-gate` — all inventory rows carry owner, status, and
