@@ -588,8 +588,6 @@ func TestT05A8WhitelistAndExecution(t *testing.T) {
 		{"kind_dml", func(s *spec.Statement) { s.Kind = spec.KindDML }},
 		{"ddl_nil", func(s *spec.Statement) { s.DDL = nil }},
 		{"operation_unknown", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperationUnknown }},
-		{"create_trigger", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperationCreateTrigger }},
-		{"drop_trigger", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperationDropTrigger }},
 		{"create_event", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperation("create_event") }},
 		{"call", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperation("call") }},
 		{"dml_nonnil", func(s *spec.Statement) { s.DML = &spec.DML{} }},

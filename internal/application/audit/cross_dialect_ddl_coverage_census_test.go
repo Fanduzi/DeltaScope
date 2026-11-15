@@ -136,8 +136,8 @@ var mysqlDDLCensusCases = []struct {
 	{Name: "DROP FUNCTION", SQL: "DROP FUNCTION hello", Expected: ddlCoverageFindingCovered},
 
 	// --- 7. Trigger lifecycle ---
-	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()", Expected: ddlCoverageParserError},
-	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_users_bi", Expected: ddlCoverageParserError},
+	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()", Expected: ddlCoverageFindingCovered},
+	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_users_bi", Expected: ddlCoverageFindingCovered},
 
 	// --- 8. Event lifecycle ---
 	{Name: "CREATE EVENT", SQL: "CREATE EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()", Expected: ddlCoverageParserError},
@@ -230,8 +230,8 @@ var tidbDDLCensusCases = []struct {
 	{Name: "ALTER TABLE LOCALITY", SQL: "ALTER TABLE users LOCALITY = 'us-east-1'", Expected: ddlCoverageParserError},
 
 	// --- 9. Unsupported product areas / parser gaps ---
-	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()", Expected: ddlCoverageParserError},
-	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_users_bi", Expected: ddlCoverageParserError},
+	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()", Expected: ddlCoverageUnsupportedBoundary},
+	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_users_bi", Expected: ddlCoverageUnsupportedBoundary},
 	{Name: "CREATE PROCEDURE", SQL: "CREATE PROCEDURE p_cleanup() SELECT 1", Expected: ddlCoverageUnsupportedBoundary},
 	{Name: "ALTER PROCEDURE", SQL: "ALTER PROCEDURE p_cleanup SQL SECURITY INVOKER", Expected: ddlCoverageUnsupportedBoundary},
 	{Name: "DROP PROCEDURE", SQL: "DROP PROCEDURE p_cleanup", Expected: ddlCoverageUnsupportedBoundary},

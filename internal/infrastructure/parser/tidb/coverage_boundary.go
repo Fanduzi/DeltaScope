@@ -226,6 +226,9 @@ func dialectBoundaryFeature(dialect spec.Dialect, ddl *spec.DDL) (feature string
 			// TiDB's parser accepts routine statements for compatibility, but
 			// the product does not support stored procedures or functions.
 			return string(ddl.Operation), true, true
+		case spec.DDLOperationCreateTrigger, spec.DDLOperationDropTrigger:
+			// TiDB does not support triggers (T29/#108).
+			return string(ddl.Operation), true, true
 		case spec.DDLOperationCreateTable:
 			if ddl.HasSelect {
 				// TiDB does not document CREATE TABLE ... AS SELECT as supported.

@@ -139,9 +139,9 @@ func TestParserUpgradeCandidateNegativeCases(t *testing.T) {
 	t.Run("non-candidate parser_error has no guidance", func(t *testing.T) {
 		t.Parallel()
 
-		// CREATE TRIGGER is a known parser_error but NOT in the parser_upgrade_candidate list.
+		// CREATE EVENT is a known parser_error but NOT in the parser_upgrade_candidate list.
 		result, err := AuditSQL(context.Background(), Request{
-			SQL:     "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()",
+			SQL:     "CREATE EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()",
 			Dialect: spec.DialectMySQL,
 		})
 		if err == nil {

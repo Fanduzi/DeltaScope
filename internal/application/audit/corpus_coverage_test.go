@@ -53,6 +53,10 @@ func corpusRuleDialectTargets(ruleID string) []string {
 		// TiDB marks CREATE/DROP PROCEDURE and CREATE TABLE AS SELECT as vendor
 		// boundaries, so these rules can only fire under MySQL.
 		return []string{"mysql"}
+	case "ddl.create_trigger.notice", "ddl.drop_trigger.notice":
+		// TiDB marks CREATE/DROP TRIGGER as vendor boundaries, so the
+		// trigger lifecycle notices can only fire under MySQL (T29/#108).
+		return []string{"mysql"}
 	case "ddl.alter_procedure.notice", "ddl.create_function.notice",
 		"ddl.alter_function.notice", "ddl.drop_function.notice",
 		"ddl.routine.variable_shadowing.warn":
@@ -404,6 +408,8 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"ddl.alter_database.notice",
 		"ddl.create_procedure.notice",
 		"ddl.drop_procedure.notice",
+		"ddl.create_trigger.notice",
+		"ddl.drop_trigger.notice",
 		"ddl.create_user.notice",
 		"ddl.alter_user.notice",
 		"ddl.drop_user.notice",

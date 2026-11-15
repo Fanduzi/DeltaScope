@@ -32,23 +32,33 @@ const routineRootMember = -1
 // PREPARE resolves statically known literal sources (direct or
 // SET-bound); everything else stays a bounded incomplete member.
 func evaluateRoutineBody(ctx context.Context, registry *rule.Registry, parent spec.Statement, parentIndex int) ([]rule.Finding, []spec.UnsupportedDetail, *rule.StatementEvaluation, error) {
-	decl := parent.DDL.Routine
+	var body *spec.RoutineBody
+	var name, scope string
+	env := map[string]*string{}
+	switch {
+	case parent.DDL.Routine != nil:
+		decl := parent.DDL.Routine
+		body, name, scope = decl.Body, decl.Name.Name, "routine"
+		for _, p := range decl.Params {
+			env[p.Name] = nil // parameters are caller-supplied — never static
+		}
+	case parent.DDL.Trigger != nil:
+		decl := parent.DDL.Trigger
+		body, name, scope = decl.Body, decl.Name.Name, "trigger"
+	}
 	w := &routineBodyWalker{
 		ctx:         ctx,
 		registry:    registry,
 		parent:      parent,
 		parentIndex: parentIndex,
-		routine:     decl.Name.Name,
+		routine:     name,
+		scope:       scope,
 		dialect:     parent.Dialect,
 		combined:    &rule.StatementEvaluation{},
 		findings:    make([]rule.Finding, 0),
 		unsupported: make([]spec.UnsupportedDetail, 0),
 	}
-	env := map[string]*string{}
-	for _, p := range decl.Params {
-		env[p.Name] = nil // parameters are caller-supplied — never static
-	}
-	w.walkBody(decl.Body, env, routineRootMember)
+	w.walkBody(body, env, routineRootMember)
 	if w.err != nil {
 		return nil, nil, nil, w.err
 	}
@@ -65,6 +75,7 @@ type routineBodyWalker struct {
 	parent      spec.Statement
 	parentIndex int
 	routine     string
+	scope       string // "routine" | "trigger" — feature prefix and metadata key
 	dialect     spec.Dialect
 	combined    *rule.StatementEvaluation
 	findings    []rule.Finding
@@ -108,7 +119,7 @@ func (w *routineBodyWalker) walkMember(bs spec.RoutineBodyStatement, env map[str
 			}
 		}
 		if bs.Set.Unmodeled {
-			w.appendMemberGap(bs.Statement, memberIdx, "routine.body.set", nil)
+			w.appendMemberGap(bs.Statement, memberIdx, w.scope+".body.set", nil)
 		}
 	case bs.Prepare != nil:
 		w.walkPrepare(bs, env, memberIdx)
@@ -117,7 +128,7 @@ func (w *routineBodyWalker) walkMember(bs spec.RoutineBodyStatement, env map[str
 		// effects are never audited as SQL. Verbs that rebind variables
 		// or redirect control flow also invalidate every proven binding:
 		// after them nothing sequential can be proven (T28).
-		w.appendMemberGap(bs.Statement, memberIdx, "routine.body.flow", map[string]any{"flow": bs.Flow})
+		w.appendMemberGap(bs.Statement, memberIdx, w.scope+".body.flow", map[string]any{"flow": bs.Flow})
 		switch bs.Flow {
 		case "leave", "iterate", "signal", "resignal", "fetch", "get":
 			clearRoutineEnv(env)
@@ -197,7 +208,7 @@ func (w *routineBodyWalker) walkPrepare(bs spec.RoutineBodyStatement, env map[st
 		}
 	}
 	if !known {
-		w.appendMemberGap(bs.Statement, memberIdx, "routine.body.prepare", map[string]any{"source": p.Source.Kind})
+		w.appendMemberGap(bs.Statement, memberIdx, w.scope+".body.prepare", map[string]any{"source": p.Source.Kind})
 		return
 	}
 	w.auditPreparedSQL(literal, bs, memberIdx, p)
@@ -212,12 +223,12 @@ func (w *routineBodyWalker) auditPreparedSQL(sqlText string, bs spec.RoutineBody
 	name := p.Name
 	parsed, err := Parse(w.ctx, sqlText, w.dialect)
 	if err != nil {
-		w.appendMemberGap(memberStmt, memberIdx, "routine.body.prepare", map[string]any{"source": "literal_parse", "prepare": name})
+		w.appendMemberGap(memberStmt, memberIdx, w.scope+".body.prepare", map[string]any{"source": "literal_parse", "prepare": name})
 		return
 	}
 	stmts, err := Extract(w.ctx, parsed)
 	if err != nil {
-		w.appendMemberGap(memberStmt, memberIdx, "routine.body.prepare", map[string]any{"source": "literal_parse", "prepare": name})
+		w.appendMemberGap(memberStmt, memberIdx, w.scope+".body.prepare", map[string]any{"source": "literal_parse", "prepare": name})
 		return
 	}
 	for _, inner := range stmts {
@@ -241,8 +252,8 @@ func (w *routineBodyWalker) auditPreparedSQL(sqlText string, bs spec.RoutineBody
 			if f.Metadata == nil {
 				f.Metadata = map[string]any{}
 			}
-			f.Metadata["routine"] = w.routine
-			f.Metadata["routine_member"] = memberIdx
+			f.Metadata[w.scope] = w.routine
+			f.Metadata[w.scope+"_member"] = memberIdx
 			f.Metadata["prepare"] = name
 			w.findings = append(w.findings, f)
 		}
@@ -264,8 +275,8 @@ func (w *routineBodyWalker) evalMemberStatement(inner spec.Statement, env map[st
 		if item.Metadata == nil {
 			item.Metadata = map[string]any{}
 		}
-		item.Metadata["routine"] = w.routine
-		item.Metadata["routine_member"] = memberIdx
+		item.Metadata[w.scope] = w.routine
+		item.Metadata[w.scope+"_member"] = memberIdx
 		w.unsupported = append(w.unsupported, item)
 		clearRoutineEnv(env)
 		return
@@ -291,8 +302,8 @@ func (w *routineBodyWalker) evalMemberStatement(inner spec.Statement, env map[st
 		if f.Metadata == nil {
 			f.Metadata = map[string]any{}
 		}
-		f.Metadata["routine"] = w.routine
-		f.Metadata["routine_member"] = memberIdx
+		f.Metadata[w.scope] = w.routine
+		f.Metadata[w.scope+"_member"] = memberIdx
 		w.findings = append(w.findings, f)
 	}
 }
@@ -325,8 +336,8 @@ func (w *routineBodyWalker) appendMemberGap(inner spec.Statement, memberIdx int,
 		Reason:  spec.UnsupportedUnauditedReason,
 		SQL:     inner.RawSQL,
 		Metadata: map[string]any{
-			"routine":        w.routine,
-			"routine_member": memberIdx,
+			w.scope:             w.routine,
+			w.scope + "_member": memberIdx,
 		},
 	}
 	for k, v := range extra {

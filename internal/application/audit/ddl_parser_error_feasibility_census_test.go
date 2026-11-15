@@ -82,19 +82,13 @@ func assertParserErrorFeasibilityCase(t *testing.T, tc ddlParserErrorFeasibility
 	}
 }
 
-// --- MySQL parser-error feasibility cases (5) ---
+// --- MySQL parser-error feasibility cases (3) ---
+// The trigger family (CREATE/DROP TRIGGER) graduated to supported
+// statements under T29/#108 and left this census.
 // The stored-routine family (CREATE/ALTER/DROP PROCEDURE|FUNCTION) graduated
 // to supported statements under T27/#106 and left this census.
 
 var mysqlParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
-	{Dialect: spec.DialectMySQL, Family: "trigger", Name: "CREATE TRIGGER",
-		SQL:      "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()",
-		Expected: unsafeFallbackDefer,
-		Reason:   "Trigger body and timing/event/row clause parsing is unbounded"},
-	{Dialect: spec.DialectMySQL, Family: "trigger", Name: "DROP TRIGGER",
-		SQL:      "DROP TRIGGER trg_users_bi",
-		Expected: unsafeFallbackDefer,
-		Reason:   "Consistent with trigger lifecycle; parser upgrade path preferred"},
 	{Dialect: spec.DialectMySQL, Family: "event", Name: "CREATE EVENT",
 		SQL:      "CREATE EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()",
 		Expected: unsafeFallbackDefer,
@@ -109,7 +103,7 @@ var mysqlParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
 		Reason:   "Consistent with event lifecycle; parser upgrade path preferred"},
 }
 
-// --- TiDB parser-error feasibility cases (8) ---
+// --- TiDB parser-error feasibility cases (6) ---
 
 var tidbParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
 	{Dialect: spec.DialectTiDB, Family: "table_option", Name: "ALTER TABLE TTL",
@@ -120,14 +114,6 @@ var tidbParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
 		SQL:      "ALTER TABLE users LOCALITY = 'us-east-1'",
 		Expected: boundedFallbackCandidate,
 		Reason:   "TiDB-specific table option with bounded key=value structure; no body parsing required"},
-	{Dialect: spec.DialectTiDB, Family: "trigger", Name: "CREATE TRIGGER",
-		SQL:      "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()",
-		Expected: productUnsupportedOrInapplicable,
-		Reason:   "TiDB does not support triggers; parsing is not applicable"},
-	{Dialect: spec.DialectTiDB, Family: "trigger", Name: "DROP TRIGGER",
-		SQL:      "DROP TRIGGER trg_users_bi",
-		Expected: productUnsupportedOrInapplicable,
-		Reason:   "TiDB does not support triggers; parsing is not applicable"},
 	{Dialect: spec.DialectTiDB, Family: "routine", Name: "CREATE FUNCTION",
 		SQL:      "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'hello'",
 		Expected: productUnsupportedOrInapplicable,
@@ -203,11 +189,11 @@ func TestDDLParserErrorFeasibilityCensus(t *testing.T) {
 			tidbCount++
 		}
 	}
-	if mysqlCount != 5 {
-		t.Errorf("expected 5 MySQL parser-error cases, got %d", mysqlCount)
+	if mysqlCount != 3 {
+		t.Errorf("expected 3 MySQL parser-error cases, got %d", mysqlCount)
 	}
-	if tidbCount != 8 {
-		t.Errorf("expected 8 TiDB parser-error cases, got %d", tidbCount)
+	if tidbCount != 6 {
+		t.Errorf("expected 6 TiDB parser-error cases, got %d", tidbCount)
 	}
 	t.Logf("MySQL parser-error cases: %d", mysqlCount)
 	t.Logf("TiDB parser-error cases:  %d", tidbCount)

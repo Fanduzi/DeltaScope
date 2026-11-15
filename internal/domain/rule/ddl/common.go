@@ -511,6 +511,8 @@ const (
 	ruleIDCreateFunctionNotice           = "ddl.create_function.notice"
 	ruleIDAlterFunctionNotice            = "ddl.alter_function.notice"
 	ruleIDDropFunctionNotice             = "ddl.drop_function.notice"
+	ruleIDCreateTriggerNotice            = "ddl.create_trigger.notice"
+	ruleIDDropTriggerNotice              = "ddl.drop_trigger.notice"
 	ruleIDRoutineVariableShadowingWarn   = "ddl.routine.variable_shadowing.warn"
 	ruleIDCreateUserNotice               = "ddl.create_user.notice"
 	ruleIDAlterUserNotice                = "ddl.alter_user.notice"

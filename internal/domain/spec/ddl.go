@@ -55,6 +55,11 @@ type DDL struct {
 	// header plus the statically bounded body whose member statements
 	// share the spec.Statement model.
 	Routine *RoutineDeclaration `json:"-"`
+	// Trigger carries the modeled trigger definition on
+	// create_trigger/drop_trigger (issue #108 T29): timing, event, bound
+	// target, optional ordering clause, OLD/NEW pseudo-column usage, and
+	// the FOR EACH ROW body reusing the routine member model.
+	Trigger *TriggerDeclaration `json:"-"`
 	// OmittedTargets counts parsed statement targets the normalized model
 	// collapsed or ignored entirely: extra names in DROP USER/ROLE/SEQUENCE
 	// lists, extra CREATE/ALTER USER specs, and the whole user list on

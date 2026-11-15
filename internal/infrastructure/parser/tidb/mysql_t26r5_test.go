@@ -2,7 +2,7 @@
 // quote closure is decided by the same lexical scan the tokenizer
 // runs — backslash escapes and doubled quotes inside strings, doubled
 // backticks inside quoted identifiers — so `'x\'` (escaped final
-// quote) stays unclaimed while `'x\''` (escape then real close) lands.
+// quote) stays unclaimed while `'x\”` (escape then real close) lands.
 // The spelling-length fact records the unquoted spelling's rune count
 // and never claims the decoded MySQL name length.
 package tidbparser

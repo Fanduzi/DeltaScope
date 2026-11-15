@@ -972,6 +972,16 @@ rules:
     level: notice
     params:
 
+  ddl.create_trigger.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.drop_trigger.notice:
+    enabled: true
+    level: notice
+    params:
+
   ddl.routine.variable_shadowing.warn:
     enabled: true
     level: warning

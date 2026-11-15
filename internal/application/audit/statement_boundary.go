@@ -84,7 +84,7 @@ func splitSQLStatements(sql string, dialect spec.Dialect) []statementChunk {
 					return false
 				}
 				words++
-				if word == "procedure" || word == "function" {
+				if word == "procedure" || word == "function" || word == "trigger" {
 					hasRoutineKind = true
 				}
 				i = j

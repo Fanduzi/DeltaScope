@@ -752,6 +752,8 @@ func ddlCoreRules() map[string]RulePolicy {
 		"ddl.create_function.notice":             {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.alter_function.notice":              {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.drop_function.notice":               {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
+		"ddl.create_trigger.notice":              {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
+		"ddl.drop_trigger.notice":                {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.routine.variable_shadowing.warn":    {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
 		"ddl.create_user.notice":                 {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.alter_user.notice":                  {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},

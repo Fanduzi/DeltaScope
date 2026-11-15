@@ -196,6 +196,24 @@ func newDropProcedureNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, erro
 	)
 }
 
+func newMySQLTiDBCreateTriggerNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newMySQLTiDBLifecycleRule(
+		ruleIDCreateTriggerNotice, rule.LevelNotice, spec.DDLOperationCreateTrigger, "trigger",
+		"CREATE TRIGGER %q registers a new trigger",
+		"review trigger timing, event, and body effects before deploying",
+		cfg,
+	)
+}
+
+func newMySQLTiDBDropTriggerNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newMySQLTiDBLifecycleRule(
+		ruleIDDropTriggerNotice, rule.LevelNotice, spec.DDLOperationDropTrigger, "trigger",
+		"DROP TRIGGER %q removes a trigger",
+		"verify no application flow depends on this trigger before dropping",
+		cfg,
+	)
+}
+
 func newMySQLTiDBCreateFunctionNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return newMySQLTiDBLifecycleRule(
 		ruleIDCreateFunctionNotice, rule.LevelNotice, spec.DDLOperationCreateFunction, "function",

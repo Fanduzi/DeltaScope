@@ -158,6 +158,42 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 		}
 		return statement, nil
 	}
+	if node, ok := e.node.(*triggerStatement); ok {
+		// The MySQL trigger family (T29/#108): the typed declaration
+		// binds with its bound target and event, and the FOR EACH ROW
+		// body members extract through the shared routine member
+		// machinery — bounded members keep trigger.body.* features.
+		decl := node.declaration
+		statement.DDL = &spec.DDL{
+			Operation:  node.operation,
+			ObjectType: "trigger",
+			ObjectName: decl.Name.Name,
+			Trigger:    decl,
+		}
+		if decl.Body != nil {
+			decl.Body.Statements = convertRoutineMembers(dialect, rawSQL, node.inner)
+			retagTriggerMemberFeatures(decl.Body)
+		}
+		applyCoverageBoundary(dialect, &statement, e.node)
+		if dialect == spec.DialectMySQL && !decl.OldNewValid() {
+			// OLD/NEW legality is a static event fact — an INSERT body
+			// may never read OLD and a DELETE body never reads NEW.
+			statement.Unsupported = &spec.UnsupportedDetail{
+				Feature: "trigger.body.old_new", Reason: spec.UnsupportedUnauditedReason,
+				Metadata: map[string]any{
+					"trigger": decl.Name.Name, "event": string(decl.Event),
+					"uses_old": decl.UsesOld, "uses_new": decl.UsesNew,
+				},
+			}
+		}
+		if dialect == spec.DialectTiDB {
+			statement.Unsupported = &spec.UnsupportedDetail{
+				Feature: string(node.operation), Reason: spec.UnsupportedVendorBoundaryReason,
+				Metadata: map[string]any{"boundary": "vendor", "object": "trigger"},
+			}
+		}
+		return statement, nil
+	}
 	if _, ok := e.node.(*mysqlAlterInstanceStatement); ok {
 		// The MySQL-only ALTER INSTANCE ROTATE INNODB MASTER KEY
 		// subaction binds its typed declaration — the audit slice owns
@@ -403,6 +439,7 @@ func classify(stmt ast.StmtNode) spec.Kind {
 		*ast.CreateViewStmt,
 		*viewStatement,
 		*routineStatement,
+		*triggerStatement,
 		*ast.CreateIndexStmt,
 		*ast.AlterTableStmt,
 		*ast.DropTableStmt,

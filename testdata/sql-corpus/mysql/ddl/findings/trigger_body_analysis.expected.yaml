@@ -1,0 +1,16 @@
+name: trigger_body_analysis
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 3
+  unsupported:
+    count: 1
+    include:
+      - trigger.body.old_new
+  findings:
+    include:
+      - ddl.create_trigger.notice
+      - ddl.drop_trigger.notice
+      - dml.where.require
