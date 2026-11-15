@@ -3228,36 +3228,6 @@ func extractIndexKeyParts(parts []*ast.IndexPartSpecification) []spec.IndexKeyPa
 	return keyParts
 }
 
-// countIndexPartKinds counts key-part facts extractIndexColumns cannot keep:
-// expression (non-column) parts, column-prefix lengths, descending parts,
-// and multi-valued CAST(… AS … ARRAY) members. Multi-valued parts stay
-// inside the expression count — the mark exists so coverage and version
-// applicability can name the form without inspecting expression contents.
-func countIndexPartKinds(parts []*ast.IndexPartSpecification) (expr, prefix, desc, multiValued int) {
-	for _, part := range parts {
-		if part == nil {
-			continue
-		}
-		if part.Expr != nil || part.Column == nil {
-			expr++
-			if cast, ok := part.Expr.(*ast.FuncCastExpr); ok && cast.Tp != nil && cast.Tp.IsArray() {
-				multiValued++
-			}
-		}
-		// OptFieldLen stores UnspecifiedLength (-1) when no prefix is given, so
-		// any other value on a column part is an explicitly written length —
-		// including zero. Expression parts leave Length at zero and are held
-		// off by the Column != nil guard.
-		if part.Column != nil && part.Length != tidbtypes.UnspecifiedLength {
-			prefix++
-		}
-		if part.Desc {
-			desc++
-		}
-	}
-	return expr, prefix, desc, multiValued
-}
-
 // partitionOptionNames returns bounded option names found on CREATE TABLE
 // partition and sub-partition definitions. Those nested lists are separate
 // from the top-level table options the normalized model already tracks, so a

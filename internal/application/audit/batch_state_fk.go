@@ -152,7 +152,7 @@ func (s *batchState) recordInboundEdge(ctx context.Context, childKey batchTableK
 // constraints recorded on their parents — the edge dies with the child.
 // The child's own shape carries the referenced identities; only edges the
 // batch provably recorded are removed.
-func (s *batchState) dropInboundEdges(ctx context.Context, childKey batchTableKey, child spec.Table, shape *spec.TableSnapshot) error {
+func (s *batchState) dropInboundEdges(_ context.Context, childKey batchTableKey, child spec.Table, shape *spec.TableSnapshot) error {
 	if shape == nil {
 		return nil
 	}

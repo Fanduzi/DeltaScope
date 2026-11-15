@@ -50,13 +50,13 @@ func (p *Provider) LoadMySQLServerDropPrivilege(ctx context.Context, dialect spe
 	for rows.Next() {
 		var account string
 		if err := rows.Scan(&account); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, fmt.Errorf("scan current_user: %w", err)
 		}
 		observation.Account = account
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		_ = rows.Close()
 		return nil, fmt.Errorf("read current_user rows: %w", err)
 	}
 	if err := rows.Close(); err != nil {

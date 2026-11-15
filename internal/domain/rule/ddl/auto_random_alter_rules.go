@@ -94,21 +94,21 @@ func alterAutoRandomVerdicts(alter *spec.Alter, snapshot *spec.TableSnapshot) (v
 			}
 		}
 	}
-	member, memberKnown, shardBits, rangeBits, isPKHandle, hasAuto := spec.AlterAutoRandomOldFacts(snapshot, oldName)
-	if member && !memberKnown && !hasAuto && (definition == nil || !definition.AutoRandom) {
+	old := spec.AlterAutoRandomOldFacts(snapshot, oldName)
+	if old.Member && !old.MemberKnown && !old.HasAuto && (definition == nil || !definition.AutoRandom) {
 		// Vacuous member question: a table provably without AUTO_RANDOM
 		// reads old bits of zero on both arms — an untouched declaration
 		// needs no clustered premise.
-		memberKnown, shardBits, rangeBits = true, 0, 0
+		old.MemberKnown, old.ShardBits, old.RangeBits = true, 0, 0
 	}
 	if snapshot == nil || !oldFound {
-		memberKnown = false
+		old.MemberKnown = false
 	}
-	return spec.AlterAutoRandomColumnVerdict(shardBits, rangeBits, memberKnown,
-		oldType, oldAutoInc, isPKHandle, definition)
+	return spec.AlterAutoRandomColumnVerdict(old.ShardBits, old.RangeBits, old.MemberKnown,
+		oldType, oldAutoInc, old.IsPKHandle, definition)
 }
 
-func alterAutoRandomRefusalText(action, reason string) (message, suggestion string) {
+func alterAutoRandomRefusalText(_, reason string) (message, suggestion string) {
 	switch reason {
 	case spec.AlterReasonAddColumnAutoRandom:
 		return "cannot be added with AUTO_RANDOM: TiDB refuses AUTO_RANDOM on ADD COLUMN",

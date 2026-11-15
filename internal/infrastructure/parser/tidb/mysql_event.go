@@ -407,7 +407,7 @@ func finishEventStatement(sqlText string, decl *spec.EventDeclaration, inner []r
 // names the owning object family (T30).
 func retagEventMemberFeatures(body *spec.RoutineBody) {
 	eachTriggerBodyMember(body, func(bs *spec.RoutineBodyStatement) {
-		if u := bs.Statement.Unsupported; u != nil {
+		if u := bs.Unsupported; u != nil {
 			u.Feature = strings.Replace(u.Feature, "routine.body.", "event.body.", 1)
 		}
 	})

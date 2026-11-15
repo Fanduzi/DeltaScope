@@ -110,7 +110,7 @@ func (w *routineBodyWalker) walkMember(bs spec.RoutineBodyStatement, env map[str
 		return
 	}
 	switch {
-	case bs.Statement.Unsupported != nil:
+	case bs.Unsupported != nil:
 		// A member already marked bounded never executes a payload
 		// path — the boundary wins over any typed classification (T29:
 		// event-illegal OLD/NEW uses bound their member while siblings

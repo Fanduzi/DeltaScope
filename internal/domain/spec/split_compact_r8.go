@@ -435,7 +435,7 @@ func SplitRegionOutcome(dialect Dialect, decl *SplitRegionDecl, facts SplitCompa
 		}
 	}
 	var memberInt []bool
-	typesKnown := true
+	var typesKnown bool
 	if decl.IndexName != "" {
 		if decl.IndexName == "primary" {
 			if !facts.ClusteredKnown || !facts.PrimaryKnown {

@@ -80,8 +80,10 @@ func (c *ledgerConn) Prepare(query string) (driver.Stmt, error) {
 	return &ledgerStmt{stmt, query, c.ledger}, nil
 }
 
-func (c *ledgerConn) Close() error              { return c.conn.Close() }
-func (c *ledgerConn) Begin() (driver.Tx, error) { return c.conn.Begin() }
+func (c *ledgerConn) Close() error { return c.conn.Close() }
+func (c *ledgerConn) Begin() (driver.Tx, error) {
+	return c.conn.Begin() //nolint:staticcheck // driver.Conn interface requires the legacy entrypoint
+}
 
 func (c *ledgerConn) Ping(ctx context.Context) error {
 	if pinger, ok := c.conn.(driver.Pinger); ok {
@@ -116,11 +118,11 @@ func (s *ledgerStmt) Close() error  { return s.stmt.Close() }
 func (s *ledgerStmt) NumInput() int { return s.stmt.NumInput() }
 func (s *ledgerStmt) Exec(args []driver.Value) (driver.Result, error) {
 	s.ledger.add("stmt-exec", s.query)
-	return s.stmt.Exec(args)
+	return s.stmt.Exec(args) //nolint:staticcheck // driver.Stmt interface requires the legacy entrypoint
 }
 func (s *ledgerStmt) Query(args []driver.Value) (driver.Rows, error) {
 	s.ledger.add("stmt-query", s.query)
-	return s.stmt.Query(args)
+	return s.stmt.Query(args) //nolint:staticcheck // driver.Stmt interface requires the legacy entrypoint
 }
 
 type evidenceWriter func(string, []byte) error
@@ -301,15 +303,15 @@ func execute(args []string) (err error) {
 	if os.Getenv("A17_USER") == "" {
 		return fmt.Errorf("A17_USER is required; credentials must be passed through the environment")
 	}
-	if err := os.MkdirAll(args[0], 0o755); err != nil {
+	if err := os.MkdirAll(args[0], 0o750); err != nil { //nolint:gosec // CLI positional arg is the operator-chosen output root
 		return fmt.Errorf("create output root: %w", err)
 	}
 	directory := filepath.Join(args[0], target.Name)
-	if err := os.Mkdir(directory, 0o755); err != nil {
+	if err := os.Mkdir(directory, 0o750); err != nil { //nolint:gosec // derived from the same operator-chosen root
 		return fmt.Errorf("create new anchor evidence directory: %w", err)
 	}
 	write := func(name string, data []byte) error {
-		return os.WriteFile(filepath.Join(directory, name), data, 0o644)
+		return os.WriteFile(filepath.Join(directory, name), data, 0o600) //nolint:gosec // fixed evidence filenames under the operator-chosen root
 	}
 	cfg := gomysql.NewConfig()
 	cfg.Net = "tcp"

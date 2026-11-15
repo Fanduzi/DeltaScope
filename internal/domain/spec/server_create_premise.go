@@ -161,7 +161,7 @@ func AdjudicateServerCreate(state *ServerState, privilege ServerCreatePrivilege,
 		return adjudication
 	default:
 		adjudication.Arm = ServerCreateArmUnproven
-		if !(state != nil && state.OrderedAbsent) {
+		if state == nil || !state.OrderedAbsent {
 			adjudication.Owed = append(adjudication.Owed, ServerFactExistence)
 		}
 		if !consumable {

@@ -142,7 +142,7 @@ func TestSupplementedDefaultPreservesRawText(t *testing.T) {
 	if !strings.Contains(stmt.Text(), "DEFAULT (a + 1)") {
 		t.Fatalf("placeholder leaked into statement text: %q", stmt.Text())
 	}
-	node := ast.StmtNode(stmt)
+	node := stmt
 	if carried, ok := stmt.(*supplementedStatement); ok {
 		node = carried.StmtNode
 	}

@@ -229,12 +229,12 @@ func (p *Provider) loadMySQLSRSObjectOnConn(ctx context.Context, conn srsChannel
 	for rows.Next() {
 		observed = true
 		if err := rows.Scan(&matchedID, &matchedName); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, fmt.Errorf("scan mysql srs snapshot: %w", err)
 		}
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		_ = rows.Close()
 		return nil, fmt.Errorf("iterate mysql srs snapshot: %w", err)
 	}
 	if err := rows.Close(); err != nil {
@@ -328,7 +328,7 @@ func (p *Provider) loadMySQLSRSConflict(ctx context.Context, conn srsChannelQuer
 	for rows.Next() {
 		var id sql.NullInt64
 		if err := rows.Scan(&id); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, fmt.Errorf("scan mysql srs conflict witness: %w", err)
 		}
 		if id.Valid && id.Int64 >= 0 && id.Int64 <= 4294967295 {
@@ -336,7 +336,7 @@ func (p *Provider) loadMySQLSRSConflict(ctx context.Context, conn srsChannelQuer
 		}
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		_ = rows.Close()
 		return nil, fmt.Errorf("iterate mysql srs conflict witnesses: %w", err)
 	}
 	if err := rows.Close(); err != nil {
@@ -401,7 +401,7 @@ func (p *Provider) loadMySQLSRSDependencies(ctx context.Context, conn srsChannel
 	for rows.Next() {
 		var schemaName, tableName, columnName sql.NullString
 		if err := rows.Scan(&schemaName, &tableName, &columnName); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, fmt.Errorf("scan mysql srs column dependency: %w", err)
 		}
 		fact.Columns = append(fact.Columns, spec.SRSDependentColumn{
@@ -412,7 +412,7 @@ func (p *Provider) loadMySQLSRSDependencies(ctx context.Context, conn srsChannel
 		})
 	}
 	if err := rows.Err(); err != nil {
-		rows.Close()
+		_ = rows.Close()
 		return nil, fmt.Errorf("iterate mysql srs column dependencies: %w", err)
 	}
 	if err := rows.Close(); err != nil {

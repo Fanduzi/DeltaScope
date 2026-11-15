@@ -328,10 +328,6 @@ func mapConnresolveCLIError(err error) error {
 	}
 }
 
-func hasConfiguredPasswordSource(options auditConnectionOptions) bool {
-	return options.PasswordEnv != "" || options.PasswordFile != ""
-}
-
 func (o auditConnectionOptions) Enabled() bool {
 	return o.Host != "" || o.PortSet || o.User != "" || o.Password != "" || o.Schema != "" || o.Socket != ""
 }

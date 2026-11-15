@@ -34,20 +34,20 @@ func (s *batchState) alterAutoRandomGate(shape *spec.TableSnapshot, oldName stri
 			break
 		}
 	}
-	member, memberKnown, shardBits, rangeBits, isPKHandle, hasAuto := spec.AlterAutoRandomOldFacts(shape, oldName)
-	if member && !memberKnown && !hasAuto && !definition.AutoRandom {
+	old := spec.AlterAutoRandomOldFacts(shape, oldName)
+	if old.Member && !old.MemberKnown && !old.HasAuto && !definition.AutoRandom {
 		// Vacuous member question: the table provably carries no
 		// AUTO_RANDOM, so the old bits are zero on both arms and the
 		// untouched declaration needs no premise.
-		memberKnown, shardBits, rangeBits = true, 0, 0
+		old.MemberKnown, old.ShardBits, old.RangeBits = true, 0, 0
 	}
 	if !oldFound {
 		// The old column itself is unproven — bits and flags stay
 		// unknown unless the declaration is vacuous as above.
-		memberKnown = memberKnown && oldFound
+		old.MemberKnown = old.MemberKnown && oldFound
 	}
-	verdict, _ := spec.AlterAutoRandomColumnVerdict(shardBits, rangeBits, memberKnown,
-		oldType, oldAutoInc, isPKHandle, definition)
+	verdict, _ := spec.AlterAutoRandomColumnVerdict(old.ShardBits, old.RangeBits, old.MemberKnown,
+		oldType, oldAutoInc, old.IsPKHandle, definition)
 	return verdict
 }
 

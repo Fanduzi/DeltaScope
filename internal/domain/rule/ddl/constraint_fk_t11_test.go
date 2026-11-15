@@ -221,10 +221,7 @@ func TestT11DropForeignKeyExistsRule(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new drop-fk exists rule: %v", err)
 	}
-	reporter, ok := r.(rule.EvidenceReporter)
-	if !ok {
-		t.Fatalf("drop-fk exists rule must report evidence gaps")
-	}
+	var reporter rule.EvidenceReporter = r
 	mk := func(constraints []spec.Constraint, unknown bool, snapshotNil bool) spec.Statement {
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,

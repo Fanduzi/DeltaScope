@@ -168,14 +168,16 @@ func t07ExpectFloat(t *testing.T, id, key string, want any, got int) {
 	t07ExpectEqual(t, id, key, want, float64(got))
 }
 
-// t07ActualEntries projects the report into the frozen entry shapes.
-func t07ActualEntries(result report.Result) (findings, metadata, locations, gaps, unsupported []any, exact []any) {
+// t07ActualEntries projects the report into the frozen entry shapes,
+// keyed by the expectation names they answer.
+func t07ActualEntries(result report.Result) map[string][]any {
+	actual := map[string][]any{}
 	for _, stmt := range result.Statements {
 		for _, f := range stmt.Findings {
-			findings = append(findings, map[string]any{
+			actual["finding_entries"] = append(actual["finding_entries"], map[string]any{
 				"index": float64(stmt.Index), "rule_id": f.RuleID, "level": string(f.Level),
 			})
-			metadata = append(metadata, map[string]any{
+			actual["finding_metadata"] = append(actual["finding_metadata"], map[string]any{
 				"index": float64(stmt.Index), "rule_id": f.RuleID, "metadata": f.Metadata,
 			})
 			entry := map[string]any{
@@ -186,14 +188,14 @@ func t07ActualEntries(result report.Result) (findings, metadata, locations, gaps
 				entry["line"] = float64(f.Location.Line)
 				entry["column"] = float64(f.Location.Column)
 			}
-			locations = append(locations, entry)
-			exact = append(exact, map[string]any{
+			actual["finding_locations"] = append(actual["finding_locations"], entry)
+			actual["t07_exact_findings"] = append(actual["t07_exact_findings"], map[string]any{
 				"index": float64(stmt.Index), "rule_id": f.RuleID,
 				"level": string(f.Level), "message": f.Message, "metadata": f.Metadata,
 			})
 		}
 		for _, gap := range stmt.EvidenceGaps {
-			gaps = append(gaps, map[string]any{
+			actual["evidence_gap_entries"] = append(actual["evidence_gap_entries"], map[string]any{
 				"index":          float64(stmt.Index),
 				"rule_id":        gap.RuleID,
 				"reason_code":    gap.ReasonCode,
@@ -202,14 +204,14 @@ func t07ActualEntries(result report.Result) (findings, metadata, locations, gaps
 		}
 	}
 	for _, item := range result.Unsupported {
-		unsupported = append(unsupported, map[string]any{
+		actual["unsupported_entries"] = append(actual["unsupported_entries"], map[string]any{
 			"index":    float64(item.Index),
 			"feature":  item.Feature,
 			"reason":   item.Reason,
 			"metadata": item.Metadata,
 		})
 	}
-	return findings, metadata, locations, gaps, unsupported, exact
+	return actual
 }
 
 // TestT07FrozenMatrix drives every non-provider contract cell in the frozen
@@ -274,36 +276,22 @@ func TestT07FrozenMatrix(t *testing.T) {
 				t07ExpectEqual(t, tc.ID, "coverage", v, string(result.Coverage.Status))
 			}
 			if v, ok := expect["statement_coverage"]; ok {
-				t07ExpectEqual(t, tc.ID, "statement_coverage", v, []any(statementCoverage))
+				t07ExpectEqual(t, tc.ID, "statement_coverage", v, statementCoverage)
 			}
 			if v, ok := expect["statement_sql"]; ok {
-				t07ExpectEqual(t, tc.ID, "statement_sql", v, []any(statementSQL))
+				t07ExpectEqual(t, tc.ID, "statement_sql", v, statementSQL)
 			}
 			if v, ok := expect["statement_indices"]; ok {
-				t07ExpectEqual(t, tc.ID, "statement_indices", v, []any(indices))
+				t07ExpectEqual(t, tc.ID, "statement_indices", v, indices)
 			}
-			findings, metadata, locations, gaps, unsupported, exact := t07ActualEntries(result)
+			actual := t07ActualEntries(result)
 			empty := []any{}
 			for _, key := range []string{"finding_entries", "finding_metadata", "finding_locations", "evidence_gap_entries", "unsupported_entries", "t07_exact_findings"} {
 				want, present := expect[key]
 				if !present {
 					continue
 				}
-				var got any
-				switch key {
-				case "finding_entries":
-					got = findings
-				case "finding_metadata":
-					got = metadata
-				case "finding_locations":
-					got = locations
-				case "evidence_gap_entries":
-					got = gaps
-				case "unsupported_entries":
-					got = unsupported
-				case "t07_exact_findings":
-					got = exact
-				}
+				var got any = actual[key]
 				if got == nil || reflect.ValueOf(got).Len() == 0 {
 					got = empty
 				}

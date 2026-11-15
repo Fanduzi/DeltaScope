@@ -432,7 +432,7 @@ func convertRoutineMembers(dialect spec.Dialect, rawSQL string, members []routin
 				}
 			} else {
 				bs.Statement = inner
-				bs.Statement.RawSQL = member.raw
+				bs.RawSQL = member.raw
 			}
 		default:
 			bs.Statement = spec.Statement{
@@ -444,8 +444,8 @@ func convertRoutineMembers(dialect spec.Dialect, rawSQL string, members []routin
 				},
 			}
 		}
-		bs.Statement.Line = line
-		bs.Statement.Column = col
+		bs.Line = line
+		bs.Column = col
 		out = append(out, bs)
 	}
 	return out

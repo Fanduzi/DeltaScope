@@ -915,7 +915,7 @@ func assessGeneratedRemovals(assessment *AdvancedColumnAssessment, ddl *DDL, sna
 			assessment.appendGap("", AdvancedReasonOutOfValidatedRange, AdvancedFactTargetVersionRange)
 			assessment.UnresolvedTransition = true
 		case version.Product == VersionProductTiDB &&
-			!(version.Version == AdvancedTiDBStoredToOrdinaryVersion && prior.Generated.Storage == GeneratedStorageStored):
+			(version.Version != AdvancedTiDBStoredToOrdinaryVersion || prior.Generated.Storage != GeneratedStorageStored):
 			// Only stored→ordinary at the observed 8.5.0 build is a TiDB
 			// positive; every other TiDB removal transition is unresolved.
 			assessment.appendGap("", AdvancedReasonOutOfValidatedRange, AdvancedFactTargetVersionStoredToOrd)

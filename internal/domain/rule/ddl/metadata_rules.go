@@ -126,7 +126,7 @@ type alterObjectExistenceRule struct {
 	primaryResolves bool
 }
 
-func newAlterObjectExistenceRule(ruleID string, actions []string, objectLabel string, forbidIfExists bool, fallbackLevel rule.Level, cfg policy.RulePolicy, selectName func(spec.Alter) string, checkExists func(spec.Statement, *spec.TableSnapshot, string) bool) (rule.StatementRule, error) {
+func newAlterObjectExistenceRule(ruleID string, actions []string, objectLabel string, forbidIfExists bool, fallbackLevel rule.Level, cfg policy.RulePolicy, selectName func(spec.Alter) string, checkExists func(spec.Statement, *spec.TableSnapshot, string) bool) (alterObjectExistenceRule, error) {
 	return alterObjectExistenceRule{
 		ruleID:         ruleID,
 		actions:        actions,
@@ -513,7 +513,7 @@ func newAlterColumnPositionExistsRule(cfg policy.RulePolicy) (rule.StatementRule
 	if err != nil {
 		return nil, err
 	}
-	return alterColumnPositionExistsRule{inner: inner.(alterObjectExistenceRule)}, nil
+	return alterColumnPositionExistsRule{inner: inner}, nil
 }
 
 func (r alterColumnPositionExistsRule) ID() string { return r.inner.ruleID }
@@ -568,7 +568,7 @@ func (r alterColumnPositionExistsRule) evaluateAccumulated(ctx context.Context, 
 			return nil, err
 		}
 		if name := alterPositionAfterName(alter); positioned[alter.Action] && name != "" &&
-			!producedName(produced, name) && !(snapshotHasColumn(statement, snapshot, name) && !removedName(removed, name)) {
+			!producedName(produced, name) && (!snapshotHasColumn(statement, snapshot, name) || removedName(removed, name)) {
 			findings = append(findings, rule.Finding{
 				Level:      r.inner.level,
 				Message:    fmt.Sprintf("column %q does not exist on table %q", name, tableName),

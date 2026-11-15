@@ -242,8 +242,8 @@ func mysqlTablespaceAlter(sqlText, kind string, nameTok sqlTok, rest []sqlTok) (
 		// The two capability-gated scalar members may also lead the
 		// member list — the trailing-member loop below consumes them
 		// from position 0.
-		if !(rest[i].wordIs(sqlText, "autoextend_size") ||
-			rest[i].wordIs(sqlText, "engine_attribute")) {
+		if !rest[i].wordIs(sqlText, "autoextend_size") &&
+			!rest[i].wordIs(sqlText, "engine_attribute") {
 			return nil, false
 		}
 	}
@@ -293,7 +293,7 @@ func mysqlTablespaceAlterUndo(sqlText string, nameTok sqlTok, rest []sqlTok) (as
 		return nil, false
 	}
 	if !rest[0].wordIs(sqlText, "set") ||
-		!(rest[1].wordIs(sqlText, "active") || rest[1].wordIs(sqlText, "inactive")) {
+		(!rest[1].wordIs(sqlText, "active") && !rest[1].wordIs(sqlText, "inactive")) {
 		return nil, false
 	}
 	decl := &spec.TablespaceDeclaration{

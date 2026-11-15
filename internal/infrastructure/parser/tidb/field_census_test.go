@@ -656,7 +656,7 @@ var fieldDispositions = map[string]map[string]string{
 // astStructName unwraps pointer/slice/array layers and reports the struct
 // type's name when the field lives in the parser's ast package.
 func astStructName(t reflect.Type) string {
-	for t.Kind() == reflect.Ptr || t.Kind() == reflect.Slice || t.Kind() == reflect.Array {
+	for t.Kind() == reflect.Pointer || t.Kind() == reflect.Slice || t.Kind() == reflect.Array {
 		t = t.Elem()
 	}
 	if t.Kind() != reflect.Struct {

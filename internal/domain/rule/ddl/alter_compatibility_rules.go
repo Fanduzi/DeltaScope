@@ -358,7 +358,7 @@ func isCanonicalIntegerText(s string) bool {
 	if digits[0] == '-' {
 		digits = digits[1:]
 	}
-	if len(digits) == 0 || digits[0] == '0' {
+	if digits == "" || digits[0] == '0' {
 		return false
 	}
 	for i := 0; i < len(digits); i++ {

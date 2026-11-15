@@ -225,10 +225,7 @@ func newIndexExistenceRule(ruleID string, actions []string, cfg policy.RulePolic
 	if err != nil {
 		return nil, err
 	}
-	exists, ok := inner.(alterObjectExistenceRule)
-	if !ok {
-		return nil, fmt.Errorf("%s: constructor returned %T, want alterObjectExistenceRule", ruleID, inner)
-	}
+	exists := inner
 	// Every variant resolves `primary` through the primary-key identity
 	// facts — that target needs no member name space.
 	exists.primaryResolves = true

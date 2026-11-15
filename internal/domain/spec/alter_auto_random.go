@@ -85,7 +85,7 @@ func AlterAutoRandomColumnVerdict(oldShardBits, oldRangeBits int64, oldBitsKnown
 	switch {
 	case oldShardBits == newShard:
 	case oldShardBits < newShard:
-		if oldShardBits == 0 && !(oldAutoIncrement && oldIsPKHandle) {
+		if oldShardBits == 0 && (!oldAutoIncrement || !oldIsPKHandle) {
 			return AutoRandomRefused, AlterReasonChangeFromAutoIncrement
 		}
 	default: // oldShardBits > newShard
@@ -130,69 +130,79 @@ func AlterAutoRandomColumnVerdict(oldShardBits, oldRangeBits int64, oldBitsKnown
 	return AutoRandomOK, ""
 }
 
+// AutoRandomOldFacts carries the old-side answers resolved by
+// AlterAutoRandomOldFacts — see that resolver for the field contracts.
+type AutoRandomOldFacts struct {
+	Member      bool
+	MemberKnown bool
+	ShardBits   int64
+	RangeBits   int64
+	IsPKHandle  bool
+	HasAuto     bool
+}
+
 // AlterAutoRandomOldFacts resolves the old side of checkAutoRandom from
 // a proven table shape: whether the named old column is a
 // clustered-primary-key member (isClusteredPKColumn — PKIsHandle members
 // by flag, common-handle members by primary-index membership), the
 // table's effective AUTO_RANDOM shard/range bits when it is, the
 // IsPKHandleColumn answer, and whether the table carries any AUTO_RANDOM
-// column at all. memberKnown=false marks the clustered premise unproven —
+// column at all. MemberKnown=false marks the clustered premise unproven —
 // the member question can then swing the bits or the handle answer, so
 // callers fold it into undecidable except where the outcome is vacuous
 // (a table provably without AUTO_RANDOM reads old bits of zero either
 // way). Both the rule layer (metadata snapshots) and the ordered-state
 // publisher (batch-derived shapes) consume this one resolver.
-func AlterAutoRandomOldFacts(shape *TableSnapshot, oldName string) (
-	member, memberKnown bool, shardBits, rangeBits int64, isPKHandle, hasAuto bool) {
+func AlterAutoRandomOldFacts(shape *TableSnapshot, oldName string) (facts AutoRandomOldFacts) {
 	if shape == nil {
-		return false, false, 0, 0, false, false
+		return facts
 	}
 	for _, column := range shape.Columns {
 		if column.AutoRandom {
-			hasAuto = true
+			facts.HasAuto = true
 			break
 		}
 	}
-	if !hasAuto {
+	if !facts.HasAuto {
 		// The catalog's table-level AUTO_RANDOM record outlives member
 		// attribution — an unflagged column set never proves absence.
 		if bits, _, ok := AutoRandomBitsFromOptions(shape.Options); ok && bits > 0 {
-			hasAuto = true
+			facts.HasAuto = true
 		}
 	}
 	if shape.PrimaryKey == nil {
-		if shape.PrimaryKeyUnknown {
-			return false, false, 0, 0, false, hasAuto
-		}
-		return false, true, 0, 0, false, hasAuto
+		facts.MemberKnown = !shape.PrimaryKeyUnknown
+		return facts
 	}
 	for _, column := range shape.PrimaryKey.Columns {
 		if strings.EqualFold(strings.TrimSpace(column), oldName) {
-			member = true
+			facts.Member = true
 			break
 		}
 	}
-	if !member {
-		return false, true, 0, 0, false, hasAuto
+	if !facts.Member {
+		facts.MemberKnown = true
+		return facts
 	}
 	switch {
 	case shape.PrimaryKeyIsHandle:
-		isPKHandle = true
+		facts.IsPKHandle = true
 	case shape.PrimaryKeyClusteredUnknown:
 		// The member could be a clustered member (bits matter) or the
 		// PK handle (add arm) — neither answer is proven.
-		return true, false, 0, 0, false, hasAuto
+		return facts
 	case !shape.PrimaryKeyClustered:
-		return false, true, 0, 0, false, hasAuto
+		facts.Member, facts.MemberKnown = false, true
+		return facts
 	}
-	if hasAuto {
+	if facts.HasAuto {
 		for _, column := range shape.Columns {
 			if column.AutoRandom {
-				shardBits, rangeBits = AutoRandomEffectiveBits(column)
+				facts.ShardBits, facts.RangeBits = AutoRandomEffectiveBits(column)
 				break
 			}
 		}
-		if shardBits == 0 && len(shape.PrimaryKey.Columns) > 0 &&
+		if facts.ShardBits == 0 && len(shape.PrimaryKey.Columns) > 0 &&
 			strings.EqualFold(strings.TrimSpace(shape.PrimaryKey.Columns[0]), oldName) {
 			// Upstream AUTO_RANDOM always rides the first clustered
 			// member, so a proven member list derives the carrier even
@@ -200,11 +210,12 @@ func AlterAutoRandomOldFacts(shape *TableSnapshot, oldName string) (
 			// the stored bits. An unproven member list already returned
 			// memberKnown=false above.
 			if bits, rng, ok := AutoRandomBitsFromOptions(shape.Options); ok && bits > 0 {
-				shardBits, rangeBits = bits, rng
+				facts.ShardBits, facts.RangeBits = bits, rng
 			}
 		}
 	}
-	return true, true, shardBits, rangeBits, isPKHandle, hasAuto
+	facts.MemberKnown = true
+	return facts
 }
 
 // AlterAutoRandomAddColumnVerdict mirrors the ADD COLUMN refusal: an

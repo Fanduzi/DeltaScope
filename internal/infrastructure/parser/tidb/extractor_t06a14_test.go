@@ -40,9 +40,9 @@ var t06A14OptionCases = []t06A14OptionCase{
 	{name: "charset-denied", sql: t06A14CharsetDeniedSQL, astTp: ast.TableOptionCharset,
 		strValue: "latin1", options: map[string]string{"charset": "latin1"}},
 	{name: "rowformat-allowed", sql: t06A14RowFormatAllowedSQL, astTp: ast.TableOptionRowFormat,
-		uintValue: uint64(ast.RowFormatDynamic), options: map[string]string{"row_format": "DYNAMIC"}},
+		uintValue: ast.RowFormatDynamic, options: map[string]string{"row_format": "DYNAMIC"}},
 	{name: "rowformat-denied", sql: t06A14RowFormatDeniedSQL, astTp: ast.TableOptionRowFormat,
-		uintValue: uint64(ast.RowFormatCompact), options: map[string]string{"row_format": "COMPACT"}},
+		uintValue: ast.RowFormatCompact, options: map[string]string{"row_format": "COMPACT"}},
 }
 
 // TestExtractorT06A14TableOptions pins the declared option facts per input:

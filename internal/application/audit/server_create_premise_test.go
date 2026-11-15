@@ -357,10 +357,9 @@ func TestT26CreateRealContamination(t *testing.T) {
 		state.instanceFacts = &spec.InstanceFacts{Version: "8.0.36"}
 		// Prefix call: no failures among these statements — the ordered
 		// entries publish normally.
-		enriched, err := state.enrichStatements(context.Background(),
+		if _, err := state.enrichStatements(context.Background(),
 			&MetadataRequest{Schema: "golden", Provider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession},
-			statements[:tail], nil, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
-		if err != nil {
+			statements[:tail], nil, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit}); err != nil {
 			t.Fatalf("prefix enrich: %v", err)
 		}
 		if state.contaminated {
@@ -373,7 +372,7 @@ func TestT26CreateRealContamination(t *testing.T) {
 		// flag asserted below is the product's, not the test's. The
 		// mode-off request keeps this call's loader gate from firing,
 		// so both read layers report their own independent zero.
-		enriched, err = state.enrichStatements(context.Background(),
+		enriched, err := state.enrichStatements(context.Background(),
 			&MetadataRequest{Schema: "golden", Provider: provider},
 			statements[tail:], parsed.failures, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
 		if err != nil {

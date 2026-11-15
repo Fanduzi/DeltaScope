@@ -27,7 +27,7 @@ func runEvidenceAudit(t *testing.T, args ...string) (map[string]any, int) {
 	stderr := &strings.Builder{}
 	code := Execute(context.Background(), args, strings.NewReader(""), stdout, stderr)
 	var decoded map[string]any
-	if len(stdout.String()) > 0 {
+	if stdout.String() != "" {
 		_ = json.Unmarshal([]byte(stdout.String()), &decoded)
 	}
 	return decoded, code

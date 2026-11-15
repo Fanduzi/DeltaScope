@@ -458,7 +458,7 @@ func (s *batchState) applyAlterSequence(entry *batchSequenceEntry, key sequenceK
 	}
 }
 
-func (s *batchState) applyDropSequence(entry *batchSequenceEntry, key sequenceKey, declaration *spec.SequenceDeclaration) {
+func (s *batchState) applyDropSequence(entry *batchSequenceEntry, key sequenceKey, _ *spec.SequenceDeclaration) {
 	if entry.conflictKind != "" {
 		// The identity binds to a proven non-sequence object — a sequence
 		// drop cannot remove it and the sequence answer stays absent.

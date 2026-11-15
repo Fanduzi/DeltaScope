@@ -220,7 +220,7 @@ func planAdvancedSupplements(sqlText string) supplementPlan {
 	plan := supplementPlan{toks: toks}
 	for lo := 0; lo < len(toks); {
 		hi := lo
-		for hi < len(toks) && !(toks[hi].kind == tokPunct && toks[hi].text(sqlText) == ";") {
+		for hi < len(toks) && (toks[hi].kind != tokPunct || toks[hi].text(sqlText) != ";") {
 			hi++
 		}
 		if hi > lo {
@@ -356,7 +356,7 @@ func matchVisibilitySetter(toks []sqlTok, sqlText string, i, hi int) (*visibilit
 		return nil, false
 	}
 	i++
-	if i+1 != hi || !(toks[i].wordIs(sqlText, "visible") || toks[i].wordIs(sqlText, "invisible")) {
+	if i+1 != hi || (!toks[i].wordIs(sqlText, "visible") && !toks[i].wordIs(sqlText, "invisible")) {
 		return nil, false
 	}
 	fact.visibility = strings.ToLower(toks[i].text(sqlText))
@@ -1064,9 +1064,4 @@ func scanBlockComment(sqlText string, i int) (end int, closed bool) {
 		i++
 	}
 	return len(sqlText), false
-}
-
-func skipBlockComment(sqlText string, i int) int {
-	end, _ := scanBlockComment(sqlText, i)
-	return end
 }
