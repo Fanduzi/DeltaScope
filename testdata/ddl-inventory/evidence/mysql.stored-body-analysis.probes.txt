@@ -1,7 +1,7 @@
 row_id: mysql.stored-body-analysis
-# sql_shape: CREATE PROCEDURE p(IN s TEXT) SELECT s
+# sql_shape: CREATE PROCEDURE p(IN s TEXT) BEGIN SET @q=s; PREPARE stmt FROM @q; EXECUTE stmt; END;
 # dialect: mysql
-# binary HEAD 5160e2cd, generated 2026-11-13
+# binary HEAD ea488c41, generated 2026-11-15
 
 === version 5.7 (target 5.7.44) rc=1 ===
 {
@@ -9,13 +9,40 @@ row_id: mysql.stored-body-analysis
  "coverage": {
   "status": "incomplete"
  },
+ "summary": {
+  "statements": 1,
+  "blockers": 0,
+  "warnings": 0,
+  "notices": 1
+ },
  "statements": [
   {
    "index": 0,
+   "kind": "ddl",
+   "raw_sql": "CREATE PROCEDURE p(IN s TEXT) BEGIN SET @q=s; PREPARE stmt FROM @q; EXECUTE stmt; END;",
+   "normalized_sql": "CREATE PROCEDURE p(IN s TEXT) BEGIN SET @q=s; PREPARE stmt FROM @q; EXECUTE stmt; END",
    "findings": [
     {
      "rule_id": "ddl.create_procedure.notice",
-     "level": "notice"
+     "level": "notice",
+     "message": "CREATE PROCEDURE \"p\" registers a new stored procedure",
+     "statement_kind": "ddl",
+     "location": {
+      "line": 1,
+      "column": 1
+     },
+     "suggestion": "review procedure logic and security implications before deploying",
+     "metadata": {
+      "object_name": "p",
+      "object_type": "procedure",
+      "operation": "create_procedure"
+     },
+     "explanation": {
+      "summary": "Check DDL create procedure notice",
+      "why": "The statement matched the shipped governance rule for this pattern.",
+      "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+      "suggestion": "review procedure logic and security implications before deploying"
+     }
     }
    ],
    "coverage": {
@@ -25,19 +52,22 @@ row_id: mysql.stored-body-analysis
  ],
  "unsupported": [
   {
-   "feature": "create_procedure.option.params",
-   "sql": "CREATE PROCEDURE p(IN s TEXT) SELECT s",
+   "feature": "routine.body.prepare",
+   "sql": "PREPARE stmt FROM @q",
    "reason": "parsed by the shared parser but not covered by audited semantics",
    "metadata": {
-    "aspect": "option"
+    "routine": "p",
+    "routine_member": 1,
+    "source": "var"
    }
   },
   {
-   "feature": "create_procedure.body",
-   "sql": "CREATE PROCEDURE p(IN s TEXT) SELECT s",
+   "feature": "execute_prepared",
+   "sql": "EXECUTE stmt",
    "reason": "parsed by the shared parser but not covered by audited semantics",
    "metadata": {
-    "aspect": "option"
+    "routine": "p",
+    "routine_member": 2
    }
   }
  ],
@@ -56,21 +86,79 @@ row_id: mysql.stored-body-analysis
    "audited": false,
    "dialect": "mysql"
   }
- ]
+ ],
+ "version": {
+  "product": "mysql",
+  "version": "5.7.44",
+  "major": 5,
+  "minor": 7,
+  "patch": 44,
+  "source": "target",
+  "validated_range": true
+ },
+ "fail_on_triggered": false,
+ "rule_summary": {
+  "loaded": 514,
+  "applicable": 2,
+  "skipped": [
+   {
+    "reason": "dialect_mismatch",
+    "count": 190
+   }
+  ]
+ },
+ "context": {
+  "mode": "offline",
+  "dialect": "mysql",
+  "dialect_source": "flag",
+  "note": "existence not checked (no database connection)",
+  "unproven": [
+   "column_exists",
+   "table_exists"
+  ]
+ }
 }
+
 === version 8.0 (target 8.0.46) rc=1 ===
 {
  "verdict": "review",
  "coverage": {
   "status": "incomplete"
  },
+ "summary": {
+  "statements": 1,
+  "blockers": 0,
+  "warnings": 0,
+  "notices": 1
+ },
  "statements": [
   {
    "index": 0,
+   "kind": "ddl",
+   "raw_sql": "CREATE PROCEDURE p(IN s TEXT) BEGIN SET @q=s; PREPARE stmt FROM @q; EXECUTE stmt; END;",
+   "normalized_sql": "CREATE PROCEDURE p(IN s TEXT) BEGIN SET @q=s; PREPARE stmt FROM @q; EXECUTE stmt; END",
    "findings": [
     {
      "rule_id": "ddl.create_procedure.notice",
-     "level": "notice"
+     "level": "notice",
+     "message": "CREATE PROCEDURE \"p\" registers a new stored procedure",
+     "statement_kind": "ddl",
+     "location": {
+      "line": 1,
+      "column": 1
+     },
+     "suggestion": "review procedure logic and security implications before deploying",
+     "metadata": {
+      "object_name": "p",
+      "object_type": "procedure",
+      "operation": "create_procedure"
+     },
+     "explanation": {
+      "summary": "Check DDL create procedure notice",
+      "why": "The statement matched the shipped governance rule for this pattern.",
+      "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+      "suggestion": "review procedure logic and security implications before deploying"
+     }
     }
    ],
    "coverage": {
@@ -80,19 +168,22 @@ row_id: mysql.stored-body-analysis
  ],
  "unsupported": [
   {
-   "feature": "create_procedure.option.params",
-   "sql": "CREATE PROCEDURE p(IN s TEXT) SELECT s",
+   "feature": "routine.body.prepare",
+   "sql": "PREPARE stmt FROM @q",
    "reason": "parsed by the shared parser but not covered by audited semantics",
    "metadata": {
-    "aspect": "option"
+    "routine": "p",
+    "routine_member": 1,
+    "source": "var"
    }
   },
   {
-   "feature": "create_procedure.body",
-   "sql": "CREATE PROCEDURE p(IN s TEXT) SELECT s",
+   "feature": "execute_prepared",
+   "sql": "EXECUTE stmt",
    "reason": "parsed by the shared parser but not covered by audited semantics",
    "metadata": {
-    "aspect": "option"
+    "routine": "p",
+    "routine_member": 2
    }
   }
  ],
@@ -111,21 +202,79 @@ row_id: mysql.stored-body-analysis
    "audited": false,
    "dialect": "mysql"
   }
- ]
+ ],
+ "version": {
+  "product": "mysql",
+  "version": "8.0.46",
+  "major": 8,
+  "minor": 0,
+  "patch": 46,
+  "source": "target",
+  "validated_range": true
+ },
+ "fail_on_triggered": false,
+ "rule_summary": {
+  "loaded": 514,
+  "applicable": 2,
+  "skipped": [
+   {
+    "reason": "dialect_mismatch",
+    "count": 190
+   }
+  ]
+ },
+ "context": {
+  "mode": "offline",
+  "dialect": "mysql",
+  "dialect_source": "flag",
+  "note": "existence not checked (no database connection)",
+  "unproven": [
+   "column_exists",
+   "table_exists"
+  ]
+ }
 }
+
 === version 8.4 (target 8.4.10) rc=1 ===
 {
  "verdict": "review",
  "coverage": {
   "status": "incomplete"
  },
+ "summary": {
+  "statements": 1,
+  "blockers": 0,
+  "warnings": 0,
+  "notices": 1
+ },
  "statements": [
   {
    "index": 0,
+   "kind": "ddl",
+   "raw_sql": "CREATE PROCEDURE p(IN s TEXT) BEGIN SET @q=s; PREPARE stmt FROM @q; EXECUTE stmt; END;",
+   "normalized_sql": "CREATE PROCEDURE p(IN s TEXT) BEGIN SET @q=s; PREPARE stmt FROM @q; EXECUTE stmt; END",
    "findings": [
     {
      "rule_id": "ddl.create_procedure.notice",
-     "level": "notice"
+     "level": "notice",
+     "message": "CREATE PROCEDURE \"p\" registers a new stored procedure",
+     "statement_kind": "ddl",
+     "location": {
+      "line": 1,
+      "column": 1
+     },
+     "suggestion": "review procedure logic and security implications before deploying",
+     "metadata": {
+      "object_name": "p",
+      "object_type": "procedure",
+      "operation": "create_procedure"
+     },
+     "explanation": {
+      "summary": "Check DDL create procedure notice",
+      "why": "The statement matched the shipped governance rule for this pattern.",
+      "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+      "suggestion": "review procedure logic and security implications before deploying"
+     }
     }
    ],
    "coverage": {
@@ -135,19 +284,22 @@ row_id: mysql.stored-body-analysis
  ],
  "unsupported": [
   {
-   "feature": "create_procedure.option.params",
-   "sql": "CREATE PROCEDURE p(IN s TEXT) SELECT s",
+   "feature": "routine.body.prepare",
+   "sql": "PREPARE stmt FROM @q",
    "reason": "parsed by the shared parser but not covered by audited semantics",
    "metadata": {
-    "aspect": "option"
+    "routine": "p",
+    "routine_member": 1,
+    "source": "var"
    }
   },
   {
-   "feature": "create_procedure.body",
-   "sql": "CREATE PROCEDURE p(IN s TEXT) SELECT s",
+   "feature": "execute_prepared",
+   "sql": "EXECUTE stmt",
    "reason": "parsed by the shared parser but not covered by audited semantics",
    "metadata": {
-    "aspect": "option"
+    "routine": "p",
+    "routine_member": 2
    }
   }
  ],
@@ -166,5 +318,36 @@ row_id: mysql.stored-body-analysis
    "audited": false,
    "dialect": "mysql"
   }
- ]
+ ],
+ "version": {
+  "product": "mysql",
+  "version": "8.4.10",
+  "major": 8,
+  "minor": 4,
+  "patch": 10,
+  "source": "target",
+  "validated_range": true
+ },
+ "fail_on_triggered": false,
+ "rule_summary": {
+  "loaded": 514,
+  "applicable": 2,
+  "skipped": [
+   {
+    "reason": "dialect_mismatch",
+    "count": 190
+   }
+  ]
+ },
+ "context": {
+  "mode": "offline",
+  "dialect": "mysql",
+  "dialect_source": "flag",
+  "note": "existence not checked (no database connection)",
+  "unproven": [
+   "column_exists",
+   "table_exists"
+  ]
+ }
 }
+

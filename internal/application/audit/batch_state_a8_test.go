@@ -1376,7 +1376,11 @@ func TestT05A8ErrorsAndConsumers(t *testing.T) {
 					SQL: t05A8Input("CREATE PROCEDURE p(IN x INT) SELECT 1;"), Dialect: dialect, Schema: "golden",
 					ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: provider,
 				})
-				if !errors.Is(err, ErrUnsupportedStatement) {
+				if dialect == spec.DialectMySQL {
+					if err != nil {
+						t.Fatalf("mysql error = %v, want nil (params modelled since T28)", err)
+					}
+				} else if !errors.Is(err, ErrUnsupportedStatement) {
 					t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
 				}
 				for i, statement := range result.Statements {
@@ -1385,17 +1389,12 @@ func TestT05A8ErrorsAndConsumers(t *testing.T) {
 					}
 				}
 				if dialect == spec.DialectMySQL {
-					// T27/#106: the body audits through the shared member
-					// path — only the unmodeled parameter list remains a
-					// named unaudited aspect.
-					if len(result.Unsupported) != 1 {
-						t.Fatalf("unsupported = %+v, want exactly the params entry", result.Unsupported)
-					}
-					item := result.Unsupported[0]
-					if item.Feature != "create_procedure.option.params" ||
-						item.Reason != spec.UnsupportedUnauditedReason || item.Index != 1 ||
-						item.SQL != result.Statements[1].RawSQL || !reflect.DeepEqual(item.Metadata, map[string]any{"aspect": "option"}) {
-						t.Fatalf("params aspect = %+v, want unaudited at index 1", item)
+					// T28/#107: routine parameters are modelled and the
+					// body audits through the shared member path — the
+					// whole statement is now complete with no unaudited
+					// aspect entries.
+					if len(result.Unsupported) != 0 {
+						t.Fatalf("unsupported = %+v, want none (params modelled)", result.Unsupported)
 					}
 				} else {
 					if len(result.Unsupported) != 1 {

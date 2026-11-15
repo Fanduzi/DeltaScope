@@ -972,6 +972,11 @@ rules:
     level: notice
     params:
 
+  ddl.routine.variable_shadowing.warn:
+    enabled: true
+    level: warning
+    params:
+
   ddl.create_user.notice:
     enabled: true
     level: notice

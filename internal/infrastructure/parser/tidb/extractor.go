@@ -147,43 +147,7 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 			Routine:    decl,
 		}
 		if decl.Body != nil {
-			for _, member := range node.inner {
-				bs := spec.RoutineBodyStatement{Offset: member.offset}
-				line, col := routineOffsetPosition(rawSQL, member.offset)
-				if member.node != nil {
-					inner, ierr := tidbExtractor{kind: classify(member.node), node: member.node}.Extract(dialect, member.raw)
-					if ierr != nil {
-						bs.Statement = spec.Statement{
-							Kind:   classify(member.node),
-							RawSQL: member.raw,
-							Unsupported: &spec.UnsupportedDetail{
-								Feature: "routine.body.extract",
-								Reason:  spec.UnsupportedUnauditedReason,
-							},
-						}
-					} else {
-						bs.Statement = inner
-					}
-				} else {
-					bs.Statement = spec.Statement{
-						Kind:   spec.KindUnknown,
-						RawSQL: member.raw,
-						Unsupported: &spec.UnsupportedDetail{
-							Feature: member.err,
-							Reason:  spec.UnsupportedUnauditedReason,
-						},
-					}
-				}
-				bs.Statement.Line = line
-				bs.Statement.Column = col
-				decl.Body.Statements = append(decl.Body.Statements, bs)
-			}
-		}
-		if decl.ParamsPresent {
-			// Parameter lists are parsed for boundary correctness but the
-			// member declarations are not modeled yet — presence keeps the
-			// fact auditable as a named gap (T27/#106).
-			statement.DDL.UnextractedOptions = append(statement.DDL.UnextractedOptions, "params")
+			decl.Body.Statements = convertRoutineMembers(dialect, rawSQL, node.inner)
 		}
 		applyCoverageBoundary(dialect, &statement, e.node)
 		if dialect == spec.DialectTiDB {

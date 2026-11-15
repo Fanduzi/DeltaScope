@@ -1,0 +1,17 @@
+name: routine_body_analysis
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 3
+  unsupported:
+    count: 2
+    include:
+      - routine.body.prepare
+      - execute_prepared
+  findings:
+    include:
+      - ddl.routine.variable_shadowing.warn
+      - ddl.create_procedure.notice
+      - dml.where.require

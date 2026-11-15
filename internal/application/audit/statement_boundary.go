@@ -46,8 +46,11 @@ func splitSQLStatements(sql string, dialect spec.Dialect) []statementChunk {
 	dollarQuote := ""
 	quoteBackslashEscapes := false
 	parenDepth := 0
-	routineDepth := -1 // -1 = not inside a routine body
-	endSuppressed := false // an END's optional closing keyword pushes nothing
+	routineDepth := -1        // -1 = not inside a routine body
+	endSuppressed := false    // an END's optional closing keyword pushes nothing
+	memberStart := false      // next word begins a routine member — compound keywords only open there
+	exprCase := 0             // open mid-member CASE expressions — their END pairs inside the member
+	lastInitial := false      // previous word was member-initial — a ':' after it marks a label
 	chunkHasRoutineHead := -1 // -1 unknown, 0 no, 1 yes
 	isWordByte := func(c byte) bool {
 		// '$' is deliberately not a word byte: no SQL keyword contains it,
@@ -132,6 +135,7 @@ func splitSQLStatements(sql string, dialect spec.Dialect) []statementChunk {
 				parenDepth = 0
 				routineDepth = -1
 				endSuppressed = false
+				memberStart, exprCase, lastInitial = false, 0, false
 			case delim != ";" && strings.HasPrefix(scanText[i:], delim):
 				// Non-";" terminators are client framing (DELIMITER //, $$,
 				// …): they bound the statement but are never part of the SQL
@@ -143,6 +147,12 @@ func splitSQLStatements(sql string, dialect spec.Dialect) []statementChunk {
 				parenDepth = 0
 				routineDepth = -1
 				endSuppressed = false
+				memberStart, exprCase, lastInitial = false, 0, false
+			case routineDepth > 0 && scanText[i] == ';':
+				// Member boundary inside a routine body — the next word
+				// is member-initial and any open case-expression ends.
+				memberStart, exprCase, lastInitial = true, 0, false
+				i++
 			case scanText[i] == '\'':
 				state = scanSingleQuote
 				quoteBackslashEscapes = dialect != spec.DialectPostgreSQL || isPostgreSQLEscapeString(scanText, i)
@@ -169,6 +179,11 @@ func splitSQLStatements(sql string, dialect spec.Dialect) []statementChunk {
 				} else {
 					i++
 				}
+			case routineDepth > 0 && scanText[i] == ':' && lastInitial:
+				// Label prefix — the construct keyword after it still
+				// sits in member-initial position (T28).
+				memberStart, lastInitial = true, false
+				i++
 			case dialect != spec.DialectPostgreSQL && isWordByte(scanText[i]):
 				j := i
 				for j < len(scanText) && isWordByte(scanText[j]) {
@@ -176,24 +191,37 @@ func splitSQLStatements(sql string, dialect spec.Dialect) []statementChunk {
 				}
 				word := strings.ToLower(scanText[i:j])
 				if routineDepth > 0 {
-					switch word {
-					case "begin", "if", "case", "loop", "while", "repeat":
-						if !endSuppressed {
-							routineDepth++
-						}
-						endSuppressed = false
-					case "end":
+					initial := memberStart
+					memberStart = false
+					switch {
+					case word == "end" && exprCase > 0:
+						exprCase--
+					case word == "end":
 						routineDepth--
 						endSuppressed = true
-					default:
-						endSuppressed = false
+					case endSuppressed:
+						endSuppressed = false // END's optional closing keyword
+					case initial && (word == "begin" || word == "if" || word == "case" || word == "loop" || word == "while" || word == "repeat"):
+						routineDepth++
+						if word == "begin" || word == "loop" || word == "repeat" {
+							// These open the member list directly — the
+							// word that follows sits member-initial too.
+							memberStart = true
+						}
+					case word == "case" && !initial:
+						exprCase++
+					case (word == "then" || word == "else" || word == "do") && exprCase == 0:
+						// Branch/loop connective — a member follows.
+						memberStart = true
 					}
+					lastInitial = initial
 				} else if word == "begin" && parenDepth == 0 && isRoutineCreatePrefix(i) {
 					// The CREATE's compound body opens here; every BEGIN…END
 					// and compound construct nests until the outer END —
 					// semicolons inside are body separators, never outer
 					// migration boundaries (T27/#106).
 					routineDepth = 1
+					memberStart = true // the body's first member follows
 				}
 				i = j
 			case scanText[i] == '(':

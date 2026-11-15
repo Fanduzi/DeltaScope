@@ -427,7 +427,7 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		// modify_column/change_column column_position aspects are audited
 		// since T08 — see TestAuditSQLT08PositionedAlterActionsComplete.
 
-		{name: "mysql create procedure unmodeled body member", sql: "CREATE PROCEDURE p() BEGIN DECLARE x INT; SELECT 1; END;", dialect: spec.DialectMySQL, wantFeature: "routine.body.declaration", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create procedure unmodeled body member", sql: "CREATE PROCEDURE p() BEGIN DECLARE x; SELECT 1; END;", dialect: spec.DialectMySQL, wantFeature: "routine.body.declaration", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create table generated column unknown function", sql: "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (T07_UNKNOWN_FN(a)) STORED);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.expression_dependencies", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create table inline reference", sql: "CREATE TABLE t (id INT, pid INT REFERENCES parent(id));", dialect: spec.DialectMySQL, wantFeature: "create_table.column.reference", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		// Column-level CHECK graduated to audited constraint facts in T12.
@@ -450,7 +450,7 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		// Index ALGORITHM/LOCK clauses, procedure parameters, sequence table options.
 		{name: "mysql create index lock algorithm", sql: "CREATE INDEX ix ON t (c) ALGORITHM=INPLACE LOCK=NONE;", dialect: spec.DialectMySQL, wantFeature: "create_index.option.lock_algorithm", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "tidb drop index lock algorithm", sql: "DROP INDEX ix ON t LOCK=SHARED;", dialect: spec.DialectTiDB, wantFeature: "drop_index.option.lock_algorithm", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "mysql create procedure params", sql: "CREATE PROCEDURE p(IN x INT) SELECT 1;", dialect: spec.DialectMySQL, wantFeature: "create_procedure.option.params", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create function return body member", sql: "CREATE FUNCTION f() RETURNS INT RETURN 1;", dialect: spec.DialectMySQL, wantFeature: "routine.body.return", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		// CREATE SEQUENCE COMMENT is a typed option member since T21 —
 		// declared, never an unaudited aspect.
 		// Per-spec account auth clauses and placement-policy REPLACE — the field

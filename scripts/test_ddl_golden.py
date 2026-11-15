@@ -2597,7 +2597,7 @@ def a3_contract_tests(tmp):
     table_query = spec["execute"][1]["verify"][0]["sql"]
     answers = {q["sql"]: q["expect"] for q in spec["structure"]}
 
-    def database_call(anchor, sql, database=None, silent=True):
+    def database_call(anchor, sql, database=None, silent=True, via_stdin=False):
         nonlocal present
         calls.append(sql)
         if sql == "SELECT VERSION()":
@@ -3333,7 +3333,7 @@ def t06_contract_tests(tmp):
     calls = []
     created = False
 
-    def database_call(anchor, sql, database=None, silent=True):
+    def database_call(anchor, sql, database=None, silent=True, via_stdin=False):
         nonlocal created
         calls.append(sql)
         if sql == "SELECT VERSION()":
@@ -6437,7 +6437,7 @@ def t23_instance_fact_tests(tmp):
     print(("PASS " if ok else "FAIL ") + "t23 split-region-max-num fact reads show config")
     results.append(ok)
 
-    def database_call(anchor, sql, database=None, silent=True):
+    def database_call(anchor, sql, database=None, silent=True, via_stdin=False):
         if "tidb_enable_clustered_index" in sql:
             return 0, "tidb_enable_clustered_index\tint_only", ""
         if "alter-primary-key" in sql:
@@ -6488,7 +6488,7 @@ def t23n_verify_primitive_tests(tmp):
 
     calls = []
 
-    def sequence_call(anchor_, sql, database=None, silent=True):
+    def sequence_call(anchor_, sql, database=None, silent=True, via_stdin=False):
         calls.append(sql)
         return outs.pop(0)
 

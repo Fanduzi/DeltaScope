@@ -23,7 +23,7 @@ func t27Registry(t *testing.T) *rule.Registry {
 	t.Helper()
 	registry := rule.NewRegistry()
 	cfg := policy.Policy{Rules: map[string]policy.RulePolicy{
-		"dml.where.require":          {Enabled: true},
+		"dml.where.require":           {Enabled: true},
 		"ddl.create_procedure.notice": {Enabled: true},
 	}}
 	if err := dml.Register(registry, cfg); err != nil {
@@ -218,11 +218,14 @@ func TestT27RoutineDepthDoesNotLeakAcrossStatements(t *testing.T) {
 		t.Fatalf("expected p2 routine body, got %+v", p2.DDL)
 	}
 	if len(p2.DDL.Routine.Body.Statements) != 2 {
-		t.Fatalf("expected two bounded compound members (IF, WHILE), got %d", len(p2.DDL.Routine.Body.Statements))
+		t.Fatalf("expected two compound members (IF, WHILE), got %d", len(p2.DDL.Routine.Body.Statements))
 	}
+	// T28: control-flow members are modeled compounds whose inner SQL
+	// audits through the same machinery — the depth-reset regression
+	// still proves both constructs nested inside one BEGIN…END.
 	for _, m := range p2.DDL.Routine.Body.Statements {
-		if m.Statement.Unsupported == nil || m.Statement.Unsupported.Feature != "routine.body.compound_member" {
-			t.Fatalf("expected bounded compound_member member, got %+v", m.Statement.Unsupported)
+		if m.Compound == nil {
+			t.Fatalf("expected modeled compound member, got %+v", m)
 		}
 	}
 }

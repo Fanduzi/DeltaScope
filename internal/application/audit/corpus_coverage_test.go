@@ -54,9 +54,11 @@ func corpusRuleDialectTargets(ruleID string) []string {
 		// boundaries, so these rules can only fire under MySQL.
 		return []string{"mysql"}
 	case "ddl.alter_procedure.notice", "ddl.create_function.notice",
-		"ddl.alter_function.notice", "ddl.drop_function.notice":
+		"ddl.alter_function.notice", "ddl.drop_function.notice",
+		"ddl.routine.variable_shadowing.warn":
 		// All TiDB stored-routine operations are vendor boundaries, so the
-		// routine lifecycle notices can only fire under MySQL (T27/#106).
+		// routine lifecycle notices and body analysis rules can only fire
+		// under MySQL (T27/#106, T28/#107).
 		return []string{"mysql"}
 	case "ddl.alter.rename_column.version.require":
 		// TiDB 8.5 accepts RENAME COLUMN, so the incompatible finding is a

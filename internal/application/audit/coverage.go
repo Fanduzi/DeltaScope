@@ -251,9 +251,10 @@ func extractedOptionGap(dialect spec.Dialect, op spec.DDLOperation, name string)
 			return true, false
 		}
 	case "has_body":
-		// A parsed procedure body carries static SQL no rule audits yet
-		// (inventory owner T27). Under TiDB the statement itself is already a
-		// vendor boundary, so this aspect only ever fires under MySQL.
+		// Legacy grammar-path marker: the whole-input recognizer claims
+		// routine bodies since T27, so this only survives on an extraction
+		// fallback. Under TiDB the statement itself is already a vendor
+		// boundary, so this aspect only ever fires under MySQL.
 		return op == spec.DDLOperationCreateProcedure, false
 	case "auto_random_base", "auto_id_cache", "shard_row_id_bits", "pre_split_regions":
 		// T23: TiDB CREATE models the declared value, the shared

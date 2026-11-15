@@ -307,15 +307,20 @@ def manifest_credential_failures(manifest):
     return failures
 
 
-def mysql_exec_argv(anchor, sql, database=None, silent=True):
+def mysql_exec_argv(anchor, sql, database=None, silent=True, via_stdin=False):
     """Build the docker-exec argv mysql_exec would run (for case evidence)."""
     client = list(anchor["exec_client"])
     if database:
         client.append(database)
-    flag = "-Nse" if silent else "-e"
-    client += [flag, sql]
-    target = anchor.get("client_container") or anchor["container"]
     argv = ["docker", "exec"]
+    if via_stdin:
+        # The mysql client splits -e text on ';' and never honors DELIMITER
+        # there, so compound-body fixtures must ride stdin batch mode.
+        argv.append("-i")
+    else:
+        flag = "-Nse" if silent else "-e"
+        client += [flag, sql]
+    target = anchor.get("client_container") or anchor["container"]
     if anchor.get("exec_password_env"):
         argv += ["--env", "MYSQL_PWD"]
     return argv + [target, *client]
@@ -438,17 +443,18 @@ def credential_leak_findings(artifact, manifest):
     return sorted(set(findings))
 
 
-def mysql_exec(anchor, sql, database=None, silent=True):
+def mysql_exec(anchor, sql, database=None, silent=True, via_stdin=False):
     """Execute fixed fixture SQL through the anchor's dedicated mysql client."""
-    argv = mysql_exec_argv(anchor, sql, database=database, silent=silent)
+    argv = mysql_exec_argv(anchor, sql, database=database, silent=silent, via_stdin=via_stdin)
+    stdin_text = sql if via_stdin else None
     password_env = anchor.get("exec_password_env")
     if password_env:
         password = os.environ.get(password_env)
         if password is None:
             return 1, "", "required fixture credential environment is unavailable"
         env = {**os.environ, "MYSQL_PWD": password}
-        return run_cmd(argv, timeout=120, env=env)
-    return run_cmd(argv, timeout=120)
+        return run_cmd(argv, timeout=120, env=env, stdin_text=stdin_text)
+    return run_cmd(argv, timeout=120, stdin_text=stdin_text)
 
 
 def build_cli(work_dir):
@@ -1556,7 +1562,8 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
             case["assertions"].append({"name": f"{task_id} drop requires current fixture ownership", "ok": False, "detail": f"unowned identity {_fixture_key(step)!r} preserved"})
             case["status"] = "fail"
             return case
-        erc, eout, eerr = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False)
+        via_stdin = step.get("via") == "stdin"
+        erc, eout, eerr = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False, via_stdin=via_stdin)
         if fixture is not None and step.get("creates_fixture") and type(erc) is int and erc == 0:
             fixture["created"].add(_fixture_key(step))
         if fixture is not None and step.get("drops_fixture") and type(erc) is int and erc == 0:
@@ -1568,6 +1575,8 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
                 fixture["created"].add(move["to"])
         step_ok = type(erc) is int and erc == step.get("expect_rc", 0)
         record = {"name": step["name"], "sql": step["sql"], "rc": erc, "stdout": eout.strip(), "stderr": eerr.strip()}
+        if via_stdin:
+            record["via"] = "stdin"
         case["actual"]["execute"].append(record)
         case["assertions"].append({
             "name": f"execute {step['name']} return code",

@@ -1,71 +1,302 @@
 row_id: mysql.create-function
 # sql_shape: CREATE FUNCTION f() RETURNS INT RETURN 1
 # dialect: mysql
-# binary HEAD 5160e2cd, generated 2026-11-13
+# binary HEAD ea488c41, generated 2026-11-15
 
-=== version 5.7 (target 5.7.44) rc=2 ===
+=== version 5.7 (target 5.7.44) rc=1 ===
 {
- "verdict": "",
+ "verdict": "review",
  "coverage": {
   "status": "incomplete"
  },
- "statements": [],
- "unsupported": null,
+ "summary": {
+  "statements": 1,
+  "blockers": 0,
+  "warnings": 0,
+  "notices": 1
+ },
+ "statements": [
+  {
+   "index": 0,
+   "kind": "ddl",
+   "raw_sql": "CREATE FUNCTION f() RETURNS INT RETURN 1",
+   "normalized_sql": "CREATE FUNCTION f() RETURNS INT RETURN 1",
+   "findings": [
+    {
+     "rule_id": "ddl.create_function.notice",
+     "level": "notice",
+     "message": "CREATE FUNCTION \"f\" registers a new stored function",
+     "statement_kind": "ddl",
+     "location": {
+      "line": 1,
+      "column": 1
+     },
+     "suggestion": "review function logic and security implications before deploying",
+     "metadata": {
+      "object_name": "f",
+      "object_type": "function",
+      "operation": "create_function"
+     },
+     "explanation": {
+      "summary": "Check DDL create function notice",
+      "why": "The statement matched the shipped governance rule for this pattern.",
+      "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+      "suggestion": "review function logic and security implications before deploying"
+     }
+    }
+   ],
+   "coverage": {
+    "status": "incomplete"
+   }
+  }
+ ],
+ "unsupported": [
+  {
+   "feature": "routine.body.return",
+   "sql": "RETURN 1",
+   "reason": "parsed by the shared parser but not covered by audited semantics",
+   "metadata": {
+    "routine": "f",
+    "routine_member": 0
+   }
+  }
+ ],
  "diagnostics": [
   {
-   "classification": "parser_error",
-   "reason": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred",
-   "action_hint": "verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available",
+   "classification": "unsupported_statement",
+   "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+   "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
    "audited": false,
-   "dialect": "mysql",
-   "guidance_code": "parser_upgrade_candidate",
-   "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-   "line": 1,
-   "column": 1
+   "dialect": "mysql"
   }
- ]
+ ],
+ "version": {
+  "product": "mysql",
+  "version": "5.7.44",
+  "major": 5,
+  "minor": 7,
+  "patch": 44,
+  "source": "target",
+  "validated_range": true
+ },
+ "fail_on_triggered": false,
+ "rule_summary": {
+  "loaded": 514,
+  "applicable": 1,
+  "skipped": [
+   {
+    "reason": "dialect_mismatch",
+    "count": 190
+   }
+  ]
+ },
+ "context": {
+  "mode": "offline",
+  "dialect": "mysql",
+  "dialect_source": "flag",
+  "note": "existence not checked (no database connection)",
+  "unproven": [
+   "column_exists",
+   "table_exists"
+  ]
+ }
 }
-=== version 8.0 (target 8.0.46) rc=2 ===
+
+=== version 8.0 (target 8.0.46) rc=1 ===
 {
- "verdict": "",
+ "verdict": "review",
  "coverage": {
   "status": "incomplete"
  },
- "statements": [],
- "unsupported": null,
+ "summary": {
+  "statements": 1,
+  "blockers": 0,
+  "warnings": 0,
+  "notices": 1
+ },
+ "statements": [
+  {
+   "index": 0,
+   "kind": "ddl",
+   "raw_sql": "CREATE FUNCTION f() RETURNS INT RETURN 1",
+   "normalized_sql": "CREATE FUNCTION f() RETURNS INT RETURN 1",
+   "findings": [
+    {
+     "rule_id": "ddl.create_function.notice",
+     "level": "notice",
+     "message": "CREATE FUNCTION \"f\" registers a new stored function",
+     "statement_kind": "ddl",
+     "location": {
+      "line": 1,
+      "column": 1
+     },
+     "suggestion": "review function logic and security implications before deploying",
+     "metadata": {
+      "object_name": "f",
+      "object_type": "function",
+      "operation": "create_function"
+     },
+     "explanation": {
+      "summary": "Check DDL create function notice",
+      "why": "The statement matched the shipped governance rule for this pattern.",
+      "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+      "suggestion": "review function logic and security implications before deploying"
+     }
+    }
+   ],
+   "coverage": {
+    "status": "incomplete"
+   }
+  }
+ ],
+ "unsupported": [
+  {
+   "feature": "routine.body.return",
+   "sql": "RETURN 1",
+   "reason": "parsed by the shared parser but not covered by audited semantics",
+   "metadata": {
+    "routine": "f",
+    "routine_member": 0
+   }
+  }
+ ],
  "diagnostics": [
   {
-   "classification": "parser_error",
-   "reason": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred",
-   "action_hint": "verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available",
+   "classification": "unsupported_statement",
+   "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+   "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
    "audited": false,
-   "dialect": "mysql",
-   "guidance_code": "parser_upgrade_candidate",
-   "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-   "line": 1,
-   "column": 1
+   "dialect": "mysql"
   }
- ]
+ ],
+ "version": {
+  "product": "mysql",
+  "version": "8.0.46",
+  "major": 8,
+  "minor": 0,
+  "patch": 46,
+  "source": "target",
+  "validated_range": true
+ },
+ "fail_on_triggered": false,
+ "rule_summary": {
+  "loaded": 514,
+  "applicable": 1,
+  "skipped": [
+   {
+    "reason": "dialect_mismatch",
+    "count": 190
+   }
+  ]
+ },
+ "context": {
+  "mode": "offline",
+  "dialect": "mysql",
+  "dialect_source": "flag",
+  "note": "existence not checked (no database connection)",
+  "unproven": [
+   "column_exists",
+   "table_exists"
+  ]
+ }
 }
-=== version 8.4 (target 8.4.10) rc=2 ===
+
+=== version 8.4 (target 8.4.10) rc=1 ===
 {
- "verdict": "",
+ "verdict": "review",
  "coverage": {
   "status": "incomplete"
  },
- "statements": [],
- "unsupported": null,
+ "summary": {
+  "statements": 1,
+  "blockers": 0,
+  "warnings": 0,
+  "notices": 1
+ },
+ "statements": [
+  {
+   "index": 0,
+   "kind": "ddl",
+   "raw_sql": "CREATE FUNCTION f() RETURNS INT RETURN 1",
+   "normalized_sql": "CREATE FUNCTION f() RETURNS INT RETURN 1",
+   "findings": [
+    {
+     "rule_id": "ddl.create_function.notice",
+     "level": "notice",
+     "message": "CREATE FUNCTION \"f\" registers a new stored function",
+     "statement_kind": "ddl",
+     "location": {
+      "line": 1,
+      "column": 1
+     },
+     "suggestion": "review function logic and security implications before deploying",
+     "metadata": {
+      "object_name": "f",
+      "object_type": "function",
+      "operation": "create_function"
+     },
+     "explanation": {
+      "summary": "Check DDL create function notice",
+      "why": "The statement matched the shipped governance rule for this pattern.",
+      "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+      "suggestion": "review function logic and security implications before deploying"
+     }
+    }
+   ],
+   "coverage": {
+    "status": "incomplete"
+   }
+  }
+ ],
+ "unsupported": [
+  {
+   "feature": "routine.body.return",
+   "sql": "RETURN 1",
+   "reason": "parsed by the shared parser but not covered by audited semantics",
+   "metadata": {
+    "routine": "f",
+    "routine_member": 0
+   }
+  }
+ ],
  "diagnostics": [
   {
-   "classification": "parser_error",
-   "reason": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred",
-   "action_hint": "verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available",
+   "classification": "unsupported_statement",
+   "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+   "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
    "audited": false,
-   "dialect": "mysql",
-   "guidance_code": "parser_upgrade_candidate",
-   "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-   "line": 1,
-   "column": 1
+   "dialect": "mysql"
   }
- ]
+ ],
+ "version": {
+  "product": "mysql",
+  "version": "8.4.10",
+  "major": 8,
+  "minor": 4,
+  "patch": 10,
+  "source": "target",
+  "validated_range": true
+ },
+ "fail_on_triggered": false,
+ "rule_summary": {
+  "loaded": 514,
+  "applicable": 1,
+  "skipped": [
+   {
+    "reason": "dialect_mismatch",
+    "count": 190
+   }
+  ]
+ },
+ "context": {
+  "mode": "offline",
+  "dialect": "mysql",
+  "dialect_source": "flag",
+  "note": "existence not checked (no database connection)",
+  "unproven": [
+   "column_exists",
+   "table_exists"
+  ]
+ }
 }
+

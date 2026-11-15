@@ -2736,7 +2736,10 @@
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:internal/application/audit/routine_t27_test.go",
-            "gate:T27"
+            "file:internal/application/audit/routine_t28_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml",
+            "gate:T27",
+            "gate:T28"
           ]
         },
         {
@@ -2751,7 +2754,10 @@
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:internal/application/audit/routine_t27_test.go",
-            "gate:T27"
+            "file:internal/application/audit/routine_t28_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml",
+            "gate:T27",
+            "gate:T28"
           ]
         },
         {
@@ -2766,7 +2772,10 @@
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:internal/application/audit/routine_t27_test.go",
-            "gate:T27"
+            "file:internal/application/audit/routine_t28_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml",
+            "gate:T27",
+            "gate:T28"
           ]
         }
       ]
@@ -2791,7 +2800,10 @@
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
             "file:internal/application/audit/routine_t27_test.go",
-            "gate:T27"
+            "file:internal/application/audit/routine_t28_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml",
+            "gate:T27",
+            "gate:T28"
           ]
         },
         {
@@ -2806,7 +2818,10 @@
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
             "file:internal/application/audit/routine_t27_test.go",
-            "gate:T27"
+            "file:internal/application/audit/routine_t28_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml",
+            "gate:T27",
+            "gate:T28"
           ]
         },
         {
@@ -2821,7 +2836,10 @@
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
             "file:internal/application/audit/routine_t27_test.go",
-            "gate:T27"
+            "file:internal/application/audit/routine_t28_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml",
+            "gate:T27",
+            "gate:T28"
           ]
         }
       ]
@@ -2947,7 +2965,10 @@
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:internal/application/audit/routine_t27_test.go",
-            "gate:T27"
+            "file:internal/application/audit/routine_t28_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml",
+            "gate:T27",
+            "gate:T28"
           ]
         },
         {
@@ -2962,7 +2983,10 @@
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:internal/application/audit/routine_t27_test.go",
-            "gate:T27"
+            "file:internal/application/audit/routine_t28_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml",
+            "gate:T27",
+            "gate:T28"
           ]
         },
         {
@@ -2977,7 +3001,10 @@
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:internal/application/audit/routine_t27_test.go",
-            "gate:T27"
+            "file:internal/application/audit/routine_t28_test.go",
+            "file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml",
+            "gate:T27",
+            "gate:T28"
           ]
         }
       ]

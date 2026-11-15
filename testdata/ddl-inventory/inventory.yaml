@@ -2454,7 +2454,10 @@ rows:
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:internal/application/audit/routine_t27_test.go
+          - file:internal/application/audit/routine_t28_test.go
+          - file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml
           - gate:T27
+          - gate:T28
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
@@ -2466,7 +2469,10 @@ rows:
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:internal/application/audit/routine_t27_test.go
+          - file:internal/application/audit/routine_t28_test.go
+          - file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml
           - gate:T27
+          - gate:T28
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
@@ -2478,13 +2484,16 @@ rows:
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:internal/application/audit/routine_t27_test.go
+          - file:internal/application/audit/routine_t28_test.go
+          - file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml
           - gate:T27
+          - gate:T28
 
-    status_evidence: "2026-09-22 CLI probe: CREATE PROCEDURE parses; only ddl.create_procedure.notice. 2026-09-24 T03 (#82): body-bearing forms record create_procedure.body incomplete evidence; params record create_procedure.option.params. 2026-11-24 T27 (#106): BEGIN..END bodies now audit statically-bounded members through the shared statement machinery (dml.where.require fires at preserved member line/column, e.g. body DELETE blocker at 1:28 in the T27 golden path); parameter lists, IF/WHILE/LOOP/REPEAT/CASE compound members (routine.body.compound_member), DECLARE (routine.body.declaration), and dynamic EXECUTE (execute_prepared) stay explicit unsupported evidence — cell mixed because audited members and explicit boundaries coexist. DELIMITER wrappers are stripped client-side with offsets preserved; definitions never execute body SQL or mutate prospective state. Golden: T27.json 29 cases/322 assertions on mysql57/80/84 + tidb85 vendor boundary"
+    status_evidence: "2026-09-22 CLI probe: CREATE PROCEDURE parses; only ddl.create_procedure.notice. 2026-09-24 T03 (#82): body-bearing forms record create_procedure.body incomplete evidence; params record create_procedure.option.params. 2026-11-24 T27 (#106): BEGIN..END bodies now audit statically-bounded members through the shared statement machinery (dml.where.require fires at preserved member line/column, e.g. body DELETE blocker at 1:28 in the T27 golden path); parameter lists, IF/WHILE/LOOP/REPEAT/CASE compound members, DECLARE members, and dynamic EXECUTE stayed explicit unsupported evidence — cell mixed because audited members and explicit boundaries coexist. DELIMITER wrappers are stripped client-side with offsets preserved; definitions never execute body SQL or mutate prospective state. Golden: T27.json 30 cases/336 assertions on mysql57/80/84 + tidb85 vendor boundary. 2026-11-15 T28 (#107): compound members graduate — IF/CASE branch bodies, WHILE/LOOP/REPEAT loop bodies, nested BEGIN blocks, DECLARE (variable/condition/handler/cursor), SET assignments, and PREPARE sources are modeled members; inner SQL audits through the shared path (branch merges keep only unanimous bindings, loop bodies never prove a binding survives, handler members audit in isolation). Parameter lists carry direction/name/type (the create_procedure.option.params gap is retired). Statically proven PREPARE literals audit without execution; dynamic/unresolvable sources, EXECUTE, RETURN, malformed members, and depth/size overflows stay bounded evidence (routine.body.prepare/execute_prepared/routine.body.return/routine.body.declaration/routine.body.depth/routine.body.size/routine.body.parse); ddl.routine.variable_shadowing.warn flags parameter/local name collisions. Golden: T28.json 29 cases/347 assertions on mysql57/80/84 + tidb85 vendor boundary"
     targets: "routine identity, static body statements with original locations, security attributes"
     acceptance:
       dimensions: "body finding on containing definition, bounded body identity, no raw-body leak"
-      refs: ["gate:T27", "file:internal/application/audit/routine_t27_test.go", "file:testdata/ddl-golden/T27.json"]
+      refs: ["gate:T27", "gate:T28", "file:internal/application/audit/routine_t27_test.go", "file:internal/application/audit/routine_t28_test.go", "file:testdata/ddl-golden/T27.json", "file:testdata/ddl-golden/T28.json"]
     owner: T27
 
   - id: mysql.create-function
@@ -2510,7 +2519,10 @@ rows:
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
           - file:internal/application/audit/routine_t27_test.go
+          - file:internal/application/audit/routine_t28_test.go
+          - file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml
           - gate:T27
+          - gate:T28
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
@@ -2522,7 +2534,10 @@ rows:
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
           - file:internal/application/audit/routine_t27_test.go
+          - file:internal/application/audit/routine_t28_test.go
+          - file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml
           - gate:T27
+          - gate:T28
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
@@ -2534,13 +2549,16 @@ rows:
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
           - file:internal/application/audit/routine_t27_test.go
+          - file:internal/application/audit/routine_t28_test.go
+          - file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml
           - gate:T27
+          - gate:T28
 
-    status_evidence: "2026-09-22 CLI probe: parser_error on vendor-valid CREATE FUNCTION. 2026-11-24 T27 (#106): CREATE FUNCTION recognized — ddl.create_function.notice fires, SONAME UDF forms audit complete, BEGIN..END bodies audit like procedures, RETURN members record routine.body.return explicit boundary and parameter lists record create_function.option.params — cell mixed because audited forms and explicit member boundaries coexist"
+    status_evidence: "2026-09-22 CLI probe: parser_error on vendor-valid CREATE FUNCTION. 2026-11-24 T27 (#106): CREATE FUNCTION recognized — ddl.create_function.notice fires, SONAME UDF forms audit complete, BEGIN..END bodies audit like procedures, RETURN members record routine.body.return explicit boundary — cell mixed because audited forms and explicit member boundaries coexist; 2026-11-15 T28 (#107): function bodies gain the same control-flow/declaration/SET/PREPARE modeling as procedures — the create_function.option.params gap is retired (parameters modeled); RETURN members keep the routine.body.return boundary"
     targets: "routine identity, return type, body statements"
     acceptance:
       dimensions: "body audit parity with procedures"
-      refs: ["gate:T27", "file:internal/application/audit/routine_t27_test.go", "file:testdata/ddl-golden/T27.json"]
+      refs: ["gate:T27", "gate:T28", "file:internal/application/audit/routine_t27_test.go", "file:internal/application/audit/routine_t28_test.go", "file:testdata/ddl-golden/T27.json", "file:testdata/ddl-golden/T28.json"]
     owner: T27
 
   - id: mysql.alter-procedure-function
@@ -2643,7 +2661,7 @@ rows:
     sources: [mysql57, mysql80, mysql84]
     family: stored-program
     subactions: ["static body SQL", "DECLARE/local binding", "control flow", "PREPARE/EXECUTE dynamic SQL"]
-    sql_shape: "CREATE PROCEDURE p(IN s TEXT) SELECT s"
+    sql_shape: "CREATE PROCEDURE p(IN s TEXT) BEGIN SET @q=s; PREPARE stmt FROM @q; EXECUTE stmt; END;"
     prerequisites: "routine definition parsed; dynamic effects never executed or guessed"
     status: mixed_coverage
     parser_status: recognized
@@ -2660,7 +2678,10 @@ rows:
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:internal/application/audit/routine_t27_test.go
+          - file:internal/application/audit/routine_t28_test.go
+          - file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml
           - gate:T27
+          - gate:T28
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
@@ -2672,7 +2693,10 @@ rows:
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:internal/application/audit/routine_t27_test.go
+          - file:internal/application/audit/routine_t28_test.go
+          - file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml
           - gate:T27
+          - gate:T28
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
@@ -2684,13 +2708,16 @@ rows:
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:internal/application/audit/routine_t27_test.go
+          - file:internal/application/audit/routine_t28_test.go
+          - file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml
           - gate:T27
+          - gate:T28
 
-    status_evidence: "2026-11-24 T27 (#106): static body statements graduated — DML/SET/single-statement members audit through shared rule machinery with preserved source locations; compound members (routine.body.compound_member), DECLARE (routine.body.declaration), RETURN (routine.body.return), and EXECUTE (execute_prepared) emit explicit bounded evidence rather than silent pass — cell mixed because audited members and explicit boundaries coexist. Deeper binding/control-flow semantics (DECLARE scoping, handler conditions, cursor/loop state) stay owner T28 scope"
+    status_evidence: "2026-11-24 T27 (#106): static body statements graduated — DML/SET members audit through shared rule machinery with preserved source locations; compound, DECLARE, RETURN, and EXECUTE members emit explicit bounded evidence rather than silent pass. 2026-11-15 T28 (#107): stored-body analysis deepened — control flow (IF/CASE arms, WHILE/LOOP/REPEAT bodies, labeled and nested BEGIN blocks), declarations (variables, conditions, handlers with executable members, cursors with FOR SELECT), SET literal bindings, and PREPARE sources are modeled AST members audited through the shared statement machinery. Binding facts merge conservatively: an IF without ELSE keeps the pre-branch path, loop bodies run zero-or-more times so changed names degrade to bound-but-dynamic, handler members audit in an isolated env, and caller-supplied parameters are never static. Statically proven PREPARE literals audit their parsed text (findings point at the PREPARE member); dynamic sources, EXECUTE, RETURN, malformed members, and routine-body depth/member-count overflows emit explicit bounded evidence — never a silent pass, panic, or fabricated execution count. ddl.routine.variable_shadowing.warn reports local variables that reuse parameter names. Golden: T28.json 29 cases/347 assertions (dynamic golden path review/incomplete with routine.body.prepare+execute_prepared, static safe pass, static dangerous reject, depth/size limits bounded, T28_RUNTIME_SECRET never serialized) on mysql57/80/84 + tidb85 vendor boundary"
     targets: "static effects vs explicit dynamic/incomplete boundary, no execution simulation"
     acceptance:
       dimensions: "static sibling findings preserved, dynamic body incomplete-not-passed, depth caps"
-      refs: ["gate:T27", "file:internal/application/audit/routine_t27_test.go", "file:testdata/ddl-golden/T27.json"]
+      refs: ["gate:T27", "gate:T28", "file:internal/application/audit/routine_t27_test.go", "file:internal/application/audit/routine_t28_test.go", "file:testdata/ddl-golden/T27.json", "file:testdata/ddl-golden/T28.json"]
     owner: T28
 
   # ================= MySQL: triggers and events =================

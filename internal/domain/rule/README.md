@@ -6,7 +6,7 @@ Rule contracts, registration, and finding types for audit evaluation.
 
 | File | Responsibility |
 |------|---------------|
-| rule.go | Defines finding severity, finding metadata, and skip reasons for loaded-but-inapplicable rules (`dialect_mismatch`) |
+| rule.go | Defines finding severity, finding metadata, `ChildLocation` (translates a nested authored position — a routine body member's parent-raw coordinates — into file space using the parent statement's own origin; T28), and skip reasons for loaded-but-inapplicable rules (`dialect_mismatch`) |
 | registry.go | Registers statement/global rules, enforces rule IDs, evaluates them deterministically, and reports whether a rule ID is Loaded via Contains |
 | registry_test.go | Verifies registry behavior, ID enforcement, Loaded Contains, and deterministic execution |
 | catalog/README.md | Documents the explanation-oriented shipped-rule catalog module |
@@ -22,6 +22,7 @@ Rule contracts, registration, and finding types for audit evaluation.
 - `EvidenceGap`
 - `EvidenceReporter`
 - `Location`
+- `ChildLocation(parent, line, column)`
 - `StatementRule`
 - `GlobalRule`
 - `Registry`

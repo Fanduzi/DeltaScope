@@ -446,41 +446,64 @@
    ],
    "expect": {
     "exit": 1,
-    "verdict": "review",
+    "verdict": "reject",
     "statements": 1,
-    "findings": 0,
-    "diagnostics": 2,
-    "unsupported": 2,
-    "coverage": "incomplete",
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "CREATE PROCEDURE p() BEGIN IF 1=1 THEN DELETE FROM t; END IF; WHILE 0 DO UPDATE t SET id=id; END WHILE; END;"
     ],
-    "unsupported_entries": [
+    "finding_entries": [
      {
-      "feature": "routine.body.compound_member",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     },
+     {
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 40
+     },
+     {
+      "index": 0,
+      "line": 1,
+      "column": 74
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
       "metadata": {
        "routine": "p",
        "routine_member": 0
       }
      },
      {
-      "feature": "routine.body.compound_member",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "index": 0,
+      "rule_id": "dml.where.require",
       "metadata": {
        "routine": "p",
        "routine_member": 1
       }
      }
     ],
-    "fail_on_triggered": false
-   }
+    "fail_on_triggered": true
+   },
+   "notes": "T28/#107: IF/WHILE members are modeled — inner SQL audits through the shared member path, so both unguarded writes block."
   },
   {
-   "id": "mysql-params-gap",
+   "id": "mysql-params-modeled",
    "dialect": "mysql",
    "sql": "CREATE PROCEDURE p(a INT) SELECT 1",
    "policy": "t27-where",
@@ -489,27 +512,22 @@
     "blocker"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
-    "unsupported_entries": [
-     {
-      "feature": "create_procedure.option.params",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "option"
-      }
-     }
+    "statement_sql": [
+     "CREATE PROCEDURE p(a INT) SELECT 1"
     ],
     "fail_on_triggered": false
-   }
+   },
+   "notes": "T28/#107: parameter lists are modeled (direction/name/type) — no unaudited aspect remains."
   },
   {
    "id": "mysql-function-return-gap",
@@ -848,7 +866,7 @@
   {
    "id": "mysql-declare-gap",
    "dialect": "mysql",
-   "sql": "CREATE PROCEDURE p() BEGIN DECLARE x INT; DELETE FROM t; END;",
+   "sql": "CREATE PROCEDURE p() BEGIN DECLARE x; DELETE FROM t; END;",
    "policy": "t27-where",
    "args": [
     "--fail-on",
@@ -866,7 +884,7 @@
      "incomplete"
     ],
     "statement_sql": [
-     "CREATE PROCEDURE p() BEGIN DECLARE x INT; DELETE FROM t; END;"
+     "CREATE PROCEDURE p() BEGIN DECLARE x; DELETE FROM t; END;"
     ],
     "finding_entries": [
      {
@@ -884,12 +902,11 @@
       }
      }
     ],
-    "fail_on_triggered": true,
     "finding_locations": [
      {
       "index": 0,
       "line": 1,
-      "column": 43
+      "column": 39
      }
     ],
     "finding_metadata": [
@@ -901,8 +918,10 @@
        "routine_member": 1
       }
      }
-    ]
-   }
+    ],
+    "fail_on_triggered": true
+   },
+   "notes": "T28/#107: well-formed DECLARE members are modeled; a declaration with no type still lands as a bounded member."
   }
  ],
  "metadata_cases": [
@@ -1203,7 +1222,7 @@
   "T27.cli.mysql-lifecycle-notices",
   "T27.cli.mysql-multiline-body",
   "T27.cli.mysql-nested-compound",
-  "T27.cli.mysql-params-gap",
+  "T27.cli.mysql-params-modeled",
   "T27.cli.mysql-proc-parser-error",
   "T27.cli.mysql-two-routines",
   "T27.cli.tidb-alter-drop-vendor",

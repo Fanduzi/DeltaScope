@@ -50,6 +50,20 @@ type Location struct {
 	Column int `json:"column,omitempty"`
 }
 
+// ChildLocation translates a position expressed in the parent's RawSQL
+// coordinates into file space using the parent's own origin — routine
+// body members and other nested authored text anchor through it (T28).
+func ChildLocation(parent spec.Statement, line, column int) *Location {
+	if line <= 0 && column <= 0 {
+		return nil
+	}
+	loc := &Location{Line: line + parent.Line - 1, Column: column}
+	if line == 1 {
+		loc.Column += parent.Column - 1
+	}
+	return loc
+}
+
 // SkipReason describes why a loaded rule did not apply to a statement.
 type SkipReason string
 
