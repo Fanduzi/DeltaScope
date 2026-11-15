@@ -987,6 +987,26 @@ rules:
     level: blocker
     params:
 
+  ddl.create_event.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.alter_event.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.drop_event.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.event.enabled_execution.warn:
+    enabled: true
+    level: warning
+    params:
+
   ddl.routine.variable_shadowing.warn:
     enabled: true
     level: warning

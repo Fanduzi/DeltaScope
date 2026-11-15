@@ -190,6 +190,31 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 		}
 		return statement, nil
 	}
+	if node, ok := e.node.(*eventStatement); ok {
+		// The MySQL event family (T30/#109): the typed declaration
+		// carries schedule/completion/enablement facts, and the DO
+		// body members extract through the shared routine member
+		// machinery — bounded members keep event.body.* features.
+		decl := node.declaration
+		statement.DDL = &spec.DDL{
+			Operation:  node.operation,
+			ObjectType: "event",
+			ObjectName: decl.Name.Name,
+			Event:      decl,
+		}
+		if decl.Body != nil {
+			decl.Body.Statements = convertRoutineMembers(dialect, rawSQL, node.inner)
+			retagEventMemberFeatures(decl.Body)
+		}
+		applyCoverageBoundary(dialect, &statement, e.node)
+		if dialect == spec.DialectTiDB {
+			statement.Unsupported = &spec.UnsupportedDetail{
+				Feature: string(node.operation), Reason: spec.UnsupportedVendorBoundaryReason,
+				Metadata: map[string]any{"boundary": "vendor", "object": "event"},
+			}
+		}
+		return statement, nil
+	}
 	if _, ok := e.node.(*mysqlAlterInstanceStatement); ok {
 		// The MySQL-only ALTER INSTANCE ROTATE INNODB MASTER KEY
 		// subaction binds its typed declaration — the audit slice owns
@@ -436,6 +461,7 @@ func classify(stmt ast.StmtNode) spec.Kind {
 		*viewStatement,
 		*routineStatement,
 		*triggerStatement,
+		*eventStatement,
 		*ast.CreateIndexStmt,
 		*ast.AlterTableStmt,
 		*ast.DropTableStmt,

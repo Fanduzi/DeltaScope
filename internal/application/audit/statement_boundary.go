@@ -67,9 +67,12 @@ func splitSQLStatements(sql string, dialect spec.Dialect) []statementChunk {
 		// stored-routine CREATE when its first word is CREATE and it names
 		// PROCEDURE or FUNCTION. Only meaningful at parenDepth 0 — inside
 		// the parameter/option lists words like FUNCTION never arm it.
+		// T29 adds TRIGGER and T30 EVENT under CREATE; ALTER arms only for
+		// EVENT — ALTER EVENT ... DO BEGIN…END is the sole ALTER form whose
+		// clause introduces a compound body (T30/#109).
 		prefix := scanText[start:upto]
 		word, words := "", 0
-		hasRoutineKind := false
+		firstWord, hasRoutineKind, hasEventKind := "", false, false
 		for i := 0; i < len(prefix); {
 			c := prefix[i]
 			switch {
@@ -79,13 +82,19 @@ func splitSQLStatements(sql string, dialect spec.Dialect) []statementChunk {
 					j++
 				}
 				word = strings.ToLower(prefix[i:j])
-				if words == 0 && word != "create" {
-					chunkHasRoutineHead = 0
-					return false
+				if words == 0 {
+					firstWord = word
+					if word != "create" && word != "alter" {
+						chunkHasRoutineHead = 0
+						return false
+					}
 				}
 				words++
 				if word == "procedure" || word == "function" || word == "trigger" {
 					hasRoutineKind = true
+				}
+				if word == "event" {
+					hasEventKind = true
 				}
 				i = j
 			case c == '\'' || c == '"' || c == '`':
@@ -111,7 +120,7 @@ func splitSQLStatements(sql string, dialect spec.Dialect) []statementChunk {
 				i++
 			}
 		}
-		if words > 0 && hasRoutineKind {
+		if words > 0 && ((firstWord == "create" && (hasRoutineKind || hasEventKind)) || (firstWord == "alter" && hasEventKind)) {
 			chunkHasRoutineHead = 1
 		} else {
 			chunkHasRoutineHead = 0

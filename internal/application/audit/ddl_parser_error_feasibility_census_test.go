@@ -82,28 +82,19 @@ func assertParserErrorFeasibilityCase(t *testing.T, tc ddlParserErrorFeasibility
 	}
 }
 
-// --- MySQL parser-error feasibility cases (3) ---
+// --- MySQL parser-error feasibility cases (0) ---
 // The trigger family (CREATE/DROP TRIGGER) graduated to supported
 // statements under T29/#108 and left this census.
 // The stored-routine family (CREATE/ALTER/DROP PROCEDURE|FUNCTION) graduated
 // to supported statements under T27/#106 and left this census.
+// The event family (CREATE/ALTER/DROP EVENT) graduated to supported
+// statements under T30/#109 and left this census.
 
-var mysqlParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
-	{Dialect: spec.DialectMySQL, Family: "event", Name: "CREATE EVENT",
-		SQL:      "CREATE EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()",
-		Expected: unsafeFallbackDefer,
-		Reason:   "Event schedule and body parsing are unbounded"},
-	{Dialect: spec.DialectMySQL, Family: "event", Name: "ALTER EVENT",
-		SQL:      "ALTER EVENT e_cleanup ON SCHEDULE EVERY 2 DAY",
-		Expected: unsafeFallbackDefer,
-		Reason:   "Event schedule and option parsing are unbounded"},
-	{Dialect: spec.DialectMySQL, Family: "event", Name: "DROP EVENT",
-		SQL:      "DROP EVENT e_cleanup",
-		Expected: unsafeFallbackDefer,
-		Reason:   "Consistent with event lifecycle; parser upgrade path preferred"},
-}
+var mysqlParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{}
 
-// --- TiDB parser-error feasibility cases (6) ---
+// --- TiDB parser-error feasibility cases (4) ---
+// The event family (CREATE/DROP EVENT) graduated to vendor-boundary
+// statements under T30/#109 and left this census.
 
 var tidbParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
 	{Dialect: spec.DialectTiDB, Family: "table_option", Name: "ALTER TABLE TTL",
@@ -122,14 +113,6 @@ var tidbParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
 		SQL:      "DROP FUNCTION hello",
 		Expected: productUnsupportedOrInapplicable,
 		Reason:   "TiDB does not support user-defined SQL functions; parsing is not applicable"},
-	{Dialect: spec.DialectTiDB, Family: "event", Name: "CREATE EVENT",
-		SQL:      "CREATE EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()",
-		Expected: productUnsupportedOrInapplicable,
-		Reason:   "TiDB does not support events; parsing is not applicable"},
-	{Dialect: spec.DialectTiDB, Family: "event", Name: "DROP EVENT",
-		SQL:      "DROP EVENT e_cleanup",
-		Expected: productUnsupportedOrInapplicable,
-		Reason:   "TiDB does not support events; parsing is not applicable"},
 }
 
 func TestDDLParserErrorFeasibilityCensus(t *testing.T) {
@@ -189,11 +172,11 @@ func TestDDLParserErrorFeasibilityCensus(t *testing.T) {
 			tidbCount++
 		}
 	}
-	if mysqlCount != 3 {
-		t.Errorf("expected 3 MySQL parser-error cases, got %d", mysqlCount)
+	if mysqlCount != 0 {
+		t.Errorf("expected 0 MySQL parser-error cases, got %d", mysqlCount)
 	}
-	if tidbCount != 6 {
-		t.Errorf("expected 6 TiDB parser-error cases, got %d", tidbCount)
+	if tidbCount != 4 {
+		t.Errorf("expected 4 TiDB parser-error cases, got %d", tidbCount)
 	}
 	t.Logf("MySQL parser-error cases: %d", mysqlCount)
 	t.Logf("TiDB parser-error cases:  %d", tidbCount)

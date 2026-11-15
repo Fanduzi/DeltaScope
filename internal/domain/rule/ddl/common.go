@@ -514,6 +514,11 @@ const (
 	ruleIDCreateTriggerNotice              = "ddl.create_trigger.notice"
 	ruleIDDropTriggerNotice                = "ddl.drop_trigger.notice"
 	ruleIDCreateTriggerOrderVersionRequire = "ddl.create_trigger.ordering.version.require"
+
+	ruleIDCreateEventNotice         = "ddl.create_event.notice"
+	ruleIDAlterEventNotice          = "ddl.alter_event.notice"
+	ruleIDDropEventNotice           = "ddl.drop_event.notice"
+	ruleIDEventEnabledExecutionWarn = "ddl.event.enabled_execution.warn"
 	ruleIDRoutineVariableShadowingWarn     = "ddl.routine.variable_shadowing.warn"
 	ruleIDCreateUserNotice                 = "ddl.create_user.notice"
 	ruleIDAlterUserNotice                  = "ddl.alter_user.notice"

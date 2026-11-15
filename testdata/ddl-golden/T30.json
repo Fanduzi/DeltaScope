@@ -1,0 +1,1123 @@
+{
+ "task_id": "T30",
+ "issue": 109,
+ "policy_profile": "all-rules-disabled",
+ "description": "MySQL CREATE/ALTER/DROP EVENT declarations with modeled schedule, completion, and enablement attributes; shared DO-body audit; scheduled-execution warnings; and TiDB vendor boundaries.",
+ "anchors": {
+  "mysql57": {
+   "service": "mysql57",
+   "container": "deltascope-ddl-golden-mysql57",
+   "image": "mysql:5.7.44",
+   "product": "mysql",
+   "version_contains": "5.7.44",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T27_MYSQL_PASSWORD"
+  },
+  "mysql80": {
+   "service": "mysql80",
+   "container": "deltascope-ddl-golden-mysql80",
+   "image": "mysql:8.0.46",
+   "product": "mysql",
+   "version_contains": "8.0.46",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T27_MYSQL_PASSWORD"
+  },
+  "mysql84": {
+   "service": "mysql84",
+   "container": "deltascope-ddl-golden-mysql84",
+   "image": "mysql:8.4.10",
+   "product": "mysql",
+   "version_contains": "8.4.10",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T27_MYSQL_PASSWORD"
+  },
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": true
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "clear-task-fixture",
+   "sql": "DROP DATABASE IF EXISTS t30fx",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "seed-fixture-schema",
+   "sql": "CREATE DATABASE t30fx;CREATE TABLE t30fx.t (id INT PRIMARY KEY);CREATE TABLE t30fx.audit_log (id INT)",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "fixture tables exist for event body targets",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t30fx' AND TABLE_NAME IN ('t','audit_log')",
+     "expect": "2"
+    }
+   ]
+  }
+ ],
+ "syntax_negative": {
+  "sql": "CREATE EVENT t30fx.ev ON SCHEDULE EVERY",
+  "expect": {
+   "error_class": "1064",
+   "rc_nonzero": true,
+   "forbidden_markers": [
+    "Access denied",
+    "Connection refused",
+    "doesn't exist",
+    "already exists",
+    "event_scheduler",
+    "DISABLE SLAVE"
+   ]
+  },
+  "post_state_check": {
+   "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='t30fx'",
+   "expect": "0"
+  }
+ },
+ "policy": {
+  "profiles": {
+   "t30-where": {
+    "enable": {
+     "dml.where.require": {
+      "level": "blocker"
+     },
+     "ddl.create_event.notice": {
+      "enabled": true,
+      "level": "notice"
+     },
+     "ddl.alter_event.notice": {
+      "enabled": true,
+      "level": "notice"
+     },
+     "ddl.drop_event.notice": {
+      "enabled": true,
+      "level": "notice"
+     },
+     "ddl.event.enabled_execution.warn": {
+      "enabled": true,
+      "level": "warning"
+     }
+    }
+   }
+  }
+ },
+ "cli_cases": [
+  {
+   "id": "mysql-golden-path",
+   "dialect": "mysql",
+   "sql": "CREATE EVENT golden_ev ON SCHEDULE EVERY 1 DAY DISABLE DO DELETE FROM t",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE EVENT golden_ev ON SCHEDULE EVERY 1 DAY DISABLE DO DELETE FROM t"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_event.notice",
+      "level": "notice"
+     },
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "metadata": {
+       "operation": "delete",
+       "event": "golden_ev",
+       "event_member": 0
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 59
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "notes": "Golden path: a DISABLED event still audits its DO body \u2014 the where blocker lands on member 0 with event scope metadata while the lifecycle notice stays at the head; disabled means unaudited-execution, never unaudited-body."
+  },
+  {
+   "id": "mysql-safe-body",
+   "dialect": "mysql",
+   "sql": "CREATE EVENT ev ON SCHEDULE EVERY 1 DAY DISABLE DO DELETE FROM t WHERE id = 1",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_event.notice",
+      "level": "notice"
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "A WHERE-guarded body produces no blocker and the disabled event produces no execution warning."
+  },
+  {
+   "id": "mysql-enabled-every-warn",
+   "dialect": "mysql",
+   "sql": "CREATE EVENT ev ON SCHEDULE EVERY 1 HOUR ENABLE DO SELECT 1",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_event.notice",
+      "level": "notice"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.event.enabled_execution.warn",
+      "level": "warning"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.event.enabled_execution.warn",
+      "metadata": {
+       "event": "ev",
+       "operation": "create_event",
+       "schedule_kind": "every",
+       "repeating": true
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "An ENABLED repeating event surfaces the scheduled-execution warning with schedule shape metadata; the audit never predicts a runtime outcome."
+  },
+  {
+   "id": "mysql-enabled-at-once",
+   "dialect": "mysql",
+   "sql": "CREATE EVENT ev ON SCHEDULE AT CURRENT_TIMESTAMP DO SELECT 1",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.event.enabled_execution.warn",
+      "metadata": {
+       "event": "ev",
+       "schedule_kind": "at",
+       "repeating": false
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "A one-shot AT schedule still schedules execution \u2014 the warning distinguishes repeating=False."
+  },
+  {
+   "id": "mysql-disable-on-slave-warn",
+   "dialect": "mysql",
+   "sql": "ALTER EVENT ev DISABLE ON SLAVE",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter_event.notice",
+      "level": "notice"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.event.enabled_execution.warn",
+      "level": "warning"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.event.enabled_execution.warn",
+      "metadata": {
+       "event": "ev",
+       "operation": "alter_event",
+       "status": "disable_on_slave"
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "DISABLE ON SLAVE stops replicas only \u2014 the event still executes on the primary, so the warning fires with the authored status."
+  },
+  {
+   "id": "mysql-alter-schedule-gap",
+   "dialect": "mysql",
+   "sql": "ALTER EVENT ev ON SCHEDULE EVERY 2 DAY",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter_event.notice",
+      "level": "notice"
+     }
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.event.enabled_execution.warn",
+      "reason_code": "missing_event_state",
+      "required_facts": [
+       "event.enabled_state"
+      ]
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "An ALTER that authors no status clause leaves the enabled-execution premise unproven \u2014 an explicit catalog gap, never a guessed warning."
+  },
+  {
+   "id": "mysql-alter-do-only",
+   "dialect": "mysql",
+   "sql": "ALTER EVENT ev DO DELETE FROM t",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter_event.notice",
+      "level": "notice"
+     },
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "metadata": {
+       "operation": "delete",
+       "event": "ev",
+       "event_member": 0
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 19
+     }
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.event.enabled_execution.warn",
+      "reason_code": "missing_event_state",
+      "required_facts": [
+       "event.enabled_state"
+      ]
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "notes": "A DO-only ALTER replaces the body \u2014 it audits through the member machinery (blocker on member 0) while the missing status clause still owes the enabled-state gap."
+  },
+  {
+   "id": "mysql-alter-disable",
+   "dialect": "mysql",
+   "sql": "ALTER EVENT ev DISABLE",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter_event.notice",
+      "level": "notice"
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "A full DISABLE stops the schedule \u2014 no warning and no enabled-state gap."
+  },
+  {
+   "id": "mysql-drop-lifecycle",
+   "dialect": "mysql",
+   "sql": "DROP EVENT IF EXISTS ev",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.drop_event.notice",
+      "level": "notice"
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "DROP EVENT emits its lifecycle notice."
+  },
+  {
+   "id": "mysql-compound-body",
+   "dialect": "mysql",
+   "sql": "CREATE EVENT ev ON SCHEDULE EVERY 1 DAY DISABLE DO BEGIN DELETE FROM audit_log; UPDATE t SET x = 1 WHERE id = 1; END",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_event.notice",
+      "level": "notice"
+     },
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "metadata": {
+       "operation": "delete",
+       "event": "ev",
+       "event_member": 0
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 58
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "notes": "A BEGIN\u2026END DO body audits its members through the shared machinery \u2014 the unguarded DELETE blocks on member 0."
+  },
+  {
+   "id": "mysql-definer",
+   "dialect": "mysql",
+   "sql": "CREATE DEFINER='root'@'localhost' EVENT ev ON SCHEDULE EVERY 1 DAY DISABLE DO SELECT 1",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_event.notice",
+      "level": "notice"
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "The DEFINER clause is modeled as a shape; the account payload never reaches the declaration."
+  },
+  {
+   "id": "mysql-on-completion",
+   "dialect": "mysql",
+   "sql": "CREATE EVENT ev ON SCHEDULE EVERY 1 DAY STARTS '2027-01-01 00:00:00' ENDS '2027-06-01 00:00:00' ON COMPLETION PRESERVE DISABLE DO SELECT 1",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_event.notice",
+      "level": "notice"
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "STARTS/ENDS bounds and ON COMPLETION PRESERVE are modeled schedule attributes; clock values are captured, never evaluated."
+  },
+  {
+   "id": "mysql-multi-statement",
+   "dialect": "mysql",
+   "sql": "CREATE EVENT ev ON SCHEDULE EVERY 1 DAY DISABLE DO BEGIN DELETE FROM audit_log; UPDATE t SET x=1 WHERE id=1; END; SELECT 1",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE EVENT ev ON SCHEDULE EVERY 1 DAY DISABLE DO BEGIN DELETE FROM audit_log; UPDATE t SET x=1 WHERE id=1; END;",
+     "SELECT 1"
+    ],
+    "fail_on_triggered": true
+   },
+   "notes": "The compound DO body keeps member semicolons inside the statement; the following SELECT lands as statement 2."
+  },
+  {
+   "id": "mysql-parser-negative",
+   "dialect": "mysql",
+   "sql": "CREATE EVENT ev ON SCHEDULE EVERY",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "fail_on_triggered": false
+   },
+   "notes": "A truncated schedule declines the recognizer and stays a parser error \u2014 never fabricated audit."
+  },
+  {
+   "id": "tidb-create-vendor",
+   "dialect": "tidb",
+   "sql": "CREATE EVENT ev ON SCHEDULE EVERY 1 DAY DO SELECT 1",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_event",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "boundary": "vendor",
+       "object": "event"
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "TiDB vendor boundary: CREATE EVENT is outside the supported TiDB surface; the body is not audited."
+  },
+  {
+   "id": "tidb-alter-vendor",
+   "dialect": "tidb",
+   "sql": "ALTER EVENT ev DISABLE",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_event",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "boundary": "vendor",
+       "object": "event"
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "TiDB vendor boundary on ALTER EVENT."
+  },
+  {
+   "id": "tidb-drop-vendor",
+   "dialect": "tidb",
+   "sql": "DROP EVENT ev",
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "drop_event",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "boundary": "vendor",
+       "object": "event"
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "notes": "TiDB vendor boundary on DROP EVENT."
+  }
+ ],
+ "metadata_cases": [
+  {
+   "id": "mysql57-event-lifecycle",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE EVENT ev ON SCHEDULE EVERY 1 DAY DISABLE DO DELETE FROM t",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "t30meta_57",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-owned-fixture",
+     "sql": "CREATE DATABASE t30meta_57;CREATE TABLE t30meta_57.t (id INT PRIMARY KEY)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture table ready",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t30meta_57' AND TABLE_NAME='t'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "metadata": {
+       "operation": "delete",
+       "event": "ev",
+       "event_member": 0
+      }
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create the event",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='t30meta_57'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "native disabled event creation receipt",
+     "via": "stdin",
+     "sql": "DELIMITER //\nCREATE EVENT t30meta_57.ev ON SCHEDULE EVERY 1 DAY DISABLE DO BEGIN INSERT INTO t30meta_57.t VALUES (1); END//\nDELIMITER ;\n",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one DISABLED event created natively",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='t30meta_57' AND EVENT_NAME='ev' AND STATUS='DISABLED'",
+     "expect": "1"
+    },
+    {
+     "assert": "the native event body never executed \u2014 fixture stays empty",
+     "sql": "SELECT COUNT(*) FROM t30meta_57.t",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP DATABASE IF EXISTS t30meta_57",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual schema",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t30meta_57'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mysql80-event-lifecycle",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE EVENT ev ON SCHEDULE EVERY 1 DAY DISABLE DO DELETE FROM t",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t30meta_80",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-owned-fixture",
+     "sql": "CREATE DATABASE t30meta_80;CREATE TABLE t30meta_80.t (id INT PRIMARY KEY)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture table ready",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t30meta_80' AND TABLE_NAME='t'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "metadata": {
+       "operation": "delete",
+       "event": "ev",
+       "event_member": 0
+      }
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create the event",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='t30meta_80'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "native disabled event creation receipt",
+     "via": "stdin",
+     "sql": "DELIMITER //\nCREATE EVENT t30meta_80.ev ON SCHEDULE EVERY 1 DAY DISABLE DO BEGIN INSERT INTO t30meta_80.t VALUES (1); END//\nDELIMITER ;\n",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one DISABLED event created natively",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='t30meta_80' AND EVENT_NAME='ev' AND STATUS='DISABLED'",
+     "expect": "1"
+    },
+    {
+     "assert": "the native event body never executed \u2014 fixture stays empty",
+     "sql": "SELECT COUNT(*) FROM t30meta_80.t",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP DATABASE IF EXISTS t30meta_80",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual schema",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t30meta_80'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mysql84-event-lifecycle",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE EVENT ev ON SCHEDULE EVERY 1 DAY DISABLE DO DELETE FROM t",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "t30meta_84",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "policy": "t30-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-owned-fixture",
+     "sql": "CREATE DATABASE t30meta_84;CREATE TABLE t30meta_84.t (id INT PRIMARY KEY)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture table ready",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t30meta_84' AND TABLE_NAME='t'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "metadata": {
+       "operation": "delete",
+       "event": "ev",
+       "event_member": 0
+      }
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create the event",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='t30meta_84'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "native disabled event creation receipt",
+     "via": "stdin",
+     "sql": "DELIMITER //\nCREATE EVENT t30meta_84.ev ON SCHEDULE EVERY 1 DAY DISABLE DO BEGIN INSERT INTO t30meta_84.t VALUES (1); END//\nDELIMITER ;\n",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one DISABLED event created natively",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='t30meta_84' AND EVENT_NAME='ev' AND STATUS='DISABLED'",
+     "expect": "1"
+    },
+    {
+     "assert": "the native event body never executed \u2014 fixture stays empty",
+     "sql": "SELECT COUNT(*) FROM t30meta_84.t",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP DATABASE IF EXISTS t30meta_84",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual schema",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t30meta_84'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "required_case_ids": [
+  "T30.cli.mysql-golden-path",
+  "T30.cli.mysql-safe-body",
+  "T30.cli.mysql-enabled-every-warn",
+  "T30.cli.mysql-enabled-at-once",
+  "T30.cli.mysql-disable-on-slave-warn",
+  "T30.cli.mysql-alter-schedule-gap",
+  "T30.cli.mysql-alter-do-only",
+  "T30.cli.mysql-alter-disable",
+  "T30.cli.mysql-drop-lifecycle",
+  "T30.cli.mysql-compound-body",
+  "T30.cli.mysql-definer",
+  "T30.cli.mysql-on-completion",
+  "T30.cli.mysql-multi-statement",
+  "T30.cli.mysql-parser-negative",
+  "T30.cli.tidb-create-vendor",
+  "T30.cli.tidb-alter-vendor",
+  "T30.cli.tidb-drop-vendor",
+  "T30.meta.mysql57-event-lifecycle",
+  "T30.meta.mysql80-event-lifecycle",
+  "T30.meta.mysql84-event-lifecycle",
+  "T30.db.mysql57.ddl",
+  "T30.db.mysql57.syntax_negative",
+  "T30.db.mysql80.ddl",
+  "T30.db.mysql80.syntax_negative",
+  "T30.db.mysql84.ddl",
+  "T30.db.mysql84.syntax_negative",
+  "T30.db.tidb85.ddl",
+  "T30.db.tidb85.syntax_negative"
+ ]
+}

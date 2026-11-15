@@ -214,6 +214,33 @@ func newMySQLTiDBDropTriggerNoticeRule(cfg policy.RulePolicy) (rule.StatementRul
 	)
 }
 
+func newMySQLTiDBCreateEventNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newMySQLTiDBLifecycleRule(
+		ruleIDCreateEventNotice, rule.LevelNotice, spec.DDLOperationCreateEvent, "event",
+		"CREATE EVENT %q registers a new scheduled event",
+		"review the schedule, enablement, and body effects before deploying",
+		cfg,
+	)
+}
+
+func newMySQLTiDBAlterEventNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newMySQLTiDBLifecycleRule(
+		ruleIDAlterEventNotice, rule.LevelNotice, spec.DDLOperationAlterEvent, "event",
+		"ALTER EVENT %q changes a scheduled event",
+		"review the changed schedule, enablement, or body effects before deploying",
+		cfg,
+	)
+}
+
+func newMySQLTiDBDropEventNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newMySQLTiDBLifecycleRule(
+		ruleIDDropEventNotice, rule.LevelNotice, spec.DDLOperationDropEvent, "event",
+		"DROP EVENT %q removes a scheduled event",
+		"verify no workload depends on this event before dropping",
+		cfg,
+	)
+}
+
 func newMySQLTiDBCreateFunctionNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return newMySQLTiDBLifecycleRule(
 		ruleIDCreateFunctionNotice, rule.LevelNotice, spec.DDLOperationCreateFunction, "function",

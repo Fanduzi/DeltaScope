@@ -59,6 +59,12 @@ func corpusRuleDialectTargets(ruleID string) []string {
 		// trigger lifecycle and ordering rules can only fire under
 		// MySQL (T29/#108).
 		return []string{"mysql"}
+	case "ddl.create_event.notice", "ddl.alter_event.notice", "ddl.drop_event.notice",
+		"ddl.event.enabled_execution.warn":
+		// TiDB marks CREATE/ALTER/DROP EVENT as vendor boundaries, so the
+		// event lifecycle and scheduled-execution rules can only fire
+		// under MySQL (T30/#109).
+		return []string{"mysql"}
 	case "ddl.alter_procedure.notice", "ddl.create_function.notice",
 		"ddl.alter_function.notice", "ddl.drop_function.notice",
 		"ddl.routine.variable_shadowing.warn":

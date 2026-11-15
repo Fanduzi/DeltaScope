@@ -19,11 +19,12 @@ import (
 const routineRootMember = -1
 
 // evaluateRoutineBody audits each statically bounded body member of a
-// stored-routine or trigger definition through the shared registry.
+// stored-routine, trigger, or event definition through the shared registry.
 // Member findings keep their own rule IDs and levels; their locations
 // are translated from parent-raw space into file space using the
 // parent's line/column, and every finding is tagged with the owning
-// routine or trigger and member index (T27/#106, T29/#108). Unparseable
+// routine, trigger, or event and member index (T27/#106, T29/#108,
+// T30/#109). Unparseable
 // members surface as unsupported details instead of being silently
 // skipped.
 //
@@ -46,6 +47,9 @@ func evaluateRoutineBody(ctx context.Context, registry *rule.Registry, parent sp
 	case parent.DDL.Trigger != nil:
 		decl := parent.DDL.Trigger
 		body, name, scope = decl.Body, decl.Name.Name, "trigger"
+	case parent.DDL.Event != nil:
+		decl := parent.DDL.Event
+		body, name, scope = decl.Body, decl.Name.Name, "event"
 	}
 	w := &routineBodyWalker{
 		ctx:         ctx,
@@ -76,7 +80,7 @@ type routineBodyWalker struct {
 	parent      spec.Statement
 	parentIndex int
 	routine     string
-	scope       string // "routine" | "trigger" — feature prefix and metadata key
+	scope       string // "routine" | "trigger" | "event" — feature prefix and metadata key
 	dialect     spec.Dialect
 	combined    *rule.StatementEvaluation
 	findings    []rule.Finding

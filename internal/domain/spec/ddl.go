@@ -55,6 +55,10 @@ type DDL struct {
 	// header plus the statically bounded body whose member statements
 	// share the spec.Statement model.
 	Routine *RoutineDeclaration `json:"-"`
+	// Event carries the modeled event definition (schedule,
+	// completion, enablement) on MySQL CREATE|ALTER|DROP EVENT (T30).
+	Event *EventDeclaration `json:"-"`
+
 	// Trigger carries the modeled trigger definition on
 	// create_trigger/drop_trigger (issue #108 T29): timing, event, bound
 	// target, optional ordering clause, OLD/NEW pseudo-column usage, and
@@ -285,6 +289,10 @@ const (
 
 	DDLOperationCreateTrigger DDLOperation = "create_trigger"
 	DDLOperationDropTrigger   DDLOperation = "drop_trigger"
+
+	DDLOperationCreateEvent DDLOperation = "create_event"
+	DDLOperationAlterEvent  DDLOperation = "alter_event"
+	DDLOperationDropEvent   DDLOperation = "drop_event"
 
 	DDLOperationCreateFunction  DDLOperation = "create_function"
 	DDLOperationDropFunction    DDLOperation = "drop_function"

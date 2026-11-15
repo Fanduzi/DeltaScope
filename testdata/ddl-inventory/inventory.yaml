@@ -2844,39 +2844,56 @@ rows:
     subactions: ["ON SCHEDULE AT/EVERY", "ON COMPLETION", "ENABLE/DISABLE", "DO body"]
     sql_shape: "CREATE EVENT ev ON SCHEDULE EVERY 1 DAY DISABLE DO DELETE FROM t"
     prerequisites: "scheduler not required for static audit; DISABLE fixture prevents execution"
-    status: parser_unsupported
-    parser_status: unrecognized
-    audit_status: not_applicable
+    status: mixed_coverage
+    parser_status: recognized
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        parser_status: recognized
+        audit_status: mixed
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-event.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/event_t30_test.go
+          - gate:T30
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        parser_status: recognized
+        audit_status: mixed
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-event.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/event_t30_test.go
+          - gate:T30
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        parser_status: recognized
+        audit_status: mixed
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-event.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/event_t30_test.go
+          - gate:T30
 
-    status_evidence: "2026-09-22 CLI probe: parser_error on vendor-valid CREATE EVENT (T30 oracle requires schedule+DISABLE preserved plus body audit)"
-    targets: "event identity, schedule, enabled state, static body"
+    status_evidence: "2026-11-15 T30 (#109): CREATE EVENT claimed — DEFINER (shape only), ON SCHEDULE AT/EVERY with interval and STARTS/ENDS bounds, ON COMPLETION PRESERVE/NOT PRESERVE, ENABLE/DISABLE/DISABLE ON SLAVE, and the DO body are modeled in the declaration; the body audits through the shared routine-member machinery with event-scoped evidence and metadata (event/event_member). A DISABLED body still audits — disabled means not-scheduled, never not-analysed. ENABLED schedules emit ddl.event.enabled_execution.warn with schedule shape metadata; scheduler execution is never predicted or awaited. Audited members and explicit boundaries coexist, so the cell stays mixed. Golden: T30.json 16 cli cases + 3 anchor receipts"
+    targets: "event identity, schedule shape, completion policy, enablement, static body members"
     acceptance:
-      dimensions: "body audit even when DISABLED, scheduler facts explicit"
-      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+      dimensions: "body audit independent of schedule state, schedule/completion attributes modeled, DEFINER payload never serialized, no scheduler execution"
+      refs: ["gate:T30", "file:testdata/ddl-golden/T30.json", "file:internal/application/audit/event_t30_test.go", "file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml"]
     owner: T30
-
   - id: mysql.alter-event
     product: mysql
     versions: ["5.7", "8.0", "8.4"]
@@ -2885,39 +2902,56 @@ rows:
     subactions: ["ALTER EVENT ... ON SCHEDULE/RENAME/ENABLE/DISABLE/DO"]
     sql_shape: "ALTER EVENT ev ON SCHEDULE EVERY 2 DAY"
     prerequisites: "none"
-    status: parser_unsupported
-    parser_status: unrecognized
-    audit_status: not_applicable
+    status: mixed_coverage
+    parser_status: recognized
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        parser_status: recognized
+        audit_status: mixed
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.alter-event.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/event_t30_test.go
+          - gate:T30
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        parser_status: recognized
+        audit_status: mixed
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.alter-event.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/event_t30_test.go
+          - gate:T30
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        parser_status: recognized
+        audit_status: mixed
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.alter-event.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/event_t30_test.go
+          - gate:T30
 
-    status_evidence: "2026-09-22 CLI probe: parser_error"
-    targets: "event identity, schedule/state transitions, new body if present"
+    status_evidence: "2026-11-15 T30 (#109): ALTER EVENT claimed — schedule re-definition, ENABLE/DISABLE/DISABLE ON SLAVE, and body replacement parse; ENABLE (and DISABLE ON SLAVE, which still executes on the primary) emits ddl.event.enabled_execution.warn while an ALTER that authors no status clause owes the explicit missing_event_state evidence gap rather than a guessed warning. Golden: T30.json mysql-alter-* cases"
+    targets: "event identity, schedule/state transitions, enabled-state evidence gaps, new body if present"
     acceptance:
-      dimensions: "attribute vs body-change classification"
-      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+      dimensions: "attribute vs body-change classification, missing-state evidence gap vs fabricated warning"
+      refs: ["gate:T30", "file:testdata/ddl-golden/T30.json", "file:internal/application/audit/event_t30_test.go"]
     owner: T30
-
   - id: mysql.drop-event
     product: mysql
     versions: ["5.7", "8.0", "8.4"]
@@ -2926,39 +2960,56 @@ rows:
     subactions: ["DROP EVENT", "IF EXISTS"]
     sql_shape: "DROP EVENT ev"
     prerequisites: "none"
-    status: parser_unsupported
-    parser_status: unrecognized
-    audit_status: not_applicable
+    status: generic_notice
+    parser_status: recognized
+    audit_status: notice_only
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        parser_status: recognized
+        audit_status: notice_only
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.drop-event.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/event_t30_test.go
+          - gate:T30
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        parser_status: recognized
+        audit_status: notice_only
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.drop-event.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/event_t30_test.go
+          - gate:T30
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        parser_status: recognized
+        audit_status: notice_only
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.drop-event.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/event_t30_test.go
+          - gate:T30
 
-    status_evidence: "2026-09-22 CLI probe: parser_error"
-    targets: "event identity"
+    status_evidence: "2026-11-15 T30 (#109): DROP EVENT claimed — ddl.drop_event.notice fires and IF EXISTS is modeled; lifecycle is symmetric with CREATE EVENT on all three MySQL anchors. Golden: T30.json mysql-drop-lifecycle"
+    targets: "event identity, IF EXISTS"
     acceptance:
-      dimensions: "lifecycle classification"
-      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+      dimensions: "drop lifecycle parity"
+      refs: ["gate:T30", "file:testdata/ddl-golden/T30.json", "file:internal/application/audit/event_t30_test.go"]
     owner: T30
-
   # ================= MySQL: tablespaces, servers, low-frequency =================
   - id: mysql.create-tablespace
     product: mysql
@@ -4933,13 +4984,13 @@ rows:
         product_scope: vendor_boundary
         parser_status: unrecognized
         audit_status: explicit_unsupported
-        evidence: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+        evidence: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md", "gate:T30"]
 
-    status_evidence: "vendor boundary; parser_error observed"
+    status_evidence: "TiDB does not implement events; the shape is recognised and emits unsupported evidence (create_event/alter_event/drop_event with boundary:vendor metadata) — parser acceptance never counts as support and bodies are never audited for tidb. 2026-11-15 T30 (#109): boundary enforced for all three event forms. Golden: T30.json tidb-*-vendor"
     targets: "explicit vendor boundary"
     acceptance:
       dimensions: "boundary classification"
-      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md", "gate:T30", "file:testdata/ddl-golden/T30.json"]
     owner: T30
 
   - id: tidb.create-tablespace

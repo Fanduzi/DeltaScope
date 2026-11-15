@@ -67,7 +67,8 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 		var bodyFindings []rule.Finding
 		var bodyUnsupported []spec.UnsupportedDetail
 		if statement.DDL != nil && ((statement.DDL.Routine != nil && statement.DDL.Routine.Body != nil) ||
-			(statement.DDL.Trigger != nil && statement.DDL.Trigger.Body != nil)) {
+			(statement.DDL.Trigger != nil && statement.DDL.Trigger.Body != nil) ||
+			(statement.DDL.Event != nil && statement.DDL.Event.Body != nil)) {
 			var bodyEval *rule.StatementEvaluation
 			bodyFindings, bodyUnsupported, bodyEval, err = evaluateRoutineBody(ctx, registry, statement, idx)
 			if err != nil {

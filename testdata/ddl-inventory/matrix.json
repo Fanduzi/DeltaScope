@@ -11,11 +11,11 @@
   ],
   "status_counts": {
     "semantically_checked": 76,
-    "generic_notice": 14,
-    "mixed_coverage": 6,
-    "parser_unsupported": 5,
+    "generic_notice": 15,
+    "mixed_coverage": 8,
     "explicit_unsupported": 2,
-    "vendor_not_supported": 11
+    "vendor_not_supported": 11,
+    "parser_unsupported": 2
   },
   "rows": [
     {
@@ -3126,19 +3126,24 @@
       "id": "mysql.create-event",
       "product": "mysql",
       "owner": "T30",
-      "status": "parser_unsupported",
-      "parser_status": "unrecognized",
-      "audit_status": "not_applicable",
+      "status": "mixed_coverage",
+      "parser_status": "recognized",
+      "audit_status": "mixed",
       "applicability": [
         {
           "anchor": "mysql57",
           "version_range": 5.7,
           "official_presence": "documented",
           "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:testdata/ddl-inventory/evidence/mysql.create-event.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/event_t30_test.go",
+            "gate:T30"
           ]
         },
         {
@@ -3146,10 +3151,15 @@
           "version_range": 8.0,
           "official_presence": "documented",
           "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:testdata/ddl-inventory/evidence/mysql.create-event.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/event_t30_test.go",
+            "gate:T30"
           ]
         },
         {
@@ -3157,10 +3167,15 @@
           "version_range": 8.4,
           "official_presence": "documented",
           "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:testdata/ddl-inventory/evidence/mysql.create-event.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/event_t30_test.go",
+            "gate:T30"
           ]
         }
       ]
@@ -3169,19 +3184,24 @@
       "id": "mysql.alter-event",
       "product": "mysql",
       "owner": "T30",
-      "status": "parser_unsupported",
-      "parser_status": "unrecognized",
-      "audit_status": "not_applicable",
+      "status": "mixed_coverage",
+      "parser_status": "recognized",
+      "audit_status": "mixed",
       "applicability": [
         {
           "anchor": "mysql57",
           "version_range": 5.7,
           "official_presence": "documented",
           "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:testdata/ddl-inventory/evidence/mysql.alter-event.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/event_t30_test.go",
+            "gate:T30"
           ]
         },
         {
@@ -3189,10 +3209,15 @@
           "version_range": 8.0,
           "official_presence": "documented",
           "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:testdata/ddl-inventory/evidence/mysql.alter-event.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/event_t30_test.go",
+            "gate:T30"
           ]
         },
         {
@@ -3200,10 +3225,15 @@
           "version_range": 8.4,
           "official_presence": "documented",
           "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:testdata/ddl-inventory/evidence/mysql.alter-event.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/event_t30_test.go",
+            "gate:T30"
           ]
         }
       ]
@@ -3212,19 +3242,24 @@
       "id": "mysql.drop-event",
       "product": "mysql",
       "owner": "T30",
-      "status": "parser_unsupported",
-      "parser_status": "unrecognized",
-      "audit_status": "not_applicable",
+      "status": "generic_notice",
+      "parser_status": "recognized",
+      "audit_status": "notice_only",
       "applicability": [
         {
           "anchor": "mysql57",
           "version_range": 5.7,
           "official_presence": "documented",
           "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:testdata/ddl-inventory/evidence/mysql.drop-event.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/event_t30_test.go",
+            "gate:T30"
           ]
         },
         {
@@ -3232,10 +3267,15 @@
           "version_range": 8.0,
           "official_presence": "documented",
           "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:testdata/ddl-inventory/evidence/mysql.drop-event.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/event_t30_test.go",
+            "gate:T30"
           ]
         },
         {
@@ -3243,10 +3283,15 @@
           "version_range": 8.4,
           "official_presence": "documented",
           "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "notice_only",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:testdata/ddl-inventory/evidence/mysql.drop-event.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/event_t30_test.go",
+            "gate:T30"
           ]
         }
       ]
@@ -5336,7 +5381,8 @@
           "parser_status": "unrecognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"
+            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md",
+            "gate:T30"
           ]
         }
       ]

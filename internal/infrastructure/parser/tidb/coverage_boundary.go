@@ -229,6 +229,9 @@ func dialectBoundaryFeature(dialect spec.Dialect, ddl *spec.DDL) (feature string
 		case spec.DDLOperationCreateTrigger, spec.DDLOperationDropTrigger:
 			// TiDB does not support triggers (T29/#108).
 			return string(ddl.Operation), true, true
+		case spec.DDLOperationCreateEvent, spec.DDLOperationAlterEvent, spec.DDLOperationDropEvent:
+			// TiDB does not support scheduled events (T30/#109).
+			return string(ddl.Operation), true, true
 		case spec.DDLOperationCreateTable:
 			if ddl.HasSelect {
 				// TiDB does not document CREATE TABLE ... AS SELECT as supported.

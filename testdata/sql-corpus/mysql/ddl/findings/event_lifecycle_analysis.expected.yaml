@@ -1,0 +1,16 @@
+name: event_lifecycle_analysis
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 4
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.create_event.notice
+      - ddl.alter_event.notice
+      - ddl.drop_event.notice
+      - ddl.event.enabled_execution.warn
+      - dml.where.require

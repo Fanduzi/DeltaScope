@@ -62,9 +62,9 @@ func TestDDLParserErrorUnsupportedContractMySQLTiDB(t *testing.T) {
 		},
 		{
 			Dialect:   spec.DialectMySQL,
-			Name:      "mysql_create_event_schedule_not_audited",
-			SQL:       "CREATE EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()",
-			Forbidden: []string{"EVERY 1 DAY", "p_cleanup"},
+			Name:      "mysql_create_event_malformed_schedule_not_audited",
+			SQL:       "CREATE EVENT e_cleanup ON SCHEDULE EVERY SECRET_SCHEDULE_SHAPEx9",
+			Forbidden: []string{"SECRET_SCHEDULE_SHAPEx9"},
 		},
 		{
 			Dialect:   spec.DialectTiDB,

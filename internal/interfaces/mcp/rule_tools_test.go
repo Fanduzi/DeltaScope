@@ -246,10 +246,10 @@ func TestListRulesCallTextIsNotStructuredJSON(t *testing.T) {
 	if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
 		t.Fatalf("content[0].text looks like a JSON dump: %q", truncateForTest(trimmed, 120))
 	}
-	if len(text) > 80_000 {
+	if len(text) > 96_000 {
 		t.Fatalf("content[0].text is %d bytes; want a compact catalog, not a dump", len(text))
 	}
-	if len(structuredJSON) > 120_000 {
+	if len(structuredJSON) > 144_000 {
 		t.Fatalf("structuredContent is %d bytes; want compact rows", len(structuredJSON))
 	}
 	if !strings.Contains(text, "dml.where.require") {

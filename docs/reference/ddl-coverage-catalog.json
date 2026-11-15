@@ -13,10 +13,10 @@
   "summary": {
     "mysql": {
       "total": 63,
-      "finding_covered": 59,
+      "finding_covered": 62,
       "normalized_silent": 0,
       "unsupported_boundary": 0,
-      "parser_error": 4,
+      "parser_error": 1,
       "unclassified": 0
     },
     "postgresql": {
@@ -39,8 +39,8 @@
       "total": 57,
       "finding_covered": 43,
       "normalized_silent": 1,
-      "unsupported_boundary": 10,
-      "parser_error": 3,
+      "unsupported_boundary": 12,
+      "parser_error": 1,
       "unclassified": 0
     }
   },
@@ -222,25 +222,32 @@
       "dialect": "mysql",
       "family": "event_lifecycle",
       "form": "ALTER EVENT",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "notes": "parser error"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter_event.notice"
+      ],
+      "notes": ""
     },
     {
       "dialect": "mysql",
       "family": "event_lifecycle",
       "form": "CREATE EVENT",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "notes": "parser error"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_event.notice",
+        "ddl.event.enabled_execution.warn"
+      ],
+      "notes": ""
     },
     {
       "dialect": "mysql",
       "family": "event_lifecycle",
       "form": "DROP EVENT",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "notes": "parser error"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.drop_event.notice"
+      ],
+      "notes": ""
     },
     {
       "dialect": "mysql",
@@ -3837,17 +3844,17 @@
       "dialect": "tidb",
       "family": "event_lifecycle",
       "form": "CREATE EVENT",
-      "classification": "parser_error",
+      "classification": "unsupported_boundary",
       "finding_rule_ids": [],
-      "notes": "parser error"
+      "notes": "recognized product boundary"
     },
     {
       "dialect": "tidb",
       "family": "event_lifecycle",
       "form": "DROP EVENT",
-      "classification": "parser_error",
+      "classification": "unsupported_boundary",
       "finding_rule_ids": [],
-      "notes": "parser error"
+      "notes": "recognized product boundary"
     },
     {
       "dialect": "tidb",

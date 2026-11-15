@@ -139,9 +139,11 @@ func TestParserUpgradeCandidateNegativeCases(t *testing.T) {
 	t.Run("non-candidate parser_error has no guidance", func(t *testing.T) {
 		t.Parallel()
 
-		// CREATE EVENT is a known parser_error but NOT in the parser_upgrade_candidate list.
+		// A truncated CREATE EVENT is a parser_error (the recognizer
+		// declines the malformed schedule) and is NOT in the
+		// parser_upgrade_candidate list.
 		result, err := AuditSQL(context.Background(), Request{
-			SQL:     "CREATE EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()",
+			SQL:     "CREATE EVENT e_cleanup ON SCHEDULE EVERY",
 			Dialect: spec.DialectMySQL,
 		})
 		if err == nil {

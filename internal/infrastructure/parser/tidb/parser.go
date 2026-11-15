@@ -77,6 +77,12 @@ func (p *Parser) Parse(ctx context.Context, sql string) (Result, error) {
 		// FOR EACH ROW body riding the shared routine member
 		// machinery — claimed whole-input (T29/#108).
 		parsed, warns = []ast.StmtNode{tr}, trWarns
+	} else if ev, evWarns, evOK := parseMySQLEvent(sql); evOK {
+		// The MySQL event family — CREATE|ALTER|DROP EVENT with
+		// modeled schedule/completion/enablement and a DO body
+		// riding the shared routine member machinery — claimed
+		// whole-input (T30/#109).
+		parsed, warns = []ast.StmtNode{ev}, evWarns
 	} else if header, viewHeaderOK := parseViewHeader(sql); viewHeaderOK && (header.operation == spec.DDLOperationAlterView || header.declaration.CheckBare) {
 		if view, viewWarns, ok := parseViewAdapter(ctx, sql); ok {
 			parsed, warns = []ast.StmtNode{view}, viewWarns

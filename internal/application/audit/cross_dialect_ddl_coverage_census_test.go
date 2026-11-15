@@ -139,10 +139,10 @@ var mysqlDDLCensusCases = []struct {
 	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()", Expected: ddlCoverageFindingCovered},
 	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_users_bi", Expected: ddlCoverageFindingCovered},
 
-	// --- 8. Event lifecycle ---
-	{Name: "CREATE EVENT", SQL: "CREATE EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()", Expected: ddlCoverageParserError},
-	{Name: "ALTER EVENT", SQL: "ALTER EVENT e_cleanup ON SCHEDULE EVERY 2 DAY", Expected: ddlCoverageParserError},
-	{Name: "DROP EVENT", SQL: "DROP EVENT e_cleanup", Expected: ddlCoverageParserError},
+	// --- 8. Event lifecycle (T30/#109: modeled declarations, shared body audit) ---
+	{Name: "CREATE EVENT", SQL: "CREATE EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER EVENT", SQL: "ALTER EVENT e_cleanup ON SCHEDULE EVERY 2 DAY", Expected: ddlCoverageFindingCovered},
+	{Name: "DROP EVENT", SQL: "DROP EVENT e_cleanup", Expected: ddlCoverageFindingCovered},
 
 	// --- 9. Privilege/User/Role lifecycle ---
 	{Name: "CREATE USER", SQL: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", Expected: ddlCoverageFindingCovered},
@@ -238,8 +238,8 @@ var tidbDDLCensusCases = []struct {
 	{Name: "CREATE FUNCTION", SQL: "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'hello'", Expected: ddlCoverageUnsupportedBoundary},
 	{Name: "ALTER FUNCTION", SQL: "ALTER FUNCTION hello SQL SECURITY INVOKER", Expected: ddlCoverageUnsupportedBoundary},
 	{Name: "DROP FUNCTION", SQL: "DROP FUNCTION hello", Expected: ddlCoverageUnsupportedBoundary},
-	{Name: "CREATE EVENT", SQL: "CREATE EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()", Expected: ddlCoverageParserError},
-	{Name: "DROP EVENT", SQL: "DROP EVENT e_cleanup", Expected: ddlCoverageParserError},
+	{Name: "CREATE EVENT", SQL: "CREATE EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()", Expected: ddlCoverageUnsupportedBoundary},
+	{Name: "DROP EVENT", SQL: "DROP EVENT e_cleanup", Expected: ddlCoverageUnsupportedBoundary},
 
 	// --- 10. Privilege/User lifecycle ---
 	{Name: "CREATE USER", SQL: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", Expected: ddlCoverageFindingCovered},
