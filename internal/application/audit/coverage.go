@@ -724,7 +724,18 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 			// vendor boundary, never a silent pass (issue #98 R4); unmodeled
 			// members keep the bounded evidence gap.
 			if dialect == spec.DialectTiDB && len(declaration.Unmodeled) == 0 && declaration.Source != spec.TTLClauseSourceUnproven {
-				if reason := spec.TTLAlterRefusalReason(dialect, declaration, ttlAlterPriorSnapshot(statement)); reason != "" {
+				prior := ttlAlterPriorSnapshot(statement)
+				reason := spec.TTLAlterRefusalReason(dialect, declaration, prior)
+				// A TTL member inside a multi-spec ALTER is refused
+				// atomically by TiDB (ERROR 8150 no_ttl_config on a
+				// proven no-TTL table, ERROR 8200 multi_schema_change on
+				// a proven TTL table, "composite" when the specific code
+				// is unprovable) — the clause is never silently consumed
+				// (issue #98 R6).
+				if len(ddl.Alter) > 1 {
+					reason = spec.TTLAlterCompositeRefusalReason(dialect, declaration, prior)
+				}
+				if reason != "" {
 					gaps = append(gaps, aspectGap(
 						fmt.Sprintf("%s.%s.ttl.%s", ddl.Operation, alter.Action, declaration.Member), true,
 						map[string]any{"aspect": "ttl", "action": alter.Action, "member": declaration.Member, "refusal": reason},

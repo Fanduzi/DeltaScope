@@ -356,3 +356,137 @@ func TestT19AlterTTLNoTTLConfigRefusal(t *testing.T) {
 		}
 	})
 }
+
+func TestT19AlterCompositeTTLRefusal(t *testing.T) {
+	boundary := func(result report.Result, index int, member string) *spec.UnsupportedDetail {
+		t.Helper()
+		for i := range result.Unsupported {
+			entry := &result.Unsupported[i]
+			if entry.Index != index {
+				continue
+			}
+			if entry.Reason == spec.UnsupportedVendorBoundaryReason &&
+				entry.Metadata["aspect"] == "ttl" && entry.Metadata["member"] == member {
+				return entry
+			}
+		}
+		return nil
+	}
+	policy := t10Policy(t, t10Rule{id: t19RuleTTLWarn, level: "warning"})
+	on := true
+	ttlShape := func(name string) *spec.TableSnapshot {
+		shape := t19TTLShape(name)
+		shape.TTL = &spec.TTLConfig{TimeColumn: "created_at", IntervalValue: "1", IntervalUnit: "day", Enabled: &on, JobInterval: "1h"}
+		return shape
+	}
+
+	t.Run("proven no TTL composite keeps no_ttl_config", func(t *testing.T) {
+		provider := &t10Provider{version: "8.0.11-TiDB-v8.5.0", tables: map[string]*spec.TableSnapshot{"t": t19TTLShape("t")}}
+		for _, sql := range []string{
+			"ALTER TABLE t TTL_ENABLE='ON', ADD COLUMN c INT",
+			"ALTER TABLE t TTL_ENABLE='OFF', ADD COLUMN c INT",
+			"ALTER TABLE t TTL_JOB_INTERVAL='2h', ADD COLUMN c INT",
+			"ALTER TABLE t TTL_JOB_INTERVAL='2h', DROP COLUMN c",
+		} {
+			result := t10Audit(t, spec.DialectTiDB, sql, provider, policy)
+			entry := boundary(result, 0, "ttl_enable")
+			if entry == nil {
+				entry = boundary(result, 0, "ttl_job_interval")
+			}
+			if entry == nil || entry.Metadata["refusal"] != "no_ttl_config" {
+				t.Fatalf("%q must refuse no_ttl_config, got %#v", sql, result.Unsupported)
+			}
+			if result.Statements[0].Coverage.Status != report.CoverageIncomplete || result.Verdict != report.VerdictReview {
+				t.Fatalf("coverage=%s verdict=%s, want incomplete/review", result.Statements[0].Coverage.Status, result.Verdict)
+			}
+			if warns := t05FindingsByRule(result, 0, t19RuleTTLWarn); len(warns) != 0 {
+				t.Fatalf("refused composite must not fabricate findings, got %#v", warns)
+			}
+		}
+	})
+
+	t.Run("proven TTL composite refuses multi_schema_change", func(t *testing.T) {
+		provider := &t10Provider{version: "8.0.11-TiDB-v8.5.0", tables: map[string]*spec.TableSnapshot{"t": ttlShape("t")}}
+		for _, tc := range []struct {
+			sql    string
+			member string
+		}{
+			{"ALTER TABLE t TTL_ENABLE='OFF', ADD COLUMN c INT", "ttl_enable"},
+			{"ALTER TABLE t TTL_JOB_INTERVAL='2h', DROP COLUMN c", "ttl_job_interval"},
+			{"ALTER TABLE t TTL=created_at+INTERVAL 10 DAY, ADD COLUMN c INT", "ttl"},
+			{"ALTER TABLE t TTL_ENABLE='OFF', TTL_JOB_INTERVAL='2h'", "ttl_enable"},
+		} {
+			result := t10Audit(t, spec.DialectTiDB, tc.sql, provider, policy)
+			entry := boundary(result, 0, tc.member)
+			if entry == nil || entry.Metadata["refusal"] != "multi_schema_change" {
+				t.Fatalf("%q must refuse multi_schema_change, got %#v", tc.sql, result.Unsupported)
+			}
+			if warns := t05FindingsByRule(result, 0, t19RuleTTLWarn); len(warns) != 0 {
+				t.Fatalf("refused composite must not fabricate findings, got %#v", warns)
+			}
+		}
+	})
+
+	t.Run("unproven prior keeps composite tier without fabricated code", func(t *testing.T) {
+		unknown := t19TTLShape("t")
+		unknown.TTLKnown = false
+		for _, tc := range []struct {
+			name     string
+			provider *t10Provider
+			sql      string
+			member   string
+		}{
+			{name: "ttl unproven", provider: &t10Provider{version: "8.0.11-TiDB-v8.5.0", tables: map[string]*spec.TableSnapshot{"t": unknown}}, sql: "ALTER TABLE t TTL_ENABLE='ON', ADD COLUMN c INT", member: "ttl_enable"},
+			{name: "no metadata", provider: &t10Provider{version: "8.0.11-TiDB-v8.5.0"}, sql: "ALTER TABLE t TTL_ENABLE='ON', ADD COLUMN c INT", member: "ttl_enable"},
+			{name: "no metadata ttl def", provider: &t10Provider{version: "8.0.11-TiDB-v8.5.0"}, sql: "ALTER TABLE t TTL=created_at+INTERVAL 30 DAY, ADD COLUMN c INT", member: "ttl"},
+			{name: "no metadata interval", provider: &t10Provider{version: "8.0.11-TiDB-v8.5.0"}, sql: "ALTER TABLE t TTL_JOB_INTERVAL='2h', DROP COLUMN c", member: "ttl_job_interval"},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				result := t10Audit(t, spec.DialectTiDB, tc.sql, tc.provider, policy)
+				entry := boundary(result, 0, tc.member)
+				if entry == nil || entry.Metadata["refusal"] != "composite" {
+					t.Fatalf("%q must refuse composite tier (code unproven), got %#v", tc.sql, result.Unsupported)
+				}
+				if warns := t05FindingsByRule(result, 0, t19RuleTTLWarn); len(warns) != 0 {
+					t.Fatalf("composite refusal must not fabricate findings, got %#v", warns)
+				}
+			})
+		}
+	})
+
+	t.Run("non TTL multi-action control carries no ttl boundary", func(t *testing.T) {
+		provider := &t10Provider{version: "8.0.11-TiDB-v8.5.0", tables: map[string]*spec.TableSnapshot{"t": ttlShape("t")}}
+		result := t10Audit(t, spec.DialectTiDB, "ALTER TABLE t ADD COLUMN a INT, ADD COLUMN b INT", provider, policy)
+		for _, member := range []string{"ttl", "ttl_enable", "ttl_job_interval"} {
+			if entry := boundary(result, 0, member); entry != nil {
+				t.Fatalf("non-TTL composite must not carry ttl boundary, got %#v", entry)
+			}
+		}
+	})
+
+	t.Run("refused composite leaves successor state unpolluted", func(t *testing.T) {
+		provider := &t10Provider{version: "8.0.11-TiDB-v8.5.0"}
+		_, statements := t17Enrich(t, spec.DialectTiDB,
+			"CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME); ALTER TABLE t TTL_ENABLE='ON', ADD COLUMN c INT; ALTER TABLE t ADD COLUMN note INT;",
+			"golden", &spec.VersionIdentity{Product: spec.VersionProductTiDB, Version: "8.5.0", Major: 8, Minor: 5, Patch: 0, ValidatedRange: true}, provider)
+		if len(statements) != 3 || len(statements[2].Metadata.TargetTables) != 1 {
+			t.Fatalf("successor bindings = %#v", statements[2].Metadata)
+		}
+		snapshot := statements[2].Metadata.TargetTables[0].Snapshot
+		if snapshot == nil || !snapshot.TTLKnown || snapshot.TTL != nil {
+			t.Fatalf("successor must keep proven no TTL after refused composite, got %#v", snapshot)
+		}
+	})
+
+	t.Run("mysql composite keeps vendor boundary not composite tier", func(t *testing.T) {
+		provider := &t10Provider{version: "8.0.46", tables: map[string]*spec.TableSnapshot{"t": ttlShape("t")}}
+		result := t10Audit(t, spec.DialectMySQL, "ALTER TABLE t TTL_ENABLE='OFF', ADD COLUMN c INT", provider, policy)
+		entry := boundary(result, 0, "ttl_enable")
+		if entry == nil {
+			t.Fatalf("MySQL composite must keep its vendor boundary, got %#v", result.Unsupported)
+		}
+		if refusal, ok := entry.Metadata["refusal"]; ok {
+			t.Fatalf("MySQL boundary must not carry TiDB refusal tier, got %v", refusal)
+		}
+	})
+}

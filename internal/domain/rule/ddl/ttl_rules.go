@@ -100,7 +100,11 @@ func (r tidbTTLWarnRule) outcome(statement spec.Statement) ttlRuleOutcome {
 		return createTTLOutcome(statement)
 	}
 	if len(ddl.Alter) != 1 {
-		// TiDB refuses TTL combined with any other schema action atomically.
+		// TiDB refuses TTL combined with any other schema action atomically:
+		// the statement never executes, so no lifecycle warning fires. The
+		// refusal boundary itself is published by coverage via
+		// TTLAlterCompositeRefusalReason — the clause is not silently
+		// consumed (issue #98 R6).
 		return ttlRuleOutcome{}
 	}
 	alter := ddl.Alter[0]

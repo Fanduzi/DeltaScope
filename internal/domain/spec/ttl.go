@@ -64,6 +64,40 @@ func TTLAlterRefusalReason(dialect Dialect, declaration TTLDeclaration, prior *T
 	return ""
 }
 
+// TTLAlterCompositeRefusalReason returns the proven refusal tier for a
+// modeled TTL member carried inside a multi-spec ALTER (issue #98 R6).
+// TiDB refuses every TTL clause that shares a multi-spec ALTER atomically:
+// ttl_enable/ttl_job_interval on a proven no-TTL table hit the earlier
+// ERROR 8150 no_ttl_config check; on a proven TTL table the whole
+// statement is refused with ERROR 8200 multi_schema_change; a ttl=
+// definition member is always refused with 8200 on an existing table.
+// When the bound pre-state cannot prove which native check fires (unknown
+// or absent table state), the refusal itself is still provable — both
+// branches refuse — but the specific error code is not, so the member
+// carries the "composite" tier instead of a fabricated code. Unmodeled or
+// unproven-source members return "" and keep their evidence-gap contract.
+func TTLAlterCompositeRefusalReason(dialect Dialect, declaration TTLDeclaration, prior *TableSnapshot) string {
+	if dialect != DialectTiDB || len(declaration.Unmodeled) > 0 || declaration.Source == TTLClauseSourceUnproven {
+		return ""
+	}
+	if reason := TTLAlterRefusalReason(dialect, declaration, prior); reason != "" {
+		return reason
+	}
+	switch declaration.Member {
+	case "ttl":
+		if prior == nil || !prior.Exists {
+			return "composite"
+		}
+		return "multi_schema_change"
+	case "ttl_enable", "ttl_job_interval":
+		if prior != nil && prior.Exists && prior.TTLKnown && prior.TTL != nil {
+			return "multi_schema_change"
+		}
+		return "composite"
+	}
+	return ""
+}
+
 func ttlCreateOutcomeReason(dialect Dialect, ddl *DDL, effectiveSchema string, facts *InstanceFacts, likeSource *TableSnapshot) (TTLDefinitionOutcome, string) {
 	if dialect != DialectTiDB || ddl == nil {
 		return TTLDefinitionUnproven, ""
