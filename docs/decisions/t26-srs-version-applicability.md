@@ -133,3 +133,18 @@ acquired via `p.db.Conn(ctx)`.
   dependency read; both units release on success and on failure; and
   the topology-split cell (banner differs per backend connection)
   shows the witness only vouches for its own pinned backend.
+
+## Update (T58 / #142)
+
+The `srs.version_applicability` premise now carries live-anchor golden
+evidence (`testdata/ddl-golden/T58.json`, canonical task 50):
+
+- observed 5.7.44 and observed 8.4.10 both pin
+  `version_inapplicable` + `gap_fact` on DROP SRS;
+- observed 8.0.46 audits (the provider's absent answer fires
+  `ddl.mysql.srs.drop.absent` as a blocker);
+- tidb85 stays the vendor boundary;
+- an offline `--target-version 8.0.46` pin stays `version_unproven` —
+  the caller pin remains a conflict check, never an observed fact.
+
+15 cases / 123 assertions, green on the canonical runner.
