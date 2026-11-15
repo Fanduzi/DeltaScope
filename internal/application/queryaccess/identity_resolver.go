@@ -562,21 +562,6 @@ func validateFactPinning(facts *EffectIdentityFacts, finalCtx EffectIdentityReso
 	return factsMatchResolution(facts, finalCtx)
 }
 
-// classifyCandidateResolutionMode returns the bounded resolution mode for a
-// candidate under the given execution context.
-// Explicit schema still requires a session-complete context to keep resolved
-// facts (mode is still "explicit_schema" for path ranking, but gates enforce
-// session completeness separately).
-func classifyCandidateResolutionMode(c EffectCandidate, rc EffectIdentityResolutionContext) EffectIdentityResolutionMode {
-	if CandidateExplicitlyQualified(c) {
-		return ResolutionModeExplicitSchema
-	}
-	if ResolutionContextUsableForUnqualified(rc) {
-		return ResolutionModeUnqualifiedBound
-	}
-	return ResolutionModeUnqualifiedUnbound
-}
-
 // gateIdentityBatchByResolutionContext enforces Phase-1 resolution policy:
 //
 //   - Without a session-complete context, ALL candidates become unavailable

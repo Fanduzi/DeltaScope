@@ -324,10 +324,8 @@ func TestT07SetDropDefaultPreservesState(t *testing.T) {
 // a column dependency: dropping the referenced source is the exact blocker.
 func TestT07ExpressionDefaultDependency(t *testing.T) {
 	t.Parallel()
-	sql := strings.Join([]string{
-		"CREATE TABLE t (\n  a INT,\n  b INT DEFAULT (a + 1)\n)",
-		"ALTER TABLE t DROP COLUMN a",
-	}, ";\n") + ";"
+	sql := "CREATE TABLE t (\n  a INT,\n  b INT DEFAULT (a + 1)\n)" +
+		";\n" + "ALTER TABLE t DROP COLUMN a" + ";"
 	for _, variant := range []struct {
 		dialect spec.Dialect
 		version string

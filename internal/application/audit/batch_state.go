@@ -633,11 +633,13 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		return s.applyPlacementStatement(statement)
 	case spec.DDLOperationCreateView, spec.DDLOperationAlterView:
 		if ddl.View != nil {
-			return s.applyView(statement)
+			s.applyView(statement)
+			return nil
 		}
 	case spec.DDLOperationDropView:
 		if ddl.View != nil {
-			return s.applyDropView(statement)
+			s.applyDropView(statement)
+			return nil
 		}
 	case spec.DDLOperationCreateTable:
 		return s.applyCreateTable(ctx, statement)
@@ -2214,7 +2216,7 @@ func (s *batchState) applyMaintenanceAlter(alter *spec.Alter, targets []spec.Tab
 // attaches the data file, so the row-bearing statistics the move touches
 // can no longer vouch while the structural shape stays. TiDB refuses the
 // actions at the vendor boundary, so nothing transitions there.
-func (s *batchState) applyTablespaceAlter(alter *spec.Alter, targets []spec.Table) {
+func (s *batchState) applyTablespaceAlter(_ *spec.Alter, targets []spec.Table) {
 	if s.dialect == spec.DialectTiDB || len(targets) == 0 {
 		return
 	}
@@ -2934,7 +2936,7 @@ func (s *batchState) applyRenamePair(ctx context.Context, statement spec.Stateme
 // (backing them up when originals is non-nil); every undecidable cell —
 // ambiguous binding, unvouched endpoint, or immovable members — answers
 // renamePairUnproven and leaves endpoint tombstoning to the caller.
-func (s *batchState) renamePairTransition(ctx context.Context, srcNS boundNamespace, srcEntry *batchTableEntry, srcKey batchTableKey, dstNS boundNamespace, dstEntry *batchTableEntry, dstKey batchTableKey, source, destination spec.Table, originals map[batchTableKey]map[boundNamespace]*batchTableEntry) (renamePairOutcome, error) {
+func (s *batchState) renamePairTransition(ctx context.Context, srcNS boundNamespace, srcEntry *batchTableEntry, srcKey batchTableKey, dstNS boundNamespace, dstEntry *batchTableEntry, dstKey batchTableKey, _, _ spec.Table, originals map[batchTableKey]map[boundNamespace]*batchTableEntry) (renamePairOutcome, error) {
 	if srcKey == dstKey && srcNS == dstNS {
 		// RENAME t TO t is a proven no-op natively — the identity and
 		// shape stand exactly as bound.
@@ -3279,7 +3281,7 @@ func (s *batchState) multiDropVetoes() *bool {
 // targets drop and missing ones keep their (absent) pre-state. Temp-bound
 // names in a multi-target list drop on 5.7, survive on 8.x/TiDB — divergent
 // under an unknown version.
-func dropTargetFate(atomic *bool, multi, ifExists, anyMissing, anyUnvouched bool, ns boundNamespace, entry *batchTableEntry, dialect spec.Dialect, version *spec.VersionIdentity) dropFate {
+func dropTargetFate(atomic *bool, multi, ifExists, anyMissing, anyUnvouched bool, ns boundNamespace, entry *batchTableEntry, dialect spec.Dialect, _ *spec.VersionIdentity) dropFate {
 	state := tableNeverTouched
 	if entry != nil {
 		state = entry.state

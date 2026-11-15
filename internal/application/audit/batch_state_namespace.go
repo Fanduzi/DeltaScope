@@ -29,15 +29,6 @@ const (
 	namespaceAmbiguous
 )
 
-// temporaryNamespaceKnown reports whether a temp-slot state decides the
-// binding: present means the temp object shadows the name, absent means the
-// name provably has no temp object. never-touched is provably absent — temp
-// objects exist only when this session created them, and the batch is the
-// session.
-func temporaryNamespaceKnown(state tableKnowledge) bool {
-	return state == tablePresent || state == tableAbsent || state == tableNeverTouched
-}
-
 // tempEntry returns the session-local entry for a key, or nil when the slot
 // was never touched (provably no temp object — the batch is the session and
 // temp objects cannot preexist it).

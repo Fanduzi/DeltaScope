@@ -12,7 +12,7 @@ type viewStateReadError struct{ cause error }
 func (viewStateReadError) Error() string   { return "view metadata read failed" }
 func (e viewStateReadError) Unwrap() error { return e.cause }
 
-func (s *batchState) applyDropView(statement spec.Statement) error {
+func (s *batchState) applyDropView(statement spec.Statement) {
 	assessment := spec.AssessViewLifecycle(statement)
 	for _, target := range assessment.DropTargets {
 		key := s.keyFor(s.schema, target.Binding.Table)
@@ -25,7 +25,6 @@ func (s *batchState) applyDropView(statement spec.Statement) error {
 			s.entries[key] = &batchTableEntry{state: tableUnknown, notView: true, displaySchema: key.schema, displayTable: key.table}
 		}
 	}
-	return nil
 }
 
 func (s *batchState) projectViewMetadata(ctx context.Context, statement spec.Statement, target *spec.TableSnapshot, targets []spec.TargetBinding, sources []*spec.TableSnapshot) (*spec.ViewMetadata, error) {
@@ -133,14 +132,14 @@ func (s *batchState) projectViewMetadata(ctx context.Context, statement spec.Sta
 	return metadata, nil
 }
 
-func (s *batchState) applyView(statement spec.Statement) error {
+func (s *batchState) applyView(statement spec.Statement) {
 	ddl := statement.DDL
 	if ddl == nil || ddl.View == nil || ddl.Table == nil || statement.Metadata == nil || statement.Metadata.View == nil {
-		return nil
+		return
 	}
 	assessment := spec.AssessViewLifecycle(statement)
 	if assessment.TargetInvalid || assessment.SourceInvalid || assessment.CheckInvalid {
-		return nil
+		return
 	}
 	key := s.keyFor(s.schema, *ddl.Table)
 	if len(assessment.TargetRequired) != 0 || len(assessment.SourceRequired) != 0 ||
@@ -180,7 +179,7 @@ func (s *batchState) applyView(statement spec.Statement) error {
 		} else {
 			s.invalidateKey(key)
 		}
-		return nil
+		return
 	}
 	var shape *spec.TableSnapshot
 	if ddl.Operation == spec.DDLOperationAlterView {
@@ -267,5 +266,4 @@ func (s *batchState) applyView(statement spec.Statement) error {
 		}
 	}
 	s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: key.schema, displayTable: key.table}
-	return nil
 }

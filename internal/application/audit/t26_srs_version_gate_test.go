@@ -232,14 +232,14 @@ func TestT26SRSVersionGateOwnApplyDrop(t *testing.T) {
 	fx := opAbsentFixture(opGrantConsumable)
 	provider, state := paRealState(t, fx)
 	// First an in-domain proven-absence DROP publishes the entry.
-	enriched := appaudit.EnrichSRSPrivForTest(t, state, provider,
+	appaudit.EnrichSRSPrivForTest(t, state, provider,
 		"DROP SPATIAL REFERENCE SYSTEM IF EXISTS 100001;")
 	if len(state.SRSOrderedSRIDs()) != 1 {
 		t.Fatalf("in-domain absent drop must publish: %+v", state.SRSOrderedSRIDs())
 	}
 	// Now a boundary write on the same SRID: stale mint + barrier flip.
 	vgOutOfDomain(state)
-	enriched = appaudit.EnrichSRSPrivForTest(t, state, provider,
+	enriched := appaudit.EnrichSRSPrivForTest(t, state, provider,
 		"DROP SPATIAL REFERENCE SYSTEM 100001;")
 	if enriched[0].Unsupported == nil || enriched[0].Unsupported.Metadata["gate"] != "version" {
 		t.Fatalf("must take the version boundary: %+v", enriched[0].Unsupported)

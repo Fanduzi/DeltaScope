@@ -813,7 +813,7 @@ func TestT26SRSR1ReservedEndpoints(t *testing.T) {
 	assertReads(t, provider, fixture, 1, 1, 1, 1, 0)
 
 	// E5.5 shape: 32768 — no advisory at all.
-	fixture, provider = newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36", qoVersion: "8.0.3"}, nil)
+	_, provider = newSRSSQLHarness(t, &srsSQLFixture{version: "8.0.36", qoVersion: "8.0.3"}, nil)
 	enriched = enrichSRS(t, newSRSState(provider), provider, "DROP SPATIAL REFERENCE SYSTEM 32768")
 	result = evaluateEnriched(t, enriched)
 	if n := len(result.Statements[0].Findings); n != 0 {
@@ -1574,7 +1574,7 @@ func TestT26SRSR1ErrorPaths(t *testing.T) {
 
 	// E11.3: deps query fails after a clean existence answer.
 	sentinelD := errors.New("srs-deps-fail-3")
-	fixture, provider = newSRSSQLHarness(t, &srsSQLFixture{
+	_, provider = newSRSSQLHarness(t, &srsSQLFixture{
 		version: "8.0.36", failOn: map[string]error{"st_geometry_columns": sentinelD},
 	}, nil)
 	state = newSRSState(provider)

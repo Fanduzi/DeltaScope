@@ -740,35 +740,6 @@ type IndexKeyPart struct {
 	MultiValuedCastLengthSet bool `json:"multi_valued_cast_length_set,omitempty"`
 }
 
-// SetKeyParts installs the member list and derives every aggregate mark from
-// it, so count fields can never drift from the member facts.
-func (i *Index) SetKeyParts(parts []IndexKeyPart) {
-	i.KeyParts = parts
-	i.ExpressionCount, i.PrefixParts, i.DescParts, i.MultiValuedParts, i.UnmodeledKeyParts, i.DirectionUnknownParts = 0, 0, 0, 0, 0, 0
-	i.HasExpressionKeys = false
-	for _, part := range parts {
-		switch part.Kind {
-		case IndexKeyPartExpression:
-			i.ExpressionCount++
-			i.HasExpressionKeys = true
-			if part.MultiValued {
-				i.MultiValuedParts++
-			}
-		case IndexKeyPartUnmodeled:
-			i.UnmodeledKeyParts++
-		}
-		if part.PrefixLength != nil {
-			i.PrefixParts++
-		}
-		if part.Descending {
-			i.DescParts++
-		}
-		if part.DirectionUnknown {
-			i.DirectionUnknownParts++
-		}
-	}
-}
-
 // CloneKeyParts deep-copies the member list; ExpressionFacts are reference
 // counts and strings, so a slice copy per part is the whole clone.
 func CloneKeyParts(in []IndexKeyPart) []IndexKeyPart {
@@ -862,6 +833,35 @@ type Index struct {
 	// Name-keyed lookups must only bind members with a proven name.
 	// Internal audit marker; not serialized.
 	NameUnknown bool `json:"-"`
+}
+
+// SetKeyParts installs the member list and derives every aggregate mark from
+// it, so count fields can never drift from the member facts.
+func (i *Index) SetKeyParts(parts []IndexKeyPart) {
+	i.KeyParts = parts
+	i.ExpressionCount, i.PrefixParts, i.DescParts, i.MultiValuedParts, i.UnmodeledKeyParts, i.DirectionUnknownParts = 0, 0, 0, 0, 0, 0
+	i.HasExpressionKeys = false
+	for _, part := range parts {
+		switch part.Kind {
+		case IndexKeyPartExpression:
+			i.ExpressionCount++
+			i.HasExpressionKeys = true
+			if part.MultiValued {
+				i.MultiValuedParts++
+			}
+		case IndexKeyPartUnmodeled:
+			i.UnmodeledKeyParts++
+		}
+		if part.PrefixLength != nil {
+			i.PrefixParts++
+		}
+		if part.Descending {
+			i.DescParts++
+		}
+		if part.DirectionUnknown {
+			i.DirectionUnknownParts++
+		}
+	}
 }
 
 // Constraint describes a non-index table constraint worth preserving for later rules.

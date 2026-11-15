@@ -10,8 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog"
 	"os"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog"
 )
 
 // t06A5HTTPPolicy writes the isolated single-rule policy (limit=8, blocker).

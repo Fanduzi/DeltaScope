@@ -63,10 +63,11 @@ func fixedFixture(anchor string) (string, []expectedColumn) {
 	if anchor != "mysql57" {
 		want[7].defaultExpr = true
 	}
-	if anchor == "mysql80" || anchor == "mysql84" {
+	switch anchor {
+	case "mysql80", "mysql84":
 		columns += ",expr_c INT DEFAULT(a+1),json_c JSON DEFAULT(JSON_OBJECT('k',1)),hidden_c INT INVISIBLE,hidden_gen INT AS(a+1) STORED INVISIBLE"
 		want = append(want, expectedColumn{name: "expr_c", defaultExpr: true, defaultRefs: []string{"a"}}, expectedColumn{name: "json_c", defaultExpr: true}, expectedColumn{name: "hidden_c", invisible: true}, expectedColumn{name: "hidden_gen", storage: "stored", genRefs: []string{"a"}, invisible: true})
-	} else if anchor == "tidb85" {
+	case "tidb85":
 		columns += ",json_c JSON DEFAULT(JSON_OBJECT('k',1))"
 		want = append(want, expectedColumn{name: "json_c", defaultExpr: true})
 	}
@@ -163,7 +164,7 @@ func writeJSON(dir, name string, value any) (err error) {
 	if err != nil {
 		return fmt.Errorf("encode %s: %w", name, err)
 	}
-	file, err := os.OpenFile(filepath.Join(dir, name), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+	file, err := os.OpenFile(filepath.Join(dir, name), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) //nolint:gosec // fixed evidence filenames under the operator-chosen root
 	if err != nil {
 		return fmt.Errorf("create evidence %s: %w", name, err)
 	}
@@ -396,7 +397,8 @@ func collect(ctx context.Context, db *sql.DB, dir, anchor string, ledger *queryL
 		return errors.New("complete LIMIT-0 visible field set differs")
 	}
 	visible := map[string]any{"select_star": all}
-	if anchor == "mysql80" || anchor == "mysql84" {
+	switch anchor {
+	case "mysql80", "mysql84":
 		explicit, err := projection(ctx, db, "SELECT hidden_c,hidden_gen FROM "+fixtureTable+" LIMIT 0")
 		if err != nil {
 			return err
@@ -424,11 +426,11 @@ func run() (err error) {
 	if os.Getenv("T07_USER") == "" {
 		return errors.New("T07_USER must be provided by environment")
 	}
-	if err := os.MkdirAll(os.Args[1], 0755); err != nil {
+	if err := os.MkdirAll(os.Args[1], 0o750); err != nil { //nolint:gosec // CLI positional arg is the operator-chosen output root
 		return err
 	}
 	dir := filepath.Join(os.Args[1], anchor)
-	if err := os.Mkdir(dir, 0755); err != nil {
+	if err := os.Mkdir(dir, 0o750); err != nil { //nolint:gosec // derived from the same operator-chosen root
 		return err
 	}
 	cfg := gomysql.NewConfig()

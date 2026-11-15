@@ -246,8 +246,7 @@ func TestT23AutoIncrementRequireAcceptsAutoRandom(t *testing.T) {
 	if len(findings) != 1 {
 		t.Fatalf("strict policy must flag the missing literal AUTO_INCREMENT, got %+v", findings)
 	}
-	findings, err = allow.Evaluate(context.Background(), statement)
-	if err != nil {
+	if _, err = allow.Evaluate(context.Background(), statement); err != nil {
 		t.Fatalf("evaluate allow mysql: %v", err)
 	}
 	statement.Dialect = spec.DialectMySQL

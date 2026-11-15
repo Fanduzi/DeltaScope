@@ -58,8 +58,10 @@ func (c *ledgerConn) Prepare(query string) (driver.Stmt, error) {
 	return &ledgerStmt{stmt, query, c.ledger}, nil
 }
 
-func (c *ledgerConn) Close() error              { return c.conn.Close() }
-func (c *ledgerConn) Begin() (driver.Tx, error) { return c.conn.Begin() }
+func (c *ledgerConn) Close() error { return c.conn.Close() }
+func (c *ledgerConn) Begin() (driver.Tx, error) {
+	return c.conn.Begin() //nolint:staticcheck // driver.Conn interface requires the legacy entrypoint
+}
 
 func (c *ledgerConn) Ping(ctx context.Context) error {
 	c.ledger.add("ping", "")
@@ -95,9 +97,9 @@ func (s *ledgerStmt) Close() error  { return s.stmt.Close() }
 func (s *ledgerStmt) NumInput() int { return s.stmt.NumInput() }
 func (s *ledgerStmt) Exec(args []driver.Value) (driver.Result, error) {
 	s.ledger.add("stmt-exec", s.query)
-	return s.stmt.Exec(args)
+	return s.stmt.Exec(args) //nolint:staticcheck // driver.Stmt interface requires the legacy entrypoint
 }
 func (s *ledgerStmt) Query(args []driver.Value) (driver.Rows, error) {
 	s.ledger.add("stmt-query", s.query)
-	return s.stmt.Query(args)
+	return s.stmt.Query(args) //nolint:staticcheck // driver.Stmt interface requires the legacy entrypoint
 }

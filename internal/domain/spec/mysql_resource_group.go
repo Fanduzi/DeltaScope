@@ -836,7 +836,7 @@ func mysqlResourceGroupPriorityTypes(operation DDLOperation, declaration *MySQLR
 // (undeclared VCPU/enabled preserve, an undeclared priority resets to
 // zero exactly as upstream's parse-tree default does), and DROP clears
 // the identity. Divergent members stay withheld (nil).
-func mysqlResourceGroupPostState(operation DDLOperation, declaration *MySQLResourceGroupDeclaration, pre *MySQLResourceGroupState, prioDeclared bool, prio mysqlResourceGroupPriorityOutcome, occupiedKnown, occupied bool) *MySQLResourceGroupPost {
+func mysqlResourceGroupPostState(operation DDLOperation, declaration *MySQLResourceGroupDeclaration, pre *MySQLResourceGroupState, prioDeclared bool, prio mysqlResourceGroupPriorityOutcome, _, _ bool) *MySQLResourceGroupPost {
 	switch operation {
 	case DDLOperationCreateResourceGroup:
 		post := &MySQLResourceGroupPost{

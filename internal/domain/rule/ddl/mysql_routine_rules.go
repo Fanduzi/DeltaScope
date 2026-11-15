@@ -66,7 +66,7 @@ func (r mysqlRoutineVariableShadowingRule) Evaluate(ctx context.Context, stateme
 					Level:      r.level,
 					Message:    fmt.Sprintf("local variable %q shadows routine parameter %q", name, name),
 					Suggestion: "rename the local variable or the parameter so name references stay unambiguous",
-					Location:   rule.ChildLocation(statement, bs.Statement.Line, bs.Statement.Column),
+					Location:   rule.ChildLocation(statement, bs.Line, bs.Column),
 					Metadata: map[string]any{
 						"routine":        decl.Name.Name,
 						"routine_member": memberIdx,

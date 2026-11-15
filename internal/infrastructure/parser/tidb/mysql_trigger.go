@@ -259,7 +259,7 @@ func eachTriggerBodyMember(body *spec.RoutineBody, fn func(*spec.RoutineBodyStat
 // evidence names the owning object family (T29).
 func retagTriggerMemberFeatures(body *spec.RoutineBody) {
 	eachTriggerBodyMember(body, func(bs *spec.RoutineBodyStatement) {
-		if u := bs.Statement.Unsupported; u != nil {
+		if u := bs.Unsupported; u != nil {
 			u.Feature = strings.Replace(u.Feature, "routine.body.", "trigger.body.", 1)
 		}
 	})
@@ -312,12 +312,12 @@ func applyTriggerOldNewBounds(decl *spec.TriggerDeclaration) {
 		return
 	}
 	eachTriggerBodyMember(decl.Body, func(bs *spec.RoutineBodyStatement) {
-		if bs.Compound != nil || bs.Declare != nil || bs.Statement.Unsupported != nil {
+		if bs.Compound != nil || bs.Declare != nil || bs.Unsupported != nil {
 			return
 		}
-		memberToks, _ := tokenizeSQLState(bs.Statement.RawSQL)
-		usesOld, usesNew, oldCols, newCols := triggerOldNewUse(bs.Statement.RawSQL, memberToks)
-		if !(usesOld && !decl.Event.AllowsOld()) && !(usesNew && !decl.Event.AllowsNew()) {
+		memberToks, _ := tokenizeSQLState(bs.RawSQL)
+		usesOld, usesNew, oldCols, newCols := triggerOldNewUse(bs.RawSQL, memberToks)
+		if (!usesOld || decl.Event.AllowsOld()) && (!usesNew || decl.Event.AllowsNew()) {
 			return
 		}
 		meta := map[string]any{
@@ -330,7 +330,7 @@ func applyTriggerOldNewBounds(decl *spec.TriggerDeclaration) {
 		if usesNew {
 			meta["new_columns"] = newCols
 		}
-		bs.Statement.Unsupported = &spec.UnsupportedDetail{
+		bs.Unsupported = &spec.UnsupportedDetail{
 			Feature:  "trigger.body.old_new",
 			Reason:   spec.UnsupportedUnauditedReason,
 			Metadata: meta,

@@ -43,7 +43,7 @@ func blankTiDBFeatureComments(sql string) string {
 				state = scanLineComment
 				i++
 			case i+3 < len(sql) && sql[i:i+4] == "/*T!" &&
-				!(i+9 <= len(sql) && strings.EqualFold(sql[i:i+9], "/*T![ttl]")):
+				(i+9 > len(sql) || !strings.EqualFold(sql[i:i+9], "/*T![ttl]")):
 				if out == nil {
 					out = []byte(sql)
 				}

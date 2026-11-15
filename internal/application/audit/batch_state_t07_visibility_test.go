@@ -123,10 +123,8 @@ func TestT07VisibilitySetterPreservesSiblings(t *testing.T) {
 func TestT07VisibilityModifyResets(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	statements := t07Columns(t, strings.Join([]string{
-		"CREATE TABLE t (id INT PRIMARY KEY, hidden_c INT INVISIBLE, visible_c INT)",
-		"ALTER TABLE t MODIFY COLUMN hidden_c BIGINT",
-	}, ";\n"), spec.DialectMySQL)
+	statements := t07Columns(t, "CREATE TABLE t (id INT PRIMARY KEY, hidden_c INT INVISIBLE, visible_c INT)"+
+		";\n"+"ALTER TABLE t MODIFY COLUMN hidden_c BIGINT", spec.DialectMySQL)
 	version := &spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.46", Major: 8, Minor: 0, Patch: 46, ValidatedRange: true}
 	state := newBatchState(spec.DialectMySQL, "golden", nil)
 	target := spec.Table{Schema: "golden", Name: "t"}

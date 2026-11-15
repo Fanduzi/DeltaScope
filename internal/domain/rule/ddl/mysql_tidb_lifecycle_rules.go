@@ -25,7 +25,7 @@ type mysqlTidbLifecycleRule struct {
 	adjudicate func(level rule.Level, statement spec.Statement) ([]rule.Finding, bool)
 }
 
-func newMySQLTiDBLifecycleRule(id string, level rule.Level, operation spec.DDLOperation, objectType string, message string, suggestion string, cfg policy.RulePolicy) (rule.StatementRule, error) {
+func newMySQLTiDBLifecycleRule(id string, level rule.Level, operation spec.DDLOperation, objectType string, message string, suggestion string, cfg policy.RulePolicy) (mysqlTidbLifecycleRule, error) {
 	return mysqlTidbLifecycleRule{
 		id:         id,
 		level:      configuredLevel(cfg, level),
@@ -341,7 +341,7 @@ func newCreateResourceGroupNoticeRule(cfg policy.RulePolicy) (rule.StatementRule
 	if err != nil {
 		return nil, err
 	}
-	n := base.(mysqlTidbLifecycleRule)
+	n := base
 	n.adjudicate = resourceGroupNoticeAdjudicator("create", n.message, n.suggestion)
 	return n, nil
 }
@@ -356,7 +356,7 @@ func newAlterResourceGroupNoticeRule(cfg policy.RulePolicy) (rule.StatementRule,
 	if err != nil {
 		return nil, err
 	}
-	n := base.(mysqlTidbLifecycleRule)
+	n := base
 	n.adjudicate = resourceGroupNoticeAdjudicator("alter", n.message, n.suggestion)
 	return n, nil
 }
@@ -371,7 +371,7 @@ func newDropResourceGroupNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, 
 	if err != nil {
 		return nil, err
 	}
-	n := base.(mysqlTidbLifecycleRule)
+	n := base
 	n.adjudicate = resourceGroupNoticeAdjudicator("drop", n.message, n.suggestion)
 	return n, nil
 }
@@ -413,7 +413,7 @@ func newCreateSequenceNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, err
 	if err != nil {
 		return nil, err
 	}
-	n := base.(mysqlTidbLifecycleRule)
+	n := base
 	n.adjudicate = sequenceNoticeAdjudicator("create", n.message, n.suggestion)
 	return n, nil
 }
@@ -428,7 +428,7 @@ func newAlterSequenceNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, erro
 	if err != nil {
 		return nil, err
 	}
-	n := base.(mysqlTidbLifecycleRule)
+	n := base
 	n.adjudicate = sequenceNoticeAdjudicator("alter", n.message, n.suggestion)
 	return n, nil
 }
@@ -443,7 +443,7 @@ func newDropSequenceNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error
 	if err != nil {
 		return nil, err
 	}
-	n := base.(mysqlTidbLifecycleRule)
+	n := base
 	n.adjudicate = sequenceNoticeAdjudicator("drop", n.message, n.suggestion)
 	return n, nil
 }

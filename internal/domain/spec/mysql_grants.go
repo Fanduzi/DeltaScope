@@ -19,7 +19,7 @@ var mysqlGlobalGrantPattern = regexp.MustCompile(`(?i)^GRANT\s+(.+?)\s+ON\s+(\S+
 func CollectMySQLGlobalPrivileges(set map[string]bool, lines []string) {
 	for _, line := range lines {
 		match := mysqlGlobalGrantPattern.FindStringSubmatch(strings.TrimSpace(line))
-		if match == nil || match[2] != "*.*" {
+		if len(match) < 3 || match[2] != "*.*" {
 			continue
 		}
 		for _, privilege := range strings.Split(match[1], ",") {
