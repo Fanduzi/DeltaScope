@@ -4,6 +4,7 @@ package ddl
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -217,6 +218,7 @@ func (r alterAutoRandomValidRule) EvidenceGaps(statement spec.Statement) []rule.
 	for fact := range facts {
 		required = append(required, fact)
 	}
+	sort.Strings(required)
 	return []rule.EvidenceGap{{
 		ReasonCode:    gapReasonMissingInstanceFact,
 		RequiredFacts: required,
@@ -410,6 +412,7 @@ func (r alterTableOptionsValidRule) EvidenceGaps(statement spec.Statement) []rul
 	for fact := range required {
 		list = append(list, fact)
 	}
+	sort.Strings(list)
 	return []rule.EvidenceGap{{
 		ReasonCode:    gapReasonMissingInstanceFact,
 		RequiredFacts: list,

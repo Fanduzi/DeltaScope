@@ -448,8 +448,8 @@
       "index": 0,
       "rule_id": "ddl.tidb.alter.auto_random.valid",
       "required_facts": [
-       "table.columns",
-       "table.auto_random_bits"
+       "table.auto_random_bits",
+       "table.columns"
       ]
      }
     ],
@@ -461,8 +461,8 @@
       "rule_id": "ddl.tidb.alter.auto_random.valid",
       "reason_code": "missing_instance_fact",
       "required_facts": [
-       "table.columns",
-       "table.auto_random_bits"
+       "table.auto_random_bits",
+       "table.columns"
       ]
      },
      {

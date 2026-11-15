@@ -3,6 +3,7 @@ package ddl
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -229,6 +230,7 @@ func (r tableCacheValidRule) EvidenceGaps(statement spec.Statement) []rule.Evide
 	for fact := range required {
 		list = append(list, fact)
 	}
+	sort.Strings(list)
 	return []rule.EvidenceGap{{ReasonCode: gapReasonMissingInstanceFact, RequiredFacts: list}}
 }
 
@@ -327,6 +329,7 @@ func (r tableAttributesValidRule) EvidenceGaps(statement spec.Statement) []rule.
 	for fact := range required {
 		list = append(list, fact)
 	}
+	sort.Strings(list)
 	return []rule.EvidenceGap{{ReasonCode: gapReasonMissingInstanceFact, RequiredFacts: list}}
 }
 
@@ -430,5 +433,6 @@ func (r tableTiFlashValidRule) EvidenceGaps(statement spec.Statement) []rule.Evi
 	for fact := range required {
 		list = append(list, fact)
 	}
+	sort.Strings(list)
 	return []rule.EvidenceGap{{ReasonCode: gapReasonMissingInstanceFact, RequiredFacts: list}}
 }
