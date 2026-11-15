@@ -52,7 +52,7 @@ func TestParserErrorDiagnosticEvidence(t *testing.T) {
 }
 
 // The ENGINE-led ALTER TABLESPACE form graduated out of the MySQL
-// parser-upgrade candidate list (T57/#140): the bounded tablespace
+// parser-upgrade candidate list (T57/#141): the bounded tablespace
 // recognizer consumes `ALTER TABLESPACE name ENGINE [=] engine`, so the
 // statement is audited — never a parser-error diagnostic.
 func TestMySQLAlterTablespaceEngineGraduated(t *testing.T) {

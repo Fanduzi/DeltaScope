@@ -21,7 +21,7 @@ func TestParserUpgradeCandidateGuidanceCoverage(t *testing.T) {
 	}{
 		// MySQL has no remaining parser-upgrade candidates: the
 		// stored-routine prefixes graduated under T27 and ALTER
-		// TABLESPACE ENGINE graduated under T57/#140. PostgreSQL
+		// TABLESPACE ENGINE graduated under T57/#141. PostgreSQL
 		// candidates (5) are in the postgresql-tag counterpart.
 	}
 

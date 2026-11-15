@@ -27,7 +27,7 @@ func TestDDLCoverage_EmbeddedCatalogMySQLParserUpgradeCandidate(t *testing.T) {
 	}
 
 	// MySQL has zero remaining parser-upgrade candidates: ALTER TABLESPACE
-	// ENGINE graduated to finding_covered under T57/#140.
+	// ENGINE graduated to finding_covered under T57/#141.
 	output := stdout.String()
 	if strings.Contains(output, "ALTER TABLESPACE") {
 		t.Error("graduated ALTER TABLESPACE must not remain a parser upgrade candidate")
@@ -56,7 +56,7 @@ func TestDDLCoverage_MySQLParserUpgradeCandidate(t *testing.T) {
 		t.Fatalf("exit code = %d, want 0; stderr=%s", code, stderr.String())
 	}
 
-	// MySQL retains zero parser-upgrade candidates after T57/#140 graduated
+	// MySQL retains zero parser-upgrade candidates after T57/#141 graduated
 	// ALTER TABLESPACE ENGINE to finding_covered.
 	output := stdout.String()
 	if strings.Contains(output, "ALTER TABLESPACE") {

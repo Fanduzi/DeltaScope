@@ -80,7 +80,7 @@ var requiredParserUpgradeCandidates = []struct {
 }{
 	// The MySQL stored-routine prefixes graduated to supported statements
 	// under T27/#106; the ALTER TABLESPACE ENGINE clause graduated under
-	// T57/#140 when the bounded recognizer learned the ENGINE-led member.
+	// T57/#141 when the bounded recognizer learned the ENGINE-led member.
 	// PostgreSQL keeps the remaining five candidates.
 	{"postgresql", "DROP SUBSCRIPTION WITH drop_slot"},
 	{"postgresql", "NOT NULL NOT VALID"},

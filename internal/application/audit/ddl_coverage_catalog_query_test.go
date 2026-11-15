@@ -130,7 +130,7 @@ func TestQueryCatalog_ClassificationFilter(t *testing.T) {
 	}
 	// TiDB and PostgreSQL keep parser_error entries; MySQL's last
 	// parser_error form (ALTER TABLESPACE ENGINE) graduated to
-	// finding_covered under T57/#140.
+	// finding_covered under T57/#141.
 	seenDialects := map[string]bool{}
 	for _, e := range res.Entries {
 		seenDialects[e.Dialect] = true
@@ -225,7 +225,7 @@ func TestQueryCatalog_CombinedFilters(t *testing.T) {
 	}
 
 	// MySQL retains zero parser_error entries — its only candidate
-	// graduated to finding_covered under T57/#140.
+	// graduated to finding_covered under T57/#141.
 	mysqlPE := QueryCatalog(entries, CatalogQuery{Dialect: "mysql", Classification: "parser_error"})
 	if mysqlPE.Total != 0 {
 		t.Errorf("expected zero mysql parser_error entries, got %d", mysqlPE.Total)
