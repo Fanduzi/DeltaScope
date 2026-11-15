@@ -1,0 +1,3411 @@
+{
+ "task_id": "T39",
+ "issue": 122,
+ "anchor_scope": "postgresql",
+ "policy_profile": "pg-acceptance",
+ "description": "INDEX/ACCESS METHOD/OPCLASS/OPFAMILY/TRANSFORM/CAST acceptance on postgresql17 (#122): index methods and access-object lifecycles execute natively.",
+ "policy": {
+  "enable": {
+   "ddl.alter.add_column.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.add_column.notice": {
+    "enabled": true
+   },
+   "ddl.alter.add_constraint.notice": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.columns.max_count": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.duplicate.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.fulltext.contains.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.fulltext.prefix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.fulltext.suffix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.redundant_left_prefix.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.redundant_unique_overlap.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.secondary.contains.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.secondary.prefix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.secondary.suffix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.unique.contains.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.unique.prefix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_index.unique.suffix.require": {
+    "enabled": true
+   },
+   "ddl.alter.add_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.add_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.add_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.alter_check.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.alter_check.version.require": {
+    "enabled": true
+   },
+   "ddl.alter.alter_index.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.compatibility.require": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.explicit_auto_increment_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.explicit_default_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.explicit_nullability_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.target.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.change_column.target_type_family.allowlist": {
+    "enabled": true
+   },
+   "ddl.alter.charset_conversion.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.charset_conversion.warn": {
+    "enabled": true
+   },
+   "ddl.alter.check_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.check_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.check_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.coalesce_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.coalesce_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.column.dependency.require": {
+    "enabled": true
+   },
+   "ddl.alter.column_position.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.discard_partition_tablespace.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.discard_partition_tablespace.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.discard_partition_tablespace.target": {
+    "enabled": true
+   },
+   "ddl.alter.discard_tablespace.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.discard_tablespace.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_check.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_column.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_column.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_column.notice": {
+    "enabled": true
+   },
+   "ddl.alter.drop_default.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_default.explicit_default_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_default.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_expression.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_foreign_key.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_foreign_key.notice": {
+    "enabled": true
+   },
+   "ddl.alter.drop_identity.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_index.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_index.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_index.notice": {
+    "enabled": true
+   },
+   "ddl.alter.drop_not_null.explicit_nullability_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_not_null.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.drop_partition.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.drop_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.drop_primary_key.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.drop_primary_key.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.exchange_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.exchange_partition.counterpart": {
+    "enabled": true
+   },
+   "ddl.alter.exchange_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.exchange_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.import_partition_tablespace.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.import_partition_tablespace.target": {
+    "enabled": true
+   },
+   "ddl.alter.import_partition_tablespace.warn": {
+    "enabled": true
+   },
+   "ddl.alter.import_tablespace.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.import_tablespace.warn": {
+    "enabled": true
+   },
+   "ddl.alter.keys_toggle.notice": {
+    "enabled": true
+   },
+   "ddl.alter.merge.mysql.require": {
+    "enabled": true
+   },
+   "ddl.alter.merge.tidb.require": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.compatibility.require": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.explicit_auto_increment_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.explicit_default_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.explicit_nullability_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.notice": {
+    "enabled": true
+   },
+   "ddl.alter.modify_column.target_type_family.allowlist": {
+    "enabled": true
+   },
+   "ddl.alter.online_ddl.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.online_ddl.warn": {
+    "enabled": true
+   },
+   "ddl.alter.optimize_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.optimize_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.optimize_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.partition_by.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.partition_by.warn": {
+    "enabled": true
+   },
+   "ddl.alter.rebuild.warn": {
+    "enabled": true
+   },
+   "ddl.alter.rebuild_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.rebuild_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.rebuild_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.remove_partitioning.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.remove_partitioning.warn": {
+    "enabled": true
+   },
+   "ddl.alter.rename_column.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.rename_column.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.rename_column.target.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.rename_column.version.require": {
+    "enabled": true
+   },
+   "ddl.alter.rename_index.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.rename_index.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.rename_table.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.reorganize_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.reorganize_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.reorganize_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.repair_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.repair_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter.repair_partition.warn": {
+    "enabled": true
+   },
+   "ddl.alter.set_data_type.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.set_default.exists.require": {
+    "enabled": true
+   },
+   "ddl.alter.set_default.explicit_default_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.set_default.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.set_generated.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.set_not_null.explicit_nullability_change.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.set_not_null.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.table_option.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.table_option.compatibility.require": {
+    "enabled": true
+   },
+   "ddl.alter.table_option.warn": {
+    "enabled": true
+   },
+   "ddl.alter.truncate_partition.applicability": {
+    "enabled": true
+   },
+   "ddl.alter.truncate_partition.forbid": {
+    "enabled": true
+   },
+   "ddl.alter.truncate_partition.target": {
+    "enabled": true
+   },
+   "ddl.alter_database.notice": {
+    "enabled": true
+   },
+   "ddl.alter_event.notice": {
+    "enabled": true
+   },
+   "ddl.alter_function.notice": {
+    "enabled": true
+   },
+   "ddl.alter_placement_policy.notice": {
+    "enabled": true
+   },
+   "ddl.alter_procedure.notice": {
+    "enabled": true
+   },
+   "ddl.alter_resource_group.notice": {
+    "enabled": true
+   },
+   "ddl.alter_sequence.notice": {
+    "enabled": true
+   },
+   "ddl.alter_user.notice": {
+    "enabled": true
+   },
+   "ddl.column.advanced.compatibility.require": {
+    "enabled": true
+   },
+   "ddl.column.bit.forbid": {
+    "enabled": true
+   },
+   "ddl.column.blob_text.forbid": {
+    "enabled": true
+   },
+   "ddl.column.char.max_length": {
+    "enabled": true
+   },
+   "ddl.column.charset.allowlist": {
+    "enabled": true
+   },
+   "ddl.column.charset_collation.match.require": {
+    "enabled": true
+   },
+   "ddl.column.collation.allowlist": {
+    "enabled": true
+   },
+   "ddl.column.comment.require": {
+    "enabled": true
+   },
+   "ddl.column.default.require": {
+    "enabled": true
+   },
+   "ddl.column.float_double.forbid": {
+    "enabled": true
+   },
+   "ddl.column.json.forbid": {
+    "enabled": true
+   },
+   "ddl.column.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.column.name.keyword.forbid": {
+    "enabled": true
+   },
+   "ddl.column.name.max_length": {
+    "enabled": true
+   },
+   "ddl.column.name.pattern.require": {
+    "enabled": true
+   },
+   "ddl.column.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.column.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.column.not_null.require": {
+    "enabled": true
+   },
+   "ddl.column.timestamp.forbid": {
+    "enabled": true
+   },
+   "ddl.column.varchar.max_length": {
+    "enabled": true
+   },
+   "ddl.constraint.check.ignored.notice": {
+    "enabled": true
+   },
+   "ddl.constraint.check.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.constraint.check.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.check.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.check.not_enforced.notice": {
+    "enabled": true
+   },
+   "ddl.constraint.foreign_key.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.constraint.foreign_key.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.foreign_key.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.primary_key.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.constraint.primary_key.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.primary_key.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.unique_key.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.constraint.unique_key.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.constraint.unique_key.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.create_event.notice": {
+    "enabled": true
+   },
+   "ddl.create_function.notice": {
+    "enabled": true
+   },
+   "ddl.create_index.columns.exists.require": {
+    "enabled": true
+   },
+   "ddl.create_index.notice": {
+    "enabled": true
+   },
+   "ddl.create_placement_policy.notice": {
+    "enabled": true
+   },
+   "ddl.create_procedure.notice": {
+    "enabled": true
+   },
+   "ddl.create_resource_group.notice": {
+    "enabled": true
+   },
+   "ddl.create_role.notice": {
+    "enabled": true
+   },
+   "ddl.create_sequence.notice": {
+    "enabled": true
+   },
+   "ddl.create_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.create_trigger.ordering.version.require": {
+    "enabled": true
+   },
+   "ddl.create_user.notice": {
+    "enabled": true
+   },
+   "ddl.database.alter.exists.require": {
+    "enabled": true
+   },
+   "ddl.database.create.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.database.create.notice": {
+    "enabled": true
+   },
+   "ddl.database.denylist.forbid": {
+    "enabled": true
+   },
+   "ddl.database.drop.exists.require": {
+    "enabled": true
+   },
+   "ddl.database.drop.warn": {
+    "enabled": true
+   },
+   "ddl.database.option.encryption.applicability": {
+    "enabled": true
+   },
+   "ddl.database.system.modify.forbid": {
+    "enabled": true
+   },
+   "ddl.drop_event.notice": {
+    "enabled": true
+   },
+   "ddl.drop_function.notice": {
+    "enabled": true
+   },
+   "ddl.drop_index.notice": {
+    "enabled": true
+   },
+   "ddl.drop_placement_policy.notice": {
+    "enabled": true
+   },
+   "ddl.drop_procedure.notice": {
+    "enabled": true
+   },
+   "ddl.drop_resource_group.notice": {
+    "enabled": true
+   },
+   "ddl.drop_role.notice": {
+    "enabled": true
+   },
+   "ddl.drop_sequence.notice": {
+    "enabled": true
+   },
+   "ddl.drop_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.drop_user.notice": {
+    "enabled": true
+   },
+   "ddl.event.enabled_execution.warn": {
+    "enabled": true
+   },
+   "ddl.grant.notice": {
+    "enabled": true
+   },
+   "ddl.index.advanced.compatibility.require": {
+    "enabled": true
+   },
+   "ddl.index.columns.max_count": {
+    "enabled": true
+   },
+   "ddl.index.duplicate.forbid": {
+    "enabled": true
+   },
+   "ddl.index.fulltext.contains.require": {
+    "enabled": true
+   },
+   "ddl.index.fulltext.prefix.require": {
+    "enabled": true
+   },
+   "ddl.index.fulltext.suffix.require": {
+    "enabled": true
+   },
+   "ddl.index.invisible.forbid": {
+    "enabled": true
+   },
+   "ddl.index.key_length.max_bytes.require": {
+    "enabled": true
+   },
+   "ddl.index.name.keyword.forbid": {
+    "enabled": true
+   },
+   "ddl.index.name.pattern.require": {
+    "enabled": true
+   },
+   "ddl.index.redundant_left_prefix.forbid": {
+    "enabled": true
+   },
+   "ddl.index.redundant_unique_overlap.forbid": {
+    "enabled": true
+   },
+   "ddl.index.secondary.contains.require": {
+    "enabled": true
+   },
+   "ddl.index.secondary.prefix.require": {
+    "enabled": true
+   },
+   "ddl.index.secondary.suffix.require": {
+    "enabled": true
+   },
+   "ddl.index.total.max_count": {
+    "enabled": true
+   },
+   "ddl.index.unique.contains.require": {
+    "enabled": true
+   },
+   "ddl.index.unique.prefix.require": {
+    "enabled": true
+   },
+   "ddl.index.unique.suffix.require": {
+    "enabled": true
+   },
+   "ddl.mysql.alter_instance.privilege": {
+    "enabled": true
+   },
+   "ddl.mysql.alter_instance.reload_tls": {
+    "enabled": true
+   },
+   "ddl.mysql.alter_instance.rotate_master_key": {
+    "enabled": true
+   },
+   "ddl.mysql.resource_group.affinity.warn": {
+    "enabled": true
+   },
+   "ddl.mysql.resource_group.force.warn": {
+    "enabled": true
+   },
+   "ddl.mysql.resource_group.priority.warn": {
+    "enabled": true
+   },
+   "ddl.mysql.resource_group.valid": {
+    "enabled": true
+   },
+   "ddl.mysql.server.alter.notice": {
+    "enabled": true
+   },
+   "ddl.mysql.server.create.notice": {
+    "enabled": true
+   },
+   "ddl.mysql.server.drop.notice": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.duplicate_attribute": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.existence": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.exists_noop": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.missing_attribute": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.name_conflict": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.organization_conflict": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.privilege": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.create.srid0": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.absent": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.absent_noop": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.dependency": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.privilege": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.reserved": {
+    "enabled": true
+   },
+   "ddl.mysql.srs.drop.srid0": {
+    "enabled": true
+   },
+   "ddl.mysql.tablespace.alter.warn": {
+    "enabled": true
+   },
+   "ddl.mysql.tablespace.applicability": {
+    "enabled": true
+   },
+   "ddl.mysql.tablespace.create.warn": {
+    "enabled": true
+   },
+   "ddl.mysql.tablespace.drop.forbid": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_check.not_valid.require": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_column.non_null_default.rewrite.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_column.non_null_no_default.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_column.nullable.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_exclusion_constraint.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_identity.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_inherit.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_of_type.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.attach_partition.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.cluster_on.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.constraint_deferrable.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.constraint_initially_deferred.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.detach_partition.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.detach_partition_finalize.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.disable_rls.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.disable_rule.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.disable_trigger.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.drop_column.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.drop_constraint.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.drop_inherit.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.drop_of_type.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_always_rule.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_always_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_replica_rule.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_replica_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_rls.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_rule.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.enable_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.force_rls.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.move_all_tablespace.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.no_force_rls.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.not_valid_constraint.validate.require": {
+    "enabled": true
+   },
+   "ddl.pg.alter.owner.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.replica_identity_full.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.replica_identity_nothing.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.replica_identity_using_index.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.reset_column_options.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.reset_reloptions.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_access_method.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_column_compression.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_column_options.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_column_statistics.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_column_storage.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_data_type.rewrite.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_expression.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_logged.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_reloptions.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_schema.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_tablespace.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_unlogged.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.set_without_cluster.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter.validate_constraint.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter_aggregate.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_collation.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_conversion.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_domain.constraint.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_domain.default.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_domain.not_null.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_domain.rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_event_trigger.disable.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_event_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_extension.add_member.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_extension.drop_member.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_extension.set_schema.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_extension.update.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_foreign_data_wrapper.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_foreign_server.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_foreign_table.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_index.rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_index.set_tablespace.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_large_object.owner.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_materialized_view.rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_materialized_view.set_schema.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_operator.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_operator_class.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_operator_family.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_policy.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_publication.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_rule.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_schema.owner.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_schema.rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_sequence.cycle.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_sequence.restart.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_statistics.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_subscription.disable.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_subscription.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_text_search_configuration.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_text_search_dictionary.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_text_search_parser.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_text_search_template.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.add_attribute.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.add_value.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.add_value.position.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.alter_attribute_type.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.composite_rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.composite_set_schema.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.drop_attribute.warn": {
+    "enabled": true
+   },
+   "ddl.pg.alter_type.rename_attribute.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_user_mapping.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_view.rename.notice": {
+    "enabled": true
+   },
+   "ddl.pg.alter_view.set_schema.notice": {
+    "enabled": true
+   },
+   "ddl.pg.comment_on.notice": {
+    "enabled": true
+   },
+   "ddl.pg.comment_on.remove.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_access_method.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_aggregate.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_collation.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_constraint_trigger.warn": {
+    "enabled": true
+   },
+   "ddl.pg.create_conversion.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_domain.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_event_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_extension.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.create_extension.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_foreign_data_wrapper.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_foreign_server.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_foreign_table.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_function.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_function.security_definer.warn": {
+    "enabled": true
+   },
+   "ddl.pg.create_index.concurrently.require": {
+    "enabled": true
+   },
+   "ddl.pg.create_operator.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_operator_class.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_operator_family.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_or_replace_function.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.create_or_replace_view.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.create_policy.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_procedure.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_publication.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_rule.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_schema.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_sequence.cycle.warn": {
+    "enabled": true
+   },
+   "ddl.pg.create_statistics.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_subscription.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_temp_view.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_text_search_configuration.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_text_search_dictionary.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_text_search_parser.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_text_search_template.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_transform.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_trigger.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_type.composite.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_type.enum.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_user_mapping.notice": {
+    "enabled": true
+   },
+   "ddl.pg.create_view.check_option.notice": {
+    "enabled": true
+   },
+   "ddl.pg.drop_access_method.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_aggregate.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_collation.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_conversion.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_domain.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_domain.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_event_trigger.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_extension.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_extension.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_foreign_data_wrapper.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_foreign_server.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_foreign_table.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_function.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_index.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_materialized_view.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_materialized_view.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_operator.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_operator_class.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_operator_family.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_policy.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_procedure.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_publication.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_rule.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_schema.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_schema.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_sequence.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_sequence.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_statistics.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_subscription.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_text_search_configuration.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_text_search_dictionary.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_text_search_parser.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_text_search_template.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_transform.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_trigger.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_type.advisory": {
+    "enabled": true
+   },
+   "ddl.pg.drop_type.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_user_mapping.warn": {
+    "enabled": true
+   },
+   "ddl.pg.drop_view.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.grant.table_privilege.all.warn": {
+    "enabled": true
+   },
+   "ddl.pg.grant.table_privilege.notice": {
+    "enabled": true
+   },
+   "ddl.pg.refresh_materialized_view.concurrently.warn": {
+    "enabled": true
+   },
+   "ddl.pg.refresh_materialized_view.no_data.notice": {
+    "enabled": true
+   },
+   "ddl.pg.revoke.table_privilege.cascade.warn": {
+    "enabled": true
+   },
+   "ddl.pg.revoke.table_privilege.notice": {
+    "enabled": true
+   },
+   "ddl.pg.security_label.notice": {
+    "enabled": true
+   },
+   "ddl.pg.security_label.remove.notice": {
+    "enabled": true
+   },
+   "ddl.pg.table.foreign_key.cross_schema.advisory": {
+    "enabled": true
+   },
+   "ddl.rename_table.notice": {
+    "enabled": true
+   },
+   "ddl.revoke.notice": {
+    "enabled": true
+   },
+   "ddl.routine.variable_shadowing.warn": {
+    "enabled": true
+   },
+   "ddl.table.audit_columns.require": {
+    "enabled": true
+   },
+   "ddl.table.auto_increment.init_value.require": {
+    "enabled": true
+   },
+   "ddl.table.charset.allowlist": {
+    "enabled": true
+   },
+   "ddl.table.collation.allowlist": {
+    "enabled": true
+   },
+   "ddl.table.columns.min_count": {
+    "enabled": true
+   },
+   "ddl.table.comment.max_length": {
+    "enabled": true
+   },
+   "ddl.table.comment.require": {
+    "enabled": true
+   },
+   "ddl.table.compact.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.create_as.forbid": {
+    "enabled": true
+   },
+   "ddl.table.create_as.source.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.create_like.forbid": {
+    "enabled": true
+   },
+   "ddl.table.denylist.forbid": {
+    "enabled": true
+   },
+   "ddl.table.drop.adaptive_hash.warn": {
+    "enabled": true
+   },
+   "ddl.table.drop.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.drop.forbid": {
+    "enabled": true
+   },
+   "ddl.table.drop.rows.max_count": {
+    "enabled": true
+   },
+   "ddl.table.engine.allowlist": {
+    "enabled": true
+   },
+   "ddl.table.exists.alter.require": {
+    "enabled": true
+   },
+   "ddl.table.exists.create.forbid": {
+    "enabled": true
+   },
+   "ddl.table.foreign_key.forbid": {
+    "enabled": true
+   },
+   "ddl.table.like.source.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.name.contains.require": {
+    "enabled": true
+   },
+   "ddl.table.name.keyword.forbid": {
+    "enabled": true
+   },
+   "ddl.table.name.max_length": {
+    "enabled": true
+   },
+   "ddl.table.name.pattern.require": {
+    "enabled": true
+   },
+   "ddl.table.name.prefix.require": {
+    "enabled": true
+   },
+   "ddl.table.name.suffix.require": {
+    "enabled": true
+   },
+   "ddl.table.partition.forbid": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.auto_increment.require": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.bigint.require": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.columns.max_count": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.not_null.require": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.require": {
+    "enabled": true
+   },
+   "ddl.table.primary_key.unsigned.require": {
+    "enabled": true
+   },
+   "ddl.table.rename.dest.exists.forbid": {
+    "enabled": true
+   },
+   "ddl.table.rename.source.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.row_format.allowlist": {
+    "enabled": true
+   },
+   "ddl.table.row_size.max_bytes.require": {
+    "enabled": true
+   },
+   "ddl.table.split_region.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.truncate.adaptive_hash.warn": {
+    "enabled": true
+   },
+   "ddl.table.truncate.exists.require": {
+    "enabled": true
+   },
+   "ddl.table.truncate.forbid": {
+    "enabled": true
+   },
+   "ddl.table.truncate.inbound_fk": {
+    "enabled": true
+   },
+   "ddl.table.truncate.rows.max_count": {
+    "enabled": true
+   },
+   "ddl.tidb.alter.auto_random.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.alter.compat_options.notice": {
+    "enabled": true
+   },
+   "ddl.tidb.alter.table_options.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.alter_table.placement_policy.notice": {
+    "enabled": true
+   },
+   "ddl.tidb.local_temporary.alter": {
+    "enabled": true
+   },
+   "ddl.tidb.local_temporary.like": {
+    "enabled": true
+   },
+   "ddl.tidb.local_temporary.rename": {
+    "enabled": true
+   },
+   "ddl.tidb.placement.exists.require": {
+    "enabled": true
+   },
+   "ddl.tidb.placement.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.resource_group.burstable.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.resource_group.runaway.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.resource_group.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.sequence.cycle.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.sequence.references.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.sequence.restart.warn": {
+    "enabled": true
+   },
+   "ddl.tidb.sequence.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.attributes.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.auto_random.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.cache.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.compact.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.options.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.split_region.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.table.tiflash.valid": {
+    "enabled": true
+   },
+   "ddl.tidb.ttl.warn": {
+    "enabled": true
+   },
+   "ddl.view.algorithm.warn": {
+    "enabled": true
+   },
+   "ddl.view.check_option.valid": {
+    "enabled": true
+   },
+   "ddl.view.create.forbid": {
+    "enabled": true
+   },
+   "ddl.view.drop.forbid": {
+    "enabled": true
+   },
+   "ddl.view.options.ignored.warn": {
+    "enabled": true
+   },
+   "ddl.view.security.definer.warn": {
+    "enabled": true
+   },
+   "ddl.view.source.valid": {
+    "enabled": true
+   },
+   "ddl.view.target.valid": {
+    "enabled": true
+   },
+   "dml.impact.estimate": {
+    "enabled": true
+   },
+   "dml.impact.ratio.max_percent": {
+    "enabled": true
+   },
+   "dml.impact.rows.max_count": {
+    "enabled": true
+   },
+   "dml.insert.on_duplicate.forbid": {
+    "enabled": true
+   },
+   "dml.insert.rows.max_count": {
+    "enabled": true
+   },
+   "dml.insert.select.forbid": {
+    "enabled": true
+   },
+   "dml.join.on.require": {
+    "enabled": true
+   },
+   "dml.limit.forbid": {
+    "enabled": true
+   },
+   "dml.order_by.forbid": {
+    "enabled": true
+   },
+   "dml.replace.forbid": {
+    "enabled": true
+   },
+   "dml.subquery.forbid": {
+    "enabled": true
+   },
+   "dml.table.denylist.forbid": {
+    "enabled": true
+   },
+   "dml.table.exists.require": {
+    "enabled": true
+   },
+   "dml.where.require": {
+    "enabled": true
+   }
+  }
+ },
+ "anchors": {
+  "postgres17": {
+   "service": "postgres17",
+   "container": "deltascope-ddl-golden-postgres17",
+   "image": "postgres:17.7",
+   "product": "postgresql",
+   "version_contains": "PostgreSQL 17.7",
+   "database": "postgres",
+   "exec_client": [
+    "psql",
+    "-U",
+    "postgres",
+    "-X",
+    "-v",
+    "ON_ERROR_STOP=1",
+    "-v",
+    "VERBOSITY=verbose"
+   ],
+   "exec_flag": "-c",
+   "exec_silent_flag": "-tAXc",
+   "error_class_pattern": "ERROR:\\s+(\\w+):",
+   "needs_database_create": false
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "create schema",
+   "sql": "CREATE SCHEMA t39",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "fixture table",
+   "sql": "CREATE TABLE t39.docs (id bigint PRIMARY KEY, body text, meta jsonb, tags text[])",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create index btree",
+   "sql": "CREATE INDEX t39_docs_body ON t39.docs USING btree (body)",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create index gin",
+   "sql": "CREATE INDEX t39_docs_meta ON t39.docs USING gin (meta)",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create index gist",
+   "sql": "CREATE INDEX t39_docs_tsv ON t39.docs USING gist (to_tsvector('english', body))",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create index unique partial",
+   "sql": "CREATE UNIQUE INDEX t39_docs_body_uq ON t39.docs (body) WHERE body IS NOT NULL",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create index concurrently",
+   "sql": "CREATE INDEX CONCURRENTLY t39_docs_id2 ON t39.docs (id)",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create index expression",
+   "sql": "CREATE INDEX t39_docs_lower ON t39.docs (lower(body))",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create index with params",
+   "sql": "CREATE INDEX t39_docs_ff ON t39.docs (id) WITH (fillfactor = 70)",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create index if not exists",
+   "sql": "CREATE INDEX IF NOT EXISTS t39_docs_body ON t39.docs USING btree (body)",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "alter index rename",
+   "sql": "ALTER INDEX t39.t39_docs_id2 RENAME TO t39_docs_id3",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "alter index set params",
+   "sql": "ALTER INDEX t39.t39_docs_ff SET (fillfactor = 80)",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "alter index set tablespace",
+   "sql": "ALTER INDEX t39.t39_docs_ff SET TABLESPACE pg_default",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "alter index attach partition",
+   "sql": "CREATE TABLE t39.pt (id int) PARTITION BY RANGE (id); CREATE TABLE t39.pt_p (id int); CREATE INDEX t39_pt_idx ON t39.pt (id); CREATE INDEX t39_pt_p_idx ON t39.pt_p (id); ALTER TABLE t39.pt ATTACH PARTITION t39.pt_p FOR VALUES FROM (0) TO (10); ALTER INDEX t39.t39_pt_idx ATTACH PARTITION t39.t39_pt_p_idx",
+   "expect_rc": 0,
+   "via": "stdin",
+   "verify": []
+  },
+  {
+   "name": "drop index concurrently",
+   "sql": "DROP INDEX CONCURRENTLY IF EXISTS t39.t39_docs_id3",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "drop index cascade",
+   "sql": "DROP INDEX IF EXISTS t39.t39_docs_body CASCADE",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create access method attempt",
+   "sql": "CREATE ACCESS METHOD t39_am TYPE INDEX HANDLER bloom_handler",
+   "expect_rc": 1,
+   "verify": []
+  },
+  {
+   "name": "drop access method guarded",
+   "sql": "DROP ACCESS METHOD IF EXISTS t39_am",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create operator class",
+   "sql": "CREATE OPERATOR CLASS t39_opclass FOR TYPE int USING btree AS OPERATOR 1 <, OPERATOR 3 =",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "alter operator class rename",
+   "sql": "ALTER OPERATOR CLASS t39_opclass USING btree RENAME TO t39_opclass2",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "drop operator class",
+   "sql": "DROP OPERATOR CLASS t39_opclass2 USING btree",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create operator family",
+   "sql": "CREATE OPERATOR FAMILY t39_opfam USING btree",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "alter operator family add",
+   "sql": "ALTER OPERATOR FAMILY t39_opfam USING btree ADD OPERATOR 1 < (int, int)",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "alter operator family rename",
+   "sql": "ALTER OPERATOR FAMILY t39_opfam USING btree RENAME TO t39_opfam2",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "drop operator family",
+   "sql": "DROP OPERATOR FAMILY t39_opfam2 USING btree",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create cast",
+   "sql": "CREATE DOMAIN t39.domtext AS text; CREATE CAST (text AS t39.domtext) WITH INOUT AS IMPLICIT",
+   "expect_rc": 0,
+   "via": "stdin",
+   "verify": []
+  },
+  {
+   "name": "drop cast",
+   "sql": "DROP CAST (text AS t39.domtext)",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create transform guarded",
+   "sql": "DROP TRANSFORM IF EXISTS FOR int LANGUAGE plpgsql CASCADE",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "drop schema",
+   "sql": "DROP SCHEMA t39 CASCADE",
+   "expect_rc": 0,
+   "verify": []
+  }
+ ],
+ "syntax_negative": {
+  "sql": "CREATE INDEX ON t39.docs",
+  "expect": {
+   "error_class": "42601",
+   "forbidden_markers": [
+    "FATAL",
+    "password",
+    "Access denied",
+    "authentication failed"
+   ]
+  },
+  "post_state_check": {
+   "sql": "SELECT count(*) FROM pg_indexes WHERE indexname='t39_neg'",
+   "expect": "0"
+  }
+ },
+ "cli_cases": [
+  {
+   "id": "create-index",
+   "dialect": "postgresql",
+   "sql": "CREATE UNIQUE INDEX idx ON users USING btree (email) WHERE active",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE UNIQUE INDEX idx ON users USING btree (email) WHERE active"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.unique.prefix.require",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_index.concurrently.require",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-index-create-index-basic",
+   "dialect": "postgresql",
+   "sql": "CREATE INDEX idx ON users (email)",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX idx ON users (email)"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.secondary.prefix.require",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_index.concurrently.require",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-index-unique",
+   "dialect": "postgresql",
+   "sql": "CREATE UNIQUE INDEX idx ON users (email)",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE UNIQUE INDEX idx ON users (email)"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.unique.prefix.require",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_index.concurrently.require",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-index-concurrently",
+   "dialect": "postgresql",
+   "sql": "CREATE INDEX CONCURRENTLY idx ON users (email)",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX CONCURRENTLY idx ON users (email)"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.secondary.prefix.require",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-index-using-method",
+   "dialect": "postgresql",
+   "sql": "CREATE INDEX idx ON users USING gin (tags)",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX idx ON users USING gin (tags)"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.secondary.prefix.require",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_index.concurrently.require",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-index-expression-index",
+   "dialect": "postgresql",
+   "sql": "CREATE INDEX idx ON users (lower(email))",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX idx ON users (lower(email))"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.secondary.prefix.require",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_index.concurrently.require",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-index-partial-where",
+   "dialect": "postgresql",
+   "sql": "CREATE INDEX idx ON users (email) WHERE active",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX idx ON users (email) WHERE active"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.secondary.prefix.require",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_index.concurrently.require",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-index-include-nulls-distinct",
+   "dialect": "postgresql",
+   "sql": "CREATE INDEX idx ON users (email) INCLUDE (name) NULLS NOT DISTINCT",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX idx ON users (email) INCLUDE (name) NULLS NOT DISTINCT"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "create_index",
+      "reason": "postgresql create index nulls not distinct is unsupported in this milestone"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-index-opclass-parameters",
+   "dialect": "postgresql",
+   "sql": "CREATE INDEX idx ON users (email varchar_pattern_ops)",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX idx ON users (email varchar_pattern_ops)"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.secondary.prefix.require",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_index.concurrently.require",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-index-with-tablespace",
+   "dialect": "postgresql",
+   "sql": "CREATE INDEX idx ON users (email) WITH (fillfactor = 80) TABLESPACE fast",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX idx ON users (email) WITH (fillfactor = 80) TABLESPACE fast"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.secondary.prefix.require",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_index.concurrently.require",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-index",
+   "dialect": "postgresql",
+   "sql": "ALTER INDEX idx RENAME TO idx2",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER INDEX idx RENAME TO idx2"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.alter_index.rename.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-index-rename-to",
+   "dialect": "postgresql",
+   "sql": "ALTER INDEX idx RENAME TO idx2",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER INDEX idx RENAME TO idx2"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.alter_index.rename.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-index-set-tablespace",
+   "dialect": "postgresql",
+   "sql": "ALTER INDEX idx SET TABLESPACE fast",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER INDEX idx SET TABLESPACE fast"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.alter_index.set_tablespace.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-index-set-reset-parameters",
+   "dialect": "postgresql",
+   "sql": "ALTER INDEX idx SET (fillfactor = 70)",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER INDEX idx SET (fillfactor = 70)"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_index",
+      "reason": "postgresql alter index command AT_SetRelOptions is deferred"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-index-attach-partition",
+   "dialect": "postgresql",
+   "sql": "ALTER INDEX idx ATTACH PARTITION idx_part",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER INDEX idx ATTACH PARTITION idx_part"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_index",
+      "reason": "postgresql alter index command AT_AttachPartition is deferred"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-index-if-exists",
+   "dialect": "postgresql",
+   "sql": "ALTER INDEX IF EXISTS idx RENAME TO idx2",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER INDEX IF EXISTS idx RENAME TO idx2"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.alter_index.rename.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-index",
+   "dialect": "postgresql",
+   "sql": "DROP INDEX idx",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP INDEX idx"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_index.forbid",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.drop_index.advisory",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-index-drop-index",
+   "dialect": "postgresql",
+   "sql": "DROP INDEX idx",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP INDEX idx"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_index.forbid",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.drop_index.advisory",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-index-concurrently-if-exists-cascade",
+   "dialect": "postgresql",
+   "sql": "DROP INDEX CONCURRENTLY IF EXISTS idx CASCADE",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP INDEX CONCURRENTLY IF EXISTS idx CASCADE"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_index.forbid",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.drop_index.advisory",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-access-method",
+   "dialect": "postgresql",
+   "sql": "CREATE ACCESS METHOD heap2 TYPE TABLE HANDLER heap_tableam_handler",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE ACCESS METHOD heap2 TYPE TABLE HANDLER heap_tableam_handler"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_access_method.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-access-method-create-access-method-table",
+   "dialect": "postgresql",
+   "sql": "CREATE ACCESS METHOD heap2 TYPE TABLE HANDLER heap_tableam_handler",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE ACCESS METHOD heap2 TYPE TABLE HANDLER heap_tableam_handler"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_access_method.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-access-method-type-index",
+   "dialect": "postgresql",
+   "sql": "CREATE ACCESS METHOD idx2 TYPE INDEX HANDLER handler_fn",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE ACCESS METHOD idx2 TYPE INDEX HANDLER handler_fn"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_access_method.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-access-method",
+   "dialect": "postgresql",
+   "sql": "DROP ACCESS METHOD heap2",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP ACCESS METHOD heap2"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.drop_access_method.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-access-method-drop-access-method",
+   "dialect": "postgresql",
+   "sql": "DROP ACCESS METHOD heap2",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP ACCESS METHOD heap2"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.drop_access_method.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-access-method-if-exists-cascade",
+   "dialect": "postgresql",
+   "sql": "DROP ACCESS METHOD IF EXISTS heap2 CASCADE",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP ACCESS METHOD IF EXISTS heap2 CASCADE"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.drop_access_method.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-operator-class",
+   "dialect": "postgresql",
+   "sql": "CREATE OPERATOR CLASS int4_ops FOR TYPE int4 USING btree AS OPERATOR 1 <",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE OPERATOR CLASS int4_ops FOR TYPE int4 USING btree AS OPERATOR 1 <"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_operator_class.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-operator-class-create-operator-class",
+   "dialect": "postgresql",
+   "sql": "CREATE OPERATOR CLASS int4_ops FOR TYPE int4 USING btree AS OPERATOR 1 <, FUNCTION 1 btint4cmp(int4,int4)",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE OPERATOR CLASS int4_ops FOR TYPE int4 USING btree AS OPERATOR 1 <, FUNCTION 1 btint4cmp(int4,int4)"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_operator_class.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-operator-class-default-family",
+   "dialect": "postgresql",
+   "sql": "CREATE OPERATOR CLASS int4_ops DEFAULT FOR TYPE int4 USING btree FAMILY int_ops AS OPERATOR 1 <",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE OPERATOR CLASS int4_ops DEFAULT FOR TYPE int4 USING btree FAMILY int_ops AS OPERATOR 1 <"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_operator_class.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-operator-class",
+   "dialect": "postgresql",
+   "sql": "ALTER OPERATOR CLASS int4_ops USING btree RENAME TO int4_ops2",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER OPERATOR CLASS int4_ops USING btree RENAME TO int4_ops2"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.alter_operator_class.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-operator-class-rename-owner-set-schema",
+   "dialect": "postgresql",
+   "sql": "ALTER OPERATOR CLASS int4_ops USING btree RENAME TO int4_ops2",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER OPERATOR CLASS int4_ops USING btree RENAME TO int4_ops2"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.alter_operator_class.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-operator-class",
+   "dialect": "postgresql",
+   "sql": "DROP OPERATOR CLASS int4_ops USING btree",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP OPERATOR CLASS int4_ops USING btree"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.drop_operator_class.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-operator-class-drop-operator-class",
+   "dialect": "postgresql",
+   "sql": "DROP OPERATOR CLASS int4_ops USING btree",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP OPERATOR CLASS int4_ops USING btree"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.drop_operator_class.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-operator-class-if-exists-cascade",
+   "dialect": "postgresql",
+   "sql": "DROP OPERATOR CLASS IF EXISTS int4_ops USING btree CASCADE",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP OPERATOR CLASS IF EXISTS int4_ops USING btree CASCADE"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.drop_operator_class.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-operator-family",
+   "dialect": "postgresql",
+   "sql": "CREATE OPERATOR FAMILY int_ops USING btree",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE OPERATOR FAMILY int_ops USING btree"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_operator_family.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-operator-family-create-operator-family",
+   "dialect": "postgresql",
+   "sql": "CREATE OPERATOR FAMILY int_ops USING btree",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE OPERATOR FAMILY int_ops USING btree"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_operator_family.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-operator-family-as-members",
+   "dialect": "postgresql",
+   "sql": "CREATE OPERATOR FAMILY int_ops USING btree AS OPERATOR 1 < (int4,int4)",
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": [],
+    "statement_sql": []
+   }
+  },
+  {
+   "id": "alter-operator-family",
+   "dialect": "postgresql",
+   "sql": "ALTER OPERATOR FAMILY int_ops USING btree ADD OPERATOR 1 < (int4,int4)",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER OPERATOR FAMILY int_ops USING btree ADD OPERATOR 1 < (int4,int4)"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-operator-family-add-drop-members",
+   "dialect": "postgresql",
+   "sql": "ALTER OPERATOR FAMILY int_ops USING btree ADD OPERATOR 1 < (int4,int4)",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER OPERATOR FAMILY int_ops USING btree ADD OPERATOR 1 < (int4,int4)"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "alter-operator-family-rename-owner-set-schema",
+   "dialect": "postgresql",
+   "sql": "ALTER OPERATOR FAMILY int_ops USING btree RENAME TO int_ops2",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER OPERATOR FAMILY int_ops USING btree RENAME TO int_ops2"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.alter_operator_family.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-operator-family",
+   "dialect": "postgresql",
+   "sql": "DROP OPERATOR FAMILY int_ops USING btree",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP OPERATOR FAMILY int_ops USING btree"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.drop_operator_family.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-operator-family-drop-operator-family",
+   "dialect": "postgresql",
+   "sql": "DROP OPERATOR FAMILY int_ops USING btree",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP OPERATOR FAMILY int_ops USING btree"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.drop_operator_family.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-operator-family-if-exists-cascade",
+   "dialect": "postgresql",
+   "sql": "DROP OPERATOR FAMILY IF EXISTS int_ops USING btree CASCADE",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP OPERATOR FAMILY IF EXISTS int_ops USING btree CASCADE"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.drop_operator_family.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-transform",
+   "dialect": "postgresql",
+   "sql": "CREATE TRANSFORM FOR int LANGUAGE sql (FROM SQL WITH FUNCTION fromsql(internal), TO SQL WITH FUNCTION tosql(internal))",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TRANSFORM FOR int LANGUAGE sql (FROM SQL WITH FUNCTION fromsql(internal), TO SQL WITH FUNCTION tosql(internal))"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_transform.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-transform-create-transform",
+   "dialect": "postgresql",
+   "sql": "CREATE TRANSFORM FOR int LANGUAGE sql (FROM SQL WITH FUNCTION fromsql(internal), TO SQL WITH FUNCTION tosql(internal))",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TRANSFORM FOR int LANGUAGE sql (FROM SQL WITH FUNCTION fromsql(internal), TO SQL WITH FUNCTION tosql(internal))"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_transform.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-transform",
+   "dialect": "postgresql",
+   "sql": "DROP TRANSFORM FOR int LANGUAGE sql",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP TRANSFORM FOR int LANGUAGE sql"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.drop_transform.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-transform-drop-transform",
+   "dialect": "postgresql",
+   "sql": "DROP TRANSFORM FOR int LANGUAGE sql",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP TRANSFORM FOR int LANGUAGE sql"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.drop_transform.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-transform-if-exists-cascade",
+   "dialect": "postgresql",
+   "sql": "DROP TRANSFORM IF EXISTS FOR int LANGUAGE sql CASCADE",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP TRANSFORM IF EXISTS FOR int LANGUAGE sql CASCADE"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.drop_transform.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-cast",
+   "dialect": "postgresql",
+   "sql": "CREATE CAST (int4 AS text) WITH INOUT AS IMPLICIT",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE CAST (int4 AS text) WITH INOUT AS IMPLICIT"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-cast-with-function",
+   "dialect": "postgresql",
+   "sql": "CREATE CAST (int4 AS text) WITH FUNCTION int4text(int4)",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE CAST (int4 AS text) WITH FUNCTION int4text(int4)"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "create-cast-without-function-inout",
+   "dialect": "postgresql",
+   "sql": "CREATE CAST (int4 AS text) WITH INOUT AS IMPLICIT",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE CAST (int4 AS text) WITH INOUT AS IMPLICIT"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "unknown",
+      "reason": "postgresql statement type is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-cast",
+   "dialect": "postgresql",
+   "sql": "DROP CAST (int4 AS text)",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP CAST (int4 AS text)"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "drop",
+      "reason": "postgresql drop target is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-cast-drop-cast",
+   "dialect": "postgresql",
+   "sql": "DROP CAST (int4 AS text)",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP CAST (int4 AS text)"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "drop",
+      "reason": "postgresql drop target is not in the approved v1 subset"
+     }
+    ]
+   }
+  },
+  {
+   "id": "drop-cast-if-exists-cascade",
+   "dialect": "postgresql",
+   "sql": "DROP CAST IF EXISTS (int4 AS text) CASCADE",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP CAST IF EXISTS (int4 AS text) CASCADE"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "drop",
+      "reason": "postgresql drop target is not in the approved v1 subset"
+     }
+    ]
+   }
+  }
+ ],
+ "metadata_cases": [
+  {
+   "id": "pg-live-index-metadata",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "sql": "CREATE INDEX idx_body ON golden.docs (body)",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 25432,
+    "user": "postgres",
+    "database": "postgres",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "create fixture",
+     "sql": "CREATE SCHEMA golden; CREATE TABLE golden.docs (id bigint PRIMARY KEY, body text)",
+     "expect_rc": 0,
+     "via": "stdin"
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.pg.create_index.concurrently.require",
+      "level": "warning"
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "index not created by audit",
+     "sql": "SELECT count(*) FROM pg_indexes WHERE schemaname='golden' AND indexname='idx_body'",
+     "expect": "0",
+     "use_database": true
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture schema",
+     "sql": "DROP SCHEMA IF EXISTS golden CASCADE",
+     "expect_rc": 0
+    }
+   ]
+  }
+ ],
+ "required_case_ids": [
+  "T39.db.postgres17.ddl",
+  "T39.db.postgres17.syntax_negative",
+  "T39.cli.create-index",
+  "T39.cli.create-index-create-index-basic",
+  "T39.cli.create-index-unique",
+  "T39.cli.create-index-concurrently",
+  "T39.cli.create-index-using-method",
+  "T39.cli.create-index-expression-index",
+  "T39.cli.create-index-partial-where",
+  "T39.cli.create-index-include-nulls-distinct",
+  "T39.cli.create-index-opclass-parameters",
+  "T39.cli.create-index-with-tablespace",
+  "T39.cli.alter-index",
+  "T39.cli.alter-index-rename-to",
+  "T39.cli.alter-index-set-tablespace",
+  "T39.cli.alter-index-set-reset-parameters",
+  "T39.cli.alter-index-attach-partition",
+  "T39.cli.alter-index-if-exists",
+  "T39.cli.drop-index",
+  "T39.cli.drop-index-drop-index",
+  "T39.cli.drop-index-concurrently-if-exists-cascade",
+  "T39.cli.create-access-method",
+  "T39.cli.create-access-method-create-access-method-table",
+  "T39.cli.create-access-method-type-index",
+  "T39.cli.drop-access-method",
+  "T39.cli.drop-access-method-drop-access-method",
+  "T39.cli.drop-access-method-if-exists-cascade",
+  "T39.cli.create-operator-class",
+  "T39.cli.create-operator-class-create-operator-class",
+  "T39.cli.create-operator-class-default-family",
+  "T39.cli.alter-operator-class",
+  "T39.cli.alter-operator-class-rename-owner-set-schema",
+  "T39.cli.drop-operator-class",
+  "T39.cli.drop-operator-class-drop-operator-class",
+  "T39.cli.drop-operator-class-if-exists-cascade",
+  "T39.cli.create-operator-family",
+  "T39.cli.create-operator-family-create-operator-family",
+  "T39.cli.create-operator-family-as-members",
+  "T39.cli.alter-operator-family",
+  "T39.cli.alter-operator-family-add-drop-members",
+  "T39.cli.alter-operator-family-rename-owner-set-schema",
+  "T39.cli.drop-operator-family",
+  "T39.cli.drop-operator-family-drop-operator-family",
+  "T39.cli.drop-operator-family-if-exists-cascade",
+  "T39.cli.create-transform",
+  "T39.cli.create-transform-create-transform",
+  "T39.cli.drop-transform",
+  "T39.cli.drop-transform-drop-transform",
+  "T39.cli.drop-transform-if-exists-cascade",
+  "T39.cli.create-cast",
+  "T39.cli.create-cast-with-function",
+  "T39.cli.create-cast-without-function-inout",
+  "T39.cli.drop-cast",
+  "T39.cli.drop-cast-drop-cast",
+  "T39.cli.drop-cast-if-exists-cascade",
+  "T39.meta.pg-live-index-metadata"
+ ]
+}
