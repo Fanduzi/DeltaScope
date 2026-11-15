@@ -6757,7 +6757,7 @@ def t31_all_mode_tests():
     report("TASK=all discovers the canonical milestone set",
            tasks == sorted(tasks) and "T02" in tasks and "T32" in tasks
            and "T23S" in tasks and "T34" in tasks and "T47" in tasks
-           and "T51" in tasks and "T54" in tasks and len(tasks) == 49)
+           and "T51" in tasks and "T54" in tasks and "T58" in tasks and len(tasks) == 50)
     report("TASK=all excludes platform-variant lanes",
            "T21-arm64" not in tasks)
 

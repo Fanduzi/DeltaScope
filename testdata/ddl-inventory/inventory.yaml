@@ -3659,20 +3659,20 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_create_authored_rules.expected.yaml", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_drop_rules.expected.yaml"]
+        evidence: ["file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_create_authored_rules.expected.yaml", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_drop_rules.expected.yaml", "file:testdata/ddl-golden/T58.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: version_gated
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_create_authored_rules.expected.yaml", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_drop_rules.expected.yaml"]
+        evidence: ["file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_create_authored_rules.expected.yaml", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_drop_rules.expected.yaml", "file:testdata/ddl-golden/T58.json"]
 
-    status_evidence: "2026-11-13 R3 probe: CREATE/DROP SRS parse on both 8.0 and 8.4; audited domain registered on observed 8.0.4+ slice (proven version required - declared --target-version alone still yields bounded version-gated evidence, gap_fact=srs.version_applicability); 8.4 unregistered. Earlier: 2026-09-22 parser_error on both forms"
+    status_evidence: "2026-11-15 T58 (#142) live version-gate proof: observed 5.7.44 and 8.4.10 both pin version_inapplicable + gap_fact=srs.version_applicability unsupported entries, observed 8.0.46 audits (ddl.mysql.srs.drop.absent blocker), tidb85 pins the vendor boundary, and an offline --target-version 8.0.46 pin stays version_unproven - the caller pin is a conflict check, never an observed fact. Earlier: 2026-11-13 R3 probe CREATE/DROP SRS parse on 8.0/8.4 with registered 8.0.4+ audited slice; 2026-09-22 parser_error"
     targets: "SRID identity, definition as opaque text (no expansion into diagnostics)"
     acceptance:
       dimensions: "object classification, 5.7 vendor-boundary row"
-      refs: ["file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_create_authored_rules.expected.yaml", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_drop_rules.expected.yaml"]
+      refs: ["file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_create_authored_rules.expected.yaml", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_srs_drop_rules.expected.yaml", "file:testdata/ddl-golden/T58.json"]
     owner: T26
 
   - id: mysql.alter-instance

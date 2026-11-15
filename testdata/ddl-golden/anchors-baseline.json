@@ -113,11 +113,12 @@
   "T51",
   "T52",
   "T53",
-  "T54"
+  "T54",
+  "T58"
  ],
  "manifest_scopes": {
   "postgresql": {
-   "description": "PostgreSQL-scope manifests (issue #115, T34+): these tasks prove only the postgresql17 anchor and the postgresql CLI dialect \u2014 the mysql/tidb anchor set is not part of their denominator. Declared by manifest field anchor_scope.",
+   "description": "PostgreSQL-scope manifests (issue #115, T34+): these tasks prove only the postgresql17 anchor and the postgresql CLI dialect — the mysql/tidb anchor set is not part of their denominator. Declared by manifest field anchor_scope.",
    "required_anchors": {
     "postgres17": {
      "product": "postgresql",
@@ -132,7 +133,7 @@
    ]
   },
   "tidb": {
-   "description": "TiDB-scope manifests (issue #133, T53): these tasks prove only the tidb85 anchor and the tidb CLI dialect \u2014 TiDB-specific forms such as IMPORT INTO run on a vendor-native anchor rather than the shared mysql set. Declared by manifest field anchor_scope.",
+   "description": "TiDB-scope manifests (issue #133, T53): these tasks prove only the tidb85 anchor and the tidb CLI dialect — TiDB-specific forms such as IMPORT INTO run on a vendor-native anchor rather than the shared mysql set. Declared by manifest field anchor_scope.",
    "required_anchors": {
     "tidb85": {
      "product": "tidb",
