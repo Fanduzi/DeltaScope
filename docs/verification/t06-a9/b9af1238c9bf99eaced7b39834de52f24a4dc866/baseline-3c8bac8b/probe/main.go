@@ -15,23 +15,23 @@ import (
 )
 
 type colObs struct {
-	Name         string `json:"name"`
-	Type         string `json:"type"`
-	NotNull      bool   `json:"not_null"`
-	HasDefault   bool   `json:"has_default"`
-	DefaultValue string `json:"default_value"`
-	DefaultNull  bool   `json:"default_is_null"`
-	DefaultCT    bool   `json:"default_is_current_timestamp"`
-	OnUpdateCT   bool   `json:"on_update_current_timestamp"`
+	Name         string   `json:"name"`
+	Type         string   `json:"type"`
+	NotNull      bool     `json:"not_null"`
+	HasDefault   bool     `json:"has_default"`
+	DefaultValue string   `json:"default_value"`
+	DefaultNull  bool     `json:"default_is_null"`
+	DefaultCT    bool     `json:"default_is_current_timestamp"`
+	OnUpdateCT   bool     `json:"on_update_current_timestamp"`
 	Unextracted  []string `json:"unextracted,omitempty"`
 	ASTOptions   []string `json:"ast_options"`
 }
 
 type obs struct {
-	ID        string   `json:"id"`
-	SQL       string   `json:"sql"`
-	Columns   []colObs `json:"columns"`
-	ParseError string  `json:"parse_error,omitempty"`
+	ID         string   `json:"id"`
+	SQL        string   `json:"sql"`
+	Columns    []colObs `json:"columns"`
+	ParseError string   `json:"parse_error,omitempty"`
 }
 
 func describeExpr(e tidbast.ExprNode) string {

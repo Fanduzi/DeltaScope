@@ -73,9 +73,9 @@ func main() {
 					b, _ := json.Marshal(map[string]any{
 						"name": c.Name, "type": c.Type, "not_null": c.NotNull,
 						"has_default": c.HasDefault, "default_is_null": c.DefaultIsNull,
-						"default_cts": c.DefaultIsCurrentTimestamp,
+						"default_cts":   c.DefaultIsCurrentTimestamp,
 						"on_update_cts": c.OnUpdateCurrentTimestamp,
-						"unextracted": c.UnextractedOptions,
+						"unextracted":   c.UnextractedOptions,
 					})
 					fmt.Printf("    Column[%d]=%s\n", ci, b)
 				}

@@ -1,5 +1,5 @@
 # action.yml — DeltaScope GitHub Actions Composite Action
-# Caller usage: uses: Fanduzi/deltascope@v0.511.1
+# Caller usage: uses: Fanduzi/deltascope@v0.512.0
 name: 'DeltaScope SQL Audit'
 description: 'Offline SQL audit for MySQL/TiDB migrations — runs deltascope CLI, annotates the step summary, and optionally comments on pull requests.'
 author: 'Fanduzi'
@@ -10,7 +10,7 @@ branding:
 
 inputs:
   version:
-    description: 'DeltaScope release tag to download (e.g. v0.511.1). Defaults to latest.'
+    description: 'DeltaScope release tag to download (e.g. v0.512.0). Defaults to latest.'
     required: false
     default: 'latest'
   files:
