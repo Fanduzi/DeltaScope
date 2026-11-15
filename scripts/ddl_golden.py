@@ -93,13 +93,35 @@ def load_baseline():
         return json.load(handle)
 
 
+def baseline_required_scope(manifest, baseline):
+    """Resolve which required anchor/dialect set governs a manifest.
+
+    Manifests declaring `anchor_scope` (e.g. "postgresql", issue #115) bind to
+    `manifest_scopes[scope]`; every other manifest keeps the legacy flat
+    required_anchors / required_cli_dialects. An unknown scope is a hard
+    failure — a typo'd scope name must not silently widen or narrow the
+    denominator."""
+    scope = manifest.get("anchor_scope")
+    if not scope:
+        return (baseline.get("required_anchors") or {},
+                baseline.get("required_cli_dialects") or [])
+    scoped = (baseline.get("manifest_scopes") or {}).get(scope)
+    if scoped is None:
+        return None, None
+    return (scoped.get("required_anchors") or {},
+            scoped.get("required_cli_dialects") or [])
+
+
 def baseline_manifest_failures(manifest, baseline):
     """Anchors/dialects a manifest may not drop. The baseline file is checked in
     independently of any task manifest, so shrinking a manifest cannot shrink
     the milestone denominator."""
     failures = []
     anchors = manifest.get("anchors") or {}
-    for key, spec in (baseline.get("required_anchors") or {}).items():
+    required_anchors, _dialects = baseline_required_scope(manifest, baseline)
+    if required_anchors is None:
+        return [f"manifest anchor_scope {manifest.get('anchor_scope')!r} not declared in baseline manifest_scopes"]
+    for key, spec in required_anchors.items():
         anchor = anchors.get(key)
         if anchor is None:
             failures.append(f"baseline anchor {key} missing from manifest")
@@ -112,19 +134,22 @@ def baseline_manifest_failures(manifest, baseline):
     return failures
 
 
-def baseline_executed_failures(artifact, executed, cases, baseline):
+def baseline_executed_failures(artifact, executed, cases, baseline, manifest=None):
     """The baseline also fixes what must be executed: every required anchor
     needs its db_ddl + syntax_negative cases, and every required CLI dialect a
     cli_audit case — regardless of what the manifest's required_case_ids say."""
     task = artifact.get("task_id") or ""
     failures = []
-    for key in (baseline.get("required_anchors") or {}):
+    required_anchors, required_dialects = baseline_required_scope(manifest or {}, baseline)
+    if required_anchors is None:
+        return [f"manifest anchor_scope {(manifest or {}).get('anchor_scope')!r} not declared in baseline manifest_scopes"]
+    for key in required_anchors:
         for suffix in ("ddl", "syntax_negative"):
             cid = f"{task}.db.{key}.{suffix}"
             if cid not in executed:
                 failures.append(f"baseline case {cid} not executed")
     dialects_executed = {c.get("dialect") for c in cases if c.get("kind") == "cli_audit"}
-    for dialect in baseline.get("required_cli_dialects") or []:
+    for dialect in required_dialects:
         if dialect not in dialects_executed:
             failures.append(f"baseline cli dialect {dialect} not executed")
     return failures
@@ -227,7 +252,12 @@ def prove_anchor_identity(manifest, baseline):
     the run must stop before executing fixture SQL rather than degrade to a
     record of whatever happened to be present.
     """
-    required = baseline.get("required_anchors") or {}
+    required = dict(baseline.get("required_anchors") or {})
+    # Scoped manifests (anchor_scope) lock their own required anchors, whose
+    # digests must pin with the same force as the flat required set.
+    scoped_required, _ = baseline_required_scope(manifest, baseline)
+    if scoped_required is not None:
+        required.update(scoped_required)
     auxiliary = baseline.get("auxiliary_anchors") or {}
     facts = {}
     failures = []
@@ -280,6 +310,13 @@ def manifest_credential_failures(manifest):
     failures = []
     for key, anchor in (manifest.get("anchors") or {}).items():
         client = anchor.get("exec_client") or []
+        if anchor.get("product") == "postgresql":
+            # The postgres17 anchor runs trust auth: a credential path wired
+            # here would mean either a mis-scoped manifest or a half-built
+            # secret channel that could serialize into evidence. Fail loud.
+            for forbidden in ("client_option_file", "exec_password_env"):
+                if anchor.get(forbidden):
+                    failures.append(f"anchor {key}: {forbidden} unsupported on postgresql anchors (trust-auth contract)")
         for element in client:
             for pattern in CREDENTIAL_ARG_PATTERNS:
                 if pattern.match(element):
@@ -312,8 +349,8 @@ def manifest_credential_failures(manifest):
     return failures
 
 
-def mysql_exec_argv(anchor, sql, database=None, silent=True, via_stdin=False):
-    """Build the docker-exec argv mysql_exec would run (for case evidence)."""
+def db_exec_argv(anchor, sql, database=None, silent=True, via_stdin=False):
+    """Build the docker-exec argv db_exec would run (for case evidence)."""
     client = list(anchor["exec_client"])
     if database:
         client.append(database)
@@ -323,7 +360,10 @@ def mysql_exec_argv(anchor, sql, database=None, silent=True, via_stdin=False):
         # there, so compound-body fixtures must ride stdin batch mode.
         argv.append("-i")
     else:
-        flag = "-Nse" if silent else "-e"
+        # Anchors declare their client's one-shot flag: mysql -Nse/-e,
+        # psql -tAXc/-c. A missing key keeps the mysql default so every
+        # existing anchor's serialized argv stays byte-identical.
+        flag = anchor.get("exec_silent_flag", "-Nse") if silent else anchor.get("exec_flag", "-e")
         client += [flag, sql]
     target = anchor.get("client_container") or anchor["container"]
     if anchor.get("exec_password_env"):
@@ -448,9 +488,10 @@ def credential_leak_findings(artifact, manifest):
     return sorted(set(findings))
 
 
-def mysql_exec(anchor, sql, database=None, silent=True, via_stdin=False):
-    """Execute fixed fixture SQL through the anchor's dedicated mysql client."""
-    argv = mysql_exec_argv(anchor, sql, database=database, silent=silent, via_stdin=via_stdin)
+def db_exec(anchor, sql, database=None, silent=True, via_stdin=False):
+    """Execute fixed fixture SQL through the anchor's declared client
+    (mysql for mysql/tidb anchors, psql for postgresql anchors)."""
+    argv = db_exec_argv(anchor, sql, database=database, silent=silent, via_stdin=via_stdin)
     stdin_text = sql if via_stdin else None
     password_env = anchor.get("exec_password_env")
     if password_env:
@@ -467,9 +508,13 @@ def build_cli(work_dir):
     binary = work_dir / "deltascope"
     rc, out, err = run_cmd(["go", "env", "GOVERSION"], cwd=ROOT_DIR)
     go_version = out.strip() if rc == 0 else "unknown"
-    build_env = {**os.environ, "CGO_ENABLED": "0"}
+    # pg_query_go links libpg_query through cgo, so the PG-capable golden
+    # binary needs CGO_ENABLED=1 (Makefile line of truth). The tag is
+    # unconditional so a single binary can audit every dialect the suite
+    # covers — TASK=all interleaves mysql/tidb and postgresql manifests.
+    build_env = {**os.environ, "CGO_ENABLED": "1"}
     rc, out, err = run_cmd(
-        ["go", "build", "-o", str(binary), "./cmd/deltascope"],
+        ["go", "build", "-tags", "postgresql", "-o", str(binary), "./cmd/deltascope"],
         cwd=ROOT_DIR,
         timeout=600,
         env=build_env,
@@ -481,8 +526,8 @@ def build_cli(work_dir):
         "path": str(binary),
         "sha256": digest,
         "build": {
-            "command": "CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope",
-            "cgo_enabled": "0",
+            "command": "CGO_ENABLED=1 go build -tags postgresql -o <artifact>/deltascope ./cmd/deltascope",
+            "cgo_enabled": "1",
             "go_version": go_version,
             "built_at": utc_now(),
         },
@@ -644,7 +689,7 @@ def run_verify_check(anchor, verify, database=None):
     observations = []
     for n in range(attempts):
         try:
-            vrc, vout, verr = mysql_exec(
+            vrc, vout, verr = db_exec(
                 anchor, verify["sql"],
                 database=database if verify.get("use_database") else None,
                 silent=True)
@@ -770,7 +815,7 @@ def execute_ddl_case(manifest, anchor_key):
         "reachable": False,
         "version": "",
     }
-    rc, out, err = mysql_exec(anchor, "SELECT VERSION()")
+    rc, out, err = db_exec(anchor, "SELECT VERSION()")
     database["reachable"] = rc == 0
     database["version"] = out.strip()
     case["actual"]["database"] = database
@@ -785,7 +830,7 @@ def execute_ddl_case(manifest, anchor_key):
         return case
 
     if anchor.get("needs_database_create"):
-        rc, out, err = mysql_exec(anchor, f"CREATE DATABASE IF NOT EXISTS {anchor['database']}")
+        rc, out, err = db_exec(anchor, f"CREATE DATABASE IF NOT EXISTS {anchor['database']}")
         case["assertions"].append({
             "name": "fixture database created",
             "ok": rc == 0,
@@ -794,7 +839,7 @@ def execute_ddl_case(manifest, anchor_key):
 
     for step in manifest["ddl_steps"]:
         step_actual = {"name": step["name"], "sql": step["sql"], "verify": []}
-        rc, out, err = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False)
+        rc, out, err = db_exec(anchor, step["sql"], database=anchor["database"], silent=False)
         step_actual["rc"] = rc
         step_actual["stdout"] = out.strip()
         step_actual["stderr"] = err.strip()
@@ -844,18 +889,21 @@ def execute_negative_case(manifest, anchor_key):
     # hide a partial side effect.
     if post_state:
         query = post_state["sql"]
-        pre_rc, pre_out, pre_err = mysql_exec(anchor, query, database=database)
+        pre_rc, pre_out, pre_err = db_exec(anchor, query, database=database)
         case["actual"]["pre_query"] = {
             "sql": query,
-            "argv": mysql_exec_argv(anchor, query, database=database),
+            "argv": db_exec_argv(anchor, query, database=database),
             "rc": pre_rc,
             "stdout": pre_out.strip(),
             "stderr": pre_err.strip(),
         }
-    case["actual"]["argv"] = mysql_exec_argv(anchor, negative["sql"], database=database, silent=False)
-    rc, out, err = mysql_exec(anchor, negative["sql"], database=database, silent=False)
+    case["actual"]["argv"] = db_exec_argv(anchor, negative["sql"], database=database, silent=False)
+    rc, out, err = db_exec(anchor, negative["sql"], database=database, silent=False)
     combined = (out + err).strip()
-    match = re.search(r"ERROR\s+(\d+)", combined)
+    # mysql reports `ERROR <errno>`; psql with VERBOSITY=verbose reports
+    # `ERROR:  <sqlstate>:  <message>`. The anchor declares which shape its
+    # client emits so the class is extracted, never assumed.
+    match = re.search(anchor.get("error_class_pattern", r"ERROR\s+(\d+)"), combined)
     error_class = match.group(1) if match else ""
     case["actual"].update({"rc": rc, "stdout": out.strip(), "stderr": err.strip(), "error_class": error_class})
     case["assertions"].append({
@@ -876,10 +924,10 @@ def execute_negative_case(manifest, anchor_key):
     })
     if post_state:
         query = post_state["sql"]
-        post_rc, post_out, post_err = mysql_exec(anchor, query, database=database)
+        post_rc, post_out, post_err = db_exec(anchor, query, database=database)
         case["actual"]["post_query"] = {
             "sql": query,
-            "argv": mysql_exec_argv(anchor, query, database=database),
+            "argv": db_exec_argv(anchor, query, database=database),
             "rc": post_rc,
             "stdout": post_out.strip(),
             "stderr": post_err.strip(),
@@ -1299,9 +1347,16 @@ def read_instance_fact(anchor, fact):
     or empty read returns None so an unreadable fact can never masquerade as
     an observed value."""
     query = INSTANCE_FACT_QUERIES.get(fact)
+    if query is None and anchor.get("product") == "postgresql":
+        # PostgreSQL facts are GUC settings read through SHOW; the `pg.`
+        # prefix keys the manifest fact name to the setting name. The strict
+        # charset keeps the interpolated SQL surface identifier-shaped.
+        match = re.fullmatch(r"pg\.([a-zA-Z0-9_.]+)", fact or "")
+        if match:
+            query = f"SHOW {match.group(1)}"
     if query is None:
         return None
-    rc, out, _ = mysql_exec(anchor, query)
+    rc, out, _ = db_exec(anchor, query)
     if rc != 0:
         return None
     lines = [line for line in out.strip().splitlines() if line.strip()]
@@ -1329,6 +1384,17 @@ def _fixture_key(step):
     return step.get("fixture_key") or "default"
 
 
+DEPLOYMENT_FACT_QUERIES = {
+    "mysql": {"target": "SELECT @@server_uuid", "version": "SELECT @@version"},
+    "tidb": {"target": "SELECT @@server_uuid", "version": "SELECT @@version"},
+    # PostgreSQL has no @@server_uuid; pg_control_system().system_identifier
+    # is the cluster's immutable initdb identity, serving the same
+    # provenance-binding role for deployment-evidence targets.
+    "postgresql": {"target": "SELECT system_identifier::text FROM pg_control_system()",
+                   "version": "SELECT version()"},
+}
+
+
 def capture_deployment_evidence(anchor, spec):
     """Probe the live anchor for the target-bound deployment facts a
     --deployment-evidence-file case needs (T24/#103): the file must carry the
@@ -1339,10 +1405,14 @@ def capture_deployment_evidence(anchor, spec):
     product/source from the manifest declaration."""
     container = anchor["container"]
     probes = []
+    queries = DEPLOYMENT_FACT_QUERIES.get(anchor.get("product"))
+    if queries is None:
+        return None, [{"name": "product_facts", "rc": 1,
+                       "stdout": "", "stderr": f"no deployment fact queries for product {anchor.get('product')!r}"}]
 
     def probe(name, argv=None, sql=None):
         if sql is not None:
-            rc, out, err = mysql_exec(anchor, sql, database=anchor["database"], silent=False)
+            rc, out, err = db_exec(anchor, sql, database=anchor["database"], silent=False)
             probes.append({"name": name, "sql": sql, "rc": rc, "stdout": out.strip(), "stderr": err.strip()})
         else:
             rc, out, err = run_cmd(["docker", "exec", container, *argv])
@@ -1350,8 +1420,8 @@ def capture_deployment_evidence(anchor, spec):
         value = out.strip().rsplit("\n", 1)[-1].strip() if sql is not None else out.strip()
         return rc, value
 
-    uuid_rc, server_uuid = probe("server_uuid", sql="SELECT @@server_uuid")
-    ver_rc, version = probe("version", sql="SELECT @@version")
+    uuid_rc, server_uuid = probe("server_uuid", sql=queries["target"])
+    ver_rc, version = probe("version", sql=queries["version"])
     nproc_rc, nproc = probe("host_vcpus", argv=["nproc"])
     cap_rc, capline = probe("priority_caps", argv=["sh", "-c", "grep CapEff /proc/1/status"])
     if any(rc != 0 for rc in (uuid_rc, ver_rc, nproc_rc, cap_rc)):
@@ -1417,7 +1487,7 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
                         continue
                     record = {"sql": entry["sql"]}
                     try:
-                        rc, out, err = mysql_exec(anchor, entry["sql"], database=anchor["database"])
+                        rc, out, err = db_exec(anchor, entry["sql"], database=anchor["database"])
                         record.update({"rc": rc, "stdout": out, "stderr": err})
                     except Exception as error:
                         record.update({"exception_type": type(error).__name__, "exception_message": str(error)})
@@ -1446,7 +1516,7 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
                 cleanup = {}
                 for name, sql in (("drop", "DROP TABLE t;"), ("count", "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'")):
                     try:
-                        rc, out, err = mysql_exec(anchor, sql, database=anchor["database"])
+                        rc, out, err = db_exec(anchor, sql, database=anchor["database"])
                         cleanup[name] = {"sql": sql, "rc": rc, "stdout": out, "stderr": err}
                     except Exception as error:
                         cleanup[name] = {"sql": sql, "exception_type": type(error).__name__, "exception_message": str(error)}
@@ -1492,7 +1562,7 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
         "reachable": False,
         "version": "",
     }
-    rc, out, _ = mysql_exec(anchor, "SELECT VERSION()")
+    rc, out, _ = db_exec(anchor, "SELECT VERSION()")
     database["reachable"] = rc == 0
     database["version"] = out.strip()
     case["actual"]["database"] = database
@@ -1525,7 +1595,7 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
             case["assertions"].append({"name": f"{task_id} prior fixture absence required", "ok": False, "detail": f"no successful absence proof for {_fixture_key(step)!r}"})
             case["status"] = "fail"
             return case
-        src, sout, serr = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False)
+        src, sout, serr = db_exec(anchor, step["sql"], database=anchor["database"], silent=False)
         if fixture is not None and step.get("creates_fixture") and type(src) is int and src == 0:
             fixture["created"].add(_fixture_key(step))
         step_ok = type(src) is int and src == step.get("expect_rc", 0)
@@ -1566,6 +1636,10 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
         "--port", str(conn["port"]),
         "--user", conn["user"],
     ]
+    if conn.get("database"):
+        # PostgreSQL keeps database and schema distinct; mysql/tidb use
+        # --schema alone so existing manifests stay byte-identical.
+        args += ["--database", conn["database"]]
     if conn.get("password_env"):
         args += ["--password-env", conn["password_env"]]
     if conn.get("password_file"):
@@ -1636,7 +1710,7 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
             case["status"] = "fail"
             return case
         via_stdin = step.get("via") == "stdin"
-        erc, eout, eerr = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False, via_stdin=via_stdin)
+        erc, eout, eerr = db_exec(anchor, step["sql"], database=anchor["database"], silent=False, via_stdin=via_stdin)
         if fixture is not None and step.get("creates_fixture") and type(erc) is int and erc == 0:
             fixture["created"].add(_fixture_key(step))
         if fixture is not None and step.get("drops_fixture") and type(erc) is int and erc == 0:
@@ -1708,7 +1782,7 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
             case["assertions"].append({"name": f"{task_id} drop requires current fixture ownership", "ok": False, "detail": f"unowned identity {_fixture_key(step)!r} preserved"})
             case["status"] = "fail"
             return case
-        trc, tout, terr = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False)
+        trc, tout, terr = db_exec(anchor, step["sql"], database=anchor["database"], silent=False)
         if fixture is not None and step.get("drops_fixture") and type(trc) is int and trc == 0:
             fixture["created"].discard(_fixture_key(step))
         record = {"name": step["name"], "sql": step["sql"], "rc": trc, "stderr": terr.strip()}
@@ -1770,7 +1844,7 @@ def execute_error_case(manifest, binary, policies, spec):
     observed_banner = None
     observed_product = None
     if anchor is not None:
-        brc, bout, _ = mysql_exec(anchor, "SELECT VERSION()")
+        brc, bout, _ = db_exec(anchor, "SELECT VERSION()")
         if brc == 0:
             observed_banner = bout.strip()
             observed_product = anchor["product"]
@@ -1938,6 +2012,8 @@ def expected_cli_argv(cli_path, spec, policy_path, connect=None):
             "--format", "json"]
     if connect:
         argv += ["--host", connect["host"], "--port", str(connect["port"]), "--user", connect["user"]]
+        if connect.get("database"):
+            argv += ["--database", connect["database"]]
         if connect.get("password_env"):
             argv += ["--password-env", connect["password_env"]]
         if connect.get("password_file"):
@@ -2098,7 +2174,7 @@ def version_evidence_failures(case, spec, reparsed, anchor=None):
                 failures.append(
                     f"case {case_id}: target {target_canonical!r} conflicts with observed {version!r} yet recorded as a successful audit")
         elif anchor is None and target_canonical is not None:
-            want_product = {"mysql": "mysql", "tidb": "tidb"}.get((spec or {}).get("dialect"))
+            want_product = {"mysql": "mysql", "tidb": "tidb", "postgresql": "postgresql"}.get((spec or {}).get("dialect"))
             if version != target_canonical or source != "target" or (want_product and product != want_product):
                 failures.append(f"case {case_id}: emitted version {reparsed_version!r} inconsistent with canonical target {target_canonical!r}")
         if reparsed_version.get("validated_range") is False:
@@ -8083,7 +8159,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     if extra:
         failures.append(f"executed cases outside required set: {extra}")
     if baseline:
-        failures.extend(baseline_executed_failures(artifact, executed, cases, baseline))
+        failures.extend(baseline_executed_failures(artifact, executed, cases, baseline, manifest=manifest))
 
     cli = artifact["cli"]
     for field in ("path", "sha256", "build"):
@@ -8246,7 +8322,9 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
             combined = stdout + stderr
             if actual.get("rc") == 0:
                 failures.append(f"case {case_id}: negative returned success")
-            match = re.search(r"ERROR\s+(\d+)", combined)
+            anchor_key = case.get("anchor")
+            anchor = (manifest.get("anchors") or {}).get(anchor_key) or {}
+            match = re.search(anchor.get("error_class_pattern", r"ERROR\s+(\d+)"), combined)
             observed_class = match.group(1) if match else ""
             if observed_class != negative["expect"]["error_class"]:
                 failures.append(f"case {case_id}: error class {observed_class!r} != expected {negative['expect']['error_class']!r}")
@@ -8529,7 +8607,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
 
 def bind_run_secret_env(manifest):
     """Bind each anchor's declared exec_password_env name to RUN_SECRET so
-    mysql_exec argv records the variable name, never the value."""
+    db_exec argv records the variable name, never the value."""
     for anchor in (manifest.get("anchors") or {}).values():
         env_name = anchor.get("exec_password_env")
         if env_name:
@@ -8676,7 +8754,7 @@ def cmd_run(args):
     RUN_SECRET = secrets.token_hex(16)
     manifest = load_manifest(args.task)
     # Anchors may name an exec_password_env for the MYSQL_PWD channel used by
-    # mysql_exec. The ephemeral per-run secret is the only permitted value, so
+    # db_exec. The ephemeral per-run secret is the only permitted value, so
     # bind each declared variable to RUN_SECRET for this process; the variable
     # name (never the value) is what lands in recorded argv/artifact.
     bind_run_secret_env(manifest)

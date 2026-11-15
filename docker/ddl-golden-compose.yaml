@@ -83,6 +83,30 @@ services:
       retries: 30
       start_period: 5s
 
+  # --- PostgreSQL milestone anchor (issue #115) -----------------------------
+  # Digest-pinned postgres:17.7, matching the parser's libpg_query 17 line.
+  # POSTGRES_HOST_AUTH_METHOD=trust mirrors the tidb85 root/empty-password
+  # model: the disposable fixture container never carries a credential, so
+  # nothing credential-shaped can leak into serialized golden evidence.
+  postgres17:
+    # Tag pull so the anchor's own tag resolves locally; the run-time identity
+    # proof still pins the index digest (20064937…) plus platform, so a moved
+    # tag fails the locked-baseline check rather than silently drifting.
+    image: postgres:17.7
+    container_name: deltascope-ddl-golden-postgres17
+    ports:
+      - "127.0.0.1:25432:5432"
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+
   # --- T04-B-R1 auxiliary fixtures (issue #83) -----------------------------
   # Disposable variants pinned to the same anchor images; the four baseline
   # anchors above are untouched. They exist to prove instance-fact reads:

@@ -105,7 +105,7 @@ def fixture_guard_checks(manifest):
                 return (1,'','COUNT failure') if fault=='count-error' else (0,'','') if fault=='count-empty' else (0,'1' if fault=='preexisting' or foreign else '0','')
             return 0,verify_values.get(sql,''),''
         parsed=parsed_for(source)
-        with mock.patch.object(runner,'mysql_exec',side_effect=mysql),mock.patch.object(runner,'image_digest',return_value='constructed'),mock.patch.object(runner,'run_cmd',return_value=(1,json.dumps(parsed),'')):
+        with mock.patch.object(runner,'db_exec',side_effect=mysql),mock.patch.object(runner,'image_digest',return_value='constructed'),mock.patch.object(runner,'run_cmd',return_value=(1,json.dumps(parsed),'')):
             record=runner.execute_metadata_case(manifest,'mysql80','/constructed/cli',policies,source)
         no_drop=not any(sql.startswith('DROP TABLE') for sql in ledger)
         no_early_create=fault=='collision' or not any(sql.startswith('CREATE TABLE') for sql in ledger)
@@ -124,7 +124,7 @@ def fixture_guard_checks(manifest):
         if sql.startswith('SELECT COUNT(*)'):
             return (1,'','intermediate COUNT failure') if created and not dropped else (0,'0','')
         return 0,values.get(sql,''),''
-    with mock.patch.object(runner,'mysql_exec',side_effect=owned_mysql),mock.patch.object(runner,'image_digest',return_value='constructed'),mock.patch.object(runner,'run_cmd') as command:
+    with mock.patch.object(runner,'db_exec',side_effect=owned_mysql),mock.patch.object(runner,'image_digest',return_value='constructed'),mock.patch.object(runner,'run_cmd') as command:
         record=runner.execute_metadata_case(manifest,'mysql80','/constructed/cli',policies,provider)
     results.append(('owned intermediate failure cleans without audit',record['status']=='fail' and dropped and command.call_count==0 and record['actual']['owned_cleanup']['count']['stdout']=='0'))
     for exception_cleanup in (False,True):
@@ -133,17 +133,17 @@ def fixture_guard_checks(manifest):
         def cleanup_fail(*args,**kwargs):
             if exception_cleanup:raise RuntimeError('cleanup controlled failure')
             return 1,'','cleanup controlled failure'
-        with mock.patch.object(runner,'_execute_metadata_case',side_effect=fail_after_owned),mock.patch.object(runner,'mysql_exec',side_effect=cleanup_fail):
+        with mock.patch.object(runner,'_execute_metadata_case',side_effect=fail_after_owned),mock.patch.object(runner,'db_exec',side_effect=cleanup_fail):
             record=runner.execute_metadata_case(manifest,'mysql80','/constructed/cli',policies,source)
         results.append(('primary and cleanup errors preserved '+str(exception_cleanup),record['status']=='fail' and record['actual']['fixture_error']['message']=='primary controlled failure' and len(record['actual']['owned_cleanup'])==2))
     secret='T07_ENV_ONLY_CREDENTIAL_SENTINEL'
     anchor={'exec_client':['mysql','-uroot'],'container':'constructed','exec_password_env':'T07_PASSWORD_TEST'}
     with mock.patch.dict(os.environ,{'T07_PASSWORD_TEST':secret}),mock.patch.object(runner,'run_cmd',return_value=(0,'','')) as command:
-        runner.mysql_exec(anchor,'SELECT 1')
+        runner.db_exec(anchor,'SELECT 1')
     args,kwargs=command.call_args;results.append(('fixture credentials environment-only',secret not in repr(args) and kwargs['env']['MYSQL_PWD']==secret and args[0][:5]==['docker','exec','--env','MYSQL_PWD','constructed']))
     environment={key:value for key,value in os.environ.items() if key!='T07_PASSWORD_TEST'}
     with mock.patch.dict(os.environ,environment,clear=True),mock.patch.object(runner,'run_cmd') as command:
-        result=runner.mysql_exec(anchor,'SELECT 1')
+        result=runner.db_exec(anchor,'SELECT 1')
     results.append(('missing fixture environment fails closed',result[0]!=0 and command.call_count==0))
     return results
 

@@ -95,6 +95,24 @@
   "T28",
   "T29",
   "T30",
-  "T32"
- ]
+  "T32",
+  "T34"
+ ],
+ "manifest_scopes": {
+  "postgresql": {
+   "description": "PostgreSQL-scope manifests (issue #115, T34+): these tasks prove only the postgresql17 anchor and the postgresql CLI dialect — the mysql/tidb anchor set is not part of their denominator. Declared by manifest field anchor_scope.",
+   "required_anchors": {
+    "postgres17": {
+     "product": "postgresql",
+     "version_contains": "PostgreSQL 17.7",
+     "image": "postgres:17.7",
+     "expected_image_digest": "postgres@sha256:2006493727bd5277eece187319af1ef82b4cf82cf4fc1ed00da0775b646ac2a4",
+     "platform": "linux/arm64"
+    }
+   },
+   "required_cli_dialects": [
+    "postgresql"
+   ]
+  }
+ }
 }

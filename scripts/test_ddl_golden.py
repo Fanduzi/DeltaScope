@@ -2621,7 +2621,7 @@ def a3_contract_tests(tmp):
             return 0, "1" if present else "0", ""
         return 0, answers.get(sql, ""), ""
 
-    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=database_call), \
+    with mock.patch.object(ddl_golden, "db_exec", side_effect=database_call), \
             mock.patch.object(ddl_golden, "image_digest", return_value="mysql@sha256:stub"), \
             mock.patch.object(ddl_golden, "run_cmd", return_value=(0, c["actual"]["stdout"], "")):
         recorded = ddl_golden.execute_metadata_case(manifest, "mysql84", str(binary), policies, spec)
@@ -3357,7 +3357,7 @@ def t06_contract_tests(tmp):
             return 0, "1" if created else "0", ""
         return 0, answers.get(sql, ""), ""
 
-    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=database_call), \
+    with mock.patch.object(ddl_golden, "db_exec", side_effect=database_call), \
             mock.patch.object(ddl_golden, "image_digest", return_value="mysql@sha256:stub"), \
             mock.patch.object(ddl_golden, "run_cmd", return_value=(1, reject_stdout, "")):
         recorded = ddl_golden.execute_metadata_case(manifest, "mysql84", str(binary), policies, spec)
@@ -6457,7 +6457,7 @@ def t23_instance_fact_tests(tmp):
             return 0, "tidb\t127.0.0.1:4000\tsplit-region-max-num\t1000", ""
         return 1, "", "unknown fact"
 
-    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=database_call):
+    with mock.patch.object(ddl_golden, "db_exec", side_effect=database_call):
         anchor = {"exec_client": ["mysql"], "database": "golden"}
         results.append(ddl_golden.read_instance_fact(anchor, "tidb_enable_clustered_index") == "int_only")
         print(("PASS " if results[-1] else "FAIL ") + "t23 clustered-index value resolves to int_only")
@@ -6505,7 +6505,7 @@ def t23n_verify_primitive_tests(tmp):
 
     # Single-shot verify behaves exactly like the historical read.
     outs = [(0, "0", "")]
-    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=sequence_call):
+    with mock.patch.object(ddl_golden, "db_exec", side_effect=sequence_call):
         rec, ok, timeout = ddl_golden.run_verify_check(anchor, v_exact)
     report("t23n single-shot mismatch keeps historical shape",
            not ok and not timeout and rec["output"] == "0" and "attempts" not in rec)
@@ -6515,7 +6515,7 @@ def t23n_verify_primitive_tests(tmp):
     calls.clear()
     polled = dict(v_exact)
     polled["poll"] = {"attempts": 5, "interval_sec": 0}
-    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=sequence_call):
+    with mock.patch.object(ddl_golden, "db_exec", side_effect=sequence_call):
         rec, ok, timeout = ddl_golden.run_verify_check(anchor, polled)
     report("t23n poll matches on third attempt",
            ok and not timeout and rec.get("attempts") == 3 and len(calls) == 3)
@@ -6524,7 +6524,7 @@ def t23n_verify_primitive_tests(tmp):
     # never a fabricated match.
     outs = [(0, "0", "")] * 5
     calls.clear()
-    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=sequence_call):
+    with mock.patch.object(ddl_golden, "db_exec", side_effect=sequence_call):
         rec, ok, timeout = ddl_golden.run_verify_check(anchor, polled)
     report("t23n exhausted poll is timeout_undetermined",
            not ok and timeout and rec.get("timeout") is True
@@ -6535,7 +6535,7 @@ def t23n_verify_primitive_tests(tmp):
     # preserves every observation.
     outs = [(1, "", "conn refused"), (0, "1", "")]
     calls.clear()
-    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=sequence_call):
+    with mock.patch.object(ddl_golden, "db_exec", side_effect=sequence_call):
         rec, ok, timeout = ddl_golden.run_verify_check(anchor, polled)
     report("r19 poll fails fast on nonzero rc",
            not ok and rec.get("error") is True and len(calls) == 1
@@ -6547,7 +6547,7 @@ def t23n_verify_primitive_tests(tmp):
     calls.clear()
     for bad in ("", 1, None, ["x"], {"k": 1}):
         badv = dict(v_exact); badv.pop("expect"); badv["contains"] = bad
-        with mock.patch.object(ddl_golden, "mysql_exec", side_effect=sequence_call):
+        with mock.patch.object(ddl_golden, "db_exec", side_effect=sequence_call):
             rec, ok, timeout = ddl_golden.run_verify_check(anchor, badv)
         if not (not ok and rec.get("error") is True and len(calls) == 0):
             report(f"r19 invalid contains {bad!r} rejected before exec", False)
@@ -6567,7 +6567,7 @@ def t23n_verify_primitive_tests(tmp):
     import subprocess as _sp
     def timeout_boom(*a, **k):
         raise _sp.TimeoutExpired(cmd="mysql", timeout=120)
-    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=timeout_boom):
+    with mock.patch.object(ddl_golden, "db_exec", side_effect=timeout_boom):
         rec, ok, timeout = ddl_golden.run_verify_check(anchor, polled)
     report("r19 query timeout is error record not silent retry",
            not ok and rec.get("error") is True and rec.get("query_timeout") is True
@@ -6756,7 +6756,7 @@ def t31_all_mode_tests():
     tasks = ddl_golden.discover_all_manifests()
     report("TASK=all discovers the canonical milestone set",
            tasks == sorted(tasks) and "T02" in tasks and "T32" in tasks
-           and "T23S" in tasks and len(tasks) == 31)
+           and "T23S" in tasks and "T34" in tasks and len(tasks) == 32)
     report("TASK=all excludes platform-variant lanes",
            "T21-arm64" not in tasks)
 
@@ -6798,6 +6798,49 @@ def t31_all_mode_tests():
     baseline = ddl_golden.load_baseline()
     report("baseline locks the canonical task denominator",
            sorted(baseline.get("required_all_tasks") or []) == tasks)
+
+    # anchor_scope (issue #115 T34): a postgresql-scope manifest is bound to
+    # its own required anchor/dialect set — the mysql/tidb anchors are not
+    # part of its denominator, an unknown scope is a hard error, and the
+    # scoped anchor still pins image digest + platform.
+    pg_scope = baseline["manifest_scopes"]["postgresql"]
+    pg_manifest = {
+        "task_id": "TX", "anchor_scope": "postgresql",
+        "anchors": {
+            "postgres17": {
+                "service": "postgres17", "container": "c",
+                "image": pg_scope["required_anchors"]["postgres17"]["image"],
+                "product": "postgresql",
+                "version_contains": "PostgreSQL 17.7",
+                "database": "postgres",
+                "exec_client": ["psql", "-U", "postgres"],
+            }
+        },
+    }
+    report("pg-scope manifest needs only its scoped anchors",
+           ddl_golden.baseline_manifest_failures(pg_manifest, baseline) == [])
+    pg_missing = {**pg_manifest, "anchors": {}}
+    report("pg-scope missing required anchor rejected",
+           any("postgres17" in f for f in ddl_golden.baseline_manifest_failures(pg_missing, baseline)))
+    bad_scope = {**pg_manifest, "anchor_scope": "pg17-typo"}
+    report("unknown anchor_scope rejected",
+           any("manifest_scopes" in f for f in ddl_golden.baseline_manifest_failures(bad_scope, baseline)))
+    pg_creds = json.loads(json.dumps(pg_manifest))
+    pg_creds["anchors"]["postgres17"]["client_option_file"] = {"container_path": "/x", "user": "u", "password_source": "ephemeral-run-secret"}
+    report("pg anchor credential channel rejected",
+           any("trust-auth" in f for f in ddl_golden.manifest_credential_failures(pg_creds)))
+    report("pg-scope executed denominator is scoped",
+           ddl_golden.baseline_executed_failures(
+               {"task_id": "TX"},
+               {"TX.db.postgres17.ddl", "TX.db.postgres17.syntax_negative"},
+               [{"kind": "cli_audit", "dialect": "postgresql"}], baseline,
+               manifest=pg_manifest) == [])
+    report("pg-scope missing dialect case rejected",
+           any("postgresql" in f for f in ddl_golden.baseline_executed_failures(
+               {"task_id": "TX"},
+               {"TX.db.postgres17.ddl", "TX.db.postgres17.syntax_negative"},
+               [{"kind": "cli_audit", "dialect": "mysql"}], baseline,
+               manifest=pg_manifest)))
 
     # reaggregate must refuse before touching Docker: a missing canonical
     # artifact aborts via SystemExit (fail_run), and per-task artifacts built
@@ -6852,7 +6895,7 @@ def t24_evidence_tests(tmp):
             return 0, "8\n", ""
         return 0, "CapEff:\t00000000a80425fb\n", ""  # bit 23 (CAP_SYS_NICE) clear
 
-    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=exec_ok), \
+    with mock.patch.object(ddl_golden, "db_exec", side_effect=exec_ok), \
          mock.patch.object(ddl_golden, "run_cmd", side_effect=run_ok):
         ev, probes = ddl_golden.capture_deployment_evidence(anchor, spec)
     report("deployment evidence captures live target facts",
@@ -6869,7 +6912,7 @@ def t24_evidence_tests(tmp):
             return 0, "4\n", ""
         return 0, "CapEff:\t00000000a88425fb\n", ""  # bit 23 set
 
-    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=exec_ok), \
+    with mock.patch.object(ddl_golden, "db_exec", side_effect=exec_ok), \
          mock.patch.object(ddl_golden, "run_cmd", side_effect=run_sysnice):
         ev2, _ = ddl_golden.capture_deployment_evidence(anchor, spec)
     report("CAP_SYS_NICE bit maps priority_capable=true",
@@ -6878,7 +6921,7 @@ def t24_evidence_tests(tmp):
     def exec_dead(a, sql, database=None, silent=True, via_stdin=False):
         return 1, "", "gone"
 
-    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=exec_dead), \
+    with mock.patch.object(ddl_golden, "db_exec", side_effect=exec_dead), \
          mock.patch.object(ddl_golden, "run_cmd", side_effect=run_ok):
         ev3, probes3 = ddl_golden.capture_deployment_evidence(anchor, spec)
     report("unreadable anchor facts fail closed",

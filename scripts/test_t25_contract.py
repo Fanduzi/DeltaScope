@@ -2,7 +2,7 @@
 """Offline fake/stub contract for the T25 keyed-fixture driver branches.
 
 The fixture state machine is verified without Docker or a database: a
-scripted mysql_exec stub answers the catalog reads and observes every
+scripted db_exec stub answers the catalog reads and observes every
 mutating statement, so ownership gating, ordered teardown, rename moves
 and the owned-fallback cleanup are all exercised in memory (R7-N04)."""
 import json
@@ -90,7 +90,7 @@ def run_case(spec, mysql):
         ledger.append(sql)
         return mysql(ledger, sql)
 
-    with mock.patch.object(runner, "mysql_exec", side_effect=stub), \
+    with mock.patch.object(runner, "db_exec", side_effect=stub), \
             mock.patch.object(runner, "image_digest", return_value="constructed"), \
             mock.patch.object(runner, "run_cmd", return_value=(0, PARSED, "")):
         record = runner.execute_metadata_case(MANIFEST, "mysql80", "/constructed/cli", POLICIES, spec)

@@ -1,0 +1,194 @@
+{
+  "task_id": "T34",
+  "issue": 117,
+  "anchor_scope": "postgresql",
+  "policy_profile": "pg-feature-smoke",
+  "description": "PostgreSQL 17 golden-anchor and psql-probe infrastructure smoke (issue #117): proves the postgres17 digest-locked anchor, psql fixture execution, sqlstate error classification, feature-rule isolation, and live metadata-aware audit over TCP — the same contract the mysql/tidb anchors carry, scoped to the postgresql manifest scope.",
+  "policy": {
+    "enable": {
+      "ddl.pg.alter.add_column.nullable.notice": {"enabled": true, "level": "notice"}
+    }
+  },
+  "anchors": {
+    "postgres17": {
+      "service": "postgres17",
+      "container": "deltascope-ddl-golden-postgres17",
+      "image": "postgres:17.7",
+      "product": "postgresql",
+      "version_contains": "PostgreSQL 17.7",
+      "database": "postgres",
+      "exec_client": ["psql", "-U", "postgres", "-X", "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=verbose"],
+      "exec_flag": "-c",
+      "exec_silent_flag": "-tAXc",
+      "error_class_pattern": "ERROR:\\s+(\\w+):",
+      "needs_database_create": false
+    }
+  },
+  "ddl_steps": [
+    {
+      "name": "create schema",
+      "sql": "CREATE SCHEMA golden",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "schema exists",
+          "sql": "SELECT schema_name FROM information_schema.schemata WHERE schema_name='golden'",
+          "expect": "golden",
+          "use_database": true
+        }
+      ]
+    },
+    {
+      "name": "create table",
+      "sql": "CREATE TABLE golden.probe (id bigint PRIMARY KEY, email text NOT NULL)",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "primary key constraint exists",
+          "sql": "SELECT count(*) FROM information_schema.table_constraints WHERE table_schema='golden' AND table_name='probe' AND constraint_type='PRIMARY KEY'",
+          "expect": "1",
+          "use_database": true
+        }
+      ]
+    },
+    {
+      "name": "alter add array column",
+      "sql": "ALTER TABLE golden.probe ADD COLUMN tags text[]",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "array column landed as ARRAY",
+          "sql": "SELECT data_type FROM information_schema.columns WHERE table_schema='golden' AND table_name='probe' AND column_name='tags'",
+          "expect": "ARRAY",
+          "use_database": true
+        }
+      ]
+    },
+    {
+      "name": "drop schema cascade",
+      "sql": "DROP SCHEMA golden CASCADE",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "schema gone",
+          "sql": "SELECT count(*) FROM information_schema.schemata WHERE schema_name='golden'",
+          "expect": "0",
+          "use_database": true
+        }
+      ]
+    }
+  ],
+  "syntax_negative": {
+    "sql": "CREATE TABLE golden.broken (",
+    "expect": {
+      "error_class": "42601",
+      "forbidden_markers": ["FATAL", "password", "Access denied", "authentication failed"]
+    },
+    "post_state_check": {
+      "sql": "SELECT count(*) FROM information_schema.schemata WHERE schema_name='golden'",
+      "expect": "0"
+    }
+  },
+  "cli_cases": [
+    {
+      "id": "pg-feature-rule-fires",
+      "dialect": "postgresql",
+      "sql": "ALTER TABLE golden.probe ADD COLUMN tags text[]",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "finding_entries": [
+          {"index": 0, "rule_id": "ddl.pg.alter.add_column.nullable.notice", "level": "notice"}
+        ]
+      }
+    },
+    {
+      "id": "pg-rules-disabled",
+      "dialect": "postgresql",
+      "policy": "all-rules-disabled",
+      "sql": "ALTER TABLE golden.probe ADD COLUMN tags text[]",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0
+      }
+    }
+  ],
+  "metadata_cases": [
+    {
+      "id": "pg-live-metadata",
+      "anchor": "postgres17",
+      "dialect": "postgresql",
+      "sql": "ALTER TABLE golden.probe ADD COLUMN tags text[]",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 25432,
+        "user": "postgres",
+        "database": "postgres",
+        "schema": "public"
+      },
+      "setup": [
+        {
+          "name": "create fixture schema",
+          "sql": "CREATE SCHEMA golden",
+          "expect_rc": 0
+        },
+        {
+          "name": "create fixture table",
+          "sql": "CREATE TABLE golden.probe (id bigint PRIMARY KEY, email text NOT NULL)",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "fixture table exists",
+              "sql": "SELECT count(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='probe'",
+              "expect": "1",
+              "use_database": true
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "finding_entries": [
+          {"index": 0, "rule_id": "ddl.pg.alter.add_column.nullable.notice", "level": "notice"}
+        ]
+      },
+      "post_verify": [
+        {
+          "assert": "audit did not execute the submitted ALTER",
+          "sql": "SELECT count(*) FROM information_schema.columns WHERE table_schema='golden' AND table_name='probe' AND column_name='tags'",
+          "expect": "0",
+          "use_database": true
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop fixture schema",
+          "sql": "DROP SCHEMA IF EXISTS golden CASCADE",
+          "expect_rc": 0
+        }
+      ]
+    }
+  ],
+  "required_case_ids": [
+    "T34.db.postgres17.ddl",
+    "T34.db.postgres17.syntax_negative",
+    "T34.cli.pg-feature-rule-fires",
+    "T34.cli.pg-rules-disabled",
+    "T34.meta.pg-live-metadata"
+  ]
+}
