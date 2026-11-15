@@ -5392,7 +5392,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: explicit_unsupported
-            evidence: ["file:testdata/ddl-inventory/evidence/tidb.alter-instance.reload-tls.probes.txt", "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"]
+            evidence: ["file:testdata/ddl-inventory/evidence/tidb.alter-instance.reload-tls.probes.txt", "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json", "file:testdata/ddl-golden/T32.json", "file:internal/application/audit/t32_tidb_alter_instance_test.go"]
       - subaction_id: ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR
         parser_status: recognized
         audit_status: explicit_unsupported
@@ -5403,8 +5403,8 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: explicit_unsupported
-            evidence: ["file:testdata/ddl-inventory/evidence/tidb.alter-instance.reload-tls-no-rollback-on-error.probes.txt", "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"]
-    status_evidence: "2026-11-15 T32 (#111) boundary closure: RELOAD TLS and RELOAD TLS NO ROLLBACK ON ERROR keep the named unaudited boundary with the action kind (alter_instance.reload_tls), the object:instance target identity, the recorded no_rollback_on_error member, and the owed alter_instance.version_applicability promotion premise; native tidb85 exec of ALTER INSTANCE RELOAD TLS landed rc=0 (T32.meta). ROTATE INNODB MASTER KEY is MySQL-only grammar and stays a vendor boundary under the tidb dialect; malformed and fabricated-target spellings stay parser errors. Earlier: 2026-11-13 R3 probe unaudited boundary; 2026-09-22 silent"
+            evidence: ["file:testdata/ddl-inventory/evidence/tidb.alter-instance.reload-tls-no-rollback-on-error.probes.txt", "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json", "file:testdata/ddl-golden/T32.json", "file:internal/application/audit/t32_tidb_alter_instance_test.go"]
+    status_evidence: "2026-11-15 T59 (#143) premise discharged as pinned boundary: T32.meta live tidb85 evidence (native ALTER INSTANCE RELOAD TLS rc=0 + unaudited boundary carrying alter_instance.reload_tls, object:instance, gap_fact=alter_instance.version_applicability, no_rollback_on_error where authored) is attached to every subaction cell; the promotion premise is deferred because TiDB documents no audited-applicability version for ALTER INSTANCE, so explicit_unsupported remains the honest terminal state until such a premise exists. Earlier: 2026-11-15 T32 (#111) boundary closure; 2026-11-13 R3 probe unaudited boundary; 2026-09-22 silent"
     targets: "instance action kind and object:instance target identity"
     acceptance:
       dimensions: "classification and boundary evidence"

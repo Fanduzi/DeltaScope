@@ -5534,7 +5534,9 @@
               "audit_status": "explicit_unsupported",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/tidb.alter-instance.reload-tls.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T32.json",
+                "file:internal/application/audit/t32_tidb_alter_instance_test.go"
               ]
             }
           ]
@@ -5553,7 +5555,9 @@
               "audit_status": "explicit_unsupported",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/tidb.alter-instance.reload-tls-no-rollback-on-error.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T32.json",
+                "file:internal/application/audit/t32_tidb_alter_instance_test.go"
               ]
             }
           ]

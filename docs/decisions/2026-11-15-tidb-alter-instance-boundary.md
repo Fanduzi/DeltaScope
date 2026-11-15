@@ -60,3 +60,14 @@ TiDB audited domain that does not exist.
   status_evidence, and acceptance refs all file-bound.
 - `python3 scripts/test_ddl_golden.py` — contract suite green with
   T32 in the canonical 31-task set.
+
+## Update (T59 / #143)
+
+The `alter_instance.version_applicability` promotion premise is
+discharged as a pinned boundary: T32's live tidb85 metadata case
+(native `ALTER INSTANCE RELOAD TLS` rc=0 plus the unaudited boundary
+carrying the action identity and gap fact) is now attached to every
+subaction cell of `tidb.alter-instance`. The premise is deferred —
+TiDB documents no audited-applicability version for ALTER INSTANCE —
+so `explicit_unsupported` stays the honest terminal state until such a
+premise exists.
