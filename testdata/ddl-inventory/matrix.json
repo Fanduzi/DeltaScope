@@ -17092,7 +17092,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17103,7 +17104,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17114,7 +17116,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         }
       ]
@@ -17135,7 +17138,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt",
+            "file:testdata/ddl-golden/T51.json"
           ]
         },
         {
@@ -17146,7 +17150,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt",
+            "file:testdata/ddl-golden/T51.json"
           ]
         },
         {
@@ -17157,7 +17162,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt",
+            "file:testdata/ddl-golden/T51.json"
           ]
         }
       ]
@@ -17178,7 +17184,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17189,7 +17196,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17200,7 +17208,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         }
       ]
@@ -17221,7 +17230,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17232,7 +17242,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17243,7 +17254,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         }
       ]
@@ -17264,7 +17276,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17275,7 +17288,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17286,7 +17300,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         }
       ]
@@ -17307,7 +17322,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17318,7 +17334,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17329,7 +17346,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         }
       ]
@@ -17350,7 +17368,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt",
+            "file:testdata/ddl-golden/T51.json"
           ]
         },
         {
@@ -17361,7 +17380,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt",
+            "file:testdata/ddl-golden/T51.json"
           ]
         },
         {
@@ -17372,7 +17392,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt",
+            "file:testdata/ddl-golden/T51.json"
           ]
         }
       ]
@@ -17393,7 +17414,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17404,7 +17426,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17415,7 +17438,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         }
       ]
@@ -17436,7 +17460,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17447,7 +17472,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17458,7 +17484,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         }
       ]
@@ -17479,7 +17506,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17490,7 +17518,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17501,7 +17530,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         }
       ]
@@ -17522,7 +17552,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt",
+            "file:testdata/ddl-golden/T51.json"
           ]
         },
         {
@@ -17533,7 +17564,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt",
+            "file:testdata/ddl-golden/T51.json"
           ]
         },
         {
@@ -17544,7 +17576,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt",
+            "file:testdata/ddl-golden/T51.json"
           ]
         }
       ]
@@ -17565,7 +17598,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17576,7 +17610,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17587,7 +17622,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         }
       ]
@@ -17608,7 +17644,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17619,7 +17656,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17630,7 +17668,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         }
       ]
@@ -17651,7 +17690,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17662,7 +17702,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17673,7 +17714,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         }
       ]
@@ -17694,7 +17736,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt",
+            "file:testdata/ddl-golden/T51.json"
           ]
         },
         {
@@ -17705,7 +17748,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt",
+            "file:testdata/ddl-golden/T51.json"
           ]
         },
         {
@@ -17716,7 +17760,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt",
+            "file:testdata/ddl-golden/T51.json"
           ]
         }
       ]
@@ -17737,7 +17782,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17748,7 +17794,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17759,7 +17806,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         }
       ]
@@ -17780,7 +17828,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17791,7 +17840,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         },
         {
@@ -17802,7 +17852,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt"
+            "file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt",
+            "file:testdata/ddl-golden/T52.json"
           ]
         }
       ]
@@ -17823,7 +17874,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.call.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.call.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -17844,7 +17896,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.delete.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.delete.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -17865,7 +17918,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.do.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.do.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -17886,7 +17940,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.except.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.except.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -17907,7 +17962,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.handler.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.handler.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -17928,7 +17984,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.import-into.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.import-into.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -17949,7 +18006,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.import-table.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.import-table.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -17970,7 +18028,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.insert.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.insert.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -17991,7 +18050,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.intersect.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.intersect.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -18012,7 +18072,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.load-data.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.load-data.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -18033,7 +18094,8 @@
           "parser_status": "unrecognized",
           "audit_status": "not_applicable",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.load-xml.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.load-xml.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -18054,7 +18116,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.replace.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.replace.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -18075,7 +18138,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.select.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.select.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -18096,7 +18160,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.table.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.table.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -18117,7 +18182,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.union.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.union.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -18138,7 +18204,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.update.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.update.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -18159,7 +18226,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.values.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.values.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -18180,7 +18248,8 @@
           "parser_status": "recognized",
           "audit_status": "silent",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/tidb.dml.with.probes.txt"
+            "file:testdata/ddl-inventory/evidence/tidb.dml.with.probes.txt",
+            "file:testdata/ddl-golden/T53.json"
           ]
         }
       ]
@@ -18201,7 +18270,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/postgresql.dml.copy.probes.txt"
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.copy.probes.txt",
+            "file:testdata/ddl-golden/T54.json"
           ]
         }
       ]
@@ -18222,7 +18292,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/postgresql.dml.delete.probes.txt"
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.delete.probes.txt",
+            "file:testdata/ddl-golden/T54.json"
           ]
         }
       ]
@@ -18243,7 +18314,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/postgresql.dml.insert.probes.txt"
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.insert.probes.txt",
+            "file:testdata/ddl-golden/T54.json"
           ]
         }
       ]
@@ -18264,7 +18336,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/postgresql.dml.merge.probes.txt"
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.merge.probes.txt",
+            "file:testdata/ddl-golden/T54.json"
           ]
         }
       ]
@@ -18285,7 +18358,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/postgresql.dml.select.probes.txt"
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.select.probes.txt",
+            "file:testdata/ddl-golden/T54.json"
           ]
         }
       ]
@@ -18306,7 +18380,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/postgresql.dml.table.probes.txt"
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.table.probes.txt",
+            "file:testdata/ddl-golden/T54.json"
           ]
         }
       ]
@@ -18327,7 +18402,8 @@
           "parser_status": "recognized",
           "audit_status": "audited",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/postgresql.dml.update.probes.txt"
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.update.probes.txt",
+            "file:testdata/ddl-golden/T54.json"
           ]
         }
       ]
@@ -18348,7 +18424,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/postgresql.dml.values.probes.txt"
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.values.probes.txt",
+            "file:testdata/ddl-golden/T54.json"
           ]
         }
       ]
@@ -18369,7 +18446,8 @@
           "parser_status": "recognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/postgresql.dml.with.probes.txt"
+            "file:testdata/ddl-inventory/evidence/postgresql.dml.with.probes.txt",
+            "file:testdata/ddl-golden/T54.json"
           ]
         }
       ]

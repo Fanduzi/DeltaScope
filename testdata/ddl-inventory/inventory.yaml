@@ -14248,27 +14248,27 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt", "file:testdata/ddl-golden/T52.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=explicit_unsupported · mysql80=explicit_unsupported · mysql84=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=explicit_unsupported · mysql80=explicit_unsupported · mysql84=explicit_unsupported. Golden acceptance T52 (HEAD f72fc5a8, 49 cases, 480 assertions): mysql query/utility verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official call statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.call.probes.txt", "file:testdata/ddl-golden/T52.json"]
     owner: T52
 
   - id: mysql.dml.delete
@@ -14289,27 +14289,27 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt", "file:testdata/ddl-golden/T51.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt", "file:testdata/ddl-golden/T51.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt", "file:testdata/ddl-golden/T51.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=audited · mysql80=audited · mysql84=audited · feature findings: mysql57:dml.where.require,dml.impact.ratio.max_percent | mysql80:dml.where.require,dml.impact.ratio.max_percent | mysql84:dml.where.require,dml.impact.ratio.max_percent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=audited · mysql80=audited · mysql84=audited · feature findings: mysql57:dml.where.require,dml.impact.ratio.max_percent | mysql80:dml.where.require,dml.impact.ratio.max_percent | mysql84:dml.where.require,dml.impact.ratio.max_percent. Golden acceptance T51 (HEAD 56461038, 63 cases, 696 assertions): mysql mutation verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official delete statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.delete.probes.txt", "file:testdata/ddl-golden/T51.json"]
     owner: T51
 
   - id: mysql.dml.do
@@ -14330,27 +14330,27 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt", "file:testdata/ddl-golden/T52.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=explicit_unsupported · mysql80=explicit_unsupported · mysql84=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=explicit_unsupported · mysql80=explicit_unsupported · mysql84=explicit_unsupported. Golden acceptance T52 (HEAD f72fc5a8, 49 cases, 480 assertions): mysql query/utility verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official do statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.do.probes.txt", "file:testdata/ddl-golden/T52.json"]
     owner: T52
 
   - id: mysql.dml.except
@@ -14371,27 +14371,27 @@ rows:
         product_scope: version_gated
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt", "file:testdata/ddl-golden/T52.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Golden acceptance T52 (HEAD f72fc5a8, 49 cases, 480 assertions): mysql query/utility verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official except statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.except.probes.txt", "file:testdata/ddl-golden/T52.json"]
     owner: T52
 
   - id: mysql.dml.handler
@@ -14412,27 +14412,27 @@ rows:
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt", "file:testdata/ddl-golden/T52.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=parser_error · mysql80=parser_error · mysql84=parser_error. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=parser_error · mysql80=parser_error · mysql84=parser_error. Golden acceptance T52 (HEAD f72fc5a8, 49 cases, 480 assertions): mysql query/utility verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official handler statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.handler.probes.txt", "file:testdata/ddl-golden/T52.json"]
     owner: T52
 
   - id: mysql.dml.import-table
@@ -14453,27 +14453,27 @@ rows:
         product_scope: version_gated
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt", "file:testdata/ddl-golden/T52.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=parser_error · mysql80=parser_error · mysql84=parser_error. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=parser_error · mysql80=parser_error · mysql84=parser_error. Golden acceptance T52 (HEAD f72fc5a8, 49 cases, 480 assertions): mysql query/utility verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official import-table statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.import-table.probes.txt", "file:testdata/ddl-golden/T52.json"]
     owner: T52
 
   - id: mysql.dml.insert
@@ -14494,27 +14494,27 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt", "file:testdata/ddl-golden/T51.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt", "file:testdata/ddl-golden/T51.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt", "file:testdata/ddl-golden/T51.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=audited · mysql80=audited · mysql84=audited · feature findings: mysql57:dml.insert.select.forbid | mysql80:dml.insert.select.forbid | mysql84:dml.insert.select.forbid. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=audited · mysql80=audited · mysql84=audited · feature findings: mysql57:dml.insert.select.forbid | mysql80:dml.insert.select.forbid | mysql84:dml.insert.select.forbid. Golden acceptance T51 (HEAD 56461038, 63 cases, 696 assertions): mysql mutation verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official insert statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.insert.probes.txt", "file:testdata/ddl-golden/T51.json"]
     owner: T51
 
   - id: mysql.dml.intersect
@@ -14535,27 +14535,27 @@ rows:
         product_scope: version_gated
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt", "file:testdata/ddl-golden/T52.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Golden acceptance T52 (HEAD f72fc5a8, 49 cases, 480 assertions): mysql query/utility verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official intersect statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.intersect.probes.txt", "file:testdata/ddl-golden/T52.json"]
     owner: T52
 
   - id: mysql.dml.load-data
@@ -14576,27 +14576,27 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt", "file:testdata/ddl-golden/T52.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=explicit_unsupported · mysql80=explicit_unsupported · mysql84=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=explicit_unsupported · mysql80=explicit_unsupported · mysql84=explicit_unsupported. Golden acceptance T52 (HEAD f72fc5a8, 49 cases, 480 assertions): mysql query/utility verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official load-data statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-data.probes.txt", "file:testdata/ddl-golden/T52.json"]
     owner: T52
 
   - id: mysql.dml.load-xml
@@ -14617,27 +14617,27 @@ rows:
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt", "file:testdata/ddl-golden/T52.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=parser_error · mysql80=parser_error · mysql84=parser_error. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=parser_error · mysql80=parser_error · mysql84=parser_error. Golden acceptance T52 (HEAD f72fc5a8, 49 cases, 480 assertions): mysql query/utility verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official load-xml statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.load-xml.probes.txt", "file:testdata/ddl-golden/T52.json"]
     owner: T52
 
   - id: mysql.dml.replace
@@ -14658,27 +14658,27 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt", "file:testdata/ddl-golden/T51.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt", "file:testdata/ddl-golden/T51.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt", "file:testdata/ddl-golden/T51.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=audited · mysql80=audited · mysql84=audited · feature findings: mysql57:dml.replace.forbid | mysql80:dml.replace.forbid | mysql84:dml.replace.forbid. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=audited · mysql80=audited · mysql84=audited · feature findings: mysql57:dml.replace.forbid | mysql80:dml.replace.forbid | mysql84:dml.replace.forbid. Golden acceptance T51 (HEAD 56461038, 63 cases, 696 assertions): mysql mutation verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official replace statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.replace.probes.txt", "file:testdata/ddl-golden/T51.json"]
     owner: T51
 
   - id: mysql.dml.select
@@ -14699,27 +14699,27 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt", "file:testdata/ddl-golden/T52.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Golden acceptance T52 (HEAD f72fc5a8, 49 cases, 480 assertions): mysql query/utility verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official select statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.select.probes.txt", "file:testdata/ddl-golden/T52.json"]
     owner: T52
 
   - id: mysql.dml.table
@@ -14740,27 +14740,27 @@ rows:
         product_scope: version_gated
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt", "file:testdata/ddl-golden/T52.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Golden acceptance T52 (HEAD f72fc5a8, 49 cases, 480 assertions): mysql query/utility verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official table statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.table.probes.txt", "file:testdata/ddl-golden/T52.json"]
     owner: T52
 
   - id: mysql.dml.union
@@ -14781,27 +14781,27 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt", "file:testdata/ddl-golden/T52.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Golden acceptance T52 (HEAD f72fc5a8, 49 cases, 480 assertions): mysql query/utility verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official union statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.union.probes.txt", "file:testdata/ddl-golden/T52.json"]
     owner: T52
 
   - id: mysql.dml.update
@@ -14822,27 +14822,27 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt", "file:testdata/ddl-golden/T51.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt", "file:testdata/ddl-golden/T51.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt", "file:testdata/ddl-golden/T51.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=audited · mysql80=audited · mysql84=audited · feature findings: mysql57:dml.where.require,dml.impact.ratio.max_percent | mysql80:dml.where.require,dml.impact.ratio.max_percent | mysql84:dml.where.require,dml.impact.ratio.max_percent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=audited · mysql80=audited · mysql84=audited · feature findings: mysql57:dml.where.require,dml.impact.ratio.max_percent | mysql80:dml.where.require,dml.impact.ratio.max_percent | mysql84:dml.where.require,dml.impact.ratio.max_percent. Golden acceptance T51 (HEAD 56461038, 63 cases, 696 assertions): mysql mutation verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official update statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.update.probes.txt", "file:testdata/ddl-golden/T51.json"]
     owner: T51
 
   - id: mysql.dml.values
@@ -14863,27 +14863,27 @@ rows:
         product_scope: version_gated
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt", "file:testdata/ddl-golden/T52.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Golden acceptance T52 (HEAD f72fc5a8, 49 cases, 480 assertions): mysql query/utility verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official values statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.values.probes.txt", "file:testdata/ddl-golden/T52.json"]
     owner: T52
 
   - id: mysql.dml.with
@@ -14904,27 +14904,27 @@ rows:
         product_scope: version_gated
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt", "file:testdata/ddl-golden/T52.json"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt", "file:testdata/ddl-golden/T52.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): mysql57=silent · mysql80=silent · mysql84=silent. Golden acceptance T52 (HEAD f72fc5a8, 49 cases, 480 assertions): mysql query/utility verbs — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official with statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/mysql.dml.with.probes.txt", "file:testdata/ddl-golden/T52.json"]
     owner: T52
 
   # ================= TiDB DML =================
@@ -14946,13 +14946,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.call.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.call.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=explicit_unsupported. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official call statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.call.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.call.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.delete
@@ -14973,13 +14973,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.delete.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.delete.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=audited · feature findings: tidb85:dml.where.require,dml.impact.ratio.max_percent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=audited · feature findings: tidb85:dml.where.require,dml.impact.ratio.max_percent. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official delete statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.delete.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.delete.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.do
@@ -15000,13 +15000,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.do.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.do.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=explicit_unsupported. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official do statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.do.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.do.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.except
@@ -15027,13 +15027,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.except.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.except.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official except statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.except.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.except.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.handler
@@ -15054,13 +15054,13 @@ rows:
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.handler.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.handler.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=parser_error. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=parser_error. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official handler statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.handler.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.handler.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.import-into
@@ -15081,13 +15081,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.import-into.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.import-into.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=explicit_unsupported. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official import-into statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.import-into.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.import-into.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.import-table
@@ -15108,13 +15108,13 @@ rows:
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.import-table.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.import-table.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=parser_error. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=parser_error. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official import-table statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.import-table.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.import-table.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.insert
@@ -15135,13 +15135,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.insert.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.insert.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=audited · feature findings: tidb85:dml.insert.select.forbid. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=audited · feature findings: tidb85:dml.insert.select.forbid. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official insert statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.insert.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.insert.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.intersect
@@ -15162,13 +15162,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.intersect.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.intersect.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official intersect statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.intersect.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.intersect.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.load-data
@@ -15189,13 +15189,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.load-data.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.load-data.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=explicit_unsupported. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official load-data statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.load-data.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.load-data.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.load-xml
@@ -15216,13 +15216,13 @@ rows:
         product_scope: registered
         parser_status: unrecognized
         audit_status: not_applicable
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.load-xml.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.load-xml.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=parser_error. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=parser_error. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official load-xml statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.load-xml.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.load-xml.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.replace
@@ -15243,13 +15243,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.replace.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.replace.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=audited · feature findings: tidb85:dml.replace.forbid. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=audited · feature findings: tidb85:dml.replace.forbid. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official replace statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.replace.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.replace.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.select
@@ -15270,13 +15270,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.select.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.select.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official select statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.select.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.select.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.table
@@ -15297,13 +15297,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.table.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.table.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official table statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.table.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.table.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.union
@@ -15324,13 +15324,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.union.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.union.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official union statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.union.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.union.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.update
@@ -15351,13 +15351,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.update.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.update.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=audited · feature findings: tidb85:dml.where.require,dml.impact.ratio.max_percent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=audited · feature findings: tidb85:dml.where.require,dml.impact.ratio.max_percent. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official update statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.update.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.update.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.values
@@ -15378,13 +15378,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.values.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.values.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official values statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.values.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.values.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   - id: tidb.dml.with
@@ -15405,13 +15405,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: silent
-        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.with.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/tidb.dml.with.probes.txt", "file:testdata/ddl-golden/T53.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): tidb85=silent. Golden acceptance T53 (HEAD 751e3296, 26 cases, 256 assertions): tidb-native DML incl. IMPORT INTO — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official with statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.with.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/tidb.dml.with.probes.txt", "file:testdata/ddl-golden/T53.json"]
     owner: T53
 
   # ================= PostgreSQL DML =================
@@ -15433,13 +15433,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.copy.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.copy.probes.txt", "file:testdata/ddl-golden/T54.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Golden acceptance T54 (HEAD dccbccb6, 32 cases, 346 assertions): postgresql DML on postgres17 — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official copy statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.copy.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.copy.probes.txt", "file:testdata/ddl-golden/T54.json"]
     owner: T54
 
   - id: postgresql.dml.delete
@@ -15460,13 +15460,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.delete.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.delete.probes.txt", "file:testdata/ddl-golden/T54.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=audited · feature findings: postgresql17:dml.where.require,dml.impact.ratio.max_percent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=audited · feature findings: postgresql17:dml.where.require,dml.impact.ratio.max_percent. Golden acceptance T54 (HEAD dccbccb6, 32 cases, 346 assertions): postgresql DML on postgres17 — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official delete statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.delete.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.delete.probes.txt", "file:testdata/ddl-golden/T54.json"]
     owner: T54
 
   - id: postgresql.dml.insert
@@ -15487,13 +15487,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.insert.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.insert.probes.txt", "file:testdata/ddl-golden/T54.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=audited · feature findings: postgresql17:dml.insert.select.forbid. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=audited · feature findings: postgresql17:dml.insert.select.forbid. Golden acceptance T54 (HEAD dccbccb6, 32 cases, 346 assertions): postgresql DML on postgres17 — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official insert statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.insert.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.insert.probes.txt", "file:testdata/ddl-golden/T54.json"]
     owner: T54
 
   - id: postgresql.dml.merge
@@ -15514,13 +15514,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.merge.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.merge.probes.txt", "file:testdata/ddl-golden/T54.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Golden acceptance T54 (HEAD dccbccb6, 32 cases, 346 assertions): postgresql DML on postgres17 — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official merge statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.merge.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.merge.probes.txt", "file:testdata/ddl-golden/T54.json"]
     owner: T54
 
   - id: postgresql.dml.select
@@ -15541,13 +15541,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.select.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.select.probes.txt", "file:testdata/ddl-golden/T54.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Golden acceptance T54 (HEAD dccbccb6, 32 cases, 346 assertions): postgresql DML on postgres17 — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official select statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.select.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.select.probes.txt", "file:testdata/ddl-golden/T54.json"]
     owner: T54
 
   - id: postgresql.dml.table
@@ -15568,13 +15568,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.table.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.table.probes.txt", "file:testdata/ddl-golden/T54.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Golden acceptance T54 (HEAD dccbccb6, 32 cases, 346 assertions): postgresql DML on postgres17 — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official table statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.table.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.table.probes.txt", "file:testdata/ddl-golden/T54.json"]
     owner: T54
 
   - id: postgresql.dml.update
@@ -15595,13 +15595,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: audited
-        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.update.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.update.probes.txt", "file:testdata/ddl-golden/T54.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=audited · feature findings: postgresql17:dml.where.require,dml.impact.ratio.max_percent. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=audited · feature findings: postgresql17:dml.where.require,dml.impact.ratio.max_percent. Golden acceptance T54 (HEAD dccbccb6, 32 cases, 346 assertions): postgresql DML on postgres17 — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official update statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.update.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.update.probes.txt", "file:testdata/ddl-golden/T54.json"]
     owner: T54
 
   - id: postgresql.dml.values
@@ -15622,13 +15622,13 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.values.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.values.probes.txt", "file:testdata/ddl-golden/T54.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Golden acceptance T54 (HEAD dccbccb6, 32 cases, 346 assertions): postgresql DML on postgres17 — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official values statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.values.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.values.probes.txt", "file:testdata/ddl-golden/T54.json"]
     owner: T54
 
   - id: postgresql.dml.with
@@ -15649,11 +15649,11 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: explicit_unsupported
-        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.with.probes.txt"]
+        evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.with.probes.txt", "file:testdata/ddl-golden/T54.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Denominator row pending T51–T54 golden evidence."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=explicit_unsupported. Golden acceptance T54 (HEAD dccbccb6, 32 cases, 346 assertions): postgresql DML on postgres17 — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official with statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
-      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.with.probes.txt"]
+      refs: ["file:testdata/ddl-inventory/evidence/postgresql.dml.with.probes.txt", "file:testdata/ddl-golden/T54.json"]
     owner: T54
