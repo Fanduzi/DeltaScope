@@ -221,9 +221,10 @@ func dialectBoundaryFeature(dialect spec.Dialect, ddl *spec.DDL) (feature string
 			return string(ddl.Operation), true, true
 		}
 		switch ddl.Operation {
-		case spec.DDLOperationCreateProcedure, spec.DDLOperationDropProcedure:
-			// TiDB's parser accepts procedure statements for compatibility, but
-			// the product does not support stored procedures.
+		case spec.DDLOperationCreateProcedure, spec.DDLOperationDropProcedure, spec.DDLOperationAlterProcedure,
+			spec.DDLOperationCreateFunction, spec.DDLOperationDropFunction, spec.DDLOperationAlterFunction:
+			// TiDB's parser accepts routine statements for compatibility, but
+			// the product does not support stored procedures or functions.
 			return string(ddl.Operation), true, true
 		case spec.DDLOperationCreateTable:
 			if ddl.HasSelect {

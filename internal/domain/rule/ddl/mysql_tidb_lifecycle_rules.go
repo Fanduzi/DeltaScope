@@ -178,11 +178,47 @@ func newMySQLTiDBCreateProcedureNoticeRule(cfg policy.RulePolicy) (rule.Statemen
 	)
 }
 
+func newMySQLTiDBAlterProcedureNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newMySQLTiDBLifecycleRule(
+		ruleIDAlterProcedureNotice, rule.LevelNotice, spec.DDLOperationAlterProcedure, "procedure",
+		"ALTER PROCEDURE %q changes stored procedure characteristics",
+		"review characteristic changes such as SQL SECURITY before applying",
+		cfg,
+	)
+}
+
 func newDropProcedureNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return newMySQLTiDBLifecycleRule(
 		ruleIDDropProcedureNotice, rule.LevelNotice, spec.DDLOperationDropProcedure, "procedure",
 		"DROP PROCEDURE %q removes a stored procedure",
 		"verify no application code calls this procedure before dropping",
+		cfg,
+	)
+}
+
+func newMySQLTiDBCreateFunctionNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newMySQLTiDBLifecycleRule(
+		ruleIDCreateFunctionNotice, rule.LevelNotice, spec.DDLOperationCreateFunction, "function",
+		"CREATE FUNCTION %q registers a new stored function",
+		"review function logic and security implications before deploying",
+		cfg,
+	)
+}
+
+func newMySQLTiDBAlterFunctionNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newMySQLTiDBLifecycleRule(
+		ruleIDAlterFunctionNotice, rule.LevelNotice, spec.DDLOperationAlterFunction, "function",
+		"ALTER FUNCTION %q changes stored function characteristics",
+		"review characteristic changes such as SQL SECURITY before applying",
+		cfg,
+	)
+}
+
+func newMySQLTiDBDropFunctionNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newMySQLTiDBLifecycleRule(
+		ruleIDDropFunctionNotice, rule.LevelNotice, spec.DDLOperationDropFunction, "function",
+		"DROP FUNCTION %q removes a stored function",
+		"verify no application code calls this function before dropping",
 		cfg,
 	)
 }

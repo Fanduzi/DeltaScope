@@ -30,8 +30,11 @@ func TestDDLCoverage_EmbeddedCatalogMySQLParserUpgradeCandidate(t *testing.T) {
 	if strings.Contains(output, "ALTER VIEW") {
 		t.Error("promoted ALTER VIEW must not remain a parser upgrade candidate")
 	}
-	if !strings.Contains(output, "DROP FUNCTION") {
-		t.Error("output should contain DROP FUNCTION")
+	if strings.Contains(output, "FUNCTION") || strings.Contains(output, "PROCEDURE") {
+		t.Error("promoted routine forms must not remain parser upgrade candidates")
+	}
+	if !strings.Contains(output, "ALTER TABLESPACE") {
+		t.Error("output should contain ALTER TABLESPACE")
 	}
 	if !strings.Contains(output, "parser_upgrade_candidate") {
 		t.Error("output should contain parser_upgrade_candidate")
@@ -58,8 +61,11 @@ func TestDDLCoverage_MySQLParserUpgradeCandidate(t *testing.T) {
 	if strings.Contains(output, "ALTER VIEW") {
 		t.Error("promoted ALTER VIEW must not remain a parser upgrade candidate")
 	}
-	if !strings.Contains(output, "DROP FUNCTION") {
-		t.Error("output should contain DROP FUNCTION")
+	if strings.Contains(output, "FUNCTION") || strings.Contains(output, "PROCEDURE") {
+		t.Error("promoted routine forms must not remain parser upgrade candidates")
+	}
+	if !strings.Contains(output, "ALTER TABLESPACE") {
+		t.Error("output should contain ALTER TABLESPACE")
 	}
 	if !strings.Contains(output, "parser_upgrade_candidate") {
 		t.Error("output should contain parser_upgrade_candidate")

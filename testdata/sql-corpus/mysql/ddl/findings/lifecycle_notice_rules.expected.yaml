@@ -23,9 +23,8 @@ metadata:
 expect:
   parse_ok: true
   unsupported:
-    count: 5
+    count: 4
     include:
-      - create_procedure.body
       - create_user.option.identified
       - alter_user.option.identified
       - grant.unaudited_targets
@@ -37,7 +36,11 @@ expect:
       - ddl.drop_index.notice
       - ddl.alter_database.notice
       - ddl.create_procedure.notice
+      - ddl.alter_procedure.notice
       - ddl.drop_procedure.notice
+      - ddl.create_function.notice
+      - ddl.alter_function.notice
+      - ddl.drop_function.notice
       - ddl.create_user.notice
       - ddl.alter_user.notice
       - ddl.drop_user.notice

@@ -730,6 +730,36 @@ def main():
         results.append(check("cli_cases metadata pins pass", metadata_artifact(), "", manifest=m))
         results.append(check("cli_cases wrong metadata rejected", metadata_artifact(wrong=True), "metadata", manifest=m))
 
+        # T27 (#106): routine-body member unsupported entries carry the
+        # verbatim member slice, not the whole statement — the sql identity
+        # check must accept a member slice only when metadata marks routine
+        # member origin, and reject fabricated or unmarked text.
+        m["cli_cases"][0]["expect"] = {
+            "exit": 1, "verdict": "review", "statements": 1, "findings": 0,
+            "diagnostics": 1, "unsupported": 1,
+            "coverage": "incomplete", "statement_coverage": ["incomplete"],
+        }
+
+        def member_artifact(sql_text, meta):
+            a = cli_cases_artifact()
+            cli = a["cases"][2]
+            parsed = cli["actual"]["parsed"]
+            parsed["statements"][0]["raw_sql"] = "CREATE PROCEDURE p() BEGIN EXECUTE s; END"
+            parsed["unsupported"] = [{"feature": "execute_prepared", "sql": sql_text, "metadata": meta}]
+            cli["actual"]["stdout"] = json.dumps(parsed)
+            cli["expected"] = copy.deepcopy(m["cli_cases"][0]["expect"])
+            return a
+
+        results.append(check(
+            "cli_cases routine member slice passes",
+            member_artifact("EXECUTE s", {"routine": "p", "routine_member": 1}), "", manifest=m))
+        results.append(check(
+            "cli_cases fabricated member slice rejected",
+            member_artifact("EXECUTE evil", {"routine": "p", "routine_member": 1}), "sql identity", manifest=m))
+        results.append(check(
+            "cli_cases member slice without routine metadata rejected",
+            member_artifact("EXECUTE s", {}), "sql identity", manifest=m))
+
         # ------------------------------------------------------------------
         # T04 (#83): evidence-gap, metadata-backed, and error-case contracts.
         # Gaps are a separate result channel — the validator must reject a

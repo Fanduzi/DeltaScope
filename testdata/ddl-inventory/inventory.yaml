@@ -2439,6 +2439,118 @@ rows:
     subactions: ["CREATE PROCEDURE ... BEGIN..END", "parameters", "SQL SECURITY", "DETERMINISTIC", "body statements"]
     sql_shape: "CREATE PROCEDURE p() SELECT 1"
     prerequisites: "DELIMITER wrapping handled at batch level"
+    status: mixed_coverage
+    parser_status: recognized
+    audit_status: mixed
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: mixed
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/routine_t27_test.go
+          - gate:T27
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: mixed
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/routine_t27_test.go
+          - gate:T27
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: mixed
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:internal/application/audit/routine_t27_test.go
+          - gate:T27
+
+    status_evidence: "2026-09-22 CLI probe: CREATE PROCEDURE parses; only ddl.create_procedure.notice. 2026-09-24 T03 (#82): body-bearing forms record create_procedure.body incomplete evidence; params record create_procedure.option.params. 2026-11-24 T27 (#106): BEGIN..END bodies now audit statically-bounded members through the shared statement machinery (dml.where.require fires at preserved member line/column, e.g. body DELETE blocker at 1:28 in the T27 golden path); parameter lists, IF/WHILE/LOOP/REPEAT/CASE compound members (routine.body.compound_member), DECLARE (routine.body.declaration), and dynamic EXECUTE (execute_prepared) stay explicit unsupported evidence — cell mixed because audited members and explicit boundaries coexist. DELIMITER wrappers are stripped client-side with offsets preserved; definitions never execute body SQL or mutate prospective state. Golden: T27.json 29 cases/322 assertions on mysql57/80/84 + tidb85 vendor boundary"
+    targets: "routine identity, static body statements with original locations, security attributes"
+    acceptance:
+      dimensions: "body finding on containing definition, bounded body identity, no raw-body leak"
+      refs: ["gate:T27", "file:internal/application/audit/routine_t27_test.go", "file:testdata/ddl-golden/T27.json"]
+    owner: T27
+
+  - id: mysql.create-function
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: stored-program
+    subactions: ["CREATE FUNCTION ... RETURNS ... BEGIN..END", "DETERMINISTIC"]
+    sql_shape: "CREATE FUNCTION f() RETURNS INT RETURN 1"
+    prerequisites: "same as procedure"
+    status: mixed_coverage
+    parser_status: recognized
+    audit_status: mixed
+    applicability:
+      - anchor: mysql57
+        version_range: 5.7
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: mixed
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/routine_t27_test.go
+          - gate:T27
+      - anchor: mysql80
+        version_range: 8.0
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: mixed
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/routine_t27_test.go
+          - gate:T27
+      - anchor: mysql84
+        version_range: 8.4
+        official_presence: documented
+        product_scope: registered
+        parser_status: recognized
+        audit_status: mixed
+        evidence:
+          - file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:internal/application/audit/routine_t27_test.go
+          - gate:T27
+
+    status_evidence: "2026-09-22 CLI probe: parser_error on vendor-valid CREATE FUNCTION. 2026-11-24 T27 (#106): CREATE FUNCTION recognized — ddl.create_function.notice fires, SONAME UDF forms audit complete, BEGIN..END bodies audit like procedures, RETURN members record routine.body.return explicit boundary and parameter lists record create_function.option.params — cell mixed because audited forms and explicit member boundaries coexist"
+    targets: "routine identity, return type, body statements"
+    acceptance:
+      dimensions: "body audit parity with procedures"
+      refs: ["gate:T27", "file:internal/application/audit/routine_t27_test.go", "file:testdata/ddl-golden/T27.json"]
+    owner: T27
+
+  - id: mysql.alter-procedure-function
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: stored-program
+    subactions: ["ALTER PROCEDURE", "ALTER FUNCTION", "SQL SECURITY", "COMMENT"]
+    sql_shape: "ALTER PROCEDURE p SQL SECURITY INVOKER"
+    prerequisites: "none"
     status: generic_notice
     parser_status: recognized
     audit_status: notice_only
@@ -2450,10 +2562,10 @@ rows:
         parser_status: recognized
         audit_status: notice_only
         evidence:
-          - file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt
-          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds body-audit fixtures"
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - gate:T27
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
@@ -2461,10 +2573,10 @@ rows:
         parser_status: recognized
         audit_status: notice_only
         evidence:
-          - file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt
-          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds body-audit fixtures"
+          - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
+          - gate:T27
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
@@ -2472,116 +2584,16 @@ rows:
         parser_status: recognized
         audit_status: notice_only
         evidence:
-          - file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt
+          - file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt
+          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
-          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds body-audit fixtures"
+          - gate:T27
 
-    status_evidence: "2026-09-22 CLI probe: CREATE PROCEDURE parses; only ddl.create_procedure.notice — body SQL unaudited (T27 first path is the dml.where.require body oracle) 2026-09-24 T03 rework (#82): has_body is now gated on ProcedureBody and records create_procedure.body incomplete evidence; unparseable bodies keep the parser-error contract (owner T27). 2026-09-25: parsed parameter lists additionally record create_procedure.option.params evidence"
-    targets: "routine identity, static body statements with original locations, security attributes"
-    acceptance:
-      dimensions: "body finding on containing definition, bounded body identity, no raw-body leak"
-      refs: ["missing: owner adds body-audit fixtures"]
-    owner: T27
-
-  - id: mysql.create-function
-    product: mysql
-    versions: ["5.7", "8.0", "8.4"]
-    sources: [mysql57, mysql80, mysql84]
-    family: stored-program
-    subactions: ["CREATE FUNCTION ... RETURNS ... BEGIN..END", "DETERMINISTIC"]
-    sql_shape: "CREATE FUNCTION f() RETURNS INT RETURN 1"
-    prerequisites: "same as procedure"
-    status: parser_unsupported
-    parser_status: unrecognized
-    audit_status: not_applicable
-    applicability:
-      - anchor: mysql57
-        version_range: 5.7
-        official_presence: documented
-        product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence:
-          - file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt
-          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds function fixtures"
-      - anchor: mysql80
-        version_range: 8.0
-        official_presence: documented
-        product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence:
-          - file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt
-          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds function fixtures"
-      - anchor: mysql84
-        version_range: 8.4
-        official_presence: documented
-        product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence:
-          - file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt
-          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds function fixtures"
-
-    status_evidence: "2026-09-22 CLI probe: parser_error on vendor-valid CREATE FUNCTION (probe used RETURN form; body-bearing forms need parser evidence)"
-    targets: "routine identity, return type, body statements"
-    acceptance:
-      dimensions: "body audit parity with procedures"
-      refs: ["missing: owner adds function fixtures"]
-    owner: T27
-
-  - id: mysql.alter-procedure-function
-    product: mysql
-    versions: ["5.7", "8.0", "8.4"]
-    sources: [mysql57, mysql80, mysql84]
-    family: stored-program
-    subactions: ["ALTER PROCEDURE", "ALTER FUNCTION", "SQL SECURITY", "COMMENT"]
-    sql_shape: "ALTER PROCEDURE p SQL SECURITY INVOKER"
-    prerequisites: "none"
-    status: parser_unsupported
-    parser_status: unrecognized
-    audit_status: not_applicable
-    applicability:
-      - anchor: mysql57
-        version_range: 5.7
-        official_presence: documented
-        product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence:
-          - file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt
-          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds attribute fixtures"
-      - anchor: mysql80
-        version_range: 8.0
-        official_presence: documented
-        product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence:
-          - file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt
-          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds attribute fixtures"
-      - anchor: mysql84
-        version_range: 8.4
-        official_presence: documented
-        product_scope: registered
-        parser_status: unrecognized
-        audit_status: not_applicable
-        evidence:
-          - file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt
-          - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds attribute fixtures"
-
-    status_evidence: "2026-09-22 CLI probe: parser_error on both ALTER forms"
+    status_evidence: "2026-09-22 CLI probe: parser_error on both ALTER forms. 2026-11-24 T27 (#106): ALTER PROCEDURE and ALTER FUNCTION recognized — characteristic-only attribute changes (COMMENT, SQL SECURITY, LANGUAGE, DETERMINISTIC, CONTAINS SQL/NO SQL/READS SQL DATA/MODIFIES SQL DATA) parse and emit ddl.alter_procedure.notice / ddl.alter_function.notice; DEFINER forms rejected with parser_error because MySQL 8.4 dropped DEFINER support and older anchors keep it an upgrade-candidate boundary"
     targets: "routine identity, attribute changes"
     acceptance:
       dimensions: "attribute-change classification"
-      refs: ["missing: owner adds attribute fixtures"]
+      refs: ["gate:T27", "file:testdata/ddl-golden/T27.json", "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml"]
     owner: T27
 
   - id: mysql.drop-procedure-function
@@ -2602,27 +2614,27 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "gate:T27", "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "gate:T27", "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
         audit_status: notice_only
-        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+        evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "gate:T27", "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml"]
 
-    status_evidence: "2026-09-22 CLI probe: DROP PROCEDURE yields drop_procedure.notice; DROP FUNCTION is parser_error — asymmetric lifecycle coverage"
+    status_evidence: "2026-09-22 CLI probe: DROP PROCEDURE yields drop_procedure.notice; DROP FUNCTION was parser_error. 2026-11-24 T27 (#106): DROP FUNCTION recognized — ddl.drop_function.notice fires; lifecycle is now symmetric across CREATE/ALTER/DROP PROCEDURE/FUNCTION on all three MySQL anchors"
     targets: "routine identity, IF EXISTS, drop parity"
     acceptance:
       dimensions: "drop lifecycle parity, dependent-object notes"
-      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+      refs: ["gate:T27", "file:testdata/ddl-golden/T27.json", "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
     owner: T27
 
   - id: mysql.stored-body-analysis
@@ -2633,49 +2645,52 @@ rows:
     subactions: ["static body SQL", "DECLARE/local binding", "control flow", "PREPARE/EXECUTE dynamic SQL"]
     sql_shape: "CREATE PROCEDURE p(IN s TEXT) SELECT s"
     prerequisites: "routine definition parsed; dynamic effects never executed or guessed"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.stored-body-analysis.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds static/dynamic body boundary fixtures"
+          - file:internal/application/audit/routine_t27_test.go
+          - gate:T27
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.stored-body-analysis.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds static/dynamic body boundary fixtures"
+          - file:internal/application/audit/routine_t27_test.go
+          - gate:T27
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.stored-body-analysis.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds static/dynamic body boundary fixtures"
+          - file:internal/application/audit/routine_t27_test.go
+          - gate:T27
 
-    status_evidence: "definition-level notice only; static body SQL, control flow, and dynamic-SQL boundaries are unaudited today (T27/T28 scope)"
+    status_evidence: "2026-11-24 T27 (#106): static body statements graduated — DML/SET/single-statement members audit through shared rule machinery with preserved source locations; compound members (routine.body.compound_member), DECLARE (routine.body.declaration), RETURN (routine.body.return), and EXECUTE (execute_prepared) emit explicit bounded evidence rather than silent pass — cell mixed because audited members and explicit boundaries coexist. Deeper binding/control-flow semantics (DECLARE scoping, handler conditions, cursor/loop state) stay owner T28 scope"
     targets: "static effects vs explicit dynamic/incomplete boundary, no execution simulation"
     acceptance:
       dimensions: "static sibling findings preserved, dynamic body incomplete-not-passed, depth caps"
-      refs: ["missing: owner adds static/dynamic body boundary fixtures"]
+      refs: ["gate:T27", "file:internal/application/audit/routine_t27_test.go", "file:testdata/ddl-golden/T27.json"]
     owner: T28
 
   # ================= MySQL: triggers and events =================
@@ -4777,13 +4792,13 @@ rows:
         product_scope: vendor_boundary
         parser_status: unrecognized
         audit_status: explicit_unsupported
-        evidence: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+        evidence: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md", "gate:T27"]
 
-    status_evidence: "TiDB docs mark procedures unsupported; TiDB parser accepts the statement for compat and emits create_procedure.notice — parser acceptance must not count as support. 2026-09-23 T03 (#82): boundary now enforced — statement retained with unsupported feature create_procedure and coverage=incomplete; ddl.create_procedure.notice no longer fires for tidb. 2026-09-24 T03 rework (#82): boundary extended to DROP PROCEDURE (unsupported feature drop_procedure); ddl.drop_procedure.notice no longer fires for tidb"
+    status_evidence: "TiDB docs mark procedures unsupported; TiDB parser accepts the statement for compat and emits create_procedure.notice — parser acceptance must not count as support. 2026-09-23 T03 (#82): boundary now enforced — statement retained with unsupported feature create_procedure and coverage=incomplete; ddl.create_procedure.notice no longer fires for tidb. 2026-09-24 T03 rework (#82): boundary extended to DROP PROCEDURE (unsupported feature drop_procedure); ddl.drop_procedure.notice no longer fires for tidb. 2026-11-24 T27 (#106): boundary generalized — all six routine ops (create/alter/drop procedure, create/alter/drop function) emit explicit unsupported evidence with boundary:vendor metadata; routine bodies are never folded for tidb"
     targets: "explicit vendor boundary; never a positive support claim"
     acceptance:
       dimensions: "boundary classification distinct from MySQL body-audit path"
-      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md", "gate:T27", "file:testdata/ddl-golden/T27.json"]
     owner: T27
 
   - id: tidb.create-function
@@ -4804,13 +4819,13 @@ rows:
         product_scope: vendor_boundary
         parser_status: unrecognized
         audit_status: explicit_unsupported
-        evidence: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+        evidence: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md", "gate:T27"]
 
-    status_evidence: "vendor boundary; parser_error is also observed but product non-support governs"
+    status_evidence: "vendor boundary; product non-support governs. 2026-11-24 T27 (#106): CREATE/ALTER/DROP FUNCTION all emit explicit unsupported evidence with boundary:vendor metadata on tidb85 — symmetric with the procedure boundary"
     targets: "explicit vendor boundary"
     acceptance:
       dimensions: "boundary classification"
-      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md", "gate:T27", "file:testdata/ddl-golden/T27.json"]
     owner: T27
 
   - id: tidb.create-trigger

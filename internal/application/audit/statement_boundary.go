@@ -25,65 +25,205 @@ const (
 	scanDollarQuote
 )
 
+// delimChange records a client DELIMITER directive: at byte offset the
+// statement terminator switches to delim. Directive lines are client
+// framing, not database SQL (issue #106 T27).
+type delimChange struct {
+	offset int
+	delim  string
+}
+
 func splitSQLStatements(sql string, dialect spec.Dialect) []statementChunk {
 	chunks := make([]statementChunk, 0)
+	// Client DELIMITER directives are blanked same-width before scanning
+	// (byte offsets and line/column positions stay 1:1 with the authored
+	// input); the terminator list they produce drives boundary matching.
+	scanText, changes := blankDelimiterDirectives(sql, dialect)
+	delim := ";"
+	nextChange := 0
+
 	state, start, blockDepth := scanNormal, 0, 0
 	dollarQuote := ""
 	quoteBackslashEscapes := false
-	for i := 0; i < len(sql); {
+	parenDepth := 0
+	routineDepth := -1 // -1 = not inside a routine body
+	endSuppressed := false // an END's optional closing keyword pushes nothing
+	chunkHasRoutineHead := -1 // -1 unknown, 0 no, 1 yes
+	isWordByte := func(c byte) bool {
+		// '$' is deliberately not a word byte: no SQL keyword contains it,
+		// and treating it as one would swallow a `$$` client terminator
+		// into the preceding word (`END$$` → "end$$", never matching "end"
+		// or the delimiter) (T27/#106).
+		return c == '_' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
+	}
+	isRoutineCreatePrefix := func(upto int) bool {
+		if chunkHasRoutineHead >= 0 {
+			return chunkHasRoutineHead == 1
+		}
+		// Decide once per chunk: the authored prefix up to this point is a
+		// stored-routine CREATE when its first word is CREATE and it names
+		// PROCEDURE or FUNCTION. Only meaningful at parenDepth 0 — inside
+		// the parameter/option lists words like FUNCTION never arm it.
+		prefix := scanText[start:upto]
+		word, words := "", 0
+		hasRoutineKind := false
+		for i := 0; i < len(prefix); {
+			c := prefix[i]
+			switch {
+			case isWordByte(c):
+				j := i
+				for j < len(prefix) && isWordByte(prefix[j]) {
+					j++
+				}
+				word = strings.ToLower(prefix[i:j])
+				if words == 0 && word != "create" {
+					chunkHasRoutineHead = 0
+					return false
+				}
+				words++
+				if word == "procedure" || word == "function" {
+					hasRoutineKind = true
+				}
+				i = j
+			case c == '\'' || c == '"' || c == '`':
+				// quoted text cannot contribute keywords
+				q := c
+				i++
+				for i < len(prefix) && prefix[i] != q {
+					i++
+				}
+				i++
+			case c == '-' && i+1 < len(prefix) && prefix[i+1] == '-' || c == '#':
+				for i < len(prefix) && prefix[i] != '\n' {
+					i++
+				}
+			case c == '/' && i+1 < len(prefix) && prefix[i+1] == '*':
+				end := strings.Index(prefix[i+2:], "*/")
+				if end < 0 {
+					i = len(prefix)
+				} else {
+					i += 2 + end + 2
+				}
+			default:
+				i++
+			}
+		}
+		if words > 0 && hasRoutineKind {
+			chunkHasRoutineHead = 1
+		} else {
+			chunkHasRoutineHead = 0
+		}
+		return chunkHasRoutineHead == 1
+	}
+
+	for i := 0; i < len(scanText); {
+		if nextChange < len(changes) && i >= changes[nextChange].offset {
+			delim = changes[nextChange].delim
+			nextChange++
+		}
 		switch state {
 		case scanNormal:
 			switch {
-			case sql[i] == ';':
-				chunks = appendStatementChunk(chunks, sql, start, i+1)
+			case delim == ";" && scanText[i] == ';' && routineDepth <= 0:
+				chunks = appendStatementChunk(chunks, scanText, start, i+1)
 				start = i + 1
 				i++
-			case sql[i] == '\'':
+				chunkHasRoutineHead = -1
+				parenDepth = 0
+				routineDepth = -1
+				endSuppressed = false
+			case delim != ";" && strings.HasPrefix(scanText[i:], delim):
+				// Non-";" terminators are client framing (DELIMITER //, $$,
+				// …): they bound the statement but are never part of the SQL
+				// handed to the parser (T27/#106).
+				chunks = appendStatementChunk(chunks, scanText, start, i)
+				start = i + len(delim)
+				i += len(delim)
+				chunkHasRoutineHead = -1
+				parenDepth = 0
+				routineDepth = -1
+				endSuppressed = false
+			case scanText[i] == '\'':
 				state = scanSingleQuote
-				quoteBackslashEscapes = dialect != spec.DialectPostgreSQL || isPostgreSQLEscapeString(sql, i)
+				quoteBackslashEscapes = dialect != spec.DialectPostgreSQL || isPostgreSQLEscapeString(scanText, i)
 				i++
-			case sql[i] == '"':
+			case scanText[i] == '"':
 				state = scanDoubleQuote
 				i++
-			case sql[i] == '`' && dialect != spec.DialectPostgreSQL:
+			case scanText[i] == '`' && dialect != spec.DialectPostgreSQL:
 				state = scanBacktick
 				i++
-			case startsLineComment(sql, i, dialect):
+			case startsLineComment(scanText, i, dialect):
 				state = scanLineComment
 				i += 2
-			case sql[i] == '#' && dialect != spec.DialectPostgreSQL:
+			case scanText[i] == '#' && dialect != spec.DialectPostgreSQL:
 				state = scanLineComment
 				i++
-			case i+1 < len(sql) && sql[i:i+2] == "/*":
+			case i+1 < len(scanText) && scanText[i:i+2] == "/*":
 				state, blockDepth = scanBlockComment, 1
 				i += 2
-			case dialect == spec.DialectPostgreSQL && sql[i] == '$':
-				if delimiter := dollarQuoteDelimiter(sql, i); delimiter != "" {
+			case dialect == spec.DialectPostgreSQL && scanText[i] == '$':
+				if delimiter := dollarQuoteDelimiter(scanText, i); delimiter != "" {
 					state, dollarQuote = scanDollarQuote, delimiter
 					i += len(delimiter)
 				} else {
 					i++
 				}
+			case dialect != spec.DialectPostgreSQL && isWordByte(scanText[i]):
+				j := i
+				for j < len(scanText) && isWordByte(scanText[j]) {
+					j++
+				}
+				word := strings.ToLower(scanText[i:j])
+				if routineDepth > 0 {
+					switch word {
+					case "begin", "if", "case", "loop", "while", "repeat":
+						if !endSuppressed {
+							routineDepth++
+						}
+						endSuppressed = false
+					case "end":
+						routineDepth--
+						endSuppressed = true
+					default:
+						endSuppressed = false
+					}
+				} else if word == "begin" && parenDepth == 0 && isRoutineCreatePrefix(i) {
+					// The CREATE's compound body opens here; every BEGIN…END
+					// and compound construct nests until the outer END —
+					// semicolons inside are body separators, never outer
+					// migration boundaries (T27/#106).
+					routineDepth = 1
+				}
+				i = j
+			case scanText[i] == '(':
+				parenDepth++
+				i++
+			case scanText[i] == ')':
+				if parenDepth > 0 {
+					parenDepth--
+				}
+				i++
 			default:
 				i++
 			}
 		case scanSingleQuote:
-			i = scanQuoted(sql, i, '\'', quoteBackslashEscapes, &state)
+			i = scanQuoted(scanText, i, '\'', quoteBackslashEscapes, &state)
 		case scanDoubleQuote:
-			i = scanQuoted(sql, i, '"', dialect != spec.DialectPostgreSQL, &state)
+			i = scanQuoted(scanText, i, '"', dialect != spec.DialectPostgreSQL, &state)
 		case scanBacktick:
-			i = scanQuoted(sql, i, '`', true, &state)
+			i = scanQuoted(scanText, i, '`', true, &state)
 		case scanLineComment:
-			if sql[i] == '\n' {
+			if scanText[i] == '\n' {
 				state = scanNormal
 			}
 			i++
 		case scanBlockComment:
 			switch {
-			case dialect == spec.DialectPostgreSQL && i+1 < len(sql) && sql[i:i+2] == "/*":
+			case dialect == spec.DialectPostgreSQL && i+1 < len(scanText) && scanText[i:i+2] == "/*":
 				blockDepth++
 				i += 2
-			case i+1 < len(sql) && sql[i:i+2] == "*/":
+			case i+1 < len(scanText) && scanText[i:i+2] == "*/":
 				blockDepth--
 				i += 2
 				if blockDepth == 0 {
@@ -93,7 +233,7 @@ func splitSQLStatements(sql string, dialect spec.Dialect) []statementChunk {
 				i++
 			}
 		case scanDollarQuote:
-			if strings.HasPrefix(sql[i:], dollarQuote) {
+			if strings.HasPrefix(scanText[i:], dollarQuote) {
 				state = scanNormal
 				i += len(dollarQuote)
 			} else {
@@ -101,7 +241,55 @@ func splitSQLStatements(sql string, dialect spec.Dialect) []statementChunk {
 			}
 		}
 	}
-	return appendStatementChunk(chunks, sql, start, len(sql))
+	return appendStatementChunk(chunks, scanText, start, len(scanText))
+}
+
+// blankDelimiterDirectives blanks client `DELIMITER <d>` directive lines
+// same-width (every non-newline byte becomes a space) and returns the
+// rewritten scan text plus the ordered terminator changes. A directive
+// is a line whose first non-whitespace word is DELIMITER — the exact
+// client framing mysqldump-style exports emit; it is never database SQL.
+func blankDelimiterDirectives(sql string, dialect spec.Dialect) (string, []delimChange) {
+	if dialect == spec.DialectPostgreSQL || !strings.Contains(strings.ToLower(sql), "delimiter") {
+		return sql, nil
+	}
+	var changes []delimChange
+	blank := []byte(sql)
+	lineStart := 0
+	for lineStart < len(sql) {
+		lineEnd := strings.IndexByte(sql[lineStart:], '\n')
+		end := len(sql)
+		if lineEnd >= 0 {
+			end = lineStart + lineEnd
+		}
+		line := sql[lineStart:end]
+		rest := strings.TrimLeft(line, " \t")
+		if len(rest) > len("delimiter") && strings.EqualFold(rest[:len("delimiter")], "delimiter") && (rest[len("delimiter")] == ' ' || rest[len("delimiter")] == '\t') {
+			d := strings.TrimSpace(rest[len("delimiter"):])
+			// A directive line's payload is the first non-space token;
+			// mysql accepts anything here — only a non-empty token is a
+			// valid terminator change.
+			if token := strings.Fields(d); len(token) > 0 {
+				d = token[0]
+				if d != "" {
+					// Blank the directive line except its newline so byte
+					// offsets and line numbers are preserved exactly.
+					for i := lineStart; i < end; i++ {
+						blank[i] = ' '
+					}
+					changes = append(changes, delimChange{offset: end, delim: d})
+				}
+			}
+		}
+		if lineEnd < 0 {
+			break
+		}
+		lineStart = end + 1
+	}
+	if len(changes) == 0 {
+		return sql, nil
+	}
+	return string(blank), changes
 }
 
 func isPostgreSQLEscapeString(sql string, quote int) bool {

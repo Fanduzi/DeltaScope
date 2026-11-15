@@ -66,6 +66,12 @@ func (p *Parser) Parse(ctx context.Context, sql string) (Result, error) {
 		// KEY is claimed whole-input; RELOAD TLS stays on the native
 		// ast path (T26/#105 inventory scope).
 		parsed, warns = []ast.StmtNode{inst}, nil
+	} else if rt, rtWarns, rtOK := parseMySQLRoutine(sql); rtOK {
+		// The MySQL stored-routine family — CREATE PROCEDURE|FUNCTION
+		// including compound BEGIN…END bodies the upstream grammar
+		// cannot represent — claimed whole-input so body semicolons
+		// are never outer statement boundaries (T27/#106).
+		parsed, warns = []ast.StmtNode{rt}, rtWarns
 	} else if header, viewHeaderOK := parseViewHeader(sql); viewHeaderOK && (header.operation == spec.DDLOperationAlterView || header.declaration.CheckBare) {
 		if view, viewWarns, ok := parseViewAdapter(ctx, sql); ok {
 			parsed, warns = []ast.StmtNode{view}, viewWarns

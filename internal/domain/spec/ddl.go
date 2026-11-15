@@ -50,6 +50,11 @@ type DDL struct {
 	// CompactTable carries the authored COMPACT replica kind and member
 	// names on operation=compact_table (issue #102 T23-R8).
 	CompactTable *CompactTableDecl `json:"-"`
+	// Routine carries the modeled stored-routine definition on
+	// create_procedure/create_function (issue #106 T27): definitional
+	// header plus the statically bounded body whose member statements
+	// share the spec.Statement model.
+	Routine *RoutineDeclaration `json:"-"`
 	// OmittedTargets counts parsed statement targets the normalized model
 	// collapsed or ignored entirely: extra names in DROP USER/ROLE/SEQUENCE
 	// lists, extra CREATE/ALTER USER specs, and the whole user list on
@@ -278,8 +283,10 @@ const (
 
 	DDLOperationCreateFunction  DDLOperation = "create_function"
 	DDLOperationDropFunction    DDLOperation = "drop_function"
+	DDLOperationAlterFunction   DDLOperation = "alter_function"
 	DDLOperationCreateProcedure DDLOperation = "create_procedure"
 	DDLOperationDropProcedure   DDLOperation = "drop_procedure"
+	DDLOperationAlterProcedure  DDLOperation = "alter_procedure"
 
 	DDLOperationAlterSchema DDLOperation = "alter_schema"
 

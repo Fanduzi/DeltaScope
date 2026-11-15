@@ -12,7 +12,7 @@ func TestParserErrorDiagnosticEvidence(t *testing.T) {
 	t.Parallel()
 
 	result, err := AuditSQL(context.Background(), Request{
-		SQL:     "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'secret_body_value'",
+		SQL:     "CREATE FUNCTION hello() RETURNS VARCHAR(20) BEGIN SELECT 'secret_body_value'",
 		Dialect: spec.DialectMySQL,
 	})
 	if err == nil {
@@ -55,11 +55,11 @@ func TestParserUpgradeCandidateGuidanceCodeMySQL(t *testing.T) {
 	t.Parallel()
 
 	result, err := AuditSQL(context.Background(), Request{
-		SQL:     "ALTER PROCEDURE v_users COMMENT 'x'",
+		SQL:     "ALTER TABLESPACE ts1 ENGINE=INNODB",
 		Dialect: spec.DialectMySQL,
 	})
 	if err == nil {
-		t.Fatal("expected parser-error diagnostic for ALTER PROCEDURE")
+		t.Fatal("expected parser-error diagnostic for ALTER TABLESPACE")
 	}
 
 	diagnostics := result.Diagnostics

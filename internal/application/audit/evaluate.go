@@ -58,7 +58,35 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 			return report.Result{}, err
 		}
 
-		findings := eval.Findings
+		// A stored-routine definition audits its statically bounded body
+		// through the same registry: member findings bind to the parent
+		// statement index and the body's original source positions; member
+		// unsupported forms and evidence gaps degrade the parent's coverage
+		// exactly like top-level equivalents (T27/#106).
+		var bodyFindings []rule.Finding
+		var bodyUnsupported []spec.UnsupportedDetail
+		if statement.DDL != nil && statement.DDL.Routine != nil && statement.DDL.Routine.Body != nil {
+			var bodyEval *rule.StatementEvaluation
+			bodyFindings, bodyUnsupported, bodyEval, err = evaluateRoutineBody(ctx, registry, statement, idx)
+			if err != nil {
+				return report.Result{}, err
+			}
+			for _, id := range bodyEval.AppliedRuleIDs {
+				appliedIDs[id] = struct{}{}
+			}
+			for _, s := range bodyEval.Skipped {
+				if _, seen := skippedDedup[s.RuleID]; !seen {
+					skippedDedup[s.RuleID] = s
+				}
+			}
+			eval.EvidenceGaps = append(eval.EvidenceGaps, bodyEval.EvidenceGaps...)
+			gaps = append(gaps, bodyUnsupported...)
+			if len(bodyUnsupported) > 0 && coverage.Status == report.CoverageComplete {
+				coverage.Status = report.CoverageIncomplete
+			}
+		}
+
+		findings := append(eval.Findings, bodyFindings...)
 		for i := range findings {
 			findings[i].StatementIndex = idx
 			findings[i].StatementKind = statement.Kind.String()
@@ -166,4 +194,64 @@ func reportImpact(statement spec.Statement) *report.Impact {
 		result.Notes = append([]string(nil), impact.Notes...)
 	}
 	return result
+}
+
+// evaluateRoutineBody audits each statically bounded body member of a
+// stored-routine definition through the shared registry. Member findings
+// keep their own rule IDs and levels; their locations are translated
+// from parent-raw space into file space using the parent's line/column,
+// and every finding is tagged with the owning routine and member index
+// (T27/#106). Unparseable members surface as unsupported details instead
+// of being silently skipped.
+func evaluateRoutineBody(ctx context.Context, registry *rule.Registry, parent spec.Statement, parentIndex int) ([]rule.Finding, []spec.UnsupportedDetail, *rule.StatementEvaluation, error) {
+	decl := parent.DDL.Routine
+	findings := make([]rule.Finding, 0)
+	unsupported := make([]spec.UnsupportedDetail, 0)
+	combined := &rule.StatementEvaluation{}
+	for memberIndex, bs := range decl.Body.Statements {
+		if err := ctx.Err(); err != nil {
+			return nil, nil, nil, err
+		}
+		inner := bs.Statement
+		if inner.Unsupported != nil {
+			item := *inner.Unsupported
+			item.Index = parentIndex
+			item.SQL = inner.RawSQL
+			if item.Metadata == nil {
+				item.Metadata = map[string]any{}
+			}
+			item.Metadata["routine"] = decl.Name.Name
+			item.Metadata["routine_member"] = memberIndex
+			unsupported = append(unsupported, item)
+			continue
+		}
+		eval, err := registry.EvaluateStatementDetailed(ctx, inner)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		combined.AppliedRuleIDs = append(combined.AppliedRuleIDs, eval.AppliedRuleIDs...)
+		combined.Skipped = append(combined.Skipped, eval.Skipped...)
+		combined.EvidenceGaps = append(combined.EvidenceGaps, eval.EvidenceGaps...)
+		for i := range eval.Findings {
+			f := eval.Findings[i]
+			if f.Location == nil && (inner.Line > 0 || inner.Column > 0) {
+				f.Location = &rule.Location{Line: inner.Line, Column: inner.Column}
+			}
+			if f.Location != nil {
+				// Inner positions live in parent-raw space; translate to
+				// file space using the parent statement's own origin.
+				if f.Location.Line == 1 {
+					f.Location.Column += parent.Column - 1
+				}
+				f.Location.Line += parent.Line - 1
+			}
+			if f.Metadata == nil {
+				f.Metadata = map[string]any{}
+			}
+			f.Metadata["routine"] = decl.Name.Name
+			f.Metadata["routine_member"] = memberIndex
+			findings = append(findings, f)
+		}
+	}
+	return findings, unsupported, combined, nil
 }

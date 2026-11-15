@@ -947,7 +947,27 @@ rules:
     level: notice
     params:
 
+  ddl.alter_procedure.notice:
+    enabled: true
+    level: notice
+    params:
+
   ddl.drop_procedure.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.create_function.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.alter_function.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.drop_function.notice:
     enabled: true
     level: notice
     params:

@@ -10,7 +10,7 @@ func TestAuditParserErrorUnsupportedContractMySQL(t *testing.T) {
 	t.Parallel()
 
 	result, err := Audit(context.Background(), Request{
-		SQL:     "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'secret_body_value'",
+		SQL:     "CREATE FUNCTION hello() RETURNS VARCHAR(20) BEGIN SELECT 'secret_body_value'",
 		Dialect: DialectMySQL,
 	})
 	if err == nil {

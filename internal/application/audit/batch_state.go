@@ -711,7 +711,8 @@ func procedureLifecyclePreservesTableState(statement spec.Statement) bool {
 		return false
 	}
 	switch statement.DDL.Operation {
-	case spec.DDLOperationCreateProcedure, spec.DDLOperationDropProcedure:
+	case spec.DDLOperationCreateProcedure, spec.DDLOperationDropProcedure, spec.DDLOperationAlterProcedure,
+		spec.DDLOperationCreateFunction, spec.DDLOperationDropFunction, spec.DDLOperationAlterFunction:
 		return true
 	default:
 		return false

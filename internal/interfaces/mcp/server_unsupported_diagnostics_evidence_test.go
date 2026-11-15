@@ -23,7 +23,7 @@ func TestUnsupportedDiagnosticsEvidenceMCPParserError(t *testing.T) {
 
 	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
 		Name:      "audit_sql",
-		Arguments: map[string]any{"sql": "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'secret_body_value'", "dialect": "mysql"},
+		Arguments: map[string]any{"sql": "ALTER TABLESPACE secret_body_value ENGINE=INNODB", "dialect": "mysql"},
 	})
 	if err != nil {
 		t.Fatalf("call audit_sql: %v", err)

@@ -30,7 +30,9 @@ func TestT05A8ProcedureFirstPath(t *testing.T) {
 				sql := t05A8Input(tc.sql)
 				provider := &t05AbsentProvider{}
 				result, err := AuditSQL(ctx, Request{SQL: sql, Dialect: dialect, Schema: "golden", ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: provider})
-				boundary := dialect == spec.DialectTiDB || tc.create
+				// T27/#106 audits static MySQL routine bodies; only TiDB
+				// keeps the vendor boundary for procedure definitions.
+				boundary := dialect == spec.DialectTiDB
 				if boundary {
 					if !errors.Is(err, ErrUnsupportedStatement) {
 						t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
@@ -64,13 +66,9 @@ func TestT05A8ProcedureFirstPath(t *testing.T) {
 					t.Fatalf("unsupported = %+v, want %d entries", result.Unsupported, wantUnsupported)
 				}
 				if boundary {
-					feature, reason := "create_procedure.body", spec.UnsupportedUnauditedReason
-					var metadata map[string]any = map[string]any{"aspect": "option"}
-					if dialect == spec.DialectTiDB {
-						feature, reason, metadata = "create_procedure", spec.UnsupportedVendorBoundaryReason, map[string]any{"boundary": "vendor"}
-						if !tc.create {
-							feature = "drop_procedure"
-						}
+					feature, reason, metadata := "create_procedure", spec.UnsupportedVendorBoundaryReason, map[string]any{"boundary": "vendor"}
+					if !tc.create {
+						feature = "drop_procedure"
 					}
 					item := result.Unsupported[0]
 					if item.Index != 1 || item.Feature != feature || item.Reason != reason || item.SQL != result.Statements[1].RawSQL || !reflect.DeepEqual(item.Metadata, metadata) {

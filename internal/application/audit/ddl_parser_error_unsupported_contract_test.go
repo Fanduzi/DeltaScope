@@ -56,8 +56,8 @@ func TestDDLParserErrorUnsupportedContractMySQLTiDB(t *testing.T) {
 	cases := []parserErrorUnsupportedContractCase{
 		{
 			Dialect:   spec.DialectMySQL,
-			Name:      "mysql_create_function_body_not_audited",
-			SQL:       "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'secret_body_value'",
+			Name:      "mysql_create_function_unterminated_body",
+			SQL:       "CREATE FUNCTION hello() RETURNS VARCHAR(20) BEGIN SELECT 'secret_body_value'",
 			Forbidden: []string{"secret_body_value"},
 		},
 		{

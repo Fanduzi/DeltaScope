@@ -11,9 +11,9 @@
   ],
   "status_counts": {
     "semantically_checked": 76,
-    "generic_notice": 14,
-    "mixed_coverage": 2,
-    "parser_unsupported": 9,
+    "generic_notice": 13,
+    "mixed_coverage": 5,
+    "parser_unsupported": 7,
     "explicit_unsupported": 2,
     "vendor_not_supported": 11
   },
@@ -2720,6 +2720,116 @@
       "id": "mysql.create-procedure",
       "product": "mysql",
       "owner": "T27",
+      "status": "mixed_coverage",
+      "parser_status": "recognized",
+      "audit_status": "mixed",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/routine_t27_test.go",
+            "gate:T27"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/routine_t27_test.go",
+            "gate:T27"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:internal/application/audit/routine_t27_test.go",
+            "gate:T27"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.create-function",
+      "product": "mysql",
+      "owner": "T27",
+      "status": "mixed_coverage",
+      "parser_status": "recognized",
+      "audit_status": "mixed",
+      "applicability": [
+        {
+          "anchor": "mysql57",
+          "version_range": 5.7,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/routine_t27_test.go",
+            "gate:T27"
+          ]
+        },
+        {
+          "anchor": "mysql80",
+          "version_range": 8.0,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/routine_t27_test.go",
+            "gate:T27"
+          ]
+        },
+        {
+          "anchor": "mysql84",
+          "version_range": 8.4,
+          "official_presence": "documented",
+          "product_scope": "registered",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "evidence": [
+            "file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:internal/application/audit/routine_t27_test.go",
+            "gate:T27"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mysql.alter-procedure-function",
+      "product": "mysql",
+      "owner": "T27",
       "status": "generic_notice",
       "parser_status": "recognized",
       "audit_status": "notice_only",
@@ -2732,10 +2842,10 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt",
-            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds body-audit fixtures"
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "gate:T27"
           ]
         },
         {
@@ -2746,10 +2856,10 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt",
-            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds body-audit fixtures"
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
+            "gate:T27"
           ]
         },
         {
@@ -2760,108 +2870,10 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.create-procedure.probes.txt",
+            "file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt",
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
-            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds body-audit fixtures"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "mysql.create-function",
-      "product": "mysql",
-      "owner": "T27",
-      "status": "parser_unsupported",
-      "parser_status": "unrecognized",
-      "audit_status": "not_applicable",
-      "applicability": [
-        {
-          "anchor": "mysql57",
-          "version_range": 5.7,
-          "official_presence": "documented",
-          "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
-          "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt",
-            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds function fixtures"
-          ]
-        },
-        {
-          "anchor": "mysql80",
-          "version_range": 8.0,
-          "official_presence": "documented",
-          "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
-          "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt",
-            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds function fixtures"
-          ]
-        },
-        {
-          "anchor": "mysql84",
-          "version_range": 8.4,
-          "official_presence": "documented",
-          "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
-          "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.create-function.probes.txt",
-            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds function fixtures"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "mysql.alter-procedure-function",
-      "product": "mysql",
-      "owner": "T27",
-      "status": "parser_unsupported",
-      "parser_status": "unrecognized",
-      "audit_status": "not_applicable",
-      "applicability": [
-        {
-          "anchor": "mysql57",
-          "version_range": 5.7,
-          "official_presence": "documented",
-          "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
-          "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt",
-            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds attribute fixtures"
-          ]
-        },
-        {
-          "anchor": "mysql80",
-          "version_range": 8.0,
-          "official_presence": "documented",
-          "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
-          "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt",
-            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds attribute fixtures"
-          ]
-        },
-        {
-          "anchor": "mysql84",
-          "version_range": 8.4,
-          "official_presence": "documented",
-          "product_scope": "registered",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
-          "evidence": [
-            "file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt",
-            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds attribute fixtures"
+            "gate:T27"
           ]
         }
       ]
@@ -2882,7 +2894,9 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+            "gate:T27",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml"
           ]
         },
         {
@@ -2893,7 +2907,9 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+            "gate:T27",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml"
           ]
         },
         {
@@ -2904,7 +2920,9 @@
           "parser_status": "recognized",
           "audit_status": "notice_only",
           "evidence": [
-            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"
+            "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+            "gate:T27",
+            "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml"
           ]
         }
       ]
@@ -2913,9 +2931,9 @@
       "id": "mysql.stored-body-analysis",
       "product": "mysql",
       "owner": "T28",
-      "status": "generic_notice",
+      "status": "mixed_coverage",
       "parser_status": "recognized",
-      "audit_status": "notice_only",
+      "audit_status": "mixed",
       "applicability": [
         {
           "anchor": "mysql57",
@@ -2923,12 +2941,13 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/mysql.stored-body-analysis.probes.txt",
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds static/dynamic body boundary fixtures"
+            "file:internal/application/audit/routine_t27_test.go",
+            "gate:T27"
           ]
         },
         {
@@ -2937,12 +2956,13 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/mysql.stored-body-analysis.probes.txt",
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds static/dynamic body boundary fixtures"
+            "file:internal/application/audit/routine_t27_test.go",
+            "gate:T27"
           ]
         },
         {
@@ -2951,12 +2971,13 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/mysql.stored-body-analysis.probes.txt",
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds static/dynamic body boundary fixtures"
+            "file:internal/application/audit/routine_t27_test.go",
+            "gate:T27"
           ]
         }
       ]
@@ -5195,7 +5216,8 @@
           "parser_status": "unrecognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"
+            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md",
+            "gate:T27"
           ]
         }
       ]
@@ -5216,7 +5238,8 @@
           "parser_status": "unrecognized",
           "audit_status": "explicit_unsupported",
           "evidence": [
-            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"
+            "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md",
+            "gate:T27"
           ]
         }
       ]

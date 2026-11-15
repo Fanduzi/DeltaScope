@@ -19,7 +19,7 @@ func TestUnsupportedDiagnosticsEvidenceCLIParserErrorJSON(t *testing.T) {
 
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'secret_body_value'", "--dialect", "mysql", "--format", "json"},
+		[]string{"audit", "--sql", "ALTER TABLESPACE secret_body_value ENGINE=INNODB", "--dialect", "mysql", "--format", "json"},
 		strings.NewReader(""),
 		stdout,
 		stderr,
@@ -151,7 +151,7 @@ func TestUnsupportedDiagnosticsEvidenceCLIParserErrorText(t *testing.T) {
 
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'secret_body_value'", "--dialect", "mysql"},
+		[]string{"audit", "--sql", "ALTER TABLESPACE secret_body_value ENGINE=INNODB", "--dialect", "mysql"},
 		strings.NewReader(""),
 		stdout,
 		stderr,

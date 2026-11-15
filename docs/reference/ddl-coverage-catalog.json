@@ -12,11 +12,11 @@
   ],
   "summary": {
     "mysql": {
-      "total": 62,
-      "finding_covered": 53,
+      "total": 63,
+      "finding_covered": 57,
       "normalized_silent": 0,
       "unsupported_boundary": 0,
-      "parser_error": 9,
+      "parser_error": 6,
       "unclassified": 0
     },
     "postgresql": {
@@ -36,11 +36,11 @@
       "unclassified": 0
     },
     "tidb": {
-      "total": 55,
+      "total": 57,
       "finding_covered": 43,
       "normalized_silent": 1,
-      "unsupported_boundary": 4,
-      "parser_error": 7,
+      "unsupported_boundary": 8,
+      "parser_error": 5,
       "unclassified": 0
     }
   },
@@ -207,6 +207,16 @@
         "ddl.mysql.tablespace.alter.warn"
       ],
       "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLESPACE ENGINE",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
     },
     {
       "dialect": "mysql",
@@ -388,31 +398,31 @@
       "dialect": "mysql",
       "family": "routine_lifecycle",
       "form": "ALTER FUNCTION",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "guidance_code": "parser_upgrade_candidate",
-      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-      "notes": "parser error"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter_function.notice"
+      ],
+      "notes": ""
     },
     {
       "dialect": "mysql",
       "family": "routine_lifecycle",
       "form": "ALTER PROCEDURE",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "guidance_code": "parser_upgrade_candidate",
-      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-      "notes": "parser error"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter_procedure.notice"
+      ],
+      "notes": ""
     },
     {
       "dialect": "mysql",
       "family": "routine_lifecycle",
       "form": "CREATE FUNCTION",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "guidance_code": "parser_upgrade_candidate",
-      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-      "notes": "parser error"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_function.notice"
+      ],
+      "notes": ""
     },
     {
       "dialect": "mysql",
@@ -428,11 +438,11 @@
       "dialect": "mysql",
       "family": "routine_lifecycle",
       "form": "DROP FUNCTION",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "guidance_code": "parser_upgrade_candidate",
-      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-      "notes": "parser error"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.drop_function.notice"
+      ],
+      "notes": ""
     },
     {
       "dialect": "mysql",
@@ -3949,12 +3959,26 @@
     {
       "dialect": "tidb",
       "family": "routine_lifecycle",
-      "form": "CREATE FUNCTION",
-      "classification": "parser_error",
+      "form": "ALTER FUNCTION",
+      "classification": "unsupported_boundary",
       "finding_rule_ids": [],
-      "guidance_code": "parser_upgrade_candidate",
-      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-      "notes": "parser error"
+      "notes": "recognized product boundary"
+    },
+    {
+      "dialect": "tidb",
+      "family": "routine_lifecycle",
+      "form": "ALTER PROCEDURE",
+      "classification": "unsupported_boundary",
+      "finding_rule_ids": [],
+      "notes": "recognized product boundary"
+    },
+    {
+      "dialect": "tidb",
+      "family": "routine_lifecycle",
+      "form": "CREATE FUNCTION",
+      "classification": "unsupported_boundary",
+      "finding_rule_ids": [],
+      "notes": "recognized product boundary"
     },
     {
       "dialect": "tidb",
@@ -3968,11 +3992,9 @@
       "dialect": "tidb",
       "family": "routine_lifecycle",
       "form": "DROP FUNCTION",
-      "classification": "parser_error",
+      "classification": "unsupported_boundary",
       "finding_rule_ids": [],
-      "guidance_code": "parser_upgrade_candidate",
-      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-      "notes": "parser error"
+      "notes": "recognized product boundary"
     },
     {
       "dialect": "tidb",

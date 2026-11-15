@@ -129,11 +129,11 @@ var mysqlDDLCensusCases = []struct {
 
 	// --- 6. Routine lifecycle ---
 	{Name: "CREATE PROCEDURE", SQL: "CREATE PROCEDURE p_cleanup() SELECT 1", Expected: ddlCoverageFindingCovered},
-	{Name: "ALTER PROCEDURE", SQL: "ALTER PROCEDURE p_cleanup SQL SECURITY INVOKER", Expected: ddlCoverageParserError},
+	{Name: "ALTER PROCEDURE", SQL: "ALTER PROCEDURE p_cleanup SQL SECURITY INVOKER", Expected: ddlCoverageFindingCovered},
 	{Name: "DROP PROCEDURE", SQL: "DROP PROCEDURE p_cleanup", Expected: ddlCoverageFindingCovered},
-	{Name: "CREATE FUNCTION", SQL: "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'hello'", Expected: ddlCoverageParserError},
-	{Name: "ALTER FUNCTION", SQL: "ALTER FUNCTION hello SQL SECURITY INVOKER", Expected: ddlCoverageParserError},
-	{Name: "DROP FUNCTION", SQL: "DROP FUNCTION hello", Expected: ddlCoverageParserError},
+	{Name: "CREATE FUNCTION", SQL: "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'hello'", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER FUNCTION", SQL: "ALTER FUNCTION hello SQL SECURITY INVOKER", Expected: ddlCoverageFindingCovered},
+	{Name: "DROP FUNCTION", SQL: "DROP FUNCTION hello", Expected: ddlCoverageFindingCovered},
 
 	// --- 7. Trigger lifecycle ---
 	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()", Expected: ddlCoverageParserError},
@@ -156,6 +156,7 @@ var mysqlDDLCensusCases = []struct {
 	// --- 10. Tablespace/Resource lifecycle ---
 	{Name: "CREATE TABLESPACE", SQL: "CREATE TABLESPACE ts1 ADD DATAFILE 'ts1.ibd'", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TABLESPACE", SQL: "ALTER TABLESPACE ts1 ADD DATAFILE 'ts2.ibd'", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER TABLESPACE ENGINE", SQL: "ALTER TABLESPACE ts1 ENGINE=INNODB", Expected: ddlCoverageParserError},
 	{Name: "DROP TABLESPACE", SQL: "DROP TABLESPACE ts1", Expected: ddlCoverageFindingCovered},
 	{Name: "CREATE RESOURCE GROUP", SQL: "CREATE RESOURCE GROUP rg1 TYPE = USER VCPU = 0-3", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER RESOURCE GROUP", SQL: "ALTER RESOURCE GROUP rg1 VCPU = 0-7", Expected: ddlCoverageFindingCovered},
@@ -232,9 +233,11 @@ var tidbDDLCensusCases = []struct {
 	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()", Expected: ddlCoverageParserError},
 	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_users_bi", Expected: ddlCoverageParserError},
 	{Name: "CREATE PROCEDURE", SQL: "CREATE PROCEDURE p_cleanup() SELECT 1", Expected: ddlCoverageUnsupportedBoundary},
+	{Name: "ALTER PROCEDURE", SQL: "ALTER PROCEDURE p_cleanup SQL SECURITY INVOKER", Expected: ddlCoverageUnsupportedBoundary},
 	{Name: "DROP PROCEDURE", SQL: "DROP PROCEDURE p_cleanup", Expected: ddlCoverageUnsupportedBoundary},
-	{Name: "CREATE FUNCTION", SQL: "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'hello'", Expected: ddlCoverageParserError},
-	{Name: "DROP FUNCTION", SQL: "DROP FUNCTION hello", Expected: ddlCoverageParserError},
+	{Name: "CREATE FUNCTION", SQL: "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'hello'", Expected: ddlCoverageUnsupportedBoundary},
+	{Name: "ALTER FUNCTION", SQL: "ALTER FUNCTION hello SQL SECURITY INVOKER", Expected: ddlCoverageUnsupportedBoundary},
+	{Name: "DROP FUNCTION", SQL: "DROP FUNCTION hello", Expected: ddlCoverageUnsupportedBoundary},
 	{Name: "CREATE EVENT", SQL: "CREATE EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()", Expected: ddlCoverageParserError},
 	{Name: "DROP EVENT", SQL: "DROP EVENT e_cleanup", Expected: ddlCoverageParserError},
 

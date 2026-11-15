@@ -1,0 +1,1224 @@
+{
+ "task_id": "T27",
+ "issue": 106,
+ "policy_profile": "all-rules-disabled",
+ "description": "T27 (issue #106): MySQL stored routine static body audit. CREATE/ALTER/DROP PROCEDURE and CREATE/ALTER/DROP FUNCTION are audited lifecycle operations on the three MySQL anchors; BEGIN..END bodies fold statically bounded members (DML, SET, single-statement bodies) into the shared statement machinery with preserved line/column positions, while compound members (IF/WHILE/LOOP/REPEAT/CASE), RETURN, EXECUTE and parameter lists stay explicit unsupported evidence — never guessed. Client DELIMITER wrappers are client framing only: stripped from parser input with byte/line offsets preserved. TiDB keeps all six operations behind an explicit vendor boundary. Database verification proves the audited routine syntax is native-official on MySQL 5.7/8.0/8.4 and that the audit itself creates no routine (post_verify zero before the driver executes one).",
+ "anchors": {
+  "mysql57": {
+   "service": "mysql57",
+   "container": "deltascope-ddl-golden-mysql57",
+   "image": "mysql:5.7.44",
+   "product": "mysql",
+   "version_contains": "5.7.44",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T27_MYSQL_PASSWORD"
+  },
+  "mysql80": {
+   "service": "mysql80",
+   "container": "deltascope-ddl-golden-mysql80",
+   "image": "mysql:8.0.46",
+   "product": "mysql",
+   "version_contains": "8.0.46",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T27_MYSQL_PASSWORD"
+  },
+  "mysql84": {
+   "service": "mysql84",
+   "container": "deltascope-ddl-golden-mysql84",
+   "image": "mysql:8.4.10",
+   "product": "mysql",
+   "version_contains": "8.4.10",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T27_MYSQL_PASSWORD"
+  },
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": true
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "clear-task-fixture",
+   "sql": "DROP DATABASE IF EXISTS t27fx",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "seed-fixture-schema",
+   "sql": "CREATE DATABASE t27fx;CREATE TABLE t27fx.t (id INT PRIMARY KEY, name VARCHAR(20))",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "fixture table exists for body-member audits",
+     "sql": "SELECT CONCAT_WS(':',COLUMN_NAME,DATA_TYPE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='t27fx' AND TABLE_NAME='t' AND COLUMN_NAME='name'",
+     "expect": "name:varchar"
+    }
+   ]
+  }
+ ],
+ "syntax_negative": {
+  "sql": "CREATE PROCEDURE t27fx.p () BEGIN",
+  "expect": {
+   "error_class": "1064",
+   "rc_nonzero": true,
+   "forbidden_markers": [
+    "Access denied",
+    "Connection refused",
+    "doesn't exist",
+    "already exists"
+   ]
+  }
+ },
+ "policy": {
+  "profiles": {
+   "t27-where": {
+    "enable": {
+     "dml.where.require": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t27-routine": {
+    "enable": {
+     "dml.where.require": {
+      "level": "blocker"
+     },
+     "ddl.create_procedure.notice": {
+      "enabled": true,
+      "level": "notice"
+     },
+     "ddl.alter_procedure.notice": {
+      "enabled": true,
+      "level": "notice"
+     },
+     "ddl.drop_procedure.notice": {
+      "enabled": true,
+      "level": "notice"
+     },
+     "ddl.create_function.notice": {
+      "enabled": true,
+      "level": "notice"
+     },
+     "ddl.alter_function.notice": {
+      "enabled": true,
+      "level": "notice"
+     },
+     "ddl.drop_function.notice": {
+      "enabled": true,
+      "level": "notice"
+     }
+    }
+   }
+  }
+ },
+ "cli_cases": [
+  {
+   "id": "mysql-body-blocker",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() BEGIN DELETE FROM t; END;",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_sql": [
+     "CREATE PROCEDURE p() BEGIN DELETE FROM t; END;"
+    ],
+    "finding_entries": [
+     {
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 28
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "metadata": {
+       "routine": "p",
+       "routine_member": 0
+      }
+     }
+    ],
+    "fail_on_triggered": true
+   }
+  },
+  {
+   "id": "mysql-body-where-clean",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() BEGIN DELETE FROM t WHERE id=1; END;",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_sql": [
+     "CREATE PROCEDURE p() BEGIN DELETE FROM t WHERE id=1; END;"
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "mysql-body-semicolon-shapes",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() BEGIN SET @s='a;b'; /* c;d */ DELETE FROM t; END;",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE PROCEDURE p() BEGIN SET @s='a;b'; /* c;d */ DELETE FROM t; END;"
+    ],
+    "finding_entries": [
+     {
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 52
+     }
+    ],
+    "fail_on_triggered": true
+   }
+  },
+  {
+   "id": "mysql-delimiter-slash",
+   "dialect": "mysql",
+   "sql": "DELIMITER //\nCREATE PROCEDURE p()\nBEGIN\n DELETE FROM t;\nEND//\nDELIMITER ;",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE PROCEDURE p()\nBEGIN\n DELETE FROM t;\nEND"
+    ],
+    "finding_entries": [
+     {
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 4,
+      "column": 2
+     }
+    ],
+    "fail_on_triggered": true
+   }
+  },
+  {
+   "id": "mysql-delimiter-dollar",
+   "dialect": "mysql",
+   "sql": "DELIMITER $$\nCREATE PROCEDURE p() BEGIN DELETE FROM t; END$$\nDELIMITER ;",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE PROCEDURE p() BEGIN DELETE FROM t; END"
+    ],
+    "finding_entries": [
+     {
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 2,
+      "column": 28
+     }
+    ],
+    "fail_on_triggered": true
+   }
+  },
+  {
+   "id": "mysql-multiline-body",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p()\nBEGIN\n  DELETE FROM t;\nEND;",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE PROCEDURE p()\nBEGIN\n  DELETE FROM t;\nEND;"
+    ],
+    "finding_entries": [
+     {
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 3,
+      "column": 3
+     }
+    ],
+    "fail_on_triggered": true
+   }
+  },
+  {
+   "id": "mysql-two-routines",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE a() BEGIN DELETE FROM t; END; CREATE PROCEDURE b() BEGIN UPDATE t SET id=id; END;",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "statement_sql": [
+     "CREATE PROCEDURE a() BEGIN DELETE FROM t; END;",
+     "CREATE PROCEDURE b() BEGIN UPDATE t SET id=id; END;"
+    ],
+    "finding_entries": [
+     {
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     },
+     {
+      "index": 1,
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 28
+     },
+     {
+      "index": 1,
+      "line": 1,
+      "column": 75
+     }
+    ],
+    "fail_on_triggered": true
+   }
+  },
+  {
+   "id": "mysql-nested-compound",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() BEGIN IF 1=1 THEN DELETE FROM t; END IF; WHILE 0 DO UPDATE t SET id=id; END WHILE; END;",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 2,
+    "unsupported": 2,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE PROCEDURE p() BEGIN IF 1=1 THEN DELETE FROM t; END IF; WHILE 0 DO UPDATE t SET id=id; END WHILE; END;"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "routine.body.compound_member",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "routine": "p",
+       "routine_member": 0
+      }
+     },
+     {
+      "feature": "routine.body.compound_member",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "routine": "p",
+       "routine_member": 1
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "mysql-params-gap",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p(a INT) SELECT 1",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_procedure.option.params",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "mysql-function-return-gap",
+   "dialect": "mysql",
+   "sql": "CREATE FUNCTION f() RETURNS INT RETURN 42",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "routine.body.return",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "routine": "f",
+       "routine_member": 0
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "mysql-function-soname",
+   "dialect": "mysql",
+   "sql": "CREATE FUNCTION f() RETURNS INT SONAME 'x.so'",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE FUNCTION f() RETURNS INT SONAME 'x.so'"
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "mysql-execute-dynamic",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() BEGIN EXECUTE s; END;",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "execute_prepared",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "routine": "p",
+       "routine_member": 0
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "mysql-proc-parser-error",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() BEGIN DELETE FROM secret_table_marker",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": [],
+    "serialized_not_contains": [
+     "secret_table_marker"
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "mysql-lifecycle-notices",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() SELECT 1; ALTER PROCEDURE p COMMENT 'x'; DROP PROCEDURE p; CREATE FUNCTION f() RETURNS INT SONAME 'x.so'; ALTER FUNCTION f COMMENT 'y'; DROP FUNCTION f;",
+   "policy": "t27-routine",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 6,
+    "findings": 6,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_procedure.notice",
+      "level": "notice"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.alter_procedure.notice",
+      "level": "notice"
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.drop_procedure.notice",
+      "level": "notice"
+     },
+     {
+      "index": 3,
+      "rule_id": "ddl.create_function.notice",
+      "level": "notice"
+     },
+     {
+      "index": 4,
+      "rule_id": "ddl.alter_function.notice",
+      "level": "notice"
+     },
+     {
+      "index": 5,
+      "rule_id": "ddl.drop_function.notice",
+      "level": "notice"
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "mysql-create-body-notice",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() BEGIN DELETE FROM t WHERE id=1; END;",
+   "policy": "t27-routine",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_procedure.notice",
+      "level": "notice"
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "tidb-create-proc-vendor",
+   "dialect": "tidb",
+   "sql": "CREATE PROCEDURE p() BEGIN DELETE FROM t; END;",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE PROCEDURE p() BEGIN DELETE FROM t; END;"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_procedure",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "boundary": "vendor"
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "tidb-create-function-vendor",
+   "dialect": "tidb",
+   "sql": "CREATE FUNCTION f() RETURNS INT RETURN 42",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_function",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "boundary": "vendor"
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "tidb-alter-drop-vendor",
+   "dialect": "tidb",
+   "sql": "ALTER PROCEDURE p COMMENT 'x'; DROP FUNCTION f;",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 2,
+    "unsupported": 2,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete",
+     "incomplete"
+    ],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_procedure",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "boundary": "vendor"
+      }
+     },
+     {
+      "index": 1,
+      "feature": "drop_function",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "boundary": "vendor"
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "mysql-declare-gap",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() BEGIN DECLARE x INT; DELETE FROM t; END;",
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE PROCEDURE p() BEGIN DECLARE x INT; DELETE FROM t; END;"
+    ],
+    "finding_entries": [
+     {
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "routine.body.declaration",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "routine": "p",
+       "routine_member": 0
+      }
+     }
+    ],
+    "fail_on_triggered": true,
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 43
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "dml.where.require",
+      "metadata": {
+       "routine": "p",
+       "routine_member": 1
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "metadata_cases": [
+  {
+   "id": "mysql57-proc-lifecycle",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() BEGIN DELETE FROM t; END;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "t27meta_57",
+    "password_env": "DS_T27_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-owned-fixture",
+     "sql": "CREATE DATABASE t27meta_57;CREATE TABLE t27meta_57.t (id INT PRIMARY KEY)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture schema ready",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t27meta_57' AND TABLE_NAME='t'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 28
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create the procedure",
+     "sql": "SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='t27meta_57'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "native routine creation receipt",
+     "sql": "CREATE PROCEDURE t27meta_57.p() DELETE FROM t WHERE id=1",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one routine created natively",
+     "sql": "SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='t27meta_57' AND ROUTINE_NAME='p' AND ROUTINE_TYPE='PROCEDURE'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP DATABASE IF EXISTS t27meta_57",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual schema",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t27meta_57'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mysql80-proc-lifecycle",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() BEGIN DELETE FROM t; END;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t27meta_80",
+    "password_env": "DS_T27_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-owned-fixture",
+     "sql": "CREATE DATABASE t27meta_80;CREATE TABLE t27meta_80.t (id INT PRIMARY KEY)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture schema ready",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t27meta_80' AND TABLE_NAME='t'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 28
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create the procedure",
+     "sql": "SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='t27meta_80'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "native routine creation receipt",
+     "sql": "CREATE PROCEDURE t27meta_80.p() DELETE FROM t WHERE id=1",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one routine created natively",
+     "sql": "SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='t27meta_80' AND ROUTINE_NAME='p' AND ROUTINE_TYPE='PROCEDURE'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP DATABASE IF EXISTS t27meta_80",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual schema",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t27meta_80'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mysql84-proc-lifecycle",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() BEGIN DELETE FROM t; END;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "t27meta_84",
+    "password_env": "DS_T27_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "policy": "t27-where",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-owned-fixture",
+     "sql": "CREATE DATABASE t27meta_84;CREATE TABLE t27meta_84.t (id INT PRIMARY KEY)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture schema ready",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t27meta_84' AND TABLE_NAME='t'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "rule_id": "dml.where.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 28
+     }
+    ],
+    "fail_on_triggered": true
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create the procedure",
+     "sql": "SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='t27meta_84'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "native routine creation receipt",
+     "sql": "CREATE PROCEDURE t27meta_84.p() DELETE FROM t WHERE id=1",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one routine created natively",
+     "sql": "SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='t27meta_84' AND ROUTINE_NAME='p' AND ROUTINE_TYPE='PROCEDURE'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP DATABASE IF EXISTS t27meta_84",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual schema",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t27meta_84'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "required_case_ids": [
+  "T27.cli.mysql-body-blocker",
+  "T27.cli.mysql-body-semicolon-shapes",
+  "T27.cli.mysql-body-where-clean",
+  "T27.cli.mysql-create-body-notice",
+  "T27.cli.mysql-declare-gap",
+  "T27.cli.mysql-delimiter-dollar",
+  "T27.cli.mysql-delimiter-slash",
+  "T27.cli.mysql-execute-dynamic",
+  "T27.cli.mysql-function-return-gap",
+  "T27.cli.mysql-function-soname",
+  "T27.cli.mysql-lifecycle-notices",
+  "T27.cli.mysql-multiline-body",
+  "T27.cli.mysql-nested-compound",
+  "T27.cli.mysql-params-gap",
+  "T27.cli.mysql-proc-parser-error",
+  "T27.cli.mysql-two-routines",
+  "T27.cli.tidb-alter-drop-vendor",
+  "T27.cli.tidb-create-function-vendor",
+  "T27.cli.tidb-create-proc-vendor",
+  "T27.db.mysql57.ddl",
+  "T27.db.mysql57.syntax_negative",
+  "T27.db.mysql80.ddl",
+  "T27.db.mysql80.syntax_negative",
+  "T27.db.mysql84.ddl",
+  "T27.db.mysql84.syntax_negative",
+  "T27.db.tidb85.ddl",
+  "T27.db.tidb85.syntax_negative",
+  "T27.meta.mysql57-proc-lifecycle",
+  "T27.meta.mysql80-proc-lifecycle",
+  "T27.meta.mysql84-proc-lifecycle"
+ ]
+}

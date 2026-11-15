@@ -82,25 +82,11 @@ func assertParserErrorFeasibilityCase(t *testing.T, tc ddlParserErrorFeasibility
 	}
 }
 
-// --- MySQL parser-error feasibility cases (9) ---
+// --- MySQL parser-error feasibility cases (5) ---
+// The stored-routine family (CREATE/ALTER/DROP PROCEDURE|FUNCTION) graduated
+// to supported statements under T27/#106 and left this census.
 
 var mysqlParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
-	{Dialect: spec.DialectMySQL, Family: "routine", Name: "ALTER PROCEDURE",
-		SQL:      "ALTER PROCEDURE p_cleanup SQL SECURITY INVOKER",
-		Expected: unsafeFallbackDefer,
-		Reason:   "Routine option parsing (SQL SECURITY, COMMENT, etc.) requires understanding option semantics"},
-	{Dialect: spec.DialectMySQL, Family: "routine", Name: "CREATE FUNCTION",
-		SQL:      "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'hello'",
-		Expected: unsafeFallbackDefer,
-		Reason:   "Function body (RETURN expression) is unbounded; fallback would leak routine logic"},
-	{Dialect: spec.DialectMySQL, Family: "routine", Name: "ALTER FUNCTION",
-		SQL:      "ALTER FUNCTION hello SQL SECURITY INVOKER",
-		Expected: unsafeFallbackDefer,
-		Reason:   "Routine option parsing requires understanding option semantics"},
-	{Dialect: spec.DialectMySQL, Family: "routine", Name: "DROP FUNCTION",
-		SQL:      "DROP FUNCTION hello",
-		Expected: unsafeFallbackDefer,
-		Reason:   "Consistent with routine lifecycle; parser upgrade path preferred over per-statement fallback"},
 	{Dialect: spec.DialectMySQL, Family: "trigger", Name: "CREATE TRIGGER",
 		SQL:      "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()",
 		Expected: unsafeFallbackDefer,
@@ -217,8 +203,8 @@ func TestDDLParserErrorFeasibilityCensus(t *testing.T) {
 			tidbCount++
 		}
 	}
-	if mysqlCount != 9 {
-		t.Errorf("expected 9 MySQL parser-error cases, got %d", mysqlCount)
+	if mysqlCount != 5 {
+		t.Errorf("expected 5 MySQL parser-error cases, got %d", mysqlCount)
 	}
 	if tidbCount != 8 {
 		t.Errorf("expected 8 TiDB parser-error cases, got %d", tidbCount)

@@ -34,10 +34,6 @@ const (
 // for MySQL/TiDB dialects. Only the leading keyword sequence is matched; no object names or body
 // content are examined.
 var mysqlParserUpgradePrefixes = []string{
-	"ALTER PROCEDURE ",
-	"CREATE FUNCTION ",
-	"ALTER FUNCTION ",
-	"DROP FUNCTION ",
 	"CREATE TABLESPACE ",
 	"ALTER TABLESPACE ",
 	"DROP TABLESPACE ",

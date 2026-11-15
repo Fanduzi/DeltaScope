@@ -15,7 +15,7 @@ func TestCLIparserErrorUnsupportedContractMySQL(t *testing.T) {
 
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'secret_body_value'", "--dialect", "mysql"},
+		[]string{"audit", "--sql", "CREATE FUNCTION hello() RETURNS VARCHAR(20) BEGIN SELECT 'secret_body_value'", "--dialect", "mysql"},
 		strings.NewReader(""),
 		stdout,
 		stderr,

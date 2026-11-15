@@ -21,7 +21,7 @@ func TestMCPParserErrorUnsupportedContractMySQL(t *testing.T) {
 
 	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
 		Name:      "audit_sql",
-		Arguments: map[string]any{"sql": "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'secret_body_value'", "dialect": "mysql"},
+		Arguments: map[string]any{"sql": "CREATE FUNCTION hello() RETURNS VARCHAR(20) BEGIN SELECT 'secret_body_value'", "dialect": "mysql"},
 	})
 	if err != nil {
 		t.Fatalf("call audit_sql: %v", err)

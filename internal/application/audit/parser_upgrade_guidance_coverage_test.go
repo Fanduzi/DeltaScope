@@ -19,30 +19,14 @@ func TestParserUpgradeCandidateGuidanceCoverage(t *testing.T) {
 		dialect        spec.Dialect
 		forbiddenNames []string
 	}{
-		// MySQL candidates (4)
+		// MySQL candidates (1): the stored-routine prefixes graduated to
+		// supported statements under T27; ALTER TABLESPACE remains the only
+		// MySQL parser-upgrade candidate form.
 		{
-			name:           "MySQL ALTER PROCEDURE",
-			sql:            "ALTER PROCEDURE p1 COMMENT 'x'",
+			name:           "MySQL ALTER TABLESPACE",
+			sql:            "ALTER TABLESPACE ts1 ENGINE=INNODB",
 			dialect:        spec.DialectMySQL,
-			forbiddenNames: []string{"p1"},
-		},
-		{
-			name:           "MySQL CREATE FUNCTION",
-			sql:            "CREATE FUNCTION f1() RETURNS INT RETURN 1",
-			dialect:        spec.DialectMySQL,
-			forbiddenNames: []string{"f1"},
-		},
-		{
-			name:           "MySQL ALTER FUNCTION",
-			sql:            "ALTER FUNCTION f1 COMMENT 'x'",
-			dialect:        spec.DialectMySQL,
-			forbiddenNames: []string{"f1"},
-		},
-		{
-			name:           "MySQL DROP FUNCTION",
-			sql:            "DROP FUNCTION f1",
-			dialect:        spec.DialectMySQL,
-			forbiddenNames: []string{"f1"},
+			forbiddenNames: []string{"ts1"},
 		},
 		// PostgreSQL candidates (5) are in the postgresql-tag counterpart.
 	}

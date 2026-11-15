@@ -74,18 +74,18 @@ var t05A8GapFollowers = map[int][]rule.EvidenceGap{
 	},
 }
 
+// t05A8Boundary reports whether the fixture procedure is still a
+// whole-statement unsupported boundary. T27/#106 audits static MySQL
+// routine bodies through the shared registry, so only TiDB keeps the
+// vendor boundary.
 func t05A8Boundary(dialect spec.Dialect, create bool) bool {
-	return dialect == spec.DialectTiDB || create
+	return dialect == spec.DialectTiDB
 }
 
 func t05A8Unsupported(dialect spec.Dialect, create bool) (feature, reason string, metadata map[string]any) {
-	feature, reason = "create_procedure.body", spec.UnsupportedUnauditedReason
-	metadata = map[string]any{"aspect": "option"}
-	if dialect == spec.DialectTiDB {
-		feature, reason, metadata = "create_procedure", spec.UnsupportedVendorBoundaryReason, map[string]any{"boundary": "vendor"}
-		if !create {
-			feature = "drop_procedure"
-		}
+	feature, reason, metadata = "create_procedure", spec.UnsupportedVendorBoundaryReason, map[string]any{"boundary": "vendor"}
+	if !create {
+		feature = "drop_procedure"
 	}
 	return feature, reason, metadata
 }
@@ -354,6 +354,12 @@ func TestT05A8DefinitionsAndIdentity(t *testing.T) {
 				if unmarshalErr := json.Unmarshal(procedureBytes, &expectedStatement); unmarshalErr != nil {
 					t.Fatal(unmarshalErr)
 				}
+				// Routine is json:"-" by contract (body SQL never
+				// serializes); restore it so the enrichment comparison
+				// still proves the extracted declaration is untouched.
+				if procedure.DDL != nil && expectedStatement.DDL != nil {
+					expectedStatement.DDL.Routine = procedure.DDL.Routine
+				}
 				var unsupportedPtr *spec.UnsupportedDetail
 				var unsupportedCopy spec.UnsupportedDetail
 				if procedure.Unsupported != nil {
@@ -582,13 +588,10 @@ func TestT05A8WhitelistAndExecution(t *testing.T) {
 		{"kind_dml", func(s *spec.Statement) { s.Kind = spec.KindDML }},
 		{"ddl_nil", func(s *spec.Statement) { s.DDL = nil }},
 		{"operation_unknown", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperationUnknown }},
-		{"create_function", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperationCreateFunction }},
-		{"drop_function", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperationDropFunction }},
 		{"create_trigger", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperationCreateTrigger }},
 		{"drop_trigger", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperationDropTrigger }},
 		{"create_event", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperation("create_event") }},
 		{"call", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperation("call") }},
-		{"alter_procedure", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperation("alter_procedure") }},
 		{"dml_nonnil", func(s *spec.Statement) { s.DML = &spec.DML{} }},
 		{"table_named", func(s *spec.Statement) { s.DDL.Table = &spec.Table{Name: "t"} }},
 		{"table_empty", func(s *spec.Statement) { s.DDL.Table = &spec.Table{} }},
@@ -682,9 +685,12 @@ func TestT05A8ContaminationAndBudget(t *testing.T) {
 					}
 					foundProcedure = true
 				}
+				if dialect == spec.DialectMySQL && strings.Contains(item.Feature, "procedure") {
+					t.Errorf("audited MySQL procedure must not emit a boundary item: %+v", item)
+				}
 			}
-			if !foundProcedure {
-				t.Errorf("procedure boundary missing from %+v", result.Unsupported)
+			if dialect == spec.DialectTiDB && !foundProcedure {
+				t.Errorf("tidb vendor boundary missing from %+v", result.Unsupported)
 			}
 			if !reflect.DeepEqual(provider.events, []string{"instance", "snapshot:golden.t"}) {
 				t.Errorf("provider events = %v, want [instance snapshot:golden.t]", provider.events)
@@ -922,9 +928,8 @@ func TestT05A8ContaminationAndBudget(t *testing.T) {
 
 						wantFeatures := map[int][]string{1: {spec.AuditResourceLimitFeature}}
 						if tc.create {
-							wantFeatures[1] = []string{"create_procedure.body", spec.AuditResourceLimitFeature}
 							if dialect == spec.DialectTiDB {
-								wantFeatures[1] = []string{"create_procedure", "create_procedure.body", spec.AuditResourceLimitFeature}
+								wantFeatures[1] = []string{"create_procedure", spec.AuditResourceLimitFeature}
 							}
 						} else if dialect == spec.DialectTiDB {
 							wantFeatures[1] = []string{"drop_procedure", spec.AuditResourceLimitFeature}
@@ -1042,13 +1047,22 @@ func TestT05A8ErrorsAndConsumers(t *testing.T) {
 						unsupportedDiagnostics++
 					}
 				}
-				if parserDiagnostics != 1 || unsupportedDiagnostics != 1 {
-					t.Errorf("diagnostics = %d parser + %d unsupported, want 1+1: %+v", parserDiagnostics, unsupportedDiagnostics, result.Diagnostics)
+				// MySQL procedure bodies are audited since T27/#106 —
+				// only the TiDB vendor boundary still adds an
+				// unsupported statement alongside the parser failure.
+				wantUnsupported := 0
+				if dialect == spec.DialectTiDB {
+					wantUnsupported = 1
 				}
-				if len(result.Unsupported) != 1 {
-					t.Fatalf("unsupported = %+v, want exactly one procedure boundary", result.Unsupported)
+				if parserDiagnostics != 1 || unsupportedDiagnostics != wantUnsupported {
+					t.Errorf("diagnostics = %d parser + %d unsupported, want 1+%d: %+v", parserDiagnostics, unsupportedDiagnostics, wantUnsupported, result.Diagnostics)
 				}
-				t05A8AssertBoundaryItem(t, result, dialect, true, 0, 1)
+				if len(result.Unsupported) != wantUnsupported {
+					t.Fatalf("unsupported = %+v, want %d entries", result.Unsupported, wantUnsupported)
+				}
+				if dialect == spec.DialectTiDB {
+					t05A8AssertBoundaryItem(t, result, dialect, true, 0, 1)
+				}
 				for _, item := range result.Unsupported {
 					if item.Feature == spec.AuditResourceLimitFeature {
 						t.Error("parser failure must not fabricate a resource entry")
@@ -1086,8 +1100,12 @@ func TestT05A8ErrorsAndConsumers(t *testing.T) {
 						SQL: t05A8Input("CREATE PROCEDURE p() SELECT 1;"), Dialect: dialect, Schema: "golden",
 						ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: &t05A8Provider{},
 					})
-					if !errors.Is(controlErr, ErrUnsupportedStatement) {
-						t.Fatalf("clean control error = %v, want ErrUnsupportedStatement", controlErr)
+					if dialect == spec.DialectTiDB {
+						if !errors.Is(controlErr, ErrUnsupportedStatement) {
+							t.Fatalf("clean control error = %v, want ErrUnsupportedStatement", controlErr)
+						}
+					} else if controlErr != nil {
+						t.Fatalf("clean control error = %v, want nil for audited mysql procedure", controlErr)
 					}
 					for i := range result.Statements {
 						if !reflect.DeepEqual(result.Statements[i], control.Statements[i]) {
@@ -1099,17 +1117,20 @@ func TestT05A8ErrorsAndConsumers(t *testing.T) {
 		}
 	}
 
-	t.Run("compound_parser_control_mysql", func(t *testing.T) {
+	t.Run("compound_body_supported_mysql", func(t *testing.T) {
+		// T27/#106: a BEGIN..END compound body parses and audits through
+		// the shared member path — the whole input stays one statement
+		// and yields no unsupported entries under the DDL policy.
 		result, err := AuditSQL(context.Background(), Request{
 			SQL: t05A8Input("CREATE PROCEDURE p() BEGIN SELECT 1; END;"), Dialect: spec.DialectMySQL, Schema: "golden",
 			ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: &t05A8Provider{},
 		})
-		if !errors.Is(err, errParserUnsupported) {
-			t.Fatalf("error = %v, want errParserUnsupported", err)
+		if err != nil {
+			t.Fatalf("error = %v, want nil for the audited compound body", err)
 		}
 		for _, item := range result.Unsupported {
-			if strings.Contains(item.Feature, "procedure") {
-				t.Errorf("failed procedure text must not yield a procedure boundary: %+v", item)
+			if strings.Contains(item.Feature, "procedure") || strings.Contains(item.Feature, "routine") {
+				t.Errorf("audited compound body must not emit a routine boundary: %+v", item)
 			}
 		}
 	})
@@ -1240,14 +1261,28 @@ func TestT05A8ErrorsAndConsumers(t *testing.T) {
 					SQL: sql, Dialect: dialect, Schema: "golden",
 					ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: provider,
 				})
-				if !errors.Is(err, ErrUnsupportedStatement) {
-					t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
+				// T27/#106: under MySQL the audited procedure emits no
+				// unsupported entries — the duplicate-ADD blocker alone
+				// rejects; TiDB keeps its vendor boundary error.
+				if dialect == spec.DialectTiDB {
+					if !errors.Is(err, ErrUnsupportedStatement) {
+						t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
+					}
+				} else if err != nil {
+					t.Fatalf("error = %v, want nil for audited mysql procedure", err)
 				}
 				if result.Verdict != report.VerdictReject || result.Verdict == report.VerdictReview {
 					t.Fatalf("verdict = %s, want reject (never review)", result.Verdict)
 				}
-				if result.Coverage.Status != report.CoverageIncomplete {
-					t.Fatalf("coverage = %s, want incomplete", result.Coverage.Status)
+				// MySQL has no unsupported entries — unproven followers
+				// alone aggregate to unverified; the TiDB vendor boundary
+				// still aggregates to incomplete.
+				wantAggregateCoverage := report.CoverageUnverified
+				if dialect == spec.DialectTiDB {
+					wantAggregateCoverage = report.CoverageIncomplete
+				}
+				if result.Coverage.Status != wantAggregateCoverage {
+					t.Fatalf("coverage = %s, want %s", result.Coverage.Status, wantAggregateCoverage)
 				}
 				if len(result.Statements) != 5 {
 					t.Fatalf("statements = %d, want 5", len(result.Statements))
@@ -1264,13 +1299,23 @@ func TestT05A8ErrorsAndConsumers(t *testing.T) {
 				if duplicate.Coverage.Status != report.CoverageComplete {
 					t.Errorf("duplicate-ADD coverage = %s, want complete", duplicate.Coverage.Status)
 				}
-				if len(result.Unsupported) != 1 {
-					t.Fatalf("unsupported = %+v, want one procedure boundary", result.Unsupported)
+				// T27/#106 audits the MySQL body — only TiDB still emits
+				// a vendor boundary for the procedure member.
+				wantUnsupported := 0
+				wantProcedureCoverage := report.CoverageComplete
+				if dialect == spec.DialectTiDB {
+					wantUnsupported = 1
+					wantProcedureCoverage = report.CoverageIncomplete
 				}
-				t05A8AssertBoundaryItem(t, result, dialect, true, 0, 2)
+				if len(result.Unsupported) != wantUnsupported {
+					t.Fatalf("unsupported = %+v, want %d entries", result.Unsupported, wantUnsupported)
+				}
+				if dialect == spec.DialectTiDB {
+					t05A8AssertBoundaryItem(t, result, dialect, true, 0, 2)
+				}
 				procedure := result.Statements[2]
-				if procedure.Coverage.Status != report.CoverageIncomplete || len(procedure.Findings) != 0 || len(procedure.EvidenceGaps) != 0 {
-					t.Fatalf("procedure = %s findings=%+v gaps=%+v, want incomplete with none", procedure.Coverage.Status, procedure.Findings, procedure.EvidenceGaps)
+				if procedure.Coverage.Status != wantProcedureCoverage || len(procedure.Findings) != 0 || len(procedure.EvidenceGaps) != 0 {
+					t.Fatalf("procedure = %s findings=%+v gaps=%+v, want %s with none", procedure.Coverage.Status, procedure.Findings, procedure.EvidenceGaps, wantProcedureCoverage)
 				}
 				indexGap := []rule.EvidenceGap{{RuleID: "ddl.create_index.columns.exists.require", ReasonCode: "unknown_table_state", RequiredFacts: []string{"target_table.columns"}}}
 				for i, want := range map[int][]rule.EvidenceGap{3: t05A8GapFollowers[2], 4: indexGap} {
@@ -1340,22 +1385,17 @@ func TestT05A8ErrorsAndConsumers(t *testing.T) {
 					}
 				}
 				if dialect == spec.DialectMySQL {
-					if len(result.Unsupported) != 2 {
-						t.Fatalf("unsupported = %+v, want exactly two entries", result.Unsupported)
+					// T27/#106: the body audits through the shared member
+					// path — only the unmodeled parameter list remains a
+					// named unaudited aspect.
+					if len(result.Unsupported) != 1 {
+						t.Fatalf("unsupported = %+v, want exactly the params entry", result.Unsupported)
 					}
-					features := map[string]spec.UnsupportedDetail{}
-					for _, item := range result.Unsupported {
-						features[item.Feature] = item
-					}
-					if len(features) != 2 {
-						t.Fatalf("unsupported = %+v, want exactly params+body", result.Unsupported)
-					}
-					for _, feature := range []string{"create_procedure.option.params", "create_procedure.body"} {
-						item, ok := features[feature]
-						if !ok || item.Reason != spec.UnsupportedUnauditedReason || item.Index != 1 ||
-							item.SQL != result.Statements[1].RawSQL || !reflect.DeepEqual(item.Metadata, map[string]any{"aspect": "option"}) {
-							t.Fatalf("aspect %s = %+v, want unaudited at index 1", feature, item)
-						}
+					item := result.Unsupported[0]
+					if item.Feature != "create_procedure.option.params" ||
+						item.Reason != spec.UnsupportedUnauditedReason || item.Index != 1 ||
+						item.SQL != result.Statements[1].RawSQL || !reflect.DeepEqual(item.Metadata, map[string]any{"aspect": "option"}) {
+						t.Fatalf("params aspect = %+v, want unaudited at index 1", item)
 					}
 				} else {
 					if len(result.Unsupported) != 1 {
@@ -1381,19 +1421,22 @@ func TestT05A8ErrorsAndConsumers(t *testing.T) {
 					result, err := AuditSQL(context.Background(), Request{
 						SQL: tc.sql, Dialect: dialect, ConfigPath: policy, MetadataProvider: &t05A8Provider{},
 					})
-					if dialect == spec.DialectMySQL && !tc.create {
+					// T27/#106: MySQL procedure bodies audit through the
+					// shared member path — create and drop both reach the
+					// notice rules now.
+					if dialect == spec.DialectMySQL {
 						if err != nil {
-							t.Fatalf("mysql drop error = %v, want nil", err)
+							t.Fatalf("mysql %s error = %v, want nil", tc.name, err)
 						}
 						if len(result.Unsupported) != 0 || result.Coverage.Status != report.CoverageComplete || result.Verdict != report.VerdictPass {
-							t.Fatalf("mysql drop = %s/%s unsupported=%+v, want pass/complete none", result.Verdict, result.Coverage.Status, result.Unsupported)
+							t.Fatalf("mysql %s = %s/%s unsupported=%+v, want pass/complete none", tc.name, result.Verdict, result.Coverage.Status, result.Unsupported)
 						}
 					} else {
 						if !errors.Is(err, ErrUnsupportedStatement) {
 							t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
 						}
 						if result.Coverage.Status != report.CoverageIncomplete {
-							t.Fatalf("coverage = %s, want incomplete; vendor/aspect must not promote to complete", result.Coverage.Status)
+							t.Fatalf("coverage = %s, want incomplete; vendor boundary must not promote to complete", result.Coverage.Status)
 						}
 					}
 					if dialect == spec.DialectTiDB {
@@ -1459,10 +1502,17 @@ func TestT05A8ErrorsAndConsumers(t *testing.T) {
 					}
 					raw := strings.TrimSpace(tc.sql)
 					if dialect == spec.DialectMySQL {
-						if !reflect.DeepEqual(statementSpy.applied, []string{raw}) ||
-							!reflect.DeepEqual(statementSpy.evaluated, []string{raw}) ||
-							!reflect.DeepEqual(statementSpy.gapsSeen, []string{raw}) {
-							t.Errorf("mysql procedure must reach statement rule consumers: applies=%v eval=%v gaps=%v",
+						// T27/#106: body members reach statement-rule
+						// consumers through the shared registry — the
+						// parent raw and each member raw both appear.
+						wantConsumers := []string{raw}
+						if tc.create {
+							wantConsumers = []string{raw, "SELECT 1"}
+						}
+						if !reflect.DeepEqual(statementSpy.applied, wantConsumers) ||
+							!reflect.DeepEqual(statementSpy.evaluated, wantConsumers) ||
+							!reflect.DeepEqual(statementSpy.gapsSeen, wantConsumers) {
+							t.Errorf("mysql procedure+body must reach statement rule consumers: applies=%v eval=%v gaps=%v",
 								statementSpy.applied, statementSpy.evaluated, statementSpy.gapsSeen)
 						}
 						if len(globalSpy.raws) != 1 || !reflect.DeepEqual(globalSpy.raws[0], []string{raw}) {

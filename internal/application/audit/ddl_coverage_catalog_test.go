@@ -78,10 +78,10 @@ var requiredParserUpgradeCandidates = []struct {
 	dialect string
 	form    string
 }{
-	{"mysql", "ALTER PROCEDURE"},
-	{"mysql", "CREATE FUNCTION"},
-	{"mysql", "ALTER FUNCTION"},
-	{"mysql", "DROP FUNCTION"},
+	// The MySQL stored-routine prefixes graduated to supported statements
+	// under T27/#106; the ALTER TABLESPACE ENGINE clause remains the MySQL
+	// parser-upgrade candidate form.
+	{"mysql", "ALTER TABLESPACE ENGINE"},
 	{"postgresql", "DROP SUBSCRIPTION WITH drop_slot"},
 	{"postgresql", "NOT NULL NOT VALID"},
 	{"postgresql", "ALTER CONSTRAINT NOT ENFORCED"},
@@ -559,8 +559,8 @@ func TestDDLCoverageCatalog(t *testing.T) {
 	pgResSummary := computeCatalogSummary(pgResEntries)
 
 	// Validate baselines.
-	assertCatalogSummary(t, "mysql", mysqlSummary, 62, 53, 0, 0, 9, 0)
-	assertCatalogSummary(t, "tidb", tidbSummary, 55, 43, 1, 4, 7, 0)
+	assertCatalogSummary(t, "mysql", mysqlSummary, 63, 57, 0, 0, 6, 0)
+	assertCatalogSummary(t, "tidb", tidbSummary, 57, 43, 1, 8, 5, 0)
 	assertCatalogSummary(t, "postgresql", pgSummary, 290, 277, 8, 0, 5, 0)
 	assertCatalogSummary(t, "postgresql_alter_table_residual", pgResSummary, 66, 59, 3, 0, 4, 0)
 

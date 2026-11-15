@@ -254,15 +254,17 @@ func TestAuditSQLT03ParserFailureKeepsParserContract(t *testing.T) {
 }
 
 // TestAuditSQLT03ProcedureBodyParseFailureKeepsParserContract pins the
-// compound-body form that currently fails to parse: it must stay on the
-// parser-error path (CLI exit 2) and must never be converted into a
-// recognized has_body unsupported aspect inferred from the failed text.
+// truncated compound-body form that still fails to parse: it must stay on
+// the parser-error path (CLI exit 2) and must never be converted into a
+// recognized routine unsupported aspect inferred from the failed text.
+// T27/#106 audits well-formed bodies; a body without its closing END is
+// a genuine parser failure.
 func TestAuditSQLT03ProcedureBodyParseFailureKeepsParserContract(t *testing.T) {
 	t.Parallel()
 	configPath := writeAllRulesDisabledPolicy(t)
 
 	result, err := AuditSQL(context.Background(), Request{
-		SQL:        "CREATE PROCEDURE p() BEGIN SELECT 1; END;",
+		SQL:        "CREATE PROCEDURE p() BEGIN SELECT 1;",
 		Dialect:    spec.DialectMySQL,
 		ConfigPath: configPath,
 	})
@@ -425,7 +427,7 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		// modify_column/change_column column_position aspects are audited
 		// since T08 — see TestAuditSQLT08PositionedAlterActionsComplete.
 
-		{name: "mysql create procedure body", sql: "CREATE PROCEDURE p() SELECT 1;", dialect: spec.DialectMySQL, wantFeature: "create_procedure.body", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create procedure unmodeled body member", sql: "CREATE PROCEDURE p() BEGIN DECLARE x INT; SELECT 1; END;", dialect: spec.DialectMySQL, wantFeature: "routine.body.declaration", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create table generated column unknown function", sql: "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (T07_UNKNOWN_FN(a)) STORED);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.expression_dependencies", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create table inline reference", sql: "CREATE TABLE t (id INT, pid INT REFERENCES parent(id));", dialect: spec.DialectMySQL, wantFeature: "create_table.column.reference", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		// Column-level CHECK graduated to audited constraint facts in T12.

@@ -996,7 +996,10 @@ def cli_case_expect_checks(parsed, rc, expect):
     # agree at the entry's statement index. The index itself must reference a
     # retained statement — out-of-range indices are invalid even when both
     # text fields are omitted. Synthetic artifacts that omit both fields on a
-    # valid index skip this check.
+    # valid index skip this check. Routine-body member entries are the one
+    # relaxation: their sql is the verbatim member slice, not the whole
+    # statement, so it must appear inside the owning statement's raw_sql —
+    # and only when metadata marks routine member origin.
     for u in unsupported:
         idx = u.get("index", 0)
         in_range = isinstance(idx, int) and not isinstance(idx, bool) and 0 <= idx < len(statements)
@@ -1010,9 +1013,14 @@ def cli_case_expect_checks(parsed, rc, expect):
         bound = statements[idx].get("raw_sql")
         if u.get("sql") is None and bound is None:
             continue
+        sql_ok = u.get("sql") == bound
+        if not sql_ok and isinstance(bound, str) and isinstance(u.get("sql"), str):
+            meta = u.get("metadata") or {}
+            if meta.get("routine") is not None and meta.get("routine_member") is not None:
+                sql_ok = u["sql"] in bound
         checks.append((
             f"unsupported sql identity index={idx}",
-            parsed is not None and u.get("sql") == bound,
+            parsed is not None and sql_ok,
             f"sql={u.get('sql')!r} expected={bound!r}",
         ))
     if "evidence_gaps" in expect:

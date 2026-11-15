@@ -53,6 +53,11 @@ func corpusRuleDialectTargets(ruleID string) []string {
 		// TiDB marks CREATE/DROP PROCEDURE and CREATE TABLE AS SELECT as vendor
 		// boundaries, so these rules can only fire under MySQL.
 		return []string{"mysql"}
+	case "ddl.alter_procedure.notice", "ddl.create_function.notice",
+		"ddl.alter_function.notice", "ddl.drop_function.notice":
+		// All TiDB stored-routine operations are vendor boundaries, so the
+		// routine lifecycle notices can only fire under MySQL (T27/#106).
+		return []string{"mysql"}
 	case "ddl.alter.rename_column.version.require":
 		// TiDB 8.5 accepts RENAME COLUMN, so the incompatible finding is a
 		// MySQL applicability result. TiDB never emits it.
