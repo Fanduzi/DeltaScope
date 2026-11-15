@@ -2,8 +2,8 @@ row_id: tidb.alter-instance
 subaction_id: ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR
 dialect: tidb
 literal SQL: ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR
-binary HEAD: 489ed932e9ab75d80dc53f4aeca925d5e3877a7e
-generation date: 2026-11-13
+binary HEAD: 39a2b07088a31d5d7bd5bae68956999365d911ba
+generation date: 2026-11-15
 
 === version 8.5 (target 8.5.0) rc=1 ===
 {
@@ -11,10 +11,18 @@ generation date: 2026-11-13
  "coverage": {
   "status": "incomplete"
  },
+ "summary": {
+  "statements": 1,
+  "blockers": 0,
+  "warnings": 0,
+  "notices": 0
+ },
  "statements": [
   {
    "index": 0,
-   "findings": [],
+   "kind": "ddl",
+   "raw_sql": "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR",
+   "normalized_sql": "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR",
    "coverage": {
     "status": "incomplete"
    }
@@ -27,7 +35,9 @@ generation date: 2026-11-13
    "reason": "parsed by the shared parser but not covered by audited semantics",
    "metadata": {
     "boundary": "unaudited",
-    "no_rollback_on_error": true
+    "gap_fact": "alter_instance.version_applicability",
+    "no_rollback_on_error": true,
+    "object": "instance"
    }
   }
  ],
@@ -39,5 +49,30 @@ generation date: 2026-11-13
    "audited": false,
    "dialect": "tidb"
   }
- ]
+ ],
+ "version": {
+  "product": "tidb",
+  "version": "8.5.0",
+  "major": 8,
+  "minor": 5,
+  "patch": 0,
+  "source": "target",
+  "validated_range": true
+ },
+ "fail_on_triggered": false,
+ "rule_summary": {
+  "loaded": 521,
+  "applicable": 0,
+  "skipped": []
+ },
+ "context": {
+  "mode": "offline",
+  "dialect": "tidb",
+  "dialect_source": "flag",
+  "note": "existence not checked (no database connection)",
+  "unproven": [
+   "column_exists",
+   "table_exists"
+  ]
+ }
 }

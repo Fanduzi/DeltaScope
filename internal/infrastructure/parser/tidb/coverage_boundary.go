@@ -116,9 +116,18 @@ func applyCoverageBoundary(dialect spec.Dialect, statement *spec.Statement, node
 					}
 				} else {
 					detail := &spec.UnsupportedDetail{
-						Feature:  decl.Feature(),
-						Reason:   spec.UnsupportedUnauditedReason,
-						Metadata: map[string]any{"boundary": "unaudited"},
+						Feature: decl.Feature(),
+						Reason:  spec.UnsupportedUnauditedReason,
+						Metadata: map[string]any{
+							"boundary": "unaudited",
+							// The instance target identity and the owed
+							// promotion premise ride the boundary so a
+							// future slice cannot silently claim support
+							// without version-applicability evidence
+							// (T32/#111).
+							"object":   "instance",
+							"gap_fact": spec.AlterInstanceFactVersionApplicability,
+						},
 					}
 					if decl.NoRollbackOnError {
 						// The NO ROLLBACK ON ERROR member is recorded,

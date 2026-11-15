@@ -5149,7 +5149,9 @@ rows:
         evidence:
           - file:testdata/ddl-inventory/evidence/tidb.alter-instance.probes.txt
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: T32 (#111) owns instance-management boundary evidence"
+          - file:testdata/ddl-golden/T32.json
+          - file:internal/infrastructure/parser/tidb/coverage_boundary.go
+          - file:internal/application/audit/t32_tidb_alter_instance_test.go
 
     subaction_status:
       - subaction_id: ALTER INSTANCE RELOAD TLS
@@ -5174,9 +5176,9 @@ rows:
             parser_status: recognized
             audit_status: explicit_unsupported
             evidence: ["file:testdata/ddl-inventory/evidence/tidb.alter-instance.reload-tls-no-rollback-on-error.probes.txt", "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"]
-    status_evidence: "2026-11-13 R3 probe (8.5): ALTER INSTANCE emits explicit unsupported evidence (boundary=unaudited). T32/#111 owns implementation; R3 records current behavior only. Earlier: 2026-09-22 silent"
-    targets: "instance action kind"
+    status_evidence: "2026-11-15 T32 (#111) boundary closure: RELOAD TLS and RELOAD TLS NO ROLLBACK ON ERROR keep the named unaudited boundary with the action kind (alter_instance.reload_tls), the object:instance target identity, the recorded no_rollback_on_error member, and the owed alter_instance.version_applicability promotion premise; native tidb85 exec of ALTER INSTANCE RELOAD TLS landed rc=0 (T32.meta). ROTATE INNODB MASTER KEY is MySQL-only grammar and stays a vendor boundary under the tidb dialect; malformed and fabricated-target spellings stay parser errors. Earlier: 2026-11-13 R3 probe unaudited boundary; 2026-09-22 silent"
+    targets: "instance action kind and object:instance target identity"
     acceptance:
       dimensions: "classification and boundary evidence"
-      refs: ["missing: T32 (#111) owns instance-management boundary evidence"]
+      refs: ["file:testdata/ddl-golden/T32.json", "file:internal/infrastructure/parser/tidb/coverage_boundary.go", "file:internal/domain/spec/alter_instance.go", "file:internal/application/audit/t32_tidb_alter_instance_test.go", "file:testdata/ddl-inventory/evidence/tidb.alter-instance.probes.txt"]
     owner: T32

@@ -46,6 +46,13 @@ const (
 	// AlterInstanceFactKeyring is the rotate premise: a keyring
 	// backend is loaded and initialized. Owed while unproven.
 	AlterInstanceFactKeyring = "alter_instance.keyring"
+	// AlterInstanceFactVersionApplicability is the named promotion
+	// premise a TiDB boundary entry owes before it can claim audited
+	// support (T32/#111): the subaction is real TiDB semantics, but
+	// unaudited stays the honest class until the version-applicability
+	// domain for a TiDB audit slice is proven. It names the owed fact
+	// — the gate itself is not installed until the slice exists.
+	AlterInstanceFactVersionApplicability = "alter_instance.version_applicability"
 )
 
 // AlterInstanceForm identifies the authored subaction — the

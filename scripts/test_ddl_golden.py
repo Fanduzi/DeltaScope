@@ -6755,8 +6755,8 @@ def t31_all_mode_tests():
 
     tasks = ddl_golden.discover_all_manifests()
     report("TASK=all discovers the canonical milestone set",
-           tasks == sorted(tasks) and "T02" in tasks and "T30" in tasks
-           and "T23S" in tasks and len(tasks) == 30)
+           tasks == sorted(tasks) and "T02" in tasks and "T32" in tasks
+           and "T23S" in tasks and len(tasks) == 31)
     report("TASK=all excludes platform-variant lanes",
            "T21-arm64" not in tasks)
 

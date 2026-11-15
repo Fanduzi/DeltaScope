@@ -1,0 +1,355 @@
+{
+ "task_id": "T32",
+ "issue": 111,
+ "policy_profile": "all-rules-disabled",
+ "description": "T32 TiDB instance-management boundary (issue #111): every ALTER INSTANCE form lands an explicit class — ALTER INSTANCE RELOAD TLS [NO ROLLBACK ON ERROR] is real TiDB semantics held at the named unaudited boundary (feature kind + object:instance target identity + the owed alter_instance.version_applicability promotion premise; the NO ROLLBACK member is recorded, never merged), ALTER INSTANCE ROTATE INNODB MASTER KEY is MySQL-only grammar and stays a vendor boundary under the tidb dialect, and every malformed or fabricated-target spelling stays a parser error. The tidb85 meta case executes the native RELOAD TLS on the real anchor to prove the grammar behind the boundary. No form is a silent pass counted as coverage.",
+ "anchors": {
+  "mysql57": {
+   "service": "mysql57",
+   "container": "deltascope-ddl-golden-mysql57",
+   "image": "mysql:5.7.44",
+   "product": "mysql",
+   "version_contains": "5.7.44",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T21_MYSQL_PASSWORD"
+  },
+  "mysql80": {
+   "service": "mysql80",
+   "container": "deltascope-ddl-golden-mysql80",
+   "image": "mysql:8.0.46",
+   "product": "mysql",
+   "version_contains": "8.0.46",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T21_MYSQL_PASSWORD"
+  },
+  "mysql84": {
+   "service": "mysql84",
+   "container": "deltascope-ddl-golden-mysql84",
+   "image": "mysql:8.4.10",
+   "product": "mysql",
+   "version_contains": "8.4.10",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T21_MYSQL_PASSWORD"
+  },
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot"
+   ],
+   "needs_database_create": true
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "clear-task-fixture",
+   "sql": "DROP DATABASE IF EXISTS t32fx",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "seed-fixture-schema",
+   "sql": "CREATE DATABASE t32fx",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "fixture schema exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t32fx'",
+     "expect": "1"
+    }
+   ]
+  }
+ ],
+ "syntax_negative": {
+  "sql": "ALTER INSTANCE",
+  "expect": {
+   "error_class": "1064",
+   "forbidden_markers": [
+    "Access denied",
+    "Connection refused"
+   ]
+  }
+ },
+ "policy": {
+  "enable": {}
+ },
+ "cli_cases": [
+  {
+   "id": "tidb-alter-instance-reload-tls",
+   "dialect": "tidb",
+   "sql": "ALTER INSTANCE RELOAD TLS",
+   "args": [
+    "--target-version",
+    "8.5.0"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "unsupported_features": [
+     "alter_instance.reload_tls"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_instance.reload_tls",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "boundary": "unaudited",
+       "object": "instance",
+       "gap_fact": "alter_instance.version_applicability"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-alter-instance-reload-tls-nrb",
+   "dialect": "tidb",
+   "sql": "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR",
+   "args": [
+    "--target-version",
+    "8.5.0"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "unsupported_features": [
+     "alter_instance.reload_tls"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_instance.reload_tls",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "boundary": "unaudited",
+       "object": "instance",
+       "gap_fact": "alter_instance.version_applicability",
+       "no_rollback_on_error": true
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-alter-instance-rotate-vendor",
+   "dialect": "tidb",
+   "sql": "ALTER INSTANCE ROTATE INNODB MASTER KEY",
+   "args": [
+    "--target-version",
+    "8.5.0"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "unsupported_features": [
+     "alter_instance.rotate_innodb_master_key"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_instance.rotate_innodb_master_key",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "boundary": "vendor"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-alter-instance-target-parser-error",
+   "dialect": "tidb",
+   "sql": "ALTER INSTANCE 'tidb-1:4000' RELOAD TLS",
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": [],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "tidb-alter-instance-truncated-parser-error",
+   "dialect": "tidb",
+   "sql": "ALTER INSTANCE RELOAD TLS NO ROLLBACK",
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": [],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "mysql-alter-instance-version-gate",
+   "dialect": "mysql",
+   "sql": "ALTER INSTANCE RELOAD TLS",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "unsupported_features": [
+     "alter_instance.reload_tls"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_instance.reload_tls",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "boundary": "unaudited",
+       "object": "instance",
+       "gate": "version"
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "metadata_cases": [
+  {
+   "id": "tidb85-alter-instance-reload-tls",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER INSTANCE RELOAD TLS",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--target-version",
+    "8.5.0"
+   ],
+   "execute": [
+    {
+     "name": "native reload tls lands",
+     "sql": "ALTER INSTANCE RELOAD TLS",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "unsupported_features": [
+     "alter_instance.reload_tls"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_instance.reload_tls",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "boundary": "unaudited",
+       "object": "instance",
+       "gap_fact": "alter_instance.version_applicability"
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "required_case_ids": [
+  "T32.db.mysql57.ddl",
+  "T32.db.mysql57.syntax_negative",
+  "T32.db.mysql80.ddl",
+  "T32.db.mysql80.syntax_negative",
+  "T32.db.mysql84.ddl",
+  "T32.db.mysql84.syntax_negative",
+  "T32.db.tidb85.ddl",
+  "T32.db.tidb85.syntax_negative",
+  "T32.cli.tidb-alter-instance-reload-tls",
+  "T32.cli.tidb-alter-instance-reload-tls-nrb",
+  "T32.cli.tidb-alter-instance-rotate-vendor",
+  "T32.cli.tidb-alter-instance-target-parser-error",
+  "T32.cli.tidb-alter-instance-truncated-parser-error",
+  "T32.cli.mysql-alter-instance-version-gate",
+  "T32.meta.tidb85-alter-instance-reload-tls"
+ ]
+}
