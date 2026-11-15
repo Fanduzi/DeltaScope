@@ -16,20 +16,20 @@ import (
 )
 
 type obs struct {
-	ID             string            `json:"id"`
-	SQL            string            `json:"sql"`
-	TableComment   string            `json:"table_comment"`
-	TableCommentB  int               `json:"table_comment_bytes"`
-	TableCommentR  int               `json:"table_comment_runes"`
-	OptComment     string            `json:"options_comment"`
-	OptCommentOK   bool              `json:"options_comment_present"`
-	ColComment     map[string]string `json:"column_comments"`
-	ColCommentInfo map[string]string `json:"column_comment_len"` // "bytes/runes"
-	Unextracted    []string          `json:"unextracted"`
-	ASTTableOpts   []string          `json:"ast_table_options"`
+	ID             string              `json:"id"`
+	SQL            string              `json:"sql"`
+	TableComment   string              `json:"table_comment"`
+	TableCommentB  int                 `json:"table_comment_bytes"`
+	TableCommentR  int                 `json:"table_comment_runes"`
+	OptComment     string              `json:"options_comment"`
+	OptCommentOK   bool                `json:"options_comment_present"`
+	ColComment     map[string]string   `json:"column_comments"`
+	ColCommentInfo map[string]string   `json:"column_comment_len"` // "bytes/runes"
+	Unextracted    []string            `json:"unextracted"`
+	ASTTableOpts   []string            `json:"ast_table_options"`
 	ASTColOpts     map[string][]string `json:"ast_column_options"`
-	StrValComment  string            `json:"ast_table_option_comment_strvalue"`
-	ParseError     string            `json:"parse_error,omitempty"`
+	StrValComment  string              `json:"ast_table_option_comment_strvalue"`
+	ParseError     string              `json:"parse_error,omitempty"`
 }
 
 func main() {

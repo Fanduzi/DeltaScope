@@ -4,7 +4,26 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.511.1 Shared Transport Glue
+## Latest Completed Milestone: v0.512.0 Official DDL Acceptance
+
+**Goal:** land the MySQL/TiDB official DDL semantic-acceptance milestone (#79, T01–T32): every officially inventoried DDL statement across MySQL 5.7.44, 8.0.46, 8.4.10, and TiDB v8.5.0 lands an explicit class — policy violation, evidence gap, unsupported analysis, parser failure, or audited result. See `docs/releases/release-notes-v0.512.0.md`.
+
+### Completed Scope
+
+- Stored-program bodies (procedures/functions/triggers/events) audited member-by-member with binding invalidation, control-flow semantics, `OLD`/`NEW` column dependencies, and typed event schedules.
+- TiDB families: TTL, placement policies/binds/ALTER RANGE, sequences, resource groups, and physical layout/cache tables including a TiKV/TiFlash-backed lane.
+- MySQL low-frequency DDL: resource groups with live deployment evidence, InnoDB tablespaces, SERVER, spatial reference systems, and ALTER INSTANCE with privilege-premises and per-form version gates.
+- Prospective ordered schema state for migration batches; explicit named boundaries (`unaudited`/`vendor`) carry owed promotion premises — recognized is never silently counted as supported.
+- Versioned acceptance oracle: 31 canonical manifests run real-database cases on digest-locked anchors under `TASK=all`; the aggregate validator fails closed on denominator shrinkage, missing artifacts, skipped cases, or mixed git HEADs (31 tasks, 2565 cases, 50875 assertions at `8816924f`).
+- Supported rule-and-dialect fixture coverage is 790/790 (100.0%) across 356 YAML fixtures; this is fixture coverage, not SQL syntax or grammar coverage. Rule Catalog is 531 rules, including three default-disabled `dml.impact.*` rows.
+
+### Non-Goals
+
+- Not SQL execution, authorization, or a SQL syntax or grammar coverage claim.
+- Schema-level `ALTER DATABASE ... PLACEMENT POLICY` stays an unaudited boundary; TiDB `ALTER INSTANCE` stays unaudited until a slice proves version applicability.
+- Not an MCP Query Access tool.
+
+## Previous Completed Milestone: v0.511.1 Shared Transport Glue
 
 **Goal:** share the catalog YAML scalar, CLI SQL loader, and CLI/HTTP Query Access session attach that transports already owned twice. See `docs/releases/release-notes-v0.511.1.md`.
 

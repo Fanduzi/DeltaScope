@@ -6,6 +6,24 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.512.0] - 2026-11-16
+
+### Added
+
+- MySQL/TiDB official DDL semantic-acceptance milestone (#79, T01–T32): every officially inventoried DDL statement across MySQL 5.7.44, 8.0.46, 8.4.10, and TiDB v8.5.0 lands an explicit class — policy violation, evidence gap, unsupported analysis, parser failure, or audited result.
+- Stored-program body audit: static SQL inside MySQL procedures, functions, triggers, and events is member-scanned into typed statements with binding invalidation, control-flow semantics, `OLD`/`NEW` column dependencies, and typed event schedules.
+- TiDB families: TTL lifecycle, placement policies/binds/ALTER RANGE, sequences, resource groups, physical layout/cache tables (TiKV/TiFlash lane).
+- MySQL low-frequency DDL: resource groups with live deployment evidence, InnoDB tablespaces, SERVER, spatial reference systems, ALTER INSTANCE with privilege-premises and per-form version gates.
+- Prospective ordered schema state; named `unaudited`/`vendor` boundaries carry owed promotion premises.
+- `TASK=all` canonical golden aggregate with fail-closed denominator lock, per-task lifecycles, `reaggregate`, and live `deployment_evidence` capture.
+- New rules: `ddl.event.enabled_execution.warn`, `ddl.trigger.ordering.version`, trigger/event lifecycle notices.
+
+### Non-Goals
+
+- Not SQL execution, authorization, or a SQL syntax or grammar coverage claim.
+- Schema-level placement policy and TiDB `ALTER INSTANCE` stay explicit unaudited boundaries.
+- Not an MCP Query Access tool.
+
 ## [v0.511.1] - 2026-09-16
 
 ### Changed
