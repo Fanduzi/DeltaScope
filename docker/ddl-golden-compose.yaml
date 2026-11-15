@@ -255,6 +255,7 @@ services:
   t23s-tidb:
     image: pingcap/tidb:v8.5.0
     container_name: deltascope-ddl-golden-t23s-tidb
+    restart: on-failure
     depends_on:
       t23s-tikv:
         condition: service_healthy
