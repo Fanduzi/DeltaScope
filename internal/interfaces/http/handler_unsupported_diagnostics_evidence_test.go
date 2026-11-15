@@ -18,7 +18,7 @@ func TestUnsupportedDiagnosticsEvidenceHTTPParserError(t *testing.T) {
 		t.Fatalf("new handler: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"ALTER TABLESPACE secret_body_value ENGINE=INNODB","dialect":"mysql"}`))
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"ALTER TABLESPACE secret_body_value ADD UNDOFILE 'x'","dialect":"mysql"}`))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)

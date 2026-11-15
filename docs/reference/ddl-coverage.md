@@ -157,8 +157,8 @@ All filters are optional. When multiple filters are provided, they combine as AN
 #### Text Output (default)
 
 ```text
-DIALECT  CLASSIFICATION  FAMILY       FORM                    GUIDANCE
-mysql    parser_error    alter_table  ALTER TABLESPACE ENGINE parser_upgrade_candidate
+DIALECT    CLASSIFICATION  FAMILY       FORM                        GUIDANCE
+postgresql parser_error    constraints  ALTER CONSTRAINT INHERIT    parser_upgrade_candidate
 
 1 entries
 ```
@@ -174,15 +174,15 @@ Text output is designed for human review. It is stable enough for casual use, bu
     "total": 1,
     "returned": 1,
     "filters": {
-      "dialect": "mysql",
+      "dialect": "postgresql",
       "classification": "parser_error"
     }
   },
   "entries": [
     {
-      "dialect": "mysql",
-      "family": "alter_table",
-      "form": "ALTER TABLESPACE ENGINE",
+      "dialect": "postgresql",
+      "family": "constraints",
+      "form": "ALTER CONSTRAINT INHERIT",
       "classification": "parser_error",
       "finding_rule_ids": null,
       "guidance_code": "parser_upgrade_candidate",
@@ -197,10 +197,10 @@ JSON output includes `version`, `summary` (with `total`, `returned`, and active 
 
 ### Examples
 
-MySQL parser-upgrade candidates:
+Parser-upgrade candidates (MySQL has none remaining — ALTER TABLESPACE ENGINE graduated in T57):
 
 ```bash
-deltascope ddl-coverage --dialect mysql --classification parser_error --guidance-code parser_upgrade_candidate
+deltascope ddl-coverage --dialect postgresql --classification parser_error --guidance-code parser_upgrade_candidate
 ```
 
 PostgreSQL DROP SUBSCRIPTION in JSON:

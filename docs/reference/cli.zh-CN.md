@@ -488,6 +488,8 @@ TiDB parser 可识别 `INSERT`、`UPDATE` 和单表 `DELETE` 的 DML `RETURNING`
 | Bucket | MySQL | TiDB | PostgreSQL | 合计 |
 |---|---:|---:|---:|---:|
 | `parser_upgrade_candidate` | 5 | 0 | 5 | 10 |
+
+> 毕业说明：MySQL `ALTER TABLESPACE ... ENGINE` 形态已在 T57 中毕业为 finding-covered 行为（见 DDL coverage catalog）；上表 bucket 计数描述的是 v0.250.0 证据包。
 | `bounded_fallback_candidate` | 1 | 3 | 0 | 4 |
 | `product_unsupported_or_inapplicable` | 0 | 6 | 0 | 6 |
 | `unsafe_fallback_defer` | 9 | 0 | 0 | 9 |
@@ -1391,8 +1393,8 @@ deltascope ddl-coverage [flags]
 ### 示例
 
 ```bash
-# MySQL parser-upgrade 候选
-deltascope ddl-coverage --dialect mysql --classification parser_error --guidance-code parser_upgrade_candidate
+# Parser-upgrade 候选（MySQL 已无剩余——ALTER TABLESPACE ENGINE 已在 T57 毕业）
+deltascope ddl-coverage --dialect postgresql --classification parser_error --guidance-code parser_upgrade_candidate
 
 # PostgreSQL DROP SUBSCRIPTION（JSON 格式）
 deltascope ddl-coverage --dialect postgresql --search "drop subscription" --format json

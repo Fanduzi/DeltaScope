@@ -74,6 +74,12 @@ func TestT25TablespaceRecognizedForms(t *testing.T) {
 			spec.DDLOperationAlterTablespace, spec.TablespaceKindGeneral, "ts1", "rename", "", 0, "ts2", false},
 		{"ALTER TABLESPACE ts1 ENCRYPTION='Y'",
 			spec.DDLOperationAlterTablespace, spec.TablespaceKindGeneral, "ts1", "encryption", "", 0, "", false},
+		// ENGINE may lead the member list — `ALTER TABLESPACE t ENGINE
+		// [=] engine` is a documented single-member form.
+		{"ALTER TABLESPACE ts1 ENGINE=INNODB",
+			spec.DDLOperationAlterTablespace, spec.TablespaceKindGeneral, "ts1", "engine", "innodb", 0, "", false},
+		{"ALTER TABLESPACE ts1 ENGINE NDB",
+			spec.DDLOperationAlterTablespace, spec.TablespaceKindGeneral, "ts1", "engine", "ndb", 0, "", false},
 		// Scalar members may lead the member list (R7-N03): they carry
 		// no AlterAction — their value lands in Options.
 		{"ALTER TABLESPACE ts1 AUTOEXTEND_SIZE=8M",
@@ -170,6 +176,7 @@ func TestT25TablespaceRejectedShapes(t *testing.T) {
 		"CREATE LOGFILE GROUP lg1",
 		// No members at all.
 		"ALTER TABLESPACE ts1",
+		"ALTER TABLESPACE ts1 ENGINE",
 		"DROP TABLESPACE",
 		// DROP TABLESPACE has no IF EXISTS member in the MySQL grammar.
 		"DROP TABLESPACE IF EXISTS ts1",

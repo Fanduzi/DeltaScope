@@ -114,7 +114,7 @@ func TestUnsupportedDiagnosticsGuidanceCodeSDKMySQL(t *testing.T) {
 	t.Parallel()
 
 	result, err := Audit(context.Background(), Request{
-		SQL:     "ALTER TABLESPACE v_users ENGINE=INNODB",
+		SQL:     "ALTER TABLESPACE v_users ADD UNDOFILE 'x.ibu'",
 		Dialect: DialectMySQL,
 	})
 	if err == nil {

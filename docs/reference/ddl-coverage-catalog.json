@@ -13,10 +13,10 @@
   "summary": {
     "mysql": {
       "total": 63,
-      "finding_covered": 62,
+      "finding_covered": 63,
       "normalized_silent": 0,
       "unsupported_boundary": 0,
-      "parser_error": 1,
+      "parser_error": 0,
       "unclassified": 0
     },
     "postgresql": {
@@ -212,11 +212,11 @@
       "dialect": "mysql",
       "family": "alter_table",
       "form": "ALTER TABLESPACE ENGINE",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "guidance_code": "parser_upgrade_candidate",
-      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-      "notes": "parser error"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.mysql.tablespace.alter.warn"
+      ],
+      "notes": ""
     },
     {
       "dialect": "mysql",

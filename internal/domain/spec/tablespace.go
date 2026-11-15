@@ -20,8 +20,8 @@ type TablespaceDeclaration struct {
 	// Name is the authored object identity.
 	Name string
 	// AlterAction names the ALTER member the statement carries:
-	// "add_datafile", "drop_datafile", "add_undo_file", "rename", or
-	// "encryption". Empty on CREATE/DROP.
+	// "add_datafile", "drop_datafile", "add_undo_file", "rename",
+	// "encryption", or "engine". Empty on CREATE/DROP.
 	AlterAction string
 	// Engine is the authored ENGINE [=] value, "" when absent. Absence is
 	// a declaration fact — never an inferred default.

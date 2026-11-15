@@ -156,7 +156,7 @@ var mysqlDDLCensusCases = []struct {
 	// --- 10. Tablespace/Resource lifecycle ---
 	{Name: "CREATE TABLESPACE", SQL: "CREATE TABLESPACE ts1 ADD DATAFILE 'ts1.ibd'", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TABLESPACE", SQL: "ALTER TABLESPACE ts1 ADD DATAFILE 'ts2.ibd'", Expected: ddlCoverageFindingCovered},
-	{Name: "ALTER TABLESPACE ENGINE", SQL: "ALTER TABLESPACE ts1 ENGINE=INNODB", Expected: ddlCoverageParserError},
+	{Name: "ALTER TABLESPACE ENGINE", SQL: "ALTER TABLESPACE ts1 ENGINE=INNODB", Expected: ddlCoverageFindingCovered},
 	{Name: "DROP TABLESPACE", SQL: "DROP TABLESPACE ts1", Expected: ddlCoverageFindingCovered},
 	{Name: "CREATE RESOURCE GROUP", SQL: "CREATE RESOURCE GROUP rg1 TYPE = USER VCPU = 0-3", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER RESOURCE GROUP", SQL: "ALTER RESOURCE GROUP rg1 VCPU = 0-7", Expected: ddlCoverageFindingCovered},

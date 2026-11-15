@@ -26,18 +26,17 @@ func TestDDLCoverage_EmbeddedCatalogMySQLParserUpgradeCandidate(t *testing.T) {
 		t.Fatalf("exit code = %d, want 0; stderr=%s", code, stderr.String())
 	}
 
+	// MySQL has zero remaining parser-upgrade candidates: ALTER TABLESPACE
+	// ENGINE graduated to finding_covered under T57/#140.
 	output := stdout.String()
+	if strings.Contains(output, "ALTER TABLESPACE") {
+		t.Error("graduated ALTER TABLESPACE must not remain a parser upgrade candidate")
+	}
 	if strings.Contains(output, "ALTER VIEW") {
 		t.Error("promoted ALTER VIEW must not remain a parser upgrade candidate")
 	}
 	if strings.Contains(output, "FUNCTION") || strings.Contains(output, "PROCEDURE") {
 		t.Error("promoted routine forms must not remain parser upgrade candidates")
-	}
-	if !strings.Contains(output, "ALTER TABLESPACE") {
-		t.Error("output should contain ALTER TABLESPACE")
-	}
-	if !strings.Contains(output, "parser_upgrade_candidate") {
-		t.Error("output should contain parser_upgrade_candidate")
 	}
 }
 
@@ -57,18 +56,17 @@ func TestDDLCoverage_MySQLParserUpgradeCandidate(t *testing.T) {
 		t.Fatalf("exit code = %d, want 0; stderr=%s", code, stderr.String())
 	}
 
+	// MySQL retains zero parser-upgrade candidates after T57/#140 graduated
+	// ALTER TABLESPACE ENGINE to finding_covered.
 	output := stdout.String()
+	if strings.Contains(output, "ALTER TABLESPACE") {
+		t.Error("graduated ALTER TABLESPACE must not remain a parser upgrade candidate")
+	}
 	if strings.Contains(output, "ALTER VIEW") {
 		t.Error("promoted ALTER VIEW must not remain a parser upgrade candidate")
 	}
 	if strings.Contains(output, "FUNCTION") || strings.Contains(output, "PROCEDURE") {
 		t.Error("promoted routine forms must not remain parser upgrade candidates")
-	}
-	if !strings.Contains(output, "ALTER TABLESPACE") {
-		t.Error("output should contain ALTER TABLESPACE")
-	}
-	if !strings.Contains(output, "parser_upgrade_candidate") {
-		t.Error("output should contain parser_upgrade_candidate")
 	}
 }
 
@@ -312,7 +310,7 @@ func TestDDLCoverage_TextOutput(t *testing.T) {
 
 	code := Execute(
 		context.Background(),
-		[]string{"ddl-coverage", "--catalog", testDDLCoverageCatalogPath, "--dialect", "mysql", "--classification", "parser_error"},
+		[]string{"ddl-coverage", "--catalog", testDDLCoverageCatalogPath, "--dialect", "postgresql", "--classification", "parser_error"},
 		strings.NewReader(""),
 		stdout,
 		stderr,
@@ -331,7 +329,7 @@ func TestDDLCoverage_TextOutput(t *testing.T) {
 	if !strings.Contains(output, "parser_error") {
 		t.Error("text output should contain a classification value")
 	}
-	if !strings.Contains(output, "mysql") {
+	if !strings.Contains(output, "postgresql") {
 		t.Error("text output should contain a dialect value")
 	}
 }

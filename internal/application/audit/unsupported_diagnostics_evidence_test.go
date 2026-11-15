@@ -51,60 +51,35 @@ func TestParserErrorDiagnosticEvidence(t *testing.T) {
 	}
 }
 
-func TestParserUpgradeCandidateGuidanceCodeMySQL(t *testing.T) {
+// The ENGINE-led ALTER TABLESPACE form graduated out of the MySQL
+// parser-upgrade candidate list (T57/#140): the bounded tablespace
+// recognizer consumes `ALTER TABLESPACE name ENGINE [=] engine`, so the
+// statement is audited — never a parser-error diagnostic.
+func TestMySQLAlterTablespaceEngineGraduated(t *testing.T) {
 	t.Parallel()
 
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "ALTER TABLESPACE ts1 ENGINE=INNODB",
 		Dialect: spec.DialectMySQL,
 	})
-	if err == nil {
-		t.Fatal("expected parser-error diagnostic for ALTER TABLESPACE")
+	if err != nil {
+		t.Fatalf("engine-led ALTER TABLESPACE must audit, got error: %v", err)
 	}
-
-	diagnostics := result.Diagnostics
-	if len(diagnostics) == 0 {
-		t.Fatal("expected at least one diagnostic")
-	}
-
-	var pe *spec.Diagnostic
-	for i := range diagnostics {
-		if diagnostics[i].Classification == "parser_error" {
-			pe = &diagnostics[i]
-			break
+	for i := range result.Diagnostics {
+		if result.Diagnostics[i].Classification == "parser_error" {
+			t.Fatalf("graduated form must not emit parser_error, got %+v", result.Diagnostics[i])
 		}
 	}
-	if pe == nil {
-		t.Fatalf("expected parser_error diagnostic, got classifications: %+v", diagnosticClassifications(diagnostics))
+	var sawWarn bool
+	for _, st := range result.Statements {
+		for _, f := range st.Findings {
+			if f.RuleID == "ddl.mysql.tablespace.alter.warn" {
+				sawWarn = true
+			}
+		}
 	}
-
-	if pe.Audited {
-		t.Fatal("parser-error diagnostic must mark audited=false")
-	}
-	if pe.Dialect != "mysql" {
-		t.Fatalf("expected dialect mysql, got %q", pe.Dialect)
-	}
-
-	if pe.GuidanceCode != "parser_upgrade_candidate" {
-		t.Fatalf("expected guidance_code parser_upgrade_candidate, got %q", pe.GuidanceCode)
-	}
-
-	const expectedRef = "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500"
-	if pe.EvidenceRef != expectedRef {
-		t.Fatalf("expected evidence_ref %q, got %q", expectedRef, pe.EvidenceRef)
-	}
-	if !strings.HasPrefix(pe.EvidenceRef, "https://github.com/Fanduzi/DeltaScope/") {
-		t.Fatalf("evidence_ref must start with GitHub base URL, got %q", pe.EvidenceRef)
-	}
-
-	if strings.Contains(pe.EvidenceRef, "v_users") {
-		t.Fatal("evidence_ref must not contain raw SQL object names")
-	}
-	if strings.Contains(pe.GuidanceCode+pe.EvidenceRef+pe.Reason+pe.ActionHint, "v_users") {
-		t.Fatal("diagnostic fields must not contain raw SQL object names")
-	}
-	if strings.Contains(strings.ToLower(pe.GuidanceCode+pe.EvidenceRef+pe.Reason+pe.ActionHint+err.Error()), "near ") {
-		t.Fatal("diagnostic must not contain raw parser near-text fragments")
+	if !sawWarn {
+		t.Fatalf("expected ddl.mysql.tablespace.alter.warn finding, got %+v", result.Statements)
 	}
 }
 

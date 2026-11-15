@@ -128,15 +128,20 @@ func TestQueryCatalog_ClassificationFilter(t *testing.T) {
 			t.Errorf("got classification %q, want parser_error", e.Classification)
 		}
 	}
-	// All dialects should have parser_error entries.
+	// TiDB and PostgreSQL keep parser_error entries; MySQL's last
+	// parser_error form (ALTER TABLESPACE ENGINE) graduated to
+	// finding_covered under T57/#140.
 	seenDialects := map[string]bool{}
 	for _, e := range res.Entries {
 		seenDialects[e.Dialect] = true
 	}
-	for _, d := range []string{"mysql", "tidb", "postgresql"} {
+	for _, d := range []string{"tidb", "postgresql"} {
 		if !seenDialects[d] {
 			t.Errorf("no parser_error entries for dialect %q", d)
 		}
+	}
+	if seenDialects["mysql"] {
+		t.Error("mysql must not retain parser_error catalog entries")
 	}
 }
 
@@ -200,23 +205,30 @@ func TestQueryCatalog_SearchCaseInsensitive(t *testing.T) {
 func TestQueryCatalog_CombinedFilters(t *testing.T) {
 	entries := loadTestCatalog(t)
 
-	// dialect=mysql + classification=parser_error should be a subset of dialect=mysql alone.
-	mysqlAll := QueryCatalog(entries, CatalogQuery{Dialect: "mysql"})
-	mysqlPE := QueryCatalog(entries, CatalogQuery{Dialect: "mysql", Classification: "parser_error"})
+	// dialect=postgresql + classification=parser_error should be a subset of dialect=postgresql alone.
+	pgAll := QueryCatalog(entries, CatalogQuery{Dialect: "postgresql"})
+	pgPE := QueryCatalog(entries, CatalogQuery{Dialect: "postgresql", Classification: "parser_error"})
 
-	if mysqlPE.Total > mysqlAll.Total {
-		t.Errorf("combined filter returned more (%d) than dialect-only (%d)", mysqlPE.Total, mysqlAll.Total)
+	if pgPE.Total > pgAll.Total {
+		t.Errorf("combined filter returned more (%d) than dialect-only (%d)", pgPE.Total, pgAll.Total)
 	}
-	if mysqlPE.Total == 0 {
-		t.Error("expected mysql parser_error entries")
+	if pgPE.Total == 0 {
+		t.Error("expected postgresql parser_error entries")
 	}
-	for _, e := range mysqlPE.Entries {
-		if e.Dialect != "mysql" {
-			t.Errorf("got dialect %q, want mysql", e.Dialect)
+	for _, e := range pgPE.Entries {
+		if e.Dialect != "postgresql" {
+			t.Errorf("got dialect %q, want postgresql", e.Dialect)
 		}
 		if e.Classification != "parser_error" {
 			t.Errorf("got classification %q, want parser_error", e.Classification)
 		}
+	}
+
+	// MySQL retains zero parser_error entries — its only candidate
+	// graduated to finding_covered under T57/#140.
+	mysqlPE := QueryCatalog(entries, CatalogQuery{Dialect: "mysql", Classification: "parser_error"})
+	if mysqlPE.Total != 0 {
+		t.Errorf("expected zero mysql parser_error entries, got %d", mysqlPE.Total)
 	}
 }
 

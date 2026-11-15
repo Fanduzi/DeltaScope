@@ -545,6 +545,8 @@ Feasibility bucket facts:
 | Bucket | MySQL | TiDB | PostgreSQL | Total |
 |---|---:|---:|---:|---:|
 | `parser_upgrade_candidate` | 5 | 0 | 5 | 10 |
+
+> Graduation note: the MySQL `ALTER TABLESPACE ... ENGINE` form graduated to finding-covered behavior in T57 (see the DDL coverage catalog); the bucket counts above describe the v0.250.0 evidence pack.
 | `bounded_fallback_candidate` | 1 | 3 | 0 | 4 |
 | `product_unsupported_or_inapplicable` | 0 | 6 | 0 | 6 |
 | `unsafe_fallback_defer` | 9 | 0 | 0 | 9 |
@@ -1489,8 +1491,8 @@ All filters are optional. Multiple filters combine as AND conditions.
 ### Examples
 
 ```bash
-# MySQL parser-upgrade candidates
-deltascope ddl-coverage --dialect mysql --classification parser_error --guidance-code parser_upgrade_candidate
+# Parser-upgrade candidates (MySQL has none remaining — ALTER TABLESPACE ENGINE graduated in T57)
+deltascope ddl-coverage --dialect postgresql --classification parser_error --guidance-code parser_upgrade_candidate
 
 # PostgreSQL DROP SUBSCRIPTION in JSON
 deltascope ddl-coverage --dialect postgresql --search "drop subscription" --format json

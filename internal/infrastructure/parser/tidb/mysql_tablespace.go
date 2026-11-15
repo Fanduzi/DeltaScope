@@ -239,12 +239,18 @@ func mysqlTablespaceAlter(sqlText, kind string, nameTok sqlTok, rest []sqlTok) (
 		decl.Encryption = &on
 		i = next
 	default:
-		// The two capability-gated scalar members may also lead the
-		// member list — the trailing-member loop below consumes them
-		// from position 0.
+		// The scalar members may also lead the member list — the
+		// trailing-member loop below consumes them from position 0.
+		// ENGINE-led ALTER is the documented `ALTER TABLESPACE name
+		// ENGINE [=] engine` form whose only member is the engine
+		// clause (T57 parser-upgrade candidate).
 		if !rest[i].wordIs(sqlText, "autoextend_size") &&
-			!rest[i].wordIs(sqlText, "engine_attribute") {
+			!rest[i].wordIs(sqlText, "engine_attribute") &&
+			!rest[i].wordIs(sqlText, "engine") {
 			return nil, false
+		}
+		if rest[i].wordIs(sqlText, "engine") {
+			decl.AlterAction = "engine"
 		}
 	}
 	// Optional trailing members: ENGINE and scalar options.

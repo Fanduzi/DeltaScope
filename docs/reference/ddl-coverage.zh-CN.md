@@ -154,8 +154,8 @@ deltascope ddl-coverage [flags]
 #### 文本输出（默认）
 
 ```text
-DIALECT  CLASSIFICATION  FAMILY          FORM                         GUIDANCE
-mysql    parser_error    alter_table  ALTER TABLESPACE ENGINE parser_upgrade_candidate
+DIALECT    CLASSIFICATION  FAMILY       FORM                     GUIDANCE
+postgresql parser_error    constraints  ALTER CONSTRAINT INHERIT parser_upgrade_candidate
 
 1 entries
 ```
@@ -171,15 +171,15 @@ mysql    parser_error    alter_table  ALTER TABLESPACE ENGINE parser_upgrade_can
     "total": 1,
     "returned": 1,
     "filters": {
-      "dialect": "mysql",
+      "dialect": "postgresql",
       "classification": "parser_error"
     }
   },
   "entries": [
     {
-      "dialect": "mysql",
-      "family": "alter_table",
-      "form": "ALTER TABLESPACE ENGINE",
+      "dialect": "postgresql",
+      "family": "constraints",
+      "form": "ALTER CONSTRAINT INHERIT",
       "classification": "parser_error",
       "finding_rule_ids": null,
       "guidance_code": "parser_upgrade_candidate",
@@ -194,10 +194,10 @@ JSON 输出包含 `version`、`summary`（含 `total`、`returned` 和当前 `fi
 
 ### 示例
 
-MySQL parser-upgrade 候选：
+parser-upgrade 候选（MySQL 已无剩余 —— ALTER TABLESPACE ENGINE 已在 T57 毕业）：
 
 ```bash
-deltascope ddl-coverage --dialect mysql --classification parser_error --guidance-code parser_upgrade_candidate
+deltascope ddl-coverage --dialect postgresql --classification parser_error --guidance-code parser_upgrade_candidate
 ```
 
 PostgreSQL DROP SUBSCRIPTION（JSON 格式）：
