@@ -473,6 +473,7 @@ func columnFromDef(column *pg_query.ColumnDef) spec.Column {
 		}
 	}
 	applyGeneratedIdentityFacts(&result, column)
+	result.PGGeneration = pgGenerationFromDef(column)
 	return result
 }
 

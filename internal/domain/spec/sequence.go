@@ -3,8 +3,8 @@ package spec
 import "strings"
 
 // SequenceOptionKind names one authored sequence option member. Values are the
-// bounded vocabulary TiDB 8.5 accepts on CREATE/ALTER SEQUENCE; duplicate
-// declarations keep authored order rather than collapsing into a map.
+// bounded vocabulary used by TiDB 8.5 sequence declarations and PostgreSQL
+// identity sequence options; duplicates retain authored order, never a map.
 type SequenceOptionKind string
 
 const (

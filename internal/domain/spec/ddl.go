@@ -460,6 +460,8 @@ type Column struct {
 	GeneratedWhen             string         `json:"generated_when,omitempty"`
 	IsIdentity                bool           `json:"is_identity,omitempty"`
 	IdentityOptions           map[string]any `json:"identity_options,omitempty"`
+	// PGGeneration retains lossless authored facts for bounded declaration checks.
+	PGGeneration *PGColumnGeneration `json:"-"`
 	// AutoRandom marks a parsed TiDB AUTO_RANDOM column attribute. MySQL has
 	// no such feature, so it is a vendor boundary there (owner T23).
 	AutoRandom bool `json:"auto_random,omitempty"`

@@ -3952,6 +3952,17 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 
 func cloneColumn(in spec.Column) spec.Column {
 	out := in
+	if in.PGGeneration != nil {
+		generation := *in.PGGeneration
+		generation.Options = append([]spec.SequenceOption(nil), in.PGGeneration.Options...)
+		for i, option := range generation.Options {
+			if option.Value != nil {
+				value := *option.Value
+				generation.Options[i].Value = &value
+			}
+		}
+		out.PGGeneration = &generation
+	}
 	if in.IdentityOptions != nil {
 		out.IdentityOptions = make(map[string]any, len(in.IdentityOptions))
 		for key, value := range in.IdentityOptions {

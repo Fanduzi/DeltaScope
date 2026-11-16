@@ -2,7 +2,14 @@
 
 Date: 2026-11-16
 
-Status: **Proposed — requires user approval before implementation**
+Status: **Program active — routine-security slice shipped; bounded PG generated/identity tranche approved**
+
+## Program progress
+
+- **Routine security slice completed:** implementation `780585f1c391`, shipping/evidence commit `795b47b07aed`; pushed to `main` on 2026-11-16. Single-HEAD TASK=all at `795b47b0`: 50 tasks, 3383/3383 cases, 59,515 assertions; `/tmp/ddl-golden-routine-all/all/artifact.json` validates. [Lint/unit CI](https://github.com/Fanduzi/DeltaScope/actions/runs/43881361921) and [TLS E2E CI](https://github.com/Fanduzi/DeltaScope/actions/runs/43881362072) succeeded. Security-bearing CREATE rows remain mixed; ALTER moves generic to mixed. Whole-row semantically_checked remains 163. Neighboring routine-body/DROP backlog is not completed by association.
+- **Next:** PostgreSQL generated/identity, following relative priority 2 below, on `milestone/pg-generated-identity` from `795b47b0`. Operator approved bounded CREATE TABLE / ADD COLUMN declaration validity plus explicit identity CYCLE review, **both default-on**, including reject/review impact. Extractor work is required first: legacy projections drop int64 options, collapse duplicates, and omit array/NULL facts. No expression-legality, existing-column transition or runtime sequence-state claim. See [decision](../decisions/2026-11-16-postgresql-generated-identity-governance.md).
+- The original research, inventory counts and estimates below are historical scope, not a claim that all backlog dimensions in a shipped family are closed.
+
 
 Research base: `26c8fef6790145e46398397e3fe33742830bf62f`
 
