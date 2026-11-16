@@ -48,6 +48,9 @@ func pgIdentityTypeWidth(t *pg_query.TypeName) int {
 	if len(t.GetArrayBounds()) > 0 {
 		return -1
 	}
+	if len(t.GetTypmods()) > 0 || t.GetSetof() {
+		return 0
+	}
 	names := stringValuesFromNodes(t.GetNames())
 	if len(names) == 2 && names[0] == "pg_catalog" {
 		switch names[1] {
