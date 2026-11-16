@@ -946,6 +946,8 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterEventNotice, construct: newMySQLTiDBAlterEventNoticeRule},
 		{ruleID: ruleIDDropEventNotice, construct: newMySQLTiDBDropEventNoticeRule},
 		{ruleID: ruleIDEventEnabledExecutionWarn, construct: newEventEnabledExecutionWarnRule},
+		{ruleID: ruleIDPGGenerationDeclarationValid, construct: newPGGenerationDeclarationRule},
+		{ruleID: ruleIDPGIdentityCycleWarn, construct: newPGIdentityCycleRule},
 		{ruleID: ruleIDRoutineSecurityDefinerWarn, construct: newMySQLRoutineSecurityDefinerRule},
 		// T28: routine-body variable shadowing analysis.
 		{ruleID: ruleIDRoutineVariableShadowingWarn, construct: newMySQLTiDBRoutineVariableShadowingRule},

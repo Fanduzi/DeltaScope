@@ -519,6 +519,8 @@ const (
 	ruleIDAlterEventNotice               = "ddl.alter_event.notice"
 	ruleIDDropEventNotice                = "ddl.drop_event.notice"
 	ruleIDEventEnabledExecutionWarn      = "ddl.event.enabled_execution.warn"
+	ruleIDPGGenerationDeclarationValid   = "ddl.pg.column.generation.declaration.valid"
+	ruleIDPGIdentityCycleWarn            = "ddl.pg.column.identity.cycle.warn"
 	ruleIDRoutineSecurityDefinerWarn     = "ddl.routine.security.definer.warn"
 	ruleIDRoutineVariableShadowingWarn   = "ddl.routine.variable_shadowing.warn"
 	ruleIDCreateUserNotice               = "ddl.create_user.notice"

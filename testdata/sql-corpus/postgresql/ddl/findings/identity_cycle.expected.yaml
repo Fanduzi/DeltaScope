@@ -1,0 +1,12 @@
+name: identity_cycle
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 2
+  unsupported:
+    count: 0
+  findings:
+    include: [ddl.pg.column.identity.cycle.warn]
+    exclude: [ddl.pg.column.generation.declaration.valid]

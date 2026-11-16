@@ -1,0 +1,13 @@
+name: generation_declaration_disabled
+dialect: postgresql
+category: ddl
+config:
+  rules:
+    ddl.pg.column.generation.declaration.valid:
+      enabled: false
+    ddl.pg.column.identity.cycle.warn:
+      enabled: false
+expect:
+  parse_ok: true
+  findings:
+    exclude: [ddl.pg.column.generation.declaration.valid, ddl.pg.column.identity.cycle.warn]

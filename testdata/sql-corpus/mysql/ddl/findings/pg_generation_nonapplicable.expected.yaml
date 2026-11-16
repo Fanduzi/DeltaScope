@@ -1,0 +1,7 @@
+name: pg_generation_nonapplicable
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  findings:
+    exclude: [ddl.pg.column.generation.declaration.valid, ddl.pg.column.identity.cycle.warn]

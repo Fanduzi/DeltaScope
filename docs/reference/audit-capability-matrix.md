@@ -49,6 +49,17 @@ For `CREATE TABLE t → PROCEDURE → ADD c → CREATE INDEX idx_c(c)` under the
 | MySQL DROP | complete, lifecycle notice only | pass/complete, nil error | review/unverified, nil error |
 | TiDB DROP | incomplete, vendor boundary | review/incomplete, unsupported error | review/incomplete, unsupported error |
 
+### PostgreSQL generated/identity declarations
+
+| Rule ID | PostgreSQL | MySQL / TiDB | Metadata |
+|---------|------------|--------------|----------|
+| `ddl.pg.column.generation.declaration.valid` | Default-on blocker for bounded CREATE TABLE / ADD COLUMN declaration conflicts, proven identity scalar type and sequence bounds | Not applicable | Not required |
+| `ddl.pg.column.identity.cycle.warn` | Default-on warning for unambiguous applicable identity CYCLE; omission/NO CYCLE silent | Not applicable | Not required |
+
+Behavior change approved: eligible ADD COLUMN audits can now reject/review. Ordered generation/option facts preserve duplicates and int64 values; unknown or repeated facts produce `unproven_generation_declaration` evidence gaps, not guessed safe outcomes. New findings never include expression SQL or numeric option payloads. No expression legality, privileges, uniqueness, runtime sequence progress or existing-column identity-transition validation is added. Native catalog/refusal/no-audit-execution evidence is on PostgreSQL 17.7 (T36/T37); this does not complete the general generated-expression, partition or ALTER attribute rows.
+
+Maintainer notes: [decision](../decisions/2026-11-16-postgresql-generated-identity-governance.md).
+
 ### MySQL stored-routine security context
 
 | Rule ID | MySQL | TiDB | PostgreSQL | Metadata |

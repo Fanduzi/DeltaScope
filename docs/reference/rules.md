@@ -555,6 +555,21 @@ These rules guard against MySQL and TiDB database/schema lifecycle DDL operation
 
 ---
 
+## DDL: PostgreSQL Generated/Identity Declarations (2 rules)
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.column.generation.declaration.valid` | Checks authored CREATE TABLE / ADD COLUMN generation declarations for DEFAULT/NULL conflicts, proven scalar integer identity type and identity sequence bounds | blocker | No |
+| `ddl.pg.column.identity.cycle.warn` | Warns on an unambiguous identity CYCLE declaration because values may be reused | warning | No |
+
+Both rules are default-enabled; the resulting reject/review impact is explicitly approved. ALWAYS and BY DEFAULT without CYCLE, NO CYCLE, and omitted cycling emit no cycling finding. A proven invalid declaration suppresses the cycling warning. INCREMENT 0, nonpositive CACHE, type-incompatible MIN/MAX, MIN ≥ MAX and START outside effective bounds are validity findings; omitted sequence bounds use PostgreSQL's documented CREATE defaults and increment direction. Unresolved/custom type names, repeated generation clauses/options, unmodeled options and values outside modeled int64 remain `unproven_generation_declaration` evidence gaps (`column.generation_declaration`, `column.identity_type`, `column.identity_options`), never last-wins conclusions.
+
+Scope is PostgreSQL CREATE TABLE and ALTER TABLE ADD COLUMN only. Existing-column ADD/SET/DROP IDENTITY and SET EXPRESSION keep their prior checks. Generated-expression legality, volatility and dependencies, inheritance/LIKE/partition semantics, privileges, uniqueness and runtime sequence progress are not validated. New finding fields contain bounded table/column/action/generation/mode/reason only, not expression SQL or numeric option payloads. Existing authored SQL output is unchanged. Native evidence targets PostgreSQL 17.7; parser errors and other unsupported boundaries stay explicit.
+
+Maintainer notes: [decision](../decisions/2026-11-16-postgresql-generated-identity-governance.md).
+
+---
+
 ## DDL: MySQL Stored-Routine Security (1 rule)
 
 | Rule ID | Description | Default Level | Metadata Required |

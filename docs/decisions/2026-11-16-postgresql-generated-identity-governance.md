@@ -92,9 +92,18 @@ cover CREATE/ADD COLUMN, both modes, repeated declarations/options, explicit
 NULL, array/custom types, signed int64 extremes and overflow. Focused parser
 and application tests pass. Clone tests prove source facts are not mutated.
 
-Subsequent implementation commits bind rule, corpus and native evidence to the
-exact inventory subactions; this extractor commit alone claims no promoted
-inventory cells or new native/aggregate readiness.
+- `go test ./...` and `CGO_ENABLED=1 go test -tags postgresql ./...` pass
+  with the two registered default-on rules, new corpus cases and public SDK /
+  HTTP / MCP parity tests. The SDK test retains a PG18 parser-error sibling
+  alongside the cycling warning; no candidate is silently promoted.
+- Rule tests cover native integer defaults/direction, int64 extrema, every
+  refusal category, disabled/configured-level paths, nil/wrong-dialect and
+  existing-column controls, repeated/unmodeled declarations and evidence gaps.
+- New findings are checked for expression/numeric-payload leakage. Existing
+  authored SQL behavior remains unchanged.
+
+Golden and inventory bindings are committed as the next focused evidence slice;
+only the exact checked declaration dimensions may gain feature coverage.
 
 ## Consequences
 

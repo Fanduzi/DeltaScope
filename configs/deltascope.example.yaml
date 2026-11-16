@@ -1007,6 +1007,13 @@ rules:
     level: warning
     params:
 
+  # PostgreSQL CREATE/ADD COLUMN generation declarations; bounded, not expression analysis.
+  ddl.pg.column.generation.declaration.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.column.identity.cycle.warn:
+    enabled: true
+    level: warning
   # MySQL stored routines: CREATE defaults to DEFINER; ALTER warns only when authored.
   ddl.routine.security.definer.warn:
     enabled: true

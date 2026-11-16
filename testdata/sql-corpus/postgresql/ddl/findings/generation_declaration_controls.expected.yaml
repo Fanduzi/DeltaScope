@@ -1,0 +1,9 @@
+name: generation_declaration_controls
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    exclude: [ddl.pg.column.generation.declaration.valid, ddl.pg.column.identity.cycle.warn]

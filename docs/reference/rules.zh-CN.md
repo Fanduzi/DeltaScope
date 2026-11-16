@@ -537,6 +537,21 @@ TiDB 的 ALTER VIEW 和裸 CHECK OPTION 仍是厂商边界。缺少必要事实�
 
 ---
 
+## DDL：PostgreSQL 生成列与标识列声明（2 条规则）
+
+| 规则 ID | 描述 | 默认级别 | 需要元数据 |
+|---------|------|:--------:|:----------:|
+| `ddl.pg.column.generation.declaration.valid` | 检查 CREATE TABLE / ADD COLUMN 中的 DEFAULT/NULL 冲突、已证明的标识列整数标量类型及序列边界 | blocker | 否 |
+| `ddl.pg.column.identity.cycle.warn` | 显式、无歧义的标识列 CYCLE 声明可能重复使用数值，需复核 | warning | 否 |
+
+两条规则默认启用；新增 reject/review 影响已获明确批准。不带 CYCLE 的 ALWAYS / BY DEFAULT、NO CYCLE 和省略循环选项均不触发循环告警。声明已被证明无效时不再发循环告警。INCREMENT 0、非正 CACHE、超出类型范围的 MIN/MAX、MIN ≥ MAX 及范围外的 START 触发有效性 finding；省略的序列边界依据 PostgreSQL 文档规定的 CREATE 默认值和递增方向确定。未解析的自定义类型、重复声明或选项、未建模选项及超出 int64 的数值保留为 `unproven_generation_declaration` 证据缺口，所需事实为 `column.generation_declaration`、`column.identity_type` 或 `column.identity_options`，不采用最后一个值推断。
+
+仅适用于 PostgreSQL CREATE TABLE 和 ALTER TABLE ADD COLUMN。既有列上的 ADD/SET/DROP IDENTITY、SET EXPRESSION 保持原有检查。不验证生成表达式的合法性、易变性和依赖，也不判断继承、LIKE、分区、权限、唯一性或序列运行状态。新增 finding 仅携带表、列、操作、生成类别、模式和原因，不复制表达式或序列数值选项；原有调用者 SQL 输出不变。原生证据使用 PostgreSQL 17.7，解析错误和其他未支持边界仍明确保留。
+
+维护者说明：[决策记录](../decisions/2026-11-16-postgresql-generated-identity-governance.md)。
+
+---
+
 ## DDL：MySQL 存储例程安全上下文（1 条规则）
 
 | 规则 ID | 描述 | 默认级别 | 需要元数据 |

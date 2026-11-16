@@ -233,6 +233,12 @@ func summaryForRule(ruleID string) string {
 }
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
+	if ruleID == "ddl.pg.column.generation.declaration.valid" {
+		return "PostgreSQL CREATE TABLE / ADD COLUMN bounded generated/identity declarations: DEFAULT/NULL conflicts, proven scalar integer type and identity sequence bounds. Repeated or incomplete facts stay evidence gaps. No expression legality, existing-column transition or runtime sequence-state proof."
+	}
+	if ruleID == "ddl.pg.column.identity.cycle.warn" {
+		return "PostgreSQL CREATE TABLE / ADD COLUMN explicit identity CYCLE warns about possible value reuse. NO CYCLE and omission are silent; unresolved declarations stay evidence gaps, not last-wins guesses."
+	}
 	if ruleID == "ddl.routine.security.definer.warn" {
 		return "MySQL stored PROCEDURE/FUNCTION security-context review: explicit SQL SECURITY DEFINER on CREATE/ALTER, or the documented DEFINER default on CREATE only. INVOKER and ALTER omission are silent; no account privilege resolution or body analysis."
 	}
@@ -258,6 +264,10 @@ func statementKindsForRule(ruleID string) []string {
 
 func triggerExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.column.generation.declaration.valid":
+		return "CREATE TABLE t (id bigint GENERATED ALWAYS AS IDENTITY (INCREMENT 0));"
+	case ruleID == "ddl.pg.column.identity.cycle.warn":
+		return "CREATE TABLE t (id bigint GENERATED ALWAYS AS IDENTITY (CYCLE));"
 	case ruleID == "ddl.routine.security.definer.warn":
 		return "CREATE PROCEDURE p() SQL SECURITY DEFINER SET @x=1;"
 	case ruleID == "ddl.view.target.valid":
@@ -285,6 +295,8 @@ func triggerExampleForRule(ruleID string) string {
 
 func validExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.column.generation.declaration.valid", ruleID == "ddl.pg.column.identity.cycle.warn":
+		return "CREATE TABLE t (id bigint GENERATED ALWAYS AS IDENTITY (NO CYCLE));"
 	case ruleID == "ddl.routine.security.definer.warn":
 		return "CREATE PROCEDURE p() SQL SECURITY INVOKER SET @x=1;"
 	case ruleID == "ddl.view.target.valid":
@@ -333,6 +345,10 @@ func configExampleForRule(ruleID string, policy domainpolicy.RulePolicy) string 
 
 func remediationForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.column.generation.declaration.valid":
+		return "Correct generation/default/nullability conflicts and use valid integer sequence bounds; resolve unproven declaration facts."
+	case ruleID == "ddl.pg.column.identity.cycle.warn":
+		return "Review potential value reuse and uniqueness requirements; use NO CYCLE when wraparound is not intended."
 	case ruleID == "ddl.routine.security.definer.warn":
 		return "Review whether definer-context execution is intended; use SQL SECURITY INVOKER when caller-context execution is appropriate."
 	case strings.HasSuffix(ruleID, ".require"):
@@ -628,6 +644,7 @@ func categoryForPGRule(ruleID string) string {
 		{"drop_index", "index"},
 		{"alter_index", "index"},
 		{"table", "table"},
+		{"column", "column"},
 		{"drop_schema", "schema"},
 		{"create_schema", "schema"},
 		{"alter_schema", "schema"},
