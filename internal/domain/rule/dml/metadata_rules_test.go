@@ -30,7 +30,7 @@ func TestTableExistenceRuleUsesOnlyDefinitiveMySQLTiDBSnapshots(t *testing.T) {
 		{name: "missing delete", dialect: spec.DialectMySQL, operation: spec.DMLOperationDelete, metadata: missingTableMetadata(), want: true},
 		{name: "existing table", dialect: spec.DialectMySQL, operation: spec.DMLOperationUpdate, metadata: &spec.Metadata{TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true}}, want: false},
 		{name: "no snapshot", dialect: spec.DialectMySQL, operation: spec.DMLOperationUpdate, want: false},
-		{name: "postgresql", dialect: spec.DialectPostgreSQL, operation: spec.DMLOperationUpdate, metadata: missingTableMetadata(), want: false},
+		{name: "postgresql", dialect: spec.DialectPostgreSQL, operation: spec.DMLOperationUpdate, metadata: missingTableMetadata(), want: true},
 		{name: "unknown operation", dialect: spec.DialectMySQL, operation: spec.DMLOperationUnknown, metadata: missingTableMetadata(), want: false},
 	}
 

@@ -167,18 +167,19 @@ func TestEnrichMetadataKeepsRequestSchemaForPostgreSQLAndDDL(t *testing.T) {
 			if err != nil {
 				t.Fatalf("enrich: %v", err)
 			}
-			// PostgreSQL keeps the request schema for provider reads (legacy
-			// contract); MySQL/TiDB follow the effective statement identity —
-			// an explicit table qualifier wins over the request schema.
-			wantCall := "app.users"
-			if tc.dialect != spec.DialectPostgreSQL {
-				wantCall = "tenant_a.users"
+			// A DML statement's explicit schema qualifier wins over the request
+			// schema for provider reads on every dialect; DDL keeps the request
+			// schema for provider reads (legacy contract).
+			wantCall := "tenant_a.users"
+			wantMetadataSchema := "app"
+			if tc.statement.DML != nil {
+				wantMetadataSchema = "tenant_a"
 			}
 			if len(provider.snapshotCalls) != 1 || provider.snapshotCalls[0] != wantCall {
 				t.Fatalf("snapshot calls = %#v, want %s", provider.snapshotCalls, wantCall)
 			}
-			if enriched[0].Metadata == nil || enriched[0].Metadata.Schema != "app" {
-				t.Fatalf("metadata schema = %#v, want app", enriched[0].Metadata)
+			if enriched[0].Metadata == nil || enriched[0].Metadata.Schema != wantMetadataSchema {
+				t.Fatalf("metadata schema = %#v, want %s", enriched[0].Metadata, wantMetadataSchema)
 			}
 		})
 	}

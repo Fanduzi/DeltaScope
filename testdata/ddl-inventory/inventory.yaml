@@ -15462,7 +15462,7 @@ rows:
         audit_status: audited
         evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.delete.probes.txt", "file:testdata/ddl-golden/T54.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=audited · feature findings: postgresql17:dml.where.require,dml.impact.ratio.max_percent. Golden acceptance T54 (HEAD dccbccb6, 32 cases, 346 assertions): postgresql DML on postgres17 — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=audited · feature findings: postgresql17:dml.where.require,dml.impact.ratio.max_percent,dml.table.exists.require (metadata-connected, T60). Golden acceptance T54 (HEAD dccbccb6, 32 cases, 346 assertions): postgresql DML on postgres17 — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official delete statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
@@ -15489,7 +15489,7 @@ rows:
         audit_status: audited
         evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.insert.probes.txt", "file:testdata/ddl-golden/T54.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=audited · feature findings: postgresql17:dml.insert.select.forbid. Golden acceptance T54 (HEAD dccbccb6, 32 cases, 346 assertions): postgresql DML on postgres17 — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=audited · feature findings: postgresql17:dml.insert.select.forbid,dml.table.exists.require (metadata-connected, T60). Golden acceptance T54 (HEAD dccbccb6, 32 cases, 346 assertions): postgresql DML on postgres17 — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official insert statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"
@@ -15597,7 +15597,7 @@ rows:
         audit_status: audited
         evidence: ["file:testdata/ddl-inventory/evidence/postgresql.dml.update.probes.txt", "file:testdata/ddl-golden/T54.json"]
 
-    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=audited · feature findings: postgresql17:dml.where.require,dml.impact.ratio.max_percent. Golden acceptance T54 (HEAD dccbccb6, 32 cases, 346 assertions): postgresql DML on postgres17 — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
+    status_evidence: "2026-11-15 T50 probe (HEAD cad11b48): postgresql17=audited · feature findings: postgresql17:dml.where.require,dml.impact.ratio.max_percent,dml.table.exists.require (metadata-connected, T60). Golden acceptance T54 (HEAD dccbccb6, 32 cases, 346 assertions): postgresql DML on postgres17 — every cell pinned on live anchors plus CLI dialect probes; statuses confirmed by execution, not only probes."
     targets: "official update statement family forms"
     acceptance:
       dimensions: "verb forms, modifier clauses, vendor boundaries, version applicability"

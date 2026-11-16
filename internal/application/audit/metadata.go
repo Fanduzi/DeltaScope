@@ -918,7 +918,7 @@ func targetTableName(statement spec.Statement) string {
 }
 
 func metadataTargetSchema(request *MetadataRequest, statement spec.Statement) string {
-	if (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB) && statement.DML != nil {
+	if statement.DML != nil {
 		if targets := statement.DML.MutationTargetTables(); len(targets) > 0 {
 			if schema := strings.TrimSpace(targets[0].Schema); schema != "" {
 				return schema

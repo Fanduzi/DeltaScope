@@ -22,7 +22,7 @@ func (r tableExistenceRule) ID() string { return ruleIDTableExistsRequire }
 
 func (r tableExistenceRule) AppliesTo(statement spec.Statement) bool {
 	// ponytail: multi-target mutations fail closed; add per-target snapshots if they must be covered.
-	return (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB) &&
+	return (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB || statement.Dialect == spec.DialectPostgreSQL) &&
 		statement.Kind == spec.KindDML &&
 		statement.DML != nil &&
 		(statement.DML.Operation == spec.DMLOperationInsert ||
