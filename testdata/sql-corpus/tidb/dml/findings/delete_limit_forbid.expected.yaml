@@ -1,0 +1,13 @@
+name: delete_limit_forbid
+dialect: tidb
+category: dml
+expect:
+  parse_ok: true
+  statement_kind: dml
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - dml.where.require
+      - dml.limit.forbid
+    exclude: []

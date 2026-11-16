@@ -1,0 +1,7 @@
+name: select_into_var_parser_error
+dialect: tidb
+category: dml
+expect:
+  parse_ok: false
+  diagnostics:
+    parser_error_count: 1

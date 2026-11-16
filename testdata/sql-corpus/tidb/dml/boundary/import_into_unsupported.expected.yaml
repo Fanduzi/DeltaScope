@@ -1,0 +1,9 @@
+name: import_into_unsupported
+dialect: tidb
+category: dml
+expect:
+  parse_ok: true
+  unsupported:
+    count: 1
+    include:
+      - import_into

@@ -1,0 +1,19 @@
+name: postgresql_metadata_existing_table_update
+dialect: postgresql
+category: dml
+expect:
+  parse_ok: true
+  statement_kind: dml
+  operation: update
+  unsupported:
+    count: 0
+  findings:
+    include: []
+    exclude:
+      - dml.table.exists.require
+      - dml.where.require
+metadata:
+  schema: app
+  tables:
+    users:
+      exists: true

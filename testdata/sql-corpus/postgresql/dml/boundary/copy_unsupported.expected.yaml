@@ -1,0 +1,7 @@
+name: postgresql_offline_copy_unsupported
+dialect: postgresql
+category: dml
+expect:
+  parse_ok: true
+  unsupported:
+    count: 1

@@ -1,0 +1,1 @@
+LOAD DATA INFILE 'infile.csv' INTO TABLE t;

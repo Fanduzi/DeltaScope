@@ -1,0 +1,9 @@
+name: postgresql_offline_update_returning
+dialect: postgresql
+category: dml
+expect:
+  parse_ok: true
+  statement_kind: dml
+  operation: update
+  unsupported:
+    count: 0

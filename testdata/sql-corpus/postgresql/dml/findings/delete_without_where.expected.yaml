@@ -1,0 +1,13 @@
+name: postgresql_offline_delete_without_where
+dialect: postgresql
+category: dml
+expect:
+  parse_ok: true
+  statement_kind: dml
+  operation: delete
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - dml.where.require
+    exclude: []

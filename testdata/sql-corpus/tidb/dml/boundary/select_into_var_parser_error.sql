@@ -1,0 +1,1 @@
+SELECT a INTO @v FROM t;

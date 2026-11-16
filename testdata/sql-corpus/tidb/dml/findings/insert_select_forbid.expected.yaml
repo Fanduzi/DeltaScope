@@ -1,0 +1,12 @@
+name: insert_select_forbid
+dialect: tidb
+category: dml
+expect:
+  parse_ok: true
+  statement_kind: dml
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - dml.insert.select.forbid
+    exclude: []

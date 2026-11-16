@@ -1,0 +1,7 @@
+name: handler_parser_error
+dialect: mysql
+category: dml
+expect:
+  parse_ok: false
+  diagnostics:
+    parser_error_count: 1

@@ -1,0 +1,14 @@
+name: insert_multiple_rows
+dialect: mysql
+category: dml
+expect:
+  parse_ok: true
+  statement_kind: dml
+  unsupported:
+    count: 0
+  findings:
+    include: []
+    exclude:
+      - dml.where.require
+      - dml.insert.select.forbid
+      - dml.insert.on_duplicate.forbid
