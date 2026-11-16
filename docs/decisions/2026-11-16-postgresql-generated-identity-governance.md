@@ -131,9 +131,25 @@ and application tests pass. Clone tests prove source facts are not mutated.
   changes **pass→review**; new invalid ADD COLUMN declarations can reject. These
   counts do not imply general grammar or expression coverage.
 
+- The first single-HEAD aggregate at `c233fab7c3d0e020fd2eca4b071e07a817301557`
+  passes **50 tasks, 3398/3398 cases, 59,716 assertions** and validates with
+  `python3 scripts/ddl_golden.py validate --artifact
+  /tmp/ddl-golden-pg-generated-identity/all/artifact.json`. T23S initially had
+  zero executed cases: monitored startup proved TiKV `OOMKilled=true` in a
+  9.7-GiB Docker VM shared with unrelated workloads. The operator increased
+  Docker memory to 20,940,374,016 bytes; an unchanged-HEAD canonical T23S rerun
+  passed **21/21 cases, 252 assertions**, then `reaggregate` and validation
+  passed. No health-check, timeout, skip or expectation was relaxed, and no
+  unrelated container was stopped by this task.
+- The separate read-only pre-integration review found two test-only goimports
+  grouping defects; they were corrected without rule/manifest changes. This
+  changes HEAD, so the delivery must rerun TASK=all at the final commit rather
+  than claiming the earlier SHA as final evidence. Exact per-task HEADs remain
+  machine-checked by the canonical runner.
+
 The program delivery gate is a final single-HEAD TASK=all run plus artifact
 validation, followed only then by FF-only main integration and a normal push.
-The inspectable delivery artifact path is `/tmp/ddl-golden-pg-generated-identity/all/artifact.json`;
+The final rerun's delivery artifact path is `/tmp/ddl-golden-pg-generated-identity-final/all/artifact.json`;
 per-task artifacts carry their own exact `head_sha`. No aggregate-readiness
 claim is borrowed from the older routine-security baseline.
 

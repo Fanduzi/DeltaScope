@@ -1,8 +1,9 @@
 package audit
 
 import (
-	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"testing"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 func TestCloneColumnOwnsPGGeneration(t *testing.T) {

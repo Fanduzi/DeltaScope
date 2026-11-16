@@ -4,8 +4,9 @@ package mcpapi
 
 import (
 	"context"
-	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 	"testing"
+
+	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func TestAuditSQLPGGenerationWarningParity(t *testing.T) {
