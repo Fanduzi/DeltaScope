@@ -3,6 +3,29 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T27/T28 MySQL routine-security contract
+
+[T27.json](T27.json) retains its original 30 required cases and independent
+`t27-where`/`t27-routine` profiles. The `t27-sql-security` profile adds 18 CLI
+controls and three anchor-owned metadata cases (51 required cases total).
+CREATE/ALTER × procedure/function × DEFINER/INVOKER/omission is pinned without
+borrowing lifecycle-notice evidence. Unknown/repeated characteristics remain
+unverified, disabled and SONAME controls stay silent, and TiDB retains its
+vendor boundary.
+
+Each MySQL 5.7.44/8.0.46/8.4.10 metadata case audits before native definition
+creation, verifies existing modes and a body-write sentinel are unchanged,
+then the driver applies the exact header statements and independently reads
+`information_schema.ROUTINES.SECURITY_TYPE`. COMMENT-only ALTER preserves an
+existing DEFINER mode without the audit inferring it. Functions use root-owned
+`DETERMINISTIC NO SQL` definitions; binary-logging/trust values are recorded,
+not altered to hide a privilege precondition. No routine is CALLed or invoked.
+
+[T28.json](T28.json) retains its original 29 cases/profile and adds one isolated
+security-warning plus dynamic PREPARE/EXECUTE retention control (30 required
+cases). Existing protected-marker expectations are unchanged. These manifests
+are expectations, not standalone claims of executed or aggregate readiness.
+
 ## T25 MySQL tablespace family contract
 
 [T25.json](T25.json) pins the issue-#104 tablespace surface end to end:

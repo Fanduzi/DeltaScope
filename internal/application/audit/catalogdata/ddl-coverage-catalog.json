@@ -427,7 +427,8 @@
       "form": "CREATE FUNCTION",
       "classification": "finding_covered",
       "finding_rule_ids": [
-        "ddl.create_function.notice"
+        "ddl.create_function.notice",
+        "ddl.routine.security.definer.warn"
       ],
       "notes": ""
     },
@@ -437,7 +438,8 @@
       "form": "CREATE PROCEDURE",
       "classification": "finding_covered",
       "finding_rule_ids": [
-        "ddl.create_procedure.notice"
+        "ddl.create_procedure.notice",
+        "ddl.routine.security.definer.warn"
       ],
       "notes": ""
     },

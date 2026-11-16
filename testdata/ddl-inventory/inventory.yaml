@@ -2717,10 +2717,55 @@ rows:
           - gate:T27
           - gate:T28
 
-    status_evidence: "2026-09-22 CLI probe: CREATE PROCEDURE parses; only ddl.create_procedure.notice. 2026-09-24 T03 (#82): body-bearing forms record create_procedure.body incomplete evidence; params record create_procedure.option.params. 2026-11-24 T27 (#106): BEGIN..END bodies now audit statically-bounded members through the shared statement machinery (dml.where.require fires at preserved member line/column, e.g. body DELETE blocker at 1:28 in the T27 golden path); parameter lists, IF/WHILE/LOOP/REPEAT/CASE compound members, DECLARE members, and dynamic EXECUTE stayed explicit unsupported evidence — cell mixed because audited members and explicit boundaries coexist. DELIMITER wrappers are stripped client-side with offsets preserved; definitions never execute body SQL or mutate prospective state. Golden: T27.json 30 cases/336 assertions on mysql57/80/84 + tidb85 vendor boundary. 2026-11-15 T28 (#107): compound members graduate — IF/CASE branch bodies, WHILE/LOOP/REPEAT loop bodies, nested BEGIN blocks, DECLARE (variable/condition/handler/cursor), SET assignments, and PREPARE sources are modeled members; inner SQL audits through the shared path (branch merges keep only unanimous bindings, loop bodies never prove a binding survives, handler members audit in isolation). Parameter lists carry direction/name/type (the create_procedure.option.params gap is retired). Statically proven PREPARE literals audit without execution; dynamic/unresolvable sources, EXECUTE, RETURN, malformed members, and depth/size overflows stay bounded evidence (routine.body.prepare/execute_prepared/routine.body.return/routine.body.declaration/routine.body.depth/routine.body.size/routine.body.parse); ddl.routine.variable_shadowing.warn flags parameter/local name collisions. Golden: T28.json 29 cases/347 assertions on mysql57/80/84 + tidb85 vendor boundary"
+    subaction_status:
+      - subaction_id: sql-security
+        parser_status: recognized
+        audit_status: audited
+        applicability:
+          - anchor: mysql57
+            version_range: 5.7
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-golden/T27.json#sql-security
+              - file:testdata/ddl-golden/T27.json#mysql57-routine-security
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-definer
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-default
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-invoker
+              - file:testdata/sql-corpus/mysql/ddl/findings/routine_security_create_definer.expected.yaml#ddl.routine.security.definer.warn
+          - anchor: mysql80
+            version_range: 8.0
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-golden/T27.json#sql-security
+              - file:testdata/ddl-golden/T27.json#mysql80-routine-security
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-definer
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-default
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-invoker
+              - file:testdata/sql-corpus/mysql/ddl/findings/routine_security_create_definer.expected.yaml#ddl.routine.security.definer.warn
+          - anchor: mysql84
+            version_range: 8.4
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-golden/T27.json#sql-security
+              - file:testdata/ddl-golden/T27.json#mysql84-routine-security
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-definer
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-default
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-invoker
+              - file:testdata/sql-corpus/mysql/ddl/findings/routine_security_create_definer.expected.yaml#ddl.routine.security.definer.warn
+
+    status_evidence: "2026-11-16 routine security: ddl.routine.security.definer.warn reviews explicit/default CREATE DEFINER; INVOKER is silent. T27 t27-sql-security cases and mysql57/mysql80/mysql84-routine-security independently read ROUTINES.SECURITY_TYPE and prove audit non-mutation/no body execution. T28 mysql-security-dynamic-retention retains dynamic boundaries. Only the sql-security subaction is audited; body/other-characteristic boundaries keep the row mixed. Historical evidence: 2026-09-22 CLI probe: CREATE PROCEDURE parses; only ddl.create_procedure.notice. 2026-09-24 T03 (#82): body-bearing forms record create_procedure.body incomplete evidence; params record create_procedure.option.params. 2026-11-24 T27 (#106): BEGIN..END bodies now audit statically-bounded members through the shared statement machinery (dml.where.require fires at preserved member line/column, e.g. body DELETE blocker at 1:28 in the T27 golden path); parameter lists, IF/WHILE/LOOP/REPEAT/CASE compound members, DECLARE members, and dynamic EXECUTE stayed explicit unsupported evidence — cell mixed because audited members and explicit boundaries coexist. DELIMITER wrappers are stripped client-side with offsets preserved; definitions never execute body SQL or mutate prospective state. Golden: T27.json 30 cases/336 assertions on mysql57/80/84 + tidb85 vendor boundary. 2026-11-15 T28 (#107): compound members graduate — IF/CASE branch bodies, WHILE/LOOP/REPEAT loop bodies, nested BEGIN blocks, DECLARE (variable/condition/handler/cursor), SET assignments, and PREPARE sources are modeled members; inner SQL audits through the shared path (branch merges keep only unanimous bindings, loop bodies never prove a binding survives, handler members audit in isolation). Parameter lists carry direction/name/type (the create_procedure.option.params gap is retired). Statically proven PREPARE literals audit without execution; dynamic/unresolvable sources, EXECUTE, RETURN, malformed members, and depth/size overflows stay bounded evidence (routine.body.prepare/execute_prepared/routine.body.return/routine.body.declaration/routine.body.depth/routine.body.size/routine.body.parse); ddl.routine.variable_shadowing.warn flags parameter/local name collisions. Golden: T28.json 29 cases/347 assertions on mysql57/80/84 + tidb85 vendor boundary"
     targets: "routine identity, static body statements with original locations, security attributes"
     acceptance:
-      dimensions: "body finding on containing definition, bounded body identity, no raw-body leak"
+      dimensions: "body finding on containing definition, bounded body identity, no raw-body leak; explicit/default/INVOKER security mode with independent native catalog evidence"
       refs: ["gate:T27", "gate:T28", "file:internal/application/audit/routine_t27_test.go", "file:internal/application/audit/routine_t28_test.go", "file:testdata/ddl-golden/T27.json", "file:testdata/ddl-golden/T28.json"]
     owner: T27
 
@@ -2729,7 +2774,7 @@ rows:
     versions: ["5.7", "8.0", "8.4"]
     sources: [mysql57, mysql80, mysql84]
     family: stored-program
-    subactions: ["CREATE FUNCTION ... RETURNS ... BEGIN..END", "DETERMINISTIC"]
+    subactions: ["CREATE FUNCTION ... RETURNS ... BEGIN..END", "DETERMINISTIC", "SQL SECURITY"]
     sql_shape: "CREATE FUNCTION f() RETURNS INT RETURN 1"
     prerequisites: "same as procedure"
     status: mixed_coverage
@@ -2782,10 +2827,55 @@ rows:
           - gate:T27
           - gate:T28
 
-    status_evidence: "2026-09-22 CLI probe: parser_error on vendor-valid CREATE FUNCTION. 2026-11-24 T27 (#106): CREATE FUNCTION recognized — ddl.create_function.notice fires, SONAME UDF forms audit complete, BEGIN..END bodies audit like procedures, RETURN members record routine.body.return explicit boundary — cell mixed because audited forms and explicit member boundaries coexist; 2026-11-15 T28 (#107): function bodies gain the same control-flow/declaration/SET/PREPARE modeling as procedures — the create_function.option.params gap is retired (parameters modeled); RETURN members keep the routine.body.return boundary"
-    targets: "routine identity, return type, body statements"
+    subaction_status:
+      - subaction_id: sql-security
+        parser_status: recognized
+        audit_status: audited
+        applicability:
+          - anchor: mysql57
+            version_range: 5.7
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-golden/T27.json#sql-security
+              - file:testdata/ddl-golden/T27.json#mysql57-routine-security
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-function-definer
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-function-default
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-function-invoker
+              - file:testdata/sql-corpus/mysql/ddl/findings/routine_security_partial.expected.yaml#ddl.routine.security.definer.warn
+          - anchor: mysql80
+            version_range: 8.0
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-golden/T27.json#sql-security
+              - file:testdata/ddl-golden/T27.json#mysql80-routine-security
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-function-definer
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-function-default
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-function-invoker
+              - file:testdata/sql-corpus/mysql/ddl/findings/routine_security_partial.expected.yaml#ddl.routine.security.definer.warn
+          - anchor: mysql84
+            version_range: 8.4
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-golden/T27.json#sql-security
+              - file:testdata/ddl-golden/T27.json#mysql84-routine-security
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-function-definer
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-function-default
+              - file:testdata/ddl-golden/T27.json#mysql-security-create-function-invoker
+              - file:testdata/sql-corpus/mysql/ddl/findings/routine_security_partial.expected.yaml#ddl.routine.security.definer.warn
+
+    status_evidence: "2026-11-16 routine security: ddl.routine.security.definer.warn reviews explicit/default CREATE DEFINER; INVOKER and SONAME controls emit no new finding. T27 mysql57/mysql80/mysql84-routine-security prove native SECURITY_TYPE with root-owned DETERMINISTIC NO SQL definitions and recorded binary-logging preconditions; RETURN evidence remains incomplete alongside the warning. Only sql-security gains audited cells; the row remains mixed. Historical evidence: 2026-09-22 CLI probe: parser_error on vendor-valid CREATE FUNCTION. 2026-11-24 T27 (#106): CREATE FUNCTION recognized — ddl.create_function.notice fires, SONAME UDF forms audit complete, BEGIN..END bodies audit like procedures, RETURN members record routine.body.return explicit boundary — cell mixed because audited forms and explicit member boundaries coexist; 2026-11-15 T28 (#107): function bodies gain the same control-flow/declaration/SET/PREPARE modeling as procedures — the create_function.option.params gap is retired (parameters modeled); RETURN members keep the routine.body.return boundary"
+    targets: "routine identity, security mode, return type, body statements"
     acceptance:
-      dimensions: "body audit parity with procedures"
+      dimensions: "body audit parity with procedures; explicit/default/INVOKER security mode with independent native catalog evidence"
       refs: ["gate:T27", "gate:T28", "file:internal/application/audit/routine_t27_test.go", "file:internal/application/audit/routine_t28_test.go", "file:testdata/ddl-golden/T27.json", "file:testdata/ddl-golden/T28.json"]
     owner: T27
 
@@ -2797,17 +2887,19 @@ rows:
     subactions: ["ALTER PROCEDURE", "ALTER FUNCTION", "SQL SECURITY", "COMMENT"]
     sql_shape: "ALTER PROCEDURE p SQL SECURITY INVOKER"
     prerequisites: "none"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
+          - file:testdata/ddl-golden/T27.json#mysql57-routine-security
+          - file:testdata/sql-corpus/mysql/ddl/findings/routine_security_alter_definer.expected.yaml#ddl.routine.security.definer.warn
           - file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
@@ -2817,8 +2909,10 @@ rows:
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
+          - file:testdata/ddl-golden/T27.json#mysql80-routine-security
+          - file:testdata/sql-corpus/mysql/ddl/findings/routine_security_alter_definer.expected.yaml#ddl.routine.security.definer.warn
           - file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
@@ -2828,18 +2922,74 @@ rows:
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
+          - file:testdata/ddl-golden/T27.json#mysql84-routine-security
+          - file:testdata/sql-corpus/mysql/ddl/findings/routine_security_alter_definer.expected.yaml#ddl.routine.security.definer.warn
           - file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
           - gate:T27
 
-    status_evidence: "2026-09-22 CLI probe: parser_error on both ALTER forms. 2026-11-24 T27 (#106): ALTER PROCEDURE and ALTER FUNCTION recognized — characteristic-only attribute changes (COMMENT, SQL SECURITY, LANGUAGE, DETERMINISTIC, CONTAINS SQL/NO SQL/READS SQL DATA/MODIFIES SQL DATA) parse and emit ddl.alter_procedure.notice / ddl.alter_function.notice; DEFINER forms rejected with parser_error because MySQL 8.4 dropped DEFINER support and older anchors keep it an upgrade-candidate boundary"
+    subaction_status:
+      - subaction_id: sql-security
+        parser_status: recognized
+        audit_status: audited
+        applicability:
+          - anchor: mysql57
+            version_range: 5.7
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-golden/T27.json#sql-security
+              - file:testdata/ddl-golden/T27.json#mysql57-routine-security
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-definer
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-function-definer
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-invoker
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-function-invoker
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-omitted
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-function-omitted
+              - file:testdata/sql-corpus/mysql/ddl/findings/routine_security_alter_definer.expected.yaml#ddl.routine.security.definer.warn
+          - anchor: mysql80
+            version_range: 8.0
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-golden/T27.json#sql-security
+              - file:testdata/ddl-golden/T27.json#mysql80-routine-security
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-definer
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-function-definer
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-invoker
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-function-invoker
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-omitted
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-function-omitted
+              - file:testdata/sql-corpus/mysql/ddl/findings/routine_security_alter_definer.expected.yaml#ddl.routine.security.definer.warn
+          - anchor: mysql84
+            version_range: 8.4
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-golden/T27.json#sql-security
+              - file:testdata/ddl-golden/T27.json#mysql84-routine-security
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-definer
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-function-definer
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-invoker
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-function-invoker
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-omitted
+              - file:testdata/ddl-golden/T27.json#mysql-security-alter-function-omitted
+              - file:testdata/sql-corpus/mysql/ddl/findings/routine_security_alter_definer.expected.yaml#ddl.routine.security.definer.warn
+
+    status_evidence: "2026-11-16 routine security: ddl.routine.security.definer.warn reviews only explicit ALTER SQL SECURITY DEFINER, on both routine kinds. INVOKER and omission controls are silent; T27 mysql57/mysql80/mysql84-routine-security prove native mode changes and COMMENT preserving existing DEFINER without inferring it in the audit. The sql-security cells are audited; COMMENT/general lifecycle attributes remain notice-only, so the parent changes generic_notice to mixed_coverage, never semantically_checked. Historical evidence: 2026-09-22 CLI probe: parser_error on both ALTER forms. 2026-11-24 T27 (#106): ALTER PROCEDURE and ALTER FUNCTION recognized — characteristic-only attribute changes (COMMENT, SQL SECURITY, LANGUAGE, DETERMINISTIC, CONTAINS SQL/NO SQL/READS SQL DATA/MODIFIES SQL DATA) parse and emit ddl.alter_procedure.notice / ddl.alter_function.notice; DEFINER forms rejected with parser_error because MySQL 8.4 dropped DEFINER support and older anchors keep it an upgrade-candidate boundary"
     targets: "routine identity, attribute changes"
     acceptance:
-      dimensions: "attribute-change classification"
-      refs: ["gate:T27", "file:testdata/ddl-golden/T27.json", "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml"]
+      dimensions: "attribute-change classification; explicit DEFINER versus INVOKER and omitted-security controls with independent native catalog evidence"
+      refs: ["gate:T27", "file:testdata/ddl-golden/T27.json", "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml", "file:testdata/sql-corpus/mysql/ddl/findings/routine_security_alter_definer.expected.yaml", "file:testdata/sql-corpus/mysql/ddl/findings/routine_security_alter_omitted.expected.yaml"]
     owner: T27
 
   - id: mysql.drop-procedure-function

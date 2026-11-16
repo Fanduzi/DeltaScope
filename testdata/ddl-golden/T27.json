@@ -106,6 +106,9 @@
  },
  "policy": {
   "profiles": {
+   "t27-sql-security": {
+    "enable": {"ddl.routine.security.definer.warn": {"level": "warning"}}
+   },
    "t27-where": {
     "enable": {
      "dml.where.require": {
@@ -147,6 +150,129 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "mysql-security-create-procedure-definer", "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() SQL SECURITY DEFINER SET @x=1;",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "fail_on_triggered": false,
+    "finding_entries": [{"rule_id": "ddl.routine.security.definer.warn", "level": "warning"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "p", "kind": "procedure", "operation": "create_procedure", "security": "definer", "security_source": "authored"}}],
+    "finding_locations": [{"index": 0, "line": 1, "column": 1}]}
+  },
+  {
+   "id": "mysql-security-create-procedure-default", "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() SET @x=1;",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "fail_on_triggered": false,
+    "finding_entries": [{"rule_id": "ddl.routine.security.definer.warn", "level": "warning"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "p", "kind": "procedure", "operation": "create_procedure", "security": "definer", "security_source": "create_default"}}]}
+  },
+  {
+   "id": "mysql-security-create-procedure-invoker", "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() SQL SECURITY INVOKER SET @x=1;",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "fail_on_triggered": false}
+  },
+  {
+   "id": "mysql-security-create-function-definer", "dialect": "mysql",
+   "sql": "CREATE FUNCTION f() RETURNS INT SQL SECURITY DEFINER RETURN 1;",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 1, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 1, "unsupported": 1, "unsupported_features": ["routine.body.return"], "coverage": "incomplete", "evidence_gaps": 0, "fail_on_triggered": false,
+    "finding_entries": [{"rule_id": "ddl.routine.security.definer.warn", "level": "warning"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "f", "kind": "function", "operation": "create_function", "security": "definer", "security_source": "authored"}}]}
+  },
+  {
+   "id": "mysql-security-create-function-default", "dialect": "mysql",
+   "sql": "CREATE FUNCTION f() RETURNS INT RETURN 1;",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 1, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 1, "unsupported": 1, "unsupported_features": ["routine.body.return"], "coverage": "incomplete", "evidence_gaps": 0, "fail_on_triggered": false,
+    "finding_entries": [{"rule_id": "ddl.routine.security.definer.warn", "level": "warning"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "f", "kind": "function", "operation": "create_function", "security": "definer", "security_source": "create_default"}}]}
+  },
+  {
+   "id": "mysql-security-create-function-invoker", "dialect": "mysql",
+   "sql": "CREATE FUNCTION f() RETURNS INT SQL SECURITY INVOKER RETURN 1;",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 1, "verdict": "review", "statements": 1, "findings": 0, "diagnostics": 1, "unsupported": 1, "unsupported_features": ["routine.body.return"], "coverage": "incomplete", "evidence_gaps": 0, "fail_on_triggered": false}
+  },
+  {
+   "id": "mysql-security-alter-procedure-definer", "dialect": "mysql",
+   "sql": "ALTER PROCEDURE p SQL SECURITY DEFINER;",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "fail_on_triggered": false,
+    "finding_entries": [{"rule_id": "ddl.routine.security.definer.warn", "level": "warning"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "p", "kind": "procedure", "operation": "alter_procedure", "security": "definer", "security_source": "authored"}}]}
+  },
+  {
+   "id": "mysql-security-alter-procedure-invoker", "dialect": "mysql",
+   "sql": "ALTER PROCEDURE p SQL SECURITY INVOKER;",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "fail_on_triggered": false}
+  },
+  {
+   "id": "mysql-security-alter-procedure-omitted", "dialect": "mysql",
+   "sql": "ALTER PROCEDURE p COMMENT 'mode not authored';",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "fail_on_triggered": false}
+  },
+  {
+   "id": "mysql-security-alter-function-definer", "dialect": "mysql",
+   "sql": "ALTER FUNCTION f SQL SECURITY DEFINER;",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "fail_on_triggered": false,
+    "finding_entries": [{"rule_id": "ddl.routine.security.definer.warn", "level": "warning"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "f", "kind": "function", "operation": "alter_function", "security": "definer", "security_source": "authored"}}]}
+  },
+  {
+   "id": "mysql-security-alter-function-invoker", "dialect": "mysql",
+   "sql": "ALTER FUNCTION f SQL SECURITY INVOKER;",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "fail_on_triggered": false}
+  },
+  {
+   "id": "mysql-security-alter-function-omitted", "dialect": "mysql",
+   "sql": "ALTER FUNCTION f COMMENT 'mode not authored';",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "fail_on_triggered": false}
+  },
+  {
+   "id": "mysql-security-account-invoker", "dialect": "mysql",
+   "sql": "CREATE DEFINER='account_sentinel'@'host_sentinel' PROCEDURE p() SQL SECURITY INVOKER SET @x=1;",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "fail_on_triggered": false}
+  },
+  {
+   "id": "mysql-security-disabled", "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() SQL SECURITY DEFINER SET @x=1;",
+   "policy": "all-rules-disabled", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "fail_on_triggered": false}
+  },
+  {
+   "id": "mysql-security-unknown", "dialect": "mysql",
+   "sql": "ALTER PROCEDURE p SQL SECURITY UNKNOWN;",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "evidence_gaps": 1, "fail_on_triggered": false,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.routine.security.definer.warn", "reason_code": "unproven_routine_security", "required_facts": ["routine.sql_security"]}]}
+  },
+  {
+   "id": "mysql-security-repeated", "dialect": "mysql",
+   "sql": "ALTER PROCEDURE p SQL SECURITY DEFINER SQL SECURITY INVOKER;",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "evidence_gaps": 1, "fail_on_triggered": false,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.routine.security.definer.warn", "reason_code": "unproven_routine_security", "required_facts": ["routine.sql_security"]}]}
+  },
+  {
+   "id": "mysql-security-soname", "dialect": "mysql",
+   "sql": "CREATE FUNCTION f RETURNS INTEGER SONAME 'not_loaded.so';",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "fail_on_triggered": false}
+  },
+  {
+   "id": "tidb-security-vendor", "dialect": "tidb",
+   "sql": "CREATE PROCEDURE p() SQL SECURITY DEFINER SET @x=1;",
+   "policy": "t27-sql-security", "args": ["--fail-on", "none"],
+   "expect": {"exit": 1, "verdict": "review", "statements": 1, "findings": 0, "diagnostics": 1, "unsupported": 1, "unsupported_features": ["create_procedure"], "coverage": "incomplete", "evidence_gaps": 0, "fail_on_triggered": false}
+  },
   {
    "id": "mysql-body-blocker",
    "dialect": "mysql",
@@ -926,6 +1052,90 @@
  ],
  "metadata_cases": [
   {
+   "id": "mysql57-routine-security", "anchor": "mysql57", "dialect": "mysql", "policy": "t27-sql-security",
+   "connect": {"host": "127.0.0.1", "port": 23357, "user": "root", "schema": "t27sec_57", "password_env": "DS_T27_GOLDEN_PW", "password_source": "ephemeral-run-secret"},
+   "sql": "CREATE PROCEDURE p_def() SQL SECURITY DEFINER UPDATE audit_guard SET v=99;CREATE PROCEDURE p_default() UPDATE audit_guard SET v=99;CREATE PROCEDURE p_invoker() SQL SECURITY INVOKER UPDATE audit_guard SET v=99;CREATE FUNCTION f_def() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY DEFINER RETURN 7;CREATE FUNCTION f_default() RETURNS INT DETERMINISTIC NO SQL RETURN 7;CREATE FUNCTION f_invoker() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY INVOKER RETURN 7;ALTER PROCEDURE a_p_def SQL SECURITY DEFINER;ALTER PROCEDURE a_p_invoker SQL SECURITY INVOKER;ALTER PROCEDURE a_p_omitted COMMENT 'preserve';ALTER FUNCTION a_f_def SQL SECURITY DEFINER;ALTER FUNCTION a_f_invoker SQL SECURITY INVOKER;ALTER FUNCTION a_f_omitted COMMENT 'preserve';",
+   "args": ["--fail-on", "none"],
+   "setup": [{"name": "create case-owned security fixtures", "sql": "CREATE DATABASE t27sec_57;USE t27sec_57;CREATE TABLE audit_guard(v INT);INSERT INTO audit_guard VALUES(1);CREATE PROCEDURE a_p_def() SQL SECURITY INVOKER UPDATE audit_guard SET v=99;CREATE PROCEDURE a_p_invoker() SQL SECURITY DEFINER UPDATE audit_guard SET v=99;CREATE PROCEDURE a_p_omitted() SQL SECURITY DEFINER UPDATE audit_guard SET v=99;CREATE FUNCTION a_f_def() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY INVOKER RETURN 7;CREATE FUNCTION a_f_invoker() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY DEFINER RETURN 7;CREATE FUNCTION a_f_omitted() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY DEFINER RETURN 7;", "expect_rc": 0,
+    "verify": [{"assert": "only ALTER fixtures exist before audit", "sql": "SELECT GROUP_CONCAT(CONCAT(ROUTINE_NAME,':',SECURITY_TYPE) ORDER BY ROUTINE_NAME) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='t27sec_57'", "expect": "a_f_def:INVOKER,a_f_invoker:DEFINER,a_f_omitted:DEFINER,a_p_def:INVOKER,a_p_invoker:DEFINER,a_p_omitted:DEFINER"}]}],
+   "expect": {"exit": 1, "verdict": "review", "statements": 12, "findings": 6, "diagnostics": 3, "unsupported": 3, "unsupported_features": ["routine.body.return", "routine.body.return", "routine.body.return"], "coverage": "incomplete", "evidence_gaps": 0, "fail_on_triggered": false,
+    "statement_coverage": ["complete", "complete", "complete", "incomplete", "incomplete", "incomplete", "complete", "complete", "complete", "complete", "complete", "complete"],
+    "finding_entries": [{"index": 0, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}, {"index": 1, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}, {"index": 3, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}, {"index": 4, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}, {"index": 6, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}, {"index": 9, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}],
+    "finding_metadata": [
+     {"index": 0, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "p_def", "kind": "procedure", "operation": "create_procedure", "security": "definer", "security_source": "authored"}},
+     {"index": 1, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "p_default", "kind": "procedure", "operation": "create_procedure", "security": "definer", "security_source": "create_default"}},
+     {"index": 3, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "f_def", "kind": "function", "operation": "create_function", "security": "definer", "security_source": "authored"}},
+     {"index": 4, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "f_default", "kind": "function", "operation": "create_function", "security": "definer", "security_source": "create_default"}},
+     {"index": 6, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "a_p_def", "kind": "procedure", "operation": "alter_procedure", "security": "definer", "security_source": "authored"}},
+     {"index": 9, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "a_f_def", "kind": "function", "operation": "alter_function", "security": "definer", "security_source": "authored"}}]},
+   "post_verify": [
+    {"assert": "audit creates no definition and changes no existing mode", "sql": "SELECT GROUP_CONCAT(CONCAT(ROUTINE_NAME,':',SECURITY_TYPE) ORDER BY ROUTINE_NAME) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='t27sec_57'", "expect": "a_f_def:INVOKER,a_f_invoker:DEFINER,a_f_omitted:DEFINER,a_p_def:INVOKER,a_p_invoker:DEFINER,a_p_omitted:DEFINER"},
+    {"assert": "audit executes no routine body", "sql": "SELECT v FROM t27sec_57.audit_guard", "expect": "1"}],
+   "execute": [
+    {"name": "record function binary logging preconditions (root; DETERMINISTIC NO SQL; no privilege bypass)", "sql": "SELECT CONCAT('log_bin=',@@log_bin,',trust=',@@log_bin_trust_function_creators)", "expect_rc": 0, "stdout_contains": ["log_bin=", ",trust="]},
+    {"name": "native security headers only; never CALL or invoke functions", "sql": "USE t27sec_57;CREATE PROCEDURE p_def() SQL SECURITY DEFINER UPDATE audit_guard SET v=99;CREATE PROCEDURE p_default() UPDATE audit_guard SET v=99;CREATE PROCEDURE p_invoker() SQL SECURITY INVOKER UPDATE audit_guard SET v=99;CREATE FUNCTION f_def() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY DEFINER RETURN 7;CREATE FUNCTION f_default() RETURNS INT DETERMINISTIC NO SQL RETURN 7;CREATE FUNCTION f_invoker() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY INVOKER RETURN 7;ALTER PROCEDURE a_p_def SQL SECURITY DEFINER;ALTER PROCEDURE a_p_invoker SQL SECURITY INVOKER;ALTER PROCEDURE a_p_omitted COMMENT 'preserve';ALTER FUNCTION a_f_def SQL SECURITY DEFINER;ALTER FUNCTION a_f_invoker SQL SECURITY INVOKER;ALTER FUNCTION a_f_omitted COMMENT 'preserve';", "expect_rc": 0}],
+   "structure": [
+    {"assert": "catalog independently proves CREATE defaults and ALTER mode requests/omission", "sql": "SELECT GROUP_CONCAT(CONCAT(ROUTINE_NAME,':',SECURITY_TYPE) ORDER BY ROUTINE_NAME) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='t27sec_57'", "expect": "a_f_def:DEFINER,a_f_invoker:INVOKER,a_f_omitted:DEFINER,a_p_def:DEFINER,a_p_invoker:INVOKER,a_p_omitted:DEFINER,f_def:DEFINER,f_default:DEFINER,f_invoker:INVOKER,p_def:DEFINER,p_default:DEFINER,p_invoker:INVOKER"},
+    {"assert": "native definitions do not execute bodies", "sql": "SELECT v FROM t27sec_57.audit_guard", "expect": "1"}],
+   "teardown": [{"name": "drop owned security schema", "sql": "DROP DATABASE t27sec_57", "expect_rc": 0, "verify": [{"assert": "no residual security fixture", "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t27sec_57'", "expect": "0"}]}]
+  },
+  {
+   "id": "mysql80-routine-security", "anchor": "mysql80", "dialect": "mysql", "policy": "t27-sql-security",
+   "connect": {"host": "127.0.0.1", "port": 23380, "user": "root", "schema": "t27sec_80", "password_env": "DS_T27_GOLDEN_PW", "password_source": "ephemeral-run-secret"},
+   "sql": "CREATE PROCEDURE p_def() SQL SECURITY DEFINER UPDATE audit_guard SET v=99;CREATE PROCEDURE p_default() UPDATE audit_guard SET v=99;CREATE PROCEDURE p_invoker() SQL SECURITY INVOKER UPDATE audit_guard SET v=99;CREATE FUNCTION f_def() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY DEFINER RETURN 7;CREATE FUNCTION f_default() RETURNS INT DETERMINISTIC NO SQL RETURN 7;CREATE FUNCTION f_invoker() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY INVOKER RETURN 7;ALTER PROCEDURE a_p_def SQL SECURITY DEFINER;ALTER PROCEDURE a_p_invoker SQL SECURITY INVOKER;ALTER PROCEDURE a_p_omitted COMMENT 'preserve';ALTER FUNCTION a_f_def SQL SECURITY DEFINER;ALTER FUNCTION a_f_invoker SQL SECURITY INVOKER;ALTER FUNCTION a_f_omitted COMMENT 'preserve';",
+   "args": ["--fail-on", "none"],
+   "setup": [{"name": "create case-owned security fixtures", "sql": "CREATE DATABASE t27sec_80;USE t27sec_80;CREATE TABLE audit_guard(v INT);INSERT INTO audit_guard VALUES(1);CREATE PROCEDURE a_p_def() SQL SECURITY INVOKER UPDATE audit_guard SET v=99;CREATE PROCEDURE a_p_invoker() SQL SECURITY DEFINER UPDATE audit_guard SET v=99;CREATE PROCEDURE a_p_omitted() SQL SECURITY DEFINER UPDATE audit_guard SET v=99;CREATE FUNCTION a_f_def() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY INVOKER RETURN 7;CREATE FUNCTION a_f_invoker() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY DEFINER RETURN 7;CREATE FUNCTION a_f_omitted() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY DEFINER RETURN 7;", "expect_rc": 0,
+    "verify": [{"assert": "only ALTER fixtures exist before audit", "sql": "SELECT GROUP_CONCAT(CONCAT(ROUTINE_NAME,':',SECURITY_TYPE) ORDER BY ROUTINE_NAME) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='t27sec_80'", "expect": "a_f_def:INVOKER,a_f_invoker:DEFINER,a_f_omitted:DEFINER,a_p_def:INVOKER,a_p_invoker:DEFINER,a_p_omitted:DEFINER"}]}],
+   "expect": {"exit": 1, "verdict": "review", "statements": 12, "findings": 6, "diagnostics": 3, "unsupported": 3, "unsupported_features": ["routine.body.return", "routine.body.return", "routine.body.return"], "coverage": "incomplete", "evidence_gaps": 0, "fail_on_triggered": false,
+    "statement_coverage": ["complete", "complete", "complete", "incomplete", "incomplete", "incomplete", "complete", "complete", "complete", "complete", "complete", "complete"],
+    "finding_entries": [{"index": 0, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}, {"index": 1, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}, {"index": 3, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}, {"index": 4, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}, {"index": 6, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}, {"index": 9, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}],
+    "finding_metadata": [
+     {"index": 0, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "p_def", "kind": "procedure", "operation": "create_procedure", "security": "definer", "security_source": "authored"}},
+     {"index": 1, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "p_default", "kind": "procedure", "operation": "create_procedure", "security": "definer", "security_source": "create_default"}},
+     {"index": 3, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "f_def", "kind": "function", "operation": "create_function", "security": "definer", "security_source": "authored"}},
+     {"index": 4, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "f_default", "kind": "function", "operation": "create_function", "security": "definer", "security_source": "create_default"}},
+     {"index": 6, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "a_p_def", "kind": "procedure", "operation": "alter_procedure", "security": "definer", "security_source": "authored"}},
+     {"index": 9, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "a_f_def", "kind": "function", "operation": "alter_function", "security": "definer", "security_source": "authored"}}]},
+   "post_verify": [
+    {"assert": "audit creates no definition and changes no existing mode", "sql": "SELECT GROUP_CONCAT(CONCAT(ROUTINE_NAME,':',SECURITY_TYPE) ORDER BY ROUTINE_NAME) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='t27sec_80'", "expect": "a_f_def:INVOKER,a_f_invoker:DEFINER,a_f_omitted:DEFINER,a_p_def:INVOKER,a_p_invoker:DEFINER,a_p_omitted:DEFINER"},
+    {"assert": "audit executes no routine body", "sql": "SELECT v FROM t27sec_80.audit_guard", "expect": "1"}],
+   "execute": [
+    {"name": "record function binary logging preconditions (root; DETERMINISTIC NO SQL; no privilege bypass)", "sql": "SELECT CONCAT('log_bin=',@@log_bin,',trust=',@@log_bin_trust_function_creators)", "expect_rc": 0, "stdout_contains": ["log_bin=", ",trust="]},
+    {"name": "native security headers only; never CALL or invoke functions", "sql": "USE t27sec_80;CREATE PROCEDURE p_def() SQL SECURITY DEFINER UPDATE audit_guard SET v=99;CREATE PROCEDURE p_default() UPDATE audit_guard SET v=99;CREATE PROCEDURE p_invoker() SQL SECURITY INVOKER UPDATE audit_guard SET v=99;CREATE FUNCTION f_def() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY DEFINER RETURN 7;CREATE FUNCTION f_default() RETURNS INT DETERMINISTIC NO SQL RETURN 7;CREATE FUNCTION f_invoker() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY INVOKER RETURN 7;ALTER PROCEDURE a_p_def SQL SECURITY DEFINER;ALTER PROCEDURE a_p_invoker SQL SECURITY INVOKER;ALTER PROCEDURE a_p_omitted COMMENT 'preserve';ALTER FUNCTION a_f_def SQL SECURITY DEFINER;ALTER FUNCTION a_f_invoker SQL SECURITY INVOKER;ALTER FUNCTION a_f_omitted COMMENT 'preserve';", "expect_rc": 0}],
+   "structure": [
+    {"assert": "catalog independently proves CREATE defaults and ALTER mode requests/omission", "sql": "SELECT GROUP_CONCAT(CONCAT(ROUTINE_NAME,':',SECURITY_TYPE) ORDER BY ROUTINE_NAME) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='t27sec_80'", "expect": "a_f_def:DEFINER,a_f_invoker:INVOKER,a_f_omitted:DEFINER,a_p_def:DEFINER,a_p_invoker:INVOKER,a_p_omitted:DEFINER,f_def:DEFINER,f_default:DEFINER,f_invoker:INVOKER,p_def:DEFINER,p_default:DEFINER,p_invoker:INVOKER"},
+    {"assert": "native definitions do not execute bodies", "sql": "SELECT v FROM t27sec_80.audit_guard", "expect": "1"}],
+   "teardown": [{"name": "drop owned security schema", "sql": "DROP DATABASE t27sec_80", "expect_rc": 0, "verify": [{"assert": "no residual security fixture", "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t27sec_80'", "expect": "0"}]}]
+  },
+  {
+   "id": "mysql84-routine-security", "anchor": "mysql84", "dialect": "mysql", "policy": "t27-sql-security",
+   "connect": {"host": "127.0.0.1", "port": 23384, "user": "root", "schema": "t27sec_84", "password_env": "DS_T27_GOLDEN_PW", "password_source": "ephemeral-run-secret"},
+   "sql": "CREATE PROCEDURE p_def() SQL SECURITY DEFINER UPDATE audit_guard SET v=99;CREATE PROCEDURE p_default() UPDATE audit_guard SET v=99;CREATE PROCEDURE p_invoker() SQL SECURITY INVOKER UPDATE audit_guard SET v=99;CREATE FUNCTION f_def() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY DEFINER RETURN 7;CREATE FUNCTION f_default() RETURNS INT DETERMINISTIC NO SQL RETURN 7;CREATE FUNCTION f_invoker() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY INVOKER RETURN 7;ALTER PROCEDURE a_p_def SQL SECURITY DEFINER;ALTER PROCEDURE a_p_invoker SQL SECURITY INVOKER;ALTER PROCEDURE a_p_omitted COMMENT 'preserve';ALTER FUNCTION a_f_def SQL SECURITY DEFINER;ALTER FUNCTION a_f_invoker SQL SECURITY INVOKER;ALTER FUNCTION a_f_omitted COMMENT 'preserve';",
+   "args": ["--fail-on", "none"],
+   "setup": [{"name": "create case-owned security fixtures", "sql": "CREATE DATABASE t27sec_84;USE t27sec_84;CREATE TABLE audit_guard(v INT);INSERT INTO audit_guard VALUES(1);CREATE PROCEDURE a_p_def() SQL SECURITY INVOKER UPDATE audit_guard SET v=99;CREATE PROCEDURE a_p_invoker() SQL SECURITY DEFINER UPDATE audit_guard SET v=99;CREATE PROCEDURE a_p_omitted() SQL SECURITY DEFINER UPDATE audit_guard SET v=99;CREATE FUNCTION a_f_def() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY INVOKER RETURN 7;CREATE FUNCTION a_f_invoker() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY DEFINER RETURN 7;CREATE FUNCTION a_f_omitted() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY DEFINER RETURN 7;", "expect_rc": 0,
+    "verify": [{"assert": "only ALTER fixtures exist before audit", "sql": "SELECT GROUP_CONCAT(CONCAT(ROUTINE_NAME,':',SECURITY_TYPE) ORDER BY ROUTINE_NAME) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='t27sec_84'", "expect": "a_f_def:INVOKER,a_f_invoker:DEFINER,a_f_omitted:DEFINER,a_p_def:INVOKER,a_p_invoker:DEFINER,a_p_omitted:DEFINER"}]}],
+   "expect": {"exit": 1, "verdict": "review", "statements": 12, "findings": 6, "diagnostics": 3, "unsupported": 3, "unsupported_features": ["routine.body.return", "routine.body.return", "routine.body.return"], "coverage": "incomplete", "evidence_gaps": 0, "fail_on_triggered": false,
+    "statement_coverage": ["complete", "complete", "complete", "incomplete", "incomplete", "incomplete", "complete", "complete", "complete", "complete", "complete", "complete"],
+    "finding_entries": [{"index": 0, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}, {"index": 1, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}, {"index": 3, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}, {"index": 4, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}, {"index": 6, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}, {"index": 9, "rule_id": "ddl.routine.security.definer.warn", "level": "warning"}],
+    "finding_metadata": [
+     {"index": 0, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "p_def", "kind": "procedure", "operation": "create_procedure", "security": "definer", "security_source": "authored"}},
+     {"index": 1, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "p_default", "kind": "procedure", "operation": "create_procedure", "security": "definer", "security_source": "create_default"}},
+     {"index": 3, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "f_def", "kind": "function", "operation": "create_function", "security": "definer", "security_source": "authored"}},
+     {"index": 4, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "f_default", "kind": "function", "operation": "create_function", "security": "definer", "security_source": "create_default"}},
+     {"index": 6, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "a_p_def", "kind": "procedure", "operation": "alter_procedure", "security": "definer", "security_source": "authored"}},
+     {"index": 9, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "a_f_def", "kind": "function", "operation": "alter_function", "security": "definer", "security_source": "authored"}}]},
+   "post_verify": [
+    {"assert": "audit creates no definition and changes no existing mode", "sql": "SELECT GROUP_CONCAT(CONCAT(ROUTINE_NAME,':',SECURITY_TYPE) ORDER BY ROUTINE_NAME) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='t27sec_84'", "expect": "a_f_def:INVOKER,a_f_invoker:DEFINER,a_f_omitted:DEFINER,a_p_def:INVOKER,a_p_invoker:DEFINER,a_p_omitted:DEFINER"},
+    {"assert": "audit executes no routine body", "sql": "SELECT v FROM t27sec_84.audit_guard", "expect": "1"}],
+   "execute": [
+    {"name": "record function binary logging preconditions (root; DETERMINISTIC NO SQL; no privilege bypass)", "sql": "SELECT CONCAT('log_bin=',@@log_bin,',trust=',@@log_bin_trust_function_creators)", "expect_rc": 0, "stdout_contains": ["log_bin=", ",trust="]},
+    {"name": "native security headers only; never CALL or invoke functions", "sql": "USE t27sec_84;CREATE PROCEDURE p_def() SQL SECURITY DEFINER UPDATE audit_guard SET v=99;CREATE PROCEDURE p_default() UPDATE audit_guard SET v=99;CREATE PROCEDURE p_invoker() SQL SECURITY INVOKER UPDATE audit_guard SET v=99;CREATE FUNCTION f_def() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY DEFINER RETURN 7;CREATE FUNCTION f_default() RETURNS INT DETERMINISTIC NO SQL RETURN 7;CREATE FUNCTION f_invoker() RETURNS INT DETERMINISTIC NO SQL SQL SECURITY INVOKER RETURN 7;ALTER PROCEDURE a_p_def SQL SECURITY DEFINER;ALTER PROCEDURE a_p_invoker SQL SECURITY INVOKER;ALTER PROCEDURE a_p_omitted COMMENT 'preserve';ALTER FUNCTION a_f_def SQL SECURITY DEFINER;ALTER FUNCTION a_f_invoker SQL SECURITY INVOKER;ALTER FUNCTION a_f_omitted COMMENT 'preserve';", "expect_rc": 0}],
+   "structure": [
+    {"assert": "catalog independently proves CREATE defaults and ALTER mode requests/omission", "sql": "SELECT GROUP_CONCAT(CONCAT(ROUTINE_NAME,':',SECURITY_TYPE) ORDER BY ROUTINE_NAME) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA='t27sec_84'", "expect": "a_f_def:DEFINER,a_f_invoker:INVOKER,a_f_omitted:DEFINER,a_p_def:DEFINER,a_p_invoker:INVOKER,a_p_omitted:DEFINER,f_def:DEFINER,f_default:DEFINER,f_invoker:INVOKER,p_def:DEFINER,p_default:DEFINER,p_invoker:INVOKER"},
+    {"assert": "native definitions do not execute bodies", "sql": "SELECT v FROM t27sec_84.audit_guard", "expect": "1"}],
+   "teardown": [{"name": "drop owned security schema", "sql": "DROP DATABASE t27sec_84", "expect_rc": 0, "verify": [{"assert": "no residual security fixture", "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t27sec_84'", "expect": "0"}]}]
+  },
+  {
    "id": "mysql57-proc-lifecycle",
    "anchor": "mysql57",
    "dialect": "mysql",
@@ -1238,6 +1448,27 @@
   "T27.db.tidb85.syntax_negative",
   "T27.meta.mysql57-proc-lifecycle",
   "T27.meta.mysql80-proc-lifecycle",
-  "T27.meta.mysql84-proc-lifecycle"
+  "T27.meta.mysql84-proc-lifecycle",
+  "T27.cli.mysql-security-create-procedure-definer",
+  "T27.cli.mysql-security-create-procedure-default",
+  "T27.cli.mysql-security-create-procedure-invoker",
+  "T27.cli.mysql-security-create-function-definer",
+  "T27.cli.mysql-security-create-function-default",
+  "T27.cli.mysql-security-create-function-invoker",
+  "T27.cli.mysql-security-alter-procedure-definer",
+  "T27.cli.mysql-security-alter-procedure-invoker",
+  "T27.cli.mysql-security-alter-procedure-omitted",
+  "T27.cli.mysql-security-alter-function-definer",
+  "T27.cli.mysql-security-alter-function-invoker",
+  "T27.cli.mysql-security-alter-function-omitted",
+  "T27.cli.mysql-security-account-invoker",
+  "T27.cli.mysql-security-disabled",
+  "T27.cli.mysql-security-unknown",
+  "T27.cli.mysql-security-repeated",
+  "T27.cli.mysql-security-soname",
+  "T27.cli.tidb-security-vendor",
+  "T27.meta.mysql57-routine-security",
+  "T27.meta.mysql80-routine-security",
+  "T27.meta.mysql84-routine-security"
  ]
 }

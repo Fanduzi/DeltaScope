@@ -9,7 +9,7 @@ honestly — not a count of implemented rules.
 
 | File | Responsibility |
 |------|----------------|
-| inventory.yaml | The inventory: verified official sources, status vocabulary, owner tasks (real issues), the `required_row_ids` denominator, and one row per statement family/subaction scoped to the versions where it exists |
+| inventory.yaml | The three MySQL CREATE/ALTER routine rows bind `sql-security` subactions to `ddl.routine.security.definer.warn` corpus selectors and exact T27 CLI/anchor-owned catalog cases; CREATE rows remain mixed, ALTER becomes mixed rather than completed because general attributes remain notice-only. The inventory: verified official sources, status vocabulary, owner tasks (real issues), the `required_row_ids` denominator, and one row per statement family/subaction scoped to the versions where it exists |
 | required_rows.txt | Locked denominator baseline — one row ID per line, checked in independently of `inventory.yaml`. The gate requires `rows` == `required_row_ids` == this file, so shrinking both YAML fields together still fails |
 | matrix.json | Derived view of the inventory (`id`, `product`, `owner`, derived `status`, `parser_status`, `audit_status`, `applicability`, optional `subaction_status`). Regenerate with `python3 scripts/gen_ddl_inventory_matrix.py` after any inventory change; do not hand-edit |
 | T06-base-traceability.md | Bounded T06 (#85) traceability table: maps each CREATE TABLE acceptance dimension on `mysql.create-table`/`tidb.create-table` to normalized spec fields, consuming rules, and concrete evidence; records accepted representation limits and other-task boundaries |

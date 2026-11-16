@@ -3,7 +3,7 @@
 Date: 2026-11-16
 Status: Accepted
 Related milestone: [routine-security scope](../plans/2026-11-16-next-rule-family-scope.md), T27 / T28
-Related commits: `feat(ddl): warn on MySQL routine definer security` (implementation); evidence follow-up on `milestone/routine-security-definer`
+Related commits: `780585f1c391` (`feat(ddl): warn on MySQL routine definer security`); `test(ddl): bind routine security golden and inventory evidence` on `milestone/routine-security-definer`
 
 ## Context
 
@@ -102,9 +102,45 @@ attributes such as COMMENT.
   includes explicit/default/INVOKER/ALTER/disabled and warning-plus-incomplete
   fixtures; TiDB and PostgreSQL controls remain separate.
 
-Golden/inventory binding and full build/PG-tagged gates are recorded in the
-milestone's evidence follow-up; this implementation record alone makes no new
-live-anchor or aggregate-readiness claim.
+- T27: **51/51 cases, 627 assertions**; T28: **30/30 cases, 368 assertions**.
+  Existing required cases/profiles remain intact; added expectations and exact
+  required IDs were authored before the new golden cases were run, not generated
+  from product output. Initial T27 validation caught an expectation encoding
+  error: three RETURN boundaries require three entries in the exact feature
+  multiset; correcting that did not alter product behavior or the denominator.
+- T27's three `mysql57/mysql80/mysql84-routine-security` cases audit twelve
+  headers each, then independently query `ROUTINES.SECURITY_TYPE` after native
+  CREATE/ALTER. CREATE defaults/explicit modes and ALTER COMMENT preservation
+  all agree on 5.7.44, 8.0.46, 8.4.10. Function creation uses the fixture's root
+  connection and `DETERMINISTIC NO SQL`; observed `log_bin:trust` is `0:0` on
+  5.7 and `1:0` on 8.0/8.4. No logging variable or privilege bypass was used.
+- Before driver-side definitions, catalog rows/modes and a body-write sentinel
+  are unchanged; the sentinel is also unchanged after native definitions. No
+  routine is invoked. Each owned schema is removed and absence verified.
+- Full required gates passed: `go build ./...`, `go test ./...`,
+  `CGO_ENABLED=1 go test -tags postgresql ./...`, empty
+  `gofmt -l internal/ cmd/ pkg/`, `make ddl-inventory-gate`, plus
+  `make sql-corpus-gates ddl-coverage-catalog-test` and
+  `python3 scripts/test_ddl_golden.py` (896 contract cases, zero failures).
+  The coverage catalog and its embedded copy were regenerated through
+  `UPDATE_DDL_COVERAGE_CATALOG=1`; only the two CREATE routine finding-ID lists
+  change. Owning README member/interface lists are synchronized; no global
+  architecture, dependency, installation or release contract changed.
+- Default-policy offline behavior comparison against base probes: **0** of the
+  two pre-existing routine-bearing MySQL corpus inputs move pass→review (both
+  were already non-pass). **1/3** touched inventory representative SQL shapes
+  moves pass→review: CREATE PROCEDURE. CREATE FUNCTION already reviews due to
+  RETURN; the representative ALTER INVOKER remains pass. This counts verdict
+  changes, not coverage-status promotions or all possible routine inputs.
+- Inventory evidence selectors bind `sql-security`, each exact CLI mode and its
+  own anchor metadata case. CREATE rows stay `mixed_coverage`; ALTER moves
+  `generic_notice` → `mixed_coverage` because general attributes remain notices.
+  Whole-row `semantically_checked` stays **163**; generic **20→19**, mixed
+  **43→44**. `matrix.json` is regenerated, not hand-edited. Inventory gate passes.
+
+These are targeted T27/T28 results, not a new TASK=all aggregate-readiness claim.
+Final-HEAD reruns and full gate results are reported with the delivery refs;
+local artifacts are under `/tmp/ddl-golden-routine/`.
 
 ## Consequences
 

@@ -106,6 +106,9 @@
  },
  "policy": {
   "profiles": {
+   "t28-sql-security": {
+    "enable": {"ddl.routine.security.definer.warn": {"level": "warning"}}
+   },
    "t28-where": {
     "enable": {
      "dml.where.require": {
@@ -120,6 +123,18 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "mysql-security-dynamic-retention", "dialect": "mysql", "policy": "t28-sql-security",
+   "sql": "CREATE PROCEDURE p(IN s TEXT) SQL SECURITY DEFINER BEGIN SET @q=s; PREPARE stmt FROM @q; EXECUTE stmt; END;",
+   "args": ["--fail-on", "none"],
+   "expect": {"exit": 1, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 2, "unsupported": 2, "coverage": "incomplete", "evidence_gaps": 0, "fail_on_triggered": false,
+    "finding_entries": [{"rule_id": "ddl.routine.security.definer.warn", "level": "warning"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.routine.security.definer.warn", "metadata": {"routine": "p", "kind": "procedure", "operation": "create_procedure", "security": "definer", "security_source": "authored"}}],
+    "unsupported_entries": [
+     {"feature": "routine.body.prepare", "reason": "parsed by the shared parser but not covered by audited semantics", "metadata": {"routine": "p", "routine_member": 1, "source": "var"}},
+     {"feature": "execute_prepared", "reason": "parsed by the shared parser but not covered by audited semantics", "metadata": {"routine": "p", "routine_member": 2}}],
+    "serialized_not_contains": ["T28_RUNTIME_SECRET"]}
+  },
   {
    "id": "mysql-dynamic-prepare",
    "dialect": "mysql",
@@ -1245,6 +1260,7 @@
   "T28.db.mysql84.ddl",
   "T28.db.mysql84.syntax_negative",
   "T28.db.tidb85.ddl",
-  "T28.db.tidb85.syntax_negative"
+  "T28.db.tidb85.syntax_negative",
+  "T28.cli.mysql-security-dynamic-retention"
  ]
 }

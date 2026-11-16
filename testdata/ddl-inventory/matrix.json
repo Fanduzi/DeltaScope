@@ -11,8 +11,8 @@
   ],
   "status_counts": {
     "semantically_checked": 163,
-    "generic_notice": 20,
-    "mixed_coverage": 43,
+    "generic_notice": 19,
+    "mixed_coverage": 44,
     "explicit_unsupported": 41,
     "vendor_not_supported": 11,
     "parser_unsupported": 8,
@@ -2779,6 +2779,63 @@
             "gate:T28"
           ]
         }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "sql-security",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/ddl-golden/T27.json#sql-security",
+                "file:testdata/ddl-golden/T27.json#mysql57-routine-security",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-definer",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-default",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-invoker",
+                "file:testdata/sql-corpus/mysql/ddl/findings/routine_security_create_definer.expected.yaml#ddl.routine.security.definer.warn"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/ddl-golden/T27.json#sql-security",
+                "file:testdata/ddl-golden/T27.json#mysql80-routine-security",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-definer",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-default",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-invoker",
+                "file:testdata/sql-corpus/mysql/ddl/findings/routine_security_create_definer.expected.yaml#ddl.routine.security.definer.warn"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/ddl-golden/T27.json#sql-security",
+                "file:testdata/ddl-golden/T27.json#mysql84-routine-security",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-definer",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-default",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-invoker",
+                "file:testdata/sql-corpus/mysql/ddl/findings/routine_security_create_definer.expected.yaml#ddl.routine.security.definer.warn"
+              ]
+            }
+          ]
+        }
       ]
     },
     {
@@ -2843,15 +2900,72 @@
             "gate:T28"
           ]
         }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "sql-security",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/ddl-golden/T27.json#sql-security",
+                "file:testdata/ddl-golden/T27.json#mysql57-routine-security",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-function-definer",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-function-default",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-function-invoker",
+                "file:testdata/sql-corpus/mysql/ddl/findings/routine_security_partial.expected.yaml#ddl.routine.security.definer.warn"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/ddl-golden/T27.json#sql-security",
+                "file:testdata/ddl-golden/T27.json#mysql80-routine-security",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-function-definer",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-function-default",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-function-invoker",
+                "file:testdata/sql-corpus/mysql/ddl/findings/routine_security_partial.expected.yaml#ddl.routine.security.definer.warn"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/ddl-golden/T27.json#sql-security",
+                "file:testdata/ddl-golden/T27.json#mysql84-routine-security",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-function-definer",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-function-default",
+                "file:testdata/ddl-golden/T27.json#mysql-security-create-function-invoker",
+                "file:testdata/sql-corpus/mysql/ddl/findings/routine_security_partial.expected.yaml#ddl.routine.security.definer.warn"
+              ]
+            }
+          ]
+        }
       ]
     },
     {
       "id": "mysql.alter-procedure-function",
       "product": "mysql",
       "owner": "T27",
-      "status": "generic_notice",
+      "status": "mixed_coverage",
       "parser_status": "recognized",
-      "audit_status": "notice_only",
+      "audit_status": "mixed",
       "applicability": [
         {
           "anchor": "mysql57",
@@ -2859,8 +2973,10 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
+            "file:testdata/ddl-golden/T27.json#mysql57-routine-security",
+            "file:testdata/sql-corpus/mysql/ddl/findings/routine_security_alter_definer.expected.yaml#ddl.routine.security.definer.warn",
             "file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
@@ -2873,8 +2989,10 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
+            "file:testdata/ddl-golden/T27.json#mysql80-routine-security",
+            "file:testdata/sql-corpus/mysql/ddl/findings/routine_security_alter_definer.expected.yaml#ddl.routine.security.definer.warn",
             "file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
@@ -2887,12 +3005,80 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
+            "file:testdata/ddl-golden/T27.json#mysql84-routine-security",
+            "file:testdata/sql-corpus/mysql/ddl/findings/routine_security_alter_definer.expected.yaml#ddl.routine.security.definer.warn",
             "file:testdata/ddl-inventory/evidence/mysql.alter-procedure-function.probes.txt",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
             "gate:T27"
+          ]
+        }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "sql-security",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": 5.7,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/ddl-golden/T27.json#sql-security",
+                "file:testdata/ddl-golden/T27.json#mysql57-routine-security",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-definer",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-function-definer",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-invoker",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-function-invoker",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-omitted",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-function-omitted",
+                "file:testdata/sql-corpus/mysql/ddl/findings/routine_security_alter_definer.expected.yaml#ddl.routine.security.definer.warn"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": 8.0,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/ddl-golden/T27.json#sql-security",
+                "file:testdata/ddl-golden/T27.json#mysql80-routine-security",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-definer",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-function-definer",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-invoker",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-function-invoker",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-omitted",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-function-omitted",
+                "file:testdata/sql-corpus/mysql/ddl/findings/routine_security_alter_definer.expected.yaml#ddl.routine.security.definer.warn"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": 8.4,
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/ddl-golden/T27.json#sql-security",
+                "file:testdata/ddl-golden/T27.json#mysql84-routine-security",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-definer",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-function-definer",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-invoker",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-function-invoker",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-omitted",
+                "file:testdata/ddl-golden/T27.json#mysql-security-alter-function-omitted",
+                "file:testdata/sql-corpus/mysql/ddl/findings/routine_security_alter_definer.expected.yaml#ddl.routine.security.definer.warn"
+              ]
+            }
           ]
         }
       ]
