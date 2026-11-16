@@ -36,6 +36,9 @@ main() {
   require_grep "sha256 \"${DARWIN_AMD64_SHA256}\"" "darwin amd64 sha256"
   require_grep "sha256 \"${DARWIN_ARM64_SHA256}\"" "darwin arm64 sha256"
   require_grep 'binary "deltascope"' "binary stanza"
+  require_grep '  postflight_steps do' "declarative postflight stanza"
+  require_grep '    on_macos do' "declarative macOS guard"
+  require_grep '      run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{staged_path}}/deltascope"]' "install-time quarantine step"
 }
 
 main "$@"

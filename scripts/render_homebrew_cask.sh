@@ -41,8 +41,8 @@ cask "deltascope" do
   binary "deltascope"
 
   postflight_steps do
-    if OS.mac?
-      system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/deltascope"]
+    on_macos do
+      run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{staged_path}}/deltascope"]
     end
   end
 end

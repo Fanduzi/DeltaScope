@@ -25,7 +25,9 @@ is unchanged.
 | t07proof/ | Bounded T07 supplemental native source/catalog/provider private-fact proof with exact ordered sets, raw catalog/HEX, LIMIT-0 fields, query ledger and owned cleanup; separate from Golden business cases; see [module README](t07proof/README.md) |
 | t06a17proof/ | Bounded T06-A17-R1 native catalog/provider proof command and constructed-fault tests: complete ordered 24-column collection, independent numeric/member facts, owned-table cleanup, failure propagation, and test-only old/new assertion sensitivity; see [module README](t06a17proof/README.md) |
 | verify_pg_manylinux_baseline.sh | Builds the converged Linux PG-capable binaries in a manylinux2014 container and fails if the Linux glibc baseline exceeds the approved threshold |
-| verify_homebrew_cask.sh | Verifies rendered Homebrew cask files against the release version, darwin archive URLs, sha256 values, and binary stanza |
+| render_homebrew_cask.sh | Renders release casks with declarative `postflight_steps`, an `on_macos` guard, `run`, and the deferred `{{staged_path}}` token |
+| verify_homebrew_cask.sh | Verifies rendered Homebrew cask files against the release version, darwin archive URLs, sha256 values, binary stanza, and declarative quarantine step |
+| test_homebrew_cask.py | Pins rendered postflight steps and rejects legacy block, guard, command, and path-interpolation regressions; runs in release workflow hygiene gates |
 | verify_release_archive.sh | Verifies packaged release archives by checking checksums, required files, binary version output, PostgreSQL CLI smoke, and optional Linux glibc baseline |
 | verify_release_version_surfaces.sh | Checks that source version constants, package docs, npm launcher and MCP Registry versions/names, README install pins, release notes, release index links, and landing current-version surfaces all match VERSION |
 | verify_release_dialect_hygiene.sh | Runs release-blocking MySQL, TiDB, and PostgreSQL default-policy dialect smoke checks against a built or extracted deltascope binary |

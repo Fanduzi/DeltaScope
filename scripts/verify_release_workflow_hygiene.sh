@@ -38,6 +38,8 @@ main() {
   require_line 'brew tap fanduzi/deltascope' "lowercase tap"
   require_line 'brew install --cask deltascope' "short cask install after explicit tap"
 
+  python3 "$(dirname "$0")/test_homebrew_cask.py"
+
   # Run structural Homebrew trust contract checker
   python3 "$(dirname "$0")/verify_release_workflow_hygiene.py" "$(dirname "$0")/.."
 
