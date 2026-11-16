@@ -6228,12 +6228,13 @@ rows:
       - ON COMMIT / TABLESPACE
       - OF composite type
       - arrays and composite columns
+      - generation-declaration
     sql_shape: CREATE TABLE users (id bigint PRIMARY KEY, email text NOT NULL)
     prerequisites: "none"
     status: mixed_coverage
     parser_status: partial
     audit_status: mixed
-    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 14 shapes -> 1 audited, 1 explicit_unsupported, 12 notice_only; golden manifests and native execution evidence land with the owner task"
+    status_evidence: "2026-11-16 generated/identity tranche: bounded generation-declaration cells gain ddl.pg.column.generation.declaration.valid and ddl.pg.column.identity.cycle.warn with T36 exact CLI and postgres17 native catalog/refusal/no-execution evidence. No expression, partition or other table semantics are promoted; parent remains mixed. Historical: 2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 14 shapes -> 1 audited, 1 explicit_unsupported, 12 notice_only; golden manifests and native execution evidence land with the owner task"
     targets: column definitions, defaults, all constraint forms, storage/access options
     applicability:
       - anchor: postgresql17
@@ -6242,8 +6243,25 @@ rows:
         product_scope: registered
         parser_status: partial
         audit_status: mixed
-        evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+        evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, 'file:testdata/ddl-golden/T36.json#pg-generation-positive', 'file:testdata/ddl-golden/T36.json#pg-generation-negative']
     subaction_status:
+      - subaction_id: generation-declaration
+        parser_status: recognized
+        audit_status: audited
+        applicability:
+          - anchor: postgresql17
+            version_range: "17"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-golden/T36.json#generation-declaration
+              - file:testdata/ddl-golden/T36.json#pg-generation-positive
+              - file:testdata/ddl-golden/T36.json#pg-generation-negative
+              - file:testdata/ddl-golden/T36.json#generation-declaration-ambiguous
+              - file:testdata/sql-corpus/postgresql/ddl/findings/generation_declaration_invalid.expected.yaml#ddl.pg.column.generation.declaration.valid
+              - file:testdata/sql-corpus/postgresql/ddl/findings/identity_cycle.expected.yaml#ddl.pg.column.identity.cycle.warn
       - subaction_id: basic columns
         parser_status: recognized
         audit_status: notice_only
@@ -6389,7 +6407,7 @@ rows:
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.arrays-and-composite-columns.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
-      refs: [file:testdata/ddl-inventory/evidence/postgresql.create-table.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+      refs: [file:testdata/ddl-inventory/evidence/postgresql.create-table.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, gate:T36, file:testdata/sql-corpus/postgresql/ddl/findings/generation_declaration_invalid.expected.yaml]
     owner: T36
   - id: postgresql.create-table-constraints
     product: postgresql
@@ -6499,12 +6517,13 @@ rows:
       - BY DEFAULT AS IDENTITY
       - sequence options
       - GENERATED ALWAYS AS expression STORED
+      - generation-declaration
     sql_shape: CREATE TABLE users (id bigint GENERATED ALWAYS AS IDENTITY, code int GENERATED ALWAYS AS (id * 2) STORED)
     prerequisites: "none"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
-    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 5 shapes -> 5 notice_only; golden manifests and native execution evidence land with the owner task"
+    audit_status: mixed
+    status_evidence: "2026-11-16 generated/identity tranche: ddl.pg.column.generation.declaration.valid and ddl.pg.column.identity.cycle.warn check bounded declaration conflicts/types/sequence bounds and authored CYCLE; repeated/unmodeled facts stay explicit gaps. T36 postgres17 catalog/no-execution/SQLSTATE evidence binds generation-declaration; only that exact dimension is audited. Expression legality, inheritance and runtime sequence state remain outside scope, so the row moves generic_notice to mixed_coverage, not semantically_checked. Historical: 2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 5 shapes -> 5 notice_only; golden manifests and native execution evidence land with the owner task"
     targets: identity kinds, sequence options, stored generated expressions
     applicability:
       - anchor: postgresql17
@@ -6512,9 +6531,26 @@ rows:
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
-        evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+        audit_status: mixed
+        evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, 'file:testdata/ddl-golden/T36.json#pg-generation-positive', 'file:testdata/ddl-golden/T36.json#pg-generation-negative']
     subaction_status:
+      - subaction_id: generation-declaration
+        parser_status: recognized
+        audit_status: audited
+        applicability:
+          - anchor: postgresql17
+            version_range: "17"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-golden/T36.json#generation-declaration
+              - file:testdata/ddl-golden/T36.json#pg-generation-positive
+              - file:testdata/ddl-golden/T36.json#pg-generation-negative
+              - file:testdata/ddl-golden/T36.json#generation-declaration-ambiguous
+              - file:testdata/sql-corpus/postgresql/ddl/findings/generation_declaration_invalid.expected.yaml#ddl.pg.column.generation.declaration.valid
+              - file:testdata/sql-corpus/postgresql/ddl/findings/identity_cycle.expected.yaml#ddl.pg.column.identity.cycle.warn
       - subaction_id: GENERATED ALWAYS AS IDENTITY
         parser_status: recognized
         audit_status: notice_only
@@ -6561,7 +6597,7 @@ rows:
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.generated-always-as-expression-stored.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
-      refs: [file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+      refs: [file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, gate:T36, file:testdata/sql-corpus/postgresql/ddl/findings/identity_cycle.expected.yaml]
     owner: T36
   - id: postgresql.create-table-partitioning
     product: postgresql
@@ -6861,12 +6897,13 @@ rows:
       - ALTER COLUMN TYPE
       - ALTER COLUMN TYPE USING
       - multi-action
+      - add-column-generation-declaration
     sql_shape: ALTER TABLE users ADD COLUMN email text
     prerequisites: existing table
     status: mixed_coverage
     parser_status: recognized
     audit_status: mixed
-    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 9 shapes -> 8 audited, 1 notice_only; golden manifests and native execution evidence land with the owner task"
+    status_evidence: "2026-11-16 generated/identity tranche: add-column-generation-declaration gains ddl.pg.column.generation.declaration.valid and ddl.pg.column.identity.cycle.warn with T37 CLI/default-conflict/cycle controls and native catalog/no-execution proof. Existing-column identity transitions, RENAME and other columns semantics are not promoted; row remains mixed. Historical: 2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 9 shapes -> 8 audited, 1 notice_only; golden manifests and native execution evidence land with the owner task"
     targets: column add/drop/rename/type changes, cascade, multi-action
     applicability:
       - anchor: postgresql17
@@ -6875,8 +6912,25 @@ rows:
         product_scope: registered
         parser_status: recognized
         audit_status: mixed
-        evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+        evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, 'file:testdata/ddl-golden/T37.json#pg-add-column-generation']
     subaction_status:
+      - subaction_id: add-column-generation-declaration
+        parser_status: recognized
+        audit_status: audited
+        applicability:
+          - anchor: postgresql17
+            version_range: "17"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: audited
+            evidence:
+              - file:testdata/ddl-golden/T37.json#add-column-generation-declaration
+              - file:testdata/ddl-golden/T37.json#add-column-generation-cycle
+              - file:testdata/ddl-golden/T37.json#add-column-generation-invalid
+              - file:testdata/ddl-golden/T37.json#pg-add-column-generation
+              - file:testdata/sql-corpus/postgresql/ddl/findings/generation_declaration_invalid.expected.yaml#ddl.pg.column.generation.declaration.valid
+              - file:testdata/sql-corpus/postgresql/ddl/findings/identity_cycle.expected.yaml#ddl.pg.column.identity.cycle.warn
       - subaction_id: ADD COLUMN
         parser_status: recognized
         audit_status: audited
@@ -6967,7 +7021,7 @@ rows:
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.multi-action.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
-      refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+      refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, gate:T37, file:testdata/sql-corpus/postgresql/ddl/findings/generation_declaration_invalid.expected.yaml]
     owner: T37
   - id: postgresql.alter-table.column-attributes
     product: postgresql

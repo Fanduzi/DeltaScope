@@ -3,6 +3,25 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T36/T37 PostgreSQL generation-declaration contract
+
+T36 retains its original 48 cases and adds nine CLI controls plus two owned
+metadata cases (59 required cases). T37 retains its original 62 cases and adds
+three CLI controls plus one owned metadata case (66 required cases). Existing
+`pg-acceptance` profiles are unchanged; `pg-generation-declaration` isolates the
+two new rules. Fixed cases pin CREATE/ADD COLUMN parity, mode/cycling silence,
+int64 preservation, native refusal categories, duplicates/unmodeled gaps,
+disabled rules and non-PG controls.
+
+PostgreSQL 17.7 catalog oracles read `pg_attribute`, `pg_sequence` and sequence
+`is_called` without INSERT or nextval: the audit creates no tables/columns and
+does not advance sentinel sequences. Native driver-only CREATE/ADD COLUMN
+then proves identity modes/cycling, stored generation and large sequence
+bounds. Seven negative driver statements independently pin SQLSTATE 22023 /
+42601 rather than borrowing a generic notice or treating refusal as success.
+All owned schemas are removed with absence checks. Generated expressions and
+existing-column identity transitions are not promoted by these cases.
+
 ## T27/T28 MySQL routine-security contract
 
 [T27.json](T27.json) retains its original 30 required cases and independent

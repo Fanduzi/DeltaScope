@@ -4,6 +4,7 @@ Date: 2026-11-16
 Status: Accepted
 Related milestone: `milestone/pg-generated-identity`, T36 / T37
 Base: `795b47b07aedc698dad5b788758f4131113de12a`
+Implementation commits: `5d5f7ea` (lossless seam), `664c1ed` (rules/defaults/corpus/public surfaces), `01bc313` (unproven type-modifier guard)
 
 ## Context
 
@@ -43,7 +44,7 @@ ALTER TABLE ADD COLUMN declarations:
 The parser adapter first preserves internal `PGColumnGeneration` evidence:
 counts, first authored mode, explicit NULL, type-width proof, ordered int64
 sequence options and unmodeled markers. Array types are proven non-integer;
-unresolved/custom type names stay unproven rather than guessed. The existing
+unresolved/custom type names and unmodeled type modifiers stay unproven rather than guessed. The existing
 legacy fields remain unchanged for compatibility. No raw expression payload
 or new public result field is introduced. Column cloning owns the new facts.
 
@@ -102,8 +103,39 @@ and application tests pass. Clone tests prove source facts are not mutated.
 - New findings are checked for expression/numeric-payload leakage. Existing
   authored SQL behavior remains unchanged.
 
-Golden and inventory bindings are committed as the next focused evidence slice;
-only the exact checked declaration dimensions may gain feature coverage.
+- Targeted golden evidence: T36 **59/59 cases, 655 assertions**; T37
+  **66/66 cases, 682 assertions**, with the original profiles/required cases
+  retained. The first native-oracle run exposed PostgreSQL internal `char`
+  concatenation ambiguity; explicit catalog casts corrected the oracle without
+  changing rule expectations, product behavior or case denominators.
+- Driver-owned PostgreSQL 17.7 CREATE/ADD COLUMN facts independently confirm
+  identity modes, CYCLE/NO CYCLE, stored generation and full int64 bounds.
+  Seven native refusals pin SQLSTATE 22023/42601. Audits do not create/alter
+  definitions or advance the sentinel sequences. Native definitions do not
+  INSERT or call nextval; identity sequences remain `is_called=false`.
+- Required local gates passed on the evidence checkout: `go build ./...`,
+  `go test ./...`, `CGO_ENABLED=1 go test -tags postgresql ./...`, empty
+  `gofmt -l internal/ cmd/ pkg/`, `make ddl-inventory-gate`, plus
+  `make sql-corpus-gates ddl-coverage-catalog-test` and
+  `python3 scripts/test_ddl_golden.py` (896 contract cases, zero failures).
+  All owning README member/interface lists are updated; there is no global
+  architecture, dependency, installation or release contract change.
+- Three exact new inventory subactions bind these tests through file selectors.
+  The generated/identity parent becomes generic→mixed; the two general parents
+  remain mixed. Broad expression/attribute cells retain their historical states.
+  Whole-row semantically_checked remains **163**; generic **19→18**, mixed
+  **44→45**. The matrix is generated, not hand-edited.
+- Against the retained, SHA-verified base CLI, **0/8** pre-existing PG
+  generation-bearing corpus inputs and **0/3** touched inventory representative
+  shapes change verdict under Default Policy. A focused ADD COLUMN CYCLE probe
+  changes **pass→review**; new invalid ADD COLUMN declarations can reject. These
+  counts do not imply general grammar or expression coverage.
+
+The program delivery gate is a final single-HEAD TASK=all run plus artifact
+validation, followed only then by FF-only main integration and a normal push.
+The inspectable delivery artifact path is `/tmp/ddl-golden-pg-generated-identity/all/artifact.json`;
+per-task artifacts carry their own exact `head_sha`. No aggregate-readiness
+claim is borrowed from the older routine-security baseline.
 
 ## Consequences
 

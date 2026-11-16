@@ -11,8 +11,8 @@
   ],
   "status_counts": {
     "semantically_checked": 163,
-    "generic_notice": 19,
-    "mixed_coverage": 44,
+    "generic_notice": 18,
+    "mixed_coverage": 45,
     "explicit_unsupported": 41,
     "vendor_not_supported": 11,
     "parser_unsupported": 8,
@@ -6587,11 +6587,36 @@
           "audit_status": "mixed",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/postgresql.create-table.probes.txt",
-            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:testdata/ddl-golden/T36.json#pg-generation-positive",
+            "file:testdata/ddl-golden/T36.json#pg-generation-negative"
           ]
         }
       ],
       "subaction_status": [
+        {
+          "subaction_id": "generation-declaration",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "applicability": [
+            {
+              "anchor": "postgresql17",
+              "version_range": "17",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/ddl-golden/T36.json#generation-declaration",
+                "file:testdata/ddl-golden/T36.json#pg-generation-positive",
+                "file:testdata/ddl-golden/T36.json#pg-generation-negative",
+                "file:testdata/ddl-golden/T36.json#generation-declaration-ambiguous",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/generation_declaration_invalid.expected.yaml#ddl.pg.column.generation.declaration.valid",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/identity_cycle.expected.yaml#ddl.pg.column.identity.cycle.warn"
+              ]
+            }
+          ]
+        },
         {
           "subaction_id": "basic columns",
           "parser_status": "recognized",
@@ -6983,9 +7008,9 @@
       "id": "postgresql.create-table-generated-identity",
       "product": "postgresql",
       "owner": "T36",
-      "status": "generic_notice",
+      "status": "mixed_coverage",
       "parser_status": "recognized",
-      "audit_status": "notice_only",
+      "audit_status": "mixed",
       "applicability": [
         {
           "anchor": "postgresql17",
@@ -6993,14 +7018,39 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.probes.txt",
-            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:testdata/ddl-golden/T36.json#pg-generation-positive",
+            "file:testdata/ddl-golden/T36.json#pg-generation-negative"
           ]
         }
       ],
       "subaction_status": [
+        {
+          "subaction_id": "generation-declaration",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "applicability": [
+            {
+              "anchor": "postgresql17",
+              "version_range": "17",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/ddl-golden/T36.json#generation-declaration",
+                "file:testdata/ddl-golden/T36.json#pg-generation-positive",
+                "file:testdata/ddl-golden/T36.json#pg-generation-negative",
+                "file:testdata/ddl-golden/T36.json#generation-declaration-ambiguous",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/generation_declaration_invalid.expected.yaml#ddl.pg.column.generation.declaration.valid",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/identity_cycle.expected.yaml#ddl.pg.column.identity.cycle.warn"
+              ]
+            }
+          ]
+        },
         {
           "subaction_id": "GENERATED ALWAYS AS IDENTITY",
           "parser_status": "recognized",
@@ -7477,11 +7527,35 @@
           "audit_status": "mixed",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.probes.txt",
-            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:testdata/ddl-golden/T37.json#pg-add-column-generation"
           ]
         }
       ],
       "subaction_status": [
+        {
+          "subaction_id": "add-column-generation-declaration",
+          "parser_status": "recognized",
+          "audit_status": "audited",
+          "applicability": [
+            {
+              "anchor": "postgresql17",
+              "version_range": "17",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "audited",
+              "evidence": [
+                "file:testdata/ddl-golden/T37.json#add-column-generation-declaration",
+                "file:testdata/ddl-golden/T37.json#add-column-generation-cycle",
+                "file:testdata/ddl-golden/T37.json#add-column-generation-invalid",
+                "file:testdata/ddl-golden/T37.json#pg-add-column-generation",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/generation_declaration_invalid.expected.yaml#ddl.pg.column.generation.declaration.valid",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/identity_cycle.expected.yaml#ddl.pg.column.identity.cycle.warn"
+              ]
+            }
+          ]
+        },
         {
           "subaction_id": "ADD COLUMN",
           "parser_status": "recognized",

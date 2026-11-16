@@ -16,6 +16,18 @@ honestly — not a count of implemented rules.
 | T06-CLOSEOUT.md | Final T06 (#85) technical closeout index (T06技术收口材料齐备): binds every accepted dimension to the traceability rows, the SHA-frozen umbrella evidence, and the owner boundary for deferred dimensions; issue #85 stays open |
 | evidence/ | Per-row offline CLI probe captures (`<row-id>.probes.txt`): recorded `deltascope audit` output for the row's `sql_shape` at every declared version (`=== version <v> (target …)` sections). Regenerate by re-running the probe commands recorded in the file header |
 
+## PostgreSQL generation-declaration tranche
+
+`postgresql.create-table`, `postgresql.create-table-generated-identity` and
+`postgresql.alter-table.columns` bind exact `generation-declaration` /
+`add-column-generation-declaration` cells to T36/T37 mode/conflict/gap controls
+and their own PostgreSQL 17.7 catalog/refusal/no-audit-execution metadata cases.
+Only these bounded new subactions are audited. Existing broad expression and
+attribute cells retain their prior states. The generated/identity parent moves
+`generic_notice` to `mixed_coverage`; all three parents remain mixed and no
+whole row becomes semantically checked. New rule IDs are attached as literal
+selectors in corpus evidence refs. `matrix.json` is regenerated from YAML.
+
 ## Row contract
 
 Every row carries: `id` (stable, unique), `product` (`mysql`/`tidb`),
