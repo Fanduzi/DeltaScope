@@ -1010,7 +1010,7 @@ TiDB 的 ALTER VIEW 和裸 CHECK OPTION 仍是厂商边界。缺少必要事实�
 | `dml.insert.select.forbid` | 禁止 INSERT INTO … SELECT | blocker | 否 |
 | `dml.insert.on_duplicate.forbid` | 禁止 INSERT … ON DUPLICATE KEY UPDATE | blocker | 否 |
 | `dml.table.denylist.forbid` | 禁止对拒绝列表中的 schema/表执行 DML | blocker | **是** |
-| `dml.table.exists.require` | MySQL/TiDB 的 DML 目标表必须存在于实时元数据中 | blocker | **是** |
+| `dml.table.exists.require` | MySQL/TiDB/PostgreSQL 的 DML 目标表必须存在于实时元数据中 | blocker | **是** |
 
 ---
 

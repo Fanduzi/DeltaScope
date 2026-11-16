@@ -1028,7 +1028,7 @@ These rules evaluate DML statements: `SELECT`, `INSERT`, `UPDATE`, `DELETE`, and
 | `dml.insert.select.forbid` | INSERT INTO … SELECT is forbidden | blocker | No |
 | `dml.insert.on_duplicate.forbid` | INSERT … ON DUPLICATE KEY UPDATE is forbidden | blocker | No |
 | `dml.table.denylist.forbid` | DML on schema/table entries in the denylist is forbidden | blocker | **Yes** |
-| `dml.table.exists.require` | MySQL/TiDB DML target table must exist in live metadata | blocker | **Yes** |
+| `dml.table.exists.require` | MySQL/TiDB/PostgreSQL DML target table must exist in live metadata | blocker | **Yes** |
 
 ---
 
