@@ -1,0 +1,1 @@
+CREATE PROCEDURE security_definer() SQL SECURITY DEFINER SET @x=1;

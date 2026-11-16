@@ -1,0 +1,11 @@
+name: routine_security_invoker
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 4
+  unsupported:
+    count: 0
+  findings:
+    exclude: [ddl.routine.security.definer.warn]

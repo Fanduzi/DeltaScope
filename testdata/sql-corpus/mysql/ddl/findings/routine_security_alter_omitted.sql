@@ -1,0 +1,2 @@
+ALTER PROCEDURE p COMMENT 'mode is not authored';
+ALTER FUNCTION f NO SQL;

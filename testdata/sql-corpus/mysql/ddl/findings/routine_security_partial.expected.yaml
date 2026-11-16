@@ -1,0 +1,12 @@
+name: routine_security_partial
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 3
+  unsupported:
+    count: 3
+    include: [routine.body.return, execute_prepared]
+  findings:
+    include: [ddl.routine.security.definer.warn]

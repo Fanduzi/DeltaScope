@@ -1,0 +1,8 @@
+name: routine_security_nonapplicable
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  findings:
+    include: [ddl.pg.create_function.security_definer.warn]
+    exclude: [ddl.routine.security.definer.warn]

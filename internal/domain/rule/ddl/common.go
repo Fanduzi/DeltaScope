@@ -519,6 +519,7 @@ const (
 	ruleIDAlterEventNotice               = "ddl.alter_event.notice"
 	ruleIDDropEventNotice                = "ddl.drop_event.notice"
 	ruleIDEventEnabledExecutionWarn      = "ddl.event.enabled_execution.warn"
+	ruleIDRoutineSecurityDefinerWarn     = "ddl.routine.security.definer.warn"
 	ruleIDRoutineVariableShadowingWarn   = "ddl.routine.variable_shadowing.warn"
 	ruleIDCreateUserNotice               = "ddl.create_user.notice"
 	ruleIDAlterUserNotice                = "ddl.alter_user.notice"

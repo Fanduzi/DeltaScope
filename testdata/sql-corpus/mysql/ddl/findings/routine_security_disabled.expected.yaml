@@ -1,0 +1,13 @@
+name: routine_security_disabled
+dialect: mysql
+category: ddl
+config:
+  rules:
+    ddl.routine.security.definer.warn:
+      enabled: false
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    exclude: [ddl.routine.security.definer.warn]

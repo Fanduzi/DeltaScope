@@ -233,6 +233,9 @@ func summaryForRule(ruleID string) string {
 }
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
+	if ruleID == "ddl.routine.security.definer.warn" {
+		return "MySQL stored PROCEDURE/FUNCTION security-context review: explicit SQL SECURITY DEFINER on CREATE/ALTER, or the documented DEFINER default on CREATE only. INVOKER and ALTER omission are silent; no account privilege resolution or body analysis."
+	}
 	base := summaryForRule(ruleID)
 	scope := strings.Join(statementKindsForRule(ruleID), ", ")
 	metadata := "offline-safe"
@@ -255,6 +258,8 @@ func statementKindsForRule(ruleID string) []string {
 
 func triggerExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.routine.security.definer.warn":
+		return "CREATE PROCEDURE p() SQL SECURITY DEFINER SET @x=1;"
 	case ruleID == "ddl.view.target.valid":
 		return "DROP VIEW missing_view;"
 	case ruleID == "ddl.view.source.valid":
@@ -280,6 +285,8 @@ func triggerExampleForRule(ruleID string) string {
 
 func validExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.routine.security.definer.warn":
+		return "CREATE PROCEDURE p() SQL SECURITY INVOKER SET @x=1;"
 	case ruleID == "ddl.view.target.valid":
 		return "DROP VIEW IF EXISTS v;"
 	case ruleID == "ddl.view.security.definer.warn":
@@ -326,6 +333,8 @@ func configExampleForRule(ruleID string, policy domainpolicy.RulePolicy) string 
 
 func remediationForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.routine.security.definer.warn":
+		return "Review whether definer-context execution is intended; use SQL SECURITY INVOKER when caller-context execution is appropriate."
 	case strings.HasSuffix(ruleID, ".require"):
 		return "Add the required clause, option, or object explicitly so the rule no longer has to infer intent."
 	case strings.HasSuffix(ruleID, ".forbid"):
@@ -486,6 +495,8 @@ func FormatYAMLScalar(value any) string {
 // All other rules (including most DML rules) apply to common dialect scope.
 func dialectsForRule(ruleID string) []string {
 	switch {
+	case ruleID == "ddl.routine.security.definer.warn":
+		return []string{"mysql"}
 	case ruleID == "ddl.view.target.valid", ruleID == "ddl.view.source.valid",
 		ruleID == "ddl.view.security.definer.warn":
 		return []string{"mysql", "tidb"}

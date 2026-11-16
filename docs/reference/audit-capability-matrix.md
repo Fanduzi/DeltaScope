@@ -49,6 +49,14 @@ For `CREATE TABLE t → PROCEDURE → ADD c → CREATE INDEX idx_c(c)` under the
 | MySQL DROP | complete, lifecycle notice only | pass/complete, nil error | review/unverified, nil error |
 | TiDB DROP | incomplete, vendor boundary | review/incomplete, unsupported error | review/incomplete, unsupported error |
 
+### MySQL stored-routine security context
+
+| Rule ID | MySQL | TiDB | PostgreSQL | Metadata |
+|---------|-------|------|------------|----------|
+| `ddl.routine.security.definer.warn` | Default-on warning for CREATE explicit/default DEFINER and ALTER explicit DEFINER | Vendor boundary; no finding | Not applicable; existing PG rules unchanged | Not required |
+
+Explicit INVOKER and ALTER omission are silent. Account clauses alone do not select a security mode. New finding fields carry only routine/kind/operation/security/provenance and optional schema; no account privileges or body payloads are resolved. Unknown/repeated security characteristics owe `unproven_routine_security` (`routine.sql_security`) rather than a last-wins interpretation. Existing body incompleteness remains visible alongside the warning. Otherwise-pass audits intentionally become review; this does not complete whole routine inventory rows. See [decision](../decisions/2026-11-16-mysql-routine-security-definer-warn.md).
+
 Body audit reuses one walker for all three object families: `BEGIN…END` compounds, control-flow branches/loops, declarations, `SET`/`PREPARE` bindings, and flow verbs classify into typed members whose own findings report `routine`/`trigger`/`event` plus `*_member` metadata at positions translated back into the authored SQL. Trigger bodies additionally bind `OLD.<col>`/`NEW.<col>` legality to the declared event (`trigger.body.old_new` bounds illegal uses, never fabricated missing tables). Event declarations model the authored schedule shape, completion policy, and enablement — `ddl.event.enabled_execution.warn` fires when an event is provably left scheduled (CREATE defaults enabled; `DISABLE ON SLAVE` still executes on the primary), while a status-free `ALTER EVENT` owes the `missing_event_state` gap instead of a guessed warning. No body is ever executed, no scheduler or trigger action is simulated, and runtime outcomes are never predicted.
 
 This table assumes those simple statements, the four isolated blockers, and no independent error or budget cutoff. Existing findings and an earlier reject remain authoritative. Unsupported results retain the existing partial-result contract: application/SDK `ErrUnsupportedStatement`, CLI exit 1 even with `--fail-on none`, HTTP 400 and MCP `isError=true`. MySQL DROP's offline gap-only result keeps CLI exit 0 at none, HTTP 200 and MCP `isError=false`; warning/notice thresholds retain the existing gap weight. Existing `unsupported[].sql` stays equal to its statement's raw SQL; no new body or error text is copied into reason/metadata.

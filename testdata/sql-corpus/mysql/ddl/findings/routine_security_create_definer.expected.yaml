@@ -1,0 +1,9 @@
+name: routine_security_create_definer
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include: [ddl.routine.security.definer.warn]

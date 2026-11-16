@@ -1007,6 +1007,10 @@ rules:
     level: warning
     params:
 
+  # MySQL stored routines: CREATE defaults to DEFINER; ALTER warns only when authored.
+  ddl.routine.security.definer.warn:
+    enabled: true
+    level: warning
   ddl.routine.variable_shadowing.warn:
     enabled: true
     level: warning

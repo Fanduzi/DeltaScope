@@ -537,6 +537,18 @@ TiDB 的 ALTER VIEW 和裸 CHECK OPTION 仍是厂商边界。缺少必要事实�
 
 ---
 
+## DDL：MySQL 存储例程安全上下文（1 条规则）
+
+| 规则 ID | 描述 | 默认级别 | 需要元数据 |
+|---------|------|:--------:|:----------:|
+| `ddl.routine.security.definer.warn` | `CREATE PROCEDURE` / `CREATE FUNCTION` 显式或默认使用 DEFINER，以及 `ALTER PROCEDURE` / `ALTER FUNCTION` 显式指定 `SQL SECURITY DEFINER` 时提示复核 | warning | 否 |
+
+默认启用，仅适用于 MySQL。CREATE 未写安全模式时采用 MySQL 文档规定的 DEFINER 默认值；ALTER 未写该选项时不推断既有模式。显式 INVOKER 不触发本规则，但不代表代码安全。`DEFINER=account` 本身不是触发条件：配合 INVOKER 时静默；CREATE 省略模式时仍因默认模式告警。SONAME 可加载函数、DROP、TiDB 厂商边界和 PostgreSQL 不适用。
+
+finding 仅携带例程名称、种类、操作、`security=definer`、`security_source=authored|create_default` 及可选 schema。不解析账号权限，不分析例程体；RETURN、动态 SQL 等既有边界仍与告警并存。未知或重复的安全特征产生 `unproven_routine_security` 证据缺口（`routine.sql_security`），不按最后一个值推断 INVOKER。经批准，默认告警会将原本 pass 的审计改为 review；仍可通过 enabled/level 配置覆盖。见[决策记录](../decisions/2026-11-16-mysql-routine-security-definer-warn.md)。
+
+---
+
 ## DDL：MySQL/TiDB DDL Notice 规则（27 条）
 
 这些规则将此前为 normalized_silent 的 MySQL 和 TiDB DDL 形态提升为 finding-covered。覆盖生命周期 DDL 事件（独立索引、重命名、数据库变更、用户/角色/权限管理、存储过程生命周期、资源组）、ALTER TABLE 动作通知（列添加/删除/修改、约束、索引、外键），以及 TiDB 专属的 placement policy 和 sequence 生命周期。仅在设置 `--dialect mysql` 或 `--dialect tidb` 时生效，PostgreSQL 方言下自动跳过。

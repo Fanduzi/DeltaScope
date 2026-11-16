@@ -555,6 +555,18 @@ These rules guard against MySQL and TiDB database/schema lifecycle DDL operation
 
 ---
 
+## DDL: MySQL Stored-Routine Security (1 rule)
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.routine.security.definer.warn` | Stored `CREATE PROCEDURE` / `CREATE FUNCTION` with explicit or default DEFINER security, and `ALTER PROCEDURE` / `ALTER FUNCTION` with explicit `SQL SECURITY DEFINER`, require review | warning | No |
+
+Enabled by default, MySQL only. Omitted CREATE security uses MySQL's documented DEFINER default; omitted ALTER security makes no claim about the existing mode. Explicit INVOKER emits no finding from this rule, not a safety certificate. A `DEFINER=account` clause is not an independent trigger: with INVOKER it is silent; with omitted CREATE security the default still warns. SONAME/loadable functions, DROP, TiDB vendor boundaries and PostgreSQL are outside this rule.
+
+Findings contain bounded routine identity, kind, operation, `security=definer`, `security_source=authored|create_default`, and optional schema. No privilege/account resolution or body analysis is performed. Existing RETURN and dynamic-SQL boundaries remain incomplete alongside any warning. Unknown/repeated security characteristics remain `unproven_routine_security` evidence gaps (`routine.sql_security`), never a last-wins INVOKER pass. This approved default-on warning intentionally changes otherwise-pass audits to review; the usual enabled/level policy overrides apply. See [decision](../decisions/2026-11-16-mysql-routine-security-definer-warn.md).
+
+---
+
 ## DDL: MySQL/TiDB DDL Notice Rules (27 rules)
 
 These rules promote previously normalized-silent MySQL and TiDB DDL forms to finding-covered status. They cover lifecycle DDL events (standalone index, rename, database alteration, user/role/privilege management, procedure lifecycle, resource group), ALTER TABLE action notices (column add/drop/modify, constraint, index, foreign key), and TiDB-specific placement policy and sequence lifecycle. They only apply when `--dialect mysql` or `--dialect tidb` is set and are skipped for PostgreSQL dialects.
