@@ -2,12 +2,16 @@
 
 Date: 2026-11-16
 
-Status: **Program active — routine-security shipped; approved PG generation-declaration slice implemented, delivery verification-gated**
+Status: **Program active — routine-security and approved PG generation-declaration slices delivered; remaining family dimensions open**
+
+Current implementation baseline: `d8cceea6b71e6ebe76ee0aaabcf3f95c76c665d0` (main and origin/main verified equal on 2026-11-17).
+
+Execution ledger: [19 families / 63 rows / all recorded dimensions](2026-11-17-rule-backlog-ledger.md). This ledger tracks remaining work; it does not replace the authoritative inventory or convert a partial slice into whole-family completion.
 
 ## Program progress
 
 - **Routine security slice completed:** implementation `780585f1c391`, shipping/evidence commit `795b47b07aed`; pushed to `main` on 2026-11-16. Single-HEAD TASK=all at `795b47b0`: 50 tasks, 3383/3383 cases, 59,515 assertions; `/tmp/ddl-golden-routine-all/all/artifact.json` validates. [Lint/unit CI](https://github.com/Fanduzi/DeltaScope/actions/runs/43881361921) and [TLS E2E CI](https://github.com/Fanduzi/DeltaScope/actions/runs/43881362072) succeeded. Security-bearing CREATE rows remain mixed; ALTER moves generic to mixed. Whole-row semantically_checked remains 163. Neighboring routine-body/DROP backlog is not completed by association.
-- **PG generated/identity approved slice completed (implementation):** shipping implementation `664c1ed` after extractor seam commit `5d5f7ea`, with native/inventory evidence `c233fab7`, on `milestone/pg-generated-identity` from `795b47b0`. This follows relative priority 2. Operator explicitly approved bounded CREATE TABLE / ADD COLUMN declaration validity plus identity CYCLE review, **both default-on**, including reject/review impact. T36/T37 native catalog/refusal/no-audit-execution cases pass; exact bounded inventory subactions gain evidence, while generated/identity moves generic→mixed and no whole row becomes semantically checked. Expression legality, existing-column transitions and runtime sequence state remain open dimensions, not completed by association. Delivery is governed by the single-HEAD TASK=all / FF-only / normal-push / CI chain in the program mandate. See [decision](../decisions/2026-11-16-postgresql-generated-identity-governance.md).
+- **PG generated/identity approved slice delivered:** final shipping commit `d8cceea6b71e6ebe76ee0aaabcf3f95c76c665d0` after extractor `5d5f7ea`, rules `664c1ed`, guard `01bc313` and native/inventory evidence `c233fab7`. The retained `milestone/pg-generated-identity` branch was FF-only integrated from `795b47b0`, then normally pushed to main. Single-HEAD TASK=all at final `d8cceea6`: **50 tasks, 3398/3398 cases, 59,716 assertions**, all tasks nonempty; `/tmp/ddl-golden-pg-generated-identity-final/all/artifact.json` validates. [Lint/Go/PG CI](https://github.com/Fanduzi/DeltaScope/actions/runs/43909845975), [TLS E2E CI](https://github.com/Fanduzi/DeltaScope/actions/runs/43909846063) and [Pages](https://github.com/Fanduzi/DeltaScope/runs/133448716229) succeeded. Operator explicitly approved bounded CREATE TABLE / ADD COLUMN declaration validity plus identity CYCLE review, **both default-on**, including reject/review impact. Exact declaration subactions gain evidence; generated/identity moves generic→mixed and whole-row semantically_checked stays 163. Expression legality, existing-column transitions and runtime sequence state remain open dimensions, not completed by association. See [decision](../decisions/2026-11-16-postgresql-generated-identity-governance.md).
 - **Next candidate:** PG ALTER constraint/validation, following relative priority 3; approve its exact scope/default behavior before implementation. Do not duplicate existing NOT VALID/VALIDATE advisories or promote the five #149 parser candidates. PR #150 and PR #112 still require the operator's decision.
 - The original research, inventory counts and estimates below are historical scope, not a claim that all backlog dimensions in a shipped family are closed.
 
@@ -33,7 +37,7 @@ Why this family first:
 
 ## Baseline and evidence limits
 
-The authoritative [inventory](../../testdata/ddl-inventory/inventory.yaml) has 301 rows:
+The following is the **historical scoping snapshot at research base `26c8fef6`**, not the current delivery totals. The authoritative [inventory](../../testdata/ddl-inventory/inventory.yaml) has 301 rows. At delivered `d8cceea6`, semantically_checked=163, generic_notice=18 and mixed_coverage=45; the other classes are unchanged. The original snapshot was:
 
 | Stored aggregate | Rows |
 | --- | ---: |
@@ -51,7 +55,7 @@ Status evidence includes historical probes, not a guarantee that every present-d
 
 A generic finding, a policy-disabled control, an unsupported result, or a parser error is not proof of full semantic coverage. Future changes must bind evidence to each exact row/subaction/anchor. A mixed row containing a parser boundary cannot be promoted by improving an unrelated parsed cell.
 
-The retained all-task golden baseline remains `6a4f14e7`: 50 tasks, 3361/3361 cases, 59,206 assertions. It was validated during release work, not rerun for this plan. No new native routine probes were performed for this research.
+The research-time retained all-task golden baseline was `6a4f14e7`: 50 tasks, 3361/3361 cases, 59,206 assertions. It was validated during release work, not rerun for the original scoping research. Later routine and PG declaration delivery evidence is recorded above; its totals must not be attributed to the old baseline.
 
 ## Current-path findings
 

@@ -147,11 +147,46 @@ and application tests pass. Clone tests prove source facts are not mutated.
   than claiming the earlier SHA as final evidence. Exact per-task HEADs remain
   machine-checked by the canonical runner.
 
-The program delivery gate is a final single-HEAD TASK=all run plus artifact
-validation, followed only then by FF-only main integration and a normal push.
-The final rerun's delivery artifact path is `/tmp/ddl-golden-pg-generated-identity-final/all/artifact.json`;
-per-task artifacts carry their own exact `head_sha`. No aggregate-readiness
-claim is borrowed from the older routine-security baseline.
+### Final delivery evidence (rechecked 2026-11-17)
+
+- Base: `795b47b07aedc698dad5b788758f4131113de12a`.
+- Candidate, FF-only merged main and pushed origin/main:
+  `d8cceea6b71e6ebe76ee0aaabcf3f95c76c665d0`.
+- Exact normal push range: `795b47b0..d8cceea6`. The milestone branch
+  `milestone/pg-generated-identity` is retained. No tag or release was created.
+- Final candidate and merged-root gates passed: `go build ./...`,
+  `go test ./...`, `CGO_ENABLED=1 go test -tags postgresql ./...`, empty
+  `gofmt -l internal/ cmd/ pkg/`, `git diff --check`, and
+  `make ddl-inventory-gate`. Candidate corpus/catalog gates,
+  `golangci-lint run ./...` and workflow-contract checks also passed.
+- `python3 scripts/ddl_golden.py run --task all --artifact-dir
+  /tmp/ddl-golden-pg-generated-identity-final` passed **50 tasks,
+  3398/3398 cases, 59,716 assertions**, with zero failed/empty tasks.
+  Every task artifact records final `d8cceea6` as `head_sha`; this is a complete
+  rerun, not a relabeling of the earlier aggregate. The CLI build and task
+  serving checkout were `/Users/fan/GolangProjects/DeltaScope` at that SHA.
+- `python3 scripts/ddl_golden.py validate --artifact
+  /tmp/ddl-golden-pg-generated-identity-final/all/artifact.json` passed;
+  the retained artifact was independently recounted and revalidated on
+  2026-11-17. No task was skipped or substituted from another HEAD.
+- [Lint/Go/PG CI](https://github.com/Fanduzi/DeltaScope/actions/runs/43909845975):
+  `golangci-lint`, `go test`, `PostgreSQL unit tests` all succeeded.
+  [CLI TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/43909846063)
+  and [Pages](https://github.com/Fanduzi/DeltaScope/runs/133448716229) succeeded.
+  All five checks are attached to exact final `d8cceea6`.
+- A separate local read-only verification phase inspected scope, rule silent/
+  gap arms, registration and exact evidence ownership after the goimports
+  correction; its result was PASS with no known unresolved P1/P2 findings.
+  This was not a delegated review. Working-tree status was compared against
+  the pre-delivery snapshot: tracked paths were clean, pre-existing untracked
+  tool/evidence paths were preserved, and no unrelated worktree was changed.
+- Golden fixture containers were removed by the runner. The unrelated Docker
+  workloads, release worktree and milestone branches were preserved. PR #112
+  and PR #150 remained open and unmerged. No tracker ticket was closed for
+  this bounded slice.
+
+These facts close the approved declaration slice only. They do not close
+unimplemented expression, transition or runtime-state dimensions in the family.
 
 ## Consequences
 
