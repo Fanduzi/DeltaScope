@@ -907,6 +907,9 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			"constraint_type": constraintType,
 			"not_valid":       strconv.FormatBool(constraint.GetSkipValidation()),
 		}
+		if constraintType == "primary_key" || constraintType == "unique" {
+			options["using_index"] = strconv.FormatBool(constraint.GetIndexname() != "")
+		}
 		if constraint.GetContype() == pg_query.ConstrType_CONSTR_FOREIGN {
 			if cols := stringValuesFromNodes(constraint.GetFkAttrs()); len(cols) > 0 {
 				options["columns"] = strings.Join(cols, ",")
