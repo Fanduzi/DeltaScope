@@ -93,9 +93,22 @@ on their existing parser-error boundaries.
 - `parser_constraint_build_postgresql_tag_test.go` binds the reusable-index
   marker to the actual AST, including plain, reused, unnamed and quoted cases;
   FK/CHECK do not acquire an irrelevant marker.
-- Evidence for the new rule/default contract is supplied by the implementation
-  and native/corpus commits; this seam record alone claims no inventory
-  promotion or final delivery readiness.
+- `go test ./...`, `CGO_ENABLED=1 go test -tags postgresql ./...` and
+  `golangci-lint run ./...` pass with the approved warning pair and UNIQUE
+  reuse correction. Adjacent rule tests cover explicit true/false, missing/
+  invalid facts, per-action warning/gap coexistence, nil/inapplicable inputs,
+  configured levels, disabled registration and cancellation.
+- Real parser/application and SDK/HTTP/MCP tests pin the shared warnings and
+  silent arms. SDK partial-result tests retain a PG18 parser-error sibling;
+  new finding fields do not leak unrelated reference/index payloads.
+- Corpus includes positive, silent-mode, disabled and MySQL/TiDB controls.
+  The coverage catalog and its embedded copy are regenerated from tests.
+  The representative PG census gains one net finding-covered case (ordinary
+  ADD PRIMARY KEY); parser-error remains five. Reused UNIQUE becomes silent
+  as approved, not because a case or assertion was removed.
+
+Native and exact inventory bindings belong to the subsequent focused evidence
+commit; these local checks alone are not final delivery or family completion.
 
 ## Consequences
 

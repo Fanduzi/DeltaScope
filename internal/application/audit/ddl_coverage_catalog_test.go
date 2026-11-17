@@ -561,7 +561,7 @@ func TestDDLCoverageCatalog(t *testing.T) {
 	// Validate baselines.
 	assertCatalogSummary(t, "mysql", mysqlSummary, 63, 63, 0, 0, 0, 0)
 	assertCatalogSummary(t, "tidb", tidbSummary, 57, 43, 1, 12, 1, 0)
-	assertCatalogSummary(t, "postgresql", pgSummary, 290, 277, 8, 0, 5, 0)
+	assertCatalogSummary(t, "postgresql", pgSummary, 290, 278, 7, 0, 5, 0)
 	assertCatalogSummary(t, "postgresql_alter_table_residual", pgResSummary, 66, 59, 3, 0, 4, 0)
 
 	// Convert to JSON entries.

@@ -233,6 +233,12 @@ func summaryForRule(ruleID string) string {
 }
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
+	if ruleID == "ddl.pg.alter.add_foreign_key.not_valid.require" {
+		return "PostgreSQL ALTER ADD FOREIGN KEY without NOT VALID warns about initial validation and locks. NOT VALID is silent for this rule, not legality proof; PostgreSQL 17 partitioned-table foreign keys cannot use that option. Existing FK forbids and validation follow-up remain independent."
+	}
+	if ruleID == "ddl.pg.alter.add_primary_key.concurrent_index.warn" {
+		return "PostgreSQL ALTER ADD PRIMARY KEY without USING INDEX warns about index-build and lock impact. Explicit USING INDEX is silent, not index-eligibility or lock-free attachment proof."
+	}
 	if ruleID == "ddl.pg.column.generation.declaration.valid" {
 		return "PostgreSQL CREATE TABLE / ADD COLUMN bounded generated/identity declarations: DEFAULT/NULL conflicts, proven scalar integer type and identity sequence bounds. Repeated or incomplete facts stay evidence gaps. No expression legality, existing-column transition or runtime sequence-state proof."
 	}
@@ -264,6 +270,10 @@ func statementKindsForRule(ruleID string) []string {
 
 func triggerExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.alter.add_foreign_key.not_valid.require":
+		return "ALTER TABLE child ADD CONSTRAINT fk FOREIGN KEY (pid) REFERENCES parent(id);"
+	case ruleID == "ddl.pg.alter.add_primary_key.concurrent_index.warn":
+		return "ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY (id);"
 	case ruleID == "ddl.pg.column.generation.declaration.valid":
 		return "CREATE TABLE t (id bigint GENERATED ALWAYS AS IDENTITY (INCREMENT 0));"
 	case ruleID == "ddl.pg.column.identity.cycle.warn":
@@ -295,6 +305,10 @@ func triggerExampleForRule(ruleID string) string {
 
 func validExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.alter.add_foreign_key.not_valid.require":
+		return "ALTER TABLE child ADD CONSTRAINT fk FOREIGN KEY (pid) REFERENCES parent(id) NOT VALID;"
+	case ruleID == "ddl.pg.alter.add_primary_key.concurrent_index.warn":
+		return "ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY USING INDEX idx;"
 	case ruleID == "ddl.pg.column.generation.declaration.valid", ruleID == "ddl.pg.column.identity.cycle.warn":
 		return "CREATE TABLE t (id bigint GENERATED ALWAYS AS IDENTITY (NO CYCLE));"
 	case ruleID == "ddl.routine.security.definer.warn":
@@ -345,6 +359,10 @@ func configExampleForRule(ruleID string, policy domainpolicy.RulePolicy) string 
 
 func remediationForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.alter.add_foreign_key.not_valid.require":
+		return "Review validation and locks on both tables; consider NOT VALID then VALIDATE where supported, not for PostgreSQL 17 partitioned-table foreign keys."
+	case ruleID == "ddl.pg.alter.add_primary_key.concurrent_index.warn":
+		return "Review index-build risk; consider an eligible prebuilt unique index where supported. USING INDEX still requires eligibility and attachment/NOT NULL review."
 	case ruleID == "ddl.pg.column.generation.declaration.valid":
 		return "Correct generation/default/nullability conflicts and use valid integer sequence bounds; resolve unproven declaration facts."
 	case ruleID == "ddl.pg.column.identity.cycle.warn":

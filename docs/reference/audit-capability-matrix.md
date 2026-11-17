@@ -49,6 +49,17 @@ For `CREATE TABLE t → PROCEDURE → ADD c → CREATE INDEX idx_c(c)` under the
 | MySQL DROP | complete, lifecycle notice only | pass/complete, nil error | review/unverified, nil error |
 | TiDB DROP | incomplete, vendor boundary | review/incomplete, unsupported error | review/incomplete, unsupported error |
 
+### PostgreSQL ALTER constraint migration risk
+
+| Rule ID | PostgreSQL | MySQL / TiDB | Metadata |
+|---------|------------|--------------|----------|
+| `ddl.pg.alter.add_foreign_key.not_valid.require` | Default-on warning for authored FK without NOT VALID; explicit NOT VALID silent | Not applicable | Not required |
+| `ddl.pg.alter.add_primary_key.concurrent_index.warn` | Default-on warning for authored PK without USING INDEX; explicit reuse silent | Not applicable | Not required |
+
+Behavior change approved. These review signals do not prove target/index legality, measure locks or execute ALTER. FK forbids and validation follow-up remain independent. PostgreSQL 17 partitioned-table FKs cannot use NOT VALID; USING INDEX still has eligibility/attachment/NOT NULL constraints. Missing option facts remain `unproven_constraint_declaration` gaps. UNIQUE USING INDEX is now silent for the existing build advisory; its ordinary UNIQUE arm retains the ID/notice level with the corrected ACCESS EXCLUSIVE explanation. Other F09 constraint-state/identity/attribute dimensions remain open.
+
+Maintainer notes: [decision](../decisions/2026-11-17-postgresql-alter-constraint-build-risk.md).
+
 ### PostgreSQL generated/identity declarations
 
 | Rule ID | PostgreSQL | MySQL / TiDB | Metadata |

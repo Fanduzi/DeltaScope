@@ -400,16 +400,16 @@ func (r addUniqueConstraintAdvisoryRule) Evaluate(ctx context.Context, statement
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		if alter.Options["constraint_type"] != "unique" {
+		if alter.Options["constraint_type"] != "unique" || alter.Options["using_index"] == "true" {
 			continue
 		}
 		findings = append(findings, rule.Finding{
 			Level:   r.level,
 			Message: fmt.Sprintf("ADD UNIQUE CONSTRAINT %q builds a unique index — consider CREATE UNIQUE INDEX CONCURRENTLY instead", alter.Name),
 			Explanation: &rule.FindingExplanation{
-				Why:        "PostgreSQL ADD CONSTRAINT ... UNIQUE acquires a SHARE ROW EXCLUSIVE lock while building the underlying unique index, which can block writes on the table.",
+				Why:        "PostgreSQL ADD CONSTRAINT ... UNIQUE without USING INDEX builds the underlying unique index under an ACCESS EXCLUSIVE lock, which can block concurrent table access.",
 				Risk:       "On large tables, the index build can take significant time, blocking concurrent writes throughout.",
-				Suggestion: "Prefer a two-step approach: 1) CREATE UNIQUE INDEX CONCURRENTLY to build the index without blocking writes. 2) ADD CONSTRAINT ... USING INDEX to attach the constraint to the pre-built index.",
+				Suggestion: "Consider CREATE UNIQUE INDEX CONCURRENTLY followed by ADD CONSTRAINT ... USING INDEX where supported; index eligibility and attachment locks still need review.",
 			},
 			Metadata: map[string]any{
 				"action":          "add_constraint",

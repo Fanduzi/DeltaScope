@@ -21,8 +21,8 @@
     },
     "postgresql": {
       "total": 290,
-      "finding_covered": 277,
-      "normalized_silent": 8,
+      "finding_covered": 278,
+      "normalized_silent": 7,
       "unsupported_boundary": 0,
       "parser_error": 5,
       "unclassified": 0
@@ -807,6 +807,7 @@
       "form": "ALTER TABLE ADD CONSTRAINT FOREIGN KEY",
       "classification": "finding_covered",
       "finding_rule_ids": [
+        "ddl.pg.alter.add_foreign_key.not_valid.require",
         "ddl.table.foreign_key.forbid",
         "ddl.table.foreign_key.forbid"
       ],
@@ -816,9 +817,11 @@
       "dialect": "postgresql",
       "family": "alter_table",
       "form": "ALTER TABLE ADD CONSTRAINT PRIMARY KEY",
-      "classification": "normalized_silent",
-      "finding_rule_ids": [],
-      "notes": "normalized, no finding under default policy"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.add_primary_key.concurrent_index.warn"
+      ],
+      "notes": ""
     },
     {
       "dialect": "postgresql",
@@ -1430,9 +1433,11 @@
       "dialect": "postgresql",
       "family": "constraints",
       "form": "PRIMARY KEY INCLUDE",
-      "classification": "normalized_silent",
-      "finding_rule_ids": [],
-      "notes": "normalized, no finding under default policy"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.add_primary_key.concurrent_index.warn"
+      ],
+      "notes": ""
     },
     {
       "dialect": "postgresql",
@@ -1457,11 +1462,9 @@
       "dialect": "postgresql",
       "family": "constraints",
       "form": "UNIQUE USING INDEX",
-      "classification": "finding_covered",
-      "finding_rule_ids": [
-        "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory"
-      ],
-      "notes": ""
+      "classification": "normalized_silent",
+      "finding_rule_ids": [],
+      "notes": "normalized, no finding under default policy"
     },
     {
       "dialect": "postgresql",

@@ -16,6 +16,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 | handler.go | Binds Gin HTTP requests to public APIs, emits diagnostic error envelopes that retain the full partial audit result beside the bounded transport error, and maps MCP `connection_ref` to field-level `invalid_request` instead of opaque `invalid_json` |
 | handler_unsupported_diagnostics_evidence_test.go | Verifies HTTP parser diagnostics preserve the review-floored partial result, valid statements/findings, locations, context, error status, and no-leak boundaries |
 | handler_unsupported_verdict_floor_postgresql_tag_test.go | Verifies HTTP PostgreSQL `SELECT 1` keeps non-success status and serializes the review-floored unsupported result with the retained incomplete-coverage statement |
+| audit_constraint_migration_postgresql_tag_test.go | Shared PG primary-key build warning and USING INDEX silent arm reach HTTP JSON unchanged |
 | audit_generation_postgresql_tag_test.go | Pins shared PostgreSQL default-on identity-CYCLE warnings through HTTP JSON, without transport-specific analysis |
 | audit_routine_security_test.go | Pins shared default routine-security warnings in complete HTTP 200 and RETURN-incomplete HTTP 400 payloads; no transport-specific rule logic |
 | audit_coverage_t03_test.go | Verifies issue #82/T03 transport contract: MySQL `CREATE SEQUENCE` + supported `ALTER TABLE` returns HTTP 400 with the partial result, retained incomplete coverage, and bounded unsupported evidence |

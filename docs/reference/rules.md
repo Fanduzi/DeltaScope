@@ -555,6 +555,23 @@ These rules guard against MySQL and TiDB database/schema lifecycle DDL operation
 
 ---
 
+## DDL: PostgreSQL ALTER Constraint Migration Risk (2 rules)
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.alter.add_foreign_key.not_valid.require` | ALTER ADD FOREIGN KEY without NOT VALID requests initial validation of existing rows | warning | No |
+| `ddl.pg.alter.add_primary_key.concurrent_index.warn` | ALTER ADD PRIMARY KEY without USING INDEX requests an index build under the ALTER lock | warning | No |
+
+Both are default-enabled; the new review impact is explicitly approved. Authored `NOT VALID` and `USING INDEX` are silent for their respective rules, not proof of target existence, index eligibility or successful execution. Missing/unowned option facts owe `unproven_constraint_declaration` evidence gaps (`constraint.not_valid` / `constraint.using_index`). CREATE and unrelated ALTER actions, MySQL and TiDB do not match.
+
+The FK warning does not relax `ddl.table.foreign_key.forbid`. Existing CHECK NOT VALID and NOT VALID→VALIDATE follow-up rules remain independent. Remediation is conditional: PostgreSQL 17 does not permit NOT VALID foreign keys on partitioned tables. A separately built eligible unique index can reduce the PK index-build step, but USING INDEX attachment and NOT NULL verification can still require locks/scans; no actual duration or lock-free execution is promised.
+
+The existing `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory` keeps its ID/default notice level, but is silent for explicit UNIQUE USING INDEX instead of incorrectly claiming an index build. Plain UNIQUE still receives the advisory, with the documented ACCESS EXCLUSIVE lock explanation. New findings carry only bounded table/schema/constraint identity, kind, action and the relevant boolean declaration; no SQL or index-expression payload is emitted.
+
+Maintainer notes: [decision](../decisions/2026-11-17-postgresql-alter-constraint-build-risk.md). This is one F09 slice, not complete constraint-state or whole-family coverage.
+
+---
+
 ## DDL: PostgreSQL Generated/Identity Declarations (2 rules)
 
 | Rule ID | Description | Default Level | Metadata Required |

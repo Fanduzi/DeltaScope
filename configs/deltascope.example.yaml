@@ -1007,6 +1007,13 @@ rules:
     level: warning
     params:
 
+  # PostgreSQL authored constraint validation/index-build risk; not execution proof.
+  ddl.pg.alter.add_foreign_key.not_valid.require:
+    enabled: true
+    level: warning
+  ddl.pg.alter.add_primary_key.concurrent_index.warn:
+    enabled: true
+    level: warning
   # PostgreSQL CREATE/ADD COLUMN generation declarations; bounded, not expression analysis.
   ddl.pg.column.generation.declaration.valid:
     enabled: true

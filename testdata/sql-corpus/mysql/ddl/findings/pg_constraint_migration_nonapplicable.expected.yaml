@@ -1,0 +1,7 @@
+name: pg_constraint_migration_nonapplicable
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  findings:
+    exclude: [ddl.pg.alter.add_foreign_key.not_valid.require, ddl.pg.alter.add_primary_key.concurrent_index.warn]

@@ -1,0 +1,15 @@
+name: constraint_migration_risk
+dialect: postgresql
+category: ddl
+config:
+  rules:
+    ddl.table.foreign_key.forbid:
+      enabled: false
+expect:
+  parse_ok: true
+  statements:
+    count: 2
+  unsupported:
+    count: 0
+  findings:
+    include: [ddl.pg.alter.add_foreign_key.not_valid.require, ddl.pg.alter.add_primary_key.concurrent_index.warn]

@@ -1,0 +1,2 @@
+ALTER TABLE app.t ADD PRIMARY KEY(id);
+ALTER TABLE app.child ADD FOREIGN KEY(pid) REFERENCES app.parent(id);

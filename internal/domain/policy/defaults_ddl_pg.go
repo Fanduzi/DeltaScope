@@ -48,6 +48,16 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelWarning,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.alter.add_foreign_key.not_valid.require": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter.add_primary_key.concurrent_index.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
 		"ddl.pg.alter.add_unique_constraint.concurrent_index.advisory": {
 			Enabled: true,
 			Level:   rule.LevelNotice,

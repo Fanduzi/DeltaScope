@@ -537,6 +537,23 @@ TiDB 的 ALTER VIEW 和裸 CHECK OPTION 仍是厂商边界。缺少必要事实�
 
 ---
 
+## DDL：PostgreSQL ALTER 约束迁移风险（2 条规则）
+
+| 规则 ID | 描述 | 默认级别 | 需要元数据 |
+|---------|------|:--------:|:----------:|
+| `ddl.pg.alter.add_foreign_key.not_valid.require` | ALTER ADD FOREIGN KEY 未写 NOT VALID 时，请求对既有行进行初始验证 | warning | 否 |
+| `ddl.pg.alter.add_primary_key.concurrent_index.warn` | ALTER ADD PRIMARY KEY 未写 USING INDEX 时，请求在 ALTER 锁下构建索引 | warning | 否 |
+
+两条规则默认启用，新增 review 影响已获明确批准。对应声明中写出 NOT VALID / USING INDEX 时，本规则静默；这不代表目标存在、索引合格或语句可成功执行。选项事实缺失或未建模时保留 `unproven_constraint_declaration` 证据缺口（`constraint.not_valid` / `constraint.using_index`），不从字段缺失猜测。CREATE、其他 ALTER 动作以及 MySQL/TiDB 不匹配。
+
+FK 告警不放宽 `ddl.table.foreign_key.forbid`；原有 CHECK NOT VALID 和 NOT VALID 后续 VALIDATE 检查保持独立。建议有适用边界：PostgreSQL 17 的分区表外键不允许 NOT VALID。预先并发建立合格唯一索引可减少 PK 的索引构建步骤，但 USING INDEX 附着及 NOT NULL 验证仍可能需要锁或扫描，不承诺实际耗时或无锁执行。
+
+既有 `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory` 保留 ID 和默认 notice 级别；显式 UNIQUE USING INDEX 不再收到错误的“正在构建索引”提示。普通 UNIQUE 仍提示，并将锁说明修正为文档规定的 ACCESS EXCLUSIVE。新增 finding 仅携带表/schema/约束身份、类型、动作和相关声明布尔值，不输出 SQL 或索引表达式载荷。
+
+维护者说明：[决策记录](../decisions/2026-11-17-postgresql-alter-constraint-build-risk.md)。这只是 F09 的一个切片，不代表约束状态或整族覆盖完成。
+
+---
+
 ## DDL：PostgreSQL 生成列与标识列声明（2 条规则）
 
 | 规则 ID | 描述 | 默认级别 | 需要元数据 |

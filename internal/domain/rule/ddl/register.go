@@ -698,6 +698,8 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGTableForeignKeyCrossSchemaAdvisory, construct: newTableForeignKeyCrossSchemaAdvisoryRule},
 		{ruleID: ruleIDPGDropIndexAdvisory, construct: newDropIndexAdvisoryRule},
 		{ruleID: ruleIDPGAlterAddColumnNonNullNoDefaultWarn, construct: newAddColumnNonNullNoDefaultWarnRule},
+		{ruleID: ruleIDPGAlterAddForeignKeyNotValidRequire, construct: newPGForeignKeyNotValidRule},
+		{ruleID: ruleIDPGAlterAddPrimaryKeyConcurrentIndexWarn, construct: newPGPrimaryKeyConcurrentIndexRule},
 		{ruleID: ruleIDPGAlterAddUniqueConstraintConcurrentIndexAdvisory, construct: newAddUniqueConstraintAdvisoryRule},
 		{ruleID: ruleIDPGAlterDropConstraintAdvisory, construct: newDropConstraintAdvisoryRule},
 		// PostgreSQL object lifecycle rules (PG-only).
