@@ -537,6 +537,26 @@ TiDB 的 ALTER VIEW 和裸 CHECK OPTION 仍是厂商边界。缺少必要事实�
 
 ---
 
+## DDL：PostgreSQL 约束目标（3 条规则）
+
+| 规则 ID | 限定检查 | 默认级别 | 需要元数据 |
+|---------|----------|:--------:|:----------:|
+| `ddl.pg.alter.validate_constraint.target.require` | VALIDATE 的目标存在且为 FK/CHECK | blocker | 是 |
+| `ddl.pg.alter.constraint_deferrability.target.require` | ALTER CONSTRAINT deferrability 的目标存在且为 FK | blocker | 是 |
+| `ddl.pg.alter.drop_constraint.target.require` | DROP 目标缺失且未写 IF EXISTS 时拒绝 | blocker | 是 |
+
+三条默认行为均已获明确批准。检查依赖精确绑定表/schema 的完整、新鲜约束目录，以及真实观测的稳定 PostgreSQL 17 版本。解码后的标识符区分大小写，重复或归属不明的记录不采用 last-wins。缺失、歧义、过期或超出作用域的事实保留 `unproven_constraint_target` 缺口（`target_table.pg_constraints`、`instance.version` 或 `constraint.if_exists`），不猜测目标不存在。事实缺口沿用 **unverified/review** 协议；语法和 parser 边界仍是 incomplete。调用者的 `target_version` 不能替代服务器观测，也不扩展仅面向 MySQL/TiDB 的公共版本身份协议。
+
+已证明为 validated 的 FK/CHECK 不再收到原有扫描 notice；已证明目标缺失的 DROP IF EXISTS 不再收到移除完整性保证的 notice。事实未知时保留条件式建议。原有 FK/PK forbid 和 NOT VALID→VALIDATE 跟进仍独立生效。
+
+已接受的阶段边界：前序相关 DDL、同一 ALTER 中的前序动作使旧目录事实失效，不推演 PG 后态。未知/parser 失败或未建模的跨身份影响会更保守地失效。本批不启用通用 PostgreSQL 顺序执行模型；目标检查不证明数据满足约束、依赖可移除、权限、继承/分区合法性或执行成功。原生 23514/23503 数据拒绝仍是独立边界。
+
+公共 Go provider 可使用 `PGConstraintState` 别名提供名称、原生 `pg_constraint.contype` 与 validated 状态，目录字段不进入 JSON。新增 finding 仅输出限定身份/动作、`reason_code`、`target_exists` 和可选的单字符 `target_constraint_kind`，不输出表达式或原始 provider 错误。
+
+维护者说明：[决策与冻结的 T37 用例角色](../decisions/2026-11-17-postgresql-constraint-target-evidence.md)。这仍是 F09 的部分切片。
+
+---
+
 ## DDL：PostgreSQL ALTER 约束迁移风险（2 条规则）
 
 | 规则 ID | 描述 | 默认级别 | 需要元数据 |

@@ -233,6 +233,15 @@ func summaryForRule(ruleID string) string {
 }
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
+	if ruleID == "ddl.pg.alter.validate_constraint.target.require" {
+		return "Requires a proven existing PostgreSQL FK/CHECK target for VALIDATE CONSTRAINT. Missing/wrong-kind targets block; unknown, ambiguous or stale catalog facts remain evidence gaps. Does not verify data or execution."
+	}
+	if ruleID == "ddl.pg.alter.constraint_deferrability.target.require" {
+		return "Requires a proven existing PostgreSQL FK target for ALTER CONSTRAINT deferrability. Missing/wrong-kind targets block; quoted names bind exactly and unknown/stale facts remain evidence gaps."
+	}
+	if ruleID == "ddl.pg.alter.drop_constraint.target.require" {
+		return "Blocks a proven missing PostgreSQL DROP CONSTRAINT target unless IF EXISTS is authored. Unknown catalog/guard facts remain gaps; a target check does not establish dependency or permission legality."
+	}
 	if ruleID == "ddl.pg.alter.add_foreign_key.not_valid.require" {
 		return "PostgreSQL ALTER ADD FOREIGN KEY without NOT VALID warns about initial validation and locks. NOT VALID is silent for this rule, not legality proof; PostgreSQL 17 partitioned-table foreign keys cannot use that option. Existing FK forbids and validation follow-up remain independent."
 	}
@@ -270,6 +279,12 @@ func statementKindsForRule(ruleID string) []string {
 
 func triggerExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.alter.validate_constraint.target.require":
+		return "ALTER TABLE t VALIDATE CONSTRAINT missing;"
+	case ruleID == "ddl.pg.alter.constraint_deferrability.target.require":
+		return "ALTER TABLE t ALTER CONSTRAINT missing DEFERRABLE;"
+	case ruleID == "ddl.pg.alter.drop_constraint.target.require":
+		return "ALTER TABLE t DROP CONSTRAINT missing;"
 	case ruleID == "ddl.pg.alter.add_foreign_key.not_valid.require":
 		return "ALTER TABLE child ADD CONSTRAINT fk FOREIGN KEY (pid) REFERENCES parent(id);"
 	case ruleID == "ddl.pg.alter.add_primary_key.concurrent_index.warn":
@@ -305,6 +320,12 @@ func triggerExampleForRule(ruleID string) string {
 
 func validExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.alter.validate_constraint.target.require":
+		return "ALTER TABLE t VALIDATE CONSTRAINT existing_check;"
+	case ruleID == "ddl.pg.alter.constraint_deferrability.target.require":
+		return "ALTER TABLE t ALTER CONSTRAINT existing_fk DEFERRABLE;"
+	case ruleID == "ddl.pg.alter.drop_constraint.target.require":
+		return "ALTER TABLE t DROP CONSTRAINT IF EXISTS missing;"
 	case ruleID == "ddl.pg.alter.add_foreign_key.not_valid.require":
 		return "ALTER TABLE child ADD CONSTRAINT fk FOREIGN KEY (pid) REFERENCES parent(id) NOT VALID;"
 	case ruleID == "ddl.pg.alter.add_primary_key.concurrent_index.warn":
@@ -359,6 +380,8 @@ func configExampleForRule(ruleID string, policy domainpolicy.RulePolicy) string 
 
 func remediationForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.alter.validate_constraint.target.require", ruleID == "ddl.pg.alter.constraint_deferrability.target.require", ruleID == "ddl.pg.alter.drop_constraint.target.require":
+		return "Verify the exact target and its action-compatible kind with fresh complete catalog facts; IF EXISTS guards only DROP absence. Resolve unknown/stale facts separately; do not infer data, dependency, permission or execution legality."
 	case ruleID == "ddl.pg.alter.add_foreign_key.not_valid.require":
 		return "Review validation and locks on both tables; consider NOT VALID then VALIDATE where supported, not for PostgreSQL 17 partitioned-table foreign keys."
 	case ruleID == "ddl.pg.alter.add_primary_key.concurrent_index.warn":
@@ -440,6 +463,16 @@ func metadataNotesForRule(ruleID string) *MetadataNotes {
 	if !ok {
 		return nil
 	}
+	switch ruleID {
+	case "ddl.pg.alter.validate_constraint.target.require", "ddl.pg.alter.constraint_deferrability.target.require", "ddl.pg.alter.drop_constraint.target.require":
+		return &MetadataNotes{Kinds: kinds,
+			Required: "A complete fresh PG constraint directory bound to the exact table/schema and an observed PostgreSQL 17 server banner establish the supported target-check scope; examples assume those facts.",
+			Missing:  "Unobserved, out-of-scope version, ambiguous, stale or incorrectly bound facts remain unproven_constraint_target evidence gaps (unverified coverage/review), never guessed absence. Prior related DDL and preceding ALTER actions withhold old facts; no PG post-state is simulated."}
+	case "ddl.pg.alter.validate_constraint.advisory", "ddl.pg.alter.drop_constraint.advisory":
+		return &MetadataNotes{Kinds: kinds,
+			Required: "Optional proven PG17 catalog state and observed version suppress already-validated VALIDATE or absent guarded DROP no-op notices.",
+			Missing:  "Keep conditional advice without claiming a scan/removal occurred; the independent target rules own missing-fact gaps."}
+	}
 	if ruleID == "ddl.table.row_size.max_bytes.require" {
 		return &MetadataNotes{
 			Kinds:    kinds,
@@ -463,6 +496,9 @@ func metadataNotesForRule(ruleID string) *MetadataNotes {
 
 func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 	switch ruleID {
+	case "ddl.pg.alter.validate_constraint.target.require", "ddl.pg.alter.constraint_deferrability.target.require", "ddl.pg.alter.drop_constraint.target.require",
+		"ddl.pg.alter.validate_constraint.advisory", "ddl.pg.alter.drop_constraint.advisory":
+		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true
 	case "ddl.view.target.valid", "ddl.view.source.valid", "ddl.view.security.definer.warn",
 		"ddl.view.check_option.valid":
 		return []MetadataKind{MetadataKindTargetTable}, true
@@ -820,25 +856,30 @@ func sourceForRule() string {
 const unknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
 
 var metadataAwareRuleIDs = map[string]bool{
-	"ddl.view.target.valid":                         true,
-	"ddl.view.source.valid":                         true,
-	"ddl.view.security.definer.warn":                true,
-	"ddl.view.check_option.valid":                   true,
-	"ddl.alter.change_column.compatibility.require": true,
-	"ddl.alter.change_column.exists.require":        true,
-	"ddl.alter.change_column.target.exists.forbid":  true,
-	"ddl.alter.drop_column.exists.require":          true,
-	"ddl.alter.drop_index.exists.require":           true,
-	"ddl.alter.drop_foreign_key.exists.require":     true,
-	"ddl.alter.drop_primary_key.exists.require":     true,
-	"ddl.alter.modify_column.compatibility.require": true,
-	"ddl.alter.modify_column.exists.require":        true,
-	unknownPriorNullabilityAdvisoryRuleID:           true,
-	"ddl.alter.rename_column.exists.require":        true,
-	"ddl.alter.rename_column.target.exists.forbid":  true,
-	"ddl.alter.rename_column.version.require":       true,
-	"ddl.alter.rename_index.exists.require":         true,
-	"ddl.alter.alter_index.exists.require":          true,
+	"ddl.pg.alter.validate_constraint.target.require":      true,
+	"ddl.pg.alter.constraint_deferrability.target.require": true,
+	"ddl.pg.alter.drop_constraint.target.require":          true,
+	"ddl.pg.alter.validate_constraint.advisory":            true,
+	"ddl.pg.alter.drop_constraint.advisory":                true,
+	"ddl.view.target.valid":                                true,
+	"ddl.view.source.valid":                                true,
+	"ddl.view.security.definer.warn":                       true,
+	"ddl.view.check_option.valid":                          true,
+	"ddl.alter.change_column.compatibility.require":        true,
+	"ddl.alter.change_column.exists.require":               true,
+	"ddl.alter.change_column.target.exists.forbid":         true,
+	"ddl.alter.drop_column.exists.require":                 true,
+	"ddl.alter.drop_index.exists.require":                  true,
+	"ddl.alter.drop_foreign_key.exists.require":            true,
+	"ddl.alter.drop_primary_key.exists.require":            true,
+	"ddl.alter.modify_column.compatibility.require":        true,
+	"ddl.alter.modify_column.exists.require":               true,
+	unknownPriorNullabilityAdvisoryRuleID:                  true,
+	"ddl.alter.rename_column.exists.require":               true,
+	"ddl.alter.rename_column.target.exists.forbid":         true,
+	"ddl.alter.rename_column.version.require":              true,
+	"ddl.alter.rename_index.exists.require":                true,
+	"ddl.alter.alter_index.exists.require":                 true,
 	// T12 CHECK lifecycle rules read the target table's constraint members
 	// and the instance's CHECK arm facts.
 	"ddl.alter.alter_check.exists.require":     true,

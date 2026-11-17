@@ -59,6 +59,7 @@ func TestAuditSQLToolAcceptsPostgreSQLOfflineRequests(t *testing.T) {
 }
 
 type mcpMetadataAuditTestClient struct {
+	version       string
 	closed        bool
 	detectDialect spec.Dialect
 	planCalls     int
@@ -71,7 +72,11 @@ type mcpMetadataAuditTestClient struct {
 }
 
 func (c *mcpMetadataAuditTestClient) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
-	return &spec.InstanceFacts{Version: "PostgreSQL 16.3"}, nil
+	version := c.version
+	if version == "" {
+		version = "PostgreSQL 16.3"
+	}
+	return &spec.InstanceFacts{Version: version}, nil
 }
 
 func (c *mcpMetadataAuditTestClient) LoadTableSnapshot(_ context.Context, _ spec.Dialect, _ string, table string) (*spec.TableSnapshot, error) {

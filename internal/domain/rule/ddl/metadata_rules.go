@@ -475,7 +475,11 @@ func matchingDropPrimaryKeyActions(statement spec.Statement) []spec.Alter {
 		return nil
 	}
 	for _, alter := range matchingAlterActions(statement, "drop_constraint") {
-		if alter.Name != "" && strings.EqualFold(alter.Name, constraintName) {
+		sameName := alter.Name == constraintName
+		if statement.Dialect != spec.DialectPostgreSQL {
+			sameName = strings.EqualFold(alter.Name, constraintName)
+		}
+		if alter.Name != "" && sameName {
 			matches = append(matches, spec.Alter{Action: "drop_primary_key", Name: alter.Name})
 		}
 	}

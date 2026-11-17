@@ -91,6 +91,10 @@ type InstanceFacts = spec.InstanceFacts
 // TableSnapshot mirrors metadata-aware target table snapshots for public providers.
 type TableSnapshot = spec.TableSnapshot
 
+// PGConstraintState carries bounded PostgreSQL catalog facts for public providers.
+// TableSnapshot.PGConstraints remains excluded from serialized metadata.
+type PGConstraintState = spec.PGConstraintState
+
 // ViewSnapshot carries private view-definition facts for metadata providers.
 type ViewSnapshot = spec.ViewSnapshot
 
@@ -540,6 +544,10 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 	}
 	out.Indexes = cloneIndexes(in.Indexes)
 	out.Constraints = cloneConstraints(in.Constraints)
+	if in.PGConstraints != nil {
+		out.PGConstraints = make([]spec.PGConstraintState, len(in.PGConstraints))
+		copy(out.PGConstraints, in.PGConstraints)
+	}
 	if len(in.Options) > 0 {
 		out.Options = make(map[string]string, len(in.Options))
 		for key, value := range in.Options {

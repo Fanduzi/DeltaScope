@@ -1,0 +1,8 @@
+name: pg_constraint_target_nonapplicable
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported: {count: 0}
+  findings:
+    exclude: [ddl.pg.alter.validate_constraint.target.require, ddl.pg.alter.constraint_deferrability.target.require, ddl.pg.alter.drop_constraint.target.require]

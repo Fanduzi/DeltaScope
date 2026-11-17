@@ -704,6 +704,9 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterDropConstraintAdvisory, construct: newDropConstraintAdvisoryRule},
 		// PostgreSQL object lifecycle rules (PG-only).
 		{ruleID: ruleIDPGAlterDropColumnAdvisory, construct: newDropColumnAdvisoryRule},
+		{ruleID: ruleIDPGAlterValidateConstraintTargetRequire, construct: newPGValidateConstraintTargetRule},
+		{ruleID: ruleIDPGAlterConstraintDeferrabilityTargetRequire, construct: newPGConstraintDeferrabilityTargetRule},
+		{ruleID: ruleIDPGAlterDropConstraintTargetRequire, construct: newPGDropConstraintTargetRule},
 		{ruleID: ruleIDPGAlterValidateConstraintAdvisory, construct: newValidateConstraintAdvisoryRule},
 		{ruleID: ruleIDPGAlterAddColumnNullableNotice, construct: newAddColumnNullableNoticeRule},
 		{ruleID: ruleIDPGAlterSetSchemaAdvisory, construct: newSetSchemaAdvisoryRule},

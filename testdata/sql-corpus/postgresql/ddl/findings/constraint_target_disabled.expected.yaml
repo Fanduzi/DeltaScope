@@ -1,0 +1,27 @@
+name: constraint_target_disabled
+dialect: postgresql
+category: ddl
+config:
+  rules:
+    ddl.pg.alter.validate_constraint.target.require: {enabled: false}
+    ddl.pg.alter.constraint_deferrability.target.require: {enabled: false}
+    ddl.pg.alter.drop_constraint.target.require: {enabled: false}
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    val_t:
+      exists: true
+      pg_constraints: [{name: pk, type: p, validated: true}]
+    def_t:
+      exists: true
+      pg_constraints: [{name: ck, type: c, validated: true}]
+    drop_t:
+      exists: true
+      pg_constraints: []
+expect:
+  parse_ok: true
+  statements: {count: 3}
+  unsupported: {count: 0}
+  findings:
+    exclude: [ddl.pg.alter.validate_constraint.target.require, ddl.pg.alter.constraint_deferrability.target.require, ddl.pg.alter.drop_constraint.target.require]

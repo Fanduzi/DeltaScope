@@ -449,15 +449,22 @@ func (r dropConstraintAdvisoryRule) Evaluate(ctx context.Context, statement spec
 	}
 
 	findings := make([]rule.Finding, 0)
-	for _, alter := range matchingAlterActions(statement, "drop_constraint") {
+	for i, alter := range statement.DDL.Alter {
+		if alter.Action != "drop_constraint" {
+			continue
+		}
 		if err := ctx.Err(); err != nil {
 			return nil, err
+		}
+		member, known := pgConstraintTargetState(statement, i)
+		if known && pgConstraintTargetVersionKnown(statement) && member == nil && alter.Options["if_exists"] == "true" {
+			continue
 		}
 		findings = append(findings, rule.Finding{
 			Level:   r.level,
 			Message: fmt.Sprintf("DROP CONSTRAINT %q on PostgreSQL may break application assumptions", alter.Name),
 			Explanation: &rule.FindingExplanation{
-				Why:        "Dropping a constraint removes a data integrity guarantee that application logic or downstream consumers may depend on.",
+				Why:        "Dropping an existing constraint removes a data integrity guarantee that application logic or downstream consumers may depend on. A missing target with IF EXISTS is a no-op; without the guard it refuses.",
 				Risk:       "Data that previously satisfied the constraint is no longer validated, potentially leading to data quality issues that are difficult to detect and remediate.",
 				Suggestion: "Before dropping: 1) Verify no application code depends on the constraint guarantee. 2) Assess whether a softer deprecation (e.g., NOT VALID for CHECK) is safer. 3) Schedule the change during a maintenance window with monitoring.",
 			},

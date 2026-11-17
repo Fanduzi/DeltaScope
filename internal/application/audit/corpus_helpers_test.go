@@ -572,6 +572,16 @@ func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusT
 	for _, constraint := range snapshot.Constraints {
 		out.Constraints = append(out.Constraints, corpusConstraintToSpec(constraint))
 	}
+	if snapshot.PGConstraints != nil {
+		out.PGConstraints = make([]spec.PGConstraintState, 0, len(snapshot.PGConstraints))
+		for _, member := range snapshot.PGConstraints {
+			if member.Validated == nil {
+				out.PGConstraints = nil
+				break
+			}
+			out.PGConstraints = append(out.PGConstraints, spec.PGConstraintState{Name: member.Name, Type: member.Type, Validated: *member.Validated})
+		}
+	}
 	out.PrimaryKeyUnknown = snapshot.PrimaryKeyUnknown
 	out.ConstraintsUnknown = snapshot.ConstraintsUnknown
 	out.TTLKnown = snapshot.TTLKnown

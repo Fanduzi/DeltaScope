@@ -49,6 +49,20 @@ For `CREATE TABLE t → PROCEDURE → ADD c → CREATE INDEX idx_c(c)` under the
 | MySQL DROP | complete, lifecycle notice only | pass/complete, nil error | review/unverified, nil error |
 | TiDB DROP | incomplete, vendor boundary | review/incomplete, unsupported error | review/incomplete, unsupported error |
 
+### PostgreSQL constraint targets
+
+| Rule ID | PostgreSQL 17 with observed catalog/version | MySQL / TiDB | Metadata |
+|---------|---------------------------------------------|--------------|----------|
+| `ddl.pg.alter.validate_constraint.target.require` | Missing/wrong-kind FK/CHECK target blocker | Not applicable | Required |
+| `ddl.pg.alter.constraint_deferrability.target.require` | Missing/non-FK target blocker | Not applicable | Required |
+| `ddl.pg.alter.drop_constraint.target.require` | Missing target blocker unless IF EXISTS | Not applicable | Required |
+
+Approved default-on blockers. Exact table/schema/constraint identity, complete fresh directory and observed PG17 scope are required; unknown/ambiguous/stale facts remain `unproven_constraint_target` gaps with unverified/review, never guessed absence. Prior related DDL and preceding ALTER actions withhold old facts without enabling PG ordered execution. Known already-validated VALIDATE and absent guarded DROP suppress their existing no-op notices; unknown advice stays conditional. FK/PK forbids and validation follow-up remain independent.
+
+The Go provider `PGConstraintState` alias and copied directory retain private facts without new JSON envelope fields. Target proof is not data/dependency/permission/inheritance/partition or execution proof. Native 23514/23503 refusals and #149 parser boundaries are not promoted. The public MySQL/TiDB version-identity contract is unchanged; PG17 uses the existing observed instance banner.
+
+Maintainer notes: [decision](../decisions/2026-11-17-postgresql-constraint-target-evidence.md). Other F09 dimensions remain open.
+
 ### PostgreSQL ALTER constraint migration risk
 
 | Rule ID | PostgreSQL | MySQL / TiDB | Metadata |

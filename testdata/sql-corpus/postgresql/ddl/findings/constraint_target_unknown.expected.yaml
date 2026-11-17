@@ -1,0 +1,16 @@
+name: constraint_target_unknown
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    val_t: {exists: true}
+    def_t: {exists: true}
+    drop_t: {exists: true}
+expect:
+  parse_ok: true
+  statements: {count: 3}
+  unsupported: {count: 0}
+  findings:
+    exclude: [ddl.pg.alter.validate_constraint.target.require, ddl.pg.alter.constraint_deferrability.target.require, ddl.pg.alter.drop_constraint.target.require]

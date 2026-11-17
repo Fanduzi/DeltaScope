@@ -1014,6 +1014,16 @@ rules:
   ddl.pg.alter.add_primary_key.concurrent_index.warn:
     enabled: true
     level: warning
+  # PG constraint target facts: default blockers; unproven/stale catalog -> evidence gap.
+  ddl.pg.alter.validate_constraint.target.require:
+    enabled: true
+    level: blocker
+  ddl.pg.alter.constraint_deferrability.target.require:
+    enabled: true
+    level: blocker
+  ddl.pg.alter.drop_constraint.target.require:
+    enabled: true
+    level: blocker
   # PostgreSQL CREATE/ADD COLUMN generation declarations; bounded, not expression analysis.
   ddl.pg.column.generation.declaration.valid:
     enabled: true

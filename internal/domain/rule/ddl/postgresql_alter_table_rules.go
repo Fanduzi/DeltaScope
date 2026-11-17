@@ -52,9 +52,18 @@ func (r pgAlterActionAdvisoryRule) Evaluate(ctx context.Context, statement spec.
 	}
 
 	findings := make([]rule.Finding, 0)
-	for _, alter := range matchingAlterActions(statement, r.action) {
+	for i, alter := range statement.DDL.Alter {
+		if alter.Action != r.action {
+			continue
+		}
 		if err := ctx.Err(); err != nil {
 			return nil, err
+		}
+		if r.id == ruleIDPGAlterValidateConstraintAdvisory {
+			member, known := pgConstraintTargetState(statement, i)
+			if known && pgConstraintTargetVersionKnown(statement) && member != nil && (member.Type == "c" || member.Type == "f") && member.Validated {
+				continue
+			}
 		}
 		message := r.message
 		if alter.Name != "" {
@@ -161,8 +170,8 @@ func newDropColumnAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRule, error
 func newValidateConstraintAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return newPGAlterActionAdvisoryRule(
 		ruleIDPGAlterValidateConstraintAdvisory, rule.LevelNotice, "validate_constraint", "constraint",
-		"VALIDATE CONSTRAINT %q scans existing rows on PostgreSQL",
-		"VALIDATE CONSTRAINT checks all existing rows against the constraint definition. It holds a SHARE UPDATE EXCLUSIVE lock, which is less restrictive than ACCESS EXCLUSIVE but still blocks certain DDL.",
+		"VALIDATE CONSTRAINT %q may scan existing rows if not already validated on PostgreSQL",
+		"VALIDATE CONSTRAINT scans existing rows only for an existing, not-yet-validated FK/CHECK constraint. Already-validated constraints are no-ops; missing or wrong-kind targets refuse. Validation holds a SHARE UPDATE EXCLUSIVE lock, which still blocks certain DDL.",
 		"On large tables the validation scan can take significant time, though it does not block reads or writes.",
 		"Schedule VALIDATE CONSTRAINT during low-traffic periods for large tables. Ensure the constraint was added with NOT VALID first for safe phased deployment.",
 		cfg,

@@ -1,0 +1,23 @@
+name: constraint_target_controls
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    valid_t:
+      exists: true
+      pg_constraints: [{name: ck, type: c, validated: true}]
+    noop_t:
+      exists: true
+      pg_constraints: []
+    fk_t:
+      exists: true
+      pg_constraints: [{name: fk, type: f, validated: false}]
+expect:
+  parse_ok: true
+  statements: {count: 3}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.constraint_deferrable.notice]
+    exclude: [ddl.pg.alter.validate_constraint.target.require, ddl.pg.alter.constraint_deferrability.target.require, ddl.pg.alter.drop_constraint.target.require, ddl.pg.alter.validate_constraint.advisory, ddl.pg.alter.drop_constraint.advisory]

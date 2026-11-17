@@ -34,13 +34,20 @@ Unknown/incomplete/ambiguous facts owe evidence gaps, not guessed absence or
 a blocker. This can raise offline pass to review. Proven already-validated
 VALIDATE and proven absent DROP IF EXISTS stop receiving misleading old
 scan/removal notices; unknown cases use conditional wording. Existing FK/PK
-forbids and NOT VALID→VALIDATE follow-up remain independent.
+forbids and NOT VALID→VALIDATE follow-up remain independent. The shared
+DROP→PK matcher must compare PostgreSQL constraint names exactly, so a
+quoted unique `"CK"` is not misidentified as a distinct primary key `ck`;
+MySQL/TiDB case-folding and genuine PK forbids remain unchanged.
 
 ### Fact seam
 
 `TableSnapshot.PGConstraints` is a separate, nonserialized directory of names,
 `pg_constraint.contype` and `convalidated`. The legacy PK projection remains
-unchanged. nil means unobserved/stale; non-nil empty means observed empty.
+unchanged. Target-kind conclusions are scoped to an observed stable PostgreSQL
+17 banner from the existing `InstanceFacts.Version` read. Missing/out-of-range
+version facts owe `instance.version` gaps. The public `VersionIdentity`
+contract deliberately remains MySQL/TiDB-only; it is not widened, and a caller
+`target_version` cannot substitute for the observed server fact. nil means unobserved/stale; non-nil empty means observed empty.
 The provider publishes only after a successful exact schema/table-bound read,
 collects no expressions or definitions and preserves every row. Query/scan/
 iteration/close errors propagate rather than producing an empty catalog.
@@ -75,7 +82,10 @@ records; no parser release is required or adopted here.
 
 ## Public and privacy contract
 
-New directory/freshness facts stay out of serialized metadata. New findings
+New directory/freshness facts stay out of serialized metadata. The public Go
+`PGConstraintState` alias lets SDK metadata providers supply the bounded
+name/native-kind/validated tuple; SDK cloning preserves owned member slices
+and the nil/known-empty distinction, without adding JSON envelope fields. New findings
 may expose bounded table/schema/constraint identity, action, target kind and
 proof outcome, never expressions, raw provider errors or unrelated payloads.
 SDK, CLI, HTTP and MCP consume one shared rule/assessment path. No database
@@ -125,8 +135,22 @@ suite, default/PG lint and inventory/corpus/coverage-catalog gates pass. The
 unchanged 79-case T37 baseline passes with 836 assertions. These focused
 pre-commit checks are not borrowed as final-HEAD aggregate evidence.
 
-This record establishes accepted facts and the stage boundary, not final
-single-HEAD aggregate readiness or implemented/shipped new rule behavior.
+The rule implementation now registers the approved blocker trio and optional
+old-notice no-op suppression. Domain/application/SDK/HTTP/MCP tests pin shared
+blocker, silent and unverified-gap arms; corpus covers known invalid targets,
+known no-ops, exact-case selection, prior DDL, unknown facts, disabled rules
+and non-PG controls. A real 15-shape/30-CLI replay confirms six target refusals
+become blockers, guarded absence is silent and ADD/DROP successors retain
+catalog gaps; independent 23514/23503 data refusals remain outside target proof.
+The shared PK matcher regression is reproduced red before the exact-PG-name
+fix and green afterward, retaining MySQL/TiDB behavior. Before the rule
+implementation commit, full build/default+PG tests, inventory/corpus/catalog
+gates, default+PG lint and formatting pass with the new rules enabled.
+
+These are implementation/focused checks, not final single-HEAD aggregate
+readiness or shipped new rule behavior. The frozen canonical/native cases
+and exact inventory bindings still belong to the evidence tranche; the full
+required delivery chain must pass before merge/push.
 The final rule/evidence delivery must independently pass the full goal gates.
 
 ## Sources and links

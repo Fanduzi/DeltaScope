@@ -1,0 +1,24 @@
+name: constraint_target_case
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    upper_t:
+      exists: true
+      pg_constraints: [{name: CK, type: u, validated: true}, {name: ck, type: c, validated: true}]
+    lower_t:
+      exists: true
+      pg_constraints: [{name: CK, type: u, validated: true}, {name: ck, type: c, validated: true}]
+    drop_case_t:
+      exists: true
+      constraints: [{name: ck, type: primary_key, columns: [id]}]
+      pg_constraints: [{name: CK, type: u, validated: true}, {name: ck, type: p, validated: true}]
+expect:
+  parse_ok: true
+  statements: {count: 3}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.validate_constraint.target.require]
+    exclude: [ddl.pg.alter.constraint_deferrability.target.require, ddl.pg.alter.drop_constraint.target.require, ddl.alter.drop_primary_key.forbid]

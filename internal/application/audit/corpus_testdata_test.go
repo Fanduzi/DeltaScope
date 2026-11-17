@@ -325,6 +325,9 @@ type corpusTableSnapshot struct {
 	PlacementPolicy      string            `yaml:"placement_policy,omitempty"`
 	PlacementPolicyKnown bool              `yaml:"placement_policy_known,omitempty"`
 	PartitionPlacements  map[string]string `yaml:"partition_placements,omitempty"`
+
+	// nil is unobserved; an explicit empty array is a loaded empty directory.
+	PGConstraints []corpusPGConstraint `yaml:"pg_constraints,omitempty"`
 }
 
 type corpusTable struct {
@@ -366,6 +369,12 @@ type corpusIndex struct {
 	Kind        string   `yaml:"kind,omitempty"`
 	Columns     []string `yaml:"columns,omitempty"`
 	Cardinality *int64   `yaml:"cardinality,omitempty"`
+}
+
+type corpusPGConstraint struct {
+	Name      string `yaml:"name"`
+	Type      string `yaml:"type"`
+	Validated *bool  `yaml:"validated"`
 }
 
 type corpusConstraint struct {

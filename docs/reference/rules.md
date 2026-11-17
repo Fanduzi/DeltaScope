@@ -555,6 +555,26 @@ These rules guard against MySQL and TiDB database/schema lifecycle DDL operation
 
 ---
 
+## DDL: PostgreSQL Constraint Targets (3 rules)
+
+| Rule ID | Bounded check | Default Level | Metadata Required |
+|---------|---------------|:-------------:|:-----------------:|
+| `ddl.pg.alter.validate_constraint.target.require` | Existing FK/CHECK target for VALIDATE | blocker | Yes |
+| `ddl.pg.alter.constraint_deferrability.target.require` | Existing FK target for ALTER CONSTRAINT deferrability | blocker | Yes |
+| `ddl.pg.alter.drop_constraint.target.require` | Missing DROP target refuses unless IF EXISTS is authored | blocker | Yes |
+
+All three default-enabled behaviors are explicitly approved. They require a fresh complete constraint directory bound to the exact table/schema and an observed stable PostgreSQL 17 server banner. Decoded identifiers are case-sensitive; duplicate/unowned bindings are not last-wins. Missing, ambiguous, stale or out-of-scope facts owe `unproven_constraint_target` gaps (`target_table.pg_constraints`, `instance.version` or `constraint.if_exists`) rather than invented absence. Evidence gaps use the existing **unverified/review** protocol; syntax/parser boundaries remain incomplete. Caller `target_version` does not replace the server observation or widen the MySQL/TiDB-only public version-identity contract.
+
+A proven already-validated FK/CHECK no longer receives the existing scan notice. A proven absent guarded DROP no longer receives the removal notice. Unknown facts retain conditional advice. Existing FK/PK forbids and NOT VALID→VALIDATE follow-up remain independent.
+
+Accepted stage boundary: prior related DDL and preceding ALTER actions withhold old directory facts, not a fabricated PG post-state. Opaque/parser failures and unmodeled cross-identity effects conservatively invalidate more broadly. This does not enable general PostgreSQL ordered execution. Target checks do not establish data satisfaction, dependency removals, permissions, inheritance/partition legality or execution success; native 23514/23503 data refusals remain distinct.
+
+The public Go `PGConstraintState` provider alias supplies name, native `pg_constraint.contype` and validated state; directory fields stay out of JSON. New findings emit only bounded identities/action, `reason_code`, `target_exists` and optional one-letter `target_constraint_kind`, never expressions or raw provider errors.
+
+Maintainer notes: [decision and frozen T37 roles](../decisions/2026-11-17-postgresql-constraint-target-evidence.md). This remains a partial F09 slice.
+
+---
+
 ## DDL: PostgreSQL ALTER Constraint Migration Risk (2 rules)
 
 | Rule ID | Description | Default Level | Metadata Required |

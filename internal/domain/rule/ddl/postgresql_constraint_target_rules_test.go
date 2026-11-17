@@ -1,0 +1,219 @@
+package ddl
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+)
+
+func pgTargetStatement(action string, members []spec.PGConstraintState) spec.Statement {
+	return spec.Statement{Dialect: spec.DialectPostgreSQL, Kind: spec.KindDDL,
+		DDL:      &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Schema: "app", Name: "t"}, Alter: []spec.Alter{{Action: action, Name: "c", Options: map[string]string{"if_exists": "false", "expression": "private_expression_marker"}}}},
+		Metadata: &spec.Metadata{Schema: "app", Instance: &spec.InstanceFacts{Version: "PostgreSQL 17.7"}, TargetTable: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: members}}}
+}
+
+func TestPGConstraintTargetArms(t *testing.T) {
+	for _, tc := range []struct{ id, action string }{
+		{ruleIDPGAlterValidateConstraintTargetRequire, "validate_constraint"},
+		{ruleIDPGAlterConstraintDeferrabilityTargetRequire, "alter_constraint_deferrable"},
+		{ruleIDPGAlterConstraintDeferrabilityTargetRequire, "alter_constraint_initially_deferred"},
+		{ruleIDPGAlterDropConstraintTargetRequire, "drop_constraint"},
+	} {
+		t.Run(tc.action, func(t *testing.T) {
+			r := pgConstraintTargetRule{id: tc.id, level: rule.LevelBlocker}
+			for _, kind := range []string{"", "c", "f", "p", "u", "x"} {
+				members := []spec.PGConstraintState{}
+				if kind != "" {
+					members = append(members, spec.PGConstraintState{Name: "c", Type: kind})
+				}
+				s := pgTargetStatement(tc.action, members)
+				f, err := r.Evaluate(context.Background(), s)
+				wantFailure := kind == "" || tc.id == ruleIDPGAlterValidateConstraintTargetRequire && kind != "c" && kind != "f" || tc.id == ruleIDPGAlterConstraintDeferrabilityTargetRequire && kind != "f"
+				if err != nil || len(r.EvidenceGaps(s)) != 0 || (len(f) == 1) != wantFailure {
+					t.Fatalf("kind=%q f=%+v gaps=%v err=%v", kind, f, r.EvidenceGaps(s), err)
+				}
+				if len(f) == 1 {
+					if f[0].Level != rule.LevelBlocker || f[0].Metadata["schema"] != "app" || f[0].Metadata["constraint"] != "c" || f[0].Metadata["target_exists"] != (kind != "") {
+						t.Fatalf("finding=%+v", f[0])
+					}
+					raw, err := json.Marshal(f[0])
+					if err != nil {
+						t.Fatal(err)
+					}
+					if strings.Contains(string(raw), "private_expression_marker") {
+						t.Fatal("payload leak")
+					}
+				}
+			}
+			for _, mutate := range []func(*spec.Statement){
+				func(s *spec.Statement) { s.Metadata = nil },
+				func(s *spec.Statement) { s.Metadata.TargetTable = nil },
+				func(s *spec.Statement) { s.Metadata.TargetTable.PGConstraints = nil },
+				func(s *spec.Statement) {
+					s.Metadata.TargetTable.PGConstraints = []spec.PGConstraintState{{Name: "c", Type: "f"}, {Name: "c", Type: "f"}}
+				},
+				func(s *spec.Statement) {
+					s.Metadata.TargetTable.PGConstraints = []spec.PGConstraintState{{Name: "c", Type: "unknown"}}
+				},
+				func(s *spec.Statement) { s.Metadata.TargetTable.Schema = "other" },
+				func(s *spec.Statement) { s.Metadata.TargetTable.Table.Name = "T" },
+				func(s *spec.Statement) { s.Metadata.Schema = "other" },
+				func(s *spec.Statement) { s.DDL.Alter[0].Name = "" },
+			} {
+				s := pgTargetStatement(tc.action, []spec.PGConstraintState{})
+				mutate(&s)
+				f, err := r.Evaluate(context.Background(), s)
+				g := r.EvidenceGaps(s)
+				if err != nil || len(f) != 0 || len(g) != 1 || g[0].ReasonCode != "unproven_constraint_target" || !reflect.DeepEqual(g[0].RequiredFacts, []string{"target_table.pg_constraints"}) {
+					t.Fatalf("f=%+v gaps=%+v err=%v", f, g, err)
+				}
+			}
+			s := pgTargetStatement(tc.action, []spec.PGConstraintState{})
+			s.DDL.Alter = append(s.DDL.Alter, s.DDL.Alter[0])
+			f, err := r.Evaluate(context.Background(), s)
+			if err != nil || len(f) != 1 || len(r.EvidenceGaps(s)) != 1 {
+				t.Fatalf("lost known failure or stale sibling gap: %+v %v", f, err)
+			}
+			for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+				s.Dialect = dialect
+				if r.AppliesTo(s) || len(r.EvidenceGaps(s)) != 0 {
+					t.Fatal("cross dialect match")
+				}
+			}
+			s.Dialect = spec.DialectPostgreSQL
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			if _, err := r.Evaluate(ctx, s); !errors.Is(err, context.Canceled) {
+				t.Fatal(err)
+			}
+			for _, mutate := range []func(*spec.Statement){
+				func(s *spec.Statement) { s.DDL = nil },
+				func(s *spec.Statement) { s.DDL.Table = nil },
+				func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperationCreateTable },
+				func(s *spec.Statement) { s.DDL.Alter[0].Action = "add_constraint" },
+				func(s *spec.Statement) { s.Unsupported = &spec.UnsupportedDetail{Feature: "unknown"} },
+			} {
+				s := pgTargetStatement(tc.action, []spec.PGConstraintState{})
+				mutate(&s)
+				f, err := r.Evaluate(context.Background(), s)
+				if err != nil || r.AppliesTo(s) || len(f) != 0 || len(r.EvidenceGaps(s)) != 0 {
+					t.Fatalf("inapplicable=%+v %v", f, err)
+				}
+			}
+		})
+	}
+}
+
+func TestPGConstraintTargetGuardAndDefaults(t *testing.T) {
+	for _, id := range []string{ruleIDPGAlterValidateConstraintTargetRequire, ruleIDPGAlterConstraintDeferrabilityTargetRequire, ruleIDPGAlterDropConstraintTargetRequire} {
+		p := policy.Default().Rules[id]
+		if !p.Enabled || p.Level != rule.LevelBlocker || len(p.Params) != 0 {
+			t.Fatalf("default %s: %+v", id, p)
+		}
+		for _, enabled := range []bool{true, false} {
+			reg := rule.NewRegistry()
+			if err := Register(reg, policy.Policy{Rules: map[string]policy.RulePolicy{id: {Enabled: enabled, Level: rule.LevelWarning}}}); err != nil {
+				t.Fatal(err)
+			}
+			action := "drop_constraint"
+			if id == ruleIDPGAlterValidateConstraintTargetRequire {
+				action = "validate_constraint"
+			}
+			if id == ruleIDPGAlterConstraintDeferrabilityTargetRequire {
+				action = "alter_constraint_deferrable"
+			}
+			f, err := reg.EvaluateStatement(context.Background(), pgTargetStatement(action, []spec.PGConstraintState{}))
+			if err != nil || (len(f) == 1) != enabled || enabled && (f[0].RuleID != id || f[0].Level != rule.LevelWarning) {
+				t.Fatalf("configured=%+v %v", f, err)
+			}
+		}
+	}
+	r := pgConstraintTargetRule{id: ruleIDPGAlterDropConstraintTargetRequire, level: rule.LevelBlocker}
+	for _, guard := range []string{"true", "false", "", "unknown"} {
+		s := pgTargetStatement("drop_constraint", []spec.PGConstraintState{})
+		s.DDL.Alter[0].Options["if_exists"] = guard
+		f, err := r.Evaluate(context.Background(), s)
+		g := r.EvidenceGaps(s)
+		if err != nil || (len(f) == 1) != (guard == "false") || (len(g) == 1) != (guard == "" || guard == "unknown") {
+			t.Fatalf("guard=%q f=%v gaps=%v err=%v", guard, f, g, err)
+		}
+		if len(g) == 1 && !reflect.DeepEqual(g[0].RequiredFacts, []string{"constraint.if_exists"}) {
+			t.Fatalf("gap=%v", g)
+		}
+	}
+}
+
+func TestDropConstraintPrimaryKeyIdentityDialect(t *testing.T) {
+	for _, tc := range []struct {
+		dialect spec.Dialect
+		name    string
+		count   int
+	}{
+		{spec.DialectPostgreSQL, "ck", 1}, {spec.DialectPostgreSQL, "CK", 0},
+		{spec.DialectMySQL, "CK", 1}, {spec.DialectTiDB, "CK", 1},
+	} {
+		s := pgTargetStatement("drop_constraint", []spec.PGConstraintState{})
+		s.Dialect = tc.dialect
+		s.DDL.Alter[0].Name = tc.name
+		s.Metadata.TargetTable.Constraints = []spec.Constraint{{Type: "primary_key", Name: "ck"}}
+		if got := len(matchingDropPrimaryKeyActions(s)); got != tc.count {
+			t.Fatalf("dialect=%s name=%q got=%d want=%d", tc.dialect, tc.name, got, tc.count)
+		}
+	}
+}
+
+func TestPGConstraintTargetVersionScope(t *testing.T) {
+	r := pgConstraintTargetRule{id: ruleIDPGAlterValidateConstraintTargetRequire, level: rule.LevelBlocker}
+	for _, banner := range []string{"", "17.7", "PostgreSQL 18.1", "PostgreSQL 170.1", "PostgreSQL 17.beta", "PostgreSQL 17.7beta", "PostgreSQL 17.7.1"} {
+		s := pgTargetStatement("validate_constraint", []spec.PGConstraintState{})
+		s.Metadata.Instance.Version = banner
+		f, err := r.Evaluate(context.Background(), s)
+		g := r.EvidenceGaps(s)
+		if err != nil || len(f) != 0 || len(g) != 1 || !reflect.DeepEqual(g[0].RequiredFacts, []string{"instance.version"}) {
+			t.Fatalf("banner=%q f=%v gaps=%v err=%v", banner, f, g, err)
+		}
+	}
+	for _, banner := range []string{"PostgreSQL 17.7", "PostgreSQL 17.10 (Debian build)"} {
+		s := pgTargetStatement("validate_constraint", []spec.PGConstraintState{})
+		s.Metadata.Instance.Version = banner
+		f, err := r.Evaluate(context.Background(), s)
+		if err != nil || len(f) != 1 || len(r.EvidenceGaps(s)) != 0 {
+			t.Fatalf("banner=%q f=%v err=%v", banner, f, err)
+		}
+	}
+}
+
+func TestPGConstraintTargetAdvisoryNoops(t *testing.T) {
+	validate, _ := newValidateConstraintAdvisoryRule(policy.RulePolicy{})
+	drop, _ := newDropConstraintAdvisoryRule(policy.RulePolicy{})
+	for _, kind := range []string{"c", "f", "p"} {
+		s := pgTargetStatement("validate_constraint", []spec.PGConstraintState{{Name: "c", Type: kind, Validated: true}})
+		f, err := validate.Evaluate(context.Background(), s)
+		if err != nil || (len(f) == 0) != (kind != "p") {
+			t.Fatalf("kind=%s f=%v err=%v", kind, f, err)
+		}
+		s.Metadata.TargetTable.PGConstraints = nil
+		f, err = validate.Evaluate(context.Background(), s)
+		if err != nil || len(f) != 1 || !strings.Contains(f[0].Message, "may scan") {
+			t.Fatalf("unknown: %v %v", f, err)
+		}
+	}
+	s := pgTargetStatement("drop_constraint", []spec.PGConstraintState{})
+	s.DDL.Alter[0].Options["if_exists"] = "true"
+	f, err := drop.Evaluate(context.Background(), s)
+	if err != nil || len(f) != 0 {
+		t.Fatalf("known noop=%v %v", f, err)
+	}
+	s.Metadata.TargetTable.PGConstraints = nil
+	f, err = drop.Evaluate(context.Background(), s)
+	if err != nil || len(f) != 1 {
+		t.Fatalf("unknown must retain conditional notice=%v %v", f, err)
+	}
+}
