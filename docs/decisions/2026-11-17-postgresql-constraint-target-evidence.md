@@ -164,9 +164,29 @@ rebound to their own T37/corpus selectors. YAML generates the matrix; all row/
 cell statuses and aggregate counts remain unchanged. This does not certify
 data, dependencies, permissions, general PG post-state or whole-family scope.
 
-These implementation/focused results are not final same-HEAD aggregate
-readiness or shipped D4. The full required delivery chain and independent
-read-only review must pass before merge/push.
+## Final D4 delivery evidence
+
+D4 shipped at `aa7f88723fbc930dacdd451a0a6c772a6617a5a5`, FF-only merged
+from `milestone/pg-alter-semantics` and normally pushed from base
+`8aa9e3c88a6441c0df0273d03ecf0efcddb6c5d6`. The initial `ed6fe765`
+aggregate was superseded after the read-only review fix for linear failure
+scanning; no old-HEAD artifact contributes to final readiness.
+
+The validated final artifact
+`/tmp/ddl-golden-pg-constraint-target-final-aa7f8872/all/artifact.json`
+passes **50 tasks, 3426/3426 cases, 60,165 assertions**, all nonzero and all
+at the exact final SHA. Build, default/PG tests, default/PG lint, formatting
+and inventory/corpus/coverage-catalog gates passed before and after merge.
+Separate final read-only verification found no unresolved P1/P2, matched all
+refs and preserved the original tracked/untracked worktree state.
+
+Exact-SHA [Go/PG/lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44154482102),
+[TLS E2E CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44154482185)
+and Cloudflare Pages succeeded. Milestone scope is 69 paths
+(`8aa9e3c8...aa7f8872`); the last review-fix task is four
+(`ed6fe765..aa7f8872`), versus seven for the preceding native-evidence task.
+These are historical D4 delivery facts, not whole-F09 completion or aggregate
+claims for a subsequent documentation commit.
 
 ## Sources and links
 
