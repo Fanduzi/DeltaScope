@@ -7924,7 +7924,11 @@
             "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.probes.txt",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:testdata/ddl-golden/T37.json#pg-constraint-risk-native",
-            "file:testdata/ddl-golden/T37.json#pg-constraint-partitioned-fk"
+            "file:testdata/ddl-golden/T37.json#pg-constraint-partitioned-fk",
+            "file:testdata/ddl-golden/T37.json#pg-constraint-target-validate",
+            "file:testdata/ddl-golden/T37.json#pg-constraint-target-deferrability",
+            "file:testdata/ddl-golden/T37.json#pg-constraint-target-drop",
+            "file:docs/decisions/2026-11-17-postgresql-constraint-target-evidence.md"
           ]
         }
       ],
@@ -8054,7 +8058,13 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.drop-constraint.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#DROP CONSTRAINT",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-target-drop",
+                "file:testdata/ddl-golden/T37.json#constraint-target-drop-offline",
+                "file:testdata/ddl-golden/T37.json#constraint-target-drop-guard-offline",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-target-prior-ddl",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_target_invalid.expected.yaml#ddl.pg.alter.drop_constraint.target.require"
               ]
             }
           ]
@@ -8073,7 +8083,11 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.drop-constraint-cascade.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#DROP CONSTRAINT CASCADE",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-target-drop",
+                "file:internal/infrastructure/parser/postgresql/parser_constraint_target_postgresql_tag_test.go",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_target_invalid.expected.yaml#ddl.pg.alter.drop_constraint.target.require"
               ]
             }
           ]
@@ -8092,7 +8106,15 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.validate-constraint.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#VALIDATE CONSTRAINT",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-target-validate",
+                "file:testdata/ddl-golden/T37.json#constraint-target-validate-offline",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-target-check-data",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-target-fk-data",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-target-prior-ddl",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-target-prior-parser",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_target_invalid.expected.yaml#ddl.pg.alter.validate_constraint.target.require"
               ]
             }
           ]
@@ -8111,7 +8133,11 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.alter-constraint-deferrable.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#ALTER CONSTRAINT DEFERRABLE",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-target-deferrability",
+                "file:testdata/ddl-golden/T37.json#constraint-target-deferrability-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_target_invalid.expected.yaml#ddl.pg.alter.constraint_deferrability.target.require"
               ]
             }
           ]

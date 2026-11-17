@@ -7180,7 +7180,7 @@ rows:
     status: mixed_coverage
     parser_status: partial
     audit_status: mixed
-    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 13 shapes -> 6 audited, 3 not_applicable, 1 notice_only, 3 silent; golden manifests and native execution evidence land with the owner task. 2026-11-15 T48 (#131) closure: golden T37 pins enable-all-policy answers — ADD CHECK NOT VALID emits ddl.pg.alter.not_valid_constraint.validate.require (warning) and is promoted to audited; ADD PRIMARY KEY stays a recorded rule gap (zero findings, coverage complete under 531-rule policy, native exec verified); ALTER CONSTRAINT NOT ENFORCED, NOT NULL NOT VALID and INHERIT/NO INHERIT remain not_applicable parser-boundary cells owned by the parser-upgrade backlog. 2026-11-17 F09 approved constraint-risk slice: T37 retains all prior 66 cases and adds 13 isolated cases. ADD PRIMARY KEY and ADD FOREIGN KEY become audited only for authored index-build/initial-validation risk, with explicit USING INDEX/NOT VALID silent controls; ADD UNIQUE keeps its notice arm but explicit reuse is silent. Exact PG17.7 native cases prove constraint kinds, validation flags, original reused-index identities, lock categories and no audit execution; a partitioned NOT VALID FK is independently refused with SQLSTATE 42809. Constraint existence/type/state and index eligibility remain unproven; the parent stays mixed and all parser-boundary cells remain unchanged"
+    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 13 shapes -> 6 audited, 3 not_applicable, 1 notice_only, 3 silent; golden manifests and native execution evidence land with the owner task. 2026-11-15 T48 (#131) closure: golden T37 pins enable-all-policy answers — ADD CHECK NOT VALID emits ddl.pg.alter.not_valid_constraint.validate.require (warning) and is promoted to audited; ADD PRIMARY KEY stays a recorded rule gap (zero findings, coverage complete under 531-rule policy, native exec verified); ALTER CONSTRAINT NOT ENFORCED, NOT NULL NOT VALID and INHERIT/NO INHERIT remain not_applicable parser-boundary cells owned by the parser-upgrade backlog. 2026-11-17 F09 approved constraint-risk slice: T37 retains all prior 66 cases and adds 13 isolated cases. ADD PRIMARY KEY and ADD FOREIGN KEY become audited only for authored index-build/initial-validation risk, with explicit USING INDEX/NOT VALID silent controls; ADD UNIQUE keeps its notice arm but explicit reuse is silent. Exact PG17.7 native cases prove constraint kinds, validation flags, original reused-index identities, lock categories and no audit execution; a partitioned NOT VALID FK is independently refused with SQLSTATE 42809. D3 left constraint existence/type/state and index eligibility unproven; the parent stayed mixed. 2026-11-17 D4 target tranche: T37 preserves all 79 prior cases/profiles and adds the 15 ADR-frozen cases (94 total). Fresh complete exact-name catalogs plus observed PG17 scope prove bounded VALIDATE FK/CHECK, ALTER deferrability FK and DROP absence/IF EXISTS checks; known validated/guarded no-ops stop receiving misleading notices. Native 42704/42809 and exact quoted/PK controls bind the four target subactions, including an explicit missing CASCADE refusal. Prior DDL/parser failures retain gaps; 23514/23503 data refusals are independent boundaries, not successful full-SQL audit. No row or cell status is upgraded; data/dependency/permission/inheritance/partition and general ordered-state dimensions remain open, and all parser-boundary cells are unchanged"
     targets: all constraint kinds, validation state, deferrability
     applicability:
       - anchor: postgresql17
@@ -7189,7 +7189,7 @@ rows:
         product_scope: registered
         parser_status: partial
         audit_status: mixed
-        evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#pg-constraint-risk-native, file:testdata/ddl-golden/T37.json#pg-constraint-partitioned-fk]
+        evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#pg-constraint-risk-native, file:testdata/ddl-golden/T37.json#pg-constraint-partitioned-fk, file:testdata/ddl-golden/T37.json#pg-constraint-target-validate, file:testdata/ddl-golden/T37.json#pg-constraint-target-deferrability, file:testdata/ddl-golden/T37.json#pg-constraint-target-drop, file:docs/decisions/2026-11-17-postgresql-constraint-target-evidence.md]
     subaction_status:
       - subaction_id: ADD PRIMARY KEY
         parser_status: recognized
@@ -7256,7 +7256,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.drop-constraint.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.drop-constraint.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, "file:testdata/ddl-golden/T37.json#DROP CONSTRAINT", file:testdata/ddl-golden/T37.json#pg-constraint-target-drop, file:testdata/ddl-golden/T37.json#constraint-target-drop-offline, file:testdata/ddl-golden/T37.json#constraint-target-drop-guard-offline, file:testdata/ddl-golden/T37.json#pg-constraint-target-prior-ddl, file:testdata/sql-corpus/postgresql/ddl/findings/constraint_target_invalid.expected.yaml#ddl.pg.alter.drop_constraint.target.require]
       - subaction_id: DROP CONSTRAINT CASCADE
         parser_status: recognized
         audit_status: audited
@@ -7267,7 +7267,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.drop-constraint-cascade.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.drop-constraint-cascade.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, "file:testdata/ddl-golden/T37.json#DROP CONSTRAINT CASCADE", file:testdata/ddl-golden/T37.json#pg-constraint-target-drop, file:internal/infrastructure/parser/postgresql/parser_constraint_target_postgresql_tag_test.go, file:testdata/sql-corpus/postgresql/ddl/findings/constraint_target_invalid.expected.yaml#ddl.pg.alter.drop_constraint.target.require]
       - subaction_id: VALIDATE CONSTRAINT
         parser_status: recognized
         audit_status: audited
@@ -7278,7 +7278,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.validate-constraint.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.validate-constraint.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, "file:testdata/ddl-golden/T37.json#VALIDATE CONSTRAINT", file:testdata/ddl-golden/T37.json#pg-constraint-target-validate, file:testdata/ddl-golden/T37.json#constraint-target-validate-offline, file:testdata/ddl-golden/T37.json#pg-constraint-target-check-data, file:testdata/ddl-golden/T37.json#pg-constraint-target-fk-data, file:testdata/ddl-golden/T37.json#pg-constraint-target-prior-ddl, file:testdata/ddl-golden/T37.json#pg-constraint-target-prior-parser, file:testdata/sql-corpus/postgresql/ddl/findings/constraint_target_invalid.expected.yaml#ddl.pg.alter.validate_constraint.target.require]
       - subaction_id: ALTER CONSTRAINT DEFERRABLE
         parser_status: recognized
         audit_status: audited
@@ -7289,7 +7289,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.alter-constraint-deferrable.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.alter-constraint-deferrable.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, "file:testdata/ddl-golden/T37.json#ALTER CONSTRAINT DEFERRABLE", file:testdata/ddl-golden/T37.json#pg-constraint-target-deferrability, file:testdata/ddl-golden/T37.json#constraint-target-deferrability-offline, file:testdata/sql-corpus/postgresql/ddl/findings/constraint_target_invalid.expected.yaml#ddl.pg.alter.constraint_deferrability.target.require]
       - subaction_id: ALTER CONSTRAINT NOT ENFORCED
         parser_status: unrecognized
         audit_status: not_applicable
@@ -7325,7 +7325,7 @@ rows:
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.alter-constraint-inherit-no-inherit.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
-      refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json, file:docs/decisions/2026-11-17-postgresql-alter-constraint-build-risk.md]
+      refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json, file:docs/decisions/2026-11-17-postgresql-alter-constraint-build-risk.md, file:docs/decisions/2026-11-17-postgresql-constraint-target-evidence.md]
     owner: T37
   - id: postgresql.alter-table.partition-ops
     product: postgresql

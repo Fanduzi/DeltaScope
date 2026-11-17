@@ -3,10 +3,33 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 PostgreSQL constraint-target contract
+
+The target tranche preserves all 79 prior required cases and independent
+profiles, adding the 15 cases frozen in the decision before rule implementation
+(**94 required cases**): eight CLI controls and seven owned PG17.7 metadata
+cases under `pg-constraint-target`.
+
+The CLI cases pin offline unverified gaps, disabled/non-PG controls and parser
+retention. Metadata cases independently prove missing/wrong-kind 42704/42809,
+validated/guarded no-op silence, case-sensitive selection, preservation of the
+real PK forbid without misidentifying a quoted unique name, and an explicit
+missing CASCADE target refusal. Catalog flags and uncalled sequences prove
+no audit mutation before the driver runs. Prior ADD/DROP/parser failures keep
+catalog gaps rather than predicting post-state; parser-error exit remains the
+existing CLI code 2 with incomplete coverage, distinct from unverified facts.
+
+CHECK/FK data probes independently refuse 23514/23503 while the bounded target
+check is satisfied. These cases are **not data-legality or successful full-SQL
+audit certificates** and do not promote runtime/permission/dependency/parser
+boundaries. Every new metadata fixture proves prior namespace absence and
+uses ownership-guarded, verified cleanup. Inventory evidence is bound only to
+four exact constraint-target subactions; no row/cell status is upgraded.
+
 ## T37 PostgreSQL constraint migration-risk contract
 
 T37 preserves all 66 prior required cases and adds eleven CLI controls plus
- two owned metadata cases (**79 required cases**). Existing `pg-acceptance`
+ two owned metadata cases (**79 before the target tranche above**). Existing `pg-acceptance`
  and generation profiles stay unchanged. The isolated `pg-constraint-risk`
  profile pins PK build/reuse, FK initial-validation/NOT VALID and corrected
  UNIQUE build/reuse arms; separate profiles prove the existing VALIDATE
@@ -29,7 +52,7 @@ On PostgreSQL 17.7, the driver separately creates eligible unique indexes
 T36 retains its original 48 cases and adds nine CLI controls plus two owned
 metadata cases (59 required cases). T37 retains its original 62 cases and adds
 three CLI controls plus one owned metadata case (66 before the constraint-risk
-tranche above, now 79). Existing
+tranche, then 94 after the target tranche above). Existing
 `pg-acceptance` profiles are unchanged; `pg-generation-declaration` isolates the
 two new rules. Fixed cases pin CREATE/ADD COLUMN parity, mode/cycling silence,
 int64 preservation, native refusal categories, duplicates/unmodeled gaps,

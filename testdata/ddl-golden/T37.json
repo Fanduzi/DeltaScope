@@ -6,6 +6,17 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-constraint-target": {"enable": {
+    "ddl.pg.alter.validate_constraint.target.require": {"level": "blocker"},
+    "ddl.pg.alter.constraint_deferrability.target.require": {"level": "blocker"},
+    "ddl.pg.alter.drop_constraint.target.require": {"level": "blocker"},
+    "ddl.pg.alter.validate_constraint.advisory": {"level": "notice"},
+    "ddl.pg.alter.drop_constraint.advisory": {"level": "notice"},
+    "ddl.pg.alter.constraint_deferrable.notice": {"level": "notice"},
+    "ddl.pg.alter.constraint_initially_deferred.notice": {"level": "notice"},
+    "ddl.alter.drop_primary_key.forbid": {"level": "blocker"},
+    "ddl.pg.alter.not_valid_constraint.validate.require": {"level": "warning", "params": {"required": true}}
+   }},
    "pg-constraint-risk": {"enable": {"ddl.pg.alter.add_foreign_key.not_valid.require": {"level": "warning"}, "ddl.pg.alter.add_primary_key.concurrent_index.warn": {"level": "warning"}, "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory": {"level": "notice"}}},
    "pg-constraint-followup": {"enable": {"ddl.pg.alter.add_foreign_key.not_valid.require": {"level": "warning"}, "ddl.pg.alter.not_valid_constraint.validate.require": {"level": "warning"}}},
    "pg-constraint-forbid": {"enable": {"ddl.pg.alter.add_foreign_key.not_valid.require": {"level": "warning"}, "ddl.table.foreign_key.forbid": {"level": "blocker"}}},
@@ -1826,6 +1837,54 @@
  },
  "cli_cases": [
   {
+   "id": "constraint-target-validate-offline", "dialect": "postgresql", "policy": "pg-constraint-target", "notes": "VALIDATE CONSTRAINT: unobserved catalog is unverified, not proven absence",
+   "sql": "ALTER TABLE app.t VALIDATE CONSTRAINT c", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "evidence_gaps": 1,
+    "finding_entries": [{"rule_id": "ddl.pg.alter.validate_constraint.advisory", "level": "notice"}],
+    "evidence_gap_entries": [{"rule_id": "ddl.pg.alter.validate_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["target_table.pg_constraints"]}]}
+  },
+  {
+   "id": "constraint-target-deferrability-offline", "dialect": "postgresql", "policy": "pg-constraint-target", "notes": "ALTER CONSTRAINT DEFERRABLE: no assumed FK target from AST declaration type",
+   "sql": "ALTER TABLE app.t ALTER CONSTRAINT c DEFERRABLE", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "evidence_gaps": 1,
+    "finding_entries": [{"rule_id": "ddl.pg.alter.constraint_deferrable.notice", "level": "notice"}],
+    "evidence_gap_entries": [{"rule_id": "ddl.pg.alter.constraint_deferrability.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["target_table.pg_constraints"]}]}
+  },
+  {
+   "id": "constraint-target-drop-offline", "dialect": "postgresql", "policy": "pg-constraint-target", "notes": "DROP CONSTRAINT: no fake missing-member blocker without catalog proof",
+   "sql": "ALTER TABLE app.t DROP CONSTRAINT c", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "evidence_gaps": 1,
+    "finding_entries": [{"rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}],
+    "evidence_gap_entries": [{"rule_id": "ddl.pg.alter.drop_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["target_table.pg_constraints"]}]}
+  },
+  {
+   "id": "constraint-target-drop-guard-offline", "dialect": "postgresql", "policy": "pg-constraint-target", "notes": "DROP CONSTRAINT: IF EXISTS does not prove absence or a no-op without facts",
+   "sql": "ALTER TABLE app.t DROP CONSTRAINT IF EXISTS c", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "evidence_gaps": 1,
+    "finding_entries": [{"rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}],
+    "evidence_gap_entries": [{"rule_id": "ddl.pg.alter.drop_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["target_table.pg_constraints"]}]}
+  },
+  {
+   "id": "constraint-target-disabled", "dialect": "postgresql", "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.t VALIDATE CONSTRAINT c;ALTER TABLE app.t ALTER CONSTRAINT c DEFERRABLE;ALTER TABLE app.t DROP CONSTRAINT c", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 3, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0}
+  },
+  {
+   "id": "constraint-target-mysql", "dialect": "mysql", "policy": "pg-constraint-target", "sql": "CREATE TABLE t(id int PRIMARY KEY)", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0}
+  },
+  {
+   "id": "constraint-target-tidb", "dialect": "tidb", "policy": "pg-constraint-target", "sql": "CREATE TABLE t(id int PRIMARY KEY)", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0}
+  },
+  {
+   "id": "constraint-target-parser-retention", "dialect": "postgresql", "policy": "pg-constraint-target", "notes": "VALIDATE CONSTRAINT: parser-error sibling keeps its boundary, not successful audit",
+   "sql": "ALTER TABLE app.t VALIDATE CONSTRAINT c;ALTER TABLE app.t ALTER CONSTRAINT c NOT ENFORCED", "args": ["--fail-on", "none"],
+   "expect": {"exit": 2, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 1, "unsupported": 0, "coverage": "incomplete", "evidence_gaps": 1,
+    "finding_entries": [{"rule_id": "ddl.pg.alter.validate_constraint.advisory", "level": "notice"}],
+    "evidence_gap_entries": [{"rule_id": "ddl.pg.alter.validate_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["target_table.pg_constraints"]}]}
+  },
+  {
    "id": "constraint-risk-pk-build", "dialect": "postgresql", "policy": "pg-constraint-risk", "notes": "ADD PRIMARY KEY: plain declaration build-risk evidence, not target legality",
    "sql": "ALTER TABLE app.t ADD CONSTRAINT pk PRIMARY KEY(id);ALTER TABLE app.u ADD PRIMARY KEY(id);", "args": ["--fail-on", "none"],
    "expect": {"exit": 0, "verdict": "review", "statements": 2, "findings": 2, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0,
@@ -3500,6 +3559,202 @@
  ],
  "metadata_cases": [
   {
+   "id": "pg-constraint-target-prior-ddl", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-constraint-target", "notes": "VALIDATE CONSTRAINT / DROP CONSTRAINT: related prior DDL withholds catalog proof instead of inventing a PG post-state",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgt37_prior"},
+   "fixture": {"cleanup": [{"name": "owned prior-DDL schema cleanup", "fixture_key": "schema", "sql": "DROP SCHEMA pgt37_prior CASCADE", "verify": {"assert": "schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_prior'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgt37_prior.new_t ADD CONSTRAINT fresh CHECK(id>=0) NOT VALID;ALTER TABLE pgt37_prior.new_t VALIDATE CONSTRAINT fresh;ALTER TABLE pgt37_prior.old_t DROP CONSTRAINT ck;ALTER TABLE pgt37_prior.old_t VALIDATE CONSTRAINT ck;", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove prior-DDL namespace absence", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "namespace absent before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_prior'", "expect": "0"}]},
+    {"name": "claim prior-DDL schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgt37_prior", "expect_rc": 0},
+    {"name": "create untouched catalog premises", "sql": "CREATE TABLE pgt37_prior.new_t(id int);CREATE TABLE pgt37_prior.old_t(id int CONSTRAINT ck CHECK(id>=0));CREATE SEQUENCE pgt37_prior.guard START 7", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "review", "statements": 4, "findings": 3, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "evidence_gaps": 2,
+    "finding_entries": [{"index": 1, "rule_id": "ddl.pg.alter.validate_constraint.advisory", "level": "notice"}, {"index": 2, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}, {"index": 3, "rule_id": "ddl.pg.alter.validate_constraint.advisory", "level": "notice"}],
+    "evidence_gap_entries": [{"index": 1, "rule_id": "ddl.pg.alter.validate_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["target_table.pg_constraints"]}, {"index": 3, "rule_id": "ddl.pg.alter.validate_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["target_table.pg_constraints"]}]},
+   "post_verify": [
+    {"assert": "audit creates no fresh constraint", "sql": "SELECT count(*) FROM pg_constraint WHERE conrelid='pgt37_prior.new_t'::regclass", "expect": "0"},
+    {"assert": "audit keeps pre-existing CHECK", "sql": "SELECT contype::text || ':' || convalidated::text FROM pg_constraint WHERE conrelid='pgt37_prior.old_t'::regclass AND conname='ck'", "expect": "c:true"},
+    {"assert": "audit never calls prior-DDL guard", "sql": "SELECT last_value::text || ':' || is_called::text FROM pgt37_prior.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native ADD NOT VALID creates fresh member", "sql": "ALTER TABLE pgt37_prior.new_t ADD CONSTRAINT fresh CHECK(id>=0) NOT VALID", "expect_rc": 0},
+    {"name": "native subsequent VALIDATE finds fresh member", "sql": "ALTER TABLE pgt37_prior.new_t VALIDATE CONSTRAINT fresh", "expect_rc": 0},
+    {"name": "native DROP removes old member", "sql": "ALTER TABLE pgt37_prior.old_t DROP CONSTRAINT ck", "expect_rc": 0},
+    {"name": "native subsequent VALIDATE refuses removed member", "sql": "ALTER TABLE pgt37_prior.old_t VALIDATE CONSTRAINT ck", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42704", "does not exist"]}
+   ],
+   "structure": [
+    {"assert": "driver-created member is validated", "sql": "SELECT convalidated::text FROM pg_constraint WHERE conrelid='pgt37_prior.new_t'::regclass AND conname='fresh'", "expect": "true"},
+    {"assert": "driver-removed member stays absent", "sql": "SELECT count(*) FROM pg_constraint WHERE conrelid='pgt37_prior.old_t'::regclass", "expect": "0"}
+   ],
+   "teardown": [{"name": "drop owned prior-DDL schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgt37_prior CASCADE", "expect_rc": 0, "verify": [{"assert": "prior-DDL namespace removed", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_prior'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-constraint-target-check-data", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-constraint-target", "notes": "VALIDATE CONSTRAINT: CHECK target proof is not data-satisfaction certification; 23514 is an independent native boundary",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgt37_ckdata"},
+   "fixture": {"cleanup": [{"name": "owned CHECK-data schema cleanup", "fixture_key": "schema", "sql": "DROP SCHEMA pgt37_ckdata CASCADE", "verify": {"assert": "schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_ckdata'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgt37_ckdata.t VALIDATE CONSTRAINT ck", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove CHECK-data namespace absence", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "namespace absent before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_ckdata'", "expect": "0"}]},
+    {"name": "claim CHECK-data schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgt37_ckdata", "expect_rc": 0},
+    {"name": "seed violating row before adding NOT VALID CHECK", "sql": "CREATE TABLE pgt37_ckdata.t(id int);INSERT INTO pgt37_ckdata.t VALUES(-1);ALTER TABLE pgt37_ckdata.t ADD CONSTRAINT ck CHECK(id>=0) NOT VALID;CREATE SEQUENCE pgt37_ckdata.guard START 7", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0,
+    "finding_entries": [{"rule_id": "ddl.pg.alter.validate_constraint.advisory", "level": "notice"}]},
+   "post_verify": [
+    {"assert": "audit never validates CHECK", "sql": "SELECT convalidated::text FROM pg_constraint WHERE conrelid='pgt37_ckdata.t'::regclass AND conname='ck'", "expect": "false"},
+    {"assert": "audit leaves violating row unchanged", "sql": "SELECT id FROM pgt37_ckdata.t", "expect": "-1"},
+    {"assert": "audit never advances CHECK-data guard", "sql": "SELECT last_value::text || ':' || is_called::text FROM pgt37_ckdata.guard", "expect": "7:false"}
+   ],
+   "execute": [{"name": "native CHECK validation data refusal", "sql": "ALTER TABLE pgt37_ckdata.t VALIDATE CONSTRAINT ck", "via": "stdin", "expect_rc": 3, "stderr_contains": ["23514", "check constraint", "violated by some row"]}],
+   "structure": [
+    {"assert": "failed validation keeps CHECK unvalidated", "sql": "SELECT convalidated::text FROM pg_constraint WHERE conrelid='pgt37_ckdata.t'::regclass AND conname='ck'", "expect": "false"},
+    {"assert": "failed validation does not repair data", "sql": "SELECT id FROM pgt37_ckdata.t", "expect": "-1"}
+   ],
+   "teardown": [{"name": "drop owned CHECK-data schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgt37_ckdata CASCADE", "expect_rc": 0, "verify": [{"assert": "CHECK-data namespace removed", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_ckdata'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-constraint-target-fk-data", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-constraint-target", "notes": "VALIDATE CONSTRAINT: FK target proof is not row/reference-data certification; 23503 is an independent native boundary",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgt37_fkdata"},
+   "fixture": {"cleanup": [{"name": "owned FK-data schema cleanup", "fixture_key": "schema", "sql": "DROP SCHEMA pgt37_fkdata CASCADE", "verify": {"assert": "schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_fkdata'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgt37_fkdata.t VALIDATE CONSTRAINT fk", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove FK-data namespace absence", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "namespace absent before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_fkdata'", "expect": "0"}]},
+    {"name": "claim FK-data schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgt37_fkdata", "expect_rc": 0},
+    {"name": "seed orphan before adding NOT VALID FK", "sql": "CREATE TABLE pgt37_fkdata.parent(id int PRIMARY KEY);CREATE TABLE pgt37_fkdata.t(pid int);INSERT INTO pgt37_fkdata.t VALUES(42);ALTER TABLE pgt37_fkdata.t ADD CONSTRAINT fk FOREIGN KEY(pid) REFERENCES pgt37_fkdata.parent(id) NOT VALID;CREATE SEQUENCE pgt37_fkdata.guard START 7", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0,
+    "finding_entries": [{"rule_id": "ddl.pg.alter.validate_constraint.advisory", "level": "notice"}]},
+   "post_verify": [
+    {"assert": "audit never validates FK", "sql": "SELECT convalidated::text FROM pg_constraint WHERE conrelid='pgt37_fkdata.t'::regclass AND conname='fk'", "expect": "false"},
+    {"assert": "audit leaves orphan row unchanged", "sql": "SELECT pid FROM pgt37_fkdata.t", "expect": "42"},
+    {"assert": "audit never fabricates reference data", "sql": "SELECT count(*) FROM pgt37_fkdata.parent", "expect": "0"},
+    {"assert": "audit never advances FK-data guard", "sql": "SELECT last_value::text || ':' || is_called::text FROM pgt37_fkdata.guard", "expect": "7:false"}
+   ],
+   "execute": [{"name": "native FK validation data refusal", "sql": "ALTER TABLE pgt37_fkdata.t VALIDATE CONSTRAINT fk", "via": "stdin", "expect_rc": 3, "stderr_contains": ["23503", "foreign key constraint"]}],
+   "structure": [
+    {"assert": "failed validation keeps FK unvalidated", "sql": "SELECT convalidated::text FROM pg_constraint WHERE conrelid='pgt37_fkdata.t'::regclass AND conname='fk'", "expect": "false"},
+    {"assert": "failed validation leaves orphan row", "sql": "SELECT pid FROM pgt37_fkdata.t", "expect": "42"}
+   ],
+   "teardown": [{"name": "drop owned FK-data schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgt37_fkdata CASCADE", "expect_rc": 0, "verify": [{"assert": "FK-data namespace removed", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_fkdata'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-constraint-target-prior-parser", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-constraint-target", "notes": "VALIDATE CONSTRAINT: preceding #149 parser failure invalidates catalog proof; the parser boundary is retained",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgt37_parse"},
+   "fixture": {"cleanup": [{"name": "owned parser-prefix schema cleanup", "fixture_key": "schema", "sql": "DROP SCHEMA pgt37_parse CASCADE", "verify": {"assert": "schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_parse'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgt37_parse.t ALTER CONSTRAINT ck NOT ENFORCED;ALTER TABLE pgt37_parse.t VALIDATE CONSTRAINT ck;", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove parser-prefix namespace absence", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "namespace absent before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_parse'", "expect": "0"}]},
+    {"name": "claim parser-prefix schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgt37_parse", "expect_rc": 0},
+    {"name": "create valid CHECK that must not hide prefix failure", "sql": "CREATE TABLE pgt37_parse.t(id int CONSTRAINT ck CHECK(id>=0));CREATE SEQUENCE pgt37_parse.guard START 7", "expect_rc": 0}
+   ],
+   "expect": {"exit": 2, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 1, "unsupported": 0, "coverage": "incomplete", "evidence_gaps": 1,
+    "finding_entries": [{"rule_id": "ddl.pg.alter.validate_constraint.advisory", "level": "notice"}],
+    "evidence_gap_entries": [{"rule_id": "ddl.pg.alter.validate_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["target_table.pg_constraints"]}]},
+   "post_verify": [
+    {"assert": "audit leaves original CHECK valid", "sql": "SELECT contype::text || ':' || convalidated::text FROM pg_constraint WHERE conrelid='pgt37_parse.t'::regclass AND conname='ck'", "expect": "c:true"},
+    {"assert": "audit never advances parser-prefix guard", "sql": "SELECT last_value::text || ':' || is_called::text FROM pgt37_parse.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native supported VALIDATE is a no-op in isolation", "sql": "ALTER TABLE pgt37_parse.t VALIDATE CONSTRAINT ck", "expect_rc": 0},
+    {"name": "native PG17 also refuses PG18 syntax", "sql": "ALTER TABLE pgt37_parse.t ALTER CONSTRAINT ck NOT ENFORCED", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42601", "syntax error"]}
+   ],
+   "structure": [{"assert": "driver refusal preserves valid CHECK", "sql": "SELECT convalidated::text FROM pg_constraint WHERE conrelid='pgt37_parse.t'::regclass AND conname='ck'", "expect": "true"}],
+   "teardown": [{"name": "drop owned parser-prefix schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgt37_parse CASCADE", "expect_rc": 0, "verify": [{"assert": "parser-prefix namespace removed", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_parse'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-constraint-target-validate", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-constraint-target", "notes": "VALIDATE CONSTRAINT: exact existence/kind/validated/case oracle, not data legality",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgt37_val"},
+   "fixture": {"cleanup": [{"name": "owned validation schema cleanup", "fixture_key": "schema", "sql": "DROP SCHEMA pgt37_val CASCADE", "verify": {"assert": "schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_val'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgt37_val.bad_pk VALIDATE CONSTRAINT bad_pk_key;ALTER TABLE pgt37_val.bad_uq VALIDATE CONSTRAINT bad_uq_key;ALTER TABLE pgt37_val.absent VALIDATE CONSTRAINT missing;ALTER TABLE pgt37_val.nv VALIDATE CONSTRAINT ck;ALTER TABLE pgt37_val.done VALIDATE CONSTRAINT ck;ALTER TABLE pgt37_val.quoted_upper VALIDATE CONSTRAINT \"CK\";ALTER TABLE pgt37_val.quoted_lower VALIDATE CONSTRAINT ck;", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove validation namespace absence", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "namespace absent before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_val'", "expect": "0"}]},
+    {"name": "claim validation schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgt37_val", "expect_rc": 0},
+    {"name": "create distinct catalog targets", "sql": "CREATE TABLE pgt37_val.bad_pk(id int CONSTRAINT bad_pk_key PRIMARY KEY);CREATE TABLE pgt37_val.bad_uq(id int CONSTRAINT bad_uq_key UNIQUE);CREATE TABLE pgt37_val.absent(id int);CREATE TABLE pgt37_val.nv(id int);ALTER TABLE pgt37_val.nv ADD CONSTRAINT ck CHECK(id>=0) NOT VALID;CREATE TABLE pgt37_val.done(id int CONSTRAINT ck CHECK(id>=0));CREATE TABLE pgt37_val.quoted_upper(id int CONSTRAINT \"CK\" UNIQUE,CONSTRAINT ck CHECK(id>=0));CREATE TABLE pgt37_val.quoted_lower(id int CONSTRAINT ck CHECK(id>=0));CREATE SEQUENCE pgt37_val.guard START 7", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "reject", "statements": 7, "findings": 9, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0,
+    "finding_entries": [{"index": 0, "rule_id": "ddl.pg.alter.validate_constraint.target.require", "level": "blocker"}, {"index": 0, "rule_id": "ddl.pg.alter.validate_constraint.advisory", "level": "notice"}, {"index": 1, "rule_id": "ddl.pg.alter.validate_constraint.target.require", "level": "blocker"}, {"index": 1, "rule_id": "ddl.pg.alter.validate_constraint.advisory", "level": "notice"}, {"index": 2, "rule_id": "ddl.pg.alter.validate_constraint.target.require", "level": "blocker"}, {"index": 2, "rule_id": "ddl.pg.alter.validate_constraint.advisory", "level": "notice"}, {"index": 3, "rule_id": "ddl.pg.alter.validate_constraint.advisory", "level": "notice"}, {"index": 5, "rule_id": "ddl.pg.alter.validate_constraint.target.require", "level": "blocker"}, {"index": 5, "rule_id": "ddl.pg.alter.validate_constraint.advisory", "level": "notice"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.pg.alter.validate_constraint.target.require", "metadata": {"schema": "pgt37_val", "table": "bad_pk", "constraint": "bad_pk_key", "target_exists": true, "target_constraint_kind": "p", "reason_code": "constraint_kind_mismatch"}}, {"index": 2, "rule_id": "ddl.pg.alter.validate_constraint.target.require", "metadata": {"table": "absent", "constraint": "missing", "target_exists": false, "reason_code": "constraint_absent"}}, {"index": 5, "rule_id": "ddl.pg.alter.validate_constraint.target.require", "metadata": {"table": "quoted_upper", "constraint": "CK", "target_constraint_kind": "u"}}]},
+   "post_verify": [
+    {"assert": "audit leaves constraint identities and states unchanged", "sql": "SELECT string_agg(t.relname || ':' || c.conname || ':' || c.contype::text || ':' || c.convalidated::text, ',' ORDER BY t.relname,c.contype) FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid WHERE c.connamespace='pgt37_val'::regnamespace", "expect": "bad_pk:bad_pk_key:p:true,bad_uq:bad_uq_key:u:true,done:ck:c:true,nv:ck:c:false,quoted_lower:ck:c:true,quoted_upper:ck:c:true,quoted_upper:CK:u:true"},
+    {"assert": "audit never advances validation guard", "sql": "SELECT last_value::text || ':' || is_called::text FROM pgt37_val.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native PK validation refusal", "sql": "ALTER TABLE pgt37_val.bad_pk VALIDATE CONSTRAINT bad_pk_key", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42809", "not a foreign key or check constraint"]},
+    {"name": "native UNIQUE validation refusal", "sql": "ALTER TABLE pgt37_val.bad_uq VALIDATE CONSTRAINT bad_uq_key", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42809", "not a foreign key or check constraint"]},
+    {"name": "native missing validation refusal", "sql": "ALTER TABLE pgt37_val.absent VALIDATE CONSTRAINT missing", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42704", "does not exist"]},
+    {"name": "native unvalidated CHECK validates", "sql": "ALTER TABLE pgt37_val.nv VALIDATE CONSTRAINT ck", "expect_rc": 0},
+    {"name": "native validated CHECK no-op", "sql": "ALTER TABLE pgt37_val.done VALIDATE CONSTRAINT ck", "expect_rc": 0},
+    {"name": "native quoted UNIQUE exact-kind refusal", "sql": "ALTER TABLE pgt37_val.quoted_upper VALIDATE CONSTRAINT \"CK\"", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42809", "not a foreign key or check constraint"]},
+    {"name": "native lowercase CHECK stays distinct", "sql": "ALTER TABLE pgt37_val.quoted_lower VALIDATE CONSTRAINT ck", "expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "driver changes only the NV validated state", "sql": "SELECT string_agg(t.relname || ':' || c.conname || ':' || c.contype::text || ':' || c.convalidated::text, ',' ORDER BY t.relname,c.contype) FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid WHERE c.connamespace='pgt37_val'::regnamespace", "expect": "bad_pk:bad_pk_key:p:true,bad_uq:bad_uq_key:u:true,done:ck:c:true,nv:ck:c:true,quoted_lower:ck:c:true,quoted_upper:ck:c:true,quoted_upper:CK:u:true"},
+    {"assert": "driver leaves guard uncalled", "sql": "SELECT is_called::text FROM pgt37_val.guard", "expect": "false"}
+   ],
+   "teardown": [{"name": "drop owned validation schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgt37_val CASCADE", "expect_rc": 0, "verify": [{"assert": "validation namespace removed", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_val'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-constraint-target-deferrability", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-constraint-target", "notes": "ALTER CONSTRAINT DEFERRABLE: actual FK kind, missing/wrong-kind and quoted identity",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgt37_def"},
+   "fixture": {"cleanup": [{"name": "owned deferrability schema cleanup", "fixture_key": "schema", "sql": "DROP SCHEMA pgt37_def CASCADE", "verify": {"assert": "schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_def'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgt37_def.valid_t ALTER CONSTRAINT fk DEFERRABLE INITIALLY DEFERRED;ALTER TABLE pgt37_def.bad_t ALTER CONSTRAINT ck DEFERRABLE;ALTER TABLE pgt37_def.absent ALTER CONSTRAINT missing NOT DEFERRABLE INITIALLY IMMEDIATE;ALTER TABLE pgt37_def.quoted_t ALTER CONSTRAINT \"FK\" DEFERRABLE;", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove deferrability namespace absence", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "namespace absent before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_def'", "expect": "0"}]},
+    {"name": "claim deferrability schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgt37_def", "expect_rc": 0},
+    {"name": "create FK and non-FK targets", "sql": "CREATE TABLE pgt37_def.parent(id int PRIMARY KEY);CREATE TABLE pgt37_def.valid_t(pid int CONSTRAINT fk REFERENCES pgt37_def.parent(id));CREATE TABLE pgt37_def.bad_t(id int CONSTRAINT ck CHECK(id>=0));CREATE TABLE pgt37_def.absent(id int);CREATE TABLE pgt37_def.quoted_t(pid int CONSTRAINT \"FK\" CHECK(pid>=0),CONSTRAINT fk FOREIGN KEY(pid) REFERENCES pgt37_def.parent(id));CREATE SEQUENCE pgt37_def.guard START 7", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "reject", "statements": 4, "findings": 7, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0,
+    "finding_entries": [{"index": 0, "rule_id": "ddl.pg.alter.constraint_initially_deferred.notice", "level": "notice"}, {"index": 1, "rule_id": "ddl.pg.alter.constraint_deferrable.notice", "level": "notice"}, {"index": 1, "rule_id": "ddl.pg.alter.constraint_deferrability.target.require", "level": "blocker"}, {"index": 2, "rule_id": "ddl.pg.alter.constraint_deferrable.notice", "level": "notice"}, {"index": 2, "rule_id": "ddl.pg.alter.constraint_deferrability.target.require", "level": "blocker"}, {"index": 3, "rule_id": "ddl.pg.alter.constraint_deferrable.notice", "level": "notice"}, {"index": 3, "rule_id": "ddl.pg.alter.constraint_deferrability.target.require", "level": "blocker"}],
+    "finding_metadata": [{"index": 1, "rule_id": "ddl.pg.alter.constraint_deferrability.target.require", "metadata": {"schema": "pgt37_def", "table": "bad_t", "constraint": "ck", "target_constraint_kind": "c", "reason_code": "constraint_kind_mismatch"}}, {"index": 2, "rule_id": "ddl.pg.alter.constraint_deferrability.target.require", "metadata": {"target_exists": false, "reason_code": "constraint_absent"}}, {"index": 3, "rule_id": "ddl.pg.alter.constraint_deferrability.target.require", "metadata": {"constraint": "FK", "target_constraint_kind": "c"}}]},
+   "post_verify": [
+    {"assert": "audit leaves FK flags unchanged", "sql": "SELECT condeferrable::text || ':' || condeferred::text FROM pg_constraint WHERE conrelid='pgt37_def.valid_t'::regclass AND conname='fk'", "expect": "false:false"},
+    {"assert": "quoted CHECK and lowercase FK stay distinct", "sql": "SELECT string_agg(conname || ':' || contype::text, ',' ORDER BY contype) FROM pg_constraint WHERE conrelid='pgt37_def.quoted_t'::regclass", "expect": "FK:c,fk:f"},
+    {"assert": "audit never calls deferrability guard", "sql": "SELECT last_value::text || ':' || is_called::text FROM pgt37_def.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native FK deferrability changes", "sql": "ALTER TABLE pgt37_def.valid_t ALTER CONSTRAINT fk DEFERRABLE INITIALLY DEFERRED", "expect_rc": 0},
+    {"name": "native CHECK deferrability refuses", "sql": "ALTER TABLE pgt37_def.bad_t ALTER CONSTRAINT ck DEFERRABLE", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42809", "not a foreign key constraint"]},
+    {"name": "native missing deferrability refuses", "sql": "ALTER TABLE pgt37_def.absent ALTER CONSTRAINT missing NOT DEFERRABLE INITIALLY IMMEDIATE", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42704", "does not exist"]},
+    {"name": "native quoted CHECK is not lowercase FK", "sql": "ALTER TABLE pgt37_def.quoted_t ALTER CONSTRAINT \"FK\" DEFERRABLE", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42809", "not a foreign key constraint"]}
+   ],
+   "structure": [
+    {"assert": "driver publishes exact FK flags", "sql": "SELECT condeferrable::text || ':' || condeferred::text FROM pg_constraint WHERE conrelid='pgt37_def.valid_t'::regclass AND conname='fk'", "expect": "true:true"},
+    {"assert": "wrong-kind refusal preserves CHECK", "sql": "SELECT contype::text || ':' || condeferrable::text FROM pg_constraint WHERE conrelid='pgt37_def.bad_t'::regclass AND conname='ck'", "expect": "c:false"}
+   ],
+   "teardown": [{"name": "drop owned deferrability schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgt37_def CASCADE", "expect_rc": 0, "verify": [{"assert": "deferrability namespace removed", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_def'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-constraint-target-drop", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-constraint-target", "notes": "DROP CONSTRAINT / DROP CONSTRAINT CASCADE: existence/guard target proof only, independent PK forbid and exact quoted target; dependency legality unproven",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgt37_drop"},
+   "fixture": {"cleanup": [{"name": "owned drop schema cleanup", "fixture_key": "schema", "sql": "DROP SCHEMA pgt37_drop CASCADE", "verify": {"assert": "schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_drop'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgt37_drop.unguarded DROP CONSTRAINT missing;ALTER TABLE pgt37_drop.guarded DROP CONSTRAINT IF EXISTS missing;ALTER TABLE pgt37_drop.existing DROP CONSTRAINT ck;ALTER TABLE pgt37_drop.case_t DROP CONSTRAINT \"CK\";ALTER TABLE pgt37_drop.real_pk_t DROP CONSTRAINT real_pk_key;ALTER TABLE pgt37_drop.cascade_absent DROP CONSTRAINT missing CASCADE;", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove drop namespace absence", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "namespace absent before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_drop'", "expect": "0"}]},
+    {"name": "claim drop schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgt37_drop", "expect_rc": 0},
+    {"name": "create guarded and real targets", "sql": "CREATE TABLE pgt37_drop.unguarded(id int);CREATE TABLE pgt37_drop.guarded(id int);CREATE TABLE pgt37_drop.existing(id int CONSTRAINT ck CHECK(id>=0));CREATE TABLE pgt37_drop.case_t(id int CONSTRAINT ck PRIMARY KEY,code int CONSTRAINT \"CK\" UNIQUE);CREATE TABLE pgt37_drop.real_pk_t(id int CONSTRAINT real_pk_key PRIMARY KEY);CREATE TABLE pgt37_drop.cascade_absent(id int);CREATE SEQUENCE pgt37_drop.guard START 7", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "reject", "statements": 6, "findings": 8, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0,
+    "finding_entries": [{"index": 0, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "level": "blocker"}, {"index": 0, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}, {"index": 2, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}, {"index": 3, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}, {"index": 4, "rule_id": "ddl.alter.drop_primary_key.forbid", "level": "blocker"}, {"index": 4, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}, {"index": 5, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "level": "blocker"}, {"index": 5, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "metadata": {"schema": "pgt37_drop", "table": "unguarded", "constraint": "missing", "target_exists": false, "reason_code": "constraint_absent"}}]},
+   "post_verify": [
+    {"assert": "audit removes no constraints including case-distinct PK", "sql": "SELECT string_agg(t.relname || ':' || c.conname || ':' || c.contype::text, ',' ORDER BY t.relname,c.contype) FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid WHERE c.connamespace='pgt37_drop'::regnamespace", "expect": "case_t:ck:p,case_t:CK:u,existing:ck:c,real_pk_t:real_pk_key:p"},
+    {"assert": "audit never calls drop guard", "sql": "SELECT last_value::text || ':' || is_called::text FROM pgt37_drop.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native unguarded missing target refuses", "sql": "ALTER TABLE pgt37_drop.unguarded DROP CONSTRAINT missing", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42704", "does not exist"]},
+    {"name": "native guarded missing target no-op", "sql": "ALTER TABLE pgt37_drop.guarded DROP CONSTRAINT IF EXISTS missing", "expect_rc": 0, "stderr_contains": ["does not exist, skipping"]},
+    {"name": "native existing CHECK drops", "sql": "ALTER TABLE pgt37_drop.existing DROP CONSTRAINT ck", "expect_rc": 0},
+    {"name": "native quoted UNIQUE drops without dropping distinct PK", "sql": "ALTER TABLE pgt37_drop.case_t DROP CONSTRAINT \"CK\"", "expect_rc": 0},
+    {"name": "native real PK drop proves forbid is policy not syntax refusal", "sql": "ALTER TABLE pgt37_drop.real_pk_t DROP CONSTRAINT real_pk_key", "expect_rc": 0},
+    {"name": "native CASCADE still refuses missing target", "sql": "ALTER TABLE pgt37_drop.cascade_absent DROP CONSTRAINT missing CASCADE", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42704", "does not exist"]}
+   ],
+   "structure": [
+    {"assert": "only case-distinct PK remains after driver", "sql": "SELECT string_agg(t.relname || ':' || c.conname || ':' || c.contype::text, ',' ORDER BY t.relname,c.contype) FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid WHERE c.connamespace='pgt37_drop'::regnamespace", "expect": "case_t:ck:p"},
+    {"assert": "driver leaves drop guard uncalled", "sql": "SELECT is_called::text FROM pgt37_drop.guard", "expect": "false"}
+   ],
+   "teardown": [{"name": "drop owned drop schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgt37_drop CASCADE", "expect_rc": 0, "verify": [{"assert": "drop namespace removed", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgt37_drop'", "expect": "0"}]}]
+  },
+  {
    "id": "pg-constraint-risk-native", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-constraint-risk", "notes": "ADD PRIMARY KEY / ADD UNIQUE / ADD FOREIGN KEY: bounded migration-risk declarations, independent catalog/index-identity/lock oracle; no target-legality claim",
    "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgrisk37_native"},
    "fixture": {"cleanup": [{"name": "remove only owned constraint-risk schema", "fixture_key": "schema", "sql": "DROP SCHEMA pgrisk37_native CASCADE", "verify": {"assert": "owned schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgrisk37_native'", "expect": "0"}}]},
@@ -3718,6 +3973,21 @@
   "T37.cli.constraint-risk-mysql-control",
   "T37.cli.constraint-risk-tidb-control",
   "T37.meta.pg-constraint-risk-native",
-  "T37.meta.pg-constraint-partitioned-fk"
+  "T37.meta.pg-constraint-partitioned-fk",
+  "T37.cli.constraint-target-validate-offline",
+  "T37.cli.constraint-target-deferrability-offline",
+  "T37.cli.constraint-target-drop-offline",
+  "T37.cli.constraint-target-drop-guard-offline",
+  "T37.cli.constraint-target-disabled",
+  "T37.cli.constraint-target-mysql",
+  "T37.cli.constraint-target-tidb",
+  "T37.cli.constraint-target-parser-retention",
+  "T37.meta.pg-constraint-target-validate",
+  "T37.meta.pg-constraint-target-deferrability",
+  "T37.meta.pg-constraint-target-drop",
+  "T37.meta.pg-constraint-target-prior-ddl",
+  "T37.meta.pg-constraint-target-check-data",
+  "T37.meta.pg-constraint-target-fk-data",
+  "T37.meta.pg-constraint-target-prior-parser"
  ]
 }

@@ -42,6 +42,18 @@ aggregate is promoted. Target legality, index eligibility and constraint-state
 resolution remain open. `matrix.json` is generated, with all 301 row counts
 unchanged.
 
+## PostgreSQL constraint-target tranche
+
+Only evidence on `postgresql.alter-table.constraints` changes. DROP CONSTRAINT,
+DROP CONSTRAINT CASCADE, VALIDATE CONSTRAINT and ALTER CONSTRAINT DEFERRABLE
+bind literal subaction selectors, exact new T37 native/CLI cases and matching
+rule-specific corpus references. Native missing CASCADE, exact quoted/PK
+identity, wrong-kind/missing target and no-op controls are distinct from
+prior-DDL/parser gaps and 23514/23503 data refusals. Target proof does not
+certify those broader boundaries. All row/cell statuses and all 301-row
+aggregate counts are unchanged; the parent remains mixed. `matrix.json` is
+regenerated from YAML, not edited by hand.
+
 ## Row contract
 
 Every row carries: `id` (stable, unique), `product` (`mysql`/`tidb`),

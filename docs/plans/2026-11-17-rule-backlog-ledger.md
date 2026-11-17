@@ -104,7 +104,7 @@ not aggregate evidence for a later documentation commit.
 **F09 remains open.** Other constraint existence/type/validation-state,
 identity/default/attribute/options and rename/owner dimensions remain queued.
 
-### Next approved constraint-target scope
+### D4 constraint-target candidate and accepted stage boundary
 
 After 15 PostgreSQL 17.7 native shapes and 30 real offline/live CLI probes at
 `8aa9e3c8`, the operator approved three new default blockers:
@@ -120,8 +120,24 @@ related prior DDL invalidates old catalog facts; later target checks retain a
 gap rather than falsely rejecting ADD→VALIDATE or trusting DROP→VALIDATE.
 This is not permanent deferral or whole-family support. Data, dependencies,
 permissions and remaining dimensions are not certified by target checks.
-Implementation and a separate decision record belong to the next tranche;
-these approvals are not claims that the rules already exist.
+Implementation is now in `be3a5570` (complete private catalog, exact schema/
+case/cache routing, AST guards and conservative freshness) and `8482b193`
+(rules/config/catalog, SDK provider alias/owned copy, HTTP/MCP/application,
+corpus and bilingual references). [Decision](../decisions/2026-11-17-postgresql-constraint-target-evidence.md).
+The shared PK matcher also keeps PG `ck` distinct from quoted unique `"CK"`
+without relaxing actual PK forbids or MySQL/TiDB behavior.
+
+T37 implements the exact 15 cases frozen before rules: all 79 old cases and
+profiles are retained, for **94/94 cases and 1131 assertions** in focused
+execution. Native oracles pin 42704/42809, missing CASCADE, catalog states,
+quoted identities, no-op silence and no audit execution. Prior DDL/parser
+facts remain gaps; independent 23514/23503 refusals do not certify data. Only
+four exact constraint-target evidence cells are rebound; no cell/row status,
+aggregate count or original dimensional denominator is promoted.
+
+This is **candidate implementation/evidence, not a delivered D4 or completed
+F09**. Final same-HEAD aggregate, independent read-only review, FF-only merge,
+normal push and exact-SHA CI must pass before delivery.
 
 ## Family index
 
@@ -139,7 +155,7 @@ new default behavior is approved per family before implementation.
 | F06 | TiDB recovery/flashback | 1 | T16 | unreviewed |
 | F07 | PostgreSQL schema/collation | 2 | T35 | unreviewed |
 | F08 | PostgreSQL CREATE TABLE | 6 | T36 | D2 delivered; remaining dimensions unreviewed |
-| F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2 ADD COLUMN and D3 constraint risk delivered; target checks approved; remaining dimensions open |
+| F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2 ADD COLUMN and D3 constraint risk delivered; D4 target candidate above; remaining dimensions open |
 | F10 | PostgreSQL DROP/TRUNCATE | 2 | T38 | unreviewed |
 | F11 | PostgreSQL indexes/operator families | 4 | T39 | unreviewed |
 | F12 | PostgreSQL views/materialized views | 5 | T40 | unreviewed |
@@ -195,7 +211,7 @@ insufficient.
 | F08 | `postgresql.create-table-like` | LIKE basic; INCLUDING options | unreviewed |
 | F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; others unreviewed |
 | F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | unreviewed |
-| F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; target checks approved; remaining dimensions open |
+| F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 target candidate; remaining dimensions open |
 | F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | unreviewed |
 | F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | unreviewed |
 | F10 | `postgresql.drop-table` | DROP TABLE; IF EXISTS / multi-target | unreviewed |

@@ -147,11 +147,23 @@ fix and green afterward, retaining MySQL/TiDB behavior. Before the rule
 implementation commit, full build/default+PG tests, inventory/corpus/catalog
 gates, default+PG lint and formatting pass with the new rules enabled.
 
-These are implementation/focused checks, not final single-HEAD aggregate
-readiness or shipped new rule behavior. The frozen canonical/native cases
-and exact inventory bindings still belong to the evidence tranche; the full
-required delivery chain must pass before merge/push.
-The final rule/evidence delivery must independently pass the full goal gates.
+The canonical tranche preserves all 79 old T37 cases/profiles and adds the
+exact 15 frozen cases. Focused execution passes **94/94 with 1131 assertions**.
+Native oracles independently pin missing/wrong-kind 42704/42809 (including an
+explicit missing CASCADE target), catalog/flag changes and no-op states,
+quoted UNIQUE versus PK identity, 23514/23503 data refusals and the retained
+PG18 parser boundary. Audits precede driver execution; catalog/data/sequence
+checks and ownership-guarded teardown prove non-mutation and cleanup. Parser
+cases keep the existing CLI exit 2; no diagnostic or gap is removed.
+
+Only exact DROP, DROP CASCADE, VALIDATE and deferrability evidence cells are
+rebound to their own T37/corpus selectors. YAML generates the matrix; all row/
+cell statuses and aggregate counts remain unchanged. This does not certify
+data, dependencies, permissions, general PG post-state or whole-family scope.
+
+These implementation/focused results are not final same-HEAD aggregate
+readiness or shipped D4. The full required delivery chain and independent
+read-only review must pass before merge/push.
 
 ## Sources and links
 
