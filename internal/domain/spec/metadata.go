@@ -372,6 +372,11 @@ type TableSnapshot struct {
 	Constraints  []Constraint      `json:"constraints,omitempty"`
 	Options      map[string]string `json:"options,omitempty"`
 
+	// PGConstraints is the complete, target-bound PG constraint directory.
+	// nil means unobserved/stale; non-nil empty means observed empty. It is
+	// separate from legacy PK-only Constraints and never enters public JSON.
+	PGConstraints []PGConstraintState `json:"-"`
+
 	// TTL is the catalog/prospective TTL configuration when one is proven
 	// present. nil means either proven absence (TTLKnown=true) or an
 	// unobserved state (TTLKnown=false); never infer either from the other.

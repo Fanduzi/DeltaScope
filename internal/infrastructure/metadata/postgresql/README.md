@@ -8,6 +8,8 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 |------|---------------|
 | open.go | Formats PostgreSQL metadata connection DSNs and opens pgx stdlib `database/sql` handles |
 | open_test.go | Verifies TCP and unix-socket DSN/address formatting helpers |
+| constraint_state.go | Loads all target-bound `pg_constraint` names/kinds/validated flags with parameterized exact schema/table identity, no expressions/definitions; errors propagate before publishing the non-nil complete directory and duplicate rows stay visible |
+| constraint_state_test.go | Pins complete/empty/quoted/duplicate catalog reads and query/scan/iteration errors without a live database |
 | provider.go | Loads normalized dialect, schema, instance-fact, table snapshot, and plain-`EXPLAIN` plan-estimate data from PostgreSQL catalogs and planner stats |
 | provider_test.go | Verifies catalog-backed schema discovery, reltuples/statistics loading, PK constraint truth, and plain-`EXPLAIN` estimation without a live database |
 | resolve_object.go | Resolves non-table database object metadata from PostgreSQL catalogs with schema-qualified ambiguity detection and privacy-safe attribute projection |

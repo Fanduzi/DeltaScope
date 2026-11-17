@@ -8,7 +8,8 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 |------|---------------|
 | parser.go | Parses PostgreSQL SQL text and classifies statements when built with the `postgresql` tag |
 | extractor.go | Defines the PostgreSQL extracted-statement wrapper and extractor that populates normalized spec fields (column `NotNull`, `Default`, constraints) for ALTER TABLE ADD COLUMN statements |
-| extractor_ddl_alter.go | Normalizes PostgreSQL ALTER actions; ADD PRIMARY KEY/UNIQUE retain an explicit `using_index=true|false` AST fact, never inferred from missing column lists or live index eligibility |
+| extractor_ddl_alter.go | Normalizes PostgreSQL ALTER actions; ADD PRIMARY KEY/UNIQUE retain an explicit `using_index=true|false` AST fact, never inferred from missing column lists or live index eligibility; DROP CONSTRAINT preserves `if_exists` and `cascade` from AST (omission/RESTRICT both mean false) |
+| parser_constraint_target_postgresql_tag_test.go | Pins DROP constraint guard/CASCADE/RESTRICT/omission and exact quoted names without widening parser support |
 | parser_constraint_build_postgresql_tag_test.go | Pins plain/reused-index PK and UNIQUE declarations, unnamed/quoted controls, and absence of the index-reuse marker on FK/CHECK |
 | extractor_ddl_drop.go | Extracts PostgreSQL DROP/TRUNCATE DDL preserving every named relation in `DDL.Targets` |
 | extractor_generation.go | Preserves lossless CREATE/ADD COLUMN generation declarations for bounded governance: repeated characteristics/options, signed int64 numeric options, NULL presence and scalar/array type proof; leaves legacy public projections unchanged and never retains expression bodies |

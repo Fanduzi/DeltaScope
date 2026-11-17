@@ -932,7 +932,10 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		}
 		return spec.Alter{Action: "add_constraint", Name: constraint.GetConname(), Options: options}, true, nil
 	case pg_query.AlterTableType_AT_DropConstraint:
-		return spec.Alter{Action: "drop_constraint", Name: cmd.GetName()}, true, nil
+		return spec.Alter{Action: "drop_constraint", Name: cmd.GetName(), Options: map[string]string{
+			"if_exists": strconv.FormatBool(cmd.GetMissingOk()),
+			"cascade":   strconv.FormatBool(cmd.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE),
+		}}, true, nil
 	case pg_query.AlterTableType_AT_ValidateConstraint:
 		return spec.Alter{Action: "validate_constraint", Name: cmd.GetName()}, true, nil
 	case pg_query.AlterTableType_AT_AlterColumnType:

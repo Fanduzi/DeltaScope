@@ -142,7 +142,11 @@ func TestLoadTableSnapshotUsesCatalogsAndPlannerStats(t *testing.T) {
 				{"created_at", "timestamp with time zone", nil, nil, nil, false, "CURRENT_TIMESTAMP", false, "creation time"},
 			},
 		},
-		"from pg_catalog.pg_constraint": {
+		"from pg_catalog.pg_constraint pc": {
+			columns: []string{"conname", "contype", "convalidated"},
+			rows:    [][]driver.Value{{"users_pk_constraint", "p", true}, {"users_check", "c", false}},
+		},
+		"con.contype = 'p'": {
 			columns: []string{"constraint_name", "index_name", "column_name", "index_reltuples"},
 			rows: [][]driver.Value{
 				{"users_pk_constraint", "users_primary_idx", "id", float64(321)},
@@ -197,6 +201,9 @@ func TestLoadTableSnapshotUsesCatalogsAndPlannerStats(t *testing.T) {
 	}
 	if len(snapshot.Constraints) != 1 || snapshot.Constraints[0].Type != "primary_key" || snapshot.Constraints[0].Name != "users_pk_constraint" {
 		t.Fatalf("expected primary key constraint metadata, got %#v", snapshot.Constraints)
+	}
+	if len(snapshot.PGConstraints) != 2 || snapshot.PGConstraints[1].Type != "c" || snapshot.PGConstraints[1].Validated {
+		t.Fatalf("expected full bounded constraint state directory, got %#v", snapshot.PGConstraints)
 	}
 	if len(snapshot.Indexes) != 2 {
 		t.Fatalf("expected two non-primary indexes, got %#v", snapshot.Indexes)

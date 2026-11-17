@@ -60,6 +60,7 @@ const modifyColumnUnknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_colu
 type fakeMetadataProvider struct {
 	instanceCalls int
 	tableCalls    []string
+	tableSchemas  []string
 	plannerCalls  int
 	indexCalls    []string
 	indexSchemas  []string
@@ -79,8 +80,9 @@ func (f *fakeMetadataProvider) LoadInstanceFacts(_ context.Context, _ spec.Diale
 	return f.instance, nil
 }
 
-func (f *fakeMetadataProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, _ string, table string) (*spec.TableSnapshot, error) {
+func (f *fakeMetadataProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema string, table string) (*spec.TableSnapshot, error) {
 	f.tableCalls = append(f.tableCalls, table)
+	f.tableSchemas = append(f.tableSchemas, schema)
 	if f.err != nil {
 		return nil, f.err
 	}

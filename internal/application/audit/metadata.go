@@ -179,7 +179,7 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 		return enrichOrderedStatements(ctx, dialect, request, statements, failures, instanceFacts, resolvedVersion, limits)
 	}
 
-	snapshots := make(map[string]*spec.TableSnapshot)
+	snapshots := make(map[[2]string]*spec.TableSnapshot)
 	enriched := make([]spec.Statement, len(statements))
 
 	for i, statement := range statements {
@@ -192,7 +192,7 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 			return nil, fmt.Errorf("resolve index owner: %w", err)
 		}
 		if tableName != "" {
-			key := strings.ToLower(metadataSchema) + "." + strings.ToLower(tableName)
+			key := [2]string{metadataSchema, tableName}
 			snapshot, ok := snapshots[key]
 			if !ok {
 				snapshot, err = request.Provider.LoadTableSnapshot(ctx, dialect, metadataSchema, tableName)
@@ -223,6 +223,9 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 		}
 	}
 
+	if dialect == spec.DialectPostgreSQL {
+		invalidateStalePGConstraints(enriched, failures)
+	}
 	return enriched, nil
 }
 
@@ -918,6 +921,9 @@ func targetTableName(statement spec.Statement) string {
 }
 
 func metadataTargetSchema(request *MetadataRequest, statement spec.Statement) string {
+	if statement.Dialect == spec.DialectPostgreSQL && statement.DDL != nil && statement.DDL.Table != nil && statement.DDL.Table.Schema != "" {
+		return statement.DDL.Table.Schema
+	}
 	if statement.DML != nil {
 		if targets := statement.DML.MutationTargetTables(); len(targets) > 0 {
 			if schema := strings.TrimSpace(targets[0].Schema); schema != "" {
