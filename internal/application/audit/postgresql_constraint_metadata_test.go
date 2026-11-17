@@ -74,6 +74,28 @@ func TestPGConstraintMetadataFreshness(t *testing.T) {
 	}
 }
 
+func TestPGConstraintFailureOrdering(t *testing.T) {
+	for _, tc := range []struct {
+		failures                 []parseFailure
+		prefixStale, targetStale bool
+	}{
+		{[]parseFailure{{Line: 5, Column: 1}, {Line: 2, Column: 1}}, false, true},
+		{[]parseFailure{{Line: 5, Column: 1}, {Line: 4, Column: 1}}, false, false},
+		{[]parseFailure{{Line: 5, Column: 1}, {Line: 0}}, true, true},
+	} {
+		source := &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: []spec.PGConstraintState{}}
+		prefix := pgConstraintMetadataStatement("app", "t", "", source)
+		prefix.Kind, prefix.DDL = spec.KindDML, nil
+		target := pgConstraintMetadataStatement("app", "t", "validate_constraint", source)
+		target.Line = 3
+		statements := []spec.Statement{prefix, target}
+		invalidateStalePGConstraints(statements, tc.failures)
+		if (statements[0].Metadata.TargetTable.PGConstraints == nil) != tc.prefixStale || (statements[1].Metadata.TargetTable.PGConstraints == nil) != tc.targetStale || source.PGConstraints == nil {
+			t.Fatalf("lost earliest-failure/prefix proof: %+v", tc)
+		}
+	}
+}
+
 func TestPGConstraintMetadataIdentityCache(t *testing.T) {
 	p := &fakeMetadataProvider{instance: &spec.InstanceFacts{Version: "PostgreSQL 17.7"}, snapshot: &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: []spec.PGConstraintState{}}}
 	var statements []spec.Statement

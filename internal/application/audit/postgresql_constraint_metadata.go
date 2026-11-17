@@ -7,12 +7,16 @@ import "github.com/Fanduzi/DeltaScope/internal/domain/spec"
 func invalidateStalePGConstraints(statements []spec.Statement, failures []parseFailure) {
 	stale := make(map[[2]string]bool)
 	allStale := false
+	var earliest *parseFailure
+	for i := range failures {
+		f := &failures[i]
+		if earliest == nil || failureBefore(f.Line, f.Column, earliest.Line, earliest.Column) {
+			earliest = f
+		}
+	}
 	for i, statement := range statements {
-		for _, failure := range failures {
-			if statement.Line <= 0 || failure.Line <= 0 || failureBefore(failure.Line, failure.Column, statement.Line, statement.Column) {
-				allStale = true
-				break
-			}
+		if earliest != nil && (statement.Line <= 0 || earliest.Line <= 0 || failureBefore(earliest.Line, earliest.Column, statement.Line, statement.Column)) {
+			allStale = true
 		}
 		if m := statement.Metadata; m != nil && m.TargetTable != nil && m.TargetTable.Table != nil {
 			name := m.TargetTable.Table.Name

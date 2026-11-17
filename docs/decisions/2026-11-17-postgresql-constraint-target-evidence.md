@@ -70,7 +70,10 @@ Opaque/unsupported/parser-failure content, omitted identities, non-table DDL
 whose effects are not modeled here, and effects that may reach another
 identity/dependent table conservatively end freshness more broadly. Provider snapshots and earlier statements remain immutable.
 Same-statement preceding ALTER actions must likewise withhold later target
-conclusions in the rule assessment; no post-state is invented.
+conclusions in the rule assessment; no post-state is invented. Only the earliest
+parse failure is needed to end freshness, so the pass scans failures once and
+statements once rather than multiplying both input sizes. Unsorted and missing
+failure positions retain the same conservative cutoff and immutable prefix.
 
 This stage boundary was explicitly accepted. It is not a permanent deferral,
 whole-family completion or an excuse to treat a missing fact as supported.
