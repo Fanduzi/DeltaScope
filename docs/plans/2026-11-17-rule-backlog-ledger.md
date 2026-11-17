@@ -51,9 +51,10 @@ anchors or cases may be deleted to improve the percentage.
 | --- | --- | --- | --- |
 | D1 | MySQL CREATE explicit/default DEFINER versus INVOKER; ALTER explicit DEFINER versus INVOKER/omission; account independence | Rules `780585f1`, shipping `795b47b0`; T27/T28; [decision](../decisions/2026-11-16-mysql-routine-security-definer-warn.md) | General routine existence/dependencies, other characteristics, RETURN and dynamic/body boundaries are not closed by security mode evidence |
 | D2 | PostgreSQL CREATE TABLE / ADD COLUMN bounded generation/default/NULL/type/sequence-bound validity and explicit identity CYCLE | Extractor `5d5f7ea0`, rules `664c1ed4`, guard `01bc3135`, native/inventory `c233fab7`, final shipping `d8cceea6`; T36/T37; [decision](../decisions/2026-11-16-postgresql-generated-identity-governance.md) | Expression legality/dependencies, existing-column identity transitions, runtime sequence state, partition/LIKE/inheritance and other table attributes remain open |
+| D3 | PostgreSQL ALTER PK index-build / FK initial-validation warnings and UNIQUE USING INDEX notice correction | Extractor `37fa8fd1`, rules `f9f3601e`, native/inventory and final shipping `8aa9e3c8`; T37; [decision](../decisions/2026-11-17-postgresql-alter-constraint-build-risk.md) | Constraint target/state, identity/default and all other F09 dimensions remain open |
 
-Both slices passed their final single-HEAD TASK=all aggregates and CI. The
-latest verified implementation baseline is `d8cceea6`: **50 tasks,
+D1/D2 passed their final single-HEAD TASK=all aggregates and CI. Their
+verified implementation baseline is `d8cceea6`: **50 tasks,
 3398/3398 cases, 59,716 assertions**. The artifact is
 `/tmp/ddl-golden-pg-generated-identity-final/all/artifact.json`;
 [Go/PG/lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/43909845975),
@@ -66,14 +67,14 @@ generic_notice=18, mixed_coverage=45, explicit_unsupported=41,
 vendor_not_supported=11, parser_unsupported=8, parse_only=15 (301 total).
 The original 63 generic/mixed rows still need dimensional review.
 
-## F09 approved constraint-risk slice — implementation and focused evidence
+## F09 delivered constraint-risk slice D3
 
 The operator approved two default-enabled warnings and the corrected UNIQUE
 USING INDEX silent arm. Extractor `37fa8fd1` retains the explicit reuse fact;
 `f9f3601e` adds the shared warnings, config/catalog, corpus, SDK/HTTP/MCP and
 bilingual reference coverage. [Decision](../decisions/2026-11-17-postgresql-alter-constraint-build-risk.md).
 
-T37 preserves its 66 prior cases/profiles and adds 13 isolated cases. Focused
+T37 preserves its 66 prior cases/profiles and adds 13 isolated cases. Final
 79/79 execution (836 assertions) proves ordinary/reused PK/UNIQUE, plain/NOT
 VALID FK, independent follow-up/forbid, multi-action/disabled/dialect controls,
 PG17.7 index OID/constraint catalog/lock oracles and no audit execution. The
@@ -85,10 +86,42 @@ its status with corrected reuse semantics. All parent aggregates and the
 19-family/63-row dimension denominator are unchanged. Ordinary default-policy
 PK can move pass→review; an independently enabled FK forbid still rejects.
 
-This is **candidate evidence, not delivered or family complete**. Full final
-single-HEAD aggregate/review/merge/push/CI is a separate delivery gate. Other
-constraint existence/type/validation-state, identity/default/attribute/options
-and rename/owner dimensions remain queued; no new product deferral is accepted.
+D3 was FF-only merged and normally pushed from base `8de713b8` to
+`8aa9e3c88a6441c0df0273d03ecf0efcddb6c5d6`. All 50 canonical tasks at
+that exact HEAD passed: **3411/3411 cases, 59,870 assertions**; no task had
+zero execution or a mismatched HEAD. Aggregate:
+`/tmp/ddl-golden-pg-constraint-risk-final/all/artifact.json` (validated).
+Build, default/PG tests, default/PG lint, formatting and all inventory/corpus/
+coverage-catalog gates passed before and after merge. A separate read-only
+review found no unresolved P1/P2; the original worktree status was preserved.
+[Go/PG/lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44120347868),
+[TLS E2E CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44120345515)
+and Cloudflare Pages succeeded for that exact SHA. Milestone diff
+`8de713b8...8aa9e3c8` is 47 paths; the final evidence task
+`f9f3601e..8aa9e3c8` is seven paths. This records historical code delivery,
+not aggregate evidence for a later documentation commit.
+
+**F09 remains open.** Other constraint existence/type/validation-state,
+identity/default/attribute/options and rename/owner dimensions remain queued.
+
+### Next approved constraint-target scope
+
+After 15 PostgreSQL 17.7 native shapes and 30 real offline/live CLI probes at
+`8aa9e3c8`, the operator approved three new default blockers:
+`ddl.pg.alter.validate_constraint.target.require` (exists, FK/CHECK),
+`ddl.pg.alter.constraint_deferrability.target.require` (exists, FK), and
+`ddl.pg.alter.drop_constraint.target.require` (missing without IF EXISTS).
+Missing/ambiguous/incomplete facts retain evidence gaps rather than guessed
+absence. This can raise offline pass to review. Proven already-validated and
+missing-guard no-op cases stop receiving misleading existing notices.
+
+The accepted **stage boundary** does not enable general PG ordered execution:
+related prior DDL invalidates old catalog facts; later target checks retain a
+gap rather than falsely rejecting ADD→VALIDATE or trusting DROP→VALIDATE.
+This is not permanent deferral or whole-family support. Data, dependencies,
+permissions and remaining dimensions are not certified by target checks.
+Implementation and a separate decision record belong to the next tranche;
+these approvals are not claims that the rules already exist.
 
 ## Family index
 
@@ -106,7 +139,7 @@ new default behavior is approved per family before implementation.
 | F06 | TiDB recovery/flashback | 1 | T16 | unreviewed |
 | F07 | PostgreSQL schema/collation | 2 | T35 | unreviewed |
 | F08 | PostgreSQL CREATE TABLE | 6 | T36 | D2 delivered; remaining dimensions unreviewed |
-| F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2 ADD COLUMN delivered; approved constraint-risk candidate above; remaining dimensions open |
+| F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2 ADD COLUMN and D3 constraint risk delivered; target checks approved; remaining dimensions open |
 | F10 | PostgreSQL DROP/TRUNCATE | 2 | T38 | unreviewed |
 | F11 | PostgreSQL indexes/operator families | 4 | T39 | unreviewed |
 | F12 | PostgreSQL views/materialized views | 5 | T40 | unreviewed |
@@ -162,7 +195,7 @@ insufficient.
 | F08 | `postgresql.create-table-like` | LIKE basic; INCLUDING options | unreviewed |
 | F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; others unreviewed |
 | F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | unreviewed |
-| F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial candidate: PK/FK migration risk and UNIQUE reuse correction above; all remaining dimensions unreviewed |
+| F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; target checks approved; remaining dimensions open |
 | F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | unreviewed |
 | F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | unreviewed |
 | F10 | `postgresql.drop-table` | DROP TABLE; IF EXISTS / multi-target | unreviewed |

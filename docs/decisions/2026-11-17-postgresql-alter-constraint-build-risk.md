@@ -7,8 +7,8 @@ Base: `8de713b818cb20d199c5e0172ae2607708f46b91`
 
 ## Context
 
-F09 has five inventory rows and 40 authored dimensions. All 62 current T37 CLI
-inputs were probed with the real PostgreSQL-capable CLI before implementation.
+F09 has five inventory rows and 40 authored dimensions. All 62 T37 CLI inputs
+at base `8de713b8` were probed with the real PostgreSQL-capable CLI before implementation.
 ADD PRIMARY KEY is silent; FK has a blanket forbid but no specific initial
 validation-scan warning. Existing CHECK NOT VALID and same-batch VALIDATE
 follow-up rules already cover distinct dimensions and must not be duplicated.
@@ -127,9 +127,25 @@ on their existing parser-error boundaries.
   remain unchanged. Inventory/corpus/coverage-catalog gates pass after using
   `scripts/gen_ddl_inventory_matrix.py`.
 
-These focused results are not a final single-HEAD aggregate, merged delivery
-or whole-family completion claim. Implementation commits are `37fa8fd1`
-(extractor) and `f9f3601e` (rules/corpus/shared surfaces).
+Implementation commits are `37fa8fd1` (extractor), `f9f3601e`
+(rules/corpus/shared surfaces) and `8aa9e3c8` (native/inventory evidence).
+Final D3 delivery is `8aa9e3c88a6441c0df0273d03ecf0efcddb6c5d6`,
+FF-only merged from `milestone/pg-alter-semantics` and normally pushed from
+base `8de713b818cb20d199c5e0172ae2607708f46b91`.
+
+At that exact HEAD, the validated aggregate
+`/tmp/ddl-golden-pg-constraint-risk-final/all/artifact.json` passes all 50
+canonical tasks: **3411/3411 cases, 59,870 assertions**, nonzero execution
+and no mixed HEADs. Build/default+PG tests, inventory/corpus/catalog gates,
+formatting and default+PG lint pass before and after merge. A separate
+read-only review found no unresolved P1/P2 and preserved the original
+worktree/untracked state. Exact-SHA [Go/PG/lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44120347868),
+[TLS E2E CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44120345515)
+and Cloudflare Pages succeeded. The milestone diff is 47 paths; the last
+focused evidence task is seven paths (`f9f3601e..8aa9e3c8`).
+
+This is historical evidence for D3, not a final aggregate claim for a later
+documentation commit or whole-family completion.
 
 ## Consequences
 
