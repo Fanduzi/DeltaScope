@@ -7922,7 +7922,9 @@
           "audit_status": "mixed",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.probes.txt",
-            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+            "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+            "file:testdata/ddl-golden/T37.json#pg-constraint-risk-native",
+            "file:testdata/ddl-golden/T37.json#pg-constraint-partitioned-fk"
           ]
         }
       ],
@@ -7930,7 +7932,7 @@
         {
           "subaction_id": "ADD PRIMARY KEY",
           "parser_status": "recognized",
-          "audit_status": "silent",
+          "audit_status": "audited",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -7938,11 +7940,15 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.add-primary-key.probes.txt",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "file:testdata/ddl-golden/T37.json"
+                "file:testdata/ddl-golden/T37.json#ADD PRIMARY KEY",
+                "file:testdata/ddl-golden/T37.json#constraint-risk-pk-build",
+                "file:testdata/ddl-golden/T37.json#constraint-risk-pk-reuse",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-risk-native",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_migration_risk.expected.yaml#ddl.pg.alter.add_primary_key.concurrent_index.warn"
               ]
             }
           ]
@@ -7961,7 +7967,10 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.add-unique.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#ADD UNIQUE",
+                "file:testdata/ddl-golden/T37.json#constraint-risk-unique-modes",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-risk-native"
               ]
             }
           ]
@@ -7969,7 +7978,7 @@
         {
           "subaction_id": "ADD FOREIGN KEY",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "audited",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -7977,10 +7986,17 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.add-foreign-key.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#ADD FOREIGN KEY",
+                "file:testdata/ddl-golden/T37.json#constraint-risk-fk-scan",
+                "file:testdata/ddl-golden/T37.json#constraint-risk-fk-not-valid",
+                "file:testdata/ddl-golden/T37.json#constraint-risk-fk-followup",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-risk-native",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-partitioned-fk",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_migration_risk.expected.yaml#ddl.pg.alter.add_foreign_key.not_valid.require"
               ]
             }
           ]

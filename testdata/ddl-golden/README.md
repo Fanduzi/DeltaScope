@@ -3,11 +3,33 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 PostgreSQL constraint migration-risk contract
+
+T37 preserves all 66 prior required cases and adds eleven CLI controls plus
+ two owned metadata cases (**79 required cases**). Existing `pg-acceptance`
+ and generation profiles stay unchanged. The isolated `pg-constraint-risk`
+ profile pins PK build/reuse, FK initial-validation/NOT VALID and corrected
+ UNIQUE build/reuse arms; separate profiles prove the existing VALIDATE
+ follow-up and blanket FK forbid remain independent. Disabled, multi-action
+ and non-PG controls do not borrow generic-notice evidence.
+
+On PostgreSQL 17.7, the driver separately creates eligible unique indexes
+ CONCURRENTLY, records their OIDs and proves USING INDEX attaches those same
+ objects. Catalog oracles pin constraint kinds and `convalidated`; transaction
+ probes observe PK ACCESS EXCLUSIVE and FK SHARE ROW EXCLUSIVE locks. Audit
+ precedes native execution and changes neither constraints, original indexes,
+ guarded data nor sentinel sequence state. A separate partitioned-table
+ native refusal pins SQLSTATE **42809**, not a parser or product success.
+ Schema absence/ownership descriptors and verified cleanup protect fixtures.
+ These are declaration-risk cases, not constraint/index eligibility or whole
+ F09 completion claims.
+
 ## T36/T37 PostgreSQL generation-declaration contract
 
 T36 retains its original 48 cases and adds nine CLI controls plus two owned
 metadata cases (59 required cases). T37 retains its original 62 cases and adds
-three CLI controls plus one owned metadata case (66 required cases). Existing
+three CLI controls plus one owned metadata case (66 before the constraint-risk
+tranche above, now 79). Existing
 `pg-acceptance` profiles are unchanged; `pg-generation-declaration` isolates the
 two new rules. Fixed cases pin CREATE/ADD COLUMN parity, mode/cycling silence,
 int64 preservation, native refusal categories, duplicates/unmodeled gaps,

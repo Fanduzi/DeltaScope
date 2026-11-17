@@ -107,8 +107,29 @@ on their existing parser-error boundaries.
   ADD PRIMARY KEY); parser-error remains five. Reused UNIQUE becomes silent
   as approved, not because a case or assertion was removed.
 
-Native and exact inventory bindings belong to the subsequent focused evidence
-commit; these local checks alone are not final delivery or family completion.
+- T37 keeps its 66 existing required cases/profiles and adds 13 isolated cases
+  (79 total). Focused execution passes 79/79 with 836 assertions. Both native
+  metadata cases use prior-absence and ownership-guarded cleanup descriptors.
+- Native PostgreSQL 17.7 proves ordinary versus reused PK/UNIQUE construction,
+  preservation/attachment of original prebuilt index OIDs and FK validated
+  versus NOT VALID catalog states. Transaction-local probes observe the PK
+  ACCESS EXCLUSIVE and FK child/reference SHARE ROW EXCLUSIVE locks without
+  claiming a production lock duration.
+- The independent partitioned-table driver control refuses NOT VALID FK with
+  SQLSTATE 42809. This bounds remediation; it does not count a refusal as an
+  audited or supported new SQL form.
+- Before driver execution, constraints remain absent, original indexes/data
+  remain unchanged and the sentinel sequence is not called. Teardown proves
+  schema absence, with fallback cleanup restricted to owned identities.
+- Only ADD PRIMARY KEY and ADD FOREIGN KEY migration-risk cells become audited;
+  UNIQUE receives exact build/reuse evidence without a status upgrade. Parent
+  mixed status, all other cells, the 301-row denominator and aggregate counts
+  remain unchanged. Inventory/corpus/coverage-catalog gates pass after using
+  `scripts/gen_ddl_inventory_matrix.py`.
+
+These focused results are not a final single-HEAD aggregate, merged delivery
+or whole-family completion claim. Implementation commits are `37fa8fd1`
+(extractor) and `f9f3601e` (rules/corpus/shared surfaces).
 
 ## Consequences
 

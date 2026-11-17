@@ -28,6 +28,20 @@ attribute cells retain their prior states. The generated/identity parent moves
 whole row becomes semantically checked. New rule IDs are attached as literal
 selectors in corpus evidence refs. `matrix.json` is regenerated from YAML.
 
+## PostgreSQL ALTER constraint migration-risk tranche
+
+Only `postgresql.alter-table.constraints` changes: ADD PRIMARY KEY and ADD
+FOREIGN KEY become audited for the approved authored build/initial-validation
+risk dimensions. ADD UNIQUE keeps its audited classification while its reuse
+arm stops claiming an index build. Literal subaction selectors, exact T37 CLI
+case selectors, PG17.7 owned native catalog/refusal cases and rule-specific
+corpus selectors bind each cell. Historical probe captures remain historical;
+the isolated new profiles supply the new positive and silent-mode evidence.
+The parent remains mixed; no other F09 cell, parser boundary or whole-row
+aggregate is promoted. Target legality, index eligibility and constraint-state
+resolution remain open. `matrix.json` is generated, with all 301 row counts
+unchanged.
+
 ## Row contract
 
 Every row carries: `id` (stable, unique), `product` (`mysql`/`tidb`),

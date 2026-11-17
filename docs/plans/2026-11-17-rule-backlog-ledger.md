@@ -66,6 +66,30 @@ generic_notice=18, mixed_coverage=45, explicit_unsupported=41,
 vendor_not_supported=11, parser_unsupported=8, parse_only=15 (301 total).
 The original 63 generic/mixed rows still need dimensional review.
 
+## F09 approved constraint-risk slice — implementation and focused evidence
+
+The operator approved two default-enabled warnings and the corrected UNIQUE
+USING INDEX silent arm. Extractor `37fa8fd1` retains the explicit reuse fact;
+`f9f3601e` adds the shared warnings, config/catalog, corpus, SDK/HTTP/MCP and
+bilingual reference coverage. [Decision](../decisions/2026-11-17-postgresql-alter-constraint-build-risk.md).
+
+T37 preserves its 66 prior cases/profiles and adds 13 isolated cases. Focused
+79/79 execution (836 assertions) proves ordinary/reused PK/UNIQUE, plain/NOT
+VALID FK, independent follow-up/forbid, multi-action/disabled/dialect controls,
+PG17.7 index OID/constraint catalog/lock oracles and no audit execution. The
+partitioned NOT VALID FK driver refusal is SQLSTATE 42809, not support.
+
+Only `postgresql.alter-table.constraints` is touched: ADD PRIMARY KEY and ADD
+FOREIGN KEY become audited for these migration-risk signals; UNIQUE retains
+its status with corrected reuse semantics. All parent aggregates and the
+19-family/63-row dimension denominator are unchanged. Ordinary default-policy
+PK can move pass→review; an independently enabled FK forbid still rejects.
+
+This is **candidate evidence, not delivered or family complete**. Full final
+single-HEAD aggregate/review/merge/push/CI is a separate delivery gate. Other
+constraint existence/type/validation-state, identity/default/attribute/options
+and rename/owner dimensions remain queued; no new product deferral is accepted.
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.
@@ -82,7 +106,7 @@ new default behavior is approved per family before implementation.
 | F06 | TiDB recovery/flashback | 1 | T16 | unreviewed |
 | F07 | PostgreSQL schema/collation | 2 | T35 | unreviewed |
 | F08 | PostgreSQL CREATE TABLE | 6 | T36 | D2 delivered; remaining dimensions unreviewed |
-| F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2 ADD COLUMN slice delivered; remaining dimensions unreviewed |
+| F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2 ADD COLUMN delivered; approved constraint-risk candidate above; remaining dimensions open |
 | F10 | PostgreSQL DROP/TRUNCATE | 2 | T38 | unreviewed |
 | F11 | PostgreSQL indexes/operator families | 4 | T39 | unreviewed |
 | F12 | PostgreSQL views/materialized views | 5 | T40 | unreviewed |
@@ -138,7 +162,7 @@ insufficient.
 | F08 | `postgresql.create-table-like` | LIKE basic; INCLUDING options | unreviewed |
 | F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; others unreviewed |
 | F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | unreviewed |
-| F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | unreviewed |
+| F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial candidate: PK/FK migration risk and UNIQUE reuse correction above; all remaining dimensions unreviewed |
 | F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | unreviewed |
 | F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | unreviewed |
 | F10 | `postgresql.drop-table` | DROP TABLE; IF EXISTS / multi-target | unreviewed |

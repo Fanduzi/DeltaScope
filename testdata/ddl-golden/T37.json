@@ -5,7 +5,12 @@
  "policy_profile": "pg-acceptance",
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
-  "profiles": {"pg-generation-declaration": {"enable": {"ddl.pg.column.generation.declaration.valid": {"level": "blocker"}, "ddl.pg.column.identity.cycle.warn": {"level": "warning"}}}},
+  "profiles": {
+   "pg-constraint-risk": {"enable": {"ddl.pg.alter.add_foreign_key.not_valid.require": {"level": "warning"}, "ddl.pg.alter.add_primary_key.concurrent_index.warn": {"level": "warning"}, "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory": {"level": "notice"}}},
+   "pg-constraint-followup": {"enable": {"ddl.pg.alter.add_foreign_key.not_valid.require": {"level": "warning"}, "ddl.pg.alter.not_valid_constraint.validate.require": {"level": "warning"}}},
+   "pg-constraint-forbid": {"enable": {"ddl.pg.alter.add_foreign_key.not_valid.require": {"level": "warning"}, "ddl.table.foreign_key.forbid": {"level": "blocker"}}},
+   "pg-generation-declaration": {"enable": {"ddl.pg.column.generation.declaration.valid": {"level": "blocker"}, "ddl.pg.column.identity.cycle.warn": {"level": "warning"}}}
+  },
   "enable": {
    "ddl.alter.add_column.exists.forbid": {
     "enabled": true
@@ -1821,6 +1826,66 @@
  },
  "cli_cases": [
   {
+   "id": "constraint-risk-pk-build", "dialect": "postgresql", "policy": "pg-constraint-risk", "notes": "ADD PRIMARY KEY: plain declaration build-risk evidence, not target legality",
+   "sql": "ALTER TABLE app.t ADD CONSTRAINT pk PRIMARY KEY(id);ALTER TABLE app.u ADD PRIMARY KEY(id);", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 2, "findings": 2, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0,
+    "finding_entries": [{"index": 0, "rule_id": "ddl.pg.alter.add_primary_key.concurrent_index.warn", "level": "warning"}, {"index": 1, "rule_id": "ddl.pg.alter.add_primary_key.concurrent_index.warn", "level": "warning"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.pg.alter.add_primary_key.concurrent_index.warn", "metadata": {"schema": "app", "table": "t", "constraint": "pk", "constraint_type": "primary_key", "using_index": false}}, {"index": 1, "rule_id": "ddl.pg.alter.add_primary_key.concurrent_index.warn", "metadata": {"schema": "app", "table": "u", "constraint_type": "primary_key", "using_index": false}}]}
+  },
+  {
+   "id": "constraint-risk-pk-reuse", "dialect": "postgresql", "policy": "pg-constraint-risk", "notes": "ADD PRIMARY KEY: explicit reuse silent control, not index eligibility proof",
+   "sql": "ALTER TABLE app.t ADD CONSTRAINT pk PRIMARY KEY USING INDEX idx;", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0}
+  },
+  {
+   "id": "constraint-risk-fk-scan", "dialect": "postgresql", "policy": "pg-constraint-risk", "notes": "ADD FOREIGN KEY: initial validation warning without a blanket forbid",
+   "sql": "ALTER TABLE app.child ADD CONSTRAINT fk FOREIGN KEY(pid) REFERENCES app.parent(id);", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0,
+    "finding_entries": [{"rule_id": "ddl.pg.alter.add_foreign_key.not_valid.require", "level": "warning"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.pg.alter.add_foreign_key.not_valid.require", "metadata": {"schema": "app", "table": "child", "constraint": "fk", "constraint_type": "foreign_key", "not_valid": false}}]}
+  },
+  {
+   "id": "constraint-risk-fk-not-valid", "dialect": "postgresql", "policy": "pg-constraint-risk", "notes": "ADD FOREIGN KEY: NOT VALID suppresses only the new initial-validation warning",
+   "sql": "ALTER TABLE app.child ADD CONSTRAINT fk FOREIGN KEY(pid) REFERENCES app.parent(id) NOT VALID;", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0}
+  },
+  {
+   "id": "constraint-risk-fk-followup", "dialect": "postgresql", "policy": "pg-constraint-followup", "notes": "ADD FOREIGN KEY: existing NOT VALID/VALIDATE follow-up remains independent",
+   "sql": "ALTER TABLE app.child ADD CONSTRAINT fk FOREIGN KEY(pid) REFERENCES app.parent(id) NOT VALID;ALTER TABLE app.child VALIDATE CONSTRAINT fk;", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 2, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0}
+  },
+  {
+   "id": "constraint-risk-unique-modes", "dialect": "postgresql", "policy": "pg-constraint-risk", "notes": "ADD UNIQUE: ordinary build advisory retained; explicit reuse is not described as a build",
+   "sql": "ALTER TABLE app.t ADD CONSTRAINT uq UNIQUE(id);ALTER TABLE app.u ADD CONSTRAINT uq UNIQUE USING INDEX idx;", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 2, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0,
+    "finding_entries": [{"index": 0, "rule_id": "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory", "level": "notice"}]}
+  },
+  {
+   "id": "constraint-risk-multi", "dialect": "postgresql", "policy": "pg-constraint-risk",
+   "sql": "ALTER TABLE app.t ADD PRIMARY KEY(id), ADD CONSTRAINT fk FOREIGN KEY(pid) REFERENCES app.parent(id);", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 2, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0,
+    "finding_entries": [{"rule_id": "ddl.pg.alter.add_primary_key.concurrent_index.warn", "level": "warning"}, {"rule_id": "ddl.pg.alter.add_foreign_key.not_valid.require", "level": "warning"}]}
+  },
+  {
+   "id": "constraint-risk-disabled", "dialect": "postgresql", "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.t ADD PRIMARY KEY(id);ALTER TABLE app.child ADD CONSTRAINT fk FOREIGN KEY(pid) REFERENCES app.parent(id);", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 2, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0}
+  },
+  {
+   "id": "constraint-risk-forbid-independent", "dialect": "postgresql", "policy": "pg-constraint-forbid",
+   "sql": "ALTER TABLE app.child ADD CONSTRAINT fk FOREIGN KEY(pid) REFERENCES app.parent(id);", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "reject", "statements": 1, "findings": 3, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0,
+    "finding_entries": [{"rule_id": "ddl.table.foreign_key.forbid", "level": "blocker"}, {"rule_id": "ddl.table.foreign_key.forbid", "level": "blocker"}, {"rule_id": "ddl.pg.alter.add_foreign_key.not_valid.require", "level": "warning"}]}
+  },
+  {
+   "id": "constraint-risk-mysql-control", "dialect": "mysql", "policy": "pg-constraint-risk", "sql": "CREATE TABLE t(id bigint PRIMARY KEY)", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0}
+  },
+  {
+   "id": "constraint-risk-tidb-control", "dialect": "tidb", "policy": "pg-constraint-risk", "sql": "CREATE TABLE t(id bigint PRIMARY KEY)", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0}
+  },
+  {
    "id": "add-column-generation-cycle", "dialect": "postgresql", "policy": "pg-generation-declaration", "notes": "add-column-generation-declaration",
    "sql": "ALTER TABLE t ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY(CYCLE);ALTER TABLE t ADD COLUMN n bigint GENERATED BY DEFAULT AS IDENTITY(NO CYCLE);", "args": ["--fail-on", "none"],
    "expect": {"exit": 0, "verdict": "review", "statements": 2, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0,
@@ -3435,6 +3500,65 @@
  ],
  "metadata_cases": [
   {
+   "id": "pg-constraint-risk-native", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-constraint-risk", "notes": "ADD PRIMARY KEY / ADD UNIQUE / ADD FOREIGN KEY: bounded migration-risk declarations, independent catalog/index-identity/lock oracle; no target-legality claim",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgrisk37_native"},
+   "fixture": {"cleanup": [{"name": "remove only owned constraint-risk schema", "fixture_key": "schema", "sql": "DROP SCHEMA pgrisk37_native CASCADE", "verify": {"assert": "owned schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgrisk37_native'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgrisk37_native.pk_plain ADD CONSTRAINT pk_plain_key PRIMARY KEY(id);ALTER TABLE pgrisk37_native.pk_reuse ADD CONSTRAINT pk PRIMARY KEY USING INDEX pk_ready;ALTER TABLE pgrisk37_native.unique_plain ADD CONSTRAINT uq_plain_key UNIQUE(id);ALTER TABLE pgrisk37_native.unique_reuse ADD CONSTRAINT uq UNIQUE USING INDEX uq_ready;ALTER TABLE pgrisk37_native.child_plain ADD CONSTRAINT fk FOREIGN KEY(pid) REFERENCES pgrisk37_native.parent(id);ALTER TABLE pgrisk37_native.child_staged ADD CONSTRAINT fk FOREIGN KEY(pid) REFERENCES pgrisk37_native.parent(id) NOT VALID;", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove fixture absence", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "schema absent before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgrisk37_native'", "expect": "0"}]},
+    {"name": "claim isolated schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgrisk37_native", "expect_rc": 0},
+    {"name": "create owned tables and nonexecution guards", "sql": "CREATE TABLE pgrisk37_native.pk_plain(id bigint NOT NULL);CREATE TABLE pgrisk37_native.pk_reuse(id bigint NOT NULL);CREATE TABLE pgrisk37_native.unique_plain(id bigint);CREATE TABLE pgrisk37_native.unique_reuse(id bigint);CREATE TABLE pgrisk37_native.parent(id bigint PRIMARY KEY);CREATE TABLE pgrisk37_native.child_plain(pid bigint);CREATE TABLE pgrisk37_native.child_staged(pid bigint);CREATE TABLE pgrisk37_native.audit_guard(v int);INSERT INTO pgrisk37_native.audit_guard VALUES(13);CREATE SEQUENCE pgrisk37_native.sentinel START 7;CREATE TABLE pgrisk37_native.index_receipt(index_oid oid)", "expect_rc": 0},
+    {"name": "independently prebuild eligible PK unique index", "sql": "CREATE UNIQUE INDEX CONCURRENTLY pk_ready ON pgrisk37_native.pk_reuse(id)", "expect_rc": 0},
+    {"name": "independently prebuild eligible UNIQUE index", "sql": "CREATE UNIQUE INDEX CONCURRENTLY uq_ready ON pgrisk37_native.unique_reuse(id)", "expect_rc": 0},
+    {"name": "record original index object identities", "sql": "INSERT INTO pgrisk37_native.index_receipt VALUES('pgrisk37_native.pk_ready'::regclass),('pgrisk37_native.uq_ready'::regclass)", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "review", "statements": 6, "findings": 3, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0,
+    "finding_entries": [{"index": 0, "rule_id": "ddl.pg.alter.add_primary_key.concurrent_index.warn", "level": "warning"}, {"index": 2, "rule_id": "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory", "level": "notice"}, {"index": 4, "rule_id": "ddl.pg.alter.add_foreign_key.not_valid.require", "level": "warning"}]},
+   "post_verify": [
+    {"assert": "audit attaches no constraints", "sql": "SELECT count(*) FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid JOIN pg_namespace n ON n.oid=t.relnamespace WHERE n.nspname='pgrisk37_native' AND t.relname IN ('pk_plain','pk_reuse','unique_plain','unique_reuse','child_plain','child_staged')", "expect": "0"},
+    {"assert": "audit preserves unattached original index identities", "sql": "SELECT count(*) FROM pgrisk37_native.index_receipt r JOIN pg_class c ON c.oid=r.index_oid WHERE c.relname IN ('pk_ready','uq_ready')", "expect": "2"},
+    {"assert": "audit leaves data guard unchanged", "sql": "SELECT v FROM pgrisk37_native.audit_guard", "expect": "13"},
+    {"assert": "audit never calls sentinel", "sql": "SELECT last_value::text || ':' || is_called::text FROM pgrisk37_native.sentinel", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "plain PK observes native ALTER lock", "sql": "BEGIN;ALTER TABLE pgrisk37_native.pk_plain ADD CONSTRAINT pk_plain_key PRIMARY KEY(id);SELECT mode FROM pg_locks WHERE pid=pg_backend_pid() AND relation='pgrisk37_native.pk_plain'::regclass AND mode='AccessExclusiveLock';COMMIT", "expect_rc": 0, "stdout_contains": ["AccessExclusiveLock"]},
+    {"name": "attach prebuilt PK index", "sql": "ALTER TABLE pgrisk37_native.pk_reuse ADD CONSTRAINT pk PRIMARY KEY USING INDEX pk_ready", "expect_rc": 0},
+    {"name": "plain UNIQUE build", "sql": "ALTER TABLE pgrisk37_native.unique_plain ADD CONSTRAINT uq_plain_key UNIQUE(id)", "expect_rc": 0},
+    {"name": "attach prebuilt UNIQUE index", "sql": "ALTER TABLE pgrisk37_native.unique_reuse ADD CONSTRAINT uq UNIQUE USING INDEX uq_ready", "expect_rc": 0},
+    {"name": "plain FK observes child and reference native locks", "sql": "BEGIN;ALTER TABLE pgrisk37_native.child_plain ADD CONSTRAINT fk FOREIGN KEY(pid) REFERENCES pgrisk37_native.parent(id);SELECT 'fk_share_row_exclusive=' || count(*) FROM pg_locks WHERE pid=pg_backend_pid() AND mode='ShareRowExclusiveLock' AND relation IN ('pgrisk37_native.child_plain'::regclass,'pgrisk37_native.parent'::regclass);COMMIT", "expect_rc": 0, "stdout_contains": ["fk_share_row_exclusive=2"]},
+    {"name": "staged FK skips initial validation", "sql": "ALTER TABLE pgrisk37_native.child_staged ADD CONSTRAINT fk FOREIGN KEY(pid) REFERENCES pgrisk37_native.parent(id) NOT VALID", "expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native constraint kinds and validated flags", "sql": "SELECT string_agg(t.relname || ':' || c.contype::text || ':' || c.convalidated::text, ',' ORDER BY t.relname) FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid JOIN pg_namespace n ON n.oid=t.relnamespace WHERE n.nspname='pgrisk37_native' AND t.relname IN ('pk_plain','pk_reuse','unique_plain','unique_reuse','child_plain','child_staged')", "expect": "child_plain:f:true,child_staged:f:false,pk_plain:p:true,pk_reuse:p:true,unique_plain:u:true,unique_reuse:u:true"},
+    {"assert": "both reuse modes attach original index objects", "sql": "SELECT count(*) FROM pgrisk37_native.index_receipt r JOIN pg_constraint c ON c.conindid=r.index_oid WHERE c.contype IN ('p','u')", "expect": "2"},
+    {"assert": "native driver does not advance sentinel", "sql": "SELECT last_value::text || ':' || is_called::text FROM pgrisk37_native.sentinel", "expect": "7:false"}
+   ],
+   "teardown": [{"name": "drop only owned schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgrisk37_native CASCADE", "expect_rc": 0, "verify": [{"assert": "constraint-risk schema removed", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgrisk37_native'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-constraint-partitioned-fk", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-constraint-risk", "notes": "ADD FOREIGN KEY: native refusal control proves NOT VALID recommendation is conditional on PG17 partitioning; no claim of partitioned-target legality auditing",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgrisk37_partition"},
+   "fixture": {"cleanup": [{"name": "remove only owned partition fixture", "fixture_key": "schema", "sql": "DROP SCHEMA pgrisk37_partition CASCADE", "verify": {"assert": "owned schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgrisk37_partition'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgrisk37_partition.child ADD CONSTRAINT fk FOREIGN KEY(pid) REFERENCES pgrisk37_partition.parent(id);", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove partition fixture absence", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "schema absent before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgrisk37_partition'", "expect": "0"}]},
+    {"name": "claim partition schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgrisk37_partition", "expect_rc": 0},
+    {"name": "create owned partition and reference tables", "sql": "CREATE TABLE pgrisk37_partition.parent(id bigint PRIMARY KEY);CREATE TABLE pgrisk37_partition.child(pid bigint,bucket int) PARTITION BY RANGE(bucket);CREATE TABLE pgrisk37_partition.child_staged(pid bigint,bucket int) PARTITION BY RANGE(bucket)", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0,
+    "finding_entries": [{"rule_id": "ddl.pg.alter.add_foreign_key.not_valid.require", "level": "warning"}]},
+   "post_verify": [{"assert": "audit adds no partitioned FK", "sql": "SELECT count(*) FROM pg_constraint WHERE conrelid='pgrisk37_partition.child'::regclass", "expect": "0"}],
+   "execute": [
+    {"name": "native partitioned FK without NOT VALID succeeds", "sql": "ALTER TABLE pgrisk37_partition.child ADD CONSTRAINT fk FOREIGN KEY(pid) REFERENCES pgrisk37_partition.parent(id)", "expect_rc": 0},
+    {"name": "native PG17 refuses partitioned NOT VALID FK", "sql": "\\set VERBOSITY verbose\nALTER TABLE pgrisk37_partition.child_staged ADD CONSTRAINT fk FOREIGN KEY(pid) REFERENCES pgrisk37_partition.parent(id) NOT VALID;", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42809", "cannot add NOT VALID foreign key on partitioned table", "This feature is not yet supported on partitioned tables."]}
+   ],
+   "structure": [
+    {"assert": "ordinary partitioned FK is validated", "sql": "SELECT convalidated::text FROM pg_constraint WHERE conrelid='pgrisk37_partition.child'::regclass AND conname='fk'", "expect": "true"},
+    {"assert": "refused NOT VALID creates no constraint", "sql": "SELECT count(*) FROM pg_constraint WHERE conrelid='pgrisk37_partition.child_staged'::regclass", "expect": "0"}
+   ],
+   "teardown": [{"name": "drop only owned partition schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgrisk37_partition CASCADE", "expect_rc": 0, "verify": [{"assert": "partition schema removed", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgrisk37_partition'", "expect": "0"}]}]
+  },
+  {
    "id": "pg-add-column-generation", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-generation-declaration", "notes": "add-column-generation-declaration",
    "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgg37_add"},
    "sql": "ALTER TABLE pgg37_add.t ADD COLUMN id bigint GENERATED BY DEFAULT AS IDENTITY(CYCLE);ALTER TABLE pgg37_add.t ADD COLUMN code int GENERATED ALWAYS AS (base * 2) STORED;", "args": ["--fail-on", "none"],
@@ -3581,6 +3705,19 @@
   "T37.cli.add-column-generation-cycle",
   "T37.cli.add-column-generation-invalid",
   "T37.cli.existing-column-generation-control",
-  "T37.meta.pg-add-column-generation"
+  "T37.meta.pg-add-column-generation",
+  "T37.cli.constraint-risk-pk-build",
+  "T37.cli.constraint-risk-pk-reuse",
+  "T37.cli.constraint-risk-fk-scan",
+  "T37.cli.constraint-risk-fk-not-valid",
+  "T37.cli.constraint-risk-fk-followup",
+  "T37.cli.constraint-risk-unique-modes",
+  "T37.cli.constraint-risk-multi",
+  "T37.cli.constraint-risk-disabled",
+  "T37.cli.constraint-risk-forbid-independent",
+  "T37.cli.constraint-risk-mysql-control",
+  "T37.cli.constraint-risk-tidb-control",
+  "T37.meta.pg-constraint-risk-native",
+  "T37.meta.pg-constraint-partitioned-fk"
  ]
 }
