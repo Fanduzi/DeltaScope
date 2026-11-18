@@ -3,7 +3,7 @@
 Date: 2026-11-18
 Status: Accepted
 Related milestone: F09 / `milestone/pg-alter-semantics` (D5)
-Related commits: research baseline `aa7f8872`; D4 history closeout `a2e3a7ab`; D5 implementation pending
+Related commits: research baseline `aa7f8872`; D4 history closeout `a2e3a7ab`; D5 facts `1e8c773d`; rule/evidence shipping pending
 
 ## Context
 
@@ -53,7 +53,10 @@ gaps are safer than silently promoting missing runtime/data facts to success.
 
 ## Public Contract
 
-Four independently configurable, enabled-by-default, parameterless rules:
+Four independently configurable, enabled-by-default, parameterless rules.
+Their findings/gaps use the observed PG17 banner, never a caller version pin;
+unobserved/out-of-series versions stay gaps. Intrinsic option errors require
+that observation but do not fabricate a table catalog.
 
 | ID | Default | Bounded predicate |
 |---|---|---|
@@ -152,6 +155,23 @@ binding, a bigint column with an independently altered smallint sequence,
 serial versus identity, domain versus builtin, stored generation/PK flags,
 zero-column tables and unsupported table scopes, without changing issuance
 state. These checks validate facts, not the pending four-rule delivery.
+
+### Shared rule implementation (candidate, not shipping proof)
+
+All four shared rules, configuration/catalog metadata, six cross-dialect corpus
+pairs and application/SDK/HTTP/MCP tests implement the approved contract. A
+candidate replay of all 45 native shapes and 90 actual CLI audits preserves the
+same native outcomes: illegal ADD/SET/DROP transitions and option conflicts now
+reject with observed facts; valid ADD and the large-int64 declaration remain
+pass; CYCLE/RESTART risks review; START-only/NO CYCLE/guards produce no new risk
+finding. Offline cases retain version/fact gaps. Native-valid ordinary DEFAULT/
+NOT NULL cases retain the independent legacy blanket rejects. All audit and
+transactional driver rollback state controls hold. Candidate replay evidence
+records `1e8c773d` plus its uncommitted rule diff; it is not a clean-HEAD or final
+canonical artifact. Build/default+PG tests, default+PG lint, formatting and
+inventory/corpus/coverage-catalog gates pass for this candidate. Frozen T37
+additions, exact inventory binding, independent review and final same-HEAD
+aggregate/merge/push/CI remain pending.
 
 ## Consequences
 

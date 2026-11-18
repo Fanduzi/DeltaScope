@@ -233,6 +233,16 @@ func summaryForRule(ruleID string) string {
 }
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
+	switch ruleID {
+	case "ddl.pg.alter.column.generation.transition.valid":
+		return "PG17 existing-column generation preconditions: exact fresh ordinary-table identity/generated/type/NOT NULL/DEFAULT/PK facts. Proven conflicts block; guards preserve known no-ops. Data, expression, permission and stale/ambiguous facts are not guessed."
+	case "ddl.pg.alter.identity.sequence_options.valid":
+		return "PG17 existing-column identity sequence options: rejects proven duplicate modes/options, invalid increment/cache/type/bounds/start/restart. ADD uses a new declaration; SET uses actual dependency-bound stable parameters. Missing facts or narrowed bounds needing unread current state remain gaps."
+	case "ddl.pg.alter.identity.restart.warn":
+		return "PG17 explicit identity RESTART warns about possible value reuse and concurrent issuance blocking. SET START alone is silent; applicability, target and options must be proven, not simulated."
+	case "ddl.pg.alter.identity.cycle.warn":
+		return "PG17 ADD IDENTITY / SET options explicit CYCLE warns about value reuse; NO CYCLE and omission are silent. CREATE/ADD COLUMN remain owned by the separate declaration rule."
+	}
 	if ruleID == "ddl.pg.alter.validate_constraint.target.require" {
 		return "Requires a proven existing PostgreSQL FK/CHECK target for VALIDATE CONSTRAINT. Missing/wrong-kind targets block; unknown, ambiguous or stale catalog facts remain evidence gaps. Does not verify data or execution."
 	}
@@ -279,6 +289,14 @@ func statementKindsForRule(ruleID string) []string {
 
 func triggerExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.alter.column.generation.transition.valid":
+		return "ALTER TABLE t ALTER COLUMN nullable_id ADD GENERATED ALWAYS AS IDENTITY;"
+	case ruleID == "ddl.pg.alter.identity.sequence_options.valid":
+		return "ALTER TABLE t ALTER COLUMN id SET INCREMENT 0;"
+	case ruleID == "ddl.pg.alter.identity.restart.warn":
+		return "ALTER TABLE t ALTER COLUMN id RESTART WITH 5;"
+	case ruleID == "ddl.pg.alter.identity.cycle.warn":
+		return "ALTER TABLE t ALTER COLUMN id SET CYCLE;"
 	case ruleID == "ddl.pg.alter.validate_constraint.target.require":
 		return "ALTER TABLE t VALIDATE CONSTRAINT missing;"
 	case ruleID == "ddl.pg.alter.constraint_deferrability.target.require":
@@ -320,6 +338,14 @@ func triggerExampleForRule(ruleID string) string {
 
 func validExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.alter.column.generation.transition.valid":
+		return "ALTER TABLE t ALTER COLUMN plain_not_null_integer ADD GENERATED ALWAYS AS IDENTITY;"
+	case ruleID == "ddl.pg.alter.identity.sequence_options.valid":
+		return "ALTER TABLE t ALTER COLUMN id SET CACHE 5;"
+	case ruleID == "ddl.pg.alter.identity.restart.warn":
+		return "ALTER TABLE t ALTER COLUMN id SET START WITH 5;"
+	case ruleID == "ddl.pg.alter.identity.cycle.warn":
+		return "ALTER TABLE t ALTER COLUMN id SET NO CYCLE;"
 	case ruleID == "ddl.pg.alter.validate_constraint.target.require":
 		return "ALTER TABLE t VALIDATE CONSTRAINT existing_check;"
 	case ruleID == "ddl.pg.alter.constraint_deferrability.target.require":
@@ -380,6 +406,8 @@ func configExampleForRule(ruleID string, policy domainpolicy.RulePolicy) string 
 
 func remediationForRule(ruleID string) string {
 	switch {
+	case strings.HasPrefix(ruleID, "ddl.pg.alter.identity."), ruleID == "ddl.pg.alter.column.generation.transition.valid":
+		return "Resolve exact fresh PG17 ordinary-table and stable sequence facts; correct incompatible targets/options. Review value reuse and blocking for RESTART/CYCLE; START alone is not RESTART. Do not infer current issuance, data, expressions, permissions or unapplied post-state."
 	case ruleID == "ddl.pg.alter.validate_constraint.target.require", ruleID == "ddl.pg.alter.constraint_deferrability.target.require", ruleID == "ddl.pg.alter.drop_constraint.target.require":
 		return "Verify the exact target and its action-compatible kind with fresh complete catalog facts; IF EXISTS guards only DROP absence. Resolve unknown/stale facts separately; do not infer data, dependency, permission or execution legality."
 	case ruleID == "ddl.pg.alter.add_foreign_key.not_valid.require":
@@ -464,6 +492,10 @@ func metadataNotesForRule(ruleID string) *MetadataNotes {
 		return nil
 	}
 	switch ruleID {
+	case "ddl.pg.alter.column.generation.transition.valid", "ddl.pg.alter.identity.sequence_options.valid", "ddl.pg.alter.identity.restart.warn", "ddl.pg.alter.identity.cycle.warn":
+		return &MetadataNotes{Kinds: kinds,
+			Required: "Observed PG17, exact fresh ordinary persistent non-inheritance/non-partition column facts and actual dependency-bound stable identity sequence parameters. Examples assume these premises; observed version alone suffices for intrinsic options refusals.",
+			Missing:  "Unknown/unmodeled/ambiguous/stale facts retain unproven_column_generation_target or unproven_identity_sequence_options gaps. Nullable SET NOT NULL needs data proof; narrowed bounds without explicit RESTART can need unread current state. No expression/permission analysis or PG post-state simulation."}
 	case "ddl.pg.alter.validate_constraint.target.require", "ddl.pg.alter.constraint_deferrability.target.require", "ddl.pg.alter.drop_constraint.target.require":
 		return &MetadataNotes{Kinds: kinds,
 			Required: "A complete fresh PG constraint directory bound to the exact table/schema and an observed PostgreSQL 17 server banner establish the supported target-check scope; examples assume those facts.",
@@ -496,6 +528,8 @@ func metadataNotesForRule(ruleID string) *MetadataNotes {
 
 func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 	switch ruleID {
+	case "ddl.pg.alter.column.generation.transition.valid", "ddl.pg.alter.identity.sequence_options.valid", "ddl.pg.alter.identity.restart.warn", "ddl.pg.alter.identity.cycle.warn":
+		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true
 	case "ddl.pg.alter.validate_constraint.target.require", "ddl.pg.alter.constraint_deferrability.target.require", "ddl.pg.alter.drop_constraint.target.require",
 		"ddl.pg.alter.validate_constraint.advisory", "ddl.pg.alter.drop_constraint.advisory":
 		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true
@@ -856,6 +890,10 @@ func sourceForRule() string {
 const unknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
 
 var metadataAwareRuleIDs = map[string]bool{
+	"ddl.pg.alter.column.generation.transition.valid":      true,
+	"ddl.pg.alter.identity.sequence_options.valid":         true,
+	"ddl.pg.alter.identity.restart.warn":                   true,
+	"ddl.pg.alter.identity.cycle.warn":                     true,
 	"ddl.pg.alter.validate_constraint.target.require":      true,
 	"ddl.pg.alter.constraint_deferrability.target.require": true,
 	"ddl.pg.alter.drop_constraint.target.require":          true,

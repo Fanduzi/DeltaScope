@@ -1,0 +1,8 @@
+name: pg_column_generation_nonapplicable
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported: {count: 0}
+  findings:
+    exclude: [ddl.pg.alter.column.generation.transition.valid, ddl.pg.alter.identity.sequence_options.valid, ddl.pg.alter.identity.restart.warn, ddl.pg.alter.identity.cycle.warn]

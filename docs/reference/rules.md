@@ -592,6 +592,44 @@ Maintainer notes: [decision](../decisions/2026-11-17-postgresql-alter-constraint
 
 ---
 
+## DDL: PostgreSQL Existing-Column Generation (4 rules)
+
+All four are enabled by default, parameterless, and PG17 metadata-aware.
+
+| Rule | Bounded check | Default level |
+| --- | --- | --- |
+| `ddl.pg.alter.column.generation.transition.valid` | ADD/SET/DROP IDENTITY, DROP EXPRESSION and DEFAULT/NOT NULL generation/PK target preconditions | blocker |
+| `ddl.pg.alter.identity.sequence_options.valid` | Duplicate modes/options and proven invalid increment/cache/type/bounds/START/RESTART | blocker |
+| `ddl.pg.alter.identity.restart.warn` | Explicit RESTART value-reuse and concurrent-issuance blocking risk | warning |
+| `ddl.pg.alter.identity.cycle.warn` | Explicit CYCLE in ADD IDENTITY or SET options | warning |
+
+An observed PG17 banner and exact, fresh ordinary persistent non-inheritance/
+non-partition table facts define this stage. ADD requires an existing ordinary
+integer column already NOT NULL without DEFAULT or generation. SET identity/
+options/RESTART requires an identity column. DROP IDENTITY/EXPRESSION respects
+its parsed IF EXISTS for kind absence, never for a missing column. DEFAULT on
+identity/stored-generated and DROP NOT NULL on identity/PK are proven conflicts.
+Known-valid targets/options emit no blocker; known guarded no-ops emit no new
+error. Existing blanket forbids and independent rules remain unchanged, so
+silence is not an overall pass or execution promise.
+
+ADD reuses bounded new-sequence declaration checks; SET uses the actual
+catalog-dependency-bound sequence type and stable parameters, never a guessed
+name or CREATE defaults. SET START alone changes recorded START, not the current
+value, and does not trigger RESTART risk. NO CYCLE and omission do not trigger
+CYCLE risk. D2 CREATE/ADD COLUMN rules remain separate without duplicate matches.
+
+Unknown/ambiguous/unmodeled/stale or wrongly bound facts retain
+`unproven_column_generation_target` / `unproven_identity_sequence_options`
+evidence gaps (unverified, at least review). No observed PG17 version means a
+version gap, not a guessed blocker. With that version alone, intrinsic options
+refusals can be proven without a column catalog. Nullable SET NOT NULL requires
+unread data proof; narrowing bounds without explicit RESTART can require unread
+current-value proof. Prior related DDL/parser failures and earlier ALTER actions
+withhold old facts; no PostgreSQL post-state is simulated. No data scan,
+expression/permission analysis or sequence current-value read/advance is added.
+New findings never carry expressions, provider errors or numeric option payloads.
+
 ## DDL: PostgreSQL Generated/Identity Declarations (2 rules)
 
 | Rule ID | Description | Default Level | Metadata Required |

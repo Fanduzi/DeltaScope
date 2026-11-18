@@ -49,6 +49,28 @@ For `CREATE TABLE t → PROCEDURE → ADD c → CREATE INDEX idx_c(c)` under the
 | MySQL DROP | complete, lifecycle notice only | pass/complete, nil error | review/unverified, nil error |
 | TiDB DROP | incomplete, vendor boundary | review/incomplete, unsupported error | review/incomplete, unsupported error |
 
+### PostgreSQL existing-column generation
+
+| Rule | PostgreSQL | MySQL/TiDB | Metadata |
+| --- | --- | --- | --- |
+| `ddl.pg.alter.column.generation.transition.valid` | Proven generation/identity/default/nullability target-precondition blocker | Not applicable | Required |
+| `ddl.pg.alter.identity.sequence_options.valid` | Proven duplicate/invalid option or stable-definition conflict blocker | Not applicable | Required; observed PG17 alone permits intrinsic refusals |
+| `ddl.pg.alter.identity.restart.warn` | Explicit RESTART value-reuse/blocking warning | Not applicable | Required |
+| `ddl.pg.alter.identity.cycle.warn` | Explicit ADD IDENTITY / SET CYCLE reuse warning | Not applicable | Required |
+
+Approved defaults, no params. Exact fresh ordinary persistent non-inheritance/
+non-partition PG17 facts and dependency-bound stable sequence parameters only.
+Unknown/unmodeled/ambiguous/stale/incorrectly bound facts retain unverified/review
+`unproven_column_generation_target` / `unproven_identity_sequence_options` gaps.
+Nullable SET NOT NULL and narrowed bounds needing unread current values remain
+gaps; no data/expression/permission/current-counter analysis or PG execution
+model is added. SET START is not RESTART; NO CYCLE/omission are silent. D2 scopes
+and old blanket forbids stay independent. New private provider facts do not
+change JSON envelopes; finding payloads omit expressions and numeric options.
+
+Maintainer notes: [decision](../decisions/2026-11-18-postgresql-column-generation-transitions.md).
+Other F09 dimensions remain open; this table is not whole-row support proof.
+
 ### PostgreSQL constraint targets
 
 | Rule ID | PostgreSQL 17 with observed catalog/version | MySQL / TiDB | Metadata |

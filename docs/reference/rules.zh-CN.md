@@ -574,6 +574,36 @@ FK 告警不放宽 `ddl.table.foreign_key.forbid`；原有 CHECK NOT VALID 和 N
 
 ---
 
+## DDL：PostgreSQL 既有列生成属性（4 条规则）
+
+四条规则均默认开启、无参数，依赖 PG17 元数据。
+
+| 规则 | 限定检查 | 默认级别 |
+| --- | --- | --- |
+| `ddl.pg.alter.column.generation.transition.valid` | ADD/SET/DROP IDENTITY、DROP EXPRESSION 及 DEFAULT/NOT NULL 的生成属性/PK 前置条件 | blocker |
+| `ddl.pg.alter.identity.sequence_options.valid` | 重复 mode/options，以及非法 increment/cache/类型/边界/START/RESTART | blocker |
+| `ddl.pg.alter.identity.restart.warn` | 显式 RESTART 的值重用及并发发号阻塞风险 | warning |
+| `ddl.pg.alter.identity.cycle.warn` | ADD IDENTITY 或 SET options 中的显式 CYCLE | warning |
+
+本阶段要求真实观测的 PG17 banner，以及精确、新鲜的普通持久非继承/非分区表目录。
+ADD 要求目标是既有普通整数列，已 NOT NULL、无 DEFAULT 或生成属性；SET identity/
+options/RESTART 要求 identity 目标。DROP IDENTITY/EXPRESSION 的 IF EXISTS 仅保护生成
+类型缺失，不保护列缺失。identity/stored-generated 上的 DEFAULT，以及 identity/PK
+上的 DROP NOT NULL 是已证明冲突。合法目标/选项不产生 blocker，已证明 guarded no-op
+不产生新目标错误。旧 blanket forbid 和独立规则不取消，静默不保证整体 pass 或执行成功。
+
+ADD 复用限定的新序列声明检查；SET 使用实际依赖绑定的 sequence 类型和稳定目录参数，
+不猜名称或 CREATE 默认值。SET START 只修改记录起点，不改变当前值、不触发 RESTART
+提醒。NO CYCLE、遗漏不触发 CYCLE 提醒；D2 CREATE/ADD COLUMN 谓词保持独立、不重复命中。
+
+未知、歧义、unmodeled、过期或错误绑定事实保留 `unproven_column_generation_target` /
+`unproven_identity_sequence_options` gap（unverified、至少 review）。缺少真实 PG17
+版本时保留版本 gap，不猜 blocker；版本已观测时，内在选项错误可以不依赖列目录证明。
+nullable SET NOT NULL 保留数据证明缺口，缩窄边界而未显式 RESTART 时可能仍需未读取的
+当前值证明。相关前序 DDL/parser failure、较早 ALTER 子动作后撤销旧事实，不模拟 PG
+后态。不扫描数据、不分析表达式/权限、不读取或推进当前计数；新 finding 不携带表达式、
+provider 错误或选项数值载荷。
+
 ## DDL：PostgreSQL 生成列与标识列声明（2 条规则）
 
 | 规则 ID | 描述 | 默认级别 | 需要元数据 |
@@ -583,7 +613,7 @@ FK 告警不放宽 `ddl.table.foreign_key.forbid`；原有 CHECK NOT VALID 和 N
 
 两条规则默认启用；新增 reject/review 影响已获明确批准。不带 CYCLE 的 ALWAYS / BY DEFAULT、NO CYCLE 和省略循环选项均不触发循环告警。声明已被证明无效时不再发循环告警。INCREMENT 0、非正 CACHE、超出类型范围的 MIN/MAX、MIN ≥ MAX 及范围外的 START 触发有效性 finding；省略的序列边界依据 PostgreSQL 文档规定的 CREATE 默认值和递增方向确定。未解析的自定义类型、重复声明或选项、未建模选项及超出 int64 的数值保留为 `unproven_generation_declaration` 证据缺口，所需事实为 `column.generation_declaration`、`column.identity_type` 或 `column.identity_options`，不采用最后一个值推断。
 
-仅适用于 PostgreSQL CREATE TABLE 和 ALTER TABLE ADD COLUMN。既有列上的 ADD/SET/DROP IDENTITY、SET EXPRESSION 保持原有检查。不验证生成表达式的合法性、易变性和依赖，也不判断继承、LIKE、分区、权限、唯一性或序列运行状态。新增 finding 仅携带表、列、操作、生成类别、模式和原因，不复制表达式或序列数值选项；原有调用者 SQL 输出不变。原生证据使用 PostgreSQL 17.7，解析错误和其他未支持边界仍明确保留。
+仅适用于 PostgreSQL CREATE TABLE 和 ALTER TABLE ADD COLUMN。既有列上的 ADD/SET/DROP IDENTITY 不在这两条声明规则范围内，限定前置条件见上一节；SET EXPRESSION 保持原有检查。不验证生成表达式的合法性、易变性和依赖，也不判断继承、LIKE、分区、权限、唯一性或序列运行状态。新增 finding 仅携带表、列、操作、生成类别、模式和原因，不复制表达式或序列数值选项；原有调用者 SQL 输出不变。原生证据使用 PostgreSQL 17.7，解析错误和其他未支持边界仍明确保留。
 
 维护者说明：[决策记录](../decisions/2026-11-16-postgresql-generated-identity-governance.md)。
 

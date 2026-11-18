@@ -1024,6 +1024,20 @@ rules:
   ddl.pg.alter.drop_constraint.target.require:
     enabled: true
     level: blocker
+  # PG17 existing-column generation: exact fresh ordinary-table facts; unknowns stay gaps.
+  # Stable identity-sequence parameters only; no current-value/data/expression/permission analysis.
+  ddl.pg.alter.column.generation.transition.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.alter.identity.sequence_options.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.alter.identity.restart.warn:
+    enabled: true
+    level: warning
+  ddl.pg.alter.identity.cycle.warn:
+    enabled: true
+    level: warning
   # PostgreSQL CREATE/ADD COLUMN generation declarations; bounded, not expression analysis.
   ddl.pg.column.generation.declaration.valid:
     enabled: true

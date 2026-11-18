@@ -5,6 +5,11 @@ import "github.com/Fanduzi/DeltaScope/internal/domain/rule"
 
 func ddlPgRules() map[string]RulePolicy {
 	return map[string]RulePolicy{
+		// Bounded PG17 existing-column generation checks and authored identity risks.
+		"ddl.pg.alter.column.generation.transition.valid": {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
+		"ddl.pg.alter.identity.sequence_options.valid":    {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
+		"ddl.pg.alter.identity.restart.warn":              {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
+		"ddl.pg.alter.identity.cycle.warn":                {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
 		// PG migration-safety rules (PostgreSQL-only).
 		"ddl.pg.create_index.concurrently.require": {
 			Enabled: true,

@@ -582,6 +582,23 @@ func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusT
 			out.PGConstraints = append(out.PGConstraints, spec.PGConstraintState{Name: member.Name, Type: member.Type, Validated: *member.Validated})
 		}
 	}
+	if cat := snapshot.PGColumns; cat != nil && cat.Ordinary != nil {
+		out.PGColumns = &spec.PGColumnCatalog{Ordinary: *cat.Ordinary}
+		if cat.Columns != nil {
+			out.PGColumns.Columns = make([]spec.PGColumnState, 0, len(cat.Columns))
+			for _, member := range cat.Columns {
+				if member.Name == "" || member.Identity == nil || member.Generated == nil || member.TypeWidth == nil || member.NotNull == nil || member.HasDefault == nil || member.PrimaryKey == nil {
+					out.PGColumns.Columns = nil
+					break
+				}
+				state := spec.PGColumnState{Name: member.Name, Identity: *member.Identity, Generated: *member.Generated, TypeWidth: *member.TypeWidth, NotNull: *member.NotNull, HasDefault: *member.HasDefault, PrimaryKey: *member.PrimaryKey}
+				if seq := member.IdentitySequence; seq != nil {
+					state.IdentitySequence = &spec.PGIdentitySequenceState{TypeWidth: seq.TypeWidth, Definition: spec.SequenceDefinition{Start: seq.Start, Increment: seq.Increment, MinValue: seq.MinValue, MaxValue: seq.MaxValue, CacheValue: seq.CacheValue, Cycle: seq.Cycle}}
+				}
+				out.PGColumns.Columns = append(out.PGColumns.Columns, state)
+			}
+		}
+	}
 	out.PrimaryKeyUnknown = snapshot.PrimaryKeyUnknown
 	out.ConstraintsUnknown = snapshot.ConstraintsUnknown
 	out.TTLKnown = snapshot.TTLKnown

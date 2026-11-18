@@ -327,7 +327,8 @@ type corpusTableSnapshot struct {
 	PartitionPlacements  map[string]string `yaml:"partition_placements,omitempty"`
 
 	// nil is unobserved; an explicit empty array is a loaded empty directory.
-	PGConstraints []corpusPGConstraint `yaml:"pg_constraints,omitempty"`
+	PGConstraints []corpusPGConstraint   `yaml:"pg_constraints,omitempty"`
+	PGColumns     *corpusPGColumnCatalog `yaml:"pg_columns,omitempty"`
 }
 
 type corpusTable struct {
@@ -369,6 +370,32 @@ type corpusIndex struct {
 	Kind        string   `yaml:"kind,omitempty"`
 	Columns     []string `yaml:"columns,omitempty"`
 	Cardinality *int64   `yaml:"cardinality,omitempty"`
+}
+
+type corpusPGColumnCatalog struct {
+	Ordinary *bool                 `yaml:"ordinary"`
+	Columns  []corpusPGColumnState `yaml:"columns"`
+}
+
+type corpusPGColumnState struct {
+	Name             string                         `yaml:"name"`
+	Identity         *string                        `yaml:"identity"`
+	Generated        *string                        `yaml:"generated"`
+	TypeWidth        *int                           `yaml:"type_width"`
+	NotNull          *bool                          `yaml:"not_null"`
+	HasDefault       *bool                          `yaml:"has_default"`
+	PrimaryKey       *bool                          `yaml:"primary_key"`
+	IdentitySequence *corpusPGIdentitySequenceState `yaml:"identity_sequence,omitempty"`
+}
+
+type corpusPGIdentitySequenceState struct {
+	TypeWidth  int    `yaml:"type_width"`
+	Start      *int64 `yaml:"start"`
+	Increment  *int64 `yaml:"increment"`
+	MinValue   *int64 `yaml:"minvalue"`
+	MaxValue   *int64 `yaml:"maxvalue"`
+	CacheValue *int64 `yaml:"cache"`
+	Cycle      *bool  `yaml:"cycle"`
 }
 
 type corpusPGConstraint struct {

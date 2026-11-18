@@ -175,14 +175,22 @@ proof remain explicit gaps. Existing blanket forbids stay independent; D2
 CREATE/ADD COLUMN predicates remain unchanged. Stage boundaries are not
 permanent deferrals or completed dimensions.
 
-The fact seam preserves guards, duplicate modes/options, int64 values and
-START versus RESTART without changing JSON projections; the private directory
-and nested definitions are cloned by application/SDK and invalidated after
-unapplied related DDL/parser failures. Model/parser/provider/application/SDK
-checks and a native renamed/mismatched-type sequence oracle validate this
-seam, not rule delivery. All four rules, corpus/canonical additions, exact
-inventory evidence and final same-HEAD delivery chain remain pending. No row,
-cell status or original denominator is promoted by facts alone.
+Fact commit `1e8c773d` preserves guards, duplicate modes/options, int64 values
+and START versus RESTART without changing JSON projections; the private
+directory and nested definitions are cloned by application/SDK and invalidated
+after unapplied related DDL/parser failures. Tests and a native renamed/
+mismatched-type sequence oracle validate this seam. The subsequent rule
+candidate implements all four shared rules, configuration/catalog, six corpus
+pairs and application/SDK/HTTP/MCP parity. A 45-shape/90-CLI candidate replay
+retains native outcomes and audit non-execution: known illegal transitions and
+options reject, valid ADD/int64 stay pass, CYCLE/RESTART review, START/NO CYCLE/
+guard controls add no risk finding; offline proof gaps remain review. Old
+blanket forbids remain independent. Build/default+PG tests, default+PG lint,
+formatting and inventory/corpus/coverage-catalog gates pass.
+
+This remains **not delivered**: frozen canonical additions, exact inventory
+evidence and the final same-HEAD aggregate/review/merge/push/CI chain are
+pending. No row/cell status or original denominator is promoted by a candidate.
 
 ## Family index
 

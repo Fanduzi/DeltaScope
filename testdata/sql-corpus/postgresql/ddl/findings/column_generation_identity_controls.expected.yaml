@@ -1,0 +1,34 @@
+name: column_generation_identity_controls
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    start_t:
+      exists: true
+      pg_columns: &identity_catalog
+        ordinary: true
+        columns:
+          - name: id
+            identity: d
+            generated: ''
+            type_width: 64
+            not_null: true
+            has_default: false
+            primary_key: false
+            identity_sequence: {type_width: 16, start: 1, increment: 1, minvalue: 1, maxvalue: 10, cache: 1, cycle: false}
+    nocycle_t:
+      exists: true
+      pg_columns: *identity_catalog
+    guard_t:
+      exists: true
+      pg_columns:
+        ordinary: true
+        columns: [{name: id, identity: '', generated: '', type_width: 64, not_null: true, has_default: false, primary_key: false}]
+expect:
+  parse_ok: true
+  statements: {count: 4}
+  unsupported: {count: 0}
+  findings:
+    exclude: [ddl.pg.alter.column.generation.transition.valid, ddl.pg.alter.identity.sequence_options.valid, ddl.pg.alter.identity.restart.warn, ddl.pg.alter.identity.cycle.warn]
