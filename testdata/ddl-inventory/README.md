@@ -54,6 +54,24 @@ certify those broader boundaries. All row/cell statuses and all 301-row
 aggregate counts are unchanged; the parent remains mixed. `matrix.json` is
 regenerated from YAML, not edited by hand.
 
+## PostgreSQL existing-column generation tranche
+
+Only `postgresql.alter-table.column-attributes` gains D5 evidence, bound to its
+six original subactions with literal selectors, exact T37 native/CLI cases and
+rule-specific corpus refs. SET GENERATED / DROP EXPRESSION and RESTART move
+from notice-only to audited for bounded target/guard and authored-risk checks.
+SET/DROP NOT NULL, SET/DROP DEFAULT and identity options become **mixed**, not
+fully audited: nullable-data, expression and unread current-value premises are
+not certified. ADD/DROP IDENTITY keeps audited status with stronger precise
+identity/guard/type/default/nullability proof. Historical probes are retained
+as history, not substituted for new native evidence.
+
+The parent remains mixed. No other row/subaction, authored subaction set,
+original dimensional denominator or 301-row aggregate count changes. Inherited,
+partition, unlogged, stale/parser, unmodeled and data/current-value gaps remain
+explicit accepted-stage boundaries, not whole-F09 completion. Regenerate
+`matrix.json` from YAML; never edit its generated contents.
+
 ## Row contract
 
 Every row carries: `id` (stable, unique), `product` (`mysql`/`tidb`),

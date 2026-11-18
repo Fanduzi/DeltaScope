@@ -3,6 +3,36 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 PostgreSQL existing-column generation contract
+
+D5 preserves all 94 prior cases, their required IDs and independent profiles.
+The 24 cases frozen before rule implementation add 14 CLI controls and ten
+owned PG17.7 metadata fixtures under `pg-column-generation`: **118 required
+cases**, with 1661 assertions in focused execution (530 additive assertions).
+A parsed-JSON comparison verifies every old case/profile is unchanged.
+
+Offline cases pin observed-version/fact gaps, START versus RESTART, guards,
+disabled/non-PG and D2-isolation controls, unmodeled declarations and retained
+parser exit 2/incomplete output. Metadata fixtures bind exact identities,
+column/sequence types and stable parameters independently of issuance state.
+The 62 driver steps split into 31 native successes and 31 refusals; SQLSTATEs
+include 55000/22023/42601/42P16/42703 and independent nullable-data 23502.
+Renamed sequence binding and a bigint column with a smallint sequence prevent
+name/type guessing. Catalog/row/uncalled-sentinel oracles run after audit and
+before driver DDL. Only driver oracles inspect current sequence values; the
+product never reads or advances them.
+
+RESTART resets issuance and acquires a native ShareRowExclusiveLock on the
+sequence; SET START changes recorded START without resetting current state.
+CYCLE/NO CYCLE, quoted names, guarded no-ops, retained generated data and valid
+ordinary DEFAULT controls remain distinct. Narrowing bounds with a fitting
+START can still fail on unread current state; data/current-value, prior-DDL/
+parser, inheritance/partition/unlogged scopes remain explicit gaps, not support
+claims. The partition-member native refusal is **42P16**. All fixtures prove
+namespace absence, claim ownership and verify owned cleanup. New inventory
+bindings affect only six column-attribute cells, not the original denominator,
+other attributes or whole F09. Final same-HEAD aggregate/CI remain required.
+
 ## T37 PostgreSQL constraint-target contract
 
 The target tranche preserves all 79 prior required cases and independent

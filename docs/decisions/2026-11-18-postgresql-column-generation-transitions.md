@@ -3,7 +3,7 @@
 Date: 2026-11-18
 Status: Accepted
 Related milestone: F09 / `milestone/pg-alter-semantics` (D5)
-Related commits: research baseline `aa7f8872`; D4 history closeout `a2e3a7ab`; D5 facts `1e8c773d`; rule/evidence shipping pending
+Related commits: research baseline `aa7f8872`; D4 history closeout `a2e3a7ab`; D5 facts `1e8c773d`, shared rules `23c9f4f9`; final shipping pending
 
 ## Context
 
@@ -170,8 +170,38 @@ transactional driver rollback state controls hold. Candidate replay evidence
 records `1e8c773d` plus its uncommitted rule diff; it is not a clean-HEAD or final
 canonical artifact. Build/default+PG tests, default+PG lint, formatting and
 inventory/corpus/coverage-catalog gates pass for this candidate. Frozen T37
-additions, exact inventory binding, independent review and final same-HEAD
-aggregate/merge/push/CI remain pending.
+additions and inventory bindings are described below; independent review and
+final same-HEAD aggregate/merge/push/CI remain pending.
+
+### Canonical/native and inventory evidence
+
+All frozen 24 cases are implemented without changing old 94 case objects,
+required IDs or profiles: T37 **118/118, 1661 assertions** (530 additive).
+Ten owned native fixtures contain 62 driver steps, 31 successes and 31 refusals,
+with independent catalog/row/sequence/lock receipts after audit non-execution
+checks. Refusals include 55000/22023/42601/42P16/42703 and nullable-data 23502.
+A bigint column with a renamed smallint sequence proves dependency binding and
+actual sequence type; START-only, RESTART, CYCLE, guarded/exact-case targets,
+retained stored data, prior-DDL/parser and scope/current-value gaps are separate.
+The partition-member ADD refusal is 42P16; parent/child/root/unlogged positive
+native forms remain outside the audited stage rather than being mislabeled
+unsupported syntax or successful product audit.
+
+Initial fixture failures were assertion-contract errors: gap entries needed
+explicit reason codes, and stored ADD's first native refusal was its nullable
+precondition. The corrected fixture uses stored NOT NULL and independently
+proves its default-expression 55000 refusal. No case or assertion was removed.
+Focused artifact `/tmp/ddl-golden-pg-column-native-r3/T37/artifact.json` records
+`23c9f4f9` with candidate manifest changes, not final clean-HEAD readiness.
+
+Only six existing column-attribute cells gain exact selectors. SET GENERATED /
+DROP EXPRESSION and RESTART become audited for bounded target/risk predicates;
+NOT NULL, DEFAULT and identity options stay mixed where data/expression/unread
+current-value dimensions are not certified. ADD/DROP IDENTITY keeps audited
+status with stronger facts. The parent remains mixed; other attributes, row
+counts and the original dimensional denominator are unchanged. Matrix output
+is generated from YAML. Final same-HEAD aggregate, independent read-only review,
+FF-only merge, push and exact-SHA CI remain pending.
 
 ## Consequences
 

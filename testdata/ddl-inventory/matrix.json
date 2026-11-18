@@ -7735,7 +7735,7 @@
         {
           "subaction_id": "SET/DROP NOT NULL",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -7743,10 +7743,15 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-drop-not-null.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#SET/DROP NOT NULL",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-targets",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-nullable-data",
+                "file:testdata/ddl-golden/T37.json#column-generation-default-null-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.column.generation.transition.valid"
               ]
             }
           ]
@@ -7754,7 +7759,7 @@
         {
           "subaction_id": "SET/DROP DEFAULT",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -7762,10 +7767,14 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-drop-default.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#SET/DROP DEFAULT",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-targets",
+                "file:testdata/ddl-golden/T37.json#column-generation-default-null-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.column.generation.transition.valid"
               ]
             }
           ]
@@ -7773,7 +7782,7 @@
         {
           "subaction_id": "SET GENERATED / DROP EXPRESSION",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "audited",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -7781,10 +7790,17 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-generated-drop-expression.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#SET GENERATED / DROP EXPRESSION",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-targets",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-guards-case",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-prior-ddl",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-prior-parser",
+                "file:testdata/ddl-golden/T37.json#column-generation-mode-duplicates",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.column.generation.transition.valid"
               ]
             }
           ]
@@ -7803,7 +7819,14 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.add-drop-identity.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#ADD/DROP IDENTITY",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-add",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-targets",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-guards-case",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-scope",
+                "file:testdata/ddl-golden/T37.json#column-generation-target-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.column.generation.transition.valid"
               ]
             }
           ]
@@ -7811,7 +7834,7 @@
         {
           "subaction_id": "identity options",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -7819,10 +7842,18 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.identity-options.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#identity options",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-options",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-restart-cycle",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-sequence-current",
+                "file:testdata/ddl-golden/T37.json#column-generation-options-offline",
+                "file:testdata/ddl-golden/T37.json#column-generation-unmodeled-controls",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.identity.sequence_options.valid",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_identity_risks.expected.yaml#ddl.pg.alter.identity.cycle.warn"
               ]
             }
           ]
@@ -7830,7 +7861,7 @@
         {
           "subaction_id": "RESTART",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "audited",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -7838,10 +7869,16 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.restart.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#RESTART",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-restart-cycle",
+                "file:testdata/ddl-golden/T37.json#pg-column-generation-sequence-current",
+                "file:testdata/ddl-golden/T37.json#column-generation-restart-offline",
+                "file:testdata/ddl-golden/T37.json#column-generation-start-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_identity_risks.expected.yaml#ddl.pg.alter.identity.restart.warn"
               ]
             }
           ]

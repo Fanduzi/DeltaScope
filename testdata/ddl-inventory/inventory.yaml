@@ -7043,7 +7043,7 @@ rows:
     status: mixed_coverage
     parser_status: recognized
     audit_status: mixed
-    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 10 shapes -> 4 audited, 6 notice_only; golden manifests and native execution evidence land with the owner task"
+    status_evidence: "2026-11-18 D5: exact fresh ordinary persistent PG17 column/sequence facts bind six existing subactions to the approved transition/options blockers and RESTART/CYCLE risks. SET GENERATED / DROP EXPRESSION and RESTART gain audited bounded target/risk checks; nullability/default/identity-options remain mixed because data, expression and unread current-value scopes are not certified. ADD/DROP IDENTITY keeps audited status with stronger exact target/guard/native proof. Other attributes and whole F09 remain open; no row or denominator promotion. Historical T33 offline probes remain baseline evidence, not D5 proof."
     targets: nullability, defaults, identity/generated, statistics, storage
     applicability:
       - anchor: postgresql17
@@ -7056,37 +7056,37 @@ rows:
     subaction_status:
       - subaction_id: SET/DROP NOT NULL
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-drop-not-null.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-drop-not-null.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, "file:testdata/ddl-golden/T37.json#SET/DROP NOT NULL", file:testdata/ddl-golden/T37.json#pg-column-generation-targets, file:testdata/ddl-golden/T37.json#pg-column-generation-nullable-data, file:testdata/ddl-golden/T37.json#column-generation-default-null-offline, file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.column.generation.transition.valid]
       - subaction_id: SET/DROP DEFAULT
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-drop-default.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-drop-default.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, "file:testdata/ddl-golden/T37.json#SET/DROP DEFAULT", file:testdata/ddl-golden/T37.json#pg-column-generation-targets, file:testdata/ddl-golden/T37.json#column-generation-default-null-offline, file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.column.generation.transition.valid]
       - subaction_id: SET GENERATED / DROP EXPRESSION
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: audited
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-generated-drop-expression.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: audited
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-generated-drop-expression.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, "file:testdata/ddl-golden/T37.json#SET GENERATED / DROP EXPRESSION", file:testdata/ddl-golden/T37.json#pg-column-generation-targets, file:testdata/ddl-golden/T37.json#pg-column-generation-guards-case, file:testdata/ddl-golden/T37.json#pg-column-generation-prior-ddl, file:testdata/ddl-golden/T37.json#pg-column-generation-prior-parser, file:testdata/ddl-golden/T37.json#column-generation-mode-duplicates, file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.column.generation.transition.valid]
       - subaction_id: ADD/DROP IDENTITY
         parser_status: recognized
         audit_status: audited
@@ -7097,29 +7097,29 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.add-drop-identity.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.add-drop-identity.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, "file:testdata/ddl-golden/T37.json#ADD/DROP IDENTITY", file:testdata/ddl-golden/T37.json#pg-column-generation-add, file:testdata/ddl-golden/T37.json#pg-column-generation-targets, file:testdata/ddl-golden/T37.json#pg-column-generation-guards-case, file:testdata/ddl-golden/T37.json#pg-column-generation-scope, file:testdata/ddl-golden/T37.json#column-generation-target-offline, file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.column.generation.transition.valid]
       - subaction_id: identity options
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.identity-options.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.identity-options.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, "file:testdata/ddl-golden/T37.json#identity options", file:testdata/ddl-golden/T37.json#pg-column-generation-options, file:testdata/ddl-golden/T37.json#pg-column-generation-restart-cycle, file:testdata/ddl-golden/T37.json#pg-column-generation-sequence-current, file:testdata/ddl-golden/T37.json#column-generation-options-offline, file:testdata/ddl-golden/T37.json#column-generation-unmodeled-controls, file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.identity.sequence_options.valid, file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_identity_risks.expected.yaml#ddl.pg.alter.identity.cycle.warn]
       - subaction_id: RESTART
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: audited
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.restart.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: audited
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.restart.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#RESTART, file:testdata/ddl-golden/T37.json#pg-column-generation-restart-cycle, file:testdata/ddl-golden/T37.json#pg-column-generation-sequence-current, file:testdata/ddl-golden/T37.json#column-generation-restart-offline, file:testdata/ddl-golden/T37.json#column-generation-start-offline, file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_identity_risks.expected.yaml#ddl.pg.alter.identity.restart.warn]
       - subaction_id: SET STATISTICS
         parser_status: recognized
         audit_status: audited
@@ -7155,7 +7155,7 @@ rows:
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-n-distinct-reset.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
-      refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+      refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, gate:T37, file:testdata/ddl-golden/T37.json]
     owner: T37
   - id: postgresql.alter-table.constraints
     product: postgresql

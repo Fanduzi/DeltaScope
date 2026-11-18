@@ -188,9 +188,24 @@ guard controls add no risk finding; offline proof gaps remain review. Old
 blanket forbids remain independent. Build/default+PG tests, default+PG lint,
 formatting and inventory/corpus/coverage-catalog gates pass.
 
-This remains **not delivered**: frozen canonical additions, exact inventory
-evidence and the final same-HEAD aggregate/review/merge/push/CI chain are
-pending. No row/cell status or original denominator is promoted by a candidate.
+The frozen 24 canonical additions now pass: **T37 118/118, 1661 assertions**,
+retaining all old 94 case objects/IDs/profiles. Ten owned metadata fixtures
+contain 62 independent native steps (31 successes, 31 refusals), post-audit
+catalog/data/sequence/sentinel controls, and RESTART sequence-lock evidence.
+They pin renamed/smallint sequence binding behind a bigint column, precise
+quoted guards, mode/options conflicts, retained generated data, START versus
+RESTART and data/current-value/prior-DDL/parser/scope gaps. Partition-member
+ADD refuses 42P16; other scoped native successes are not claimed as audit
+support. Initial fixture reason-code/first-refusal assertions were corrected,
+not deleted or weakened.
+
+Six exact existing column-attribute cells gain selectors: SET GENERATED /
+DROP EXPRESSION and RESTART become audited for bounded predicates; NOT NULL,
+DEFAULT and identity options are mixed because broader data/expression/current
+proof is absent. ADD/DROP IDENTITY keeps audited status. Parent/other cells,
+301-row aggregates and the original dimension sets remain unchanged; matrix
+is generated. This is still **not delivered**: final same-HEAD aggregate,
+independent review, FF-only merge, push and exact-SHA CI remain pending.
 
 ## Family index
 
@@ -263,7 +278,7 @@ insufficient.
 | F08 | `postgresql.create-table-temporary` | TEMP/TEMPORARY; GLOBAL TEMPORARY compat noise; UNLOGGED; ON COMMIT actions | unreviewed |
 | F08 | `postgresql.create-table-like` | LIKE basic; INCLUDING options | unreviewed |
 | F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; others unreviewed |
-| F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | unreviewed |
+| F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 bounded target/options/risk candidate with accepted gaps; broader data/expression/current and other attributes remain open; final delivery pending |
 | F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; remaining dimensions open |
 | F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | unreviewed |
 | F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | unreviewed |
