@@ -66,7 +66,7 @@ func TestLoadPGColumnCatalog(t *testing.T) {
 			t.Fatalf("forbidden query member %q", bad)
 		}
 	}
-	for _, good := range []string{"pg_catalog.pg_depend", "dep.deptype = 'i'", "pg_catalog.pg_sequence", "$1", "$2", "pg_catalog.pg_inherits", "c.relpersistence = 'p'", "a.attnum = any(pk.conkey)", "c.reloftype OPERATOR(pg_catalog.<>) 0::pg_catalog.oid"} {
+	for _, good := range []string{"pg_catalog.pg_depend", "dep.deptype = 'i'", "pg_catalog.pg_sequence", "$1", "$2", "pg_catalog.pg_inherits", "c.relpersistence OPERATOR(pg_catalog.=) 'p'", "n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text", "c.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text", "a.attnum = any(pk.conkey)", "c.reloftype OPERATOR(pg_catalog.<>) 0::pg_catalog.oid"} {
 		if !strings.Contains(q[0], good) {
 			t.Fatalf("missing query premise %q", good)
 		}

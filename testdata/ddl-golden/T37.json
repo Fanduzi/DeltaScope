@@ -4157,32 +4157,32 @@
    "anchor": "postgres17",
    "dialect": "postgresql",
    "policy": "pg-column-identity",
-   "notes": "Spaces are part of decoded table and column names.",
+   "notes": "Spaces are part of decoded table and column names. A table identifier containing only one space is independently resolved.",
    "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcol38_rename_quoted_spaces"},
    "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_rename_quoted_spaces CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_rename_quoted_spaces'","expect": "0"}}]},
-   "sql": "ALTER TABLE pgcol38_rename_quoted_spaces.\" t \" RENAME COLUMN \" \" TO \" destination \";ALTER TABLE pgcol38_rename_quoted_spaces.u RENAME COLUMN c TO \" c \"",
+   "sql": "ALTER TABLE pgcol38_rename_quoted_spaces.\" t \" RENAME COLUMN \" \" TO \" destination \";ALTER TABLE pgcol38_rename_quoted_spaces.u RENAME COLUMN c TO \" c \";ALTER TABLE pgcol38_rename_quoted_spaces.\" \" ADD COLUMN c int",
    "args": ["--fail-on","none"],
    "setup": [
     {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_rename_quoted_spaces'","expect": "0"}]},
     {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcol38_rename_quoted_spaces","expect_rc": 0},
-    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_rename_quoted_spaces.control_t(payload text);INSERT INTO pgcol38_rename_quoted_spaces.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_rename_quoted_spaces.guard START 7;CREATE TABLE pgcol38_rename_quoted_spaces.\" t \"(\" \" int);INSERT INTO pgcol38_rename_quoted_spaces.\" t \" VALUES(42);CREATE TABLE pgcol38_rename_quoted_spaces.u(c int,\" c \" int);CREATE TABLE pgcol38_rename_quoted_spaces.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_rename_quoted_spaces'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_rename_quoted_spaces.control_t(payload text);INSERT INTO pgcol38_rename_quoted_spaces.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_rename_quoted_spaces.guard START 7;CREATE TABLE pgcol38_rename_quoted_spaces.\" t \"(\" \" int);INSERT INTO pgcol38_rename_quoted_spaces.\" t \" VALUES(42);CREATE TABLE pgcol38_rename_quoted_spaces.u(c int,\" c \" int);CREATE TABLE pgcol38_rename_quoted_spaces.\" \"(c int);CREATE TABLE pgcol38_rename_quoted_spaces.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_rename_quoted_spaces'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
    ],
    "expect": {
     "exit": 0,
     "verdict": "reject",
-    "statements": 2,
-    "findings": 1,
+    "statements": 3,
+    "findings": 3,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "complete",
-    "statement_coverage": ["complete","complete"],
-    "statement_indices": [0,1],
-    "finding_entries": [{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","level": "blocker"}],
+    "statement_coverage": ["complete","complete","complete"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","level": "blocker"},{"index": 2,"rule_id": "ddl.alter.add_column.exists.forbid","level": "blocker"},{"index": 2,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
     "evidence_gaps": 0,
     "evidence_gap_entries": [],
-    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns","PGTableCatalogQualified"],
     "rule_summary_loaded": 7,
-    "finding_metadata": [{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","metadata": {"source_column": "c","target_column": " c ","reason_code": "column_already_exists"}}]
+    "finding_metadata": [{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","metadata": {"source_column": "c","target_column": " c ","reason_code": "column_already_exists"}},{"index": 2,"rule_id": "ddl.alter.add_column.exists.forbid","metadata": {"table": " ","name": "c","reason_code": "column_already_exists"}}]
    },
    "post_verify": [
     {"assert": "audit preserves exact relation names, file identities and attributes","sql": "SELECT count(*) FROM ((TABLE pgcol38_rename_quoted_spaces.receipt EXCEPT (SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_rename_quoted_spaces'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_rename_quoted_spaces'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol38_rename_quoted_spaces.receipt)) AS catalog_delta","expect": "0"},
@@ -4191,10 +4191,12 @@
    ],
    "execute": [
     {"name": "single-space source on space-delimited table","sql": "ALTER TABLE pgcol38_rename_quoted_spaces.\" t \" RENAME COLUMN \" \" TO \" destination \"","expect_rc": 0},
-    {"name": "occupied space-delimited target","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_rename_quoted_spaces.u RENAME COLUMN c TO \" c \"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42701:"]}
+    {"name": "occupied space-delimited target","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_rename_quoted_spaces.u RENAME COLUMN c TO \" c \"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42701:"]},
+    {"name": "native name binding refusal","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_rename_quoted_spaces.\" \" ADD COLUMN c int","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42701:"]}
    ],
    "structure": [
-    {"assert": "quoted destination and payload","sql": "SELECT \" destination \" FROM pgcol38_rename_quoted_spaces.\" t \"","expect": "42"}
+    {"assert": "quoted destination and payload","sql": "SELECT \" destination \" FROM pgcol38_rename_quoted_spaces.\" t \"","expect": "42"},
+    {"assert": "all-whitespace table keeps its original user column","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgcol38_rename_quoted_spaces.\" \"'::regclass AND attnum>0 AND NOT attisdropped","expect": "1"}
    ],
    "teardown": [
     {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_rename_quoted_spaces CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_rename_quoted_spaces'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
@@ -4205,10 +4207,10 @@
    "anchor": "postgres17",
    "dialect": "postgresql",
    "policy": "pg-column-identity",
-   "notes": "Qualified catalog absence discharges parent guard and child checks. Later statements in the same request retain explicit relation freshness gaps.",
+   "notes": "Qualified catalog absence discharges parent guard and child checks. Later statements in the same request retain explicit relation freshness gaps. A database qualifier without a binding cannot inherit a schema-local no-op.",
    "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcol38_table_guard_absent"},
    "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_table_guard_absent CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_table_guard_absent'","expect": "0"}}]},
-   "sql": "ALTER TABLE IF EXISTS pgcol38_table_guard_absent.missing_add ADD COLUMN c int;ALTER TABLE IF EXISTS pgcol38_table_guard_absent.missing_rename RENAME COLUMN c TO renamed",
+   "sql": "ALTER TABLE IF EXISTS pgcol38_table_guard_absent.missing_add ADD COLUMN c int;ALTER TABLE IF EXISTS pgcol38_table_guard_absent.missing_rename RENAME COLUMN c TO renamed;ALTER TABLE IF EXISTS unresolved_database.pgcol38_table_guard_absent.missing_add ADD COLUMN c int",
    "args": ["--fail-on","none"],
    "setup": [
     {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_table_guard_absent'","expect": "0"}]},
@@ -4218,17 +4220,17 @@
    "expect": {
     "exit": 0,
     "verdict": "review",
-    "statements": 2,
-    "findings": 0,
+    "statements": 3,
+    "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "unverified",
-    "statement_coverage": ["complete","unverified"],
-    "statement_indices": [0,1],
-    "finding_entries": [],
-    "evidence_gaps": 3,
-    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.table.exists.alter.require","reason_code": "unproven_alter_table_relation","required_facts": ["target_table.pg_relation"]}],
-    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "statement_coverage": ["complete","unverified","unverified"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 2,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
+    "evidence_gaps": 5,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.table.exists.alter.require","reason_code": "unproven_alter_table_relation","required_facts": ["target_table.pg_relation"]},{"index": 2,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_database"]},{"index": 2,"rule_id": "ddl.table.exists.alter.require","reason_code": "unproven_alter_table_relation","required_facts": ["target_table.pg_database"]}],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns","PGTableCatalogQualified"],
     "rule_summary_loaded": 7
    },
    "post_verify": [
@@ -4239,7 +4241,8 @@
    "execute": [
     {"name": "missing relation guard for ADD","sql": "ALTER TABLE IF EXISTS pgcol38_table_guard_absent.missing_add ADD COLUMN c int","expect_rc": 0},
     {"name": "missing relation guard for RENAME","sql": "ALTER TABLE IF EXISTS pgcol38_table_guard_absent.missing_rename RENAME COLUMN c TO renamed","expect_rc": 0},
-    {"name": "unguarded missing relation refuses","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_table_guard_absent.missing_add ADD COLUMN c int","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P01:"]}
+    {"name": "unguarded missing relation refuses","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_table_guard_absent.missing_add ADD COLUMN c int","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P01:"]},
+    {"name": "native name binding refusal","sql": "\\set VERBOSITY verbose\nALTER TABLE IF EXISTS unresolved_database.pgcol38_table_guard_absent.missing_add ADD COLUMN c int","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  0A000:"]}
    ],
    "structure": [
     {"assert": "missing relations remain absent","sql": "SELECT count(*) FROM pg_class WHERE relnamespace='pgcol38_table_guard_absent'::regnamespace AND relname IN ('missing_add','missing_rename')","expect": "0"}

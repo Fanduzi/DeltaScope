@@ -120,6 +120,23 @@ value. The retry used an ephemeral value, removed the owned project, and
 confirmed all 16 original container identities. The final candidate needs a
 fresh full run and a separate review.
 
+## Exact relation binding found in read-only review
+
+At `96b4e3bd` the live provider found the requested schema, but the extractor
+had discarded the database component of a three-part name. A cross-database
+qualified guarded ADD reported complete coverage even though PG17.7 refused
+it with `0A000`. This slice leaves database-qualified statements unverified
+under `target_table.pg_database`, since schema-local evidence has no database
+binding. The AST keeps this distinction privately. The all-space quoted table
+name also now reaches its exact relation and column reads, so the original
+native `42701` duplicate has a matching target finding. The member query uses
+system-qualified comparisons when binding scope, namespace and attributes.
+
+The previous full runner was stopped before editing (exit 143); owned cleanup
+returned zero with no residual containers. The two augmented T37 controls keep
+all existing IDs and prior oracles. The focused replay passed 173/173 with 3390
+assertions and 37 native steps: 17 successes and 20 exact refusals.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

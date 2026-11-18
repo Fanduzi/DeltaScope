@@ -93,8 +93,8 @@ Normalized statement specifications used as the stable input for rule evaluation
   facts; numeric means proven finite AST literal, never parsed expression text.
 - `PGRelationState` carries the exact name and catalog kind within the snapshot schema.
   A zero name means unobserved and an empty kind with a known name means absent.
-  `TableSnapshot.PGRelation`, `DDL.PGTableIfExists` and `Alter.PGAddColumnIfNotExists`
-  are internal evidence excluded from JSON.
+  `TableSnapshot.PGRelation`, `DDL.PGTableIfExists`, `DDL.PGTableCatalogQualified`
+  and `Alter.PGAddColumnIfNotExists` are internal evidence excluded from JSON.
 - `PGColumnTransition`, `PGColumnCatalog`, `PGColumnState`, `PGIdentitySequenceState`
   The private catalog carries an observed `Typed` marker for D8 ADD/RENAME scope.
   Internal authored/cached evidence; `PGColumnCatalog.FindColumn` proves exact-name

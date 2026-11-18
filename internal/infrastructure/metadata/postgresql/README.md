@@ -9,7 +9,8 @@ relation name across all relation kinds. Its private `PGRelation` observation
 can distinguish a sequence or index from a missing relation while the existing
 shape loader still returns table shapes for its original relation kinds.
 `pg_temp` remains unobserved because it is a session alias. The column query
-reads `pg_class.reloftype` for D8 typed-table scope.
+reads `pg_class.reloftype` for D8 typed-table scope and uses system-qualified
+comparisons for the member and scope binding.
 
 | File | Responsibility |
 |------|---------------|

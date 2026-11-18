@@ -29,10 +29,11 @@ func extractAlterTableStmt(statement spec.Statement, stmt *pg_query.AlterTableSt
 	}
 
 	ddl := &spec.DDL{
-		Operation:       spec.DDLOperationAlterTable,
-		PGTableIfExists: stmt.GetMissingOk(),
-		Table:           tableFromRangeVar(stmt.GetRelation()),
-		Alter:           make([]spec.Alter, 0, len(stmt.GetCmds())),
+		Operation:               spec.DDLOperationAlterTable,
+		PGTableIfExists:         stmt.GetMissingOk(),
+		PGTableCatalogQualified: stmt.GetRelation().GetCatalogname() != "",
+		Table:                   tableFromRangeVar(stmt.GetRelation()),
+		Alter:                   make([]spec.Alter, 0, len(stmt.GetCmds())),
 	}
 	for _, item := range stmt.GetCmds() {
 		cmd := item.GetAlterTableCmd()
@@ -241,9 +242,10 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 	switch stmt.GetRenameType() {
 	case pg_query.ObjectType_OBJECT_COLUMN:
 		statement.DDL = &spec.DDL{
-			Operation:       spec.DDLOperationAlterTable,
-			PGTableIfExists: stmt.GetRelationType() == pg_query.ObjectType_OBJECT_TABLE && stmt.GetMissingOk(),
-			Table:           table,
+			Operation:               spec.DDLOperationAlterTable,
+			PGTableIfExists:         stmt.GetRelationType() == pg_query.ObjectType_OBJECT_TABLE && stmt.GetMissingOk(),
+			PGTableCatalogQualified: stmt.GetRelation().GetCatalogname() != "",
+			Table:                   table,
 			Alter: []spec.Alter{{
 				Action: "rename_column",
 				Name:   stmt.GetSubname(),
@@ -256,10 +258,11 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 		return statement
 	case pg_query.ObjectType_OBJECT_TABLE:
 		statement.DDL = &spec.DDL{
-			Operation:       spec.DDLOperationAlterTable,
-			PGTableIfExists: stmt.GetMissingOk(),
-			Table:           table,
-			Alter:           []spec.Alter{{Action: "rename_table", Name: table.Name, Options: map[string]string{"new_name": stmt.GetNewname()}}},
+			Operation:               spec.DDLOperationAlterTable,
+			PGTableIfExists:         stmt.GetMissingOk(),
+			PGTableCatalogQualified: stmt.GetRelation().GetCatalogname() != "",
+			Table:                   table,
+			Alter:                   []spec.Alter{{Action: "rename_table", Name: table.Name, Options: map[string]string{"new_name": stmt.GetNewname()}}},
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_INDEX:
@@ -488,9 +491,10 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 		return statement
 	}
 	statement.DDL = &spec.DDL{
-		Operation:       spec.DDLOperationAlterTable,
-		PGTableIfExists: stmt.GetObjectType() == pg_query.ObjectType_OBJECT_TABLE && stmt.GetMissingOk(),
-		Table:           tableFromRangeVar(stmt.GetRelation()),
+		Operation:               spec.DDLOperationAlterTable,
+		PGTableIfExists:         stmt.GetObjectType() == pg_query.ObjectType_OBJECT_TABLE && stmt.GetMissingOk(),
+		PGTableCatalogQualified: stmt.GetRelation().GetCatalogname() != "",
+		Table:                   tableFromRangeVar(stmt.GetRelation()),
 		Alter: []spec.Alter{{
 			Action:  "set_schema",
 			Options: map[string]string{"new_schema": stmt.GetNewschema()},

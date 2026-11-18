@@ -10,22 +10,23 @@ import (
 
 func (p *Provider) loadPGColumnCatalog(ctx context.Context, snapshot *spec.TableSnapshot) error {
 	rows, err := p.db.QueryContext(ctx, `
-		select (c.relkind = 'r' and c.relpersistence = 'p' and not c.relispartition
-		        and not exists (select 1 from pg_catalog.pg_inherits inh where inh.inhrelid = c.oid or inh.inhparent = c.oid)) as generation_ordinary,
+		select (c.relkind OPERATOR(pg_catalog.=) 'r' and c.relpersistence OPERATOR(pg_catalog.=) 'p' and not c.relispartition
+		        and not exists (select 1 from pg_catalog.pg_inherits inh where inh.inhrelid OPERATOR(pg_catalog.=) c.oid or inh.inhparent OPERATOR(pg_catalog.=) c.oid)) as generation_ordinary,
 		       a.attname, a.attidentity::text, a.attgenerated::text,
 		       a.atttypid, a.attnotnull, a.atthasdef,
 		       exists (select 1 from pg_catalog.pg_constraint pk where pk.conrelid = c.oid and pk.contype = 'p' and a.attnum = any(pk.conkey)),
 		       seq.seqtypid, seq.seqstart, seq.seqincrement, seq.seqmin, seq.seqmax, seq.seqcache, seq.seqcycle,
 		       a.attnum, typ.typstorage::text, c.reloftype OPERATOR(pg_catalog.<>) 0::pg_catalog.oid
 		from pg_catalog.pg_class c
-		join pg_catalog.pg_namespace n on n.oid = c.relnamespace
-		left join pg_catalog.pg_attribute a on a.attrelid = c.oid and a.attnum OPERATOR(pg_catalog.<>) 0 and not a.attisdropped
+		join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) c.relnamespace
+		left join pg_catalog.pg_attribute a on a.attrelid OPERATOR(pg_catalog.=) c.oid and a.attnum OPERATOR(pg_catalog.<>) 0 and not a.attisdropped
 		left join pg_catalog.pg_type typ on typ.oid OPERATOR(pg_catalog.=) a.atttypid
 		left join pg_catalog.pg_depend dep on dep.refclassid = 'pg_catalog.pg_class'::pg_catalog.regclass
 		  and dep.classid = 'pg_catalog.pg_class'::pg_catalog.regclass and dep.refobjid = c.oid
 		  and dep.refobjsubid = a.attnum and dep.objsubid = 0 and dep.deptype = 'i'
 		left join pg_catalog.pg_sequence seq on seq.seqrelid = dep.objid
-		where n.nspname = $1 and c.relname = $2
+		where n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text
+		  and c.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text
 		order by a.attnum, dep.objid
 	`, snapshot.Schema, snapshot.Table.Name)
 	if err != nil {

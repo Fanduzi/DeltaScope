@@ -429,7 +429,7 @@ TiDB 的 ALTER VIEW 和裸 CHECK OPTION 仍是厂商边界。缺少必要事实�
 
 对已观测的 PostgreSQL 17，既有 ADD、RENAME 列规则使用普通持久非类型表的精确、新鲜列目录。ADD 重复用户列时报告 blocker，带 `IF NOT EXISTS` 则静默，并抑制三条描述实际新增的提示。独立声明规则仍运行。已观测的系统列重名不受 guard 保护。RENAME 先检查源列，缺失或系统源列报告 blocker。目的名已存在时也报告 blocker，包括改成原名。引号中的大小写和空格按原样比较。范围不明、目录过期或存在多个子动作时报告 `unproven_column_identity`。独立 RENAME 禁止策略仍适用。
 
-PostgreSQL `ALTER TABLE IF EXISTS` 的既有存在性规则在已证明限定名缺失或已观测到任意类型关系时静默。未限定名在指定 schema 内查无、关系观察过期或身份未绑定时报告 `unproven_alter_table_relation`。已存在关系仍需满足子动作自身条件。本切片不验证类型转换、表达式、依赖或权限。
+PostgreSQL `ALTER TABLE IF EXISTS` 的既有存在性规则在已证明限定名缺失或已观测到任意类型关系时静默。未限定名在指定 schema 内查无、关系观察过期或身份未绑定时报告 `unproven_alter_table_relation`。三段限定名缺少数据库绑定时同样保留证据缺口。已存在关系仍需满足子动作自身条件。本切片不验证类型转换、表达式、依赖或权限。
 
 `ddl.alter.rename_column.version.require` 按已解析版本检查 `RENAME COLUMN`。MySQL 8.0 系列中的 8.0.3 及以上、MySQL 8.4、TiDB 8.5 通过。MySQL 5.7 与 MySQL 8.0.0–8.0.2 是一条确定的版本不兼容 blocker：coverage 保持 `complete`，结论为 `reject`。版本缺失是 `missing_target_version` 缺口，不额外增加 finding。合法但不在已验证系列内的版本是 `target_version_out_of_validated_range` 缺口，不发布后态。`CHANGE COLUMN` 不继承这项检查。黄金 profile `t05-a5-column-identity-isolated` 启用原先八条有序状态 blocker 加上这三条，并关闭其余目录规则。它不改变既有规则的默认含义。
 

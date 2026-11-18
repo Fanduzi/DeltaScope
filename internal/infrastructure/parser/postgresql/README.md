@@ -13,7 +13,7 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 | parser_constraint_build_postgresql_tag_test.go | Pins plain/reused-index PK and UNIQUE declarations, unnamed/quoted controls, and absence of the index-reuse marker on FK/CHECK |
 | extractor_ddl_drop.go | Extracts PostgreSQL DROP/TRUNCATE DDL preserving every named relation in `DDL.Targets` |
 | extractor_column_tuning.go | Preserves STATISTICS DEFAULT versus literal and ordered SET/RESET column-option keys/value kinds; finite non-underflowing AST values only (true zero distinguished from rounding; subnormal/minimum-normal boundary stays unmodeled), never SQL-text fallback or quoted payload |
-| parser_column_identity_postgresql_tag_test.go | Verifies separate private ALTER TABLE and ADD COLUMN guard bits, plus exact decoded identifiers |
+| parser_column_identity_postgresql_tag_test.go | Verifies separate private ALTER TABLE and ADD COLUMN guard bits, three-part table identities and exact decoded identifiers |
 | parser_column_format_postgresql_tag_test.go | Pins exact authored compression method (including case/default), missing/unmodeled AST knownness, existing storage case retention and JSON privacy without SQL-text recovery |
 | parser_column_tuning_postgresql_tag_test.go | Pins tuning/default/zero/bounds/duplicates/opaque/int-float and PG-versus-Go underflow facts, JSON privacy and DROP COLUMN IF EXISTS/CASCADE/RESTRICT knownness |
 | extractor_column_transition.go | Preserves existing-column generation guards, mode counts and ordered sequence options without changing legacy projections; no SQL-text fallback or expression payload |

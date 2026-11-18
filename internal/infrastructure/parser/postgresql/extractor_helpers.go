@@ -108,7 +108,7 @@ func columnRefName(ref *pg_query.ColumnRef) string {
 }
 
 func tableFromRangeVar(r *pg_query.RangeVar) *spec.Table {
-	if r == nil || strings.TrimSpace(r.GetRelname()) == "" {
+	if r == nil || r.GetRelname() == "" {
 		return nil
 	}
 	return &spec.Table{Schema: r.GetSchemaname(), Name: r.GetRelname()}

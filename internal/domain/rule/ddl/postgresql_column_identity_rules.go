@@ -16,7 +16,7 @@ func pgColumnIdentityAction(s spec.Statement, action string) bool {
 // cannot turn an unqualified name's local miss into search-path-wide absence.
 func pgAlterRelation(s spec.Statement) (exists, known bool) {
 	snapshot, ok := targetTableSnapshot(s)
-	if !ok || s.DDL == nil || s.DDL.Table == nil {
+	if !ok || s.DDL == nil || s.DDL.Table == nil || s.DDL.PGTableCatalogQualified {
 		return false, false
 	}
 	table := s.DDL.Table
@@ -37,6 +37,9 @@ func pgGuardedAlterTableMissingFact(s spec.Statement) string {
 	if !pgConstraintTargetVersionKnown(s) {
 		return "instance.version"
 	}
+	if s.DDL.PGTableCatalogQualified {
+		return "target_table.pg_database"
+	}
 	if _, known := pgAlterRelation(s); !known {
 		return "target_table.pg_relation"
 	}
@@ -46,6 +49,9 @@ func pgGuardedAlterTableMissingFact(s spec.Statement) string {
 func pgColumnIdentityTarget(s spec.Statement, index int, ruleID string) (reason, missing string) {
 	if !pgConstraintTargetVersionKnown(s) {
 		return "", "instance.version"
+	}
+	if s.DDL.PGTableCatalogQualified {
+		return "", "target_table.pg_database"
 	}
 	if exists, known := pgAlterRelation(s); known && !exists {
 		return "", "" // The parent existence check owns the outcome.
@@ -105,7 +111,7 @@ func pgColumnIdentityTarget(s spec.Statement, index int, ruleID string) (reason,
 }
 
 func pgAddColumnNoop(s spec.Statement, index int) bool {
-	if !pgConstraintTargetVersionKnown(s) {
+	if s.DDL.PGTableCatalogQualified || !pgConstraintTargetVersionKnown(s) {
 		return false
 	}
 	if exists, known := pgAlterRelation(s); s.DDL.PGTableIfExists && known && !exists {

@@ -453,7 +453,8 @@ Unproven scope, stale observations and multiple actions yield
 For PostgreSQL `ALTER TABLE IF EXISTS`, `ddl.table.exists.alter.require` is
 silent on a proven qualified absence or an observed relation of any kind.
 A schema-local miss for an unqualified name or stale relation evidence yields
-`unproven_alter_table_relation`. Existing relation kinds can still fail the
+`unproven_alter_table_relation`. Three-part names also require a database binding
+that the current schema-local observation does not supply. Existing relation kinds can still fail the
 action's independent prerequisites. The scope excludes type conversion,
 expression evaluation, dependencies and permissions.
 

@@ -39,4 +39,12 @@ func TestPGAlterTableGuardFacts(t *testing.T) {
 	if ddl.Table.Name != " t " || a.Name != " " || a.Column.OldName != " " || a.Column.Definition.Name != " C " {
 		t.Fatalf("decoded names changed: %+v, %+v", ddl.Table, a)
 	}
+	qualified := extractPostgreSQLStatement(t, `ALTER TABLE IF EXISTS db.app." " ADD COLUMN c int`).DDL
+	if qualified == nil || qualified.Table == nil || qualified.Table.Name != " " || !qualified.PGTableCatalogQualified || !qualified.PGTableIfExists {
+		t.Fatalf("qualification or exact name lost: %+v", qualified)
+	}
+	encoded, err := json.Marshal(qualified)
+	if err != nil || strings.Contains(string(encoded), "PGTableCatalogQualified") {
+		t.Fatalf("qualification leaked: %s %v", encoded, err)
+	}
 }

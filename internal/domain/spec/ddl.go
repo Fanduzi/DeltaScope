@@ -8,6 +8,8 @@ type DDL struct {
 	View      *ViewDeclaration `json:"-"`
 	// PGTableIfExists is the authored PostgreSQL ALTER TABLE relation guard.
 	PGTableIfExists bool `json:"-"`
+	// PGTableCatalogQualified records a three-part PostgreSQL ALTER TABLE identity.
+	PGTableCatalogQualified bool `json:"-"`
 	// Targets lists every table-level object identity the statement names, in
 	// source order: each DROP TABLE/VIEW name, each TRUNCATE relation, each
 	// RENAME TABLE source and destination pair-wise, and ALTER TABLE
