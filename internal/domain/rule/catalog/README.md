@@ -7,6 +7,8 @@ and check-option rules apply only to MySQL, and ignored-option review only to
 TiDB. Target, source, security and check-option assessments can use ordered
 relation metadata; algorithm and ignored-option reviews use declared syntax.
 
+The PostgreSQL replica identity catalog entry advertises default blocker and live attachment metadata. The existing USING INDEX notice remains advisory.
+
 ## Files
 
 | File | Responsibility |

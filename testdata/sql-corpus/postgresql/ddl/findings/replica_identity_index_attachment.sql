@@ -1,0 +1,3 @@
+ALTER TABLE app.reject_t REPLICA IDENTITY USING INDEX nullable_ix;
+ALTER TABLE app.accept_t REPLICA IDENTITY USING INDEX "Exact Index";
+ALTER TABLE app.unknown_t REPLICA IDENTITY USING INDEX unobserved;

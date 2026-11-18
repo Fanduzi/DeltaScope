@@ -17,7 +17,10 @@ stays unverified. A proven absent guarded table has no index premise.
 The provider resolves the named relation in the target table's namespace. The
 candidate must be an index of that exact relation, with a uniqueness-capable
 access method, unique and immediate enforcement, no expression or predicate,
-and positive NOT NULL key attributes. Included attributes are outside the key
+and positive NOT NULL key attributes. For the access-method premise, the
+qualified built-in btree property is evidence. Other methods may override the
+property callback, so it cannot prove their native capability. Included
+attributes are outside the key
 check. Read only bounded catalog flags and exact identity. Neither predicates,
 index expressions, OIDs nor provider errors belong in findings. Gaps use
 `unproven_replica_identity_index`.
@@ -59,6 +62,15 @@ behavior remains the D8 baseline until the rule commit.
 - `T37.meta.pg-replica-index-invalid-build`
 - `T37.meta.pg-replica-index-freshness`
 - `T37.meta.pg-replica-index-scope`
+- `T37.meta.pg-replica-index-wrong-owner`
+- `T37.meta.pg-replica-index-wrong-kind`
+- `T37.meta.pg-replica-index-deferred`
+- `T37.meta.pg-replica-index-expression`
+- `T37.meta.pg-replica-index-partial`
+- `T37.meta.pg-replica-index-guard-absent`
+
+The six additional request-level controls keep each assessment fresh. Earlier
+DDL in a single request deliberately withholds later index observations.
 
 Each comparison retains its separate native refusal and no-audit-execution
 oracle. Use actual catalog identity, row/file preservation and a sequence guard.

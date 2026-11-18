@@ -134,6 +134,16 @@ The Go provider `PGConstraintState` alias and copied directory retain private fa
 
 Maintainer notes: [decision](../decisions/2026-11-17-postgresql-constraint-target-evidence.md). Other F09 dimensions remain open.
 
+### PostgreSQL replica identity index attachment
+
+The default `ddl.pg.alter.replica_identity_using_index.valid` blocker checks
+fresh, exact PG17 catalog facts for a named index on a schema-qualified ordinary
+persistent non-typed table. Coverage includes ownership, uniqueness capability,
+immediacy, expression and predicate absence, and NOT NULL key attributes.
+Unknown facts retain a gap. The existing notice describes the request, and
+DEFAULT, FULL and NOTHING keep their existing behavior. Successful catalog
+assignment does not establish replication usability.
+
 ### PostgreSQL ALTER column identity and existence guards
 
 On observed PostgreSQL 17, the existing ADD COLUMN duplicate and RENAME COLUMN

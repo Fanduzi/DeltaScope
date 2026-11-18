@@ -14,11 +14,14 @@ func (p *Provider) resolveReplicaIdentityIndex(ctx context.Context, req spec.Obj
 		return nil, nil
 	}
 	// The LEFT JOIN preserves a missing index within a proven target namespace.
-	// A missing or out-of-scope table yields no observation at all.
+	// A missing or out-of-scope table yields no observation at all. Only the
+	// built-in btree (BTREE_AM_OID) vouches for can_unique: other methods may
+	// override pg_indexam_has_property with their own property callback.
 	rows, err := p.db.QueryContext(ctx, `
 		select coalesce(idx.relkind::pg_catalog.text, ''), i.indexrelid is not null,
 		       coalesce(i.indrelid OPERATOR(pg_catalog.=) tbl.oid, false),
-		       pg_catalog.pg_indexam_has_property(idx.relam, 'can_unique'),
+		       case when i.indexrelid is not null and idx.relam OPERATOR(pg_catalog.=) 403::pg_catalog.oid
+		            then pg_catalog.pg_indexam_has_property(idx.relam, 'can_unique') end,
 		       coalesce(i.indisunique, false), coalesce(i.indimmediate, false),
 		       i.indexprs is not null, i.indpred is not null,
 		       (select case when i.indnkeyatts OPERATOR(pg_catalog.>) 0

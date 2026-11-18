@@ -50,6 +50,7 @@ func TestResolveReplicaIdentityIndex(t *testing.T) {
 			}
 			queries := log.Queries()
 			if len(queries) != 1 || !strings.Contains(queries[0], "k.position OPERATOR(pg_catalog.<=) i.indnkeyatts") ||
+				!strings.Contains(queries[0], "idx.relam OPERATOR(pg_catalog.=) 403::pg_catalog.oid") ||
 				strings.Contains(queries[0], "pg_get_indexdef") || strings.Contains(queries[0], "indisvalid") || strings.Contains(queries[0], request.Name) {
 				t.Fatalf("unexpected query shape: %q", queries)
 			}

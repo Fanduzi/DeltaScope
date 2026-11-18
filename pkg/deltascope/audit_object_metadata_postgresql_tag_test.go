@@ -92,3 +92,22 @@ func TestAuditProjectsConfirmedObjectMetadataThroughSDK(t *testing.T) {
 		t.Fatalf("expected lookup for extension/pg_trgm, got %#v", provider.objectCalls[0])
 	}
 }
+
+func TestAuditReplicaIdentityAttachmentThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGReplicaIdentity: &spec.PGReplicaIdentityIndex{Schema: "app", Table: "t", Name: "Index Name", Kind: "i", IndexKnown: true, OnTable: true, Unique: true, Immediate: true, Partial: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t REPLICA IDENTITY USING INDEX "Index Name"`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "Index Name" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.replica_identity_using_index.valid" && f.Metadata["reason_code"] == "index_partial" {
+			return
+		}
+	}
+	t.Fatalf("missing attachment finding: %+v", result.Statements[0].Findings)
+}

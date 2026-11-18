@@ -738,6 +738,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterDetachPartitionFinalizeNotice, construct: newDetachPartitionFinalizeNoticeRule},
 		{ruleID: ruleIDPGAlterReplicaIdentityFullWarn, construct: newReplicaIdentityFullWarnRule},
 		{ruleID: ruleIDPGAlterReplicaIdentityNothingWarn, construct: newReplicaIdentityNothingWarnRule},
+		{ruleID: ruleIDPGAlterReplicaIdentityIndexValid, construct: newPGReplicaIdentityIndexRule},
 		{ruleID: ruleIDPGAlterReplicaIdentityUsingIndexNotice, construct: newReplicaIdentityUsingIndexNoticeRule},
 		{ruleID: ruleIDPGDropSchemaAdvisory, construct: newDropSchemaAdvisoryRule},
 		{ruleID: ruleIDPGDropSchemaCascadeWarn, construct: newDropSchemaCascadeWarnRule},

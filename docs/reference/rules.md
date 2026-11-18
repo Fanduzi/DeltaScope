@@ -1344,6 +1344,18 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 
 `v0.32.0` is the **PostgreSQL Boundary Support-Readiness Gate**. It is a decision milestone, not a feature release. No new rule IDs were added. Characterization tests document stable AST facts about generated and identity columns; a readiness report recommends `v0.33.0` as a narrow fact-preservation pack. No production extractor, spec, rule, or policy code changed.
 
+### PostgreSQL replica identity index attachment
+
+`ddl.pg.alter.replica_identity_using_index.valid` is a default blocker on
+observed PG17 for `ALTER TABLE ... REPLICA IDENTITY USING INDEX`. The rule
+checks an exact, fresh, schema-qualified ordinary persistent non-typed table.
+Native refusals include a missing index, a different relation or owner table,
+a nonunique or deferred index, an expression or predicate, and inapplicable
+key attributes. Nullable INCLUDE columns are outside the key check. Unknown
+binding, scope or catalog facts yield `unproven_replica_identity_index`.
+The existing notice describes the requested selection. PostgreSQL can assign
+an invalid index, so assignment alone cannot establish replication usability.
+
 ### PostgreSQL ALTER TABLE GENERATED Follow-up Pack (v0.31.0)
 
 `v0.31.0` maps additional PostgreSQL generated/identity `ALTER TABLE` forms to explicit unsupported feature tags, closing the adjacent gap left by `v0.30.0`. These outcomes are **not** rule findings and **no new rule IDs** are involved. They are extractor-level contracts that return `UnsupportedDetail` entries with feature tags and reason strings.

@@ -250,6 +250,11 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelWarning,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.alter.replica_identity_using_index.valid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
 		"ddl.pg.alter.replica_identity_using_index.notice": {
 			Enabled: true,
 			Level:   rule.LevelNotice,

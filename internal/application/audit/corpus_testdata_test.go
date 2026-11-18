@@ -106,10 +106,11 @@ type corpusFacts struct {
 
 // corpusMetadata carries optional metadata-aware audit fixtures.
 type corpusMetadata struct {
-	Schema      string                         `yaml:"schema,omitempty"`
-	Instance    *corpusInstanceFacts           `yaml:"instance,omitempty"`
-	Tables      map[string]corpusTableSnapshot `yaml:"tables,omitempty"`
-	IndexOwners map[string]string              `yaml:"index_owners,omitempty"`
+	Schema           string                         `yaml:"schema,omitempty"`
+	Instance         *corpusInstanceFacts           `yaml:"instance,omitempty"`
+	Tables           map[string]corpusTableSnapshot `yaml:"tables,omitempty"`
+	IndexOwners      map[string]string              `yaml:"index_owners,omitempty"`
+	PGReplicaIndexes []corpusPGReplicaIndex         `yaml:"pg_replica_indexes,omitempty"`
 	// PlacementPolicies is the proven TiDB policy catalog the provider
 	// reads once: a non-nil map (even empty) is a vouched policy set;
 	// bound_targets lists the proven inbound references the drop premise
@@ -293,6 +294,20 @@ type corpusInstanceFacts struct {
 	MySQLSuperReadOnlyKnown  bool `yaml:"mysql_super_read_only_known,omitempty"`
 	MySQLReadOnlyExempt      bool `yaml:"mysql_read_only_exempt,omitempty"`
 	MySQLReadOnlyExemptKnown bool `yaml:"mysql_read_only_exempt_known,omitempty"`
+}
+
+type corpusPGReplicaIndex struct {
+	Schema     string `yaml:"schema"`
+	Table      string `yaml:"table"`
+	Name       string `yaml:"name"`
+	Kind       string `yaml:"kind"`
+	OnTable    bool   `yaml:"on_table"`
+	Unique     bool   `yaml:"unique"`
+	Immediate  bool   `yaml:"immediate"`
+	Expression bool   `yaml:"expression"`
+	Partial    bool   `yaml:"partial"`
+	CanUnique  *bool  `yaml:"can_unique,omitempty"`
+	KeyValid   *bool  `yaml:"key_valid,omitempty"`
 }
 
 type corpusTableSnapshot struct {

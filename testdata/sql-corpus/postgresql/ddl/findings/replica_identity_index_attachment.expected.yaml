@@ -1,0 +1,28 @@
+name: replica_identity_index_attachment
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    reject_t:
+      exists: true
+      pg_relation: {name: reject_t, kind: r}
+      pg_columns: {ordinary: true, columns: []}
+    accept_t:
+      exists: true
+      pg_relation: {name: accept_t, kind: r}
+      pg_columns: {ordinary: true, columns: []}
+    unknown_t:
+      exists: true
+      pg_relation: {name: unknown_t, kind: r}
+      pg_columns: {ordinary: true, columns: []}
+  pg_replica_indexes:
+    - {schema: app, table: reject_t, name: nullable_ix, kind: i, on_table: true, unique: true, immediate: true, can_unique: true, key_valid: false}
+    - {schema: app, table: accept_t, name: Exact Index, kind: i, on_table: true, unique: true, immediate: true, can_unique: true, key_valid: true}
+expect:
+  parse_ok: true
+  statements: {count: 3}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.replica_identity_using_index.valid, ddl.pg.alter.replica_identity_using_index.notice]

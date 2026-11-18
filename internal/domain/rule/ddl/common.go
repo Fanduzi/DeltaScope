@@ -308,6 +308,7 @@ const (
 	ruleIDPGAlterDetachPartitionWarn                        = "ddl.pg.alter.detach_partition.warn"
 	ruleIDPGAlterReplicaIdentityFullWarn                    = "ddl.pg.alter.replica_identity_full.warn"
 	ruleIDPGAlterReplicaIdentityNothingWarn                 = "ddl.pg.alter.replica_identity_nothing.warn"
+	ruleIDPGAlterReplicaIdentityIndexValid                  = "ddl.pg.alter.replica_identity_using_index.valid"
 	ruleIDPGAlterReplicaIdentityUsingIndexNotice            = "ddl.pg.alter.replica_identity_using_index.notice"
 	ruleIDPGAlterLoggedNotice                               = "ddl.pg.alter.set_logged.notice"
 	ruleIDPGAlterUnloggedNotice                             = "ddl.pg.alter.set_unlogged.notice"

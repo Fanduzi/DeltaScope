@@ -670,10 +670,10 @@ func newReplicaIdentityUsingIndexNoticeRule(cfg policy.RulePolicy) (rule.Stateme
 	return newPGAlterActionOptionRule(
 		ruleIDPGAlterReplicaIdentityUsingIndexNotice, rule.LevelNotice,
 		"replica_identity", "identity", "using_index",
-		"REPLICA IDENTITY USING INDEX configured on PostgreSQL — verify the selected index",
-		"USING INDEX makes a specific index the replica identity for logical decoding.",
-		"DeltaScope audits offline and cannot verify whether the named index exists, is valid, unique, not partial, and suitable for replica identity.",
-		"Confirm the index is valid and intentionally chosen before relying on this replica identity configuration.",
+		"REPLICA IDENTITY USING INDEX requests an index on PostgreSQL",
+		"USING INDEX requests that PostgreSQL select a named index as replica identity.",
+		"Attachment prerequisites and availability to logical replication are separate. A catalog assignment can succeed even if the index is invalid.",
+		"Verify that the chosen index meets attachment requirements and is usable by logical replication.",
 		cfg,
 	)
 }

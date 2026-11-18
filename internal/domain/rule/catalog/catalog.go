@@ -234,6 +234,8 @@ func summaryForRule(ruleID string) string {
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	switch ruleID {
+	case "ddl.pg.alter.replica_identity_using_index.valid":
+		return "Checks exact PostgreSQL 17 replica-identity index attachment using its owner, uniqueness, immediacy, expression, predicate and key-nullability facts. Unknown evidence remains a gap."
 	case "ddl.table.exists.alter.require":
 		return "Requires the ALTER TABLE target to exist. On observed PG17 a guarded qualified absence is silent, a relation of another kind retains its existence, and an unproven binding is a gap."
 	case "ddl.alter.add_column.exists.forbid":
@@ -944,6 +946,7 @@ func sourceForRule() string {
 const unknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
 
 var metadataAwareRuleIDs = map[string]bool{
+	"ddl.pg.alter.replica_identity_using_index.valid":      true,
 	"ddl.pg.alter.column.storage.valid":                    true,
 	"ddl.pg.alter.column.compression.valid":                true,
 	"ddl.pg.alter.column.statistics.target.valid":          true,
