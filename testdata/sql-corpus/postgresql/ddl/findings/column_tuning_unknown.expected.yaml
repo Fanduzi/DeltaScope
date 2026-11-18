@@ -1,0 +1,22 @@
+name: column_tuning_unknown
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    no_catalog_t: {exists: true}
+    extension_t:
+      exists: true
+      pg_columns: &ordinary
+        ordinary: true
+        columns: [{name: id, identity: '', generated: '', type_width: 64, not_null: false, has_default: false, primary_key: false}]
+    opaque_t:
+      exists: true
+      pg_columns: *ordinary
+expect:
+  parse_ok: true
+  statements: {count: 3}
+  unsupported: {count: 0}
+  findings:
+    exclude: [ddl.pg.alter.column.statistics.target.valid, ddl.pg.alter.column.statistics.clamp.warn, ddl.pg.alter.column.options.valid]

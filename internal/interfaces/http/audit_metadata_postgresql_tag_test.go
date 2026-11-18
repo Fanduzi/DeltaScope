@@ -300,8 +300,9 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingColumnForDropColum
 	})
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{
+		version:       "PostgreSQL 17.7",
 		detectDialect: spec.DialectPostgreSQL,
-		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+		snapshot: &spec.TableSnapshot{Schema: "public", PGColumns: &spec.PGColumnCatalog{Ordinary: true, Columns: []spec.PGColumnState{{Name: "email"}}}, Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table: &spec.Table{Name: "users"},
 			Columns: []spec.Column{
 				{Name: "email"},

@@ -234,6 +234,12 @@ func summaryForRule(ruleID string) string {
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	switch ruleID {
+	case "ddl.pg.alter.column.statistics.target.valid":
+		return "Observed PG17 statistics declaration: targets below -1 or proved missing columns block; DEFAULT/-1 and normal targets are allowed. Above-maximum targets are clamped, not refused. Unknown facts remain gaps."
+	case "ddl.pg.alter.column.statistics.clamp.warn":
+		return "Warns when an applicable explicit PG17 statistics target exceeds 10000 and the backend lowers it to 10000. DEFAULT and normal values are silent; unknown or proved-invalid targets do not invent a clamp finding."
+	case "ddl.pg.alter.column.options.valid":
+		return "Checks known builtin PG17 column SET options n_distinct/n_distinct_inherited for range [-1, DBL_MAX] and duplicate keys, plus exact SET/RESET target existence. Unknown SET keys/opaque values remain gaps; unknown RESET names are not inherently errors."
 	case "ddl.pg.alter.column.generation.transition.valid":
 		return "PG17 existing-column generation preconditions: exact fresh ordinary-table identity/generated/type/NOT NULL/DEFAULT/PK facts. Proven conflicts block; guards preserve known no-ops. Data, expression, permission and stale/ambiguous facts are not guessed."
 	case "ddl.pg.alter.identity.sequence_options.valid":
@@ -289,6 +295,12 @@ func statementKindsForRule(ruleID string) []string {
 
 func triggerExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.alter.column.statistics.target.valid":
+		return "ALTER TABLE t ALTER COLUMN c SET STATISTICS -2;"
+	case ruleID == "ddl.pg.alter.column.statistics.clamp.warn":
+		return "ALTER TABLE t ALTER COLUMN c SET STATISTICS 10001;"
+	case ruleID == "ddl.pg.alter.column.options.valid":
+		return "ALTER TABLE t ALTER COLUMN c SET (n_distinct=-1.1);"
 	case ruleID == "ddl.pg.alter.column.generation.transition.valid":
 		return "ALTER TABLE t ALTER COLUMN nullable_id ADD GENERATED ALWAYS AS IDENTITY;"
 	case ruleID == "ddl.pg.alter.identity.sequence_options.valid":
@@ -338,6 +350,10 @@ func triggerExampleForRule(ruleID string) string {
 
 func validExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.alter.column.statistics.target.valid", ruleID == "ddl.pg.alter.column.statistics.clamp.warn":
+		return "ALTER TABLE t ALTER COLUMN c SET STATISTICS DEFAULT;"
+	case ruleID == "ddl.pg.alter.column.options.valid":
+		return "ALTER TABLE t ALTER COLUMN c SET (n_distinct=-0.5);"
 	case ruleID == "ddl.pg.alter.column.generation.transition.valid":
 		return "ALTER TABLE t ALTER COLUMN plain_not_null_integer ADD GENERATED ALWAYS AS IDENTITY;"
 	case ruleID == "ddl.pg.alter.identity.sequence_options.valid":
@@ -406,6 +422,8 @@ func configExampleForRule(ruleID string, policy domainpolicy.RulePolicy) string 
 
 func remediationForRule(ruleID string) string {
 	switch {
+	case strings.HasPrefix(ruleID, "ddl.pg.alter.column.statistics."), ruleID == "ddl.pg.alter.column.options.valid":
+		return "Resolve exact fresh observed-PG17 column facts; correct known numeric ranges and duplicate SET keys. Statistics above 10000 are clamped, not refused. Preserve unknown/extension/opaque cases as gaps and distinguish RESET removal from SET validation."
 	case strings.HasPrefix(ruleID, "ddl.pg.alter.identity."), ruleID == "ddl.pg.alter.column.generation.transition.valid":
 		return "Resolve exact fresh PG17 ordinary-table and stable sequence facts; correct incompatible targets/options. Review value reuse and blocking for RESTART/CYCLE; START alone is not RESTART. Do not infer current issuance, data, expressions, permissions or unapplied post-state."
 	case ruleID == "ddl.pg.alter.validate_constraint.target.require", ruleID == "ddl.pg.alter.constraint_deferrability.target.require", ruleID == "ddl.pg.alter.drop_constraint.target.require":
@@ -492,6 +510,14 @@ func metadataNotesForRule(ruleID string) *MetadataNotes {
 		return nil
 	}
 	switch ruleID {
+	case "ddl.pg.alter.column.statistics.target.valid", "ddl.pg.alter.column.statistics.clamp.warn", "ddl.pg.alter.column.options.valid":
+		return &MetadataNotes{Kinds: kinds,
+			Required: "Observed PG17 and exact fresh ordinary persistent non-inheritance/non-partition column facts. Intrinsic modeled numeric refusals require the observed version but not an invented catalog.",
+			Missing:  "Unknown/stale/misbound/ambiguous facts or unmodeled/quoted/nonfinite/extension SET values retain unproven_column_tuning gaps (unverified/review). No data/expression/permission or PG post-state inference."}
+	case "ddl.alter.drop_column.exists.require", "ddl.pg.alter.drop_column.advisory":
+		return &MetadataNotes{Kinds: kinds,
+			Required: "For PostgreSQL, exact fresh ordinary-table PG17 column/guard facts distinguish absent unguarded targets from proven IF EXISTS no-ops; only the latter suppress deletion advice. Other dialects retain their existing member-existence semantics.",
+			Missing:  "The PostgreSQL existence check reports unproven_column_target for unknown version/guard/catalog, ambiguity, stale or misbound proof. Conditional advice is not deletion/execution proof; independent forbids stay effective."}
 	case "ddl.pg.alter.column.generation.transition.valid", "ddl.pg.alter.identity.sequence_options.valid", "ddl.pg.alter.identity.restart.warn", "ddl.pg.alter.identity.cycle.warn":
 		return &MetadataNotes{Kinds: kinds,
 			Required: "Observed PG17, exact fresh ordinary persistent non-inheritance/non-partition column facts and actual dependency-bound stable identity sequence parameters. Examples assume these premises; observed version alone suffices for intrinsic options refusals.",
@@ -528,6 +554,8 @@ func metadataNotesForRule(ruleID string) *MetadataNotes {
 
 func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 	switch ruleID {
+	case "ddl.pg.alter.column.statistics.target.valid", "ddl.pg.alter.column.statistics.clamp.warn", "ddl.pg.alter.column.options.valid", "ddl.alter.drop_column.exists.require", "ddl.pg.alter.drop_column.advisory":
+		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true
 	case "ddl.pg.alter.column.generation.transition.valid", "ddl.pg.alter.identity.sequence_options.valid", "ddl.pg.alter.identity.restart.warn", "ddl.pg.alter.identity.cycle.warn":
 		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true
 	case "ddl.pg.alter.validate_constraint.target.require", "ddl.pg.alter.constraint_deferrability.target.require", "ddl.pg.alter.drop_constraint.target.require",
@@ -890,6 +918,10 @@ func sourceForRule() string {
 const unknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
 
 var metadataAwareRuleIDs = map[string]bool{
+	"ddl.pg.alter.column.statistics.target.valid":          true,
+	"ddl.pg.alter.column.statistics.clamp.warn":            true,
+	"ddl.pg.alter.column.options.valid":                    true,
+	"ddl.pg.alter.drop_column.advisory":                    true,
 	"ddl.pg.alter.column.generation.transition.valid":      true,
 	"ddl.pg.alter.identity.sequence_options.valid":         true,
 	"ddl.pg.alter.identity.restart.warn":                   true,

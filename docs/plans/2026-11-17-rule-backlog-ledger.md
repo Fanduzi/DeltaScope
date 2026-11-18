@@ -250,8 +250,16 @@ Fillfactor/access-method copy is corrected without another default predicate.
 The fact seam preserves statistics DEFAULT/value, ordered exact option keys/
 namespaces and value kinds, finite numeric literals and DROP guard/CASCADE;
 quoted payloads/expressions never enter it. No parser expansion or data/
-permission/expression/general-PG-state analysis is approved. Rules/cross-surface/
-corpus, canonical/native/inventory and final delivery remain subsequent work.
+permission/expression/general-PG-state analysis is approved. The shared rules,
+existing-ID DROP/no-op correction, config/catalog, unit/application/SDK/HTTP/MCP,
+six corpus pairs and bilingual/module docs are implemented. An 80-shape/160-CLI
+candidate replay preserves all 72 baseline native SQLSTATEs and audit
+non-execution; quoted/nonfinite/overflow inputs remain honest gaps. Three old
+offline DROP expectations are corrected from false complete to unverified with
+12 additional exact gap assertions: all 118 IDs/profiles/SQL/verdict/finding
+checks remain; corrected T37 is 118/118, 1673 assertions. Neither candidate is
+final delivery. The 18 frozen additions, native canonical/inventory and final
+fixed-HEAD delivery remain subsequent work.
 Other original F09 dimensions continue in the queue, not permanent deferral.
 
 ## Family index

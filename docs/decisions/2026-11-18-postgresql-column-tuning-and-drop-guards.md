@@ -140,6 +140,41 @@ build/default+PG tests/contracts/default+PG lint/format and unchanged T37
 118/118 (1661 assertions) in focused candidate execution. These are fact-seam
 checks, not D6 rule or final aggregate delivery.
 
+### Shared rules and compatibility evidence (candidate, not delivery)
+
+The shared assessment implements the approved defaults and old DROP ID;
+conditional deletion/no-rewrite copy and config/catalog/module/bilingual docs
+are synchronized. Unit and real parser/application/SDK/HTTP/MCP/corpus checks
+cover validity, warning, silence, unknown/version/freshness/guard/opaque and
+privacy branches. Build, default/PG tests, inventory/corpus/catalog contracts,
+default/PG lint and formatting pass. The minimized guarded-absence regression
+failed on both the old blocker and unconditional advisory before the common fix.
+
+An 80-shape/160-CLI candidate replay at base `2299f216` plus the rule worktree
+records the binary/diff hashes in
+`/tmp/ds-pg-d6-rules-scope-2299f216/evidence.json`: 42 native successes/38
+refusals, all original 72 SQLSTATE controls unchanged, catalog/data/file/sentinel
+unchanged after audits and native rollback. Quoted numeric succeeds natively;
+quoted NaN/Infinity and float overflow refuse 22023 but correctly remain
+unverified rather than invented blockers. RESET duplicates succeed. Int32-max
+statistics clamp; out-of-grammar int32 overflow retains parser-error/42601.
+
+The first old-case replay was 115/118 because three offline DROP cases still
+claimed complete coverage despite the newly approved required proof. Retain
+all 118 IDs, profiles, SQL, verdicts, finding counts/entries and checks; correct
+only their aggregate/per-statement coverage to unverified and **add exact gap
+count/attribution/required-fact/no-finding-leak assertions**. Mechanical JSON
+comparison pins those as the sole three object changes. The corrected replay
+passes 118/118, 1673 assertions (12 stronger assertions), at the same base plus
+candidate worktree; neither replay is the final D6 aggregate. The 18 frozen
+additions, exact inventory bindings and fixed-HEAD delivery still follow.
+
+Implementation seams: [shared rules](../../internal/domain/rule/ddl/postgresql_column_tuning_rules.go),
+[unit](../../internal/domain/rule/ddl/postgresql_column_tuning_rules_test.go),
+[pipeline](../../internal/application/audit/column_tuning_postgresql_tag_test.go),
+[corpus](../../testdata/sql-corpus/postgresql/ddl/findings/column_tuning_invalid.expected.yaml)
+and [T37](../../testdata/ddl-golden/T37.json).
+
 ## Consequences
 
 Value ownership, SET versus RESET and guarded absence must remain distinct.

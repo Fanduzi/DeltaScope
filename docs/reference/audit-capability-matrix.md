@@ -49,6 +49,31 @@ For `CREATE TABLE t → PROCEDURE → ADD c → CREATE INDEX idx_c(c)` under the
 | MySQL DROP | complete, lifecycle notice only | pass/complete, nil error | review/unverified, nil error |
 | TiDB DROP | incomplete, vendor boundary | review/incomplete, unsupported error | review/incomplete, unsupported error |
 
+### PostgreSQL column tuning and guarded drops
+
+| Rule | PostgreSQL 17 | MySQL/TiDB | Metadata |
+| --- | --- | --- | --- |
+| `ddl.pg.alter.column.statistics.target.valid` | Proven below-default target/missing-column blocker | Not applicable | Observed PG17; exact fresh target facts for presence |
+| `ddl.pg.alter.column.statistics.clamp.warn` | Warns about native lowering above 10000, not rejection | Not applicable | Exact fresh applicable PG17 target |
+| `ddl.pg.alter.column.options.valid` | Builtin n_distinct/n_distinct_inherited range/duplicate SET key and missing SET/RESET target blocker | Not applicable | Observed PG17; exact fresh target facts for presence |
+| `ddl.alter.drop_column.exists.require` (existing ID) | Guarded proved absence is no-op; unguarded proved absence blocks | Existing semantics unchanged | Exact fresh ordinary-table column/guard/observed PG17 proof |
+
+Approved default-on, no new params. DEFAULT/-1 and normal statistics targets
+are silent; above-maximum values natively clamp. Unknown RESET names are not
+inherently invalid SET values. Unknown/extension SET keys, quoted/nonfinite/
+overflow/unmodeled values and stale/ambiguous/misbound facts retain unverified/
+review `unproven_column_tuning`; DROP proof gaps use `unproven_column_target`.
+A proved DROP IF EXISTS no-op suppresses its old deletion advice; independent
+forbids remain. Prior DDL/parser failures and ALTER siblings do not simulate
+post-state. D5's ordinary persistent non-inheritance/non-partition scope is
+reused; no expression/data/permission analysis or parser expansion is added.
+
+Fillfactor/AM advice is corrected, not new policy: SET fillfactor does not
+itself rewrite existing rows; same-AM and partition settings are not blanket
+rewrite proof. New findings omit values/quoted payloads/provider errors.
+[Decision](../decisions/2026-11-18-postgresql-column-tuning-and-drop-guards.md).
+Broader F09 storage/options/RID/rename/owner/state dimensions remain open.
+
 ### PostgreSQL existing-column generation
 
 | Rule | PostgreSQL | MySQL/TiDB | Metadata |

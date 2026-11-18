@@ -592,6 +592,50 @@ Maintainer notes: [decision](../decisions/2026-11-17-postgresql-alter-constraint
 
 ---
 
+## DDL: PostgreSQL Column Tuning and Guarded Drops (3 new rules)
+
+Default-enabled, parameterless, with real observed PG17 facts:
+
+| Rule | Bounded check | Default level |
+| --- | --- | --- |
+| `ddl.pg.alter.column.statistics.target.valid` | SET STATISTICS below -1 or a proven missing target column | blocker |
+| `ddl.pg.alter.column.statistics.clamp.warn` | Applicable explicit target above 10000 is lowered to 10000 by PostgreSQL | warning |
+| `ddl.pg.alter.column.options.valid` | Known builtin SET n_distinct/n_distinct_inherited range [-1, DBL_MAX], duplicate known keys and proven missing SET/RESET columns | blocker |
+
+DEFAULT, -1 and targets 0..10000 are valid. A larger target is **not** illegal:
+it succeeds with native clamping and a warning. Known-invalid targets suppress
+clamp advice. Ordered duplicate SET keys are not last-wins. RESET removes keys;
+an unknown RESET key is not inherently an invalid SET declaration.
+
+Target-dependent checks use exact fresh ordinary persistent non-inheritance/
+non-partition column facts. Intrinsic modeled numeric refusals require the
+observed PG17 version, not an invented catalog. Unknown/extension SET keys,
+quoted/nonfinite/overflow/unmodeled values or stale/ambiguous/misbound facts
+retain `unproven_column_tuning` gaps (unverified, at least review), requiring
+`instance.version`, `target_table.pg_columns`, `column.statistics_target` or
+`column.options`. Prior related DDL/parser failures and earlier ALTER actions
+withhold old directories without simulating post-state. This does not certify
+sampling effectiveness, data, expressions, privileges or broader table kinds.
+
+The existing `ddl.alter.drop_column.exists.require` keeps its ID/default but
+uses exact fresh PG17 column/guard proof on PostgreSQL. A proven absent column
+with parsed IF EXISTS is a no-op: neither the missing-column blocker nor its
+old deletion advisory fires. Without the guard, proven absence still blocks;
+existing columns retain deletion risk. Unknown proof owes
+`unproven_column_target` (`instance.version`, `target_table.pg_columns` or
+`column.if_exists`), not guessed absence/no-op. MySQL/TiDB behavior and
+independent explicitly enabled forbids remain unchanged. CASCADE is retained,
+not dependency/permission or successful-execution proof.
+
+Storage advice is conditional: SET fillfactor does not itself rewrite existing
+rows; selecting the current access method is not a rewrite, and partitioned
+settings do not themselves rewrite partition data. No extra default predicate
+is introduced. New finding metadata has bounded action/table/schema/column/
+parameter/reason only, not option values, quoted payloads or provider errors.
+
+[Decision and remaining scope](../decisions/2026-11-18-postgresql-column-tuning-and-drop-guards.md).
+Other original F09 dimensions remain open; this is not whole-row support.
+
 ## DDL: PostgreSQL Existing-Column Generation (4 rules)
 
 All four are enabled by default, parameterless, and PG17 metadata-aware.

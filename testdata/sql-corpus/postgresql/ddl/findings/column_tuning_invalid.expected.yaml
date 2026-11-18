@@ -1,0 +1,28 @@
+name: column_tuning_invalid
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    stat_t:
+      exists: true
+      pg_columns: &ordinary
+        ordinary: true
+        columns: [{name: id, identity: '', generated: '', type_width: 64, not_null: false, has_default: false, primary_key: false}]
+    opt_t:
+      exists: true
+      pg_columns: *ordinary
+    dup_t:
+      exists: true
+      pg_columns: *ordinary
+    missing_t:
+      exists: true
+      pg_columns: *ordinary
+expect:
+  parse_ok: true
+  statements: {count: 4}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.column.statistics.target.valid, ddl.pg.alter.column.options.valid, ddl.alter.drop_column.exists.require]
+    exclude: [ddl.pg.alter.column.statistics.clamp.warn]

@@ -20,7 +20,7 @@ func TestAuditSQLCallTextIncludesPostgreSQLDropColumnFinding(t *testing.T) {
 	if !strings.Contains(text, "Audit verdict: review") {
 		t.Fatalf("text missing review verdict: %q", text)
 	}
-	if !strings.Contains(text, `[warning] ddl.pg.alter.drop_column.advisory: DROP COLUMN "email" removes data permanently on PostgreSQL`) {
+	if !strings.Contains(text, `[warning] ddl.pg.alter.drop_column.advisory: DROP COLUMN "email" can permanently remove column data on PostgreSQL`) {
 		t.Fatalf("text missing drop-column finding: %q", text)
 	}
 	if !strings.Contains(text, "Suggestion: Verify no application code, views, or stored procedures reference this column before dropping.") {

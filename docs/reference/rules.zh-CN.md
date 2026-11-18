@@ -574,6 +574,41 @@ FK 告警不放宽 `ddl.table.foreign_key.forbid`；原有 CHECK NOT VALID 和 N
 
 ---
 
+## DDL：PostgreSQL 列调优与 guarded DROP（3 条新规则）
+
+默认开启、无参数，要求真实观测的 PG17：
+
+| 规则 | 限定检查 | 默认级别 |
+| --- | --- | --- |
+| `ddl.pg.alter.column.statistics.target.valid` | SET STATISTICS 小于 -1，或已证明目标列缺失 | blocker |
+| `ddl.pg.alter.column.statistics.clamp.warn` | 适用的显式目标大于 10000，会被原生降至 10000 | warning |
+| `ddl.pg.alter.column.options.valid` | 已知内建 SET n_distinct/n_distinct_inherited 的 [-1, DBL_MAX] 范围、重复已知键及 SET/RESET 已证明缺失的列 | blocker |
+
+DEFAULT、-1、0..10000 合法；大于 10000 不是非法值，原生成功执行并警告降至上限。
+已证明非法目标不再发 clamp 提醒。SET 保留有序重复键，不采用最后值；RESET 是移除，
+未知 RESET 键不能照搬 SET 的非法声明判断。
+
+依赖目标的结论要求精确、新鲜的普通持久非继承/非分区表目录。已建模的内在数值错误
+只需真实观测 PG17，不伪造目录。未知/扩展 SET 键、quoted/nonfinite/overflow/
+unmodeled 值及过期/歧义/错误绑定事实保留 `unproven_column_tuning` gap（unverified、
+至少 review）；所需事实为 `instance.version`、`target_table.pg_columns`、
+`column.statistics_target` 或 `column.options`。相关前序 DDL/parser failure、较早
+ALTER 子动作后撤销旧目录，不模拟后态，不证明采样效果、数据、表达式、权限或更广表类型。
+
+既有 `ddl.alter.drop_column.exists.require` 保留 ID/默认值，但 PostgreSQL 分支改用
+精确新鲜 PG17 列和 guard 证明。已证明缺失且有 parsed IF EXISTS 时是 no-op，不再误发
+缺失 blocker 或删除 advisory；无 guard 的已证明缺失仍拒绝，真实存在列仍保留删除风险。
+未知证明保留 `unproven_column_target`（`instance.version`、`target_table.pg_columns`
+或 `column.if_exists`），不猜缺失/no-op。MySQL/TiDB 以及显式开启的独立 forbid 不变。
+CASCADE 仅被保留，不证明依赖/权限合法或执行成功。
+
+存储说明改为有条件描述：SET fillfactor 本身不立即重写既有行；设置当前 access method
+不重写，分区表设置本身不重写分区数据。不另加默认谓词。新 finding metadata 仅含有界
+动作/表/schema/列/参数名/原因，不含选项数值、quoted 载荷或 provider 错误。
+
+[决策与剩余范围](../decisions/2026-11-18-postgresql-column-tuning-and-drop-guards.md)。
+其余原始 F09 维度继续追踪，不因此升级为整行支持。
+
 ## DDL：PostgreSQL 既有列生成属性（4 条规则）
 
 四条规则均默认开启、无参数，依赖 PG17 元数据。

@@ -1,0 +1,33 @@
+name: column_tuning_controls
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    zero_t:
+      exists: true
+      pg_columns: &ordinary
+        ordinary: true
+        columns: [{name: id, identity: '', generated: '', type_width: 64, not_null: false, has_default: false, primary_key: false}]
+    default_t:
+      exists: true
+      pg_columns: *ordinary
+    limit_t:
+      exists: true
+      pg_columns: *ordinary
+    options_t:
+      exists: true
+      pg_columns: *ordinary
+    reset_t:
+      exists: true
+      pg_columns: *ordinary
+    guard_t:
+      exists: true
+      pg_columns: {ordinary: true, columns: []}
+expect:
+  parse_ok: true
+  statements: {count: 6}
+  unsupported: {count: 0}
+  findings:
+    exclude: [ddl.pg.alter.column.statistics.target.valid, ddl.pg.alter.column.statistics.clamp.warn, ddl.pg.alter.column.options.valid, ddl.alter.drop_column.exists.require, ddl.pg.alter.drop_column.advisory]

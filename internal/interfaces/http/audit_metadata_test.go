@@ -15,6 +15,7 @@ import (
 )
 
 type metadataAuditTestClient struct {
+	version        string
 	closed         bool
 	detectDialect  spec.Dialect
 	tableCalls     []string
@@ -28,6 +29,9 @@ type metadataAuditTestClient struct {
 }
 
 func (c *metadataAuditTestClient) LoadInstanceFacts(_ context.Context, dialect spec.Dialect, _ string) (*spec.InstanceFacts, error) {
+	if c.version != "" {
+		return &spec.InstanceFacts{Version: c.version}, nil
+	}
 	// Mirror real servers: a TiDB endpoint reports its compatibility banner,
 	// anything else is a plain MySQL banner.
 	version := "8.0.36"

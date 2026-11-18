@@ -3,6 +3,20 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D6 tuning / DROP guard compatibility
+
+D6 retains all 118 prior IDs and profiles. Its approved proof requirement
+corrects only three offline DROP expectations (`alter-table-columns-drop-column`,
+`alter-table-columns-drop-column-if-exists-cascade`,
+`alter-table-columns-multi-action`): aggregate/statement coverage becomes
+unverified and exact gap count, attribution and `instance.version` fact checks
+are added. Their SQL/verdict/finding counts/entries and other checks are not
+weakened. The first replay's 115/118 failure remains recorded; corrected
+candidate replay is 118/118, **1673 assertions** (12 added). These candidate
+artifacts do not replace final same-HEAD aggregate evidence. The 18 D6 case IDs
+were frozen in the [decision](../../docs/decisions/2026-11-18-postgresql-column-tuning-and-drop-guards.md)
+before implementation; native additions/inventory/final delivery are pending.
+
 ## T37 PostgreSQL existing-column generation contract
 
 D5 preserves all 94 prior cases, their required IDs and independent profiles.

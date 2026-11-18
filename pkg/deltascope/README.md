@@ -35,6 +35,7 @@ Stable public package surface for library consumers.
 | query_access_online_session_postgresql_integration_test.go | Real PG17 same-backend-session proof, COUNT(1)/excluded-shape/parse-failure/foreign-table evidence, and unified-versus-legacy equivalence for the unified online entry (postgresql + integration build tags) |
 | version.go | Publishes `ReportedVersion()`, the `DefaultVersion` fallback, and the canonical ASCII logo |
 | version_test.go | Verifies untagged, devel, and pseudo-version builds do not claim `DefaultVersion` as the sole version, and that tagged versions and the absent-build-info fallback stay intact |
+| audit_column_tuning_postgresql_tag_test.go | Public SDK proof for D6 statistics/options/clamp and existing-ID DROP target/guard/no-op/unverified protocol without private value/catalog leakage |
 | audit_column_generation_postgresql_tag_test.go | Public SDK proof for D5 target/options blockers, RESTART/CYCLE warnings and unknown-catalog unverified/review protocol |
 | audit_column_catalog_test.go | Pins public generation-directory alias construction, nil/known-empty and nested sequence-definition clone ownership, and JSON exclusion |
 | audit_constraint_target_postgresql_tag_test.go | Public target blockers/no-ops, exact gaps/partial-parser sibling retention, finding privacy and owned nil/empty directory cloning |

@@ -2131,10 +2131,12 @@
     "findings": 2,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete"
+     "unverified"
     ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["instance.version"]}],
     "statement_sql": [
      "ALTER TABLE users DROP COLUMN email"
     ],
@@ -2163,10 +2165,12 @@
     "findings": 2,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete"
+     "unverified"
     ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["instance.version"]}],
     "statement_sql": [
      "ALTER TABLE users DROP COLUMN IF EXISTS email CASCADE"
     ],
@@ -2286,10 +2290,12 @@
     "findings": 3,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete"
+     "unverified"
     ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["instance.version"]}],
     "statement_sql": [
      "ALTER TABLE users ADD COLUMN email text, DROP COLUMN old"
     ],

@@ -1024,6 +1024,16 @@ rules:
   ddl.pg.alter.drop_constraint.target.require:
     enabled: true
     level: blocker
+  # PG17 tuning: numeric declaration checks, exact fresh column targets; unknowns stay gaps.
+  ddl.pg.alter.column.statistics.target.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.alter.column.statistics.clamp.warn:
+    enabled: true
+    level: warning
+  ddl.pg.alter.column.options.valid:
+    enabled: true
+    level: blocker
   # PG17 existing-column generation: exact fresh ordinary-table facts; unknowns stay gaps.
   # Stable identity-sequence parameters only; no current-value/data/expression/permission analysis.
   ddl.pg.alter.column.generation.transition.valid:

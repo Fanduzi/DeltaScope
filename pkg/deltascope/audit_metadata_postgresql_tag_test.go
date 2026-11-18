@@ -84,7 +84,8 @@ func TestAuditPostgreSQLMetadataRequiresExistingColumnForRenameColumn(t *testing
 
 func TestAuditPostgreSQLMetadataRequiresExistingColumnForDropColumn(t *testing.T) {
 	provider := &fakeMetadataProvider{
-		snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+		instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+		snapshot: &TableSnapshot{Schema: "public", PGColumns: &PGColumnCatalog{Ordinary: true, Columns: []PGColumnState{{Name: "email"}}}, Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table: &Table{Name: "users"},
 			Columns: []Column{
 				{Name: "email"},

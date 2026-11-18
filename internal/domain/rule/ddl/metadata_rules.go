@@ -145,6 +145,9 @@ func (r alterObjectExistenceRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if statement.Dialect == spec.DialectPostgreSQL && r.ruleID == ruleIDAlterDropColumnExistsRequire {
+		return r.evaluatePGDropColumn(ctx, statement)
+	}
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -232,6 +235,9 @@ func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.S
 // "checked". A confirmed-absent table is a settled parent failure and adds
 // no member gap.
 func (r alterObjectExistenceRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if statement.Dialect == spec.DialectPostgreSQL && r.ruleID == ruleIDAlterDropColumnExistsRequire {
+		return pgDropColumnEvidenceGaps(statement)
+	}
 	if !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) {
 		return nil
 	}

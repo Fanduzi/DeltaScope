@@ -1,0 +1,8 @@
+name: pg_column_tuning_nonapplicable
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  unsupported: {count: 0}
+  findings:
+    exclude: [ddl.pg.alter.column.statistics.target.valid, ddl.pg.alter.column.statistics.clamp.warn, ddl.pg.alter.column.options.valid]

@@ -59,6 +59,11 @@ func (r pgAlterActionAdvisoryRule) Evaluate(ctx context.Context, statement spec.
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
+		if r.id == ruleIDPGAlterDropColumnAdvisory {
+			if noop, _, _ := pgDropColumnTarget(statement, i); noop {
+				continue
+			}
+		}
 		if r.id == ruleIDPGAlterValidateConstraintAdvisory {
 			member, known := pgConstraintTargetState(statement, i)
 			if known && pgConstraintTargetVersionKnown(statement) && member != nil && (member.Type == "c" || member.Type == "f") && member.Validated {
@@ -159,9 +164,9 @@ func (r pgAlterAddColumnNullableNoticeRule) Evaluate(ctx context.Context, statem
 func newDropColumnAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return newPGAlterActionAdvisoryRule(
 		ruleIDPGAlterDropColumnAdvisory, rule.LevelWarning, "drop_column", "column",
-		"DROP COLUMN %q removes data permanently on PostgreSQL",
-		"Dropping a column in PostgreSQL marks it as logically dead. Existing rows retain the data on disk until VACUUM reclaims space, but the column is immediately invisible to queries.",
-		"Any application code, views, or stored procedures referencing this column will break. Data in the dropped column is permanently lost and cannot be recovered without a backup.",
+		"DROP COLUMN %q can permanently remove column data on PostgreSQL",
+		"Dropping an existing column makes it unavailable to queries; a proven absent-column IF EXISTS operation is a no-op. A table rewrite can reclaim dropped-column storage, but ordinary VACUUM need not reclaim its space immediately.",
+		"A successful drop can break application references and lose column data. RESTRICT can refuse catalog-tracked dependencies; CASCADE can remove dependent objects. This advice does not prove dependency or permission legality.",
 		"Verify no application code, views, or stored procedures reference this column before dropping. Consider a two-step deprecation: 1) Mark the column as deprecated in documentation. 2) Drop in a subsequent release after all references are removed.",
 		cfg,
 	)
@@ -353,9 +358,9 @@ func newSetTablespaceNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, erro
 func newSetAccessMethodWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return newPGAlterStorageLayoutRule(
 		ruleIDPGAlterSetAccessMethodWarn, rule.LevelWarning, "set_access_method", "access_method",
-		"ALTER TABLE SET ACCESS METHOD %s on PostgreSQL — table will be rewritten",
-		"SET ACCESS METHOD changes how the table's data is stored on disk. PostgreSQL rewrites the entire table using the new access method, requiring an ACCESS EXCLUSIVE lock.",
-		"The table is inaccessible during the rewrite. All data is copied, which can be expensive for large tables. Changing to an incompatible access method may cause data loss or corruption.",
+		"ALTER TABLE SET ACCESS METHOD %s on PostgreSQL — changing a stored table's method can require a rewrite",
+		"Changing the access method of a stored table can rewrite its contents under an ACCESS EXCLUSIVE lock. Selecting the current method is not a rewrite; partitioned-table settings concern future partitions rather than rewriting partition data.",
+		"A required rewrite can be expensive and block access. This advice does not prove target-method availability, compatibility, permissions or successful execution.",
 		"Verify the target access method is installed and compatible with the table's schema. Schedule during a maintenance window and test on a non-production copy first.",
 		cfg,
 	)
@@ -366,8 +371,8 @@ func newSetReloptionsWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error)
 		ruleIDPGAlterSetReloptionsWarn, rule.LevelWarning, "set_reloptions", "option_count",
 		"ALTER TABLE SET (...) on PostgreSQL — %s storage option(s) changed",
 		"SET (reloptions) changes table storage parameters such as fillfactor or autovacuum settings. These affect how PostgreSQL stores and maintains the table on disk.",
-		"Incorrect storage parameters can degrade performance or cause unexpected behavior. Some options require a table rewrite (e.g. fillfactor) or take effect only after the next VACUUM.",
-		"Review each storage parameter change against the table's workload profile. Apply fillfactor changes during a maintenance window if the table is large.",
+		"Incorrect storage parameters can degrade performance. SET fillfactor does not itself rewrite existing rows; it changes how future pages are filled. Other parameters have their own timing and maintenance behavior.",
+		"Review each parameter against the workload. If reorganizing existing pages is intended, plan the separate maintenance/rewrite operation explicitly rather than assuming SET fillfactor performs it.",
 		cfg,
 	)
 }

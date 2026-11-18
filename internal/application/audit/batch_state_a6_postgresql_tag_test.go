@@ -1,6 +1,7 @@
 //go:build postgresql
 
-// Package audit verifies that T05-A6 DROP COLUMN state stays off the PostgreSQL path.
+// Package audit verifies PG keeps its legacy cache, not MySQL ordered state,
+// while the approved D6 existence check explicitly owes exact PG proof.
 package audit
 
 import (
@@ -10,7 +11,7 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
-func TestBatchStateA6PostgreSQLDropColumnKeepsLegacyContract(t *testing.T) {
+func TestBatchStateA6PostgreSQLDropColumnKeepsCacheAndOwesPGProof(t *testing.T) {
 	t.Parallel()
 	policy := t05A6SixRulePolicy(t)
 	sql := "ALTER TABLE t DROP COLUMN obsolete;"
@@ -21,8 +22,9 @@ func TestBatchStateA6PostgreSQLDropColumnKeepsLegacyContract(t *testing.T) {
 		if err != nil {
 			t.Fatalf("audit: %v", err)
 		}
-		if len(result.Statements[0].EvidenceGaps) != 0 {
-			t.Fatalf("providerless PostgreSQL DROP COLUMN must not gain an ordered-state gap, got %+v", result.Statements[0].EvidenceGaps)
+		gaps := result.Statements[0].EvidenceGaps
+		if len(gaps) != 1 || gaps[0].RuleID != t05RuleDropColumnExists || gaps[0].ReasonCode != "unproven_column_target" || len(gaps[0].RequiredFacts) != 1 || gaps[0].RequiredFacts[0] != "instance.version" {
+			t.Fatalf("providerless PG DROP owes observed PG proof, not guessed ordered state: %+v", gaps)
 		}
 	})
 	t.Run("schema only", func(t *testing.T) {
@@ -31,8 +33,9 @@ func TestBatchStateA6PostgreSQLDropColumnKeepsLegacyContract(t *testing.T) {
 		if err != nil {
 			t.Fatalf("audit: %v", err)
 		}
-		if len(result.Statements[0].EvidenceGaps) != 0 {
-			t.Fatalf("schema-only PostgreSQL DROP COLUMN must not gain an ordered-state gap, got %+v", result.Statements[0].EvidenceGaps)
+		gaps := result.Statements[0].EvidenceGaps
+		if len(gaps) != 1 || gaps[0].RuleID != t05RuleDropColumnExists || gaps[0].ReasonCode != "unproven_column_target" || len(gaps[0].RequiredFacts) != 1 || gaps[0].RequiredFacts[0] != "instance.version" {
+			t.Fatalf("schema-only PG DROP owes observed PG proof: %+v", gaps)
 		}
 	})
 	t.Run("provider snapshot stays on the legacy request cache", func(t *testing.T) {
@@ -61,8 +64,9 @@ func TestBatchStateA6PostgreSQLDropColumnKeepsLegacyContract(t *testing.T) {
 			t.Fatalf("expected 2 statements, got %d", len(result.Statements))
 		}
 		for index, statement := range result.Statements {
-			if len(statement.EvidenceGaps) != 0 {
-				t.Fatalf("statement %d gained an ordered-state gap, got %+v", index, statement.EvidenceGaps)
+			gaps := statement.EvidenceGaps
+			if len(gaps) != 1 || gaps[0].RuleID != t05RuleDropColumnExists || gaps[0].ReasonCode != "unproven_column_target" || len(gaps[0].RequiredFacts) != 1 || gaps[0].RequiredFacts[0] != "instance.version" {
+				t.Fatalf("statement %d cannot promote legacy cache to exact PG proof: %+v", index, gaps)
 			}
 			if len(t05FindingsByRule(result, index, t05RuleDropColumnExists)) != 0 {
 				t.Fatalf("statement %d reported obsolete absent, got %#v", index, statement.Findings)

@@ -22,6 +22,7 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 | `server_test.go` | Verifies MCP bootstrap, registration, metadata-aware context, and parser-error partial-result preservation |
 | `server_unsupported_diagnostics_evidence_test.go` | Verifies MCP parser errors preserve review-floored partial results, audited siblings/findings, context, structured error signaling, locations, and no-leak boundaries |
 | `server_unsupported_verdict_floor_postgresql_tag_test.go` | Verifies MCP PostgreSQL `SELECT 1` keeps tool-error signaling and serializes the review-floored unsupported result with the retained incomplete-coverage statement |
+| `audit_column_tuning_postgresql_tag_test.go` | MCP audit_sql structured proof for D6 statistics/options/clamp and old DROP ID, guarded no-op and unknown proof without numeric/private metadata |
 | `audit_column_generation_postgresql_tag_test.go` | Pins D5 target/options blockers, RESTART/CYCLE warnings and unknown-catalog gaps over real MCP audit_sql structured results |
 | `audit_constraint_target_postgresql_tag_test.go` | Prepared-provider→SDK→MCP parity for target blockers, guarded no-op silence and unverified/review gaps without protocol errors |
 | `audit_constraint_migration_postgresql_tag_test.go` | Shared PG primary-key build warning and USING INDEX silent arm reach structured MCP results unchanged |
