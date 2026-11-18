@@ -835,7 +835,7 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 	case pg_query.AlterTableType_AT_DropColumn:
 		return spec.Alter{Action: "drop_column", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}}, true, nil
 	case pg_query.AlterTableType_AT_DropExpression:
-		return spec.Alter{Action: "drop_expression", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}}, true, nil
+		return spec.Alter{Action: "drop_expression", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}, PGColumnTransition: pgColumnTransitionFromCmd(cmd)}, true, nil
 	case pg_query.AlterTableType_AT_SetExpression:
 		columnName := cmd.GetName()
 		if columnName == "" {
@@ -853,15 +853,16 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 	case pg_query.AlterTableType_AT_SetIdentity:
 		generatedWhen := generatedWhenFromDef(cmd.GetDef())
 		return spec.Alter{
-			Action: "set_generated",
-			Name:   cmd.GetName(),
-			Column: &spec.AlterColumn{OldName: cmd.GetName()},
+			Action:             "set_generated",
+			Name:               cmd.GetName(),
+			Column:             &spec.AlterColumn{OldName: cmd.GetName()},
+			PGColumnTransition: pgColumnTransitionFromCmd(cmd),
 			Options: map[string]string{
 				"generated_when": generatedWhen,
 			},
 		}, true, nil
 	case pg_query.AlterTableType_AT_DropIdentity:
-		return spec.Alter{Action: "drop_identity", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}}, true, nil
+		return spec.Alter{Action: "drop_identity", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}, PGColumnTransition: pgColumnTransitionFromCmd(cmd)}, true, nil
 	case pg_query.AlterTableType_AT_AddIdentity:
 		columnName := cmd.GetName()
 		if columnName == "" {
@@ -875,10 +876,11 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			options["generated_when"] = generatedWhen
 		}
 		return spec.Alter{
-			Action:  "add_identity",
-			Name:    columnName,
-			Column:  &spec.AlterColumn{OldName: columnName},
-			Options: options,
+			Action:             "add_identity",
+			Name:               columnName,
+			Column:             &spec.AlterColumn{OldName: columnName},
+			Options:            options,
+			PGColumnTransition: pgColumnTransitionFromCmd(cmd),
 		}, true, nil
 	case pg_query.AlterTableType_AT_AddConstraint:
 		constraint := cmd.GetDef().GetConstraint()
@@ -953,11 +955,11 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		if cmd.GetDef() == nil {
 			action = "drop_default"
 		}
-		return spec.Alter{Action: action, Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Change: &spec.AlterColumnChange{TouchesDefault: true}}}, true, nil
+		return spec.Alter{Action: action, Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Change: &spec.AlterColumnChange{TouchesDefault: true}}, PGColumnTransition: pgColumnTransitionFromCmd(cmd)}, true, nil
 	case pg_query.AlterTableType_AT_SetNotNull:
-		return spec.Alter{Action: "set_not_null", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Definition: &spec.Column{Name: cmd.GetName(), NotNull: true}, Change: &spec.AlterColumnChange{TouchesNullability: true}}}, true, nil
+		return spec.Alter{Action: "set_not_null", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Definition: &spec.Column{Name: cmd.GetName(), NotNull: true}, Change: &spec.AlterColumnChange{TouchesNullability: true}}, PGColumnTransition: pgColumnTransitionFromCmd(cmd)}, true, nil
 	case pg_query.AlterTableType_AT_DropNotNull:
-		return spec.Alter{Action: "drop_not_null", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Definition: &spec.Column{Name: cmd.GetName(), NotNull: false}, Change: &spec.AlterColumnChange{TouchesNullability: true}}}, true, nil
+		return spec.Alter{Action: "drop_not_null", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Definition: &spec.Column{Name: cmd.GetName(), NotNull: false}, Change: &spec.AlterColumnChange{TouchesNullability: true}}, PGColumnTransition: pgColumnTransitionFromCmd(cmd)}, true, nil
 	case pg_query.AlterTableType_AT_ChangeOwner:
 		owner := ""
 		if no := cmd.GetNewowner(); no != nil {

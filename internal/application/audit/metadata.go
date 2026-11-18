@@ -224,7 +224,7 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 	}
 
 	if dialect == spec.DialectPostgreSQL {
-		invalidateStalePGConstraints(enriched, failures)
+		invalidateStalePGTargetCatalogs(enriched, failures)
 	}
 	return enriched, nil
 }

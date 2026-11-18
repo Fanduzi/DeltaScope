@@ -87,7 +87,7 @@ func pgIdentityOption(d *pg_query.DefElem) (spec.SequenceOption, bool) {
 	kinds := map[string]spec.SequenceOptionKind{
 		"increment": spec.SequenceOptionIncrementBy, "start": spec.SequenceOptionStartWith,
 		"minvalue": spec.SequenceOptionMinValue, "maxvalue": spec.SequenceOptionMaxValue,
-		"cache": spec.SequenceOptionCache,
+		"cache": spec.SequenceOptionCache, "restart": spec.SequenceOptionRestartWith,
 	}
 	kind, ok := kinds[d.GetDefname()]
 	if !ok {
@@ -99,6 +99,8 @@ func pgIdentityOption(d *pg_query.DefElem) (spec.SequenceOption, bool) {
 			return spec.SequenceOption{Kind: spec.SequenceOptionNoMinValue}, true
 		case spec.SequenceOptionMaxValue:
 			return spec.SequenceOption{Kind: spec.SequenceOptionNoMaxValue}, true
+		case spec.SequenceOptionRestartWith:
+			return spec.SequenceOption{Kind: spec.SequenceOptionRestart}, true
 		}
 		return unknown, false
 	}

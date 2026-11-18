@@ -168,6 +168,9 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, _ spec.Dialect, schema
 	if err := p.loadPGConstraintStates(ctx, snapshot); err != nil {
 		return nil, fmt.Errorf("load table %s.%s constraint states: %w", snapshot.Schema, snapshot.Table.Name, err)
 	}
+	if err := p.loadPGColumnCatalog(ctx, snapshot); err != nil {
+		return nil, fmt.Errorf("load table %s.%s column generation states: %w", snapshot.Schema, snapshot.Table.Name, err)
+	}
 	if err := p.loadIndexes(ctx, snapshot); err != nil {
 		return nil, fmt.Errorf("load table %s.%s indexes: %w", snapshot.Schema, snapshot.Table.Name, err)
 	}

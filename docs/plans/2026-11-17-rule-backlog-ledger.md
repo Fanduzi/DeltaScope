@@ -155,6 +155,35 @@ Milestone diff `8aa9e3c8...aa7f8872` is 69 paths; the final review-fix task
 seven). This is historical D4 evidence, not aggregate proof for a later docs
 commit. **F09 remains open**; no other dimension or whole row is completed.
 
+### D5 approved column-generation transitions (not delivered)
+
+After 45 PG17.7 shapes, 90 actual offline/metadata-aware CLI probes and six
+normalized-spec collapse counterexamples at `aa7f8872`, the operator approved
+four enabled-by-default, parameterless rules: blocker
+`ddl.pg.alter.column.generation.transition.valid`, blocker
+`ddl.pg.alter.identity.sequence_options.valid`, warning
+`ddl.pg.alter.identity.restart.warn`, and warning
+`ddl.pg.alter.identity.cycle.warn`. [Accepted decision and frozen 24 additive
+T37 IDs](../decisions/2026-11-18-postgresql-column-generation-transitions.md).
+
+The accepted stage uses exact fresh PG17 facts for ordinary persistent,
+non-inheritance/non-partition tables and dependency-bound stable sequence
+parameters. No expression/permission/data analysis, current-counter read or
+general PG post-state is authorized. Unknown/stale/ambiguous facts, bounds
+changes needing an unread current value, and nullable SET NOT NULL data
+proof remain explicit gaps. Existing blanket forbids stay independent; D2
+CREATE/ADD COLUMN predicates remain unchanged. Stage boundaries are not
+permanent deferrals or completed dimensions.
+
+The fact seam preserves guards, duplicate modes/options, int64 values and
+START versus RESTART without changing JSON projections; the private directory
+and nested definitions are cloned by application/SDK and invalidated after
+unapplied related DDL/parser failures. Model/parser/provider/application/SDK
+checks and a native renamed/mismatched-type sequence oracle validate this
+seam, not rule delivery. All four rules, corpus/canonical additions, exact
+inventory evidence and final same-HEAD delivery chain remain pending. No row,
+cell status or original denominator is promoted by facts alone.
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.

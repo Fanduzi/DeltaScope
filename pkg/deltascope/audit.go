@@ -95,6 +95,19 @@ type TableSnapshot = spec.TableSnapshot
 // TableSnapshot.PGConstraints remains excluded from serialized metadata.
 type PGConstraintState = spec.PGConstraintState
 
+// PGColumnCatalog and its members expose bounded PG17 catalog evidence to
+// custom providers; TableSnapshot.PGColumns never enters serialized metadata.
+type PGColumnCatalog = spec.PGColumnCatalog
+
+// PGColumnState contains exact-name column generation facts, not expressions.
+type PGColumnState = spec.PGColumnState
+
+// PGIdentitySequenceState contains stable dependency-bound sequence parameters.
+type PGIdentitySequenceState = spec.PGIdentitySequenceState
+
+// SequenceDefinition carries stable parameters only, never issuance position.
+type SequenceDefinition = spec.SequenceDefinition
+
 // ViewSnapshot carries private view-definition facts for metadata providers.
 type ViewSnapshot = spec.ViewSnapshot
 
@@ -529,6 +542,7 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 	}
 	out := *in
 	out.View = spec.CloneViewSnapshot(in.View)
+	out.PGColumns = in.PGColumns.Clone()
 	if in.Table != nil {
 		table := *in.Table
 		out.Table = &table

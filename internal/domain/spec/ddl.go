@@ -983,6 +983,8 @@ type Alter struct {
 	// alter specs (ADD CONSTRAINT ...) so coverage and rules can see the
 	// constraint type even when no index definition is produced.
 	Constraint *Constraint `json:"constraint,omitempty"`
+	// PGColumnTransition retains lossless authored generation-transition facts.
+	PGColumnTransition *PGColumnTransition `json:"-"`
 	// Constraints carries CHECK members declared inside column definitions
 	// of the same alter spec (ADD/MODIFY/CHANGE COLUMN ... CHECK(...)) —
 	// the in-column form the catalog stores as a table-level CHECK member.

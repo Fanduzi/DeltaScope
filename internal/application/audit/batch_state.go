@@ -3879,6 +3879,7 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 	}
 	out := *in
 	out.View = spec.CloneViewSnapshot(in.View)
+	out.PGColumns = in.PGColumns.Clone()
 	if in.PGConstraints != nil {
 		out.PGConstraints = make([]spec.PGConstraintState, len(in.PGConstraints))
 		copy(out.PGConstraints, in.PGConstraints)

@@ -2,9 +2,9 @@ package audit
 
 import "github.com/Fanduzi/DeltaScope/internal/domain/spec"
 
-// invalidateStalePGConstraints withholds catalog proof after unapplied DDL;
-// it never predicts a post-state or mutates the provider's cached snapshot.
-func invalidateStalePGConstraints(statements []spec.Statement, failures []parseFailure) {
+// invalidateStalePGTargetCatalogs withholds column/constraint proof after unapplied
+// DDL; it never predicts a post-state or mutates the provider's cached snapshot.
+func invalidateStalePGTargetCatalogs(statements []spec.Statement, failures []parseFailure) {
 	stale := make(map[[2]string]bool)
 	allStale := false
 	var earliest *parseFailure
@@ -28,6 +28,7 @@ func invalidateStalePGConstraints(statements []spec.Statement, failures []parseF
 				metadata := *m
 				snapshot := *m.TargetTable
 				snapshot.PGConstraints = nil
+				snapshot.PGColumns = nil
 				metadata.TargetTable = &snapshot
 				statements[i].Metadata = &metadata
 			}

@@ -17,7 +17,7 @@ func pgConstraintMetadataStatement(schema, table, action string, snapshot *spec.
 func TestPGConstraintMetadataFreshness(t *testing.T) {
 	for _, name := range []string{"same target", "other target", "other schema", "quoted identity", "unsupported", "drop cascade", "drop table", "rename", "omitted targets", "read only", "prior failure", "later failure"} {
 		t.Run(name, func(t *testing.T) {
-			source := &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: []spec.PGConstraintState{{Name: "ck", Type: "c", Validated: true}}}
+			source := &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: []spec.PGConstraintState{{Name: "ck", Type: "c", Validated: true}}, PGColumns: &spec.PGColumnCatalog{Ordinary: true, Columns: []spec.PGColumnState{}}}
 			first := pgConstraintMetadataStatement("app", "t", "add_constraint", source)
 			second := pgConstraintMetadataStatement("app", "t", "validate_constraint", source)
 			second.Line = 3
@@ -63,11 +63,11 @@ func TestPGConstraintMetadataFreshness(t *testing.T) {
 				first.DDL.Table.Name = "unrelated"
 			}
 			statements := []spec.Statement{first, second}
-			invalidateStalePGConstraints(statements, failures)
-			if (statements[1].Metadata.TargetTable.PGConstraints == nil) != wantStale {
+			invalidateStalePGTargetCatalogs(statements, failures)
+			if (statements[1].Metadata.TargetTable.PGConstraints == nil) != wantStale || (statements[1].Metadata.TargetTable.PGColumns == nil) != wantStale {
 				t.Fatalf("stale=%v expected=%v", statements[1].Metadata.TargetTable.PGConstraints == nil, wantStale)
 			}
-			if statements[0].Metadata.TargetTable.PGConstraints == nil || len(source.PGConstraints) != 1 || !source.PGConstraints[0].Validated {
+			if statements[0].Metadata.TargetTable.PGConstraints == nil || statements[0].Metadata.TargetTable.PGColumns == nil || source.PGColumns == nil || len(source.PGConstraints) != 1 || !source.PGConstraints[0].Validated {
 				t.Fatal("provider or earlier statement mutated")
 			}
 		})
@@ -83,14 +83,14 @@ func TestPGConstraintFailureOrdering(t *testing.T) {
 		{[]parseFailure{{Line: 5, Column: 1}, {Line: 4, Column: 1}}, false, false},
 		{[]parseFailure{{Line: 5, Column: 1}, {Line: 0}}, true, true},
 	} {
-		source := &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: []spec.PGConstraintState{}}
+		source := &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: []spec.PGConstraintState{}, PGColumns: &spec.PGColumnCatalog{Ordinary: true, Columns: []spec.PGColumnState{}}}
 		prefix := pgConstraintMetadataStatement("app", "t", "", source)
 		prefix.Kind, prefix.DDL = spec.KindDML, nil
 		target := pgConstraintMetadataStatement("app", "t", "validate_constraint", source)
 		target.Line = 3
 		statements := []spec.Statement{prefix, target}
-		invalidateStalePGConstraints(statements, tc.failures)
-		if (statements[0].Metadata.TargetTable.PGConstraints == nil) != tc.prefixStale || (statements[1].Metadata.TargetTable.PGConstraints == nil) != tc.targetStale || source.PGConstraints == nil {
+		invalidateStalePGTargetCatalogs(statements, tc.failures)
+		if (statements[0].Metadata.TargetTable.PGConstraints == nil) != tc.prefixStale || (statements[1].Metadata.TargetTable.PGConstraints == nil) != tc.targetStale || (statements[0].Metadata.TargetTable.PGColumns == nil) != tc.prefixStale || (statements[1].Metadata.TargetTable.PGColumns == nil) != tc.targetStale || source.PGConstraints == nil || source.PGColumns == nil {
 			t.Fatalf("lost earliest-failure/prefix proof: %+v", tc)
 		}
 	}

@@ -142,6 +142,14 @@ func TestLoadTableSnapshotUsesCatalogsAndPlannerStats(t *testing.T) {
 				{"created_at", "timestamp with time zone", nil, nil, nil, false, "CURRENT_TIMESTAMP", false, "creation time"},
 			},
 		},
+		"as generation_ordinary": {
+			columns: pgColumnCatalogTestColumns,
+			rows: [][]driver.Value{
+				pgColumnCatalogTestRow("id", "", "", 23, true, true, true, false),
+				pgColumnCatalogTestRow("email", "", "", 1043, true, false, false, false),
+				pgColumnCatalogTestRow("created_at", "", "", 1184, true, true, false, false),
+			},
+		},
 		"from pg_catalog.pg_constraint pc": {
 			columns: []string{"conname", "contype", "convalidated"},
 			rows:    [][]driver.Value{{"users_pk_constraint", "p", true}, {"users_check", "c", false}},
@@ -201,6 +209,9 @@ func TestLoadTableSnapshotUsesCatalogsAndPlannerStats(t *testing.T) {
 	}
 	if len(snapshot.Constraints) != 1 || snapshot.Constraints[0].Type != "primary_key" || snapshot.Constraints[0].Name != "users_pk_constraint" {
 		t.Fatalf("expected primary key constraint metadata, got %#v", snapshot.Constraints)
+	}
+	if snapshot.PGColumns == nil || len(snapshot.PGColumns.Columns) != 3 || snapshot.PGColumns.Columns[0].Identity != "" || !snapshot.PGColumns.Columns[0].PrimaryKey {
+		t.Fatalf("expected exact generation directory, not serial-to-identity inference: %+v", snapshot.PGColumns)
 	}
 	if len(snapshot.PGConstraints) != 2 || snapshot.PGConstraints[1].Type != "c" || snapshot.PGConstraints[1].Validated {
 		t.Fatalf("expected full bounded constraint state directory, got %#v", snapshot.PGConstraints)
@@ -300,10 +311,11 @@ func TestParseExplainEstimatedRowsUsesLargestMatch(t *testing.T) {
 }
 
 type testQueryResult struct {
-	columns []string
-	rows    [][]driver.Value
-	err     error
-	rowErr  error
+	columns  []string
+	rows     [][]driver.Value
+	err      error
+	rowErr   error
+	closeErr error
 }
 
 type testDriver struct{}
@@ -314,10 +326,11 @@ type testConn struct {
 }
 
 type testRows struct {
-	columns []string
-	rows    [][]driver.Value
-	index   int
-	rowErr  error
+	columns  []string
+	rows     [][]driver.Value
+	index    int
+	rowErr   error
+	closeErr error
 }
 
 type testQueryLog struct {
@@ -372,10 +385,11 @@ func registerTestDriverResults(name string, results map[string]testQueryResult) 
 			rows[i] = append([]driver.Value(nil), result.rows[i]...)
 		}
 		cloned[key] = testQueryResult{
-			columns: append([]string(nil), result.columns...),
-			rows:    rows,
-			err:     result.err,
-			rowErr:  result.rowErr,
+			columns:  append([]string(nil), result.columns...),
+			rows:     rows,
+			err:      result.err,
+			rowErr:   result.rowErr,
+			closeErr: result.closeErr,
 		}
 	}
 	testDriverResults.Store(name, cloned)
@@ -407,9 +421,10 @@ func (c testConn) QueryContext(_ context.Context, query string, _ []driver.Named
 				return nil, result.err
 			}
 			return &testRows{
-				columns: append([]string(nil), result.columns...),
-				rows:    append([][]driver.Value(nil), result.rows...),
-				rowErr:  result.rowErr,
+				columns:  append([]string(nil), result.columns...),
+				rows:     append([][]driver.Value(nil), result.rows...),
+				rowErr:   result.rowErr,
+				closeErr: result.closeErr,
 			}, nil
 		}
 	}
@@ -420,7 +435,7 @@ func (r *testRows) Columns() []string {
 	return append([]string(nil), r.columns...)
 }
 
-func (r *testRows) Close() error { return nil }
+func (r *testRows) Close() error { return r.closeErr }
 
 func (r *testRows) Next(dest []driver.Value) error {
 	if r.index >= len(r.rows) {

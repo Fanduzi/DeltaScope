@@ -12,6 +12,8 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 | parser_constraint_target_postgresql_tag_test.go | Pins DROP constraint guard/CASCADE/RESTRICT/omission and exact quoted names without widening parser support |
 | parser_constraint_build_postgresql_tag_test.go | Pins plain/reused-index PK and UNIQUE declarations, unnamed/quoted controls, and absence of the index-reuse marker on FK/CHECK |
 | extractor_ddl_drop.go | Extracts PostgreSQL DROP/TRUNCATE DDL preserving every named relation in `DDL.Targets` |
+| extractor_column_transition.go | Preserves existing-column generation guards, mode counts and ordered sequence options without changing legacy projections; no SQL-text fallback or expression payload |
+| parser_column_transition_postgresql_tag_test.go | Pins guards, duplicate modes/options, START versus RESTART, signed int64 boundaries/overflow, unmodeled members, old JSON shape and D2 isolation |
 | extractor_generation.go | Preserves lossless CREATE/ADD COLUMN generation declarations for bounded governance: repeated characteristics/options, signed int64 numeric options, NULL presence and scalar/array type proof; leaves legacy public projections unchanged and never retains expression bodies |
 | extractor_generation_postgresql_tag_test.go | Pins generation seam, duplicates, int64 extremes/overflow, scalar/array/custom types and CREATE/ADD COLUMN parity |
 | extractor_ddl_create.go | Extracts CREATE column facts; `columnFromDef` also supplies ADD COLUMN declarations through the shared generation extractor |

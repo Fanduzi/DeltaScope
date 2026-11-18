@@ -376,6 +376,9 @@ type TableSnapshot struct {
 	// nil means unobserved/stale; non-nil empty means observed empty. It is
 	// separate from legacy PK-only Constraints and never enters public JSON.
 	PGConstraints []PGConstraintState `json:"-"`
+	// PGColumns is a complete, exact-name generation-state directory; nil
+	// means unobserved/stale, never absence. It carries no expressions.
+	PGColumns *PGColumnCatalog `json:"-"`
 
 	// TTL is the catalog/prospective TTL configuration when one is proven
 	// present. nil means either proven absence (TTLKnown=true) or an
