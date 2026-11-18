@@ -13,6 +13,10 @@ index can still be selected, while data, relation files and the independent
 sequence are preserved during audit. See the
 [decision](../../docs/decisions/2026-11-18-postgresql-replica-identity-index.md).
 
+The shipped `cb2e7c36` full run passed 50 tasks, 3521/3521 cases and 62961
+assertions. The validator and all exact-SHA CI checks passed. See the decision
+record for artifact and CI links.
+
 ## T37 D8 ALTER column identity and existence guards
 
 D8 adds 17 cases under an isolated profile, preserving the existing 156 IDs

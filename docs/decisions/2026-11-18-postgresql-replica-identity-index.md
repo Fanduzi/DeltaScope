@@ -92,6 +92,26 @@ D9 changes only the original F09 REPLICA IDENTITY evidence cell. Remaining
 runtime usability, broader relation kinds, other table options, dependencies
 and permissions stay in the queue.
 
+## Delivered verification
+
+D9 shipped at `cb2e7c360944a8716a20a8c73c378bc25440ae24` from base
+`8cff67d49058b339f5cea96f85f03a2e548f9418` via fast-forward and normal push.
+The exact SHA passed 50 canonical tasks, 3521/3521 cases and 62961 assertions,
+with zero failures or skips. T37 passed 189/189 with 3922 assertions and 31
+native steps (15 successes and 16 precise refusals). Validation, independent
+read-only review, candidate and merged-root gates, and owned cleanup passed.
+The original workspace status, protected worktrees and 16 unrelated container
+identities remained intact. The final task changed seven paths and the
+milestone changed 41.
+
+- [Go, PostgreSQL and lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44372672858)
+- [CLI TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44372672933)
+- [Pages](https://github.com/Fanduzi/DeltaScope/runs/135043622559)
+
+Final artifact: `/tmp/ddl-golden-pg-replica-index-final-cb2e7c36/all/artifact.json`.
+Coverage is limited to index attachment. Replication usability and other F09
+dimensions remain open.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
