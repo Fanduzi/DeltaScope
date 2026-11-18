@@ -86,7 +86,7 @@ func TestPGCompressionCapabilityObservation(t *testing.T) {
 		{"close-error", testQueryResult{columns: []string{"name", "setting", "lz4"}, rows: [][]driver.Value{{"default_toast_compression", "pglz", true}}, closeErr: failure}, false, false, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			db, log := openTestDB(t, map[string]testQueryResult{"select version()": {columns: []string{"version"}, rows: [][]driver.Value{{"PostgreSQL 17.7"}}}, "from pg_settings": tc.result})
+			db, log := openTestDB(t, map[string]testQueryResult{"select pg_catalog.version()": {columns: []string{"version"}, rows: [][]driver.Value{{"PostgreSQL 17.7"}}}, "from pg_catalog.pg_settings": tc.result})
 			defer db.Close()
 			facts, err := NewProvider(db).LoadInstanceFacts(context.Background(), spec.DialectPostgreSQL, "app")
 			if (err != nil) != tc.failed || err != nil && facts != nil {
@@ -96,7 +96,7 @@ func TestPGCompressionCapabilityObservation(t *testing.T) {
 				t.Fatalf("facts=%+v", facts)
 			}
 			query := strings.Join(log.Queries(), "\n")
-			if !strings.Contains(query, "'lz4' = any(enumvals)") || strings.Contains(query, "pg_config") {
+			if !strings.Contains(query, "'lz4' OPERATOR(pg_catalog.=) any(enumvals)") || strings.Contains(query, "pg_config") {
 				t.Fatal(query)
 			}
 		})

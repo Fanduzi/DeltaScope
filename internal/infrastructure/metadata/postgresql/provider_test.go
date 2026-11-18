@@ -93,11 +93,11 @@ func TestResolveTableForIndexUsesCatalogOwnership(t *testing.T) {
 
 func TestLoadInstanceFactsMapsPostgreSQLSettings(t *testing.T) {
 	db, _ := openTestDB(t, map[string]testQueryResult{
-		"select version()": {
+		"select pg_catalog.version()": {
 			columns: []string{"version"},
 			rows:    [][]driver.Value{{"PostgreSQL 16.3"}},
 		},
-		"from pg_settings": {
+		"from pg_catalog.pg_settings": {
 			columns: []string{"name", "setting", "lz4_supported"},
 			rows: [][]driver.Value{
 				{"server_encoding", "UTF8", nil},

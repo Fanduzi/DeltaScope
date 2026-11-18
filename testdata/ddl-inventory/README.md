@@ -35,8 +35,12 @@ ctid is not absent/no-op. Prior-DDL/parser/sibling and broader-kind gaps remain
 explicit. Role/schema ownership and exact native refusal/physical/data receipts
 remain part of canonical evidence.
 
-Candidate T37 is 156/156, 2772 assertions, 52 native steps (25 success/27 refusal)
-at 631575a6 + dirty evidence; it is **not** final same-HEAD all-task proof.
+Initial T37 was 156/156, 2772 assertions at 631575a6 + dirty evidence.
+Read-only review rejected 9c's unqualified instance sources; that all run was
+interrupted, not passed. The same enum-reader ID now proves owned namesake/
+operator controls after system-source qualification, bringing focused coverage
+to **156/156, 2774 assertions**, still 52 native steps (25 success/27 refusal),
+at 9c + dirty fixed source. None is final clean same-HEAD all-task proof.
 See the [decision](../../docs/decisions/2026-11-18-postgresql-column-storage-compression-targets.md).
 Full D7 delivery and other F09 dimensions remain open.
 

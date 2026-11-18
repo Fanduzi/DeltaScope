@@ -609,7 +609,9 @@ quoted upper-case names are not equivalent. Compression default is legal on
 fixed-length types. A toastable text column using STORAGE PLAIN may still
 receive pglz/lz4. A selected pglz default does not prove lz4 unavailable: support
 comes from the complete observed `default_toast_compression` GUC enum in the
-existing ordinary-reader pg_settings read, without privileged pg_config access.
+existing ordinary-reader pg_catalog.pg_settings read, without privileged
+pg_config access. Version/settings and comparison operators bind explicitly to
+pg_catalog, not search_path namesakes.
 
 Exact fresh ordinary persistent non-inheritance/non-partition target facts are
 required; intrinsic mode/method refusals need the observed version, not an

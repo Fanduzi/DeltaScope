@@ -5,6 +5,20 @@ Per-task manifests for the milestone DDL golden-path runner
 
 ## T37 D7 storage/compression and observed system targets
 
+The initial 9c candidate below was rejected by read-only review: unqualified
+version/settings and text comparisons could follow search_path namesakes rather
+than actual system facts. Its all-runner was interrupted (143), not passed;
+only its owned stack was cleaned after proving prior absence. The minimal
+source qualification and a red/green provider regression now preserve all
+156 IDs and old checks, strengthening enum-reader with owned view/function/
+operator namesakes and an ordinary-role explicit-path control. Latest focused
+candidate is **156/156, 2774 assertions** (588 over the old 136), still 52 native
+DDL steps, at
+`/tmp/ddl-golden-pg-column-format-source-fixed-9c0cf73a/T37/artifact.json`.
+This is 9c + dirty fixed source, not a corrected 9c or final all-task proof.
+New clean fixed-HEAD aggregate, read-only review and exact-SHA delivery remain
+mandatory; old partial artifacts cannot fill the final task denominator.
+
 D7 preserves all 136 preceding case objects, required IDs and profiles, and
 adds exactly the 20 IDs frozen before implementation in the
 [decision](../../docs/decisions/2026-11-18-postgresql-column-storage-compression-targets.md):

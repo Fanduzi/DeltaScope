@@ -29,7 +29,7 @@ func NewProvider(db *sql.DB) *Provider {
 // DetectDialect reads server version information and classifies the SQL dialect.
 func (p *Provider) DetectDialect(ctx context.Context) (spec.Dialect, error) {
 	var version string
-	if err := p.db.QueryRowContext(ctx, `select version()`).Scan(&version); err != nil {
+	if err := p.db.QueryRowContext(ctx, `select pg_catalog.version()`).Scan(&version); err != nil {
 		return "", fmt.Errorf("query server version: %w", err)
 	}
 	return detectDialectFromVersion(version), nil
@@ -71,15 +71,16 @@ var _ appaudit.MetadataProvider = (*Provider)(nil)
 func (p *Provider) LoadInstanceFacts(ctx context.Context, _ spec.Dialect, _ string) (*spec.InstanceFacts, error) {
 	facts := &spec.InstanceFacts{}
 
-	if err := p.db.QueryRowContext(ctx, `select version()`).Scan(&facts.Version); err != nil {
+	if err := p.db.QueryRowContext(ctx, `select pg_catalog.version()`).Scan(&facts.Version); err != nil {
 		return nil, fmt.Errorf("query server version: %w", err)
 	}
 
 	rows, err := p.db.QueryContext(ctx, `
 		select name, setting,
-		       case when name = 'default_toast_compression' then 'lz4' = any(enumvals) end
-		from pg_settings
-		where name in ('server_encoding','default_toast_compression','wal_compression')
+		       case when name OPERATOR(pg_catalog.=) 'default_toast_compression'
+		            then 'lz4' OPERATOR(pg_catalog.=) any(enumvals) end
+		from pg_catalog.pg_settings
+		where name OPERATOR(pg_catalog.=) any(array['server_encoding','default_toast_compression','wal_compression'])
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("query instance facts: %w", err)

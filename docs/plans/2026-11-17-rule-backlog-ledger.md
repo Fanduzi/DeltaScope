@@ -326,7 +326,17 @@ non-weakening corrections remain in the
 Exactly ten existing cells in two mixed parents gain relevant evidence; all
 301 parent/child statuses, original subaction sets and the 19-family/63-row
 backlog denominator remain unchanged. Matrix follows the YAML generator.
-Final full gates, fixed final-HEAD all/validate, independent read-only review,
+Read-only review rejected 9c0cf73a for unqualified instance sources: same-named
+version/settings and text equality operators could falsify real version/lz4.
+That old all-runner was interrupted (143), with owned-only official cleanup and
+unchanged source/HEAD until quiescence; it is not a passed aggregate. The minimum
+system function/view/operator qualification and committed regression are being
+verified. Direct actual-provider native red/green proves both shadow cases;
+the same frozen enum-reader now has owned namesake/ordinary-role controls,
+**156/156, 2774 assertions**, still 52 native DDL steps, at
+`/tmp/ddl-golden-pg-column-format-source-fixed-9c0cf73a/T37/artifact.json`
+(9c + dirty fixed source, never a corrected 9c). No rule/default/ID expansion.
+Final full gates, new fixed final-HEAD all/validate, independent read-only review,
 FF-only merge, normal push and exact-SHA CI remain pending. Main/origin main
 still points to shipped fa37a41b. **D7, F09 and the total goal are not closed.**
 Other original table options, rename/owner/type, dependency/permission,

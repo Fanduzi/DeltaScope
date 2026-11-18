@@ -179,7 +179,57 @@ same-HEAD all-task gates/validate, independent read-only review, FF-only merge,
 normal push and exact-SHA CI follow. Facts or baseline notices alone do not
 complete the rule slice, original row or F09.
 
-## Canonical And Inventory Candidate
+## Source-Provenance Correction From Read-Only Review
+
+Read-only review of committed 9c0cf73a found one P2: explicit search_path can
+resolve version()/pg_settings to same-named user objects, and an overloaded
+text equality operator can falsify `'lz4' = ANY(enumvals)` even with a system
+view. Real-provider tests on isolated native PG17.7 returned a shadow version
+and known-false lz4 while actual pg_catalog reports true and native lz4 succeeds.
+This violates the approved actual-instance fact contract; it is not a new rule,
+permission/execution analysis or default predicate decision.
+
+The minimal correction explicitly uses **pg_catalog.version(),
+pg_catalog.pg_settings and pg_catalog comparison operators** in instance reads,
+including dialect detection and CASE/membership/row selection. It preserves
+NULL/unobserved enums, known false and duplicate/error behavior. No global
+search_path rewrite, pool/transaction redesign, new permission rule or dependency
+upgrade is introduced. This does not claim that every historical metadata or
+plan query is hardened against arbitrary server-side namespace manipulation.
+
+`instance_namespace_test.go::TestInstanceFactsUseSystemNamespace` was red before
+and green after the real source correction. Direct compiled-provider native
+regressions independently prove same-named object and equality-operator cases:
+`/tmp/ds-pg-d7-namespace-review-red-both.log` and
+`/tmp/ds-pg-d7-namespace-review-fixed-both.log`. Red/overlay-green/fixed probes
+used separate owned network-none/512MiB/tmpfs containers and verified cleanup;
+they did not mutate the all-task stack or repository during its run.
+
+9c's full all-runner was explicitly interrupted after the P2 was confirmed.
+SIGINT was ignored; SIGTERM targeted only the owned Python process, followed
+by official cleanup of the golden project proved absent before that run.
+`/tmp/ds-pg-d7-final.exit` is **143**, not a passed aggregate. Cleanup returned
+zero with no residual owned containers; unrelated services were preserved.
+No source/HEAD changed until the runner was quiescent. All its partial results
+are historical only; fixed delivery requires a new clean final HEAD all/validate.
+
+The same frozen enum-reader case now adds owned view/function/operator namesakes
+and a NOLOGIN-role explicit-search_path negative/positive control, preserving
+all old checks and 156 IDs. The actual audit still uses the normal anchor
+connection; direct compiled-provider tests, not a claimed low-privilege audit
+login, establish the fixed product lookup. Latest focused candidate is
+**156/156, 2,774 assertions** (588 over the old 136), with the same 52 native
+DDL steps (25 success/27 refusal), at
+`/tmp/ddl-golden-pg-column-format-source-fixed-9c0cf73a/T37/artifact.json`.
+It is **9c + dirty fixed source**, not evidence that 9c itself was corrected.
+The corrective candidate passes build, full default/PG tests, inventory/corpus/
+coverage contracts, both lint lanes and format/diff checks. Mechanical comparison
+removes only the added reader setup/check and yields the exact old 156-case
+manifest; no old assertion/profile/ID was removed. Original user workspace
+content is preserved. Final fixed-HEAD all/read-only review/merge/push/exact-SHA
+CI remain required.
+
+## Canonical And Inventory Candidate (Historical Pre-Correction)
 
 All 136 previous T37 objects/profiles/required IDs are mechanically unchanged;
 exactly the frozen ten CLI/ten metadata cases and two isolated profiles are
