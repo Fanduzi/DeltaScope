@@ -985,6 +985,8 @@ type Alter struct {
 	Constraint *Constraint `json:"constraint,omitempty"`
 	// PGColumnTransition retains lossless authored generation-transition facts.
 	PGColumnTransition *PGColumnTransition `json:"-"`
+	// PGColumnTuning retains authored statistics/column-option facts privately.
+	PGColumnTuning *PGColumnTuning `json:"-"`
 	// Constraints carries CHECK members declared inside column definitions
 	// of the same alter spec (ADD/MODIFY/CHANGE COLUMN ... CHECK(...)) —
 	// the in-column form the catalog stores as a table-level CHECK member.

@@ -225,6 +225,35 @@ Cloudflare Pages succeeded for the exact final SHA. Milestone
 `23c9f4f9..26dde9ad` has seven. These are historical delivery facts, not
 same-HEAD proof for a later docs commit. **F09 and the full goal remain open.**
 
+### D6 approved column tuning and DROP guards (not delivered)
+
+At D5-history baseline `4eac7c11`, 72 PG17.7 native shapes and 144 real offline/
+metadata-aware CLI calls covered remaining tuning/storage/options/RID/rename/
+owner/guard/dependency dimensions; eight normalized collapse pairs prove lost
+values/guards. The operator approved default blocker
+`ddl.pg.alter.column.statistics.target.valid`, default warning
+`ddl.pg.alter.column.statistics.clamp.warn`, default blocker
+`ddl.pg.alter.column.options.valid`, and preservation of existing DROP COLUMN
+IDs with exact fresh PG targets/guard/no-op/gap correction. MySQL/TiDB and
+independent forbids remain unchanged. [Decision and 18 frozen additive T37
+IDs](../decisions/2026-11-18-postgresql-column-tuning-and-drop-guards.md).
+
+STATISTICS below -1 refuses; DEFAULT/-1/0..10000 are valid, and >10000 warns
+about native clamping rather than blocking valid SQL. Known builtin n_distinct/
+n_distinct_inherited SET values and duplicates are checked; unknown/extension,
+quoted/nonfinite/unmodeled values remain gaps, and unknown RESET names are not
+inherently errors. Existing DROP IF EXISTS false rejection is corrected only
+with proven absence; unknown/stale/misbound proof remains review. Source AST
+facts precede rules, and generic-notice counts do not substitute for validation.
+Fillfactor/access-method copy is corrected without another default predicate.
+
+The fact seam preserves statistics DEFAULT/value, ordered exact option keys/
+namespaces and value kinds, finite numeric literals and DROP guard/CASCADE;
+quoted payloads/expressions never enter it. No parser expansion or data/
+permission/expression/general-PG-state analysis is approved. Rules/cross-surface/
+corpus, canonical/native/inventory and final delivery remain subsequent work.
+Other original F09 dimensions continue in the queue, not permanent deferral.
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.

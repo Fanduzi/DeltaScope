@@ -833,7 +833,10 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		}
 		return spec.Alter{Action: "add_column", Name: column.GetColname(), Column: &spec.AlterColumn{Definition: columnPtr(columnFromDef(column))}}, true, nil
 	case pg_query.AlterTableType_AT_DropColumn:
-		return spec.Alter{Action: "drop_column", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}}, true, nil
+		return spec.Alter{Action: "drop_column", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}, Options: map[string]string{
+			"if_exists": strconv.FormatBool(cmd.GetMissingOk()),
+			"cascade":   strconv.FormatBool(cmd.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE),
+		}}, true, nil
 	case pg_query.AlterTableType_AT_DropExpression:
 		return spec.Alter{Action: "drop_expression", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}, PGColumnTransition: pgColumnTransitionFromCmd(cmd)}, true, nil
 	case pg_query.AlterTableType_AT_SetExpression:
@@ -1093,8 +1096,9 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			kind = "value"
 		}
 		return spec.Alter{
-			Action: "set_statistics",
-			Name:   cmd.GetName(),
+			Action:         "set_statistics",
+			Name:           cmd.GetName(),
+			PGColumnTuning: pgColumnTuningFromCmd(cmd),
 			Options: map[string]string{
 				"column":                 cmd.GetName(),
 				"statistics_target_kind": kind,
@@ -1109,8 +1113,9 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			}
 		}
 		return spec.Alter{
-			Action: "set_column_options",
-			Name:   cmd.GetName(),
+			Action:         "set_column_options",
+			Name:           cmd.GetName(),
+			PGColumnTuning: pgColumnTuningFromCmd(cmd),
 			Options: map[string]string{
 				"column":             cmd.GetName(),
 				"option_count":       strconv.Itoa(count),
@@ -1125,8 +1130,9 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			}
 		}
 		return spec.Alter{
-			Action: "reset_column_options",
-			Name:   cmd.GetName(),
+			Action:         "reset_column_options",
+			Name:           cmd.GetName(),
+			PGColumnTuning: pgColumnTuningFromCmd(cmd),
 			Options: map[string]string{
 				"column":             cmd.GetName(),
 				"reset_count":        strconv.Itoa(count),
