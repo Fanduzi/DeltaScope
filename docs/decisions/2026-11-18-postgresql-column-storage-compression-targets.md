@@ -217,7 +217,7 @@ The same frozen enum-reader case now adds owned view/function/operator namesakes
 and a NOLOGIN-role explicit-search_path negative/positive control, preserving
 all old checks and 156 IDs. The actual audit still uses the normal anchor
 connection; direct compiled-provider tests, not a claimed low-privilege audit
-login, establish the fixed product lookup. Latest focused candidate is
+login, establish the fixed product lookup. That earlier focused candidate is
 **156/156, 2,774 assertions** (588 over the old 136), with the same 52 native
 DDL steps (25 success/27 refusal), at
 `/tmp/ddl-golden-pg-column-format-source-fixed-9c0cf73a/T37/artifact.json`.
@@ -228,6 +228,39 @@ removes only the added reader setup/check and yields the exact old 156-case
 manifest; no old assertion/profile/ID was removed. Original user workspace
 content is preserved. Final fixed-HEAD all/read-only review/merge/push/exact-SHA
 CI remain required.
+
+## Column-Catalog Source Binding
+
+D7's two new column-catalog comparisons also require system operators:
+`a.attnum OPERATOR(pg_catalog.<>) 0` and
+`typ.oid OPERATOR(pg_catalog.=) a.atttypid`. Explicit search_path shadowing of
+smallint/integer `<>` fabricated a known-empty directory despite a real user
+column; OID `=` misbound text to int4's `typstorage=p` instead of actual `x`.
+Both would create false blockers although native SET STORAGE EXTENDED succeeds.
+Binding only these new comparisons restores the approved actual-attribute/type
+contract; it adds no rule/default, global search_path rewrite or blanket guarantee
+for historical metadata queries.
+
+`column_format_test.go::TestPGColumnFormatCatalogObservations` pins both source
+comparisons (red before the fix). Actual-provider native red/fixed regressions
+in `/tmp/ds-pg-d7-column-source-{red,fixed}.log` independently prove user1/system6
+and real type strategy x; only owned network-none/512MiB/tmpfs probes were used
+and removed. The frozen enum-reader gains two ordinary-role SQL controls, 0:7
+for shadow/system attribute filtering and p:x for shadow/system type binding.
+Removing only added setup/checks mechanically restores the exact d445 manifest.
+All IDs, profiles, old cases/checks and inventory selectors remain unchanged.
+
+The d445 candidate did finish all 50 tasks, **3488/3488, 61808 assertions**,
+with same-HEAD per-task/CLI artifacts and valid aggregate at
+`/tmp/ddl-golden-pg-column-format-final-fixed-d445cc5b/all/artifact.json`.
+It was nevertheless rejected by this separate read-only P2 and did not ship;
+no source/HEAD changed until its runner exited zero and was quiescent.
+The corrected focused candidate is **156/156, 2776 assertions** (590 over old
+136), still 52 native DDL steps (25 success/27 refusal), at
+`/tmp/ddl-golden-pg-column-format-catalog-source-d445cc5b/T37/artifact.json`.
+This is d445 plus dirty corrected source, not d445's fixed delivery proof.
+A new committed HEAD must rerun all gates, all 50/validate and read-only review
+before FF-only merge, push and exact-SHA CI; old aggregates cannot fill its tasks.
 
 ## Canonical And Inventory Candidate (Historical Pre-Correction)
 

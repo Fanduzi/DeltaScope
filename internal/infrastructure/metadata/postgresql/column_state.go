@@ -19,8 +19,8 @@ func (p *Provider) loadPGColumnCatalog(ctx context.Context, snapshot *spec.Table
 		       a.attnum, typ.typstorage::text
 		from pg_catalog.pg_class c
 		join pg_catalog.pg_namespace n on n.oid = c.relnamespace
-		left join pg_catalog.pg_attribute a on a.attrelid = c.oid and a.attnum <> 0 and not a.attisdropped
-		left join pg_catalog.pg_type typ on typ.oid = a.atttypid
+		left join pg_catalog.pg_attribute a on a.attrelid = c.oid and a.attnum OPERATOR(pg_catalog.<>) 0 and not a.attisdropped
+		left join pg_catalog.pg_type typ on typ.oid OPERATOR(pg_catalog.=) a.atttypid
 		left join pg_catalog.pg_depend dep on dep.refclassid = 'pg_catalog.pg_class'::pg_catalog.regclass
 		  and dep.classid = 'pg_catalog.pg_class'::pg_catalog.regclass and dep.refobjid = c.oid
 		  and dep.refobjsubid = a.attnum and dep.objsubid = 0 and dep.deptype = 'i'

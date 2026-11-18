@@ -589,8 +589,9 @@ STORAGE 接受 PLAIN/EXTERNAL/EXTENDED/MAIN/DEFAULT，遵循原生大小写语�
 大写名称不等价；固定长度类型允许 compression default；toastable text 即使当前 STORAGE
 PLAIN 仍可设置 pglz/lz4。当前默认选 pglz 不代表 lz4 不可用；复用普通用户可读的
 pg_settings 查询，从 `default_toast_compression` 的完整 enumvals 证明构建支持，
-不新增受限 pg_config 读取；版本、设置来源和比较操作符明确绑定 pg_catalog，
-不能采用 search_path 的同名对象或操作符。
+不新增受限 pg_config 读取；版本、设置来源及其比较，以及 D7 新增的属性过滤和真实
+类型联接明确绑定 pg_catalog 来源/操作符，不能采用 search_path 的同名对象或操作符。
+这不是对所有历史元数据查询的全面命名空间加固承诺。
 
 目标结论要求精确、新鲜的普通持久非继承/非分区表事实；内在非法模式/方法只需真实版本，
 不伪造目标。未知/过期/错绑定/歧义/未建模事实保留 `unproven_column_storage` 或

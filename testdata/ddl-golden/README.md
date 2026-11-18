@@ -5,14 +5,27 @@ Per-task manifests for the milestone DDL golden-path runner
 
 ## T37 D7 storage/compression and observed system targets
 
+The later d445 full candidate passed all 50 tasks, 3488/3488 cases and 61808
+assertions/validate, but separate read-only review rejected two new unqualified
+column-catalog comparisons. Shadow smallint/integer <> fabricated known-empty;
+OID equality supplied the wrong type storage strategy. Only D7's new attribute
+filter/type join now use system operators. Permanent query-source tests and two
+actual-provider native red/fixed probes pin the correction. The same frozen
+enum-reader adds 0:7 attribute and p:x type controls without removing any old
+case/profile/ID/check. Latest focused candidate is **156/156, 2776 assertions**
+(590 over old 136), still 52 native DDL steps, at
+`/tmp/ddl-golden-pg-column-format-catalog-source-d445cc5b/T37/artifact.json`.
+It is d445 plus dirty corrected source; d445's all result is historical and
+cannot replace a new committed HEAD's complete all/validate/read-only delivery.
+
 The initial 9c candidate below was rejected by read-only review: unqualified
 version/settings and text comparisons could follow search_path namesakes rather
 than actual system facts. Its all-runner was interrupted (143), not passed;
 only its owned stack was cleaned after proving prior absence. The minimal
 source qualification and a red/green provider regression now preserve all
 156 IDs and old checks, strengthening enum-reader with owned view/function/
-operator namesakes and an ordinary-role explicit-path control. Latest focused
-candidate is **156/156, 2774 assertions** (588 over the old 136), still 52 native
+operator namesakes and an ordinary-role explicit-path control. That focused
+candidate was **156/156, 2774 assertions** (588 over the old 136), still 52 native
 DDL steps, at
 `/tmp/ddl-golden-pg-column-format-source-fixed-9c0cf73a/T37/artifact.json`.
 This is 9c + dirty fixed source, not a corrected 9c or final all-task proof.

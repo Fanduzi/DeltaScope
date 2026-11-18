@@ -40,7 +40,13 @@ Read-only review rejected 9c's unqualified instance sources; that all run was
 interrupted, not passed. The same enum-reader ID now proves owned namesake/
 operator controls after system-source qualification, bringing focused coverage
 to **156/156, 2774 assertions**, still 52 native steps (25 success/27 refusal),
-at 9c + dirty fixed source. None is final clean same-HEAD all-task proof.
+at 9c + dirty fixed source. The later d445 all passed 50/3488/61808 and validate
+but was rejected for new column-catalog comparison shadowing. System-qualified
+attribute filtering/type binding, permanent query tests and actual-provider
+native red/fixed controls now preserve the same IDs/selectors; enum-reader adds
+0:7 and p:x independent controls. Focused corrected coverage is 156/156, 2776
+assertions at d445 + dirty source, still 52 native DDL steps. No old aggregate
+substitutes for the corrected committed HEAD's full all/validate/read-only review.
 See the [decision](../../docs/decisions/2026-11-18-postgresql-column-storage-compression-targets.md).
 Full D7 delivery and other F09 dimensions remain open.
 

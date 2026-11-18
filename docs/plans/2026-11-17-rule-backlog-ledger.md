@@ -336,6 +336,16 @@ the same frozen enum-reader now has owned namesake/ordinary-role controls,
 **156/156, 2774 assertions**, still 52 native DDL steps, at
 `/tmp/ddl-golden-pg-column-format-source-fixed-9c0cf73a/T37/artifact.json`
 (9c + dirty fixed source, never a corrected 9c). No rule/default/ID expansion.
+The subsequent d445 candidate passed all 50 tasks, 3488/3488 and 61808 assertions
+plus validate, but read-only review rejected D7's new attribute/type comparisons:
+shadow smallint/integer <> fabricated known-empty; OID equality misbound actual
+text storage x as p despite native EXTENDED success. Only those new comparisons
+are now system-qualified, with permanent source-query and actual-provider native
+red/fixed regressions. The frozen enum-reader retains old checks and adds 0:7 /
+p:x controls; focused candidate is 156/156, 2776 assertions at
+`/tmp/ddl-golden-pg-column-format-catalog-source-d445cc5b/T37/artifact.json`
+(d445 + dirty corrected source), still 52 native steps. d445's full aggregate is
+historical, not the corrected HEAD's proof. No source/HEAD changed during its run.
 Final full gates, new fixed final-HEAD all/validate, independent read-only review,
 FF-only merge, normal push and exact-SHA CI remain pending. Main/origin main
 still points to shipped fa37a41b. **D7, F09 and the total goal are not closed.**

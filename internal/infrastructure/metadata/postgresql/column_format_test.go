@@ -43,12 +43,12 @@ func TestPGColumnFormatCatalogObservations(t *testing.T) {
 				t.Fatalf("user=%+v known=%v", m, known)
 			}
 			query := strings.Join(log.Queries(), "\n")
-			for _, part := range []string{"a.attnum <> 0", "typ.typstorage::text", "pg_catalog.pg_type"} {
+			for _, part := range []string{"a.attnum OPERATOR(pg_catalog.<>) 0", "typ.typstorage::text", "left join pg_catalog.pg_type typ on typ.oid OPERATOR(pg_catalog.=) a.atttypid"} {
 				if !strings.Contains(query, part) {
 					t.Fatalf("missing %s", part)
 				}
 			}
-			for _, part := range []string{"last_value", "pg_get_expr", "pg_config"} {
+			for _, part := range []string{"last_value", "pg_get_expr", "pg_config", "a.attnum <> 0", "typ.oid = a.atttypid"} {
 				if strings.Contains(query, part) {
 					t.Fatalf("unexpected %s", part)
 				}
