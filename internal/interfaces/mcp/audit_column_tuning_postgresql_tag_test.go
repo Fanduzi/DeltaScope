@@ -23,6 +23,7 @@ func TestAuditSQLPGColumnTuning(t *testing.T) {
 		{"ALTER COLUMN id SET STATISTICS -2", "ddl.pg.alter.column.statistics.target.valid", "reject", false},
 		{"ALTER COLUMN id SET STATISTICS 10001", "ddl.pg.alter.column.statistics.clamp.warn", "review", false},
 		{"ALTER COLUMN id SET(n_distinct=-1.1)", "ddl.pg.alter.column.options.valid", "reject", false},
+		{"ALTER COLUMN id SET(n_distinct=1e-999)", "", "review", false},
 		{"DROP COLUMN IF EXISTS missing", "", "pass", false},
 		{"DROP COLUMN missing", "ddl.alter.drop_column.exists.require", "reject", false},
 		{"DROP COLUMN IF EXISTS missing", "ddl.pg.alter.drop_column.advisory", "review", true},
@@ -74,7 +75,7 @@ func TestAuditSQLPGColumnTuning(t *testing.T) {
 		if found != (tc.id != "") {
 			t.Fatal("shared finding lost", body)
 		}
-		if tc.unknown {
+		if tc.unknown || tc.id == "" && tc.verdict == "review" {
 			gaps, _ := s["evidence_gaps"].([]any)
 			if body["coverage"].(map[string]any)["status"] != "unverified" || len(gaps) != 1 {
 				t.Fatal(body)

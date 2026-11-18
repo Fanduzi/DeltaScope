@@ -7968,7 +7968,9 @@
                 "file:testdata/ddl-golden/T37.json#column-tuning-reset-offline",
                 "file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-ddl",
                 "file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_invalid.expected.yaml#ddl.pg.alter.column.options.valid",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_controls.expected.yaml#ddl.pg.alter.column.options.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_controls.expected.yaml#ddl.pg.alter.column.options.valid",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_unknown.expected.yaml#ddl.pg.alter.column.options.valid",
+                "file:internal/infrastructure/parser/postgresql/extractor_column_tuning.go#minimumNormalDouble"
               ]
             }
           ]

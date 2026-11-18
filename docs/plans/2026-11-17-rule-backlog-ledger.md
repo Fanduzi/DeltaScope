@@ -269,7 +269,17 @@ NULL, including authored -1, as verified natively and in its catalog manual.
 Seven exact subactions across columns/attributes/options bind this evidence;
 only multi-action and n_distinct/RESET become honestly mixed, and layout is
 copy-only. Original row/subaction denominators and 301 row statuses remain.
-Final fixed-HEAD aggregate/read-only review/merge/push/exact CI remain pending.
+The f97 fixed candidate passed 50 tasks/3468 cases/61202 assertions and
+validate, but was not merged: independent review found Go-rounded nonzero
+Float literals could become modeled zero/subnormal while PG17 strtod refuses
+22023. The fact seam now quarantines underflow/minimum-normal boundary values
+under the already-approved unmodeled gap, preserving genuine zero and small
+normal values. Parser/application/SDK/HTTP/MCP/corpus regression and the same
+136 frozen IDs now pass 2186 focused assertions; 59 native steps include 40
+successes/19 refusals. No existing check/ID/profile is removed, no new blocker
+is added, and no source/HEAD changed during f97 TASK=all. Its artifact remains
+historical; corrected fixed-HEAD all-task/read-only/merge/push/exact CI remain
+pending.
 Other original F09 dimensions continue in the queue, not permanent deferral.
 
 ## Family index

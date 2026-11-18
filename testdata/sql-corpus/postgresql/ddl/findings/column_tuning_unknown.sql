@@ -1,3 +1,10 @@
 ALTER TABLE app.no_catalog_t ALTER COLUMN id SET STATISTICS 10;
 ALTER TABLE app.extension_t ALTER COLUMN id SET(private_unknown_key=1);
 ALTER TABLE app.opaque_t ALTER COLUMN id SET(n_distinct='private_quoted_value');
+ALTER TABLE app.underflow_t ALTER COLUMN id SET(n_distinct=1e-999);
+ALTER TABLE app.negative_underflow_t ALTER COLUMN id SET(n_distinct=-1e-999);
+ALTER TABLE app.subnormal_t ALTER COLUMN id SET(n_distinct=1e-310);
+ALTER TABLE app.minimum_t ALTER COLUMN id SET(n_distinct=2.2250738585072014e-308);
+ALTER TABLE app.zero_t ALTER COLUMN id SET(n_distinct=0.0);
+ALTER TABLE app.zero_exponent_t ALTER COLUMN id SET(n_distinct=0e-999);
+ALTER TABLE app.normal_t ALTER COLUMN id SET(n_distinct=1e-300);

@@ -104,3 +104,22 @@ func TestPGDropColumnGuardAndCascadeFacts(t *testing.T) {
 		}
 	}
 }
+
+func TestPGColumnTuningNumericUnderflow(t *testing.T) {
+	for _, tc := range []struct {
+		literal string
+		known   bool
+	}{
+		{"1e-999", false}, {"-1e-999", false}, {"1e-310", false},
+		{"4.9406564584124654e-324", false}, {"2.2250738585072013e-308", false},
+		{"2.2250738585072014e-308", false},
+		{"0.0", true}, {"0e-999", true}, {"-0e-999", true},
+		{"1e-300", true}, {"-1e-300", true},
+	} {
+		s := extractPostgreSQLStatement(t, "ALTER TABLE t ALTER COLUMN id SET(n_distinct="+tc.literal+")")
+		o := s.DDL.Alter[0].PGColumnTuning.Options[0]
+		if (o.ValueKind == spec.PGColumnOptionNumeric) != tc.known || (o.Numeric != nil) != tc.known {
+			t.Fatalf("literal %s -> kind=%s numeric=%v, known=%v", tc.literal, o.ValueKind, o.Numeric, tc.known)
+		}
+	}
+}

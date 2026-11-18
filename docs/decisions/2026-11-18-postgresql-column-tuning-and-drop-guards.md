@@ -211,6 +211,44 @@ subaction sets, 301 rows, row statuses and 19-family/63-row denominators stay
 unchanged. The matrix is generated from YAML. Final fixed-HEAD all-task gates,
 read-only review, merge/push and exact-SHA CI remain required before delivery.
 
+### Read-only review correction: native floating underflow
+
+The first fixed candidate `f97c73988098ce4d386dc7640c8e081f9c184417`
+completed all 50 tasks, 3468/3468 cases and 61202 assertions, and validate
+passed. It was **not merged or delivered**: independent read-only review found
+that Go ParseFloat returns nil error for nonzero literals rounded to zero or
+subnormal values, while PG17 parse_real/strtod rejects ERANGE (22023).
+The exact parser/application regression was red; a temporary overlay verified
+the proposed correction without changing source/HEAD during the active all run.
+The owned network-none PG17.7 review container was removed independently of
+all-task fixtures. Old green artifacts remain historical, never final proof
+for the corrected HEAD.
+
+Correct the fact seam, not the validity rule: Float values at/below the
+minimum-normal rounding boundary remain unmodeled unless the AST numeric
+coefficient proves genuine zero. Normal finite values above that boundary
+remain numeric. A rounded nonzero value must never masquerade as authored
+zero. Inspect only the numeric AST literal, not surrounding SQL; keep the
+existing approved column.options evidence gap rather than inventing a new
+blocker. Exact minimum-normal input can succeed natively yet still retain a
+conservative gap because its rounded value alone cannot prove strtod behavior
+for every authored coefficient. This is a representation boundary, not a
+promise to validate every finite numeric spelling or a permanent deferral.
+
+Parser/application/SDK/HTTP/MCP and corpus controls cover the regression.
+The original 136 IDs/profiles stay unchanged; only the opaque-value canonical
+fixture gains eight controls: positive/negative rounded-zero, subnormal and
+minimum-subnormal refusals, minimum-normal boundary, real zero/zero exponent
+and small normal success. Corrected focused execution is **136/136, 2186
+assertions**, with **59 native steps (40 successes, 19 refusals)**. The candidate
+artifact `/tmp/ddl-golden-pg-column-tuning-underflow/T37/artifact.json` records
+base f97 plus the corrective worktree, not final shipping evidence. No old
+case, profile or native refusal is dropped or weakened; new exact gap and
+catalog/data/file/guard checks supplement them. The inventory's existing mixed
+option cell and source-generated matrix include underflow explicitly without
+changing any row or declared dimension. A new fixed-HEAD aggregate/review and
+the complete merge/push/exact-SHA CI chain are still required.
+
 ## Consequences
 
 Value ownership, SET versus RESET and guarded absence must remain distinct.
@@ -223,5 +261,6 @@ false blocker or adding a tuning check does not close F09 by association.
 - [PG17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
 - [PG17 pg_attribute: NULL default statistics target](https://www.postgresql.org/docs/17/catalog-pg-attribute.html)
 - [PG17.7 reloptions range and duplicate handling](https://github.com/postgres/postgres/blob/REL_17_7/src/backend/access/common/reloptions.c)
+- [PG17.7 parse_real rejects strtod ERANGE](https://github.com/postgres/postgres/blob/REL_17_7/src/backend/utils/misc/guc.c)
 - [D5 directory/freshness contract](2026-11-18-postgresql-column-generation-transitions.md)
 - [Original program ledger](../plans/2026-11-17-rule-backlog-ledger.md)

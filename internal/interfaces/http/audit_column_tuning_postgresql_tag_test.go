@@ -22,6 +22,7 @@ func TestHandlerPGColumnTuning(t *testing.T) {
 		{"ALTER COLUMN id SET STATISTICS -2", "ddl.pg.alter.column.statistics.target.valid", "reject", false},
 		{"ALTER COLUMN id SET STATISTICS 10001", "ddl.pg.alter.column.statistics.clamp.warn", "review", false},
 		{"ALTER COLUMN id SET(n_distinct=-1.1)", "ddl.pg.alter.column.options.valid", "reject", false},
+		{"ALTER COLUMN id SET(n_distinct=1e-999)", "", "review", false},
 		{"DROP COLUMN IF EXISTS missing", "", "pass", false},
 		{"DROP COLUMN missing", "ddl.alter.drop_column.exists.require", "reject", false},
 		{"DROP COLUMN IF EXISTS missing", "ddl.pg.alter.drop_column.advisory", "review", true},
@@ -73,7 +74,7 @@ func TestHandlerPGColumnTuning(t *testing.T) {
 				t.Fatal("no-op finding", f)
 			}
 		}
-		if found != (tc.id != "") || tc.unknown && (body.Coverage.Status != "unverified" || len(body.Statements[0].Gaps) != 1) {
+		if found != (tc.id != "") || (tc.unknown || tc.id == "" && tc.verdict == "review") && (body.Coverage.Status != "unverified" || len(body.Statements[0].Gaps) != 1) {
 			t.Fatal(rec.Body.String())
 		}
 	}

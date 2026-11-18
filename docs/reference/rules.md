@@ -610,12 +610,17 @@ an unknown RESET key is not inherently an invalid SET declaration.
 Target-dependent checks use exact fresh ordinary persistent non-inheritance/
 non-partition column facts. Intrinsic modeled numeric refusals require the
 observed PG17 version, not an invented catalog. Unknown/extension SET keys,
-quoted/nonfinite/overflow/unmodeled values or stale/ambiguous/misbound facts
+quoted/nonfinite/overflow/underflow/subnormal/unmodeled values or stale/ambiguous/misbound facts
 retain `unproven_column_tuning` gaps (unverified, at least review), requiring
 `instance.version`, `target_table.pg_columns`, `column.statistics_target` or
 `column.options`. Prior related DDL/parser failures and earlier ALTER actions
 withhold old directories without simulating post-state. This does not certify
 sampling effectiveness, data, expressions, privileges or broader table kinds.
+PG17 rejects `strtod` underflow even when Go returns a finite subnormal or
+rounds a nonzero literal to zero without error. Such literals, including the
+minimum-normal rounding boundary, remain gaps; genuine zero is identified from
+the AST numeric coefficient and ordinary small normal values remain modeled.
+A natively valid minimum-normal literal can therefore still require review.
 
 The existing `ddl.alter.drop_column.exists.require` keeps its ID/default but
 uses exact fresh PG17 column/guard proof on PostgreSQL. A proven absent column

@@ -14,9 +14,16 @@ metadata:
     opaque_t:
       exists: true
       pg_columns: *ordinary
+    underflow_t: {exists: true, pg_columns: *ordinary}
+    negative_underflow_t: {exists: true, pg_columns: *ordinary}
+    subnormal_t: {exists: true, pg_columns: *ordinary}
+    minimum_t: {exists: true, pg_columns: *ordinary}
+    zero_t: {exists: true, pg_columns: *ordinary}
+    zero_exponent_t: {exists: true, pg_columns: *ordinary}
+    normal_t: {exists: true, pg_columns: *ordinary}
 expect:
   parse_ok: true
-  statements: {count: 3}
+  statements: {count: 10}
   unsupported: {count: 0}
   findings:
     exclude: [ddl.pg.alter.column.statistics.target.valid, ddl.pg.alter.column.statistics.clamp.warn, ddl.pg.alter.column.options.valid]

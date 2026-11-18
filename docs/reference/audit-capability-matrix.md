@@ -61,10 +61,12 @@ For `CREATE TABLE t → PROCEDURE → ADD c → CREATE INDEX idx_c(c)` under the
 Approved default-on, no new params. DEFAULT/-1 and normal statistics targets
 are silent; above-maximum values natively clamp. Unknown RESET names are not
 inherently invalid SET values. Unknown/extension SET keys, quoted/nonfinite/
-overflow/unmodeled values and stale/ambiguous/misbound facts retain unverified/
+overflow/underflow/subnormal/unmodeled values and stale/ambiguous/misbound facts retain unverified/
 review `unproven_column_tuning`; DROP proof gaps use `unproven_column_target`.
 A proved DROP IF EXISTS no-op suppresses its old deletion advice; independent
-forbids remain. Prior DDL/parser failures and ALTER siblings do not simulate
+forbids remain. Go-rounded-to-zero/subnormal and minimum-normal-boundary
+literals do not establish PG strtod compatibility; they remain gaps, while real
+zero and small normal controls stay distinct. Prior DDL/parser failures and ALTER siblings do not simulate
 post-state. D5's ordinary persistent non-inheritance/non-partition scope is
 reused; no expression/data/permission analysis or parser expansion is added.
 

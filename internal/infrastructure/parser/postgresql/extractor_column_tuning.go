@@ -5,6 +5,7 @@ package postgresql
 import (
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	pg_query "github.com/pganalyze/pg_query_go/v6"
@@ -48,8 +49,13 @@ func pgColumnTuningFromCmd(cmd *pg_query.AlterTableCmd) *spec.PGColumnTuning {
 			option.Numeric = &value
 			option.ValueKind = spec.PGColumnOptionNumeric
 		case arg.GetFloat() != nil:
-			value, err := strconv.ParseFloat(arg.GetFloat().GetFval(), 64)
-			if err == nil && !math.IsInf(value, 0) && !math.IsNaN(value) {
+			const minimumNormalDouble = 0x1p-1022
+			literal := arg.GetFloat().GetFval()
+			value, err := strconv.ParseFloat(literal, 64)
+			mantissa, _, _ := strings.Cut(strings.ToLower(literal), "e")
+			zeroLiteral := strings.Trim(mantissa, "+-0.") == ""
+			// PG strtod rejects underflow; Go can silently round a nonzero literal to zero.
+			if err == nil && !math.IsInf(value, 0) && !math.IsNaN(value) && (math.Abs(value) > minimumNormalDouble || value == 0 && zeroLiteral) {
 				option.Numeric = &value
 				option.ValueKind = spec.PGColumnOptionNumeric
 			}

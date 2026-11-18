@@ -16,8 +16,8 @@ candidate replay is 118/118, **1673 assertions** (12 added). These candidate
 artifacts do not replace final same-HEAD aggregate evidence. The 18 D6 case IDs
 were frozen in the [decision](../../docs/decisions/2026-11-18-postgresql-column-tuning-and-drop-guards.md)
 before implementation. All 18 additions now run: **136 required cases,
-2168 assertions** (495 additive). Eight owned metadata fixtures contain 51
-native driver steps (36 successes/15 exact refusals), independent attribute,
+2186 assertions** after the read-only underflow correction (513 additive).
+Eight owned metadata fixtures contain 59 native driver steps (40 successes/19 exact refusals), independent attribute,
 file/data/guard and no-audit-execution receipts plus owned absence/cleanup.
 
 The first additive replay's 133/136 failures remain recorded: all-off correctly
@@ -30,6 +30,14 @@ zero, normal/max/clamp, fractions/duplicates/RESET, quoted/nonfinite/overflow,
 parser, scope and no-immediate-rewrite controls remain distinct. Original
 118 objects/profiles/IDs remain unchanged from the D6 compatibility commit.
 Inventory binds exact cells; final same-HEAD all-task/CI delivery is pending.
+
+The f97 all-task candidate passed 50 tasks/3468 cases/61202 assertions but did
+not ship: review caught Go silently rounding a nonzero Float to zero/subnormal
+where native PG17 strtod refuses ERANGE. The existing opaque-value case now
+pins the correction, exact gaps, real-zero/zero-exponent/small-normal controls
+and native minimum-normal success despite a conservative boundary gap. This
+adds 18 assertions without removing any old check. Old f97 aggregate evidence
+cannot substitute for the corrected HEAD's complete rerun.
 
 ## T37 PostgreSQL existing-column generation contract
 

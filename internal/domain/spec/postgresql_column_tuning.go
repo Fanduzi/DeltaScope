@@ -12,7 +12,8 @@ const (
 )
 
 // PGColumnOption preserves a column option's exact key, namespace and order.
-// Numeric is non-nil only for a proven finite numeric AST literal.
+// Numeric is non-nil only for a finite AST literal without unproven PG
+// underflow behavior; genuine zero is distinct from a rounded-to-zero value.
 type PGColumnOption struct {
 	Name      string
 	Namespace string

@@ -589,11 +589,14 @@ DEFAULT、-1、0..10000 合法；大于 10000 不是非法值，原生成功执�
 未知 RESET 键不能照搬 SET 的非法声明判断。
 
 依赖目标的结论要求精确、新鲜的普通持久非继承/非分区表目录。已建模的内在数值错误
-只需真实观测 PG17，不伪造目录。未知/扩展 SET 键、quoted/nonfinite/overflow/
+只需真实观测 PG17，不伪造目录。未知/扩展 SET 键、quoted/nonfinite/overflow/下溢/非正规数/
 unmodeled 值及过期/歧义/错误绑定事实保留 `unproven_column_tuning` gap（unverified、
 至少 review）；所需事实为 `instance.version`、`target_table.pg_columns`、
 `column.statistics_target` 或 `column.options`。相关前序 DDL/parser failure、较早
 ALTER 子动作后撤销旧目录，不模拟后态，不证明采样效果、数据、表达式、权限或更广表类型。
+PG17 的 strtod 会拒绝下溢，Go 却可能无错误地产生有限非正规数，或把非零字面量舍入成
+0；这些值及最小正规数的舍入边界保留 gap。真正的零只从 AST 数值系数确认，正常的小
+正规数仍可建模。最小正规数字面量即便原生合法，本阶段也可能仍需 review。
 
 既有 `ddl.alter.drop_column.exists.require` 保留 ID/默认值，但 PostgreSQL 分支改用
 精确新鲜 PG17 列和 guard 证明。已证明缺失且有 parsed IF EXISTS 时是 no-op，不再误发

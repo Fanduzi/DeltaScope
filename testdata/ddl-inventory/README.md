@@ -81,11 +81,14 @@ Column attributes: SET STATISTICS retains audited bounded declaration/target
 proof with DEFAULT/-1/zero/max/native-clamp controls; n_distinct/RESET becomes
 **mixed** because quoted/nonfinite/overflow/extension SET values remain gaps.
 Unknown and duplicate RESET are native successes, not invalid SET declarations.
+Go-rounded-to-zero/subnormal and minimum-normal-boundary Float literals remain
+unmodeled PG strtod compatibility gaps, never fabricated zero facts; true zero
+and ordinary small normal values remain separate positive controls.
 Two options cells bind corrected fillfactor/same-AM/partition advice and file
 identity controls only; they do not gain parameter/method eligibility support.
 
 T37 keeps all old 118 objects/profiles/IDs and adds the 18 frozen cases (136,
-2168 assertions); 51 independent native actions, attribute/file/data/guard
+2186 assertions); 59 independent native actions, attribute/file/data/guard
 receipts and owned cleanup distinguish refusals, no-ops and execution. Catalog
 NULL represents PG17 default statistics, including authored -1. Earlier DROP
 revokes global old directories: fresh controls precede it and later gaps stay

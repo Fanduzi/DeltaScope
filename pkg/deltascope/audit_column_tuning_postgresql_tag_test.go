@@ -17,6 +17,7 @@ func TestAuditPGColumnTuningContract(t *testing.T) {
 		{"ALTER COLUMN id SET STATISTICS -2", "ddl.pg.alter.column.statistics.target.valid", "reject", false},
 		{"ALTER COLUMN id SET STATISTICS 10001", "ddl.pg.alter.column.statistics.clamp.warn", "review", false},
 		{"ALTER COLUMN id SET(n_distinct=-1.1)", "ddl.pg.alter.column.options.valid", "reject", false},
+		{"ALTER COLUMN id SET(n_distinct=1e-999)", "", "review", false},
 		{"DROP COLUMN IF EXISTS missing", "", "pass", false},
 		{"DROP COLUMN missing", "ddl.alter.drop_column.exists.require", "reject", false},
 		{"DROP COLUMN IF EXISTS missing", "ddl.pg.alter.drop_column.advisory", "review", true},
@@ -45,7 +46,7 @@ func TestAuditPGColumnTuningContract(t *testing.T) {
 				t.Fatal("no-op finding", f)
 			}
 		}
-		if found != (tc.id != "") || tc.unknown && (r.Coverage.Status != "unverified" || len(r.Statements[0].EvidenceGaps) != 1) {
+		if found != (tc.id != "") || (tc.unknown || tc.id == "" && tc.verdict == "review") && (r.Coverage.Status != "unverified" || len(r.Statements[0].EvidenceGaps) != 1) {
 			t.Fatalf("result=%+v", r)
 		}
 	}
