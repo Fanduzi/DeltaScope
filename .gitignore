@@ -5,8 +5,6 @@ scripts/__pycache__/
 /.tool-versions
 .gitnexus
 .claude/
-/AGENTS.md
-/CLAUDE.md
 /CLAUDE_CN.md
 docs/plans/
 docs/plans_zh/
