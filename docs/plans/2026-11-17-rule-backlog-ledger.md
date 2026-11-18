@@ -379,6 +379,25 @@ stay intact. TYPE/USING, general ordering and action eligibility for other
 relation kinds remain in scope for future slices. See the
 [decision](../decisions/2026-11-18-postgresql-alter-column-identity.md).
 
+D8 shipped at `8cff67d49058b339f5cea96f85f03a2e548f9418` from base
+`b966f73c76352507a8dcf03b01063e0f43255564` via fast-forward and normal push.
+The final canonical run passed 50 tasks, 3505/3505 cases and 62429 assertions,
+with zero failures or skips. Every task and CLI build used the shipped SHA.
+Artifact validation and all owned cleanup passed. T36 passed 59/59 with 660
+assertions. T37 passed 173/173 with 3390 assertions, including 37 new native
+steps (17 successes and 20 precise refusals). The independent read-only
+review, candidate gates and merged-root gates passed. The original workspace,
+protected release worktree and 16 unrelated container identities remained
+intact. The last task changed seven paths and the milestone changed 59.
+
+- [Go, PostgreSQL and lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44360977800)
+- [CLI TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44360977946)
+- [Pages](https://github.com/Fanduzi/DeltaScope/runs/135002167971)
+
+Final artifact: `/tmp/ddl-golden-pg-column-identity-final-8cff67d4/all/artifact.json`.
+Task counts and CI refer to the shipped product SHA. The three interrupted
+candidates remain historical. Other F09 dimensions stay open.
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.
@@ -395,7 +414,7 @@ new default behavior is approved per family before implementation.
 | F06 | TiDB recovery/flashback | 1 | T16 | unreviewed |
 | F07 | PostgreSQL schema/collation | 2 | T35 | unreviewed |
 | F08 | PostgreSQL CREATE TABLE | 6 | T36 | D2 delivered; remaining dimensions unreviewed |
-| F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2 ADD COLUMN, D3/D4 constraints, D5 generation, D6 tuning and D7 storage/compression/system targets delivered; remaining dimensions open |
+| F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2 ADD COLUMN, D3/D4 constraints, D5 generation, D6 tuning, D7 storage/compression/system and D8 column target/guards delivered; remaining dimensions open |
 | F10 | PostgreSQL DROP/TRUNCATE | 2 | T38 | unreviewed |
 | F11 | PostgreSQL indexes/operator families | 4 | T39 | unreviewed |
 | F12 | PostgreSQL views/materialized views | 5 | T40 | unreviewed |
@@ -449,7 +468,7 @@ insufficient.
 | F08 | `postgresql.create-table-partitioning` | PARTITION BY RANGE; PARTITION BY LIST; PARTITION BY HASH; PARTITION OF; PARTITION OF DEFAULT; INHERITS | unreviewed |
 | F08 | `postgresql.create-table-temporary` | TEMP/TEMPORARY; GLOBAL TEMPORARY compat noise; UNLOGGED; ON COMMIT actions | unreviewed |
 | F08 | `postgresql.create-table-like` | LIKE basic; INCLUDING options | unreviewed |
-| F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 bounded system/ordering evidence delivered; D8 exact ADD/RENAME target and guard evidence in verification; TYPE/USING and broader eligibility/order remain open |
+| F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 bounded system/ordering evidence delivered; D8 exact ADD/RENAME target and guard evidence delivered; TYPE/USING and broader eligibility/order remain open |
 | F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 generation and D6 statistics/options delivered with accepted gaps; D7 bounded storage/compression/system delivered, broader data/expression/current/kind scopes open |
 | F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; remaining dimensions open |
 | F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | unreviewed |

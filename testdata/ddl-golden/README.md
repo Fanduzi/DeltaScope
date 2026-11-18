@@ -14,6 +14,12 @@ SQLSTATE refusals. The T36 partitioned ADD control keeps its original notice
 and reports an explicit ordinary-table facts gap. See the
 [decision](../../docs/decisions/2026-11-18-postgresql-alter-column-identity.md).
 
+The final fixed `8cff67d4` run passed 50 tasks, 3505/3505 cases and 62429
+assertions with validation and no failures or skips. T36 and T37 retain the
+counts above. Relevant candidate and merged-root gates, independent review,
+exact-SHA CI and cleanup passed. See the decision record for the final artifact
+and CI links.
+
 ## T37 D7 storage/compression and observed system targets
 
 Delivered **b966f73c76352507a8dcf03b01063e0f43255564** passed **50 tasks,

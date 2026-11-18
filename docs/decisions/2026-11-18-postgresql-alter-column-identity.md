@@ -151,6 +151,27 @@ The `1fb0372b` all run stopped before edits (exit 143), followed by owned-only
 cleanup with no residual containers and the original 16 container identities
 preserved.
 
+## Delivered verification
+
+D8 shipped at `8cff67d49058b339f5cea96f85f03a2e548f9418` from base
+`b966f73c76352507a8dcf03b01063e0f43255564` via fast-forward and normal push.
+The final canonical run passed 50 tasks, 3505/3505 cases and 62429 assertions,
+with zero failures or skips. Every task and CLI build used the shipped SHA.
+Artifact validation and all owned cleanup passed. T36 passed 59/59 with 660
+assertions. T37 passed 173/173 with 3390 assertions, including 37 new native
+steps (17 successes and 20 precise refusals). The independent read-only
+review, candidate gates and merged-root gates passed. The original workspace,
+protected release worktree and 16 unrelated container identities remained
+intact. The last task changed seven paths and the milestone changed 59.
+
+- [Go, PostgreSQL and lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44360977800)
+- [CLI TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44360977946)
+- [Pages](https://github.com/Fanduzi/DeltaScope/runs/135002167971)
+
+Final artifact: `/tmp/ddl-golden-pg-column-identity-final-8cff67d4/all/artifact.json`.
+Task counts and CI refer to the shipped product SHA. The three interrupted
+candidates remain historical. Other F09 dimensions stay open.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
