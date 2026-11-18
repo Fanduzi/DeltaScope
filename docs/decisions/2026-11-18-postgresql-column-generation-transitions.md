@@ -3,7 +3,7 @@
 Date: 2026-11-18
 Status: Accepted
 Related milestone: F09 / `milestone/pg-alter-semantics` (D5)
-Related commits: research baseline `aa7f8872`; D4 history closeout `a2e3a7ab`; D5 facts `1e8c773d`, shared rules `23c9f4f9`; final shipping pending
+Related commits: research baseline `aa7f8872`; D4 history closeout `a2e3a7ab`; D5 facts `1e8c773d`, rules `23c9f4f9`, native/inventory and final shipping `26dde9ad`
 
 ## Context
 
@@ -141,9 +141,9 @@ profiles remain):
 - `T37.meta.pg-column-generation-scope`
 
 Unit, application/SDK/HTTP/MCP, corpus, native catalog/refusal and audit
-non-execution controls must precede exact inventory bindings. Final same-HEAD
-TASK=all, artifact validation, independent read-only review, FF-only merge,
-normal push and exact-SHA CI remain pending; research is not shipping proof.
+non-execution controls precede exact inventory bindings. Final same-HEAD
+TASK=all, validation, independent review, FF-only merge, normal push and exact-SHA
+CI are recorded below; research alone is never shipping proof.
 
 ### Fact seam (before rule implementation)
 
@@ -154,7 +154,7 @@ A native PG17.7 provider check additionally proves renamed-sequence dependency
 binding, a bigint column with an independently altered smallint sequence,
 serial versus identity, domain versus builtin, stored generation/PK flags,
 zero-column tables and unsupported table scopes, without changing issuance
-state. These checks validate facts, not the pending four-rule delivery.
+state. These checks validate facts, not the four-rule delivery by themselves.
 
 ### Shared rule implementation (candidate, not shipping proof)
 
@@ -170,8 +170,8 @@ transactional driver rollback state controls hold. Candidate replay evidence
 records `1e8c773d` plus its uncommitted rule diff; it is not a clean-HEAD or final
 canonical artifact. Build/default+PG tests, default+PG lint, formatting and
 inventory/corpus/coverage-catalog gates pass for this candidate. Frozen T37
-additions and inventory bindings are described below; independent review and
-final same-HEAD aggregate/merge/push/CI remain pending.
+additions and inventory bindings are described below; this candidate evidence
+is distinct from the final same-HEAD delivery evidence.
 
 ### Canonical/native and inventory evidence
 
@@ -200,8 +200,39 @@ NOT NULL, DEFAULT and identity options stay mixed where data/expression/unread
 current-value dimensions are not certified. ADD/DROP IDENTITY keeps audited
 status with stronger facts. The parent remains mixed; other attributes, row
 counts and the original dimensional denominator are unchanged. Matrix output
-is generated from YAML. Final same-HEAD aggregate, independent read-only review,
-FF-only merge, push and exact-SHA CI remain pending.
+is generated from YAML. Final same-HEAD delivery evidence follows.
+
+## Final D5 delivery evidence
+
+D5 shipped at `26dde9adbec574ddaeae5d01b461d15c7fa2065a`, FF-only merged
+from `milestone/pg-alter-semantics` and normally pushed from base
+`aa7f88723fbc930dacdd451a0a6c772a6617a5a5`. Milestone diff is **66 paths**;
+last native/inventory task `23c9f4f9..26dde9ad` is seven. The original full
+tracked/untracked status snapshot and unrelated worktrees/services were
+preserved; no release, tag, branch deletion or PR/issue closure occurred.
+
+Validated final artifact:
+`/tmp/ddl-golden-pg-column-final-26dde9ad/all/artifact.json` — **50 tasks,
+3450/3450 cases, 60,695 assertions**, every task at the exact final SHA with
+nonzero execution and no failed case/assertion. The first all-run exceeded the
+1800-second tool limit after 45 passing tasks; the unchanged HEAD supplied
+T51/T52/T53/T54/T58, then `reaggregate` and `validate` passed. No skipped/zero
+execution or old-HEAD substitute contributed. T37 is **118/118, 1661 assertions**.
+
+Build, default/PG tests, default/PG lint, formatting and inventory/corpus/catalog
+gates passed before/after merge; final artifact validation passed after push.
+A separate single-agent read-only phase checked actual code/callers, approved
+scope, privacy, silent/gap branches, evidence ownership and Git state with no
+unresolved P1/P2. Post-push verification directly matched HEAD/main/origin/main,
+the milestone ref and the server main ref, and all five exact-SHA checks.
+[Go/PG/lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44228829754),
+[TLS E2E CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44228829863) and
+Cloudflare Pages succeeded.
+
+This records historical D5 delivery, not same-HEAD aggregate evidence for a
+later documentation commit. **F09 remains open** for the other original
+column/constraint/attribute/options/rename-owner dimensions and wider
+state/data/dependency/permission/inheritance/partition boundaries.
 
 ## Consequences
 
