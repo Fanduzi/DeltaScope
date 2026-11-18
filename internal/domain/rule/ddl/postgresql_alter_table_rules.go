@@ -372,8 +372,8 @@ func newSetAccessMethodWarnRule(cfg policy.RulePolicy) (rule.StatementRule, erro
 func newSetReloptionsWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return newPGAlterStorageLayoutRule(
 		ruleIDPGAlterSetReloptionsWarn, rule.LevelWarning, "set_reloptions", "option_count",
-		"ALTER TABLE SET (...) on PostgreSQL — %s storage option(s) changed",
-		"SET (reloptions) changes table storage parameters such as fillfactor or autovacuum settings. These affect how PostgreSQL stores and maintains the table on disk.",
+		"ALTER TABLE SET (...) on PostgreSQL — requests updates for %s storage option(s)",
+		"SET requests changes to table storage parameters such as fillfactor and autovacuum settings. These parameters affect page layout and maintenance.",
 		"Incorrect storage parameters can degrade performance. SET fillfactor does not itself rewrite existing rows; it changes how future pages are filled. Other parameters have their own timing and maintenance behavior.",
 		"Review each parameter against the workload. If reorganizing existing pages is intended, plan the separate maintenance/rewrite operation explicitly rather than assuming SET fillfactor performs it.",
 		cfg,
@@ -383,8 +383,8 @@ func newSetReloptionsWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error)
 func newResetReloptionsNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return newPGAlterStorageLayoutRule(
 		ruleIDPGAlterResetReloptionsNotice, rule.LevelNotice, "reset_reloptions", "reset_count",
-		"ALTER TABLE RESET (...) on PostgreSQL — %s storage option(s) reset to default",
-		"RESET (reloptions) reverts table storage parameters to their PostgreSQL defaults. The table continues to use previously set values until the next VACUUM or ANALYZE for some parameters.",
+		"ALTER TABLE RESET (...) on PostgreSQL — requests removal of %s storage option override(s)",
+		"RESET requests removal of named overrides. Parameters without an override may already use their defaults.",
 		"Resetting parameters that were tuned for a specific workload may cause performance regression if the defaults are suboptimal for the table's access patterns.",
 		"Verify the default values are acceptable for the table's workload. Monitor query performance after resetting tuned parameters.",
 		cfg,

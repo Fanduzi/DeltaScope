@@ -36,7 +36,7 @@ func assessPGReplicaIdentityIndex(s spec.Statement) (reason, fact string) {
 		return "", ""
 	}
 	name := spec.PGReplicaIdentityIndexTarget(s)
-	if name == "" || !spec.PGReplicaIdentityTableBound(s) {
+	if name == "" || !spec.PGOrdinaryTableBound(s) {
 		return "", "target_table.pg_replica_identity_index"
 	}
 	facts := s.Metadata.PGReplicaIdentity

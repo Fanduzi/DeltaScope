@@ -134,6 +134,15 @@ The Go provider `PGConstraintState` alias and copied directory retain private fa
 
 Maintainer notes: [decision](../decisions/2026-11-17-postgresql-constraint-target-evidence.md). Other F09 dimensions remain open.
 
+### PostgreSQL heap table storage option declarations
+
+The default `ddl.pg.alter.reloptions.valid` blocker checks bounded SET/RESET
+declarations with fresh exact PG17 ordinary persistent non-typed heap evidence.
+It checks integer fillfactor range, observed autovacuum Boolean forms, duplicate
+known SET options and valued RESET. Unknown SET options, other scopes, and
+opaque values remain unverified. An unvalued unknown or repeated RESET key can
+succeed. Successful fillfactor SET does not itself rewrite rows.
+
 ### PostgreSQL replica identity index attachment
 
 The default `ddl.pg.alter.replica_identity_using_index.valid` blocker checks

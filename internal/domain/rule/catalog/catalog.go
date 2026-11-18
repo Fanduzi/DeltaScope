@@ -234,6 +234,8 @@ func summaryForRule(ruleID string) string {
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	switch ruleID {
+	case "ddl.pg.alter.reloptions.valid":
+		return "Checks bounded SET and RESET declarations for a fresh exact PostgreSQL 17 ordinary heap table. Known duplicate or invalid values block; unknown scope or options remain gaps."
 	case "ddl.pg.alter.replica_identity_using_index.valid":
 		return "Checks exact PostgreSQL 17 replica-identity index attachment using its owner, uniqueness, immediacy, expression, predicate and key-nullability facts. Unknown evidence remains a gap."
 	case "ddl.table.exists.alter.require":
@@ -946,6 +948,7 @@ func sourceForRule() string {
 const unknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
 
 var metadataAwareRuleIDs = map[string]bool{
+	"ddl.pg.alter.reloptions.valid":                        true,
 	"ddl.pg.alter.replica_identity_using_index.valid":      true,
 	"ddl.pg.alter.column.storage.valid":                    true,
 	"ddl.pg.alter.column.compression.valid":                true,

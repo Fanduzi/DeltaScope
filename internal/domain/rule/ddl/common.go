@@ -320,6 +320,7 @@ const (
 	ruleIDPGAlterDisableRuleWarn                            = "ddl.pg.alter.disable_rule.warn"
 	ruleIDPGAlterEnableReplicaRuleNotice                    = "ddl.pg.alter.enable_replica_rule.notice"
 	ruleIDPGAlterEnableAlwaysRuleNotice                     = "ddl.pg.alter.enable_always_rule.notice"
+	ruleIDPGAlterTableReloptionsValid                       = "ddl.pg.alter.reloptions.valid"
 	ruleIDPGAlterSetReloptionsWarn                          = "ddl.pg.alter.set_reloptions.warn"
 	ruleIDPGAlterResetReloptionsNotice                      = "ddl.pg.alter.reset_reloptions.notice"
 	// PostgreSQL column attribute rules (PG-only).

@@ -1,0 +1,36 @@
+name: table_reloptions_validity
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    ff:
+      exists: true
+      pg_relation: {name: ff, kind: r, heap: true}
+      pg_columns: &column_scope {ordinary: true, columns: []}
+    good:
+      exists: true
+      pg_relation: {name: good, kind: r, heap: true}
+      pg_columns: *column_scope
+    opaque:
+      exists: true
+      pg_relation: {name: opaque, kind: r, heap: true}
+      pg_columns: *column_scope
+    reset_bad:
+      exists: true
+      pg_relation: {name: reset_bad, kind: r, heap: true}
+      pg_columns: *column_scope
+    reset_good:
+      exists: true
+      pg_relation: {name: reset_good, kind: r, heap: true}
+      pg_columns: *column_scope
+expect:
+  parse_ok: true
+  statements: {count: 5}
+  unsupported: {count: 0}
+  findings:
+    include:
+      - ddl.pg.alter.reloptions.valid
+      - ddl.pg.alter.set_reloptions.warn
+      - ddl.pg.alter.reset_reloptions.notice

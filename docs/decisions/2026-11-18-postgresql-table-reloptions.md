@@ -65,7 +65,8 @@ sequence guard. Research artifacts include
 - `T37.meta.pg-table-reloptions-guard-absent`
 
 Old case IDs, SQL, findings and policy profiles stay in place. The two old
-T37 offline SET cases gain a required fact and coverage gap. Canonical live
+T37 offline SET cases use a profile that excludes the new blocker. The
+new isolated offline case covers that blocker and its evidence gap. Canonical live
 checks compare exact catalogs, file identity, payload and sequence position
 before running independent native steps. Only the existing SET/RESET storage
 parameters cell receives new evidence. Other F09 dimensions stay open.

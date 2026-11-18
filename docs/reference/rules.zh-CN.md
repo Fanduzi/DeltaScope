@@ -1272,6 +1272,10 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 `v0.32.0` 是 **PostgreSQL 边界支持就绪门控**。这是一个决策里程碑，不是功能发布。未新增规则 ID。Characterization 测试记录了 generated 和 identity 列的稳定 AST 事实；就绪报告推荐 `v0.33.0` 作为窄事实保留包。未变更任何生产 extractor、spec、rule 或 policy 代码。
 
+### PostgreSQL heap 表存储选项
+
+`ddl.pg.alter.reloptions.valid` 默认级别为 blocker。适用于已观测 PostgreSQL 17、限定名精确且目录新鲜的普通持久非类型 heap 表。检查整数 `fillfactor` 的 10–100 范围、已验证的 `autovacuum_enabled` 布尔输入、重复的已知 SET 键，以及带值 RESET。无值 RESET 可含未知或重复键。未知 SET 键、TOAST 或扩展参数、未经验证的数值形式和不明范围报告 `unproven_table_reloptions`。原有提示仍描述请求及影响。
+
 ### PostgreSQL 复制标识索引附着
 
 `ddl.pg.alter.replica_identity_using_index.valid` 默认级别为 blocker。对已观测的 PG17，检查精确限定名绑定、目录新鲜的普通持久非类型表。索引缺失、对象类型或归属不符、非唯一、延迟约束、表达式、谓词或键列不适用时报告原生前提问题。可空的 INCLUDE 列不参与键列检查。绑定、范围或目录事实不足时报告 `unproven_replica_identity_index`。既有 notice 描述请求。PG 可以选中无效索引，选中状态不能证明逻辑复制可用。

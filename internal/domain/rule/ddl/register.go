@@ -725,6 +725,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterDisableRuleWarn, construct: newDisableRuleWarnRule},
 		{ruleID: ruleIDPGAlterEnableReplicaRuleNotice, construct: newEnableReplicaRuleNoticeRule},
 		{ruleID: ruleIDPGAlterEnableAlwaysRuleNotice, construct: newEnableAlwaysRuleNoticeRule},
+		{ruleID: ruleIDPGAlterTableReloptionsValid, construct: newPGTableReloptionsRule},
 		{ruleID: ruleIDPGAlterSetReloptionsWarn, construct: newSetReloptionsWarnRule},
 		{ruleID: ruleIDPGAlterResetReloptionsNotice, construct: newResetReloptionsNoticeRule},
 		// PostgreSQL column attribute rules (PG-only).

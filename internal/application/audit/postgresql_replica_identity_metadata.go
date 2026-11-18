@@ -9,7 +9,7 @@ import (
 func enrichPGReplicaIdentityIndexes(ctx context.Context, request *MetadataRequest, statements []spec.Statement) error {
 	for _, s := range statements {
 		name := spec.PGReplicaIdentityIndexTarget(s)
-		if name == "" || !spec.PGReplicaIdentityTableBound(s) || !spec.PG17Observed(s.Metadata.Instance) {
+		if name == "" || !spec.PGOrdinaryTableBound(s) || !spec.PG17Observed(s.Metadata.Instance) {
 			continue
 		}
 		table := s.DDL.Table

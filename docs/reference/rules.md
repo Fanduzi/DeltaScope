@@ -1344,6 +1344,17 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 
 `v0.32.0` is the **PostgreSQL Boundary Support-Readiness Gate**. It is a decision milestone, not a feature release. No new rule IDs were added. Characterization tests document stable AST facts about generated and identity columns; a readiness report recommends `v0.33.0` as a narrow fact-preservation pack. No production extractor, spec, rule, or policy code changed.
 
+### PostgreSQL heap table storage options
+
+`ddl.pg.alter.reloptions.valid` defaults to blocker. It checks SET and RESET
+on an observed PostgreSQL 17 ordinary persistent non-typed heap table with a
+fresh, exact schema-qualified binding. The checks cover integer `fillfactor`
+values from 10 through 100, bounded Boolean `autovacuum_enabled` declarations,
+duplicate known SET keys and a RESET argument. Unvalued RESET accepts repeated
+and unknown names. Unknown SET keys, TOAST and extension namespaces, opaque
+numerics and unproven scope yield `unproven_table_reloptions`. The original
+advice still describes the requested changes and their effects.
+
 ### PostgreSQL replica identity index attachment
 
 `ddl.pg.alter.replica_identity_using_index.valid` is a default blocker on

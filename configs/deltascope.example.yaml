@@ -1709,6 +1709,10 @@ rules:
     level: notice
     params:
 
+  ddl.pg.alter.reloptions.valid:
+    enabled: true
+    level: blocker
+    params:
   ddl.pg.alter.set_reloptions.warn:
     enabled: true
     level: warning

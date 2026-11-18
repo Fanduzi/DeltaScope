@@ -9,6 +9,8 @@ relation metadata; algorithm and ignored-option reviews use declared syntax.
 
 The PostgreSQL replica identity catalog entry advertises default blocker and live attachment metadata. The existing USING INDEX notice remains advisory.
 
+The PostgreSQL heap table reloptions entry advertises the default blocker and live catalog scope.
+
 ## Files
 
 | File | Responsibility |

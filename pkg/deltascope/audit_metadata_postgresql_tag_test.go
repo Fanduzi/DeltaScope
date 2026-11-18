@@ -4,6 +4,8 @@ package deltascope
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -277,5 +279,25 @@ func TestAuditPostgreSQLMetadataResolvesOwningTableForDropIndex(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("expected drop_index existence finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditPGTableReloptionsThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"}, snapshot: &TableSnapshot{
+		Schema: "app", Exists: true, Table: &Table{Name: "t"}, PGRelation: PGRelationState{Name: "t", Kind: "r", Heap: true}, PGColumns: &PGColumnCatalog{Ordinary: true},
+	}}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t RESET (private_option='private_payload')`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(result.Statements) != 1 {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.reloptions.valid" && f.Metadata["reason_code"] == "table_reloption_reset_has_value" {
+			found = true
+		}
+	}
+	data, err := json.Marshal(result.Statements[0].Findings)
+	if !found || err != nil || strings.Contains(string(data), "private_option") || strings.Contains(string(data), "private_payload") {
+		t.Fatalf("findings=%s err=%v", data, err)
 	}
 }

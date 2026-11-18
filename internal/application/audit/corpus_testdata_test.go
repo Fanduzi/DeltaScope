@@ -352,6 +352,7 @@ type corpusTableSnapshot struct {
 type corpusPGRelation struct {
 	Name string `yaml:"name"`
 	Kind string `yaml:"kind,omitempty"`
+	Heap bool   `yaml:"heap,omitempty"`
 }
 
 type corpusTable struct {
