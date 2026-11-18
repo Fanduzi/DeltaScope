@@ -9,11 +9,17 @@ import (
 
 func TestPGColumnMetadataCloneOwnsCatalog(t *testing.T) {
 	value := int64(2147483648)
-	for _, catalog := range []*spec.PGColumnCatalog{nil, {Ordinary: true, Columns: []spec.PGColumnState{}}, {Ordinary: true, Columns: []spec.PGColumnState{{Name: "id", Identity: "d", IdentitySequence: &spec.PGIdentitySequenceState{TypeWidth: 64, Definition: spec.SequenceDefinition{Start: &value}}}}}} {
+	for _, catalog := range []*spec.PGColumnCatalog{{Ordinary: true, Columns: []spec.PGColumnState{}, SystemColumns: []spec.PGColumnState{{Name: "ctid", System: true, TypeStorage: "p"}}}, nil, {Ordinary: true, Columns: []spec.PGColumnState{}}, {Ordinary: true, Columns: []spec.PGColumnState{{Name: "id", Identity: "d", IdentitySequence: &spec.PGIdentitySequenceState{TypeWidth: 64, Definition: spec.SequenceDefinition{Start: &value}}}}}} {
 		s := &spec.TableSnapshot{PGColumns: catalog}
 		cloned := cloneTableSnapshot(s)
 		if !reflect.DeepEqual(s, cloned) {
 			t.Fatal("clone changed proof shape")
+		}
+		if catalog != nil && len(catalog.SystemColumns) > 0 {
+			cloned.PGColumns.SystemColumns[0].TypeStorage = "x"
+			if catalog.SystemColumns[0].TypeStorage != "p" {
+				t.Fatal("clone aliases system directory")
+			}
 		}
 		if catalog != nil && len(catalog.Columns) > 0 {
 			cloned.PGColumns.Columns[0].Identity = "a"

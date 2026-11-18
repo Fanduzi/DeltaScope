@@ -11,12 +11,12 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
-var pgColumnCatalogTestColumns = []string{"ordinary", "name", "identity", "generated", "type", "notnull", "hasdef", "pk", "seqtype", "start", "increment", "min", "max", "cache", "cycle"}
+var pgColumnCatalogTestColumns = []string{"ordinary", "name", "identity", "generated", "type", "notnull", "hasdef", "pk", "seqtype", "start", "increment", "min", "max", "cache", "cycle", "attnum", "typstorage"}
 
 func pgColumnCatalogTestRow(name, identity, generated string, typeOID int64, notNull, hasDefault, pk, sequence bool) []driver.Value {
-	row := []driver.Value{true, name, identity, generated, typeOID, notNull, hasDefault, pk, nil, nil, nil, nil, nil, nil, nil}
+	row := []driver.Value{true, name, identity, generated, typeOID, notNull, hasDefault, pk, nil, nil, nil, nil, nil, nil, nil, int64(1), "p"}
 	if sequence {
-		copy(row[8:], []driver.Value{int64(20), int64(2147483648), int64(1), int64(1), int64(math.MaxInt64), int64(1), false})
+		copy(row[8:15], []driver.Value{int64(20), int64(2147483648), int64(1), int64(1), int64(math.MaxInt64), int64(1), false})
 	}
 	return row
 }
@@ -74,7 +74,7 @@ func TestLoadPGColumnCatalog(t *testing.T) {
 }
 
 func TestPGColumnCatalogEmptyUnknownAndAmbiguous(t *testing.T) {
-	empty := []driver.Value{true, nil, nil, nil, nil, nil, nil, false, nil, nil, nil, nil, nil, nil, nil}
+	empty := []driver.Value{true, nil, nil, nil, nil, nil, nil, false, nil, nil, nil, nil, nil, nil, nil, nil, nil}
 	duplicate := pgColumnCatalogTestRow("id", "d", "", 20, true, false, false, true)
 	unsupported := pgColumnCatalogTestRow("id", "d", "", 20, true, false, false, true)
 	unsupported[0] = false

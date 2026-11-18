@@ -25,17 +25,20 @@ type PGColumnState struct {
 	Identity         string // pg_attribute.attidentity: empty, a, d
 	Generated        string // pg_attribute.attgenerated: empty, s on PG17
 	TypeWidth        int
+	TypeStorage      string // observed pg_type.typstorage: p/e/m/x; empty is unknown
+	System           bool   // observed negative pg_attribute.attnum, not a name inference
 	NotNull          bool
 	HasDefault       bool
 	PrimaryKey       bool
 	IdentitySequence *PGIdentitySequenceState
 }
 
-// PGColumnCatalog distinguishes unknown (nil) from a complete empty directory.
+// PGColumnCatalog keeps user and observed system directories separate.
 // Ordinary proves a persistent, non-inheritance/non-partition ordinary table.
 type PGColumnCatalog struct {
-	Ordinary bool
-	Columns  []PGColumnState // nil is unobserved, not an empty set
+	Ordinary      bool
+	Columns       []PGColumnState // nil is unobserved; non-nil empty proves no user columns
+	SystemColumns []PGColumnState // nil is unobserved, never proof that system targets are absent
 }
 
 // FindColumn returns one uniquely proven member or proven absence.
@@ -44,20 +47,34 @@ func (c *PGColumnCatalog) FindColumn(name string) (*PGColumnState, bool) {
 		return nil, false
 	}
 	var found *PGColumnState
-	for i := range c.Columns {
-		m := &c.Columns[i]
-		if m.Name == "" {
-			return nil, false
+	for namespace, members := range [][]PGColumnState{c.Columns, c.SystemColumns} {
+		for i := range members {
+			m := &members[i]
+			if m.Name == "" || m.System != (namespace == 1) || pgSystemColumnName(m.Name) != (namespace == 1) {
+				return nil, false
+			}
+			if m.Name != name {
+				continue
+			}
+			if found != nil || (m.Identity != "" && m.Identity != "a" && m.Identity != "d") || (m.Generated != "" && m.Generated != "s") || (m.Identity != "" && m.Generated != "") {
+				return nil, false
+			}
+			found = m
 		}
-		if m.Name != name {
-			continue
-		}
-		if found != nil || (m.Identity != "" && m.Identity != "a" && m.Identity != "d") || (m.Generated != "" && m.Generated != "s") || (m.Identity != "" && m.Generated != "") {
-			return nil, false
-		}
-		found = m
+	}
+	if found == nil && pgSystemColumnName(name) {
+		return nil, false // User-directory absence never proves a system attribute absent.
 	}
 	return found, true
+}
+
+func pgSystemColumnName(name string) bool {
+	switch name {
+	case "ctid", "xmin", "cmin", "xmax", "cmax", "tableoid":
+		return true
+	default:
+		return false
+	}
 }
 
 // Clone preserves unknown/known-empty distinctions and owns numeric facts.
@@ -66,16 +83,23 @@ func (c *PGColumnCatalog) Clone() *PGColumnCatalog {
 		return nil
 	}
 	out := *c
-	if c.Columns != nil {
-		out.Columns = make([]PGColumnState, len(c.Columns))
-		copy(out.Columns, c.Columns)
-		for i := range out.Columns {
-			if s := c.Columns[i].IdentitySequence; s != nil {
-				seq := *s
-				seq.Definition = *s.Definition.Clone()
-				out.Columns[i].IdentitySequence = &seq
-			}
+	out.Columns = clonePGColumnMembers(c.Columns)
+	out.SystemColumns = clonePGColumnMembers(c.SystemColumns)
+	return &out
+}
+
+func clonePGColumnMembers(members []PGColumnState) []PGColumnState {
+	if members == nil {
+		return nil
+	}
+	out := make([]PGColumnState, len(members))
+	copy(out, members)
+	for i := range out {
+		if s := members[i].IdentitySequence; s != nil {
+			seq := *s
+			seq.Definition = *s.Definition.Clone()
+			out[i].IdentitySequence = &seq
 		}
 	}
-	return &out
+	return out
 }

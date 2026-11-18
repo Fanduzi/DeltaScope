@@ -99,7 +99,7 @@ type PGConstraintState = spec.PGConstraintState
 // custom providers; TableSnapshot.PGColumns never enters serialized metadata.
 type PGColumnCatalog = spec.PGColumnCatalog
 
-// PGColumnState contains exact-name column generation facts, not expressions.
+// PGColumnState contains exact-name column/type/system facts, not expressions.
 type PGColumnState = spec.PGColumnState
 
 // PGIdentitySequenceState contains stable dependency-bound sequence parameters.

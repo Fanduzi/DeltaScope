@@ -8,11 +8,12 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 |------|---------------|
 | parser.go | Parses PostgreSQL SQL text and classifies statements when built with the `postgresql` tag |
 | extractor.go | Defines the PostgreSQL extracted-statement wrapper and extractor that populates normalized spec fields (column `NotNull`, `Default`, constraints) for ALTER TABLE ADD COLUMN statements |
-| extractor_ddl_alter.go | Normalizes PostgreSQL ALTER actions; ADD PRIMARY KEY/UNIQUE retain an explicit `using_index=true|false` AST fact, never inferred from missing column lists or live index eligibility; DROP CONSTRAINT preserves `if_exists` and `cascade` from AST (omission/RESTRICT both mean false) |
+| extractor_ddl_alter.go | Normalizes PostgreSQL ALTER actions; retains private exact compression-method AST and existing storage_kind without claiming applicability; ADD PRIMARY KEY/UNIQUE preserve explicit `using_index=true\|false`, never inferred eligibility; DROP CONSTRAINT preserves `if_exists`/`cascade` (omission/RESTRICT false) |
 | parser_constraint_target_postgresql_tag_test.go | Pins DROP constraint guard/CASCADE/RESTRICT/omission and exact quoted names without widening parser support |
 | parser_constraint_build_postgresql_tag_test.go | Pins plain/reused-index PK and UNIQUE declarations, unnamed/quoted controls, and absence of the index-reuse marker on FK/CHECK |
 | extractor_ddl_drop.go | Extracts PostgreSQL DROP/TRUNCATE DDL preserving every named relation in `DDL.Targets` |
 | extractor_column_tuning.go | Preserves STATISTICS DEFAULT versus literal and ordered SET/RESET column-option keys/value kinds; finite non-underflowing AST values only (true zero distinguished from rounding; subnormal/minimum-normal boundary stays unmodeled), never SQL-text fallback or quoted payload |
+| parser_column_format_postgresql_tag_test.go | Pins exact authored compression method (including case/default), missing/unmodeled AST knownness, existing storage case retention and JSON privacy without SQL-text recovery |
 | parser_column_tuning_postgresql_tag_test.go | Pins tuning/default/zero/bounds/duplicates/opaque/int-float and PG-versus-Go underflow facts, JSON privacy and DROP COLUMN IF EXISTS/CASCADE/RESTRICT knownness |
 | extractor_column_transition.go | Preserves existing-column generation guards, mode counts and ordered sequence options without changing legacy projections; no SQL-text fallback or expression payload |
 | parser_column_transition_postgresql_tag_test.go | Pins guards, duplicate modes/options, START versus RESTART, signed int64 boundaries/overflow, unmodeled members, old JSON shape and D2 isolation |

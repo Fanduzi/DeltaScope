@@ -76,7 +76,8 @@ func (p *Provider) LoadInstanceFacts(ctx context.Context, _ spec.Dialect, _ stri
 	}
 
 	rows, err := p.db.QueryContext(ctx, `
-		select name, setting
+		select name, setting,
+		       case when name = 'default_toast_compression' then 'lz4' = any(enumvals) end
 		from pg_settings
 		where name in ('server_encoding','default_toast_compression','wal_compression')
 	`)
@@ -85,23 +86,34 @@ func (p *Provider) LoadInstanceFacts(ctx context.Context, _ spec.Dialect, _ stri
 	}
 	defer rows.Close()
 
+	compressionSeen := false
 	for rows.Next() {
 		var name string
 		var value string
-		if err := rows.Scan(&name, &value); err != nil {
+		var lz4Supported sql.NullBool
+		if err := rows.Scan(&name, &value, &lz4Supported); err != nil {
 			return nil, fmt.Errorf("scan instance fact: %w", err)
 		}
 		switch strings.ToLower(name) {
 		case "server_encoding":
 			facts.DefaultCharset = value
 		case "default_toast_compression":
+			if compressionSeen {
+				return nil, fmt.Errorf("ambiguous compression capability observation")
+			}
+			compressionSeen = true
 			facts.InnoDBDefaultRowFormat = strings.ToLower(value)
+			facts.PGCompressionLZ4Known = lz4Supported.Valid
+			facts.PGCompressionLZ4Supported = lz4Supported.Valid && lz4Supported.Bool
 		case "wal_compression":
 			facts.InnoDBAdaptiveHashEnabled = normalizeYesNo(value)
 		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate instance facts: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, fmt.Errorf("close instance facts: %w", err)
 	}
 	return facts, nil
 }

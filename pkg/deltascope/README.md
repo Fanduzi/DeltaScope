@@ -86,14 +86,19 @@ Stable public package surface for library consumers.
 - `InstanceFacts`
   aliases the shared instance facts, including observed server charset,
   server collation, and configurable utf8mb4 default collation; empty means
-  unobserved and `DefaultCharset` is the request database charset.
+  unobserved and `DefaultCharset` is the request database charset. Private
+  `PGCompressionLZ4Known`/`PGCompressionLZ4Supported` distinguish an observed
+  build enum answer from the selected compression default or no observation.
 - `TableSnapshot`
 - `PGColumnCatalog`, `PGColumnState`, `PGIdentitySequenceState`, `SequenceDefinition`
-  Bounded custom-provider generation facts. `TableSnapshot.PGColumns` is private
-  JSON evidence; nil catalog/member set is unobserved, non-nil empty is known
-  empty. Exact names and `Ordinary` scope are required; sequence parameters are
+  Bounded custom-provider column facts. `TableSnapshot.PGColumns` is private
+  JSON evidence; user `Columns` nil is unobserved, non-nil empty means no user
+  columns. `SystemColumns` separately carries real negative-attnum members with
+  `System` true; missing system facts never establish absence or guarded no-op.
+  `TypeStorage` is actual `pg_type.typstorage`, not the current column strategy.
+  Exact names and `Ordinary` scope are required; sequence parameters are
   stable definition facts, never current/next issuance values. SDK and application
-  adapters deep-copy nested pointers; expressions are not carried.
+  adapters deep-copy both directories and nested pointers; expressions are not carried.
 - `ViewSnapshot`, `ViewDefinition`, `ViewColumnBinding` for metadata-provider view facts
 - `Table`
 - `Column`

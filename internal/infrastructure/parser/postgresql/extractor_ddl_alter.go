@@ -1156,9 +1156,15 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			},
 		}, true, nil
 	case pg_query.AlterTableType_AT_SetCompression:
+		var method *string
+		if value := cmd.GetDef().GetString_(); value != nil {
+			name := value.GetSval()
+			method = &name
+		}
 		return spec.Alter{
-			Action: "set_compression",
-			Name:   cmd.GetName(),
+			Action:              "set_compression",
+			Name:                cmd.GetName(),
+			PGCompressionMethod: method,
 			Options: map[string]string{
 				"column":          cmd.GetName(),
 				"has_compression": "true",

@@ -156,6 +156,9 @@ type TargetBinding struct {
 // evidence gaps instead of fabricating a configuration.
 type InstanceFacts struct {
 	Version string `json:"version,omitempty"`
+	// PG compression support is observed from the complete GUC enum, not its selected default.
+	PGCompressionLZ4Supported bool `json:"-"`
+	PGCompressionLZ4Known     bool `json:"-"`
 	// On MySQL, DefaultCharset is character_set_database, not the server default.
 	DefaultCharset string `json:"default_charset,omitempty"`
 	// Empty server default fields mean unobserved.

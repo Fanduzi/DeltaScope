@@ -98,11 +98,11 @@ func TestLoadInstanceFactsMapsPostgreSQLSettings(t *testing.T) {
 			rows:    [][]driver.Value{{"PostgreSQL 16.3"}},
 		},
 		"from pg_settings": {
-			columns: []string{"name", "setting"},
+			columns: []string{"name", "setting", "lz4_supported"},
 			rows: [][]driver.Value{
-				{"server_encoding", "UTF8"},
-				{"default_toast_compression", "pglz"},
-				{"wal_compression", "on"},
+				{"server_encoding", "UTF8", nil},
+				{"default_toast_compression", "pglz", true},
+				{"wal_compression", "on", nil},
 			},
 		},
 	})
@@ -125,6 +125,9 @@ func TestLoadInstanceFactsMapsPostgreSQLSettings(t *testing.T) {
 	}
 	if facts.InnoDBDefaultRowFormat != "pglz" {
 		t.Fatalf("expected toast compression to map into row format slot, got %#v", facts)
+	}
+	if !facts.PGCompressionLZ4Known || !facts.PGCompressionLZ4Supported {
+		t.Fatal("selected pglz was confused with lack of lz4 support")
 	}
 }
 
