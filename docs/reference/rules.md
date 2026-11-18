@@ -436,10 +436,26 @@ column/index member-existence rule (`add`/`drop`/`modify`/`change`/`rename` colu
 `ddl.create_index.columns.exists.require`, and `ddl.table.drop.exists.require` emit
 `unknown_table_state` evidence gaps when
 that state cannot be established; the remaining rules are still silently skipped without
-usable state. The gap projection never applies to PostgreSQL — it keeps its legacy
-finding/skip contract.
+usable state. PostgreSQL uses its own evidence-gap reasons for the checks described below.
 
-`ddl.alter.change_column.target.exists.forbid` and `ddl.alter.rename_column.target.exists.forbid` report one blocker when the new name belongs to another column. The same old and new identity is not a self-conflict. An unknown column set is the existing `unknown_table_state` gap, not a claim that the new name is free. Closing either rule does not let ordered state publish a known duplicate name.
+On MySQL and TiDB, `ddl.alter.change_column.target.exists.forbid` and `ddl.alter.rename_column.target.exists.forbid` report one blocker when the new name belongs to another column. The same old and new identity is not a self-conflict. An unknown column set is the existing `unknown_table_state` gap, not a claim that the new name is free. Closing either rule does not let ordered state publish a known duplicate name.
+
+On observed PostgreSQL 17, the existing ADD and RENAME column rules use an exact,
+fresh catalog of ordinary persistent tables. ADD rejects an existing user name
+unless `IF NOT EXISTS` is authored. A proven guarded duplicate suppresses the
+three ADD execution advisories while independent declaration rules still run.
+An observed system column conflicts even with the guard. RENAME checks the
+source first, rejecting an absent or system source. An occupied destination,
+including the same exact name, conflicts. Quotes preserve case and spaces.
+Unproven scope, stale observations and multiple actions yield
+`unproven_column_identity` gaps. The independent RENAME forbid still applies.
+
+For PostgreSQL `ALTER TABLE IF EXISTS`, `ddl.table.exists.alter.require` is
+silent on a proven qualified absence or an observed relation of any kind.
+A schema-local miss for an unqualified name or stale relation evidence yields
+`unproven_alter_table_relation`. Existing relation kinds can still fail the
+action's independent prerequisites. The scope excludes type conversion,
+expression evaluation, dependencies and permissions.
 
 `ddl.alter.rename_column.version.require` checks `RENAME COLUMN` against the resolved version. MySQL 8.0.3+ inside 8.0, MySQL 8.4, and TiDB 8.5 pass. MySQL 5.7 and MySQL 8.0.0–8.0.2 are one incompatibility blocker: coverage stays `complete` and the verdict is `reject`. A missing version is a `missing_target_version` gap with no extra finding. A legal version outside the validated series is a `target_version_out_of_validated_range` gap and is not published. `CHANGE COLUMN` does not inherit this check. The golden profile `t05-a5-column-identity-isolated` enables the previous eight ordered-state blockers plus these three rules and disables every other catalog rule. It does not change the default meaning of existing rules.
 

@@ -2182,18 +2182,20 @@
    "sql": "ALTER TABLE users ADD COLUMN email text",
    "expect": {
     "exit": 0,
-    "verdict": "pass",
+    "verdict": "review",
     "statements": 1,
     "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete"
+     "unverified"
     ],
     "statement_sql": [
      "ALTER TABLE users ADD COLUMN email text"
     ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.alter.add_column.exists.forbid", "reason_code": "unproven_column_identity", "required_facts": ["instance.version"]}],
     "finding_entries": [
      {
       "index": 0,
@@ -2209,18 +2211,20 @@
    "sql": "ALTER TABLE users ADD COLUMN email text",
    "expect": {
     "exit": 0,
-    "verdict": "pass",
+    "verdict": "review",
     "statements": 1,
     "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete"
+     "unverified"
     ],
     "statement_sql": [
      "ALTER TABLE users ADD COLUMN email text"
     ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.alter.add_column.exists.forbid", "reason_code": "unproven_column_identity", "required_facts": ["instance.version"]}],
     "finding_entries": [
      {
       "index": 0,
@@ -2236,18 +2240,20 @@
    "sql": "ALTER TABLE users ADD COLUMN IF NOT EXISTS email text",
    "expect": {
     "exit": 0,
-    "verdict": "pass",
+    "verdict": "review",
     "statements": 1,
     "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete"
+     "unverified"
     ],
     "statement_sql": [
      "ALTER TABLE users ADD COLUMN IF NOT EXISTS email text"
     ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.alter.add_column.exists.forbid", "reason_code": "unproven_column_identity", "required_facts": ["instance.version"]}],
     "finding_entries": [
      {
       "index": 0,
@@ -2336,13 +2342,15 @@
     "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete"
+     "unverified"
     ],
     "statement_sql": [
      "ALTER TABLE users RENAME COLUMN email TO mail"
     ],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.alter.rename_column.exists.require", "reason_code": "unproven_column_identity", "required_facts": ["instance.version"]}, {"index": 0, "rule_id": "ddl.alter.rename_column.target.exists.forbid", "reason_code": "unproven_column_identity", "required_facts": ["instance.version"]}],
     "finding_entries": [
      {
       "index": 0,
@@ -2431,8 +2439,9 @@
     "statement_coverage": [
      "unverified"
     ],
-    "evidence_gaps": 1,
-    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["instance.version"]}],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [
+     {"index": 0, "rule_id": "ddl.alter.add_column.exists.forbid", "reason_code": "unproven_column_identity", "required_facts": ["instance.version"]},{"index": 0, "rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["instance.version"]}],
     "statement_sql": [
      "ALTER TABLE users ADD COLUMN email text, DROP COLUMN old"
     ],

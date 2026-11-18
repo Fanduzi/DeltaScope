@@ -423,9 +423,13 @@ TiDB 的 ALTER VIEW 和裸 CHECK OPTION 仍是厂商边界。缺少必要事实�
 
 ### 存在性与列身份规则（20 条 — 元数据支撑）
 
-这些规则验证 DDL 语句引用的对象在请求内有序 schema 视图中确实存在（或确实不存在）：配置了元数据时取实时表快照，否则对 MySQL 与 TiDB 使用同一审计批次内先前语句派生的状态。`ddl.table.exists.alter.require`、`ddl.table.exists.create.forbid`、全部列/索引成员存在性规则（`add`/`drop`/`modify`/`change`/`rename` 列、`add`/`drop`/`rename` 索引、`set_default`/`drop_default` 目标列以及 `AFTER` 相对列位置引用）、CHANGE 与 RENAME 的目的名规则、`ddl.alter.drop_primary_key.exists.require`、`ddl.create_index.columns.exists.require` 与 `ddl.table.drop.exists.require` 在 MySQL/TiDB 上状态无法确定时产生 `unknown_table_state` 证据缺口；其余规则在无可用状态时仍静默跳过。该缺口投影从不适用于 PostgreSQL——它保留既有 finding/跳过契约。
+这些规则验证 DDL 语句引用的对象在请求内有序 schema 视图中确实存在（或确实不存在）：配置了元数据时取实时表快照，否则对 MySQL 与 TiDB 使用同一审计批次内先前语句派生的状态。`ddl.table.exists.alter.require`、`ddl.table.exists.create.forbid`、全部列/索引成员存在性规则（`add`/`drop`/`modify`/`change`/`rename` 列、`add`/`drop`/`rename` 索引、`set_default`/`drop_default` 目标列以及 `AFTER` 相对列位置引用）、CHANGE 与 RENAME 的目的名规则、`ddl.alter.drop_primary_key.exists.require`、`ddl.create_index.columns.exists.require` 与 `ddl.table.drop.exists.require` 在 MySQL/TiDB 上状态无法确定时产生 `unknown_table_state` 证据缺口；其余规则在无可用状态时仍静默跳过。PostgreSQL 的相关检查使用下述独立证据缺口。
 
-`ddl.alter.change_column.target.exists.forbid` 与 `ddl.alter.rename_column.target.exists.forbid` 在新名属于另一列时各报告一条 blocker。旧名与新名是同一身份时不是自冲突。列集合未知时仍是既有 `unknown_table_state` 缺口，不把新名说成空闲。关闭这两条规则也不会让有序状态发布已知重名。
+在 MySQL 和 TiDB 上，`ddl.alter.change_column.target.exists.forbid` 与 `ddl.alter.rename_column.target.exists.forbid` 在新名属于另一列时各报告一条 blocker。旧名与新名是同一身份时不是自冲突。列集合未知时仍是既有 `unknown_table_state` 缺口，不把新名说成空闲。关闭这两条规则也不会让有序状态发布已知重名。
+
+对已观测的 PostgreSQL 17，既有 ADD、RENAME 列规则使用普通持久表的精确、新鲜列目录。ADD 重复用户列时报告 blocker，带 `IF NOT EXISTS` 则静默，并抑制三条描述实际新增的提示。独立声明规则仍运行。已观测的系统列重名不受 guard 保护。RENAME 先检查源列，缺失或系统源列报告 blocker。目的名已存在时也报告 blocker，包括改成原名。引号中的大小写和空格按原样比较。范围不明、目录过期或存在多个子动作时报告 `unproven_column_identity`。独立 RENAME 禁止策略仍适用。
+
+PostgreSQL `ALTER TABLE IF EXISTS` 的既有存在性规则在已证明限定名缺失或已观测到任意类型关系时静默。未限定名在指定 schema 内查无、关系观察过期或身份未绑定时报告 `unproven_alter_table_relation`。已存在关系仍需满足子动作自身条件。本切片不验证类型转换、表达式、依赖或权限。
 
 `ddl.alter.rename_column.version.require` 按已解析版本检查 `RENAME COLUMN`。MySQL 8.0 系列中的 8.0.3 及以上、MySQL 8.4、TiDB 8.5 通过。MySQL 5.7 与 MySQL 8.0.0–8.0.2 是一条确定的版本不兼容 blocker：coverage 保持 `complete`，结论为 `reject`。版本缺失是 `missing_target_version` 缺口，不额外增加 finding。合法但不在已验证系列内的版本是 `target_version_out_of_validated_range` 缺口，不发布后态。`CHANGE COLUMN` 不继承这项检查。黄金 profile `t05-a5-column-identity-isolated` 启用原先八条有序状态 blocker 加上这三条，并关闭其余目录规则。它不改变既有规则的默认含义。
 

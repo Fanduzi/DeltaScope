@@ -112,9 +112,12 @@ func (r addColumnNonNullDefaultRewriteWarnRule) Evaluate(ctx context.Context, st
 	}
 
 	findings := make([]rule.Finding, 0)
-	for _, alter := range matchingAlterActions(statement, "add_column") {
+	for i, alter := range statement.DDL.Alter {
 		if err := ctx.Err(); err != nil {
 			return nil, err
+		}
+		if alter.Action != "add_column" || pgAddColumnNoop(statement, i) {
+			continue
 		}
 		col, ok := alterColumnDefinition(alter)
 		if !ok || !col.NotNull || !col.HasDefault {
@@ -339,9 +342,12 @@ func (r addColumnNonNullNoDefaultWarnRule) Evaluate(ctx context.Context, stateme
 	}
 
 	findings := make([]rule.Finding, 0)
-	for _, alter := range matchingAlterActions(statement, "add_column") {
+	for i, alter := range statement.DDL.Alter {
 		if err := ctx.Err(); err != nil {
 			return nil, err
+		}
+		if alter.Action != "add_column" || pgAddColumnNoop(statement, i) {
+			continue
 		}
 		col, ok := alterColumnDefinition(alter)
 		if !ok || !col.NotNull || col.HasDefault {

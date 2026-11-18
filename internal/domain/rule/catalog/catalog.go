@@ -234,6 +234,14 @@ func summaryForRule(ruleID string) string {
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	switch ruleID {
+	case "ddl.table.exists.alter.require":
+		return "Requires the ALTER TABLE target to exist. On observed PG17 a guarded qualified absence is silent, a relation of another kind retains its existence, and an unproven binding is a gap."
+	case "ddl.alter.add_column.exists.forbid":
+		return "Checks ADD COLUMN for existing names. On observed PG17, a fresh exact user-name duplicate permits IF NOT EXISTS, while an observed system-name conflict blocks even with the guard."
+	case "ddl.alter.rename_column.exists.require":
+		return "Requires an existing RENAME COLUMN source. On observed PG17, fresh names are case- and space-exact, and an observed system column is inapplicable."
+	case "ddl.alter.rename_column.target.exists.forbid":
+		return "Checks RENAME COLUMN for an occupied destination. On observed PG17, the exact same name also collides, and missing or stale column evidence remains a gap."
 	case "ddl.pg.alter.column.storage.valid":
 		return "Observed PG17 column STORAGE: rejects invalid case-insensitive modes, absent user columns, proved system targets or non-PLAIN strategies on a non-TOAST-aware type. Actual type typstorage supplies DEFAULT; unknown facts remain gaps."
 	case "ddl.pg.alter.column.compression.valid":

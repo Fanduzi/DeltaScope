@@ -68,8 +68,15 @@ func (r pgColumnGenerationRule) AppliesTo(s spec.Statement) bool {
 }
 
 func pgColumnTargetState(s spec.Statement, index int) (*spec.PGColumnState, bool) {
+	if catalog := pgColumnTargetCatalog(s, index); catalog != nil {
+		return catalog.FindColumn(s.DDL.Alter[index].Name)
+	}
+	return nil, false
+}
+
+func pgColumnTargetCatalog(s spec.Statement, index int) *spec.PGColumnCatalog {
 	if s.DDL == nil || s.DDL.Table == nil || index != 0 || index >= len(s.DDL.Alter) || s.Metadata == nil || s.Metadata.TargetTable == nil {
-		return nil, false
+		return nil
 	}
 	m, table := s.Metadata, s.DDL.Table
 	snapshot := m.TargetTable
@@ -78,9 +85,9 @@ func pgColumnTargetState(s spec.Statement, index int) (*spec.PGColumnState, bool
 		schema = m.Schema
 	}
 	if table.Name == "" || schema == "" || m.Schema != schema || snapshot.Schema != schema || !snapshot.Exists || snapshot.Table == nil || snapshot.Table.Name != table.Name {
-		return nil, false
+		return nil
 	}
-	return snapshot.PGColumns.FindColumn(s.DDL.Alter[index].Name)
+	return snapshot.PGColumns
 }
 
 func pgColumnTransitionTarget(s spec.Statement, index int) (*spec.PGColumnState, string, string) {

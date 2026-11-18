@@ -21,10 +21,8 @@ const (
 	gapReasonUnknownTableState = "unknown_table_state"
 )
 
-// orderedGapDialects scopes this slice's evidence-gap projection to the
-// dialects the ordered-state machine serves. PostgreSQL keeps its legacy
-// contract — real provider-backed findings still fire through Evaluate, but
-// the new unknown-state gaps never appear on it.
+// MySQL/TiDB ordered-state gaps and PostgreSQL target gaps quote different premises.
+// Each PostgreSQL rule owns its exact observation contract.
 func orderedGapDialect(dialect spec.Dialect) bool {
 	return dialect == spec.DialectMySQL || dialect == spec.DialectTiDB
 }
@@ -58,6 +56,9 @@ func (r tableExistenceRule) AppliesTo(statement spec.Statement) bool {
 func (r tableExistenceRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
+	}
+	if r.requireExist && statement.Dialect == spec.DialectPostgreSQL && statement.DDL.PGTableIfExists {
+		return nil, ctx.Err()
 	}
 	snapshot, ok := targetTableSnapshot(statement)
 	if !ok || snapshot == nil {
@@ -98,7 +99,16 @@ func (r tableExistenceRule) Evaluate(ctx context.Context, statement spec.Stateme
 // establish. A nil or absent snapshot is definite evidence (the rule either
 // fires or stays silent on purpose); only an unknown target state is a gap.
 func (r tableExistenceRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
-	if !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) {
+	if !r.AppliesTo(statement) {
+		return nil
+	}
+	if r.requireExist && statement.Dialect == spec.DialectPostgreSQL && statement.DDL.PGTableIfExists {
+		if missing := pgGuardedAlterTableMissingFact(statement); missing != "" {
+			return []rule.EvidenceGap{{ReasonCode: "unproven_alter_table_relation", RequiredFacts: []string{missing}}}
+		}
+		return nil
+	}
+	if !orderedGapDialect(statement.Dialect) {
 		return nil
 	}
 	snapshot, ok := targetTableSnapshot(statement)
@@ -141,7 +151,22 @@ func newAlterObjectExistenceRule(ruleID string, actions []string, objectLabel st
 func (r alterObjectExistenceRule) ID() string { return r.ruleID }
 
 func (r alterObjectExistenceRule) AppliesTo(statement spec.Statement) bool {
+	if action := r.pgColumnIdentityAction(statement); action != "" {
+		return pgColumnIdentityAction(statement, action)
+	}
 	return len(r.actions) > 0 && len(matchingAlterObjectActions(statement, r.actions...)) > 0
+}
+
+func (r alterObjectExistenceRule) pgColumnIdentityAction(statement spec.Statement) string {
+	if statement.Dialect == spec.DialectPostgreSQL {
+		switch r.ruleID {
+		case ruleIDAlterAddColumnExistsForbid:
+			return "add_column"
+		case ruleIDAlterRenameColumnExistsRequire:
+			return "rename_column"
+		}
+	}
+	return ""
 }
 
 func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
@@ -150,6 +175,9 @@ func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.S
 	}
 	if !r.AppliesTo(statement) {
 		return nil, nil
+	}
+	if action := r.pgColumnIdentityAction(statement); action != "" {
+		return evaluatePGColumnIdentity(ctx, statement, action, r.ruleID, r.level)
 	}
 	snapshot, ok := targetTableSnapshot(statement)
 	// A present table with nil Columns means the column shape was not
@@ -237,6 +265,12 @@ func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.S
 func (r alterObjectExistenceRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
 	if statement.Dialect == spec.DialectPostgreSQL && r.ruleID == ruleIDAlterDropColumnExistsRequire {
 		return pgDropColumnEvidenceGaps(statement)
+	}
+	if action := r.pgColumnIdentityAction(statement); action != "" {
+		if pgColumnIdentityAction(statement, action) {
+			return pgColumnIdentityGaps(statement, action, r.ruleID)
+		}
+		return nil
 	}
 	if !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) {
 		return nil

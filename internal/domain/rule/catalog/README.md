@@ -85,3 +85,5 @@ The metadata-aware DML target-table existence entry is an explicit dialect excep
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.
 - If a new rule ID pattern is added that `dialectsForRule` or `categoryForRule` does not cover, add a mapping and the `TestCategoryForRuleCoversAllRules` drift test will catch the gap.
+
+The shared ADD/RENAME column and ALTER table-existence entries describe their PostgreSQL 17 catalog and guard behavior under the existing IDs.

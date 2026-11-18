@@ -1,0 +1,30 @@
+name: column_identity_invalid
+dialect: postgresql
+category: ddl
+config:
+  rules:
+    ddl.alter.rename_column.forbid: {enabled: false}
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    add_duplicate: &table
+      exists: true
+      pg_columns:
+        ordinary: true
+        columns: [{name: id, identity: '', generated: '', type_width: 32, not_null: false, has_default: false, primary_key: false}, {name: c, identity: '', generated: '', type_width: 32, not_null: false, has_default: false, primary_key: false}, {name: ' ', identity: '', generated: '', type_width: 32, not_null: false, has_default: false, primary_key: false}]
+        system_columns: [{name: ctid, system: true, identity: '', generated: '', type_width: 32, not_null: false, has_default: false, primary_key: false}]
+    add_system: *table
+    rename_missing: *table
+    rename_conflict: *table
+    rename_same: *table
+    rename_system: *table
+expect:
+  parse_ok: true
+  statements: {count: 6}
+  unsupported: {count: 0}
+  findings:
+    include:
+      - ddl.alter.add_column.exists.forbid
+      - ddl.alter.rename_column.exists.require
+      - ddl.alter.rename_column.target.exists.forbid

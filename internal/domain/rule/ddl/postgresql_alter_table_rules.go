@@ -122,9 +122,12 @@ func (r pgAlterAddColumnNullableNoticeRule) Evaluate(ctx context.Context, statem
 	}
 
 	findings := make([]rule.Finding, 0)
-	for _, alter := range matchingAlterActions(statement, "add_column") {
+	for i, alter := range statement.DDL.Alter {
 		if err := ctx.Err(); err != nil {
 			return nil, err
+		}
+		if alter.Action != "add_column" || pgAddColumnNoop(statement, i) {
+			continue
 		}
 		col, ok := alterColumnDefinition(alter)
 		if !ok {

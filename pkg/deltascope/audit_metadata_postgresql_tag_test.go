@@ -46,8 +46,11 @@ func TestAuditPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule(t *testing.T)
 
 func TestAuditPostgreSQLMetadataRequiresExistingColumnForRenameColumn(t *testing.T) {
 	provider := &fakeMetadataProvider{
+		instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
 		snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
-			Table: &Table{Name: "users"},
+			PGColumns: &PGColumnCatalog{Ordinary: true, Columns: []PGColumnState{{Name: "email"}}},
+			Schema:    "public",
+			Table:     &Table{Name: "users"},
 			Columns: []Column{
 				{Name: "email"},
 			},

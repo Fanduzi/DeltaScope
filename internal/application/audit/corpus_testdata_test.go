@@ -331,6 +331,12 @@ type corpusTableSnapshot struct {
 	// nil is unobserved; an explicit empty array is a loaded empty directory.
 	PGConstraints []corpusPGConstraint   `yaml:"pg_constraints,omitempty"`
 	PGColumns     *corpusPGColumnCatalog `yaml:"pg_columns,omitempty"`
+	PGRelation    corpusPGRelation       `yaml:"pg_relation,omitempty"`
+}
+
+type corpusPGRelation struct {
+	Name string `yaml:"name"`
+	Kind string `yaml:"kind,omitempty"`
 }
 
 type corpusTable struct {

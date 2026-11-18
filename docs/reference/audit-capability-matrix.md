@@ -134,6 +134,18 @@ The Go provider `PGConstraintState` alias and copied directory retain private fa
 
 Maintainer notes: [decision](../decisions/2026-11-17-postgresql-constraint-target-evidence.md). Other F09 dimensions remain open.
 
+### PostgreSQL ALTER column identity and existence guards
+
+On observed PostgreSQL 17, the existing ADD COLUMN duplicate and RENAME COLUMN
+source/destination rules use exact names in a fresh ordinary persistent table
+catalog. The ADD guard skips a proven existing user column. A system name
+still collides. RENAME treats the same exact name as occupied. Earlier related
+DDL, parser errors and multiple ALTER actions can withhold the column proof.
+The parent `ALTER TABLE IF EXISTS` existence check distinguishes a qualified
+absence from an observed relation of another kind or an unproven binding.
+These checks leave action eligibility for other relation kinds, TYPE/USING,
+permissions and dependencies to their own evidence.
+
 ### PostgreSQL ALTER constraint migration risk
 
 | Rule ID | PostgreSQL | MySQL / TiDB | Metadata |

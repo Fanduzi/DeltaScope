@@ -28,11 +28,17 @@ func newColumnTargetExistsRule(ruleID, action string, fallbackLevel rule.Level, 
 func (r columnTargetExistsRule) ID() string { return r.ruleID }
 
 func (r columnTargetExistsRule) AppliesTo(statement spec.Statement) bool {
+	if statement.Dialect == spec.DialectPostgreSQL {
+		return r.action == "rename_column" && pgColumnIdentityAction(statement, r.action)
+	}
 	_, ok := singleColumnIdentityAlter(statement, r.action)
 	return ok
 }
 
 func (r columnTargetExistsRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if statement.Dialect == spec.DialectPostgreSQL && r.AppliesTo(statement) {
+		return evaluatePGColumnIdentity(ctx, statement, r.action, r.ruleID, r.level)
+	}
 	alter, ok := singleColumnIdentityAlter(statement, r.action)
 	if !ok {
 		return nil, nil
@@ -66,6 +72,9 @@ func (r columnTargetExistsRule) Evaluate(ctx context.Context, statement spec.Sta
 }
 
 func (r columnTargetExistsRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if statement.Dialect == spec.DialectPostgreSQL && r.AppliesTo(statement) {
+		return pgColumnIdentityGaps(statement, r.action, r.ruleID)
+	}
 	if !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) {
 		return nil
 	}

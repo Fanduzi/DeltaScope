@@ -1,4 +1,5 @@
 rules:
+  # PostgreSQL 17 uses exact catalog names. IF NOT EXISTS skips proven user duplicates.
   ddl.alter.add_column.exists.forbid:
     enabled: true
     level: blocker
@@ -322,6 +323,7 @@ rules:
     params:
       forbid: true
 
+  # PostgreSQL 17 also checks an exact same-name destination.
   ddl.alter.rename_column.target.exists.forbid:
     enabled: true
     level: blocker
@@ -2624,6 +2626,7 @@ rules:
     params:
       values: [InnoDB]
 
+  # PostgreSQL IF EXISTS distinguishes qualified absence from unobserved relations.
   ddl.table.exists.alter.require:
     enabled: true
     level: blocker
