@@ -13,7 +13,10 @@ import (
 var _ appaudit.ObjectResolver = (*Provider)(nil)
 
 // ResolveObject looks up non-table database object metadata from PostgreSQL catalogs.
-func (p *Provider) ResolveObject(ctx context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if dialect == spec.DialectPostgreSQL && req.Type == "replica_identity_index" {
+		return p.resolveReplicaIdentityIndex(ctx, req)
+	}
 	name := strings.TrimSpace(req.Name)
 	if name == "" || strings.TrimSpace(req.Type) == "" {
 		return &spec.ObjectSnapshot{

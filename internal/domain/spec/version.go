@@ -46,6 +46,13 @@ var (
 	tidbVersionMarker     = regexp.MustCompile(`(?i)-TiDB-v(\d+)\.(\d+)\.(\d+)`)
 )
 
+// PG17Observed requires an observed PostgreSQL 17 server banner.
+func PG17Observed(facts *InstanceFacts) bool {
+	return facts != nil && pg17Banner.MatchString(facts.Version)
+}
+
+var pg17Banner = regexp.MustCompile(`^PostgreSQL 17\.\d+(\s|$)`)
+
 // VersionProductForDialect maps an audit dialect to its server product identity.
 // PostgreSQL is not a validated product for this version contract and reports no
 // product so version-dependent MySQL-family rules never engage it.

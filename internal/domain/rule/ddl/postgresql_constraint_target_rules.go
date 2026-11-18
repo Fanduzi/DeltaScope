@@ -2,14 +2,11 @@ package ddl
 
 import (
 	"context"
-	"regexp"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
-
-var pgConstraintTargetVersionPattern = regexp.MustCompile(`^PostgreSQL 17\.\d+(\s|$)`)
 
 type pgConstraintTargetRule struct {
 	id    string
@@ -76,7 +73,7 @@ func pgConstraintTargetState(s spec.Statement, index int) (*spec.PGConstraintSta
 // The shared VersionIdentity contract intentionally excludes PostgreSQL;
 // use the existing observed server banner, never a caller target override.
 func pgConstraintTargetVersionKnown(s spec.Statement) bool {
-	return s.Metadata != nil && s.Metadata.Instance != nil && pgConstraintTargetVersionPattern.MatchString(s.Metadata.Instance.Version)
+	return s.Metadata != nil && spec.PG17Observed(s.Metadata.Instance)
 }
 
 func (r pgConstraintTargetRule) assess(s spec.Statement, index int) (*spec.PGConstraintState, string, string) {
