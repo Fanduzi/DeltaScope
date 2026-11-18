@@ -16,6 +16,16 @@ honestly — not a count of implemented rules.
 | T06-CLOSEOUT.md | Final T06 (#85) technical closeout index (T06技术收口材料齐备): binds every accepted dimension to the traceability rows, the SHA-frozen umbrella evidence, and the owner boundary for deferred dimensions; issue #85 stays open |
 | evidence/ | Per-row offline CLI probe captures (`<row-id>.probes.txt`): recorded `deltascope audit` output for the row's `sql_shape` at every declared version (`=== version <v> (target …)` sections). Regenerate by re-running the probe commands recorded in the file header |
 
+## PostgreSQL column identity and existence guards
+
+D8 binds the original ADD COLUMN, ADD COLUMN IF NOT EXISTS, RENAME COLUMN and
+multi-action cells to the exact T37 live, offline and parser-boundary cases.
+The RENAME COLUMN child and its PG17 anchor advance from notice-only to mixed.
+The parent and all 301 row IDs remain intact. The findings cover identity,
+while TYPE/USING and broader table kinds, permission, dependency and ordering
+premises remain open. See the
+[decision](../../docs/decisions/2026-11-18-postgresql-alter-column-identity.md).
+
 ## PostgreSQL column storage/compression and system-target tranche
 
 D7 extends exactly ten original cells in two already-mixed F09 parents:

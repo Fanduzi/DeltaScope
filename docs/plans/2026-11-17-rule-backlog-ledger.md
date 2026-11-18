@@ -366,6 +366,18 @@ is68. These results belong to b966, never a later historical-doc HEAD.
 Other original table options, rename/owner/type, dependency/permission,
 inheritance/partition and general-order dimensions continue, not silent deferral.
 
+### D8 PostgreSQL column identity and existence guards
+
+User-approved reuse of three column target IDs and the existing table-existence
+ID. `5b96f34f` retains distinct private AST guards and exact relation observations.
+`c94a15da` consumes PG17 ordinary-table column facts, preserves separate policy
+findings, and gaps stale or unproven cases. Seventeen new T37 cases passed in
+the focused replay (173/173, 3368 assertions and 32 native steps). The RENAME
+child is mixed after evidence binding; the parent and original denominators
+stay intact. TYPE/USING, general ordering and action eligibility for other
+relation kinds remain in scope for future slices. See the
+[decision](../decisions/2026-11-18-postgresql-alter-column-identity.md).
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.
@@ -436,7 +448,7 @@ insufficient.
 | F08 | `postgresql.create-table-partitioning` | PARTITION BY RANGE; PARTITION BY LIST; PARTITION BY HASH; PARTITION OF; PARTITION OF DEFAULT; INHERITS | unreviewed |
 | F08 | `postgresql.create-table-temporary` | TEMP/TEMPORARY; GLOBAL TEMPORARY compat noise; UNLOGGED; ON COMMIT actions | unreviewed |
 | F08 | `postgresql.create-table-like` | LIKE basic; INCLUDING options | unreviewed |
-| F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 bounded system/ordering evidence delivered; rename/type/general dimensions open |
+| F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 bounded system/ordering evidence delivered; D8 exact ADD/RENAME target and guard evidence in verification; TYPE/USING and broader eligibility/order remain open |
 | F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 generation and D6 statistics/options delivered with accepted gaps; D7 bounded storage/compression/system delivered, broader data/expression/current/kind scopes open |
 | F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; remaining dimensions open |
 | F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | unreviewed |

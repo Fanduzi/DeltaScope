@@ -6903,7 +6903,7 @@ rows:
     status: mixed_coverage
     parser_status: recognized
     audit_status: mixed
-    status_evidence: "2026-11-18 D7: actual negative-attnum system facts correct DROP target proof: guarded ctid is an existing inapplicable target, not absent/no-op; CASCADE does not protect it. Exact user known-empty remains independent. Shared target assessment suppresses inapplicable deletion advice, and earlier DDL/parser/ALTER siblings still owe gaps rather than predicted types or columns. Only the existing DROP/DROP IF EXISTS CASCADE/multi-action evidence is extended; no row or denominator promotion. Historical D6: DROP COLUMN retains its audited bounded exact fresh PG17 target/guard check, not dependency or permission legality. Missing lowercase targets cannot bind quoted uppercase columns; guarded proven no-ops suppress the old blocker/advice. DROP invalidates global old catalogs, so multi-action is explicitly mixed rather than claiming prospective state. All original subactions/rows stay retained. Historical: 2026-11-16 generated/identity tranche: add-column-generation-declaration gains ddl.pg.column.generation.declaration.valid and ddl.pg.column.identity.cycle.warn with T37 CLI/default-conflict/cycle controls and native catalog/no-execution proof. Existing-column identity transitions, RENAME and other columns semantics are not promoted; row remains mixed. Historical: 2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 9 shapes -> 8 audited, 1 notice_only; golden manifests and native execution evidence land with the owner task"
+    status_evidence: "2026-11-18 D8: exact PG17 ordinary-table ADD duplicate and RENAME source/destination proof, distinct authored guards and full-relation existence observations. RENAME now has bounded findings plus out-of-scope gaps; TYPE/USING and broader action eligibility remain open. Historical D7: actual negative-attnum system facts correct DROP target proof: guarded ctid is an existing inapplicable target, not absent/no-op; CASCADE does not protect it. Exact user known-empty remains independent. Shared target assessment suppresses inapplicable deletion advice, and earlier DDL/parser/ALTER siblings still owe gaps rather than predicted types or columns. Only the existing DROP/DROP IF EXISTS CASCADE/multi-action evidence is extended; no row or denominator promotion. Historical D6: DROP COLUMN retains its audited bounded exact fresh PG17 target/guard check, not dependency or permission legality. Missing lowercase targets cannot bind quoted uppercase columns; guarded proven no-ops suppress the old blocker/advice. DROP invalidates global old catalogs, so multi-action is explicitly mixed rather than claiming prospective state. All original subactions/rows stay retained. Historical: 2026-11-16 generated/identity tranche: add-column-generation-declaration gains ddl.pg.column.generation.declaration.valid and ddl.pg.column.identity.cycle.warn with T37 CLI/default-conflict/cycle controls and native catalog/no-execution proof. Existing-column identity transitions, RENAME and other columns semantics are not promoted; row remains mixed. Historical: 2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 9 shapes -> 8 audited, 1 notice_only; golden manifests and native execution evidence land with the owner task"
     targets: column add/drop/rename/type changes, cascade, multi-action
     applicability:
       - anchor: postgresql17
@@ -6941,7 +6941,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.add-column.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.add-column.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#pg-column-identity-add-duplicates, file:testdata/ddl-golden/T37.json#pg-column-identity-add-system, file:testdata/ddl-golden/T37.json#pg-column-identity-table-guard-absent, file:testdata/ddl-golden/T37.json#pg-column-identity-table-guard-other-kind, file:testdata/ddl-golden/T37.json#pg-column-identity-scope]
       - subaction_id: ADD COLUMN IF NOT EXISTS
         parser_status: recognized
         audit_status: audited
@@ -6952,7 +6952,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.add-column-if-not-exists.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.add-column-if-not-exists.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#pg-column-identity-add-guard, file:testdata/ddl-golden/T37.json#pg-column-identity-add-system, file:testdata/ddl-golden/T37.json#column-identity-add-offline]
       - subaction_id: DROP COLUMN
         parser_status: recognized
         audit_status: audited
@@ -6977,15 +6977,15 @@ rows:
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.drop-column-if-exists-cascade.probes.txt, file:testdata/ddl-golden/T37.json#pg-column-format-system-targets, file:testdata/ddl-golden/T37.json#pg-column-format-system-empty, file:testdata/ddl-golden/T37.json#column-format-system-offline, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, 'file:testdata/ddl-golden/T37.json#DROP COLUMN IF EXISTS', file:testdata/ddl-golden/T37.json#pg-column-tuning-statistics, file:testdata/ddl-golden/T37.json#pg-column-tuning-drop-guards, file:testdata/ddl-golden/T37.json#pg-column-tuning-no-rewrite-advice, file:testdata/ddl-golden/T37.json#column-tuning-drop-cascade-offline, file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_controls.expected.yaml#ddl.alter.drop_column.exists.require]
       - subaction_id: RENAME COLUMN
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.rename-column.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.rename-column.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#pg-column-identity-rename-source, file:testdata/ddl-golden/T37.json#pg-column-identity-rename-destination, file:testdata/ddl-golden/T37.json#pg-column-identity-rename-quoted-spaces, file:testdata/ddl-golden/T37.json#pg-column-identity-scope, file:testdata/ddl-golden/T37.json#column-identity-rename-column-guard-parser]
       - subaction_id: ALTER COLUMN TYPE
         parser_status: recognized
         audit_status: audited
@@ -7018,7 +7018,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: mixed
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.multi-action.probes.txt, file:testdata/ddl-golden/T37.json#pg-column-format-prior-ddl, file:testdata/ddl-golden/T37.json#pg-column-format-prior-parser, file:testdata/ddl-golden/T37.json#column-format-parser-retention, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#alter-table-columns-multi-action, file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-ddl, file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-parser, file:testdata/ddl-golden/T37.json#column-tuning-parser-retention]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.multi-action.probes.txt, file:testdata/ddl-golden/T37.json#pg-column-format-prior-ddl, file:testdata/ddl-golden/T37.json#pg-column-format-prior-parser, file:testdata/ddl-golden/T37.json#column-format-parser-retention, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#alter-table-columns-multi-action, file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-ddl, file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-parser, file:testdata/ddl-golden/T37.json#column-tuning-parser-retention, file:testdata/ddl-golden/T37.json#pg-column-identity-prior-ddl, file:testdata/ddl-golden/T37.json#pg-column-identity-prior-parser, file:testdata/ddl-golden/T37.json#pg-column-identity-table-guard-unqualified]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, gate:T37, file:testdata/sql-corpus/postgresql/ddl/findings/generation_declaration_invalid.expected.yaml]

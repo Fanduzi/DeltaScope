@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-column-identity": {"enable": {"ddl.alter.add_column.exists.forbid": {"level": "blocker"}, "ddl.alter.rename_column.exists.require": {"level": "blocker"}, "ddl.alter.rename_column.target.exists.forbid": {"level": "blocker"}, "ddl.table.exists.alter.require": {"level": "blocker"}, "ddl.pg.alter.add_column.nullable.notice": {"level": "notice"}, "ddl.pg.alter.add_column.non_null_no_default.warn": {"level": "warning"}, "ddl.pg.alter.add_column.non_null_default.rewrite.warn": {"level": "warning"}}},
    "pg-column-format": {"enable": {
     "ddl.pg.alter.column.storage.valid": {"level": "blocker"},
     "ddl.pg.alter.column.compression.valid": {"level": "blocker"}
@@ -1873,6 +1874,120 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "column-identity-add-offline",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "sql": "ALTER TABLE app.t ADD COLUMN IF NOT EXISTS c int",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7
+   }
+  },
+  {
+   "id": "column-identity-rename-offline",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "sql": "ALTER TABLE app.t RENAME COLUMN \" \" TO \"C \"",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["instance.version"]},{"index": 0,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7
+   }
+  },
+  {
+   "id": "column-identity-table-guard-offline",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "sql": "ALTER TABLE IF EXISTS app.t ADD COLUMN c int",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["instance.version"]},{"index": 0,"rule_id": "ddl.table.exists.alter.require","reason_code": "unproven_alter_table_relation","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7
+   }
+  },
+  {
+   "id": "column-identity-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE IF EXISTS app.t ADD COLUMN IF NOT EXISTS ctid int;ALTER TABLE app.t RENAME COLUMN c TO c",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete","complete"],
+    "statement_indices": [0,1],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"]
+   }
+  },
+  {
+   "id": "column-identity-rename-column-guard-parser",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "sql": "ALTER TABLE app.t RENAME COLUMN IF EXISTS ghost TO renamed;ALTER TABLE app.t ADD COLUMN c int",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 2,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7
+   }
+  },
   {
    "id": "column-storage-offline", "dialect": "postgresql", "policy": "pg-column-format",
    "sql": "ALTER TABLE app.a ALTER COLUMN c SET STORAGE EXTERNAL;ALTER TABLE app.b ALTER COLUMN c SET STORAGE invalid_mode", "args": ["--fail-on", "none"],
@@ -3788,6 +3903,590 @@
  ],
  "metadata_cases": [
   {
+   "id": "pg-column-identity-add-duplicates",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "notes": "Exact duplicate and distinct quoted case on ordinary tables.",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcol38_add_duplicates"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_add_duplicates CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_add_duplicates'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcol38_add_duplicates.t ADD COLUMN c int;ALTER TABLE pgcol38_add_duplicates.u ADD COLUMN \"C\" int",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_add_duplicates'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcol38_add_duplicates","expect_rc": 0},
+    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_add_duplicates.control_t(payload text);INSERT INTO pgcol38_add_duplicates.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_add_duplicates.guard START 7;CREATE TABLE pgcol38_add_duplicates.t(c int); CREATE TABLE pgcol38_add_duplicates.u(c int);CREATE TABLE pgcol38_add_duplicates.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_add_duplicates'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 3,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete","complete"],
+    "statement_indices": [0,1],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.add_column.exists.forbid","level": "blocker"},{"index": 0,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"},{"index": 1,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.alter.add_column.exists.forbid","metadata": {"name": "c","reason_code": "column_already_exists","exists": true}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation names, file identities and attributes","sql": "SELECT count(*) FROM ((TABLE pgcol38_add_duplicates.receipt EXCEPT (SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_add_duplicates'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_add_duplicates'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol38_add_duplicates.receipt)) AS catalog_delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(payload='unchanged') FROM pgcol38_add_duplicates.control_t","expect": "t"},
+    {"assert": "audit does not issue sequence values","sql": "SELECT last_value::text||':'||is_called::text FROM pgcol38_add_duplicates.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "duplicate user name","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_add_duplicates.t ADD COLUMN c int","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42701:"]},
+    {"name": "different quoted case","sql": "ALTER TABLE pgcol38_add_duplicates.u ADD COLUMN \"C\" int","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "lowercase retained","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgcol38_add_duplicates.t'::regclass AND attname='c' AND NOT attisdropped","expect": "1"},
+    {"assert": "quoted distinct column created","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgcol38_add_duplicates.u'::regclass AND attname='C' AND NOT attisdropped","expect": "1"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_add_duplicates CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_add_duplicates'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-identity-add-guard",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "notes": "Independent guards suppress the three execution advisories for proved user duplicates.",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcol38_add_guard"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_add_guard CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_add_guard'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcol38_add_guard.a ADD COLUMN IF NOT EXISTS c text;ALTER TABLE pgcol38_add_guard.b ADD COLUMN IF NOT EXISTS c int NOT NULL;ALTER TABLE pgcol38_add_guard.c ADD COLUMN IF NOT EXISTS c int NOT NULL DEFAULT 9;ALTER TABLE pgcol38_add_guard.d ADD COLUMN IF NOT EXISTS fresh int",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_add_guard'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcol38_add_guard","expect_rc": 0},
+    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_add_guard.control_t(payload text);INSERT INTO pgcol38_add_guard.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_add_guard.guard START 7;CREATE TABLE pgcol38_add_guard.a(c int);CREATE TABLE pgcol38_add_guard.b(c int);CREATE TABLE pgcol38_add_guard.c(c int);CREATE TABLE pgcol38_add_guard.d(c int);INSERT INTO pgcol38_add_guard.a VALUES(4);INSERT INTO pgcol38_add_guard.b VALUES(4);INSERT INTO pgcol38_add_guard.c VALUES(4);CREATE TABLE pgcol38_add_guard.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_add_guard'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete","complete","complete","complete"],
+    "statement_indices": [0,1,2,3],
+    "finding_entries": [{"index": 3,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation names, file identities and attributes","sql": "SELECT count(*) FROM ((TABLE pgcol38_add_guard.receipt EXCEPT (SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_add_guard'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_add_guard'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol38_add_guard.receipt)) AS catalog_delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(payload='unchanged') FROM pgcol38_add_guard.control_t","expect": "t"},
+    {"assert": "audit does not issue sequence values","sql": "SELECT last_value::text||':'||is_called::text FROM pgcol38_add_guard.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "guard skips mismatched declaration","sql": "ALTER TABLE pgcol38_add_guard.a ADD COLUMN IF NOT EXISTS c text","expect_rc": 0},
+    {"name": "guard skips NOT NULL","sql": "ALTER TABLE pgcol38_add_guard.b ADD COLUMN IF NOT EXISTS c int NOT NULL","expect_rc": 0},
+    {"name": "guard skips DEFAULT","sql": "ALTER TABLE pgcol38_add_guard.c ADD COLUMN IF NOT EXISTS c int NOT NULL DEFAULT 9","expect_rc": 0},
+    {"name": "guard adds fresh name","sql": "ALTER TABLE pgcol38_add_guard.d ADD COLUMN IF NOT EXISTS fresh int","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "existing type and payload preserved","sql": "SELECT pg_typeof(c)::text||':'||c FROM pgcol38_add_guard.a","expect": "integer:4"},
+    {"assert": "existing declaration preserved","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid IN ('pgcol38_add_guard.b'::regclass,'pgcol38_add_guard.c'::regclass) AND attname='c' AND NOT attnotnull AND NOT atthasdef","expect": "2"},
+    {"assert": "only native driver adds fresh","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgcol38_add_guard.d'::regclass AND attname='fresh' AND NOT attisdropped","expect": "1"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_add_guard CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_add_guard'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-identity-add-system",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "notes": "Zero user columns do not hide observed system names.",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcol38_add_system"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_add_system CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_add_system'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcol38_add_system.a ADD COLUMN ctid int;ALTER TABLE pgcol38_add_system.b ADD COLUMN IF NOT EXISTS ctid int;ALTER TABLE pgcol38_add_system.c ADD COLUMN \"CTID\" int",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_add_system'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcol38_add_system","expect_rc": 0},
+    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_add_system.control_t(payload text);INSERT INTO pgcol38_add_system.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_add_system.guard START 7;CREATE TABLE pgcol38_add_system.a();CREATE TABLE pgcol38_add_system.b();CREATE TABLE pgcol38_add_system.c();CREATE TABLE pgcol38_add_system.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_add_system'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 5,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete","complete","complete"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.add_column.exists.forbid","level": "blocker"},{"index": 0,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"},{"index": 1,"rule_id": "ddl.alter.add_column.exists.forbid","level": "blocker"},{"index": 1,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"},{"index": 2,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.alter.add_column.exists.forbid","metadata": {"name": "ctid","reason_code": "system_column_name_conflict"}},{"index": 1,"rule_id": "ddl.alter.add_column.exists.forbid","metadata": {"name": "ctid","reason_code": "system_column_name_conflict"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation names, file identities and attributes","sql": "SELECT count(*) FROM ((TABLE pgcol38_add_system.receipt EXCEPT (SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_add_system'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_add_system'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol38_add_system.receipt)) AS catalog_delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(payload='unchanged') FROM pgcol38_add_system.control_t","expect": "t"},
+    {"assert": "audit does not issue sequence values","sql": "SELECT last_value::text||':'||is_called::text FROM pgcol38_add_system.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "system name refuses","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_add_system.a ADD COLUMN ctid int","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42701:"]},
+    {"name": "column guard cannot protect system name","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_add_system.b ADD COLUMN IF NOT EXISTS ctid int","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42701:"]},
+    {"name": "uppercase user identifier distinct","sql": "ALTER TABLE pgcol38_add_system.c ADD COLUMN \"CTID\" int","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native system target remains negative attnum","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid IN ('pgcol38_add_system.a'::regclass,'pgcol38_add_system.b'::regclass) AND attname='ctid' AND attnum<0","expect": "2"},
+    {"assert": "distinct user column exists","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgcol38_add_system.c'::regclass AND attname='CTID' AND NOT attisdropped","expect": "1"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_add_system CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_add_system'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-identity-rename-source",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "notes": "Source proof is separate from destination and independent RENAME policy.",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcol38_rename_source"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_rename_source CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_rename_source'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcol38_rename_source.a RENAME COLUMN \"ID\" TO moved;ALTER TABLE pgcol38_rename_source.b RENAME COLUMN ctid TO moved;ALTER TABLE pgcol38_rename_source.c RENAME COLUMN id TO moved",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_rename_source'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcol38_rename_source","expect_rc": 0},
+    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_rename_source.control_t(payload text);INSERT INTO pgcol38_rename_source.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_rename_source.guard START 7;CREATE TABLE pgcol38_rename_source.a(id int);CREATE TABLE pgcol38_rename_source.b(id int);CREATE TABLE pgcol38_rename_source.c(id int);CREATE TABLE pgcol38_rename_source.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_rename_source'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete","complete","complete"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.rename_column.exists.require","level": "blocker"},{"index": 1,"rule_id": "ddl.alter.rename_column.exists.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.alter.rename_column.exists.require","metadata": {"name": "ID","exists": false,"reason_code": "column_absent"}},{"index": 1,"rule_id": "ddl.alter.rename_column.exists.require","metadata": {"name": "ctid","exists": true,"reason_code": "system_column_inapplicable"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation names, file identities and attributes","sql": "SELECT count(*) FROM ((TABLE pgcol38_rename_source.receipt EXCEPT (SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_rename_source'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_rename_source'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol38_rename_source.receipt)) AS catalog_delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(payload='unchanged') FROM pgcol38_rename_source.control_t","expect": "t"},
+    {"assert": "audit does not issue sequence values","sql": "SELECT last_value::text||':'||is_called::text FROM pgcol38_rename_source.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "exact absent source","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_rename_source.a RENAME COLUMN \"ID\" TO moved","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42703:"]},
+    {"name": "system source refuses","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_rename_source.b RENAME COLUMN ctid TO moved","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  0A000:"]},
+    {"name": "user rename succeeds","sql": "ALTER TABLE pgcol38_rename_source.c RENAME COLUMN id TO moved","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "only driver renames source","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgcol38_rename_source.c'::regclass AND attname='moved' AND NOT attisdropped","expect": "1"},
+    {"assert": "quoted absent source preserves id","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgcol38_rename_source.a'::regclass AND attname='id' AND NOT attisdropped","expect": "1"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_rename_source CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_rename_source'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-identity-rename-destination",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "notes": "Exact target collision includes self and system names.",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcol38_rename_destination"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_rename_destination CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_rename_destination'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcol38_rename_destination.a RENAME COLUMN c TO id;ALTER TABLE pgcol38_rename_destination.b RENAME COLUMN c TO c;ALTER TABLE pgcol38_rename_destination.c RENAME COLUMN c TO ctid;ALTER TABLE pgcol38_rename_destination.d RENAME COLUMN c TO \"ID\"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_rename_destination'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcol38_rename_destination","expect_rc": 0},
+    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_rename_destination.control_t(payload text);INSERT INTO pgcol38_rename_destination.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_rename_destination.guard START 7;CREATE TABLE pgcol38_rename_destination.a(id int,c int);CREATE TABLE pgcol38_rename_destination.b(c int);CREATE TABLE pgcol38_rename_destination.c(c int);CREATE TABLE pgcol38_rename_destination.d(id int,c int);CREATE TABLE pgcol38_rename_destination.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_rename_destination'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 3,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete","complete","complete","complete"],
+    "statement_indices": [0,1,2,3],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.rename_column.target.exists.forbid","level": "blocker"},{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","level": "blocker"},{"index": 2,"rule_id": "ddl.alter.rename_column.target.exists.forbid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.alter.rename_column.target.exists.forbid","metadata": {"source_column": "c","target_column": "id","reason_code": "column_already_exists"}},{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","metadata": {"source_column": "c","target_column": "c","reason_code": "column_already_exists"}},{"index": 2,"rule_id": "ddl.alter.rename_column.target.exists.forbid","metadata": {"source_column": "c","target_column": "ctid","reason_code": "system_column_name_conflict"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation names, file identities and attributes","sql": "SELECT count(*) FROM ((TABLE pgcol38_rename_destination.receipt EXCEPT (SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_rename_destination'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_rename_destination'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol38_rename_destination.receipt)) AS catalog_delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(payload='unchanged') FROM pgcol38_rename_destination.control_t","expect": "t"},
+    {"assert": "audit does not issue sequence values","sql": "SELECT last_value::text||':'||is_called::text FROM pgcol38_rename_destination.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "occupied destination","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_rename_destination.a RENAME COLUMN c TO id","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42701:"]},
+    {"name": "self destination","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_rename_destination.b RENAME COLUMN c TO c","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42701:"]},
+    {"name": "system destination","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_rename_destination.c RENAME COLUMN c TO ctid","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42701:"]},
+    {"name": "distinct uppercase destination","sql": "ALTER TABLE pgcol38_rename_destination.d RENAME COLUMN c TO \"ID\"","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "exact uppercase destination installed","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgcol38_rename_destination.d'::regclass AND attname='ID' AND NOT attisdropped","expect": "1"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_rename_destination CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_rename_destination'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-identity-rename-quoted-spaces",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "notes": "Spaces are part of decoded table and column names.",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcol38_rename_quoted_spaces"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_rename_quoted_spaces CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_rename_quoted_spaces'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcol38_rename_quoted_spaces.\" t \" RENAME COLUMN \" \" TO \" destination \";ALTER TABLE pgcol38_rename_quoted_spaces.u RENAME COLUMN c TO \" c \"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_rename_quoted_spaces'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcol38_rename_quoted_spaces","expect_rc": 0},
+    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_rename_quoted_spaces.control_t(payload text);INSERT INTO pgcol38_rename_quoted_spaces.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_rename_quoted_spaces.guard START 7;CREATE TABLE pgcol38_rename_quoted_spaces.\" t \"(\" \" int);INSERT INTO pgcol38_rename_quoted_spaces.\" t \" VALUES(42);CREATE TABLE pgcol38_rename_quoted_spaces.u(c int,\" c \" int);CREATE TABLE pgcol38_rename_quoted_spaces.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_rename_quoted_spaces'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete","complete"],
+    "statement_indices": [0,1],
+    "finding_entries": [{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7,
+    "finding_metadata": [{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","metadata": {"source_column": "c","target_column": " c ","reason_code": "column_already_exists"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation names, file identities and attributes","sql": "SELECT count(*) FROM ((TABLE pgcol38_rename_quoted_spaces.receipt EXCEPT (SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_rename_quoted_spaces'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_rename_quoted_spaces'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol38_rename_quoted_spaces.receipt)) AS catalog_delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(payload='unchanged') FROM pgcol38_rename_quoted_spaces.control_t","expect": "t"},
+    {"assert": "audit does not issue sequence values","sql": "SELECT last_value::text||':'||is_called::text FROM pgcol38_rename_quoted_spaces.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "single-space source on space-delimited table","sql": "ALTER TABLE pgcol38_rename_quoted_spaces.\" t \" RENAME COLUMN \" \" TO \" destination \"","expect_rc": 0},
+    {"name": "occupied space-delimited target","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_rename_quoted_spaces.u RENAME COLUMN c TO \" c \"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42701:"]}
+   ],
+   "structure": [
+    {"assert": "quoted destination and payload","sql": "SELECT \" destination \" FROM pgcol38_rename_quoted_spaces.\" t \"","expect": "42"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_rename_quoted_spaces CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_rename_quoted_spaces'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-identity-table-guard-absent",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "notes": "Qualified catalog absence discharges parent guard and child checks. Later statements in the same request retain explicit relation freshness gaps.",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcol38_table_guard_absent"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_table_guard_absent CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_table_guard_absent'","expect": "0"}}]},
+   "sql": "ALTER TABLE IF EXISTS pgcol38_table_guard_absent.missing_add ADD COLUMN c int;ALTER TABLE IF EXISTS pgcol38_table_guard_absent.missing_rename RENAME COLUMN c TO renamed",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_table_guard_absent'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcol38_table_guard_absent","expect_rc": 0},
+    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_table_guard_absent.control_t(payload text);INSERT INTO pgcol38_table_guard_absent.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_table_guard_absent.guard START 7;CREATE TABLE pgcol38_table_guard_absent.ordinary(c int);CREATE TABLE pgcol38_table_guard_absent.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_table_guard_absent'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["complete","unverified"],
+    "statement_indices": [0,1],
+    "finding_entries": [],
+    "evidence_gaps": 3,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.table.exists.alter.require","reason_code": "unproven_alter_table_relation","required_facts": ["target_table.pg_relation"]}],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation names, file identities and attributes","sql": "SELECT count(*) FROM ((TABLE pgcol38_table_guard_absent.receipt EXCEPT (SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_table_guard_absent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_table_guard_absent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol38_table_guard_absent.receipt)) AS catalog_delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(payload='unchanged') FROM pgcol38_table_guard_absent.control_t","expect": "t"},
+    {"assert": "audit does not issue sequence values","sql": "SELECT last_value::text||':'||is_called::text FROM pgcol38_table_guard_absent.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "missing relation guard for ADD","sql": "ALTER TABLE IF EXISTS pgcol38_table_guard_absent.missing_add ADD COLUMN c int","expect_rc": 0},
+    {"name": "missing relation guard for RENAME","sql": "ALTER TABLE IF EXISTS pgcol38_table_guard_absent.missing_rename RENAME COLUMN c TO renamed","expect_rc": 0},
+    {"name": "unguarded missing relation refuses","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_table_guard_absent.missing_add ADD COLUMN c int","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P01:"]}
+   ],
+   "structure": [
+    {"assert": "missing relations remain absent","sql": "SELECT count(*) FROM pg_class WHERE relnamespace='pgcol38_table_guard_absent'::regnamespace AND relname IN ('missing_add','missing_rename')","expect": "0"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_table_guard_absent CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_table_guard_absent'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-identity-table-guard-other-kind",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "notes": "All relation kinds inform existence, while column scope and action eligibility stay independent. Later statements in the same request retain explicit relation freshness gaps.",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcol38_table_guard_other_kind"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_table_guard_other_kind CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_table_guard_other_kind'","expect": "0"}}]},
+   "sql": "ALTER TABLE IF EXISTS pgcol38_table_guard_other_kind.seq ADD COLUMN c int;ALTER TABLE IF EXISTS pgcol38_table_guard_other_kind.idx RENAME COLUMN ghost TO moved;ALTER TABLE IF EXISTS pgcol38_table_guard_other_kind.v ADD COLUMN c int",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_table_guard_other_kind'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcol38_table_guard_other_kind","expect_rc": 0},
+    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_table_guard_other_kind.control_t(payload text);INSERT INTO pgcol38_table_guard_other_kind.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_table_guard_other_kind.guard START 7;CREATE SEQUENCE pgcol38_table_guard_other_kind.seq;CREATE TABLE pgcol38_table_guard_other_kind.t(c int);CREATE INDEX idx ON pgcol38_table_guard_other_kind.t(c);CREATE VIEW pgcol38_table_guard_other_kind.v AS SELECT c FROM pgcol38_table_guard_other_kind.t;CREATE TABLE pgcol38_table_guard_other_kind.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_table_guard_other_kind'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified","unverified","unverified"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"},{"index": 2,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
+    "evidence_gaps": 6,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 2,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.table.exists.alter.require","reason_code": "unproven_alter_table_relation","required_facts": ["target_table.pg_relation"]},{"index": 2,"rule_id": "ddl.table.exists.alter.require","reason_code": "unproven_alter_table_relation","required_facts": ["target_table.pg_relation"]}],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation names, file identities and attributes","sql": "SELECT count(*) FROM ((TABLE pgcol38_table_guard_other_kind.receipt EXCEPT (SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_table_guard_other_kind'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_table_guard_other_kind'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol38_table_guard_other_kind.receipt)) AS catalog_delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(payload='unchanged') FROM pgcol38_table_guard_other_kind.control_t","expect": "t"},
+    {"assert": "audit does not issue sequence values","sql": "SELECT last_value::text||':'||is_called::text FROM pgcol38_table_guard_other_kind.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "sequence exists but action cannot run","sql": "\\set VERBOSITY verbose\nALTER TABLE IF EXISTS pgcol38_table_guard_other_kind.seq ADD COLUMN c int","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]},
+    {"name": "index exists but source is missing","sql": "\\set VERBOSITY verbose\nALTER TABLE IF EXISTS pgcol38_table_guard_other_kind.idx RENAME COLUMN ghost TO moved","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42703:"]},
+    {"name": "view exists but action cannot run","sql": "\\set VERBOSITY verbose\nALTER TABLE IF EXISTS pgcol38_table_guard_other_kind.v ADD COLUMN c int","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]}
+   ],
+   "structure": [
+    {"assert": "catalog kind identity persists","sql": "SELECT string_agg(relkind::text,',' ORDER BY relname) FROM pg_class WHERE relnamespace='pgcol38_table_guard_other_kind'::regnamespace AND relname IN ('idx','seq','v')","expect": "i,S,v"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_table_guard_other_kind CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_table_guard_other_kind'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-identity-table-guard-unqualified",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "notes": "A schema-local miss does not establish unqualified search-path absence.",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcol38_table_guard_unqualified"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_table_guard_unqualified CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_table_guard_unqualified'","expect": "0"}}]},
+   "sql": "ALTER TABLE IF EXISTS absent_pgcol38 ADD COLUMN c int",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_table_guard_unqualified'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcol38_table_guard_unqualified","expect_rc": 0},
+    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_table_guard_unqualified.control_t(payload text);INSERT INTO pgcol38_table_guard_unqualified.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_table_guard_unqualified.guard START 7;CREATE TABLE pgcol38_table_guard_unqualified.ordinary(c int);CREATE TABLE pgcol38_table_guard_unqualified.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_table_guard_unqualified'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 0,"rule_id": "ddl.table.exists.alter.require","reason_code": "unproven_alter_table_relation","required_facts": ["target_table.pg_relation"]}],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation names, file identities and attributes","sql": "SELECT count(*) FROM ((TABLE pgcol38_table_guard_unqualified.receipt EXCEPT (SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_table_guard_unqualified'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_table_guard_unqualified'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol38_table_guard_unqualified.receipt)) AS catalog_delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(payload='unchanged') FROM pgcol38_table_guard_unqualified.control_t","expect": "t"},
+    {"assert": "audit does not issue sequence values","sql": "SELECT last_value::text||':'||is_called::text FROM pgcol38_table_guard_unqualified.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native guard in explicit path","sql": "SET search_path TO pgcol38_table_guard_unqualified, pg_catalog;ALTER TABLE IF EXISTS absent_pgcol38 ADD COLUMN c int","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "no relation invented","sql": "SELECT count(*) FROM pg_class WHERE relnamespace='pgcol38_table_guard_unqualified'::regnamespace AND relname='absent_pgcol38'","expect": "0"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_table_guard_unqualified CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_table_guard_unqualified'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-identity-prior-ddl",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "notes": "A prior statement and even a later sibling can change the catalog premise.",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcol38_prior_ddl"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_prior_ddl CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_prior_ddl'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcol38_prior_ddl.t ADD COLUMN fresh int;ALTER TABLE pgcol38_prior_ddl.t RENAME COLUMN fresh TO moved;ALTER TABLE pgcol38_prior_ddl.u ADD COLUMN c int, DROP COLUMN c;ALTER TABLE IF EXISTS pgcol38_prior_ddl.t ALTER COLUMN c TYPE bigint",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_prior_ddl'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcol38_prior_ddl","expect_rc": 0},
+    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_prior_ddl.control_t(payload text);INSERT INTO pgcol38_prior_ddl.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_prior_ddl.guard START 7;CREATE TABLE pgcol38_prior_ddl.t(c int);CREATE TABLE pgcol38_prior_ddl.u(c int);INSERT INTO pgcol38_prior_ddl.u VALUES(4);CREATE TABLE pgcol38_prior_ddl.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_prior_ddl'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 4,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["complete","unverified","unverified","unverified"],
+    "statement_indices": [0,1,2,3],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"},{"index": 2,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
+    "evidence_gaps": 4,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 2,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 3,"rule_id": "ddl.table.exists.alter.require","reason_code": "unproven_alter_table_relation","required_facts": ["target_table.pg_relation"]}],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation names, file identities and attributes","sql": "SELECT count(*) FROM ((TABLE pgcol38_prior_ddl.receipt EXCEPT (SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_prior_ddl'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_prior_ddl'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol38_prior_ddl.receipt)) AS catalog_delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(payload='unchanged') FROM pgcol38_prior_ddl.control_t","expect": "t"},
+    {"assert": "audit does not issue sequence values","sql": "SELECT last_value::text||':'||is_called::text FROM pgcol38_prior_ddl.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "real predecessor and rename","sql": "ALTER TABLE pgcol38_prior_ddl.t ADD COLUMN fresh int; ALTER TABLE pgcol38_prior_ddl.t RENAME COLUMN fresh TO moved","expect_rc": 0},
+    {"name": "native DROP phase precedes ADD","sql": "ALTER TABLE pgcol38_prior_ddl.u ADD COLUMN c int, DROP COLUMN c","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "only native chain creates moved","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgcol38_prior_ddl.t'::regclass AND attname='moved' AND NOT attisdropped","expect": "1"},
+    {"assert": "native phase replaced column","sql": "SELECT c IS NULL FROM pgcol38_prior_ddl.u","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_prior_ddl CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_prior_ddl'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-identity-prior-parser",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "notes": "Earlier native parser error invalidates cached column and parent relation premises.",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcol38_prior_parser"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_prior_parser CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_prior_parser'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcol38_prior_parser.t RENAME COLUMN IF EXISTS c TO moved;ALTER TABLE IF EXISTS pgcol38_prior_parser.t ADD COLUMN c int;ALTER TABLE pgcol38_prior_parser.t RENAME COLUMN c TO moved",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_prior_parser'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcol38_prior_parser","expect_rc": 0},
+    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_prior_parser.control_t(payload text);INSERT INTO pgcol38_prior_parser.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_prior_parser.guard START 7;CREATE TABLE pgcol38_prior_parser.t(c int);CREATE TABLE pgcol38_prior_parser.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_prior_parser'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 1,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": ["unverified","unverified"],
+    "statement_indices": [0,1],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
+    "evidence_gaps": 4,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 0,"rule_id": "ddl.table.exists.alter.require","reason_code": "unproven_alter_table_relation","required_facts": ["target_table.pg_relation"]},{"index": 1,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]}],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation names, file identities and attributes","sql": "SELECT count(*) FROM ((TABLE pgcol38_prior_parser.receipt EXCEPT (SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_prior_parser'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_prior_parser'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol38_prior_parser.receipt)) AS catalog_delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(payload='unchanged') FROM pgcol38_prior_parser.control_t","expect": "t"},
+    {"assert": "audit does not issue sequence values","sql": "SELECT last_value::text||':'||is_called::text FROM pgcol38_prior_parser.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "unparseable column guard","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_prior_parser.t RENAME COLUMN IF EXISTS c TO moved","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42601:"]},
+    {"name": "valid native rename independently lands","sql": "ALTER TABLE pgcol38_prior_parser.t RENAME COLUMN c TO moved","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "only native supported rename lands","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgcol38_prior_parser.t'::regclass AND attname='moved' AND NOT attisdropped","expect": "1"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_prior_parser CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_prior_parser'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-identity-scope",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "notes": "Inherited, partitioned and unlogged tables remain unverified by this ordinary-persistent subset.",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcol38_scope"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_scope CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_scope'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcol38_scope.child RENAME COLUMN c TO moved;ALTER TABLE pgcol38_scope.part RENAME COLUMN c TO moved;ALTER TABLE pgcol38_scope.unlogged ADD COLUMN new_col int",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_scope'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcol38_scope","expect_rc": 0},
+    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_scope.control_t(payload text);INSERT INTO pgcol38_scope.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_scope.guard START 7;CREATE TABLE pgcol38_scope.parent(c int);CREATE TABLE pgcol38_scope.child() INHERITS(pgcol38_scope.parent);CREATE TABLE pgcol38_scope.part(c int) PARTITION BY RANGE(c);CREATE UNLOGGED TABLE pgcol38_scope.unlogged(c int);CREATE TABLE pgcol38_scope.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_scope'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified","unverified","unverified"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 2,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
+    "evidence_gaps": 5,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 0,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 2,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]}],
+    "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
+    "rule_summary_loaded": 7
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation names, file identities and attributes","sql": "SELECT count(*) FROM ((TABLE pgcol38_scope.receipt EXCEPT (SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_scope'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_scope'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol38_scope.receipt)) AS catalog_delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(payload='unchanged') FROM pgcol38_scope.control_t","expect": "t"},
+    {"assert": "audit does not issue sequence values","sql": "SELECT last_value::text||':'||is_called::text FROM pgcol38_scope.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "inherited source refuses","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_scope.child RENAME COLUMN c TO moved","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]},
+    {"name": "partitioned source can rename natively","sql": "ALTER TABLE pgcol38_scope.part RENAME COLUMN c TO moved","expect_rc": 0},
+    {"name": "unlogged ADD can land natively","sql": "ALTER TABLE pgcol38_scope.unlogged ADD COLUMN new_col int","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "driver rename in excluded kind","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgcol38_scope.part'::regclass AND attname='moved' AND NOT attisdropped","expect": "1"},
+    {"assert": "driver ADD in excluded kind","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgcol38_scope.unlogged'::regclass AND attname='new_col' AND NOT attisdropped","expect": "1"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_scope CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_scope'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
    "id":"pg-column-format-quoted-case","anchor":"postgres17","dialect":"postgresql","policy":"pg-column-format",
    "notes":"Exact quoted CTID is a user column, not ctid. STORAGE mixed case succeeds; quoted compression DEFAULT is not default.",
    "connect":{"host":"127.0.0.1","port":25432,"user":"postgres","database":"postgres","schema":"pgfmt37_case"},
@@ -5078,6 +5777,23 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.column-identity-add-offline",
+  "T37.cli.column-identity-rename-offline",
+  "T37.cli.column-identity-table-guard-offline",
+  "T37.cli.column-identity-disabled",
+  "T37.cli.column-identity-rename-column-guard-parser",
+  "T37.meta.pg-column-identity-add-duplicates",
+  "T37.meta.pg-column-identity-add-guard",
+  "T37.meta.pg-column-identity-add-system",
+  "T37.meta.pg-column-identity-rename-source",
+  "T37.meta.pg-column-identity-rename-destination",
+  "T37.meta.pg-column-identity-rename-quoted-spaces",
+  "T37.meta.pg-column-identity-table-guard-absent",
+  "T37.meta.pg-column-identity-table-guard-other-kind",
+  "T37.meta.pg-column-identity-table-guard-unqualified",
+  "T37.meta.pg-column-identity-prior-ddl",
+  "T37.meta.pg-column-identity-prior-parser",
+  "T37.meta.pg-column-identity-scope",
   "T37.cli.column-storage-offline",
   "T37.cli.column-compression-offline",
   "T37.cli.column-format-default-offline",

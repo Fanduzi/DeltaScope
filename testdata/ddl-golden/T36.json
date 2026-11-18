@@ -3944,12 +3944,15 @@
    ],
    "expect": {
     "exit": 0,
-    "verdict": "pass",
+    "verdict": "review",
     "statements": 1,
     "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.alter.add_column.exists.forbid", "reason_code": "unproven_column_identity", "required_facts": ["target_table.pg_columns"]}],
     "finding_entries": [
      {
       "index": 0,

@@ -81,6 +81,27 @@ inheritance/partition semantics, general prospective order, and the remaining
 F09 dimensions stay in the ledger. A column-name result does not certify those
 independent premises.
 
+## Canonical evidence and compatibility
+
+The initial implementation changed five existing T37 expectations because the
+ADD and RENAME rules now report missing live facts offline. The original 156
+cases retained their SQL, profiles and finding assertions, and passed with
+2794 assertions. The T36 live partitioned ADD still reports its existing notice
+and now carries an explicit ordinary-table evidence gap.
+
+The first additive T37 replay at `c94a15da` with evidence edits passed 171/173.
+Two multi-statement fixtures expected later relation observations to remain fresh.
+The expectations now pin the additional gaps and retain the same native oracles.
+The corrected replay passed 173/173 with 3368 assertions. The 17 new cases
+include 32 native steps (17 successes and 15 exact SQLSTATE refusals). Each live
+case compares relation/file identities, attributes, an exact payload and a
+sequence position before native execution. The prior-DDL case also proves that
+native DROP can execute ahead of ADD even when ADD was written first.
+
+The column inventory row stays mixed; only the RENAME COLUMN child and anchor
+classification moves from notice-only to mixed. Existing IDs, profiles and
+inventory denominators remain attached to their original scopes.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

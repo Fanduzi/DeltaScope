@@ -3,6 +3,16 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D8 ALTER column identity and existence guards
+
+D8 adds 17 cases under an isolated profile, preserving the existing 156 IDs
+and profiles. Five prior offline cases now pin the new evidence gaps with
+unchanged finding assertions. The additive T37 replay reached 173/173 and
+3368 assertions. Its 32 native steps include 17 successes and 15 exact
+SQLSTATE refusals. The T36 partitioned ADD control keeps its original notice
+and reports an explicit ordinary-table facts gap. See the
+[decision](../../docs/decisions/2026-11-18-postgresql-alter-column-identity.md).
+
 ## T37 D7 storage/compression and observed system targets
 
 Delivered **b966f73c76352507a8dcf03b01063e0f43255564** passed **50 tasks,

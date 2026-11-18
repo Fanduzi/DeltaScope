@@ -7570,7 +7570,12 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.add-column.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#pg-column-identity-add-duplicates",
+                "file:testdata/ddl-golden/T37.json#pg-column-identity-add-system",
+                "file:testdata/ddl-golden/T37.json#pg-column-identity-table-guard-absent",
+                "file:testdata/ddl-golden/T37.json#pg-column-identity-table-guard-other-kind",
+                "file:testdata/ddl-golden/T37.json#pg-column-identity-scope"
               ]
             }
           ]
@@ -7589,7 +7594,10 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.add-column-if-not-exists.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#pg-column-identity-add-guard",
+                "file:testdata/ddl-golden/T37.json#pg-column-identity-add-system",
+                "file:testdata/ddl-golden/T37.json#column-identity-add-offline"
               ]
             }
           ]
@@ -7653,7 +7661,7 @@
         {
           "subaction_id": "RENAME COLUMN",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -7661,10 +7669,15 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.rename-column.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#pg-column-identity-rename-source",
+                "file:testdata/ddl-golden/T37.json#pg-column-identity-rename-destination",
+                "file:testdata/ddl-golden/T37.json#pg-column-identity-rename-quoted-spaces",
+                "file:testdata/ddl-golden/T37.json#pg-column-identity-scope",
+                "file:testdata/ddl-golden/T37.json#column-identity-rename-column-guard-parser"
               ]
             }
           ]
@@ -7728,7 +7741,10 @@
                 "file:testdata/ddl-golden/T37.json#alter-table-columns-multi-action",
                 "file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-ddl",
                 "file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-parser",
-                "file:testdata/ddl-golden/T37.json#column-tuning-parser-retention"
+                "file:testdata/ddl-golden/T37.json#column-tuning-parser-retention",
+                "file:testdata/ddl-golden/T37.json#pg-column-identity-prior-ddl",
+                "file:testdata/ddl-golden/T37.json#pg-column-identity-prior-parser",
+                "file:testdata/ddl-golden/T37.json#pg-column-identity-table-guard-unqualified"
               ]
             }
           ]
