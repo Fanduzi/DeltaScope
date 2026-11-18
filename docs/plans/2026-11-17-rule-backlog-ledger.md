@@ -294,6 +294,44 @@ The decision record was required and committed with the bounded implementation;
 this later historical doc HEAD does not inherit fa37's aggregate attribution.
 Other original F09 dimensions continue in the queue, not permanent deferral.
 
+### D7 storage/compression and system targets (implemented; delivery pending)
+
+Approved default-on, parameterless blockers:
+`ddl.pg.alter.column.storage.valid` and `ddl.pg.alter.column.compression.valid`.
+Facts **4f157146** retain exact compression AST, actual typstorage, real negative-
+attnum members separately from user known-empty, and lz4 enum known/support.
+Shared rules **631575a6** add config/catalog, bounded findings/gaps, unit and
+application/SDK/HTTP/MCP, seven corpus pairs and bilingual/module docs. D5/D6
+IDs remain; guarded existing ctid is not no-op/absence, and inapplicable deletion/
+clamp advice is suppressed without disabling independent forbids or other dialects.
+Fixed-type compression default and STORAGE PLAIN toastable text remain legal;
+method/native-storage case and Unicode lookalikes stay distinct. Public enum
+observation proves build support, not a selected pglz default or pg_config read.
+Unknown/stale/misbound/ambiguous/type/build/scope facts remain gaps.
+
+All previous 136 T37 objects/profiles/IDs remain unchanged. The frozen 20 additions
+pass **156/156, 2772 assertions**, with **52 native steps: 25 successes/27 exact
+refusals** and independent attributes/files/exact data/compressed rows/guard and
+owned schema/role cleanup. System ADD IDENTITY is exact 22023, not a guessed
+0A000. The NOLOGIN reader's SET ROLE enum probe is not a full low-privilege audit
+login or DDL-permission claim; no-lz4 native binaries have not been run, and
+negative unit/corpus/source facts are not relabeled as native platform evidence.
+
+Candidate artifact
+`/tmp/ddl-golden-pg-column-format-canonical-v2-631575a6/T37/artifact.json`
+belongs to **631575a6 + dirty evidence**, not final-HEAD all-task proof. The
+partial required-ID and first full 154/156 fixture failures and their exact,
+non-weakening corrections remain in the
+[decision](../decisions/2026-11-18-postgresql-column-storage-compression-targets.md).
+Exactly ten existing cells in two mixed parents gain relevant evidence; all
+301 parent/child statuses, original subaction sets and the 19-family/63-row
+backlog denominator remain unchanged. Matrix follows the YAML generator.
+Final full gates, fixed final-HEAD all/validate, independent read-only review,
+FF-only merge, normal push and exact-SHA CI remain pending. Main/origin main
+still points to shipped fa37a41b. **D7, F09 and the total goal are not closed.**
+Other original table options, rename/owner/type, dependency/permission,
+inheritance/partition and general-order dimensions continue, not silent deferral.
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.
@@ -310,7 +348,7 @@ new default behavior is approved per family before implementation.
 | F06 | TiDB recovery/flashback | 1 | T16 | unreviewed |
 | F07 | PostgreSQL schema/collation | 2 | T35 | unreviewed |
 | F08 | PostgreSQL CREATE TABLE | 6 | T36 | D2 delivered; remaining dimensions unreviewed |
-| F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2 ADD COLUMN, D3 risk, D4 targets and D5 generation transitions delivered; remaining dimensions open |
+| F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2 ADD COLUMN, D3/D4 constraints, D5 generation and D6 tuning delivered; D7 storage/compression/system candidate, remaining dimensions open |
 | F10 | PostgreSQL DROP/TRUNCATE | 2 | T38 | unreviewed |
 | F11 | PostgreSQL indexes/operator families | 4 | T39 | unreviewed |
 | F12 | PostgreSQL views/materialized views | 5 | T40 | unreviewed |
@@ -364,8 +402,8 @@ insufficient.
 | F08 | `postgresql.create-table-partitioning` | PARTITION BY RANGE; PARTITION BY LIST; PARTITION BY HASH; PARTITION OF; PARTITION OF DEFAULT; INHERITS | unreviewed |
 | F08 | `postgresql.create-table-temporary` | TEMP/TEMPORARY; GLOBAL TEMPORARY compat noise; UNLOGGED; ON COMMIT actions | unreviewed |
 | F08 | `postgresql.create-table-like` | LIKE basic; INCLUDING options | unreviewed |
-| F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; others unreviewed |
-| F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 bounded target/options/risk delivered at26dde9ad with accepted gaps; broader data/expression/current and other attributes remain open |
+| F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 system/ordering evidence candidate; rename/type/general dimensions open |
+| F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 generation and D6 statistics/options delivered with accepted gaps; D7 storage/compression/system candidate, broader data/expression/current/kind scopes open |
 | F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; remaining dimensions open |
 | F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | unreviewed |
 | F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | unreviewed |

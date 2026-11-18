@@ -3,6 +3,42 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D7 storage/compression and observed system targets
+
+D7 preserves all 136 preceding case objects, required IDs and profiles, and
+adds exactly the 20 IDs frozen before implementation in the
+[decision](../../docs/decisions/2026-11-18-postgresql-column-storage-compression-targets.md):
+ten CLI and ten owned metadata cases, **156/156, 2772 assertions** (586 additive).
+The candidate is **631575a6 + dirty evidence files**, not a clean final delivery
+HEAD; `/tmp/ddl-golden-pg-column-format-canonical-v2-631575a6/T37/artifact.json`
+cannot replace the final same-HEAD all-task aggregate.
+
+The additions carry 52 native driver steps (25 successes/27 exact refusals),
+independent user/system attributes, real type strategies, file identities,
+exact data/cardinality, compressed-row and guard controls, plus prior
+DDL/parser/sibling and broader-kind gaps. Default compression on fixed types,
+compression on STORAGE PLAIN text, domains/bytea, case-sensitive methods,
+Unicode storage lookalikes and quoted CTID versus system ctid stay distinct.
+A zero-user-column table retains six real system members; guarded ctid/CASCADE
+refuses rather than becoming a no-op. Related generation/statistics/options
+checks preserve IDs and suppress inapplicable deletion/clamp advice. ADD
+IDENTITY's system type refusal is 22023, not a copied 0A000 assumption.
+
+The NOLOGIN reader's SET ROLE probe proves public enum visibility independently
+of the selected pglz default; it is not an end-to-end low-privilege audit login
+or DDL permission claim. Role/schema ownership and absence/cleanup are separate.
+Private type/build/method facts do not appear in new finding metadata. A native
+without-lz4 binary has not been run; negative-build unit/corpus/source evidence
+is not relabeled as an executed native platform.
+
+First partial execution passed 147 case bodies but failed the required-ID gate;
+all 20 frozen IDs were registered, not removed to obtain green. The first full
+156 replay passed 154: a catalog count accidentally included auxiliary system
+members, and exact reader output also included SET/RESET tags. The query now
+binds only four intended tables, and the complete tagged output is asserted;
+all product predicates and old assertions remain unchanged. Final all-task,
+read-only review, merge/push and exact-SHA CI still gate delivery. F09 stays open.
+
 ## T37 D6 tuning / DROP guard compatibility
 
 D6 retains all 118 prior IDs and profiles. Its approved proof requirement

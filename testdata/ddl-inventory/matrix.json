@@ -7608,6 +7608,9 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.drop-column.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-system-empty",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-system-targets",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_format_system.expected.yaml#ddl.alter.drop_column.exists.require",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json#DROP COLUMN",
                 "file:testdata/ddl-golden/T37.json#pg-column-tuning-drop-guards",
@@ -7633,6 +7636,9 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.drop-column-if-exists-cascade.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-system-targets",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-system-empty",
+                "file:testdata/ddl-golden/T37.json#column-format-system-offline",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json#DROP COLUMN IF EXISTS",
                 "file:testdata/ddl-golden/T37.json#pg-column-tuning-statistics",
@@ -7715,6 +7721,9 @@
               "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.multi-action.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-prior-ddl",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-prior-parser",
+                "file:testdata/ddl-golden/T37.json#column-format-parser-retention",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json#alter-table-columns-multi-action",
                 "file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-ddl",
@@ -7762,6 +7771,8 @@
               "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-drop-not-null.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-system-targets",
+                "file:internal/domain/rule/ddl/postgresql_system_column_rules_test.go#TestPGSystemTargetNeverAbsentOrGuardedNoop",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json#SET/DROP NOT NULL",
                 "file:testdata/ddl-golden/T37.json#pg-column-generation-targets",
@@ -7786,6 +7797,8 @@
               "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-drop-default.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-system-targets",
+                "file:internal/domain/rule/ddl/postgresql_system_column_rules_test.go#TestPGSystemTargetNeverAbsentOrGuardedNoop",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json#SET/DROP DEFAULT",
                 "file:testdata/ddl-golden/T37.json#pg-column-generation-targets",
@@ -7809,6 +7822,8 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-generated-drop-expression.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-system-targets",
+                "file:internal/domain/rule/ddl/postgresql_system_column_rules_test.go#TestPGSystemTargetNeverAbsentOrGuardedNoop",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json#SET GENERATED / DROP EXPRESSION",
                 "file:testdata/ddl-golden/T37.json#pg-column-generation-targets",
@@ -7835,6 +7850,8 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.add-drop-identity.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-system-targets",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_format_system.expected.yaml#ddl.pg.alter.column.generation.transition.valid",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json#ADD/DROP IDENTITY",
                 "file:testdata/ddl-golden/T37.json#pg-column-generation-add",
@@ -7913,6 +7930,8 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-statistics.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-system-targets",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_format_system.expected.yaml#ddl.pg.alter.column.statistics.target.valid",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json#SET STATISTICS",
                 "file:testdata/ddl-golden/T37.json#pg-column-tuning-statistics",
@@ -7941,6 +7960,20 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-storage-compression.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-column-storage-validity",
+                "file:testdata/ddl-golden/T37.json#pg-column-compression-validity",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-system-targets",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-quoted-case",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-prior-ddl",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-prior-parser",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-scope",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-no-rewrite",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-enum-reader",
+                "file:testdata/ddl-golden/T37.json#column-storage-offline",
+                "file:testdata/ddl-golden/T37.json#column-compression-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_format_invalid.expected.yaml#ddl.pg.alter.column.storage.valid",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_format_invalid.expected.yaml#ddl.pg.alter.column.compression.valid",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_format_controls.expected.yaml",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             }
@@ -7960,6 +7993,8 @@
               "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-n-distinct-reset.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-column-format-system-targets",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_format_system.expected.yaml#ddl.pg.alter.column.options.valid",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json#n_distinct",
                 "file:testdata/ddl-golden/T37.json#pg-column-tuning-options",

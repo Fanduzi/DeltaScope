@@ -6,6 +6,20 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-column-format": {"enable": {
+    "ddl.pg.alter.column.storage.valid": {"level": "blocker"},
+    "ddl.pg.alter.column.compression.valid": {"level": "blocker"}
+   }},
+   "pg-column-format-system": {"enable": {
+    "ddl.pg.alter.column.storage.valid": {"level": "blocker"},
+    "ddl.pg.alter.column.compression.valid": {"level": "blocker"},
+    "ddl.pg.alter.column.generation.transition.valid": {"level": "blocker"},
+    "ddl.pg.alter.column.statistics.target.valid": {"level": "blocker"},
+    "ddl.pg.alter.column.statistics.clamp.warn": {"level": "warning"},
+    "ddl.pg.alter.column.options.valid": {"level": "blocker"},
+    "ddl.alter.drop_column.exists.require": {"level": "blocker"},
+    "ddl.pg.alter.drop_column.advisory": {"level": "warning"}
+   }},
    "pg-column-tuning": {
     "enable": {
      "ddl.pg.alter.column.statistics.target.valid": {"level": "blocker"},
@@ -1860,6 +1874,61 @@
  },
  "cli_cases": [
   {
+   "id": "column-storage-offline", "dialect": "postgresql", "policy": "pg-column-format",
+   "sql": "ALTER TABLE app.a ALTER COLUMN c SET STORAGE EXTERNAL;ALTER TABLE app.b ALTER COLUMN c SET STORAGE invalid_mode", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 2, "findings": 0, "diagnostics": 0, "unsupported": 0, "rule_summary_loaded": 2, "coverage": "unverified", "statement_coverage": ["unverified", "unverified"], "statement_indices": [0,1], "finding_entries": [], "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column.storage.valid", "reason_code": "unproven_column_storage", "required_facts": ["instance.version"]}, {"index": 1, "rule_id": "ddl.pg.alter.column.storage.valid", "reason_code": "unproven_column_storage", "required_facts": ["instance.version"]}]}
+  },
+  {
+   "id": "column-compression-offline", "dialect": "postgresql", "policy": "pg-column-format",
+   "sql": "ALTER TABLE app.a ALTER COLUMN c SET COMPRESSION pglz;ALTER TABLE app.b ALTER COLUMN c SET COMPRESSION lz4;ALTER TABLE app.c ALTER COLUMN c SET COMPRESSION invalid_method", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 3, "findings": 0, "diagnostics": 0, "unsupported": 0, "rule_summary_loaded": 2, "coverage": "unverified", "statement_coverage": ["unverified", "unverified", "unverified"], "statement_indices": [0,1,2], "finding_entries": [], "evidence_gaps": 3,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column.compression.valid", "reason_code": "unproven_column_compression", "required_facts": ["instance.version"]}, {"index": 1, "rule_id": "ddl.pg.alter.column.compression.valid", "reason_code": "unproven_column_compression", "required_facts": ["instance.version"]}, {"index": 2, "rule_id": "ddl.pg.alter.column.compression.valid", "reason_code": "unproven_column_compression", "required_facts": ["instance.version"]}]}
+  },
+  {
+   "id": "column-format-default-offline", "dialect": "postgresql", "policy": "pg-column-format",
+   "sql": "ALTER TABLE app.a ALTER COLUMN c SET STORAGE DEFAULT;ALTER TABLE app.b ALTER COLUMN c SET COMPRESSION default", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 2, "findings": 0, "diagnostics": 0, "unsupported": 0, "rule_summary_loaded": 2, "coverage": "unverified", "statement_coverage": ["unverified", "unverified"], "statement_indices": [0,1], "finding_entries": [], "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column.storage.valid", "reason_code": "unproven_column_storage", "required_facts": ["instance.version"]}, {"index": 1, "rule_id": "ddl.pg.alter.column.compression.valid", "reason_code": "unproven_column_compression", "required_facts": ["instance.version"]}]}
+  },
+  {
+   "id": "column-format-system-offline", "dialect": "postgresql", "policy": "pg-column-format-system",
+   "sql": "ALTER TABLE app.a ALTER COLUMN ctid SET STORAGE PLAIN;ALTER TABLE app.b ALTER COLUMN ctid SET COMPRESSION default;ALTER TABLE app.c DROP COLUMN IF EXISTS ctid", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 3, "findings": 1, "diagnostics": 0, "unsupported": 0, "rule_summary_loaded": 8, "coverage": "unverified", "statement_coverage": ["unverified", "unverified", "unverified"], "statement_indices": [0,1,2], "evidence_gaps": 3,
+    "finding_entries": [{"index": 2, "rule_id": "ddl.pg.alter.drop_column.advisory", "level": "warning"}],
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column.storage.valid", "reason_code": "unproven_column_storage", "required_facts": ["instance.version"]}, {"index": 1, "rule_id": "ddl.pg.alter.column.compression.valid", "reason_code": "unproven_column_compression", "required_facts": ["instance.version"]}, {"index": 2, "rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["instance.version"]}]}
+  },
+  {
+   "id": "column-format-storage-case-offline", "dialect": "postgresql", "policy": "pg-column-format",
+   "sql": "ALTER TABLE app.a ALTER COLUMN c SET STORAGE \"ExTeRnAl\";ALTER TABLE app.b ALTER COLUMN c SET STORAGE \"PLAİN\"", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 2, "findings": 0, "diagnostics": 0, "unsupported": 0, "rule_summary_loaded": 2, "coverage": "unverified", "statement_coverage": ["unverified", "unverified"], "statement_indices": [0,1], "finding_entries": [], "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column.storage.valid", "reason_code": "unproven_column_storage", "required_facts": ["instance.version"]}, {"index": 1, "rule_id": "ddl.pg.alter.column.storage.valid", "reason_code": "unproven_column_storage", "required_facts": ["instance.version"]}]}
+  },
+  {
+   "id": "column-format-compression-case-offline", "dialect": "postgresql", "policy": "pg-column-format",
+   "sql": "ALTER TABLE app.a ALTER COLUMN c SET COMPRESSION \"PGLZ\";ALTER TABLE app.b ALTER COLUMN c SET COMPRESSION \"DEFAULT\"", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 2, "findings": 0, "diagnostics": 0, "unsupported": 0, "rule_summary_loaded": 2, "coverage": "unverified", "statement_coverage": ["unverified", "unverified"], "statement_indices": [0,1], "finding_entries": [], "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column.compression.valid", "reason_code": "unproven_column_compression", "required_facts": ["instance.version"]}, {"index": 1, "rule_id": "ddl.pg.alter.column.compression.valid", "reason_code": "unproven_column_compression", "required_facts": ["instance.version"]}]}
+  },
+  {
+   "id": "column-format-disabled", "dialect": "postgresql", "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.a ALTER COLUMN c SET STORAGE EXTERNAL;ALTER TABLE app.b ALTER COLUMN c SET COMPRESSION invalid_method;ALTER TABLE app.c DROP COLUMN IF EXISTS ctid", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 3, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "finding_entries": [], "serialized_not_contains": ["rule_summary"]}
+  },
+  {
+   "id": "column-format-mysql", "dialect": "mysql", "policy": "pg-column-format", "sql": "ALTER TABLE app.t MODIFY COLUMN c int", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "rule_summary_loaded": 2, "rule_summary_applicable": 0, "finding_entries": []}
+  },
+  {
+   "id": "column-format-tidb", "dialect": "tidb", "policy": "pg-column-format", "sql": "ALTER TABLE app.t MODIFY COLUMN c int", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "rule_summary_loaded": 2, "rule_summary_applicable": 0, "finding_entries": []}
+  },
+  {
+   "id": "column-format-parser-retention", "dialect": "postgresql", "policy": "pg-column-format", "sql": "ALTER TABLE app.a ALTER COLUMN c SET STORAGE EXTERNAL;ALTER TABLE app.a ALTER CONSTRAINT ck NOT ENFORCED", "args": ["--fail-on", "none"],
+   "expect": {"exit": 2, "verdict": "review", "statements": 1, "findings": 0, "diagnostics": 1, "unsupported": 0, "rule_summary_loaded": 2, "coverage": "incomplete", "statement_coverage": ["unverified"], "statement_indices": [0], "finding_entries": [], "evidence_gaps": 1,
+    "evidence_gap_entries": [{"rule_id": "ddl.pg.alter.column.storage.valid", "reason_code": "unproven_column_storage", "required_facts": ["instance.version"]}]}
+  },
+  {
    "id": "column-tuning-statistics-offline", "dialect": "postgresql", "policy": "pg-column-tuning",
    "sql": "ALTER TABLE app.a ALTER COLUMN id SET STATISTICS -2;ALTER TABLE app.b ALTER COLUMN id SET STATISTICS 10001", "args": ["--fail-on", "none"],
    "expect": {"exit": 0, "verdict": "review", "statements": 2, "findings": 0, "diagnostics": 0, "unsupported": 0, "rule_summary_loaded": 5, "coverage": "unverified", "statement_coverage": ["unverified", "unverified"], "statement_indices": [0, 1], "finding_entries": [], "evidence_gaps": 3,
@@ -3710,6 +3779,331 @@
  ],
  "metadata_cases": [
   {
+   "id":"pg-column-format-quoted-case","anchor":"postgres17","dialect":"postgresql","policy":"pg-column-format",
+   "notes":"Exact quoted CTID is a user column, not ctid. STORAGE mixed case succeeds; quoted compression DEFAULT is not default.",
+   "connect":{"host":"127.0.0.1","port":25432,"user":"postgres","database":"postgres","schema":"pgfmt37_case"},
+   "fixture":{"cleanup":[{"name":"remove owned schema","fixture_key":"schema","sql":"DROP SCHEMA pgfmt37_case CASCADE","verify":{"assert":"schema absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_case'","expect":"0"}}]},
+   "sql":"ALTER TABLE pgfmt37_case.storage_t ALTER COLUMN \"CTID\" SET STORAGE \"ExTeRnAl\";ALTER TABLE pgfmt37_case.compression_t ALTER COLUMN \"CTID\" SET COMPRESSION pglz;ALTER TABLE pgfmt37_case.upper_t ALTER COLUMN \"CTID\" SET COMPRESSION \"DEFAULT\";ALTER TABLE pgfmt37_case.system_t ALTER COLUMN ctid SET COMPRESSION default","args":["--fail-on","none"],
+   "setup":[
+    {"name":"prove schema absent","fixture_key":"schema","requires_absence":true,"sql":"SELECT 1","expect_rc":0,"verify":[{"assert":"schema absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_case'","expect":"0"}]},
+    {"name":"claim schema","fixture_key":"schema","creates_fixture":true,"sql":"CREATE SCHEMA pgfmt37_case","expect_rc":0},
+    {"name":"seed exact quoted user names","sql":"CREATE TABLE pgfmt37_case.storage_t(\"CTID\" text);CREATE TABLE pgfmt37_case.compression_t(\"CTID\" text);CREATE TABLE pgfmt37_case.upper_t(\"CTID\" text);CREATE TABLE pgfmt37_case.system_t(\"CTID\" text);INSERT INTO pgfmt37_case.storage_t VALUES('payload');INSERT INTO pgfmt37_case.compression_t VALUES('payload');INSERT INTO pgfmt37_case.upper_t VALUES('payload');INSERT INTO pgfmt37_case.system_t VALUES('payload');CREATE SEQUENCE pgfmt37_case.guard START 7","expect_rc":0},
+    {"name":"snapshot exact names, strategies and files","sql":"CREATE TABLE pgfmt37_case.receipt AS SELECT c.oid relid,c.relfilenode fileid,a.attnum,a.attname name,a.attstorage storage,a.attcompression compression FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgfmt37_case'::regnamespace AND c.relname!='receipt' AND a.attnum<>0 AND NOT a.attisdropped","expect_rc":0}
+   ],
+   "expect":{"exit":0,"verdict":"reject","statements":4,"findings":2,"diagnostics":0,"unsupported":0,"coverage":"complete","statement_coverage":["complete","complete","complete","complete"],"statement_indices":[0,1,2,3],"rule_summary_loaded":2,"evidence_gaps":0,"finding_entries":[{"index":2,"rule_id":"ddl.pg.alter.column.compression.valid","level":"blocker"},{"index":3,"rule_id":"ddl.pg.alter.column.compression.valid","level":"blocker"}],"finding_metadata":[{"index":2,"rule_id":"ddl.pg.alter.column.compression.valid","metadata":{"reason_code":"compression_method_invalid","column":"CTID"}},{"index":3,"rule_id":"ddl.pg.alter.column.compression.valid","metadata":{"reason_code":"system_column_inapplicable","column":"ctid"}}],"serialized_not_contains":["PGColumns","PGCompressionMethod","SystemColumns"]},
+   "post_verify":[
+    {"assert":"audit preserves exact user/system attributes and files","sql":"SELECT count(*) FROM pgfmt37_case.receipt r LEFT JOIN pg_class c ON c.oid=r.relid LEFT JOIN pg_attribute a ON a.attrelid=r.relid AND a.attnum=r.attnum WHERE c.oid IS NULL OR c.relfilenode!=r.fileid OR a.attname IS DISTINCT FROM r.name OR a.attstorage IS DISTINCT FROM r.storage OR a.attcompression IS DISTINCT FROM r.compression","expect":"0"},
+    {"assert":"audit preserves every quoted payload and row count","sql":"SELECT (count(*)=4 AND bool_and(n=1 AND v='payload'))::text FROM (SELECT count(*) n,min(\"CTID\") v FROM pgfmt37_case.storage_t UNION ALL SELECT count(*),min(\"CTID\") FROM pgfmt37_case.compression_t UNION ALL SELECT count(*),min(\"CTID\") FROM pgfmt37_case.upper_t UNION ALL SELECT count(*),min(\"CTID\") FROM pgfmt37_case.system_t) data","expect":"true"},
+    {"assert":"audit never advances guard","sql":"SELECT last_value::text||':'||is_called::text FROM pgfmt37_case.guard","expect":"7:false"}
+   ],
+   "execute":[
+    {"name":"native mixed-case STORAGE on quoted user column","sql":"ALTER TABLE pgfmt37_case.storage_t ALTER COLUMN \"CTID\" SET STORAGE \"ExTeRnAl\"","expect_rc":0},
+    {"name":"native compression on quoted user column","sql":"ALTER TABLE pgfmt37_case.compression_t ALTER COLUMN \"CTID\" SET COMPRESSION pglz","expect_rc":0},
+    {"name":"native uppercase compression method refusal","sql":"ALTER TABLE pgfmt37_case.upper_t ALTER COLUMN \"CTID\" SET COMPRESSION \"DEFAULT\"","expect_rc":3,"via":"stdin","stderr_contains":["22023"]},
+    {"name":"native lowercase system target refusal","sql":"ALTER TABLE pgfmt37_case.system_t ALTER COLUMN ctid SET COMPRESSION default","expect_rc":3,"via":"stdin","stderr_contains":["0A000"]}
+   ],
+   "structure":[
+    {"assert":"four quoted user and four actual system members stay distinct","sql":"SELECT count(*) FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid WHERE c.relnamespace='pgfmt37_case'::regnamespace AND c.relname IN('storage_t','compression_t','upper_t','system_t') AND ((a.attname='CTID' AND a.attnum>0) OR (a.attname='ctid' AND a.attnum<0))","expect":"8"},
+    {"assert":"only native driver installs exact case-sensitive settings","sql":"SELECT string_agg(c.relname||':'||a.attstorage::text||':'||COALESCE(NULLIF(a.attcompression::text,''),'default'),',' ORDER BY c.relname) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgfmt37_case'::regnamespace AND a.attname='CTID'","expect":"compression_t:x:p,storage_t:e:default,system_t:x:default,upper_t:x:default"}
+   ],
+   "teardown":[{"name":"drop owned schema","fixture_key":"schema","drops_fixture":true,"sql":"DROP SCHEMA pgfmt37_case CASCADE","expect_rc":0,"verify":[{"assert":"schema absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_case'","expect":"0"}]}]
+  },
+  {
+   "id":"pg-column-format-prior-ddl","anchor":"postgres17","dialect":"postgresql","policy":"pg-column-format",
+   "notes":"Old toastable type, prospective ADD and earlier ALTER siblings cannot prove unapplied post-state.",
+   "connect":{"host":"127.0.0.1","port":25432,"user":"postgres","database":"postgres","schema":"pgfmt37_prior"},
+   "fixture":{"cleanup":[{"name":"remove owned schema","fixture_key":"schema","sql":"DROP SCHEMA pgfmt37_prior CASCADE","verify":{"assert":"schema absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_prior'","expect":"0"}}]},
+   "sql":"ALTER TABLE pgfmt37_prior.type_t ALTER COLUMN c TYPE integer USING c::integer;ALTER TABLE pgfmt37_prior.type_t ALTER COLUMN c SET STORAGE EXTERNAL;ALTER TABLE pgfmt37_prior.add_t ADD COLUMN n text;ALTER TABLE pgfmt37_prior.add_t ALTER COLUMN n SET COMPRESSION pglz;ALTER TABLE pgfmt37_prior.multi_t ALTER COLUMN c SET STORAGE PLAIN,ALTER COLUMN c SET COMPRESSION pglz","args":["--fail-on","none"],
+   "setup":[
+    {"name":"prove schema absent","fixture_key":"schema","requires_absence":true,"sql":"SELECT 1","expect_rc":0,"verify":[{"assert":"schema absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_prior'","expect":"0"}]},
+    {"name":"claim schema","fixture_key":"schema","creates_fixture":true,"sql":"CREATE SCHEMA pgfmt37_prior","expect_rc":0},
+    {"name":"seed original types and payloads","sql":"CREATE TABLE pgfmt37_prior.type_t(c text);INSERT INTO pgfmt37_prior.type_t VALUES('41');CREATE TABLE pgfmt37_prior.add_t(c int);INSERT INTO pgfmt37_prior.add_t VALUES(41);CREATE TABLE pgfmt37_prior.multi_t(c text);INSERT INTO pgfmt37_prior.multi_t VALUES('payload');CREATE SEQUENCE pgfmt37_prior.guard START 7;CREATE TABLE pgfmt37_prior.receipt AS SELECT c.oid relid,c.relfilenode fileid,a.attnum,a.attname name,a.atttypid typeid,a.attstorage storage,a.attcompression compression FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgfmt37_prior'::regnamespace AND c.relname!='receipt' AND a.attnum>0 AND NOT a.attisdropped","expect_rc":0}
+   ],
+   "expect":{"exit":0,"verdict":"review","statements":5,"findings":0,"diagnostics":0,"unsupported":0,"coverage":"unverified","statement_coverage":["complete","unverified","complete","unverified","unverified"],"statement_indices":[0,1,2,3,4],"rule_summary_loaded":2,"evidence_gaps":3,"finding_entries":[],"evidence_gap_entries":[{"index":1,"rule_id":"ddl.pg.alter.column.storage.valid","reason_code":"unproven_column_storage","required_facts":["target_table.pg_columns"]},{"index":3,"rule_id":"ddl.pg.alter.column.compression.valid","reason_code":"unproven_column_compression","required_facts":["target_table.pg_columns"]},{"index":4,"rule_id":"ddl.pg.alter.column.compression.valid","reason_code":"unproven_column_compression","required_facts":["target_table.pg_columns"]}]},
+   "post_verify":[
+    {"assert":"audit never applies type/attribute/file changes","sql":"SELECT count(*) FROM pgfmt37_prior.receipt r LEFT JOIN pg_class c ON c.oid=r.relid LEFT JOIN pg_attribute a ON a.attrelid=r.relid AND a.attnum=r.attnum WHERE c.oid IS NULL OR c.relfilenode!=r.fileid OR a.attname IS DISTINCT FROM r.name OR a.atttypid IS DISTINCT FROM r.typeid OR a.attstorage IS DISTINCT FROM r.storage OR a.attcompression IS DISTINCT FROM r.compression","expect":"0"},
+    {"assert":"audit never creates prospective column","sql":"SELECT count(*) FROM pg_attribute WHERE attrelid='pgfmt37_prior.add_t'::regclass AND attname='n' AND NOT attisdropped","expect":"0"},
+    {"assert":"audit preserves exact original payloads and counts","sql":"SELECT ((SELECT count(*)=1 AND bool_and(c='41') FROM pgfmt37_prior.type_t) AND (SELECT count(*)=1 AND bool_and(c=41) FROM pgfmt37_prior.add_t) AND (SELECT count(*)=1 AND bool_and(c='payload') FROM pgfmt37_prior.multi_t))::text","expect":"true"},
+    {"assert":"audit never advances guard","sql":"SELECT last_value::text||':'||is_called::text FROM pgfmt37_prior.guard","expect":"7:false"}
+   ],
+   "execute":[
+    {"name":"native predecessor changes actual type","sql":"ALTER TABLE pgfmt37_prior.type_t ALTER COLUMN c TYPE integer USING c::integer","expect_rc":0},
+    {"name":"native later storage sees new fixed type and refuses","sql":"ALTER TABLE pgfmt37_prior.type_t ALTER COLUMN c SET STORAGE EXTERNAL","expect_rc":3,"via":"stdin","stderr_contains":["0A000"]},
+    {"name":"native predecessor adds prospective column","sql":"ALTER TABLE pgfmt37_prior.add_t ADD COLUMN n text","expect_rc":0},
+    {"name":"native later declaration sees preceding ADD","sql":"ALTER TABLE pgfmt37_prior.add_t ALTER COLUMN n SET COMPRESSION pglz","expect_rc":0},
+    {"name":"native independent ALTER siblings both execute","sql":"ALTER TABLE pgfmt37_prior.multi_t ALTER COLUMN c SET STORAGE PLAIN,ALTER COLUMN c SET COMPRESSION pglz","expect_rc":0}
+   ],
+   "structure":[
+    {"assert":"only driver changes real column type","sql":"SELECT atttypid::regtype::text FROM pg_attribute WHERE attrelid='pgfmt37_prior.type_t'::regclass AND attname='c'","expect":"integer"},
+    {"assert":"only driver adds and compresses new column","sql":"SELECT attcompression::text FROM pg_attribute WHERE attrelid='pgfmt37_prior.add_t'::regclass AND attname='n'","expect":"p"},
+    {"assert":"only driver changes both independent attributes","sql":"SELECT attstorage::text||':'||attcompression::text FROM pg_attribute WHERE attrelid='pgfmt37_prior.multi_t'::regclass AND attname='c'","expect":"p:p"}
+   ],
+   "teardown":[{"name":"drop owned schema","fixture_key":"schema","drops_fixture":true,"sql":"DROP SCHEMA pgfmt37_prior CASCADE","expect_rc":0,"verify":[{"assert":"schema absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_prior'","expect":"0"}]}]
+  },
+  {
+   "id":"pg-column-format-prior-parser","anchor":"postgres17","dialect":"postgresql","policy":"pg-column-format",
+   "notes":"PG18 parser failure remains incomplete/exit2 and withdraws old type/system facts, without text recovery.",
+   "connect":{"host":"127.0.0.1","port":25432,"user":"postgres","database":"postgres","schema":"pgfmt37_parse"},
+   "fixture":{"cleanup":[{"name":"remove owned schema","fixture_key":"schema","sql":"DROP SCHEMA pgfmt37_parse CASCADE","verify":{"assert":"schema absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_parse'","expect":"0"}}]},
+   "sql":"ALTER TABLE pgfmt37_parse.t ALTER CONSTRAINT ck NOT ENFORCED;ALTER TABLE pgfmt37_parse.t ALTER COLUMN c SET STORAGE EXTERNAL;ALTER TABLE pgfmt37_parse.t ALTER COLUMN ctid SET COMPRESSION default","args":["--fail-on","none"],
+   "setup":[
+    {"name":"prove schema absent","fixture_key":"schema","requires_absence":true,"sql":"SELECT 1","expect_rc":0,"verify":[{"assert":"schema absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_parse'","expect":"0"}]},
+    {"name":"claim schema","fixture_key":"schema","creates_fixture":true,"sql":"CREATE SCHEMA pgfmt37_parse","expect_rc":0},
+    {"name":"seed original parser-boundary table","sql":"CREATE TABLE pgfmt37_parse.t(c text);INSERT INTO pgfmt37_parse.t VALUES('payload');CREATE SEQUENCE pgfmt37_parse.guard START 7;CREATE TABLE pgfmt37_parse.receipt AS SELECT c.relfilenode fileid,a.attnum,a.attname name,a.attstorage storage,a.attcompression compression FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgfmt37_parse.t'::regclass AND a.attnum<>0","expect_rc":0}
+   ],
+   "expect":{"exit":2,"verdict":"review","statements":2,"findings":0,"diagnostics":1,"unsupported":0,"coverage":"incomplete","statement_coverage":["unverified","unverified"],"statement_indices":[0,1],"rule_summary_loaded":2,"evidence_gaps":2,"finding_entries":[],"evidence_gap_entries":[{"index":0,"rule_id":"ddl.pg.alter.column.storage.valid","reason_code":"unproven_column_storage","required_facts":["target_table.pg_columns"]},{"index":1,"rule_id":"ddl.pg.alter.column.compression.valid","reason_code":"unproven_column_compression","required_facts":["target_table.pg_columns"]}]},
+   "post_verify":[
+    {"assert":"audit never applies actions after parser boundary","sql":"SELECT count(*) FROM pgfmt37_parse.receipt r JOIN pg_class c ON c.oid='pgfmt37_parse.t'::regclass JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum=r.attnum WHERE c.relfilenode!=r.fileid OR a.attname IS DISTINCT FROM r.name OR a.attstorage IS DISTINCT FROM r.storage OR a.attcompression IS DISTINCT FROM r.compression","expect":"0"},
+    {"assert":"audit preserves exact payload and row count","sql":"SELECT (count(*)=1 AND bool_and(c='payload'))::text FROM pgfmt37_parse.t","expect":"true"},
+    {"assert":"audit never advances guard","sql":"SELECT last_value::text||':'||is_called::text FROM pgfmt37_parse.guard","expect":"7:false"}
+   ],
+   "execute":[
+    {"name":"native PG17 grammar also refuses PG18 syntax","sql":"ALTER TABLE pgfmt37_parse.t ALTER CONSTRAINT ck NOT ENFORCED","expect_rc":3,"via":"stdin","stderr_contains":["42601"]},
+    {"name":"native supported storage independently succeeds","sql":"ALTER TABLE pgfmt37_parse.t ALTER COLUMN c SET STORAGE EXTERNAL","expect_rc":0},
+    {"name":"native system target independently refuses","sql":"ALTER TABLE pgfmt37_parse.t ALTER COLUMN ctid SET COMPRESSION default","expect_rc":3,"via":"stdin","stderr_contains":["0A000"]}
+   ],
+   "structure":[{"assert":"only driver supported operation changes storage","sql":"SELECT attstorage::text FROM pg_attribute WHERE attrelid='pgfmt37_parse.t'::regclass AND attname='c'","expect":"e"}],
+   "teardown":[{"name":"drop owned schema","fixture_key":"schema","drops_fixture":true,"sql":"DROP SCHEMA pgfmt37_parse CASCADE","expect_rc":0,"verify":[{"assert":"schema absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_parse'","expect":"0"}]}]
+  },
+  {
+   "id":"pg-column-format-scope","anchor":"postgres17","dialect":"postgresql","policy":"pg-column-format",
+   "notes":"Native inheritance/partition/unlogged controls remain outside the approved ordinary persistent stage; gaps are not supported coverage.",
+   "connect":{"host":"127.0.0.1","port":25432,"user":"postgres","database":"postgres","schema":"pgfmt37_scope"},
+   "fixture":{"cleanup":[{"name":"remove owned schema","fixture_key":"schema","sql":"DROP SCHEMA pgfmt37_scope CASCADE","verify":{"assert":"schema absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_scope'","expect":"0"}}]},
+   "sql":"ALTER TABLE pgfmt37_scope.parent_t ALTER COLUMN c SET COMPRESSION pglz;ALTER TABLE pgfmt37_scope.child_t ALTER COLUMN c SET COMPRESSION pglz;ALTER TABLE pgfmt37_scope.root_t ALTER COLUMN c SET COMPRESSION pglz;ALTER TABLE pgfmt37_scope.part_t ALTER COLUMN c SET COMPRESSION pglz;ALTER TABLE pgfmt37_scope.unlogged_t ALTER COLUMN c SET COMPRESSION pglz","args":["--fail-on","none"],
+   "setup":[
+    {"name":"prove schema absent","fixture_key":"schema","requires_absence":true,"sql":"SELECT 1","expect_rc":0,"verify":[{"assert":"schema absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_scope'","expect":"0"}]},
+    {"name":"claim schema","fixture_key":"schema","creates_fixture":true,"sql":"CREATE SCHEMA pgfmt37_scope","expect_rc":0},
+    {"name":"seed independent out-of-stage kinds","sql":"CREATE TABLE pgfmt37_scope.parent_t(c text);CREATE TABLE pgfmt37_scope.child_t() INHERITS(pgfmt37_scope.parent_t);CREATE TABLE pgfmt37_scope.root_t(id int,c text) PARTITION BY RANGE(id);CREATE TABLE pgfmt37_scope.part_t PARTITION OF pgfmt37_scope.root_t DEFAULT;CREATE UNLOGGED TABLE pgfmt37_scope.unlogged_t(c text);INSERT INTO pgfmt37_scope.parent_t VALUES('payload');INSERT INTO pgfmt37_scope.root_t VALUES(1,'payload');INSERT INTO pgfmt37_scope.unlogged_t VALUES('payload');CREATE SEQUENCE pgfmt37_scope.guard START 7;CREATE TABLE pgfmt37_scope.receipt AS SELECT c.oid relid,c.relfilenode fileid,a.attnum,a.attstorage storage,a.attcompression compression FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgfmt37_scope'::regnamespace AND c.relname!='receipt' AND a.attnum>0 AND NOT a.attisdropped","expect_rc":0}
+   ],
+   "expect":{"exit":0,"verdict":"review","statements":5,"findings":0,"diagnostics":0,"unsupported":0,"coverage":"unverified","statement_coverage":["unverified","unverified","unverified","unverified","unverified"],"statement_indices":[0,1,2,3,4],"rule_summary_loaded":2,"evidence_gaps":5,"finding_entries":[],"evidence_gap_entries":[{"index":0,"rule_id":"ddl.pg.alter.column.compression.valid","reason_code":"unproven_column_compression","required_facts":["target_table.pg_columns"]},{"index":1,"rule_id":"ddl.pg.alter.column.compression.valid","reason_code":"unproven_column_compression","required_facts":["target_table.pg_columns"]},{"index":2,"rule_id":"ddl.pg.alter.column.compression.valid","reason_code":"unproven_column_compression","required_facts":["target_table.pg_columns"]},{"index":3,"rule_id":"ddl.pg.alter.column.compression.valid","reason_code":"unproven_column_compression","required_facts":["target_table.pg_columns"]},{"index":4,"rule_id":"ddl.pg.alter.column.compression.valid","reason_code":"unproven_column_compression","required_facts":["target_table.pg_columns"]}]},
+   "post_verify":[
+    {"assert":"audit preserves out-of-stage attributes and files","sql":"SELECT count(*) FROM pgfmt37_scope.receipt r LEFT JOIN pg_class c ON c.oid=r.relid LEFT JOIN pg_attribute a ON a.attrelid=r.relid AND a.attnum=r.attnum WHERE c.oid IS NULL OR c.relfilenode!=r.fileid OR a.attstorage IS DISTINCT FROM r.storage OR a.attcompression IS DISTINCT FROM r.compression","expect":"0"},
+    {"assert":"audit preserves exact inherited/partitioned/unlogged data","sql":"SELECT ((SELECT count(*)=1 AND bool_and(c='payload') FROM ONLY pgfmt37_scope.parent_t) AND (SELECT count(*)=0 FROM ONLY pgfmt37_scope.child_t) AND (SELECT count(*)=1 AND bool_and(id=1 AND c='payload') FROM pgfmt37_scope.root_t) AND (SELECT count(*)=1 AND bool_and(c='payload') FROM pgfmt37_scope.unlogged_t))::text","expect":"true"},
+    {"assert":"audit never advances guard","sql":"SELECT last_value::text||':'||is_called::text FROM pgfmt37_scope.guard","expect":"7:false"}
+   ],
+   "execute":[
+    {"name":"native inheritance-parent control","sql":"ALTER TABLE pgfmt37_scope.parent_t ALTER COLUMN c SET COMPRESSION pglz","expect_rc":0},
+    {"name":"native inheritance-child control","sql":"ALTER TABLE pgfmt37_scope.child_t ALTER COLUMN c SET COMPRESSION pglz","expect_rc":0},
+    {"name":"native partition-root control","sql":"ALTER TABLE pgfmt37_scope.root_t ALTER COLUMN c SET COMPRESSION pglz","expect_rc":0},
+    {"name":"native partition-member control","sql":"ALTER TABLE pgfmt37_scope.part_t ALTER COLUMN c SET COMPRESSION pglz","expect_rc":0},
+    {"name":"native unlogged control","sql":"ALTER TABLE pgfmt37_scope.unlogged_t ALTER COLUMN c SET COMPRESSION pglz","expect_rc":0}
+   ],
+   "structure":[{"assert":"only driver installs out-of-stage compression declarations","sql":"SELECT count(*) FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid WHERE c.relnamespace='pgfmt37_scope'::regnamespace AND a.attname='c' AND a.attcompression='p'","expect":"5"}],
+   "teardown":[{"name":"drop owned schema","fixture_key":"schema","drops_fixture":true,"sql":"DROP SCHEMA pgfmt37_scope CASCADE","expect_rc":0,"verify":[{"assert":"schema absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_scope'","expect":"0"}]}]
+  },
+  {
+   "id":"pg-column-format-no-rewrite","anchor":"postgres17","dialect":"postgresql","policy":"pg-column-format",
+   "notes":"Driver-only row compression fingerprints prove future declarations do not rewrite/recompress existing rows; no product data inspection or execution.",
+   "connect":{"host":"127.0.0.1","port":25432,"user":"postgres","database":"postgres","schema":"pgfmt37_rewrite"},
+   "fixture":{"cleanup":[{"name":"remove owned schema","fixture_key":"schema","sql":"DROP SCHEMA pgfmt37_rewrite CASCADE","verify":{"assert":"schema absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_rewrite'","expect":"0"}}]},
+   "sql":"ALTER TABLE pgfmt37_rewrite.storage_t ALTER COLUMN c SET STORAGE EXTERNAL;ALTER TABLE pgfmt37_rewrite.compression_t ALTER COLUMN c SET COMPRESSION lz4","args":["--fail-on","none"],
+   "setup":[
+    {"name":"prove schema absent","fixture_key":"schema","requires_absence":true,"sql":"SELECT 1","expect_rc":0,"verify":[{"assert":"schema absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_rewrite'","expect":"0"}]},
+    {"name":"claim schema","fixture_key":"schema","creates_fixture":true,"sql":"CREATE SCHEMA pgfmt37_rewrite","expect_rc":0},
+    {"name":"seed independently compressed rows and indexed heaps","sql":"CREATE TABLE pgfmt37_rewrite.storage_t(id int,c text);CREATE TABLE pgfmt37_rewrite.compression_t(id int,c text);ALTER TABLE pgfmt37_rewrite.storage_t ALTER COLUMN c SET COMPRESSION pglz;ALTER TABLE pgfmt37_rewrite.compression_t ALTER COLUMN c SET COMPRESSION pglz;INSERT INTO pgfmt37_rewrite.storage_t VALUES(1,repeat('compressible-payload-',1000));INSERT INTO pgfmt37_rewrite.compression_t VALUES(1,repeat('compressible-payload-',1000));CREATE INDEX storage_idx ON pgfmt37_rewrite.storage_t(id);CREATE INDEX compression_idx ON pgfmt37_rewrite.compression_t(id);CREATE TABLE pgfmt37_rewrite.physical AS SELECT oid relid,relfilenode fileid FROM pg_class WHERE relnamespace='pgfmt37_rewrite'::regnamespace AND relkind IN('r','i','t');CREATE SEQUENCE pgfmt37_rewrite.guard START 7","expect_rc":0}
+   ],
+   "expect":{"exit":0,"verdict":"pass","statements":2,"findings":0,"diagnostics":0,"unsupported":0,"coverage":"complete","statement_coverage":["complete","complete"],"statement_indices":[0,1],"rule_summary_loaded":2,"evidence_gaps":0,"finding_entries":[],"serialized_not_contains":["PGColumns","PGCompressionMethod","SystemColumns"]},
+   "post_verify":[
+    {"assert":"audit does not apply future storage/compression declarations","sql":"SELECT string_agg(c.relname||':'||a.attstorage::text||':'||a.attcompression::text,',' ORDER BY c.relname) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgfmt37_rewrite'::regnamespace AND c.relname IN('storage_t','compression_t') AND a.attname='c'","expect":"compression_t:x:p,storage_t:x:p"},
+    {"assert":"audit preserves every original heap/index file","sql":"SELECT count(*) FROM pgfmt37_rewrite.physical r LEFT JOIN pg_class c ON c.oid=r.relid WHERE c.oid IS NULL OR c.relfilenode!=r.fileid","expect":"0"},
+    {"assert":"audit preserves exact compressed payloads and row counts","sql":"SELECT ((SELECT count(*)=1 AND bool_and(id=1 AND c=repeat('compressible-payload-',1000) AND pg_column_compression(c)='pglz') FROM pgfmt37_rewrite.storage_t) AND (SELECT count(*)=1 AND bool_and(id=1 AND c=repeat('compressible-payload-',1000) AND pg_column_compression(c)='pglz') FROM pgfmt37_rewrite.compression_t))::text","expect":"true"},
+    {"assert":"audit never advances guard","sql":"SELECT last_value::text||':'||is_called::text FROM pgfmt37_rewrite.guard","expect":"7:false"}
+   ],
+   "execute":[
+    {"name":"native SET STORAGE only changes future strategy","sql":"ALTER TABLE pgfmt37_rewrite.storage_t ALTER COLUMN c SET STORAGE EXTERNAL","expect_rc":0},
+    {"name":"native SET COMPRESSION only changes future method","sql":"ALTER TABLE pgfmt37_rewrite.compression_t ALTER COLUMN c SET COMPRESSION lz4","expect_rc":0}
+   ],
+   "structure":[
+    {"assert":"native declarations do not rewrite original heap/index files","sql":"SELECT count(*) FROM pgfmt37_rewrite.physical r LEFT JOIN pg_class c ON c.oid=r.relid WHERE c.oid IS NULL OR c.relfilenode!=r.fileid","expect":"0"},
+    {"assert":"existing rows remain pglz with exact payload and cardinality","sql":"SELECT ((SELECT count(*)=1 AND bool_and(id=1 AND c=repeat('compressible-payload-',1000) AND pg_column_compression(c)='pglz') FROM pgfmt37_rewrite.storage_t) AND (SELECT count(*)=1 AND bool_and(id=1 AND c=repeat('compressible-payload-',1000) AND pg_column_compression(c)='pglz') FROM pgfmt37_rewrite.compression_t))::text","expect":"true"},
+    {"assert":"only driver changes future declaration attributes","sql":"SELECT string_agg(c.relname||':'||a.attstorage::text||':'||a.attcompression::text,',' ORDER BY c.relname) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgfmt37_rewrite'::regnamespace AND c.relname IN('storage_t','compression_t') AND a.attname='c'","expect":"compression_t:x:l,storage_t:e:p"}
+   ],
+   "teardown":[{"name":"drop owned schema","fixture_key":"schema","drops_fixture":true,"sql":"DROP SCHEMA pgfmt37_rewrite CASCADE","expect_rc":0,"verify":[{"assert":"schema absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_rewrite'","expect":"0"}]}]
+  },
+  {
+   "id": "pg-column-format-system-targets", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-column-format-system",
+   "notes": "Real negative-attnum targets, not absence/no-op. No clamp/deletion advice. ADD IDENTITY specifically refuses 22023, not guessed 0A000.",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgfmt37_system"},
+   "fixture": {"cleanup": [{"name": "remove owned namespace", "fixture_key": "schema", "sql": "DROP SCHEMA pgfmt37_system CASCADE", "verify": {"assert": "owned namespace absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_system'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgfmt37_system.stats_t ALTER COLUMN ctid SET STATISTICS 10001;ALTER TABLE pgfmt37_system.options_t ALTER COLUMN ctid SET(n_distinct=0.5);ALTER TABLE pgfmt37_system.reset_t ALTER COLUMN ctid RESET(n_distinct);ALTER TABLE pgfmt37_system.default_t ALTER COLUMN ctid DROP DEFAULT;ALTER TABLE pgfmt37_system.identity_t ALTER COLUMN ctid DROP IDENTITY IF EXISTS;ALTER TABLE pgfmt37_system.expression_t ALTER COLUMN ctid DROP EXPRESSION IF EXISTS;ALTER TABLE pgfmt37_system.add_t ALTER COLUMN ctid ADD GENERATED ALWAYS AS IDENTITY;ALTER TABLE pgfmt37_system.mode_t ALTER COLUMN ctid SET GENERATED ALWAYS;ALTER TABLE pgfmt37_system.null_t ALTER COLUMN ctid DROP NOT NULL;ALTER TABLE pgfmt37_system.set_null_t ALTER COLUMN ctid SET NOT NULL;ALTER TABLE pgfmt37_system.storage_t ALTER COLUMN ctid SET STORAGE PLAIN;ALTER TABLE pgfmt37_system.compression_t ALTER COLUMN ctid SET COMPRESSION default;ALTER TABLE pgfmt37_system.drop_t DROP COLUMN IF EXISTS ctid CASCADE", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove namespace absence before ownership", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "owned namespace absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_system'", "expect": "0"}]},
+    {"name": "claim owned namespace", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgfmt37_system", "expect_rc": 0},
+    {"name": "seed independent target tables", "sql": "CREATE TABLE pgfmt37_system.stats_t(c int);INSERT INTO pgfmt37_system.stats_t VALUES(41);CREATE TABLE pgfmt37_system.options_t(c int);INSERT INTO pgfmt37_system.options_t VALUES(41);CREATE TABLE pgfmt37_system.reset_t(c int);INSERT INTO pgfmt37_system.reset_t VALUES(41);CREATE TABLE pgfmt37_system.default_t(c int);INSERT INTO pgfmt37_system.default_t VALUES(41);CREATE TABLE pgfmt37_system.identity_t(c int);INSERT INTO pgfmt37_system.identity_t VALUES(41);CREATE TABLE pgfmt37_system.expression_t(c int);INSERT INTO pgfmt37_system.expression_t VALUES(41);CREATE TABLE pgfmt37_system.add_t(c int);INSERT INTO pgfmt37_system.add_t VALUES(41);CREATE TABLE pgfmt37_system.mode_t(c int);INSERT INTO pgfmt37_system.mode_t VALUES(41);CREATE TABLE pgfmt37_system.null_t(c int);INSERT INTO pgfmt37_system.null_t VALUES(41);CREATE TABLE pgfmt37_system.set_null_t(c int);INSERT INTO pgfmt37_system.set_null_t VALUES(41);CREATE TABLE pgfmt37_system.storage_t(c int);INSERT INTO pgfmt37_system.storage_t VALUES(41);CREATE TABLE pgfmt37_system.compression_t(c int);INSERT INTO pgfmt37_system.compression_t VALUES(41);CREATE TABLE pgfmt37_system.drop_t(c int);INSERT INTO pgfmt37_system.drop_t VALUES(41);CREATE SEQUENCE pgfmt37_system.guard START 7", "expect_rc": 0},
+    {"name": "snapshot user/system attributes and files", "sql": "CREATE TABLE pgfmt37_system.receipt AS SELECT c.oid relid,c.relfilenode fileid,a.attnum,a.attname name,a.attstorage storage,a.attcompression compression,a.attidentity identity_mode,a.attgenerated generation_mode,a.attnotnull not_null,a.attstattarget target,COALESCE(a.attoptions::text,'') opts FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgfmt37_system'::regnamespace AND c.relkind='r' AND a.attnum<>0 AND NOT a.attisdropped AND c.relname!='receipt'", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "reject", "statements": 13, "findings": 13, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "statement_coverage": ["complete","complete","complete","complete","complete","complete","complete","complete","complete","complete","complete","complete","complete"], "statement_indices": [0,1,2,3,4,5,6,7,8,9,10,11,12], "rule_summary_loaded": 8, "evidence_gaps": 0,
+    "finding_entries": [{"index":0,"rule_id":"ddl.pg.alter.column.statistics.target.valid","level":"blocker"},{"index":1,"rule_id":"ddl.pg.alter.column.options.valid","level":"blocker"},{"index":2,"rule_id":"ddl.pg.alter.column.options.valid","level":"blocker"},{"index":3,"rule_id":"ddl.pg.alter.column.generation.transition.valid","level":"blocker"},{"index":4,"rule_id":"ddl.pg.alter.column.generation.transition.valid","level":"blocker"},{"index":5,"rule_id":"ddl.pg.alter.column.generation.transition.valid","level":"blocker"},{"index":6,"rule_id":"ddl.pg.alter.column.generation.transition.valid","level":"blocker"},{"index":7,"rule_id":"ddl.pg.alter.column.generation.transition.valid","level":"blocker"},{"index":8,"rule_id":"ddl.pg.alter.column.generation.transition.valid","level":"blocker"},{"index":9,"rule_id":"ddl.pg.alter.column.generation.transition.valid","level":"blocker"},{"index":10,"rule_id":"ddl.pg.alter.column.storage.valid","level":"blocker"},{"index":11,"rule_id":"ddl.pg.alter.column.compression.valid","level":"blocker"},{"index":12,"rule_id":"ddl.alter.drop_column.exists.require","level":"blocker"}],
+    "finding_metadata": [{"index":0,"rule_id":"ddl.pg.alter.column.statistics.target.valid","metadata":{"reason_code":"system_column_inapplicable","column":"ctid"}},{"index":1,"rule_id":"ddl.pg.alter.column.options.valid","metadata":{"reason_code":"system_column_inapplicable","column":"ctid"}},{"index":2,"rule_id":"ddl.pg.alter.column.options.valid","metadata":{"reason_code":"system_column_inapplicable","column":"ctid"}},{"index":3,"rule_id":"ddl.pg.alter.column.generation.transition.valid","metadata":{"reason_code":"system_column_inapplicable","column":"ctid"}},{"index":4,"rule_id":"ddl.pg.alter.column.generation.transition.valid","metadata":{"reason_code":"system_column_inapplicable","column":"ctid"}},{"index":5,"rule_id":"ddl.pg.alter.column.generation.transition.valid","metadata":{"reason_code":"system_column_inapplicable","column":"ctid"}},{"index":6,"rule_id":"ddl.pg.alter.column.generation.transition.valid","metadata":{"reason_code":"system_column_inapplicable","column":"ctid"}},{"index":7,"rule_id":"ddl.pg.alter.column.generation.transition.valid","metadata":{"reason_code":"system_column_inapplicable","column":"ctid"}},{"index":8,"rule_id":"ddl.pg.alter.column.generation.transition.valid","metadata":{"reason_code":"system_column_inapplicable","column":"ctid"}},{"index":9,"rule_id":"ddl.pg.alter.column.generation.transition.valid","metadata":{"reason_code":"system_column_inapplicable","column":"ctid"}},{"index":10,"rule_id":"ddl.pg.alter.column.storage.valid","metadata":{"reason_code":"system_column_inapplicable","column":"ctid"}},{"index":11,"rule_id":"ddl.pg.alter.column.compression.valid","metadata":{"reason_code":"system_column_inapplicable","column":"ctid"}},{"index":12,"rule_id":"ddl.alter.drop_column.exists.require","metadata":{"exists":true,"name":"ctid","reason_code":"system_column_inapplicable"}}], "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGCompressionMethod","PGColumns","SystemColumns","TypeStorage","PGCompressionLZ4Supported","PGCompressionLZ4Known"]},
+   "post_verify": [
+    {"assert": "audit preserves all attributes and files", "sql": "SELECT count(*) FROM pgfmt37_system.receipt r LEFT JOIN pg_class c ON c.oid=r.relid LEFT JOIN pg_attribute a ON a.attrelid=r.relid AND a.attnum=r.attnum WHERE c.oid IS NULL OR c.relfilenode!=r.fileid OR a.attname IS DISTINCT FROM r.name OR a.attstorage IS DISTINCT FROM r.storage OR a.attcompression IS DISTINCT FROM r.compression OR a.attidentity IS DISTINCT FROM r.identity_mode OR a.attgenerated IS DISTINCT FROM r.generation_mode OR a.attnotnull IS DISTINCT FROM r.not_null OR a.attstattarget IS DISTINCT FROM r.target OR COALESCE(a.attoptions::text,'')!=r.opts", "expect": "0"},
+    {"assert": "audit preserves each exact single-row user payload", "sql": "SELECT (count(*)=13 AND bool_and(n=1 AND v=41))::text FROM (SELECT count(*) n,min(c) v FROM pgfmt37_system.stats_t UNION ALL SELECT count(*),min(c) FROM pgfmt37_system.options_t UNION ALL SELECT count(*),min(c) FROM pgfmt37_system.reset_t UNION ALL SELECT count(*),min(c) FROM pgfmt37_system.default_t UNION ALL SELECT count(*),min(c) FROM pgfmt37_system.identity_t UNION ALL SELECT count(*),min(c) FROM pgfmt37_system.expression_t UNION ALL SELECT count(*),min(c) FROM pgfmt37_system.add_t UNION ALL SELECT count(*),min(c) FROM pgfmt37_system.mode_t UNION ALL SELECT count(*),min(c) FROM pgfmt37_system.null_t UNION ALL SELECT count(*),min(c) FROM pgfmt37_system.set_null_t UNION ALL SELECT count(*),min(c) FROM pgfmt37_system.storage_t UNION ALL SELECT count(*),min(c) FROM pgfmt37_system.compression_t UNION ALL SELECT count(*),min(c) FROM pgfmt37_system.drop_t) rows", "expect": "true"},
+    {"assert": "audit never issues guard value", "sql": "SELECT last_value::text||':'||is_called::text FROM pgfmt37_system.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name":"native system statistics refusal","sql":"ALTER TABLE pgfmt37_system.stats_t ALTER COLUMN ctid SET STATISTICS 10001","expect_rc":3,"via":"stdin","stderr_contains":["0A000"]},
+    {"name":"native system SET options refusal","sql":"ALTER TABLE pgfmt37_system.options_t ALTER COLUMN ctid SET(n_distinct=0.5)","expect_rc":3,"via":"stdin","stderr_contains":["0A000"]},
+    {"name":"native system RESET options refusal","sql":"ALTER TABLE pgfmt37_system.reset_t ALTER COLUMN ctid RESET(n_distinct)","expect_rc":3,"via":"stdin","stderr_contains":["0A000"]},
+    {"name":"native system DROP DEFAULT refusal","sql":"ALTER TABLE pgfmt37_system.default_t ALTER COLUMN ctid DROP DEFAULT","expect_rc":3,"via":"stdin","stderr_contains":["0A000"]},
+    {"name":"native guard does not protect system DROP IDENTITY","sql":"ALTER TABLE pgfmt37_system.identity_t ALTER COLUMN ctid DROP IDENTITY IF EXISTS","expect_rc":3,"via":"stdin","stderr_contains":["0A000"]},
+    {"name":"native guard does not protect system DROP EXPRESSION","sql":"ALTER TABLE pgfmt37_system.expression_t ALTER COLUMN ctid DROP EXPRESSION IF EXISTS","expect_rc":3,"via":"stdin","stderr_contains":["0A000"]},
+    {"name":"native system identity ADD reaches exact integer-type refusal","sql":"ALTER TABLE pgfmt37_system.add_t ALTER COLUMN ctid ADD GENERATED ALWAYS AS IDENTITY","expect_rc":3,"via":"stdin","stderr_contains":["22023"]},
+    {"name":"native system SET GENERATED refusal","sql":"ALTER TABLE pgfmt37_system.mode_t ALTER COLUMN ctid SET GENERATED ALWAYS","expect_rc":3,"via":"stdin","stderr_contains":["0A000"]},
+    {"name":"native system DROP NOT NULL refusal","sql":"ALTER TABLE pgfmt37_system.null_t ALTER COLUMN ctid DROP NOT NULL","expect_rc":3,"via":"stdin","stderr_contains":["0A000"]},
+    {"name":"native system SET NOT NULL refusal","sql":"ALTER TABLE pgfmt37_system.set_null_t ALTER COLUMN ctid SET NOT NULL","expect_rc":3,"via":"stdin","stderr_contains":["0A000"]},
+    {"name":"native system storage refusal","sql":"ALTER TABLE pgfmt37_system.storage_t ALTER COLUMN ctid SET STORAGE PLAIN","expect_rc":3,"via":"stdin","stderr_contains":["0A000"]},
+    {"name":"native system compression default refusal","sql":"ALTER TABLE pgfmt37_system.compression_t ALTER COLUMN ctid SET COMPRESSION default","expect_rc":3,"via":"stdin","stderr_contains":["0A000"]},
+    {"name":"native existing system guard is not no-op","sql":"ALTER TABLE pgfmt37_system.drop_t DROP COLUMN IF EXISTS ctid CASCADE","expect_rc":3,"via":"stdin","stderr_contains":["0A000"]}
+   ],
+   "structure": [
+    {"assert":"all 78 observed negative-attnum members survive","sql":"SELECT count(*) FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid WHERE c.relnamespace='pgfmt37_system'::regnamespace AND c.relname IN('stats_t','options_t','reset_t','default_t','identity_t','expression_t','add_t','mode_t','null_t','set_null_t','storage_t','compression_t','drop_t') AND a.attnum<0","expect":"78"},
+    {"assert":"native refusals preserve attributes and files","sql":"SELECT count(*) FROM pgfmt37_system.receipt r JOIN pg_class c ON c.oid=r.relid JOIN pg_attribute a ON a.attrelid=r.relid AND a.attnum=r.attnum WHERE c.relfilenode!=r.fileid OR a.attstorage IS DISTINCT FROM r.storage OR a.attcompression IS DISTINCT FROM r.compression OR a.attidentity IS DISTINCT FROM r.identity_mode OR a.attgenerated IS DISTINCT FROM r.generation_mode OR a.attnotnull IS DISTINCT FROM r.not_null OR a.attstattarget IS DISTINCT FROM r.target OR COALESCE(a.attoptions::text,'')!=r.opts","expect":"0"},
+    {"assert":"failed ADD IDENTITY leaves no orphan sequence","sql":"SELECT count(*) FROM pg_class WHERE relnamespace='pgfmt37_system'::regnamespace AND relkind='S'","expect":"1"}
+   ],
+   "teardown": [{"name":"drop owned namespace","fixture_key":"schema","drops_fixture":true,"sql":"DROP SCHEMA pgfmt37_system CASCADE","expect_rc":0,"verify":[{"assert":"owned namespace absent","sql":"SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_system'","expect":"0"}]}]
+  },
+  {
+   "id": "pg-column-compression-validity", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-column-format",
+   "notes": "Actual lz4 enum; fixed-type default is legal and current STORAGE PLAIN does not make a toastable type inapplicable.",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgfmt37_compression"},
+   "fixture": {"cleanup": [{"name": "remove owned namespace", "fixture_key": "schema", "sql": "DROP SCHEMA pgfmt37_compression CASCADE", "verify": {"assert": "owned namespace absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_compression'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgfmt37_compression.default_t ALTER COLUMN c SET COMPRESSION default;ALTER TABLE pgfmt37_compression.fixed_t ALTER COLUMN c SET COMPRESSION pglz;ALTER TABLE pgfmt37_compression.pglz_t ALTER COLUMN c SET COMPRESSION pglz;ALTER TABLE pgfmt37_compression.lz4_t ALTER COLUMN c SET COMPRESSION lz4;ALTER TABLE pgfmt37_compression.upper_t ALTER COLUMN c SET COMPRESSION \"PGLZ\";ALTER TABLE pgfmt37_compression.unknown_t ALTER COLUMN c SET COMPRESSION \"private_method_payload\";ALTER TABLE pgfmt37_compression.plain_t ALTER COLUMN c SET COMPRESSION pglz;ALTER TABLE pgfmt37_compression.bytes_t ALTER COLUMN c SET COMPRESSION lz4;ALTER TABLE pgfmt37_compression.missing_t ALTER COLUMN ghost SET COMPRESSION default", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove namespace absence before ownership", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "owned namespace absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_compression'", "expect": "0"}]},
+    {"name": "claim owned namespace", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgfmt37_compression", "expect_rc": 0},
+    {"name": "seed independent physical controls", "sql": "CREATE TABLE pgfmt37_compression.default_t(c int);INSERT INTO pgfmt37_compression.default_t VALUES(41);CREATE TABLE pgfmt37_compression.fixed_t(c int);INSERT INTO pgfmt37_compression.fixed_t VALUES(41);CREATE TABLE pgfmt37_compression.pglz_t(c text);INSERT INTO pgfmt37_compression.pglz_t VALUES('payload');CREATE TABLE pgfmt37_compression.lz4_t(c text);INSERT INTO pgfmt37_compression.lz4_t VALUES('payload');CREATE TABLE pgfmt37_compression.upper_t(c text);INSERT INTO pgfmt37_compression.upper_t VALUES('payload');CREATE TABLE pgfmt37_compression.unknown_t(c text);INSERT INTO pgfmt37_compression.unknown_t VALUES('payload');CREATE TABLE pgfmt37_compression.plain_t(c text);INSERT INTO pgfmt37_compression.plain_t VALUES('payload');CREATE TABLE pgfmt37_compression.bytes_t(c bytea);INSERT INTO pgfmt37_compression.bytes_t VALUES(decode('00ff','hex'));CREATE TABLE pgfmt37_compression.missing_t(c text);INSERT INTO pgfmt37_compression.missing_t VALUES('payload');ALTER TABLE pgfmt37_compression.plain_t ALTER COLUMN c SET STORAGE PLAIN;CREATE SEQUENCE pgfmt37_compression.guard START 7", "expect_rc": 0},
+    {"name": "snapshot catalog and files before audit", "sql": "CREATE TABLE pgfmt37_compression.receipt AS SELECT c.oid relid,c.relfilenode fileid,a.attnum,a.attname name,a.attstorage storage,a.attcompression compression,a.attidentity identity_mode,a.attgenerated generation_mode,a.attnotnull not_null,a.attstattarget target,COALESCE(a.attoptions::text,'') opts FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgfmt37_compression'::regnamespace AND c.relkind='r' AND a.attnum<>0 AND NOT a.attisdropped AND c.relname!='receipt'", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "reject", "statements": 9, "findings": 4, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "statement_coverage": ["complete","complete","complete","complete","complete","complete","complete","complete","complete"], "statement_indices": [0,1,2,3,4,5,6,7,8], "rule_summary_loaded": 2, "evidence_gaps": 0,
+    "finding_entries": [{"index": 1,"rule_id": "ddl.pg.alter.column.compression.valid","level": "blocker"},{"index": 4,"rule_id": "ddl.pg.alter.column.compression.valid","level": "blocker"},{"index": 5,"rule_id": "ddl.pg.alter.column.compression.valid","level": "blocker"},{"index": 8,"rule_id": "ddl.pg.alter.column.compression.valid","level": "blocker"}],
+    "finding_metadata": [{"index": 1,"rule_id": "ddl.pg.alter.column.compression.valid","metadata": {"reason_code": "type_not_toastable","column": "c"}},{"index": 4,"rule_id": "ddl.pg.alter.column.compression.valid","metadata": {"reason_code": "compression_method_invalid","column": "c"}},{"index": 5,"rule_id": "ddl.pg.alter.column.compression.valid","metadata": {"reason_code": "compression_method_invalid","column": "c"}},{"index": 8,"rule_id": "ddl.pg.alter.column.compression.valid","metadata": {"reason_code": "column_absent","column": "ghost"}}], "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGCompressionMethod","PGColumns","SystemColumns","TypeStorage","PGCompressionLZ4Supported","PGCompressionLZ4Known"]},
+   "post_verify": [
+    {"assert": "audit preserves all user/system attributes and files", "sql": "SELECT count(*) FROM pgfmt37_compression.receipt r LEFT JOIN pg_class c ON c.oid=r.relid LEFT JOIN pg_attribute a ON a.attrelid=r.relid AND a.attnum=r.attnum WHERE c.oid IS NULL OR c.relfilenode!=r.fileid OR a.attname IS DISTINCT FROM r.name OR a.attstorage IS DISTINCT FROM r.storage OR a.attcompression IS DISTINCT FROM r.compression OR a.attidentity IS DISTINCT FROM r.identity_mode OR a.attgenerated IS DISTINCT FROM r.generation_mode OR a.attnotnull IS DISTINCT FROM r.not_null OR a.attstattarget IS DISTINCT FROM r.target OR COALESCE(a.attoptions::text,'')!=r.opts", "expect": "0"},
+    {"assert": "audit preserves every exact typed payload and row count", "sql": "SELECT ((SELECT count(*)=1 AND bool_and(c=41) FROM pgfmt37_compression.default_t) AND (SELECT count(*)=1 AND bool_and(c=41) FROM pgfmt37_compression.fixed_t) AND (SELECT count(*)=1 AND bool_and(c='payload') FROM pgfmt37_compression.pglz_t) AND (SELECT count(*)=1 AND bool_and(c='payload') FROM pgfmt37_compression.lz4_t) AND (SELECT count(*)=1 AND bool_and(c='payload') FROM pgfmt37_compression.upper_t) AND (SELECT count(*)=1 AND bool_and(c='payload') FROM pgfmt37_compression.unknown_t) AND (SELECT count(*)=1 AND bool_and(c='payload') FROM pgfmt37_compression.plain_t) AND (SELECT count(*)=1 AND bool_and(c=decode('00ff','hex')) FROM pgfmt37_compression.bytes_t) AND (SELECT count(*)=1 AND bool_and(c='payload') FROM pgfmt37_compression.missing_t))::text", "expect": "true"},
+    {"assert": "audit never issues guard value", "sql": "SELECT last_value::text||':'||is_called::text FROM pgfmt37_compression.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native compression default on fixed type", "sql": "ALTER TABLE pgfmt37_compression.default_t ALTER COLUMN c SET COMPRESSION default", "expect_rc": 0},
+    {"name": "native nondefault fixed-type refusal", "sql": "ALTER TABLE pgfmt37_compression.fixed_t ALTER COLUMN c SET COMPRESSION pglz", "expect_rc": 3, "via": "stdin", "stderr_contains": ["0A000"]},
+    {"name": "native pglz text control", "sql": "ALTER TABLE pgfmt37_compression.pglz_t ALTER COLUMN c SET COMPRESSION pglz", "expect_rc": 0},
+    {"name": "native observed-build lz4 control", "sql": "ALTER TABLE pgfmt37_compression.lz4_t ALTER COLUMN c SET COMPRESSION lz4", "expect_rc": 0},
+    {"name": "native case-sensitive uppercase refusal", "sql": "ALTER TABLE pgfmt37_compression.upper_t ALTER COLUMN c SET COMPRESSION \"PGLZ\"", "expect_rc": 3, "via": "stdin", "stderr_contains": ["22023"]},
+    {"name": "native unknown method refusal", "sql": "ALTER TABLE pgfmt37_compression.unknown_t ALTER COLUMN c SET COMPRESSION \"private_method_payload\"", "expect_rc": 3, "via": "stdin", "stderr_contains": ["22023"]},
+    {"name": "native legal compression declaration on STORAGE PLAIN text", "sql": "ALTER TABLE pgfmt37_compression.plain_t ALTER COLUMN c SET COMPRESSION pglz", "expect_rc": 0},
+    {"name": "native lz4 bytea control", "sql": "ALTER TABLE pgfmt37_compression.bytes_t ALTER COLUMN c SET COMPRESSION lz4", "expect_rc": 0},
+    {"name": "native exact missing default-compression target", "sql": "ALTER TABLE pgfmt37_compression.missing_t ALTER COLUMN ghost SET COMPRESSION default", "expect_rc": 3, "via": "stdin", "stderr_contains": ["42703"]}
+   ],
+   "structure": [
+    {"assert": "only driver installs methods including on STORAGE PLAIN text", "sql": "SELECT string_agg(c.relname||':'||a.attstorage::text||':'||COALESCE(NULLIF(a.attcompression::text,''),'default'),',' ORDER BY c.relname) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgfmt37_compression'::regnamespace AND a.attname='c'", "expect": "bytes_t:x:l,default_t:p:default,fixed_t:p:default,lz4_t:x:l,missing_t:x:default,pglz_t:x:p,plain_t:p:p,unknown_t:x:default,upper_t:x:default"},
+    {"assert": "native compression declarations never rewrite original files", "sql": "SELECT count(*) FROM pgfmt37_compression.receipt r JOIN pg_class c ON c.oid=r.relid WHERE c.relfilenode!=r.fileid", "expect": "0"}
+   ],
+   "teardown": [{"name": "drop owned namespace", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgfmt37_compression CASCADE", "expect_rc": 0, "verify": [{"assert": "owned namespace absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_compression'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-column-storage-validity", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-column-format",
+   "notes": "Actual typstorage, not current attstorage/type-name inference; independent domain/bytea/default/refusal and Unicode-lookalike oracles.",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgfmt37_storage"},
+   "fixture": {"cleanup": [{"name": "remove owned namespace", "fixture_key": "schema", "sql": "DROP SCHEMA pgfmt37_storage CASCADE", "verify": {"assert": "owned namespace absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_storage'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgfmt37_storage.plain_t ALTER COLUMN c SET STORAGE PLAIN;ALTER TABLE pgfmt37_storage.default_t ALTER COLUMN c SET STORAGE DEFAULT;ALTER TABLE pgfmt37_storage.fixed_t ALTER COLUMN c SET STORAGE EXTERNAL;ALTER TABLE pgfmt37_storage.text_t ALTER COLUMN c SET STORAGE EXTERNAL;ALTER TABLE pgfmt37_storage.domain_text_t ALTER COLUMN c SET STORAGE MAIN;ALTER TABLE pgfmt37_storage.domain_int_t ALTER COLUMN c SET STORAGE MAIN;ALTER TABLE pgfmt37_storage.mode_t ALTER COLUMN c SET STORAGE \"PLAİN\";ALTER TABLE pgfmt37_storage.missing_t ALTER COLUMN ghost SET STORAGE PLAIN;ALTER TABLE pgfmt37_storage.bytes_t ALTER COLUMN c SET STORAGE MAIN", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove namespace absence before ownership", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "owned namespace absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_storage'", "expect": "0"}]},
+    {"name": "claim owned namespace", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgfmt37_storage", "expect_rc": 0},
+    {"name": "seed independent physical controls", "sql": "CREATE DOMAIN pgfmt37_storage.dt AS text;CREATE DOMAIN pgfmt37_storage.di AS integer;CREATE TABLE pgfmt37_storage.plain_t(c int);INSERT INTO pgfmt37_storage.plain_t VALUES(41);CREATE TABLE pgfmt37_storage.default_t(c int);INSERT INTO pgfmt37_storage.default_t VALUES(41);CREATE TABLE pgfmt37_storage.fixed_t(c int);INSERT INTO pgfmt37_storage.fixed_t VALUES(41);CREATE TABLE pgfmt37_storage.text_t(c text);INSERT INTO pgfmt37_storage.text_t VALUES('payload');CREATE TABLE pgfmt37_storage.domain_text_t(c pgfmt37_storage.dt);INSERT INTO pgfmt37_storage.domain_text_t VALUES('payload');CREATE TABLE pgfmt37_storage.domain_int_t(c pgfmt37_storage.di);INSERT INTO pgfmt37_storage.domain_int_t VALUES(41);CREATE TABLE pgfmt37_storage.mode_t(c text);INSERT INTO pgfmt37_storage.mode_t VALUES('payload');CREATE TABLE pgfmt37_storage.missing_t(c text);INSERT INTO pgfmt37_storage.missing_t VALUES('payload');CREATE TABLE pgfmt37_storage.bytes_t(c bytea);INSERT INTO pgfmt37_storage.bytes_t VALUES(decode('00ff','hex'));CREATE SEQUENCE pgfmt37_storage.guard START 7", "expect_rc": 0},
+    {"name": "snapshot catalog and files before audit", "sql": "CREATE TABLE pgfmt37_storage.receipt AS SELECT c.oid relid,c.relfilenode fileid,a.attnum,a.attname name,a.attstorage storage,a.attcompression compression,a.attidentity identity_mode,a.attgenerated generation_mode,a.attnotnull not_null,a.attstattarget target,COALESCE(a.attoptions::text,'') opts FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgfmt37_storage'::regnamespace AND c.relkind='r' AND a.attnum<>0 AND NOT a.attisdropped AND c.relname!='receipt'", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "reject", "statements": 9, "findings": 4, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "statement_coverage": ["complete","complete","complete","complete","complete","complete","complete","complete","complete"], "statement_indices": [0,1,2,3,4,5,6,7,8], "rule_summary_loaded": 2, "evidence_gaps": 0,
+    "finding_entries": [{"index": 2,"rule_id": "ddl.pg.alter.column.storage.valid","level": "blocker"},{"index": 5,"rule_id": "ddl.pg.alter.column.storage.valid","level": "blocker"},{"index": 6,"rule_id": "ddl.pg.alter.column.storage.valid","level": "blocker"},{"index": 7,"rule_id": "ddl.pg.alter.column.storage.valid","level": "blocker"}],
+    "finding_metadata": [{"index": 2,"rule_id": "ddl.pg.alter.column.storage.valid","metadata": {"reason_code": "type_not_toastable","column": "c"}},{"index": 5,"rule_id": "ddl.pg.alter.column.storage.valid","metadata": {"reason_code": "type_not_toastable","column": "c"}},{"index": 6,"rule_id": "ddl.pg.alter.column.storage.valid","metadata": {"reason_code": "storage_mode_invalid","column": "c"}},{"index": 7,"rule_id": "ddl.pg.alter.column.storage.valid","metadata": {"reason_code": "column_absent","column": "ghost"}}], "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGCompressionMethod","PGColumns","SystemColumns","TypeStorage","PGCompressionLZ4Supported","PGCompressionLZ4Known"]},
+   "post_verify": [
+    {"assert": "audit preserves all user/system attributes and files", "sql": "SELECT count(*) FROM pgfmt37_storage.receipt r LEFT JOIN pg_class c ON c.oid=r.relid LEFT JOIN pg_attribute a ON a.attrelid=r.relid AND a.attnum=r.attnum WHERE c.oid IS NULL OR c.relfilenode!=r.fileid OR a.attname IS DISTINCT FROM r.name OR a.attstorage IS DISTINCT FROM r.storage OR a.attcompression IS DISTINCT FROM r.compression OR a.attidentity IS DISTINCT FROM r.identity_mode OR a.attgenerated IS DISTINCT FROM r.generation_mode OR a.attnotnull IS DISTINCT FROM r.not_null OR a.attstattarget IS DISTINCT FROM r.target OR COALESCE(a.attoptions::text,'')!=r.opts", "expect": "0"},
+    {"assert": "audit preserves each exact typed payload and row count", "sql": "SELECT ((SELECT count(*)=1 AND bool_and(c=41) FROM pgfmt37_storage.plain_t) AND (SELECT count(*)=1 AND bool_and(c=41) FROM pgfmt37_storage.default_t) AND (SELECT count(*)=1 AND bool_and(c=41) FROM pgfmt37_storage.fixed_t) AND (SELECT count(*)=1 AND bool_and(c='payload') FROM pgfmt37_storage.text_t) AND (SELECT count(*)=1 AND bool_and(c='payload') FROM pgfmt37_storage.domain_text_t) AND (SELECT count(*)=1 AND bool_and(c=41) FROM pgfmt37_storage.domain_int_t) AND (SELECT count(*)=1 AND bool_and(c='payload') FROM pgfmt37_storage.mode_t) AND (SELECT count(*)=1 AND bool_and(c='payload') FROM pgfmt37_storage.missing_t) AND (SELECT count(*)=1 AND bool_and(c=decode('00ff','hex')) FROM pgfmt37_storage.bytes_t))::text", "expect": "true"},
+    {"assert": "audit never issues guard value", "sql": "SELECT last_value::text||':'||is_called::text FROM pgfmt37_storage.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native PLAIN fixed-type control", "sql": "ALTER TABLE pgfmt37_storage.plain_t ALTER COLUMN c SET STORAGE PLAIN", "expect_rc": 0},
+    {"name": "native DEFAULT uses actual type strategy", "sql": "ALTER TABLE pgfmt37_storage.default_t ALTER COLUMN c SET STORAGE DEFAULT", "expect_rc": 0},
+    {"name": "native non-toastable EXTERNAL refusal", "sql": "ALTER TABLE pgfmt37_storage.fixed_t ALTER COLUMN c SET STORAGE EXTERNAL", "expect_rc": 3, "via": "stdin", "stderr_contains": ["0A000"]},
+    {"name": "native toastable EXTERNAL control", "sql": "ALTER TABLE pgfmt37_storage.text_t ALTER COLUMN c SET STORAGE EXTERNAL", "expect_rc": 0},
+    {"name": "native toastable domain MAIN control", "sql": "ALTER TABLE pgfmt37_storage.domain_text_t ALTER COLUMN c SET STORAGE MAIN", "expect_rc": 0},
+    {"name": "native fixed domain MAIN refusal", "sql": "ALTER TABLE pgfmt37_storage.domain_int_t ALTER COLUMN c SET STORAGE MAIN", "expect_rc": 3, "via": "stdin", "stderr_contains": ["0A000"]},
+    {"name": "native Unicode lowercase-lookalike refusal", "sql": "ALTER TABLE pgfmt37_storage.mode_t ALTER COLUMN c SET STORAGE \"PLAİN\"", "expect_rc": 3, "via": "stdin", "stderr_contains": ["22023"]},
+    {"name": "native exact missing-column refusal", "sql": "ALTER TABLE pgfmt37_storage.missing_t ALTER COLUMN ghost SET STORAGE PLAIN", "expect_rc": 3, "via": "stdin", "stderr_contains": ["42703"]},
+    {"name": "native toastable bytea MAIN control", "sql": "ALTER TABLE pgfmt37_storage.bytes_t ALTER COLUMN c SET STORAGE MAIN", "expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "only driver changes storage according to actual types", "sql": "SELECT string_agg(c.relname||':'||a.attstorage::text,',' ORDER BY c.relname) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgfmt37_storage'::regnamespace AND a.attname='c'", "expect": "bytes_t:m,default_t:p,domain_int_t:p,domain_text_t:m,fixed_t:p,missing_t:x,mode_t:x,plain_t:p,text_t:e"},
+    {"assert": "native storage declarations never rewrite original files", "sql": "SELECT count(*) FROM pgfmt37_storage.receipt r JOIN pg_class c ON c.oid=r.relid WHERE c.relfilenode!=r.fileid", "expect": "0"}
+   ],
+   "teardown": [{"name": "drop owned namespace", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgfmt37_storage CASCADE", "expect_rc": 0, "verify": [{"assert": "owned namespace absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_storage'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-column-format-enum-reader", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-column-format",
+   "notes": "Audit uses normal anchor connection; independent SET ROLE proves the same enum is public/readable, not an end-to-end DDL-privilege claim.",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgfmt37_enum"},
+   "fixture": {"cleanup": [
+    {"name": "remove owned namespace", "fixture_key": "schema", "sql": "DROP SCHEMA pgfmt37_enum CASCADE", "verify": {"assert": "owned namespace absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_enum'", "expect": "0"}},
+    {"name": "drop owned reader", "fixture_key": "reader", "sql": "DROP ROLE pgfmt37_enum_reader", "verify": {"assert": "owned reader absent", "sql": "SELECT count(*) FROM pg_roles WHERE rolname='pgfmt37_enum_reader'", "expect": "0"}}
+   ]},
+   "sql": "ALTER TABLE pgfmt37_enum.t ALTER COLUMN c SET COMPRESSION lz4", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove namespace absence before ownership", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "owned namespace absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_enum'", "expect": "0"}]},
+    {"name": "claim owned namespace", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgfmt37_enum", "expect_rc": 0},
+    {"name": "prove reader absence", "fixture_key": "reader", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "owned reader absent", "sql": "SELECT count(*) FROM pg_roles WHERE rolname='pgfmt37_enum_reader'", "expect": "0"}]},
+    {"name": "claim ordinary NOLOGIN reader", "fixture_key": "reader", "creates_fixture": true, "sql": "CREATE ROLE pgfmt37_enum_reader NOLOGIN", "expect_rc": 0},
+    {"name": "seed independent physical controls", "sql": "CREATE TABLE pgfmt37_enum.t(c text);INSERT INTO pgfmt37_enum.t VALUES('payload');CREATE SEQUENCE pgfmt37_enum.guard START 7", "expect_rc": 0},
+    {"name": "snapshot catalog, data and files before audit", "sql": "CREATE TABLE pgfmt37_enum.receipt AS SELECT c.oid relid,c.relfilenode fileid,a.attnum,a.attname name,a.attstorage storage,a.attcompression compression,a.attidentity identity_mode,a.attgenerated generation_mode,a.attnotnull not_null,a.attstattarget target,COALESCE(a.attoptions::text,'') opts FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgfmt37_enum'::regnamespace AND c.relkind IN('r','p') AND a.attnum<>0 AND NOT a.attisdropped AND c.relname NOT IN('receipt','data_receipt');CREATE TABLE pgfmt37_enum.data_receipt AS SELECT 't' name,count(*) n,COALESCE(string_agg(md5(row_to_json(v)::text),',' ORDER BY md5(row_to_json(v)::text)),'') digest FROM ONLY pgfmt37_enum.t v", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "statement_coverage": ["complete"], "statement_indices": [0], "rule_summary_loaded": 2, "evidence_gaps": 0, "finding_entries": [], "finding_metadata": [], "evidence_gap_entries": [], "serialized_not_contains": ["PGCompressionMethod", "PGColumns", "SystemColumns", "TypeStorage", "PGCompressionLZ4Supported", "PGCompressionLZ4Known"]},
+   "post_verify": [
+    {"assert": "audit preserves all user/system attributes and relation files", "sql": "SELECT count(*) FROM pgfmt37_enum.receipt r LEFT JOIN pg_class c ON c.oid=r.relid LEFT JOIN pg_attribute a ON a.attrelid=r.relid AND a.attnum=r.attnum WHERE c.oid IS NULL OR c.relfilenode!=r.fileid OR a.attname IS DISTINCT FROM r.name OR a.attstorage IS DISTINCT FROM r.storage OR a.attcompression IS DISTINCT FROM r.compression OR a.attidentity IS DISTINCT FROM r.identity_mode OR a.attgenerated IS DISTINCT FROM r.generation_mode OR a.attnotnull IS DISTINCT FROM r.not_null OR a.attstattarget IS DISTINCT FROM r.target OR COALESCE(a.attoptions::text,'')!=r.opts", "expect": "0"},
+    {"assert": "audit preserves every row and payload", "sql": "SELECT count(*) FROM pgfmt37_enum.data_receipt r FULL JOIN (SELECT 't' name,count(*) n,COALESCE(string_agg(md5(row_to_json(v)::text),',' ORDER BY md5(row_to_json(v)::text)),'') digest FROM ONLY pgfmt37_enum.t v) v USING(name) WHERE r.name IS NULL OR v.name IS NULL OR r.n!=v.n OR r.digest!=v.digest", "expect": "0"},
+    {"assert": "audit never issues guard value", "sql": "SELECT last_value::text||':'||is_called::text FROM pgfmt37_enum.guard", "expect": "7:false"},
+    {"assert": "ordinary reader sees complete lz4 enum while default is pglz", "sql": "SET ROLE pgfmt37_enum_reader;SELECT setting||':'||('lz4'=ANY(enumvals))::text FROM pg_settings WHERE name='default_toast_compression';RESET ROLE", "expect": "SET\npglz:true\nRESET"}
+   ],
+   "execute": [{"name": "native valid lz4 control", "sql": "ALTER TABLE pgfmt37_enum.t ALTER COLUMN c SET COMPRESSION lz4", "expect_rc": 0}],
+   "structure": [
+    {"assert": "ordinary reader still sees capability independently of column declaration", "sql": "SET ROLE pgfmt37_enum_reader;SELECT setting||':'||('lz4'=ANY(enumvals))::text FROM pg_settings WHERE name='default_toast_compression';RESET ROLE", "expect": "SET\npglz:true\nRESET"},
+    {"assert": "only native driver installs lz4", "sql": "SELECT attcompression::text FROM pg_attribute WHERE attrelid='pgfmt37_enum.t'::regclass AND attname='c'", "expect": "l"}
+   ],
+   "teardown": [
+    {"name": "drop owned namespace", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgfmt37_enum CASCADE", "expect_rc": 0, "verify": [{"assert": "owned namespace absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_enum'", "expect": "0"}]},
+    {"name": "drop owned reader", "fixture_key": "reader", "drops_fixture": true, "sql": "DROP ROLE pgfmt37_enum_reader", "expect_rc": 0, "verify": [{"assert": "owned reader absent", "sql": "SELECT count(*) FROM pg_roles WHERE rolname='pgfmt37_enum_reader'", "expect": "0"}]}
+   ]
+  },
+  {
+   "id": "pg-column-format-system-empty", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-column-format-system",
+   "notes": "Independent user known-empty versus real system membership; no fictitious absence, no-op or deletion advisory.",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgfmt37_empty"},
+   "fixture": {"cleanup": [{"name": "remove owned namespace", "fixture_key": "schema", "sql": "DROP SCHEMA pgfmt37_empty CASCADE", "verify": {"assert": "owned namespace absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_empty'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgfmt37_empty.t DROP COLUMN IF EXISTS ctid", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove namespace absence before ownership", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "owned namespace absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_empty'", "expect": "0"}]},
+    {"name": "claim owned namespace", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgfmt37_empty", "expect_rc": 0},
+    {"name": "seed independent physical controls", "sql": "CREATE TABLE pgfmt37_empty.t();INSERT INTO pgfmt37_empty.t DEFAULT VALUES;CREATE SEQUENCE pgfmt37_empty.guard START 7", "expect_rc": 0},
+    {"name": "snapshot catalog, data and files before audit", "sql": "CREATE TABLE pgfmt37_empty.receipt AS SELECT c.oid relid,c.relfilenode fileid,a.attnum,a.attname name,a.attstorage storage,a.attcompression compression,a.attidentity identity_mode,a.attgenerated generation_mode,a.attnotnull not_null,a.attstattarget target,COALESCE(a.attoptions::text,'') opts FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgfmt37_empty'::regnamespace AND c.relkind IN('r','p') AND a.attnum<>0 AND NOT a.attisdropped AND c.relname NOT IN('receipt','data_receipt');CREATE TABLE pgfmt37_empty.data_receipt AS SELECT 't' name,count(*) n,COALESCE(string_agg(md5(row_to_json(v)::text),',' ORDER BY md5(row_to_json(v)::text)),'') digest FROM ONLY pgfmt37_empty.t v", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "reject", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "statement_coverage": ["complete"], "statement_indices": [0], "rule_summary_loaded": 8, "evidence_gaps": 0,
+    "finding_entries": [{"index": 0, "rule_id": "ddl.alter.drop_column.exists.require", "level": "blocker"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.alter.drop_column.exists.require", "metadata": {"exists": true, "name": "ctid", "reason_code": "system_column_inapplicable"}}], "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGCompressionMethod", "PGColumns", "SystemColumns", "TypeStorage", "PGCompressionLZ4Supported", "PGCompressionLZ4Known"]},
+   "post_verify": [
+    {"assert": "audit preserves all user/system attributes and relation files", "sql": "SELECT count(*) FROM pgfmt37_empty.receipt r LEFT JOIN pg_class c ON c.oid=r.relid LEFT JOIN pg_attribute a ON a.attrelid=r.relid AND a.attnum=r.attnum WHERE c.oid IS NULL OR c.relfilenode!=r.fileid OR a.attname IS DISTINCT FROM r.name OR a.attstorage IS DISTINCT FROM r.storage OR a.attcompression IS DISTINCT FROM r.compression OR a.attidentity IS DISTINCT FROM r.identity_mode OR a.attgenerated IS DISTINCT FROM r.generation_mode OR a.attnotnull IS DISTINCT FROM r.not_null OR a.attstattarget IS DISTINCT FROM r.target OR COALESCE(a.attoptions::text,'')!=r.opts", "expect": "0"},
+    {"assert": "audit preserves every row and payload", "sql": "SELECT count(*) FROM pgfmt37_empty.data_receipt r FULL JOIN (SELECT 't' name,count(*) n,COALESCE(string_agg(md5(row_to_json(v)::text),',' ORDER BY md5(row_to_json(v)::text)),'') digest FROM ONLY pgfmt37_empty.t v) v USING(name) WHERE r.name IS NULL OR v.name IS NULL OR r.n!=v.n OR r.digest!=v.digest", "expect": "0"},
+    {"assert": "audit never issues guard value", "sql": "SELECT last_value::text||':'||is_called::text FROM pgfmt37_empty.guard", "expect": "7:false"}
+   ],
+   "execute": [{"name": "native guarded system-column refusal", "sql": "ALTER TABLE pgfmt37_empty.t DROP COLUMN IF EXISTS ctid", "expect_rc": 3, "via": "stdin", "stderr_contains": ["0A000"]}],
+   "structure": [
+    {"assert": "zero user columns are still truly empty", "sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgfmt37_empty.t'::regclass AND attnum>0 AND NOT attisdropped", "expect": "0"},
+    {"assert": "all real system attributes survive refusal", "sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgfmt37_empty.t'::regclass AND attnum<0", "expect": "6"},
+    {"assert": "empty-tuple data survives refusal", "sql": "SELECT count(*) FROM pgfmt37_empty.t", "expect": "1"}
+   ],
+   "teardown": [{"name": "drop owned namespace", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgfmt37_empty CASCADE", "expect_rc": 0, "verify": [{"assert": "owned namespace absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgfmt37_empty'", "expect": "0"}]}]
+  },
+  {
    "id": "pg-column-tuning-scope", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-column-tuning",
    "notes": "Inheritance parent/child, partition root/member and unlogged tables are measured native controls but remain outside the approved ordinary-table fact stage; gaps are not support",
    "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgtune37_scope"},
@@ -4671,6 +5065,26 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.column-storage-offline",
+  "T37.cli.column-compression-offline",
+  "T37.cli.column-format-default-offline",
+  "T37.cli.column-format-system-offline",
+  "T37.cli.column-format-storage-case-offline",
+  "T37.cli.column-format-compression-case-offline",
+  "T37.cli.column-format-disabled",
+  "T37.cli.column-format-mysql",
+  "T37.cli.column-format-tidb",
+  "T37.cli.column-format-parser-retention",
+  "T37.meta.pg-column-storage-validity",
+  "T37.meta.pg-column-compression-validity",
+  "T37.meta.pg-column-format-system-targets",
+  "T37.meta.pg-column-format-system-empty",
+  "T37.meta.pg-column-format-quoted-case",
+  "T37.meta.pg-column-format-prior-ddl",
+  "T37.meta.pg-column-format-prior-parser",
+  "T37.meta.pg-column-format-scope",
+  "T37.meta.pg-column-format-no-rewrite",
+  "T37.meta.pg-column-format-enum-reader",
   "T37.cli.column-tuning-statistics-offline",
   "T37.cli.column-tuning-default-offline",
   "T37.cli.column-tuning-options-offline",

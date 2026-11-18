@@ -16,6 +16,30 @@ honestly — not a count of implemented rules.
 | T06-CLOSEOUT.md | Final T06 (#85) technical closeout index (T06技术收口材料齐备): binds every accepted dimension to the traceability rows, the SHA-frozen umbrella evidence, and the owner boundary for deferred dimensions; issue #85 stays open |
 | evidence/ | Per-row offline CLI probe captures (`<row-id>.probes.txt`): recorded `deltascope audit` output for the row's `sql_shape` at every declared version (`=== version <v> (target …)` sections). Regenerate by re-running the probe commands recorded in the file header |
 
+## PostgreSQL column storage/compression and system-target tranche
+
+D7 extends exactly ten original cells in two already-mixed F09 parents:
+columns DROP / DROP IF EXISTS CASCADE / multi-action, and column-attributes
+SET/DROP NOT NULL, SET/DROP DEFAULT, SET GENERATED / DROP EXPRESSION,
+ADD/DROP IDENTITY, SET STATISTICS, SET STORAGE / COMPRESSION and
+SET n_distinct / RESET. No cell or parent status is promoted; all 301 rows,
+original subaction sets and 19-family/63-row backlog denominators stay intact.
+Matrix changes are generated from YAML, not handwritten.
+
+The storage/compression cell binds actual typstorage, default/type/case,
+lz4 enum, system-target and no-immediate-rewrite controls to the two new rule
+selectors and exact T37 case IDs. Existing D5/D6 cells gain only relevant shared
+system-target evidence, not data/expression/permission/dependency certification.
+System negative-attnum members are independent of user known-empty; guarded
+ctid is not absent/no-op. Prior-DDL/parser/sibling and broader-kind gaps remain
+explicit. Role/schema ownership and exact native refusal/physical/data receipts
+remain part of canonical evidence.
+
+Candidate T37 is 156/156, 2772 assertions, 52 native steps (25 success/27 refusal)
+at 631575a6 + dirty evidence; it is **not** final same-HEAD all-task proof.
+See the [decision](../../docs/decisions/2026-11-18-postgresql-column-storage-compression-targets.md).
+Full D7 delivery and other F09 dimensions remain open.
+
 ## PostgreSQL generation-declaration tranche
 
 `postgresql.create-table`, `postgresql.create-table-generated-identity` and
