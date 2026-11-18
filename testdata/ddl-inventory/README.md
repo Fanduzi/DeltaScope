@@ -16,6 +16,14 @@ honestly — not a count of implemented rules.
 | T06-CLOSEOUT.md | Final T06 (#85) technical closeout index (T06技术收口材料齐备): binds every accepted dimension to the traceability rows, the SHA-frozen umbrella evidence, and the owner boundary for deferred dimensions; issue #85 stays open |
 | evidence/ | Per-row offline CLI probe captures (`<row-id>.probes.txt`): recorded `deltascope audit` output for the row's `sql_shape` at every declared version (`=== version <v> (target …)` sections). Regenerate by re-running the probe commands recorded in the file header |
 
+## PostgreSQL heap table storage options
+
+D10 attaches the precise PG17 SET/RESET evidence only to the original
+`SET/RESET storage parameters` anchor under `postgresql.alter-table.options`.
+The bounded declaration result covers observed ordinary persistent non-typed
+heap tables. TOAST, extensions and unproven inputs remain gaps. Existing row
+and child classifications and denominators are preserved.
+
 ## PostgreSQL replica identity index attachment
 
 D9 attaches exact T37 and corpus evidence to the original `REPLICA IDENTITY`

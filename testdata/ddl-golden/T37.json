@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-table-reloptions": {"enable": {"ddl.pg.alter.reloptions.valid": {"level": "blocker"}, "ddl.pg.alter.set_reloptions.warn": {"level": "warning"}, "ddl.pg.alter.reset_reloptions.notice": {"level": "notice"}}},
    "pg-replica-index": {"enable": {"ddl.pg.alter.replica_identity_using_index.valid": {"level": "blocker"}, "ddl.pg.alter.replica_identity_using_index.notice": {"level": "notice"}, "ddl.pg.alter.replica_identity_full.warn": {"level": "warning"}, "ddl.pg.alter.replica_identity_nothing.warn": {"level": "warning"}}},
    "pg-column-identity": {"enable": {"ddl.alter.add_column.exists.forbid": {"level": "blocker"}, "ddl.alter.rename_column.exists.require": {"level": "blocker"}, "ddl.alter.rename_column.target.exists.forbid": {"level": "blocker"}, "ddl.table.exists.alter.require": {"level": "blocker"}, "ddl.pg.alter.add_column.nullable.notice": {"level": "notice"}, "ddl.pg.alter.add_column.non_null_no_default.warn": {"level": "warning"}, "ddl.pg.alter.add_column.non_null_default.rewrite.warn": {"level": "warning"}}},
    "pg-column-format": {"enable": {
@@ -1875,6 +1876,51 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "table-reloptions-offline",
+   "dialect": "postgresql",
+   "policy": "pg-table-reloptions",
+   "sql": "ALTER TABLE app.t SET (fillfactor=9);ALTER TABLE app.t RESET (fillfactor=80)",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified","unverified"],
+    "statement_indices": [0,1],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_reloptions.warn","level": "warning"},{"index": 1,"rule_id": "ddl.pg.alter.reset_reloptions.notice","level": "notice"}],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.reloptions.valid","reason_code": "unproven_table_reloptions","required_facts": ["instance.version"]},{"index": 1,"rule_id": "ddl.pg.alter.reloptions.valid","reason_code": "unproven_table_reloptions","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGTableReloptions","PGRelation"],
+    "rule_summary_loaded": 3
+   }
+  },
+  {
+   "id": "table-reloptions-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.t SET (fillfactor=9)",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableReloptions","PGRelation"]
+   }
+  },
   {
    "id": "replica-index-offline",
    "dialect": "postgresql",
@@ -3971,6 +4017,572 @@
   }
  ],
  "metadata_cases": [
+  {
+   "id": "pg-table-reloptions-fillfactor-controls",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-reloptions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrl_fillfactor_controls"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_fillfactor_controls CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_fillfactor_controls'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrl_fillfactor_controls.t SET (fillfactor=10)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_fillfactor_controls'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrl_fillfactor_controls","expect_rc": 0},
+    {"name": "seed and record heap catalog","sql": "CREATE TABLE pgrl_fillfactor_controls.t(id int,payload text) WITH (fillfactor=80,autovacuum_enabled=true); INSERT INTO pgrl_fillfactor_controls.t VALUES(1,'keep'); CREATE SEQUENCE pgrl_fillfactor_controls.guard START 7; ; CREATE TABLE pgrl_fillfactor_controls.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_fillfactor_controls'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_reloptions.warn","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableReloptions","PGRelation"],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"assert": "audit preserves complete relation and TOAST options and file identities","sql": "SELECT count(*) FROM ((TABLE pgrl_fillfactor_controls.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_fillfactor_controls'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_fillfactor_controls'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrl_fillfactor_controls.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgrl_fillfactor_controls.t","expect": "t"},
+    {"assert": "audit does not issue values","sql": "SELECT last_value::text||':'||is_called::text FROM pgrl_fillfactor_controls.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native legal declaration","sql": "ALTER TABLE pgrl_fillfactor_controls.t SET (fillfactor=10)","expect_rc": 0},
+    {"name": "native legal declaration","sql": "ALTER TABLE pgrl_fillfactor_controls.t SET (fillfactor=100)","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native catalog option present","sql": "SELECT 'fillfactor=100'=ANY(reloptions) FROM pg_class WHERE oid='pgrl_fillfactor_controls.t'::regclass","expect": "t"},
+    {"assert": "heap file unchanged","sql": "SELECT c.relfilenode=r.relfilenode FROM pg_class c JOIN pgrl_fillfactor_controls.receipt r ON r.oid=c.oid WHERE c.oid='pgrl_fillfactor_controls.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_fillfactor_controls CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_fillfactor_controls'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-reloptions-fillfactor-range",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-reloptions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrl_fillfactor_range"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_fillfactor_range CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_fillfactor_range'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrl_fillfactor_range.t SET (fillfactor=9)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_fillfactor_range'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrl_fillfactor_range","expect_rc": 0},
+    {"name": "seed and record heap catalog","sql": "CREATE TABLE pgrl_fillfactor_range.t(id int,payload text) WITH (fillfactor=80,autovacuum_enabled=true); INSERT INTO pgrl_fillfactor_range.t VALUES(1,'keep'); CREATE SEQUENCE pgrl_fillfactor_range.guard START 7; ; CREATE TABLE pgrl_fillfactor_range.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_fillfactor_range'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_reloptions.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.reloptions.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableReloptions","PGRelation"],
+    "rule_summary_loaded": 3,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.reloptions.valid","metadata": {"reason_code": "table_reloption_out_of_range","parameter": "fillfactor"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves complete relation and TOAST options and file identities","sql": "SELECT count(*) FROM ((TABLE pgrl_fillfactor_range.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_fillfactor_range'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_fillfactor_range'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrl_fillfactor_range.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgrl_fillfactor_range.t","expect": "t"},
+    {"assert": "audit does not issue values","sql": "SELECT last_value::text||':'||is_called::text FROM pgrl_fillfactor_range.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 22023","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrl_fillfactor_range.t SET (fillfactor=9)","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  22023:"]},
+    {"name": "native refusal 22023","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrl_fillfactor_range.t SET (fillfactor=101)","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  22023:"]}
+   ],
+   "structure": [
+    {"assert": "native catalog option present","sql": "SELECT 'fillfactor=80'=ANY(reloptions) FROM pg_class WHERE oid='pgrl_fillfactor_range.t'::regclass","expect": "t"},
+    {"assert": "heap file unchanged","sql": "SELECT c.relfilenode=r.relfilenode FROM pg_class c JOIN pgrl_fillfactor_range.receipt r ON r.oid=c.oid WHERE c.oid='pgrl_fillfactor_range.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_fillfactor_range CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_fillfactor_range'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-reloptions-fillfactor-missing",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-reloptions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrl_fillfactor_missing"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_fillfactor_missing CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_fillfactor_missing'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrl_fillfactor_missing.t SET (fillfactor)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_fillfactor_missing'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrl_fillfactor_missing","expect_rc": 0},
+    {"name": "seed and record heap catalog","sql": "CREATE TABLE pgrl_fillfactor_missing.t(id int,payload text) WITH (fillfactor=80,autovacuum_enabled=true); INSERT INTO pgrl_fillfactor_missing.t VALUES(1,'keep'); CREATE SEQUENCE pgrl_fillfactor_missing.guard START 7; ; CREATE TABLE pgrl_fillfactor_missing.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_fillfactor_missing'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_reloptions.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.reloptions.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableReloptions","PGRelation"],
+    "rule_summary_loaded": 3,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.reloptions.valid","metadata": {"reason_code": "table_reloption_value_required","parameter": "fillfactor"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves complete relation and TOAST options and file identities","sql": "SELECT count(*) FROM ((TABLE pgrl_fillfactor_missing.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_fillfactor_missing'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_fillfactor_missing'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrl_fillfactor_missing.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgrl_fillfactor_missing.t","expect": "t"},
+    {"assert": "audit does not issue values","sql": "SELECT last_value::text||':'||is_called::text FROM pgrl_fillfactor_missing.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 22023","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrl_fillfactor_missing.t SET (fillfactor)","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  22023:"]}
+   ],
+   "structure": [
+    {"assert": "native catalog option present","sql": "SELECT 'fillfactor=80'=ANY(reloptions) FROM pg_class WHERE oid='pgrl_fillfactor_missing.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_fillfactor_missing CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_fillfactor_missing'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-reloptions-bool-controls",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-reloptions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrl_bool_controls"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_bool_controls CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_bool_controls'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrl_bool_controls.t SET (autovacuum_enabled='Fa')",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_bool_controls'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrl_bool_controls","expect_rc": 0},
+    {"name": "seed and record heap catalog","sql": "CREATE TABLE pgrl_bool_controls.t(id int,payload text) WITH (fillfactor=80,autovacuum_enabled=true); INSERT INTO pgrl_bool_controls.t VALUES(1,'keep'); CREATE SEQUENCE pgrl_bool_controls.guard START 7; ; CREATE TABLE pgrl_bool_controls.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_bool_controls'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_reloptions.warn","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableReloptions","PGRelation"],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"assert": "audit preserves complete relation and TOAST options and file identities","sql": "SELECT count(*) FROM ((TABLE pgrl_bool_controls.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_bool_controls'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_bool_controls'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrl_bool_controls.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgrl_bool_controls.t","expect": "t"},
+    {"assert": "audit does not issue values","sql": "SELECT last_value::text||':'||is_called::text FROM pgrl_bool_controls.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native legal declaration","sql": "ALTER TABLE pgrl_bool_controls.t SET (autovacuum_enabled='Fa')","expect_rc": 0},
+    {"name": "native legal declaration","sql": "ALTER TABLE pgrl_bool_controls.t SET (autovacuum_enabled=off)","expect_rc": 0},
+    {"name": "native legal declaration","sql": "ALTER TABLE pgrl_bool_controls.t SET (autovacuum_enabled=0)","expect_rc": 0},
+    {"name": "native legal declaration","sql": "ALTER TABLE pgrl_bool_controls.t SET (autovacuum_enabled)","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native catalog option present","sql": "SELECT 'autovacuum_enabled=true'=ANY(reloptions) FROM pg_class WHERE oid='pgrl_bool_controls.t'::regclass","expect": "t"},
+    {"assert": "heap file unchanged","sql": "SELECT c.relfilenode=r.relfilenode FROM pg_class c JOIN pgrl_bool_controls.receipt r ON r.oid=c.oid WHERE c.oid='pgrl_bool_controls.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_bool_controls CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_bool_controls'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-reloptions-bool-invalid",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-reloptions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrl_bool_invalid"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_bool_invalid CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_bool_invalid'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrl_bool_invalid.t SET (autovacuum_enabled=1.0)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_bool_invalid'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrl_bool_invalid","expect_rc": 0},
+    {"name": "seed and record heap catalog","sql": "CREATE TABLE pgrl_bool_invalid.t(id int,payload text) WITH (fillfactor=80,autovacuum_enabled=true); INSERT INTO pgrl_bool_invalid.t VALUES(1,'keep'); CREATE SEQUENCE pgrl_bool_invalid.guard START 7; ; CREATE TABLE pgrl_bool_invalid.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_bool_invalid'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_reloptions.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.reloptions.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableReloptions","PGRelation"],
+    "rule_summary_loaded": 3,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.reloptions.valid","metadata": {"reason_code": "table_reloption_invalid_boolean","parameter": "autovacuum_enabled"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves complete relation and TOAST options and file identities","sql": "SELECT count(*) FROM ((TABLE pgrl_bool_invalid.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_bool_invalid'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_bool_invalid'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrl_bool_invalid.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgrl_bool_invalid.t","expect": "t"},
+    {"assert": "audit does not issue values","sql": "SELECT last_value::text||':'||is_called::text FROM pgrl_bool_invalid.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 22023","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrl_bool_invalid.t SET (autovacuum_enabled=1.0)","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  22023:"]},
+    {"name": "native refusal 22023","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrl_bool_invalid.t SET (autovacuum_enabled='o')","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  22023:"]}
+   ],
+   "structure": [
+    {"assert": "native catalog option present","sql": "SELECT 'autovacuum_enabled=true'=ANY(reloptions) FROM pg_class WHERE oid='pgrl_bool_invalid.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_bool_invalid CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_bool_invalid'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-reloptions-duplicate-set",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-reloptions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrl_duplicate_set"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_duplicate_set CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_duplicate_set'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrl_duplicate_set.t SET (fillfactor=80,fillfactor=80)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_duplicate_set'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrl_duplicate_set","expect_rc": 0},
+    {"name": "seed and record heap catalog","sql": "CREATE TABLE pgrl_duplicate_set.t(id int,payload text) WITH (fillfactor=80,autovacuum_enabled=true); INSERT INTO pgrl_duplicate_set.t VALUES(1,'keep'); CREATE SEQUENCE pgrl_duplicate_set.guard START 7; ; CREATE TABLE pgrl_duplicate_set.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_duplicate_set'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_reloptions.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.reloptions.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableReloptions","PGRelation"],
+    "rule_summary_loaded": 3,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.reloptions.valid","metadata": {"reason_code": "table_reloption_duplicate","parameter": "fillfactor"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves complete relation and TOAST options and file identities","sql": "SELECT count(*) FROM ((TABLE pgrl_duplicate_set.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_duplicate_set'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_duplicate_set'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrl_duplicate_set.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgrl_duplicate_set.t","expect": "t"},
+    {"assert": "audit does not issue values","sql": "SELECT last_value::text||':'||is_called::text FROM pgrl_duplicate_set.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 22023","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrl_duplicate_set.t SET (fillfactor=80,fillfactor=80)","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  22023:"]},
+    {"name": "native legal declaration","sql": "ALTER TABLE pgrl_duplicate_set.t SET (toast.autovacuum_enabled=off,autovacuum_enabled=on)","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native catalog option present","sql": "SELECT 'autovacuum_enabled=on'=ANY(reloptions) FROM pg_class WHERE oid='pgrl_duplicate_set.t'::regclass","expect": "t"},
+    {"assert": "heap file unchanged","sql": "SELECT c.relfilenode=r.relfilenode FROM pg_class c JOIN pgrl_duplicate_set.receipt r ON r.oid=c.oid WHERE c.oid='pgrl_duplicate_set.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_duplicate_set CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_duplicate_set'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-reloptions-reset-controls",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-reloptions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrl_reset_controls"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_reset_controls CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_reset_controls'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrl_reset_controls.t RESET (unknown_option, fillfactor, fillfactor)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_reset_controls'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrl_reset_controls","expect_rc": 0},
+    {"name": "seed and record heap catalog","sql": "CREATE TABLE pgrl_reset_controls.t(id int,payload text) WITH (fillfactor=80,autovacuum_enabled=true); INSERT INTO pgrl_reset_controls.t VALUES(1,'keep'); CREATE SEQUENCE pgrl_reset_controls.guard START 7; ; CREATE TABLE pgrl_reset_controls.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_reset_controls'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.reset_reloptions.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableReloptions","PGRelation"],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"assert": "audit preserves complete relation and TOAST options and file identities","sql": "SELECT count(*) FROM ((TABLE pgrl_reset_controls.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_reset_controls'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_reset_controls'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrl_reset_controls.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgrl_reset_controls.t","expect": "t"},
+    {"assert": "audit does not issue values","sql": "SELECT last_value::text||':'||is_called::text FROM pgrl_reset_controls.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native legal declaration","sql": "ALTER TABLE pgrl_reset_controls.t RESET (unknown_option,fillfactor,fillfactor)","expect_rc": 0},
+    {"name": "native legal declaration","sql": "ALTER TABLE pgrl_reset_controls.t RESET (unknown_ns.fillfactor)","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native reset removed fillfactor","sql": "SELECT NOT ('fillfactor=80'=ANY(reloptions)) FROM pg_class WHERE oid='pgrl_reset_controls.t'::regclass","expect": "t"},
+    {"assert": "heap file unchanged","sql": "SELECT c.relfilenode=r.relfilenode FROM pg_class c JOIN pgrl_reset_controls.receipt r ON r.oid=c.oid WHERE c.oid='pgrl_reset_controls.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_reset_controls CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_reset_controls'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-reloptions-reset-valued",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-reloptions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrl_reset_valued"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_reset_valued CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_reset_valued'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrl_reset_valued.t RESET (opaque_unknown_key='opaque_secret_value')",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_reset_valued'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrl_reset_valued","expect_rc": 0},
+    {"name": "seed and record heap catalog","sql": "CREATE TABLE pgrl_reset_valued.t(id int,payload text) WITH (fillfactor=80,autovacuum_enabled=true); INSERT INTO pgrl_reset_valued.t VALUES(1,'keep'); CREATE SEQUENCE pgrl_reset_valued.guard START 7; ; CREATE TABLE pgrl_reset_valued.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_reset_valued'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.reset_reloptions.notice","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.reloptions.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableReloptions","PGRelation"],
+    "rule_summary_loaded": 3,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.reloptions.valid","metadata": {"reason_code": "table_reloption_reset_has_value"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves complete relation and TOAST options and file identities","sql": "SELECT count(*) FROM ((TABLE pgrl_reset_valued.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_reset_valued'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_reset_valued'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrl_reset_valued.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgrl_reset_valued.t","expect": "t"},
+    {"assert": "audit does not issue values","sql": "SELECT last_value::text||':'||is_called::text FROM pgrl_reset_valued.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42601","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrl_reset_valued.t RESET (opaque_unknown_key='opaque_secret_value')","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42601:"]}
+   ],
+   "structure": [
+    {"assert": "native catalog option present","sql": "SELECT 'fillfactor=80'=ANY(reloptions) FROM pg_class WHERE oid='pgrl_reset_valued.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_reset_valued CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_reset_valued'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-reloptions-opaque-values",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-reloptions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrl_opaque_values"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_opaque_values CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_opaque_values'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrl_opaque_values.t SET (fillfactor=8e1)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_opaque_values'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrl_opaque_values","expect_rc": 0},
+    {"name": "seed and record heap catalog","sql": "CREATE TABLE pgrl_opaque_values.t(id int,payload text) WITH (fillfactor=80,autovacuum_enabled=true); INSERT INTO pgrl_opaque_values.t VALUES(1,'keep'); CREATE SEQUENCE pgrl_opaque_values.guard START 7; ; CREATE TABLE pgrl_opaque_values.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_opaque_values'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_reloptions.warn","level": "warning"}],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.reloptions.valid","reason_code": "unproven_table_reloptions","required_facts": ["table.reloptions"]}],
+    "serialized_not_contains": ["PGTableReloptions","PGRelation"],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"assert": "audit preserves complete relation and TOAST options and file identities","sql": "SELECT count(*) FROM ((TABLE pgrl_opaque_values.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_opaque_values'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_opaque_values'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrl_opaque_values.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgrl_opaque_values.t","expect": "t"},
+    {"assert": "audit does not issue values","sql": "SELECT last_value::text||':'||is_called::text FROM pgrl_opaque_values.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native legal declaration","sql": "ALTER TABLE pgrl_opaque_values.t SET (fillfactor=8e1)","expect_rc": 0},
+    {"name": "native legal declaration","sql": "ALTER TABLE pgrl_opaque_values.t SET (fillfactor='0x50')","expect_rc": 0},
+    {"name": "native refusal 22023","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrl_opaque_values.t SET (opaque_unknown_key=1)","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  22023:"]}
+   ],
+   "structure": [
+    {"assert": "native accepted the alternate base","sql": "SELECT 'fillfactor=0x50'=ANY(reloptions) FROM pg_class WHERE oid='pgrl_opaque_values.t'::regclass","expect": "t"},
+    {"assert": "heap file unchanged","sql": "SELECT c.relfilenode=r.relfilenode FROM pg_class c JOIN pgrl_opaque_values.receipt r ON r.oid=c.oid WHERE c.oid='pgrl_opaque_values.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_opaque_values CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_opaque_values'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-reloptions-scope",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-reloptions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrl_scope"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_scope CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_scope'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrl_scope.typed SET (fillfactor=80);ALTER TABLE pgrl_scope.part SET (fillfactor=80);ALTER TABLE t SET (fillfactor=80)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_scope'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrl_scope","expect_rc": 0},
+    {"name": "seed and record heap catalog","sql": "CREATE TABLE pgrl_scope.t(id int,payload text) WITH (fillfactor=80,autovacuum_enabled=true); INSERT INTO pgrl_scope.t VALUES(1,'keep'); CREATE SEQUENCE pgrl_scope.guard START 7; CREATE TYPE pgrl_scope.rowtype AS (id int); CREATE TABLE pgrl_scope.typed OF pgrl_scope.rowtype; CREATE TABLE pgrl_scope.part(id int) PARTITION BY RANGE(id); CREATE TABLE pgrl_scope.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_scope'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 3,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified","unverified","unverified"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_reloptions.warn","level": "warning"},{"index": 1,"rule_id": "ddl.pg.alter.set_reloptions.warn","level": "warning"},{"index": 2,"rule_id": "ddl.pg.alter.set_reloptions.warn","level": "warning"}],
+    "evidence_gaps": 3,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.reloptions.valid","reason_code": "unproven_table_reloptions","required_facts": ["target_table.pg_heap"]},{"index": 1,"rule_id": "ddl.pg.alter.reloptions.valid","reason_code": "unproven_table_reloptions","required_facts": ["target_table.pg_heap"]},{"index": 2,"rule_id": "ddl.pg.alter.reloptions.valid","reason_code": "unproven_table_reloptions","required_facts": ["target_table.pg_heap"]}],
+    "serialized_not_contains": ["PGTableReloptions","PGRelation"],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"assert": "audit preserves complete relation and TOAST options and file identities","sql": "SELECT count(*) FROM ((TABLE pgrl_scope.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_scope'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_scope'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrl_scope.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgrl_scope.t","expect": "t"},
+    {"assert": "audit does not issue values","sql": "SELECT last_value::text||':'||is_called::text FROM pgrl_scope.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native legal declaration","sql": "ALTER TABLE pgrl_scope.typed SET (fillfactor=80)","expect_rc": 0},
+    {"name": "native refusal 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrl_scope.part SET (fillfactor=80)","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]},
+    {"name": "native legal declaration","sql": "ALTER TABLE pgrl_scope.t SET (fillfactor=80)","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native catalog option present","sql": "SELECT 'fillfactor=80'=ANY(reloptions) FROM pg_class WHERE oid='pgrl_scope.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_scope CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_scope'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-reloptions-freshness",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-reloptions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrl_freshness"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_freshness CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_freshness'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrl_freshness.t ADD COLUMN other int;ALTER TABLE pgrl_freshness.t SET (fillfactor=9);ALTER TABLE pgrl_freshness.t RENAME COLUMN IF EXISTS id TO renamed;ALTER TABLE pgrl_freshness.t RESET (fillfactor)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_freshness'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrl_freshness","expect_rc": 0},
+    {"name": "seed and record heap catalog","sql": "CREATE TABLE pgrl_freshness.t(id int,payload text) WITH (fillfactor=80,autovacuum_enabled=true); INSERT INTO pgrl_freshness.t VALUES(1,'keep'); CREATE SEQUENCE pgrl_freshness.guard START 7; ; CREATE TABLE pgrl_freshness.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_freshness'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 2,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": ["complete","unverified","unverified"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 1,"rule_id": "ddl.pg.alter.set_reloptions.warn","level": "warning"},{"index": 2,"rule_id": "ddl.pg.alter.reset_reloptions.notice","level": "notice"}],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.pg.alter.reloptions.valid","reason_code": "unproven_table_reloptions","required_facts": ["target_table.pg_heap"]},{"index": 2,"rule_id": "ddl.pg.alter.reloptions.valid","reason_code": "unproven_table_reloptions","required_facts": ["target_table.pg_heap"]}],
+    "serialized_not_contains": ["PGTableReloptions","PGRelation"],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"assert": "audit preserves complete relation and TOAST options and file identities","sql": "SELECT count(*) FROM ((TABLE pgrl_freshness.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_freshness'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_freshness'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrl_freshness.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgrl_freshness.t","expect": "t"},
+    {"assert": "audit does not issue values","sql": "SELECT last_value::text||':'||is_called::text FROM pgrl_freshness.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native legal declaration","sql": "ALTER TABLE pgrl_freshness.t ADD COLUMN other int","expect_rc": 0},
+    {"name": "native refusal 22023","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrl_freshness.t SET (fillfactor=9)","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  22023:"]},
+    {"name": "native refusal 42601","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrl_freshness.t RENAME COLUMN IF EXISTS id TO renamed","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42601:"]},
+    {"name": "native legal declaration","sql": "ALTER TABLE pgrl_freshness.t RESET (fillfactor)","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native predecessor then reset","sql": "SELECT EXISTS(SELECT FROM pg_attribute WHERE attrelid='pgrl_freshness.t'::regclass AND attname='other') AND NOT ('fillfactor=80'=ANY(reloptions)) FROM pg_class WHERE oid='pgrl_freshness.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_freshness CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_freshness'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-reloptions-guard-absent",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-reloptions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrl_guard_absent"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_guard_absent CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_guard_absent'","expect": "0"}}]},
+   "sql": "ALTER TABLE IF EXISTS pgrl_guard_absent.missing SET (fillfactor=9)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_guard_absent'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrl_guard_absent","expect_rc": 0},
+    {"name": "seed and record heap catalog","sql": "CREATE TABLE pgrl_guard_absent.t(id int,payload text) WITH (fillfactor=80,autovacuum_enabled=true); INSERT INTO pgrl_guard_absent.t VALUES(1,'keep'); CREATE SEQUENCE pgrl_guard_absent.guard START 7; ; CREATE TABLE pgrl_guard_absent.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_guard_absent'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_reloptions.warn","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableReloptions","PGRelation"],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"assert": "audit preserves complete relation and TOAST options and file identities","sql": "SELECT count(*) FROM ((TABLE pgrl_guard_absent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_guard_absent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reloptions,toast.reloptions AS toast_options FROM pg_class c LEFT JOIN pg_class toast ON toast.oid=c.reltoastrelid WHERE c.relnamespace='pgrl_guard_absent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrl_guard_absent.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgrl_guard_absent.t","expect": "t"},
+    {"assert": "audit does not issue values","sql": "SELECT last_value::text||':'||is_called::text FROM pgrl_guard_absent.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native legal declaration","sql": "ALTER TABLE IF EXISTS pgrl_guard_absent.missing SET (fillfactor=9)","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "guard skipped absent relation","sql": "SELECT to_regclass('pgrl_guard_absent.missing') IS NULL","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrl_guard_absent CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrl_guard_absent'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
   {
    "id": "pg-replica-index-eligible",
    "anchor": "postgres17",
@@ -6482,6 +7094,20 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.table-reloptions-offline",
+  "T37.cli.table-reloptions-disabled",
+  "T37.meta.pg-table-reloptions-fillfactor-controls",
+  "T37.meta.pg-table-reloptions-fillfactor-range",
+  "T37.meta.pg-table-reloptions-fillfactor-missing",
+  "T37.meta.pg-table-reloptions-bool-controls",
+  "T37.meta.pg-table-reloptions-bool-invalid",
+  "T37.meta.pg-table-reloptions-duplicate-set",
+  "T37.meta.pg-table-reloptions-reset-controls",
+  "T37.meta.pg-table-reloptions-reset-valued",
+  "T37.meta.pg-table-reloptions-opaque-values",
+  "T37.meta.pg-table-reloptions-scope",
+  "T37.meta.pg-table-reloptions-freshness",
+  "T37.meta.pg-table-reloptions-guard-absent",
   "T37.cli.replica-index-offline",
   "T37.cli.replica-index-disabled",
   "T37.cli.replica-index-other-modes",

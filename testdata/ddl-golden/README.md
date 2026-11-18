@@ -3,6 +3,16 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D10 PostgreSQL heap table storage options
+
+D10 retains the 189 earlier T37 cases, their profiles, and their 3922
+assertions. Fourteen additions under an isolated profile bring the focused run
+to 203/203 cases and 4352 assertions. The 27 native controls include 16
+successes and 11 precise refusals. Live cases independently pin heap and TOAST
+options, physical file identity, payload and the sequence guard before any
+native execution. See the
+[decision](../../docs/decisions/2026-11-18-postgresql-table-reloptions.md).
+
 ## T37 D9 PostgreSQL replica identity index attachment
 
 D9 adds 16 cases, preserving the 173 earlier T37 cases and all existing

@@ -71,6 +71,25 @@ checks compare exact catalogs, file identity, payload and sequence position
 before running independent native steps. Only the existing SET/RESET storage
 parameters cell receives new evidence. Other F09 dimensions stay open.
 
+## Evidence bindings
+
+`1d088d18` retains the facts and `6efd1dce` provides the shared rule. The focused
+candidate passed T37 203/203 with 4352 assertions. The added 14 cases include
+12 owned live cases and 27 native controls, with 16 successes and 11 precise
+refusals. All 189 original cases, profiles and their 3922 assertions remain.
+Two earlier offline expectations had incorrectly assumed the fixed acceptance
+profile enabled the new blocker. They were restored to their original values.
+The new isolated profile proves the intended missing-fact behavior.
+
+One early facts-only focused run reached the tool timeout. It left an owned
+PostgreSQL container, which was removed with the project cleanup after verifying
+it was the only owned residual and preserving all original container identities.
+The retry passed 189/189 with 3922 assertions. Neither interrupted nor focused
+evidence can replace the final fixed-SHA full run.
+
+The original SET/RESET storage parameters anchor receives 15 additional
+selectors. The matrix retains its original row and subaction classifications.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
