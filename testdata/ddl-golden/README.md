@@ -3,6 +3,16 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D9 PostgreSQL replica identity index attachment
+
+D9 adds 16 cases, preserving the 173 earlier T37 cases and all existing
+profiles. Thirteen metadata cases use real PG17 index and table catalogs.
+The focused run passed 189/189 cases with 3922 assertions, including 31 native
+execution controls. The invalid-build control checks that an invalid, unready
+index can still be selected, while data, relation files and the independent
+sequence are preserved during audit. See the
+[decision](../../docs/decisions/2026-11-18-postgresql-replica-identity-index.md).
+
 ## T37 D8 ALTER column identity and existence guards
 
 D8 adds 17 cases under an isolated profile, preserving the existing 156 IDs

@@ -398,6 +398,17 @@ Final artifact: `/tmp/ddl-golden-pg-column-identity-final-8cff67d4/all/artifact.
 Task counts and CI refer to the shipped product SHA. The three interrupted
 candidates remain historical. Other F09 dimensions stay open.
 
+### D9 PostgreSQL replica identity index attachment
+
+Approved default blocker for exact ordinary persistent non-typed PG17 table
+bindings. `69cf55bd` binds private catalog evidence and `97fa6b64` implements
+native attachment eligibility. T37 retains all 173 earlier cases and adds 16
+frozen IDs. The focused candidate passed 189/189 with 3922 assertions and 31
+native controls. This adds evidence only to the original REPLICA IDENTITY
+cell. Runtime usability was left open by the approved scope, as were other
+F09 options/type/rename-owner and general dependency/order dimensions.
+See the [decision](../decisions/2026-11-18-postgresql-replica-identity-index.md).
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.

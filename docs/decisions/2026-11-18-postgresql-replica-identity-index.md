@@ -76,6 +76,22 @@ Each comparison retains its separate native refusal and no-audit-execution
 oracle. Use actual catalog identity, row/file preservation and a sequence guard.
 The existing case IDs and profiles are preserved.
 
+## Evidence bindings
+
+The focused T37 replay passed 189/189 with 3922 assertions. All 173 prior
+cases and profiles are preserved. The 16 additions use one isolated policy
+profile and 31 native execution controls (15 successful statements and 16
+exact refusals). The invalid-build test independently verifies that the initial
+failed build left an invalid and unready unique index, and that native
+assignment marked it without changing eligibility for replication. The first
+replays identified fixture issues (punctuation in unquoted schema names and a
+setup command issued through `psql -c`). Fixture corrections retained every
+required ID and native assertion. The final SHA still requires full verification.
+
+D9 changes only the original F09 REPLICA IDENTITY evidence cell. Remaining
+runtime usability, broader relation kinds, other table options, dependencies
+and permissions stay in the queue.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

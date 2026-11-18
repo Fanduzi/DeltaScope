@@ -7643,7 +7643,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.replica-identity.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.replica-identity.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#pg-replica-index-eligible, file:testdata/ddl-golden/T37.json#pg-replica-index-binding, file:testdata/ddl-golden/T37.json#pg-replica-index-wrong-owner, file:testdata/ddl-golden/T37.json#pg-replica-index-wrong-kind, file:testdata/ddl-golden/T37.json#pg-replica-index-structure, file:testdata/ddl-golden/T37.json#pg-replica-index-deferred, file:testdata/ddl-golden/T37.json#pg-replica-index-expression, file:testdata/ddl-golden/T37.json#pg-replica-index-partial, file:testdata/ddl-golden/T37.json#pg-replica-index-keys, file:testdata/ddl-golden/T37.json#pg-replica-index-invalid-build, file:testdata/ddl-golden/T37.json#pg-replica-index-freshness, file:testdata/ddl-golden/T37.json#pg-replica-index-scope, file:testdata/ddl-golden/T37.json#pg-replica-index-guard-absent, file:testdata/ddl-golden/T37.json#replica-index-offline, file:testdata/ddl-golden/T37.json#replica-index-disabled, file:testdata/ddl-golden/T37.json#replica-index-other-modes, file:testdata/sql-corpus/postgresql/ddl/findings/replica_identity_index_attachment.expected.yaml#ddl.pg.alter.replica_identity_using_index.valid]
       - subaction_id: SET WITHOUT OIDS dead form
         parser_status: recognized
         audit_status: silent

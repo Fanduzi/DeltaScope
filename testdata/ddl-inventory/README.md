@@ -16,6 +16,14 @@ honestly — not a count of implemented rules.
 | T06-CLOSEOUT.md | Final T06 (#85) technical closeout index (T06技术收口材料齐备): binds every accepted dimension to the traceability rows, the SHA-frozen umbrella evidence, and the owner boundary for deferred dimensions; issue #85 stays open |
 | evidence/ | Per-row offline CLI probe captures (`<row-id>.probes.txt`): recorded `deltascope audit` output for the row's `sql_shape` at every declared version (`=== version <v> (target …)` sections). Regenerate by re-running the probe commands recorded in the file header |
 
+## PostgreSQL replica identity index attachment
+
+D9 attaches exact T37 and corpus evidence to the original `REPLICA IDENTITY`
+cell under `postgresql.alter-table.options`. The PG17 checks cover native
+attachment prerequisites for the verified table scope. Runtime usability
+remains separate, including assignment of an invalid index. The original
+row and child classifications and denominators are preserved.
+
 ## PostgreSQL column identity and existence guards
 
 D8 binds the original ADD COLUMN, ADD COLUMN IF NOT EXISTS, RENAME COLUMN and

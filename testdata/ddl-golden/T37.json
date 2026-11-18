@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-replica-index": {"enable": {"ddl.pg.alter.replica_identity_using_index.valid": {"level": "blocker"}, "ddl.pg.alter.replica_identity_using_index.notice": {"level": "notice"}, "ddl.pg.alter.replica_identity_full.warn": {"level": "warning"}, "ddl.pg.alter.replica_identity_nothing.warn": {"level": "warning"}}},
    "pg-column-identity": {"enable": {"ddl.alter.add_column.exists.forbid": {"level": "blocker"}, "ddl.alter.rename_column.exists.require": {"level": "blocker"}, "ddl.alter.rename_column.target.exists.forbid": {"level": "blocker"}, "ddl.table.exists.alter.require": {"level": "blocker"}, "ddl.pg.alter.add_column.nullable.notice": {"level": "notice"}, "ddl.pg.alter.add_column.non_null_no_default.warn": {"level": "warning"}, "ddl.pg.alter.add_column.non_null_default.rewrite.warn": {"level": "warning"}}},
    "pg-column-format": {"enable": {
     "ddl.pg.alter.column.storage.valid": {"level": "blocker"},
@@ -1874,6 +1875,74 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "replica-index-offline",
+   "dialect": "postgresql",
+   "policy": "pg-replica-index",
+   "sql": "ALTER TABLE app.t REPLICA IDENTITY USING INDEX \" Exact \"",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"}],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","reason_code": "unproven_replica_identity_index","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"],
+    "rule_summary_loaded": 4
+   }
+  },
+  {
+   "id": "replica-index-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.t REPLICA IDENTITY USING INDEX missing",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"]
+   }
+  },
+  {
+   "id": "replica-index-other-modes",
+   "dialect": "postgresql",
+   "policy": "pg-replica-index",
+   "sql": "ALTER TABLE app.t REPLICA IDENTITY DEFAULT;ALTER TABLE app.t REPLICA IDENTITY FULL;ALTER TABLE app.t REPLICA IDENTITY NOTHING",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete","complete","complete"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 1,"rule_id": "ddl.pg.alter.replica_identity_full.warn","level": "warning"},{"index": 2,"rule_id": "ddl.pg.alter.replica_identity_nothing.warn","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"],
+    "rule_summary_loaded": 4
+   }
+  },
   {
    "id": "column-identity-add-offline",
    "dialect": "postgresql",
@@ -3903,6 +3972,634 @@
  ],
  "metadata_cases": [
   {
+   "id": "pg-replica-index-eligible",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-replica-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrid_eligible"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_eligible CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_eligible'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrid_eligible.t REPLICA IDENTITY USING INDEX \" Exact \"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_eligible'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrid_eligible","expect_rc": 0},
+    {"name": "seed catalog and independence controls","sql": "CREATE TABLE pgrid_eligible.control_t(v text); INSERT INTO pgrid_eligible.control_t VALUES('untouched'); CREATE SEQUENCE pgrid_eligible.guard START 7; CREATE TABLE pgrid_eligible.t(id int NOT NULL, payload text); INSERT INTO pgrid_eligible.t VALUES(4,NULL); CREATE UNIQUE INDEX \" Exact \" ON pgrid_eligible.t(id) INCLUDE(payload);","expect_rc": 0},
+    {"name": "record pre-audit catalog","sql": "CREATE TABLE pgrid_eligible.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_eligible'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation IDs, file identities and index flags","sql": "SELECT count(*) FROM ((TABLE pgrid_eligible.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_eligible'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_eligible'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrid_eligible.receipt)) AS deltas","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(v='untouched') FROM pgrid_eligible.control_t","expect": "t"},
+    {"assert": "audit does not issue the sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrid_eligible.guard","expect": "7:false"},
+    {"assert": "key and nullable include are independent","sql": "SELECT id::text||':'||(payload IS NULL)::text FROM pgrid_eligible.t","expect": "4:true"}
+   ],
+   "execute": [
+    {"name": "native attachment","sql": "ALTER TABLE pgrid_eligible.t REPLICA IDENTITY USING INDEX \" Exact \"","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "driver-selected index and actual readiness","sql": "SELECT c.relreplident::text||':'||i.indisreplident::text||':'||i.indisvalid::text||':'||i.indisready::text FROM pg_index i JOIN pg_class c ON i.indrelid=c.oid WHERE i.indexrelid='pgrid_eligible.\" Exact \"'::regclass","expect": "i:true:true:true"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_eligible CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_eligible'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-replica-index-binding",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-replica-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrid_binding"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_binding CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_binding'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrid_binding.a REPLICA IDENTITY USING INDEX missing",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_binding'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrid_binding","expect_rc": 0},
+    {"name": "seed catalog and independence controls","sql": "CREATE TABLE pgrid_binding.control_t(v text); INSERT INTO pgrid_binding.control_t VALUES('untouched'); CREATE SEQUENCE pgrid_binding.guard START 7; CREATE TABLE pgrid_binding.a(id int NOT NULL); CREATE TABLE pgrid_binding.b(id int NOT NULL); CREATE TABLE pgrid_binding.c(id int NOT NULL); CREATE TABLE pgrid_binding.d(id int NOT NULL); CREATE TABLE pgrid_binding.wrong_t(id int NOT NULL); CREATE UNIQUE INDEX wrong_t_ix ON pgrid_binding.wrong_t(id); CREATE VIEW pgrid_binding.not_index AS SELECT id FROM pgrid_binding.c; CREATE UNIQUE INDEX \"MixedCase\" ON pgrid_binding.d(id);","expect_rc": 0},
+    {"name": "record pre-audit catalog","sql": "CREATE TABLE pgrid_binding.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_binding'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","metadata": {"reason_code": "index_absent"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation IDs, file identities and index flags","sql": "SELECT count(*) FROM ((TABLE pgrid_binding.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_binding'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_binding'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrid_binding.receipt)) AS deltas","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(v='untouched') FROM pgrid_binding.control_t","expect": "t"},
+    {"assert": "audit does not issue the sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrid_binding.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42704","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_binding.a REPLICA IDENTITY USING INDEX missing","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42704:"]},
+    {"name": "native refusal 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_binding.b REPLICA IDENTITY USING INDEX wrong_t_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]},
+    {"name": "native refusal 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_binding.c REPLICA IDENTITY USING INDEX not_index","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]},
+    {"name": "native refusal 42704","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_binding.d REPLICA IDENTITY USING INDEX mixedcase","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42704:"]},
+    {"name": "native attachment","sql": "ALTER TABLE pgrid_binding.d REPLICA IDENTITY USING INDEX \"MixedCase\"","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "driver-selected index and actual readiness","sql": "SELECT c.relreplident::text||':'||i.indisreplident::text||':'||i.indisvalid::text||':'||i.indisready::text FROM pg_index i JOIN pg_class c ON i.indrelid=c.oid WHERE i.indexrelid='pgrid_binding.\"MixedCase\"'::regclass","expect": "i:true:true:true"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_binding CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_binding'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-replica-index-structure",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-replica-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrid_structure"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_structure CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_structure'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrid_structure.nonuniq REPLICA IDENTITY USING INDEX nonuniq_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_structure'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrid_structure","expect_rc": 0},
+    {"name": "seed catalog and independence controls","sql": "CREATE TABLE pgrid_structure.control_t(v text); INSERT INTO pgrid_structure.control_t VALUES('untouched'); CREATE SEQUENCE pgrid_structure.guard START 7; CREATE TABLE pgrid_structure.nonuniq(id int NOT NULL); CREATE INDEX nonuniq_ix ON pgrid_structure.nonuniq(id); CREATE TABLE pgrid_structure.deferred(id int NOT NULL, CONSTRAINT deferred_ix UNIQUE(id) DEFERRABLE); CREATE TABLE pgrid_structure.expr(id int NOT NULL); CREATE UNIQUE INDEX expr_ix ON pgrid_structure.expr((id+1)); CREATE TABLE pgrid_structure.partial(id int NOT NULL); CREATE UNIQUE INDEX partial_ix ON pgrid_structure.partial(id) WHERE id>0;","expect_rc": 0},
+    {"name": "record pre-audit catalog","sql": "CREATE TABLE pgrid_structure.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_structure'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","metadata": {"reason_code": "index_not_unique"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation IDs, file identities and index flags","sql": "SELECT count(*) FROM ((TABLE pgrid_structure.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_structure'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_structure'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrid_structure.receipt)) AS deltas","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(v='untouched') FROM pgrid_structure.control_t","expect": "t"},
+    {"assert": "audit does not issue the sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrid_structure.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_structure.nonuniq REPLICA IDENTITY USING INDEX nonuniq_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]},
+    {"name": "native refusal 0A000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_structure.deferred REPLICA IDENTITY USING INDEX deferred_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  0A000:"]},
+    {"name": "native refusal 0A000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_structure.expr REPLICA IDENTITY USING INDEX expr_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  0A000:"]},
+    {"name": "native refusal 0A000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_structure.partial REPLICA IDENTITY USING INDEX partial_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  0A000:"]}
+   ],
+   "structure": [
+    {"assert": "no index assigned after native refusals","sql": "SELECT count(*) FROM pg_class WHERE relnamespace='pgrid_structure'::regnamespace AND relreplident='i'","expect": "0"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_structure CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_structure'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-replica-index-keys",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-replica-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrid_keys"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_keys CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_keys'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrid_keys.nullable REPLICA IDENTITY USING INDEX nullable_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_keys'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrid_keys","expect_rc": 0},
+    {"name": "seed catalog and independence controls","sql": "CREATE TABLE pgrid_keys.control_t(v text); INSERT INTO pgrid_keys.control_t VALUES('untouched'); CREATE SEQUENCE pgrid_keys.guard START 7; CREATE TABLE pgrid_keys.nullable(id int); CREATE UNIQUE INDEX nullable_ix ON pgrid_keys.nullable(id); CREATE TABLE pgrid_keys.nnd(id int); CREATE UNIQUE INDEX nnd_ix ON pgrid_keys.nnd(id) NULLS NOT DISTINCT; CREATE TABLE pgrid_keys.include_t(id int NOT NULL, included text); CREATE UNIQUE INDEX include_ix ON pgrid_keys.include_t(id) INCLUDE(included);","expect_rc": 0},
+    {"name": "record pre-audit catalog","sql": "CREATE TABLE pgrid_keys.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_keys'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","metadata": {"reason_code": "index_key_inapplicable"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation IDs, file identities and index flags","sql": "SELECT count(*) FROM ((TABLE pgrid_keys.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_keys'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_keys'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrid_keys.receipt)) AS deltas","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(v='untouched') FROM pgrid_keys.control_t","expect": "t"},
+    {"assert": "audit does not issue the sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrid_keys.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_keys.nullable REPLICA IDENTITY USING INDEX nullable_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]},
+    {"name": "native refusal 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_keys.nnd REPLICA IDENTITY USING INDEX nnd_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]},
+    {"name": "native attachment","sql": "ALTER TABLE pgrid_keys.include_t REPLICA IDENTITY USING INDEX include_ix","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "driver-selected index and actual readiness","sql": "SELECT c.relreplident::text||':'||i.indisreplident::text||':'||i.indisvalid::text||':'||i.indisready::text FROM pg_index i JOIN pg_class c ON i.indrelid=c.oid WHERE i.indexrelid='pgrid_keys.include_ix'::regclass","expect": "i:true:true:true"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_keys CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_keys'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-replica-index-invalid-build",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-replica-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrid_invalid_build"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_invalid_build CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_invalid_build'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrid_invalid_build.t REPLICA IDENTITY USING INDEX invalid_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_invalid_build'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrid_invalid_build","expect_rc": 0},
+    {"name": "seed catalog and independence controls","sql": "CREATE TABLE pgrid_invalid_build.control_t(v text); INSERT INTO pgrid_invalid_build.control_t VALUES('untouched'); CREATE SEQUENCE pgrid_invalid_build.guard START 7; CREATE TABLE pgrid_invalid_build.t(id int NOT NULL); INSERT INTO pgrid_invalid_build.t VALUES(1),(1);","expect_rc": 0},
+    {"name": "seed failed concurrent unique build","sql": "CREATE UNIQUE INDEX CONCURRENTLY invalid_ix ON pgrid_invalid_build.t(id)","expect_rc": 1,"verify": [{"assert": "failed build leaves the intended invalid unready unique index","sql": "SELECT indisunique::text||':'||indisvalid::text||':'||indisready::text FROM pg_index WHERE indexrelid='pgrid_invalid_build.invalid_ix'::regclass","expect": "true:false:false"}]},
+    {"name": "record pre-audit catalog","sql": "CREATE TABLE pgrid_invalid_build.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_invalid_build'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation IDs, file identities and index flags","sql": "SELECT count(*) FROM ((TABLE pgrid_invalid_build.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_invalid_build'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_invalid_build'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrid_invalid_build.receipt)) AS deltas","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(v='untouched') FROM pgrid_invalid_build.control_t","expect": "t"},
+    {"assert": "audit does not issue the sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrid_invalid_build.guard","expect": "7:false"},
+    {"assert": "ordinary duplicate fixture retained","sql": "SELECT count(*) FROM pgrid_invalid_build.t WHERE id=1","expect": "2"}
+   ],
+   "execute": [
+    {"name": "native attachment","sql": "ALTER TABLE pgrid_invalid_build.t REPLICA IDENTITY USING INDEX invalid_ix","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "driver-selected index and actual readiness","sql": "SELECT c.relreplident::text||':'||i.indisreplident::text||':'||i.indisvalid::text||':'||i.indisready::text FROM pg_index i JOIN pg_class c ON i.indrelid=c.oid WHERE i.indexrelid='pgrid_invalid_build.invalid_ix'::regclass","expect": "i:true:false:false"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_invalid_build CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_invalid_build'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-replica-index-freshness",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-replica-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrid_freshness"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_freshness CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_freshness'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrid_freshness.a ADD COLUMN other int;ALTER TABLE pgrid_freshness.a REPLICA IDENTITY USING INDEX ix_a;ALTER TABLE pgrid_freshness.b REPLICA IDENTITY USING INDEX ix_b;ALTER TABLE pgrid_freshness.b RENAME COLUMN IF EXISTS id TO changed;ALTER TABLE pgrid_freshness.c REPLICA IDENTITY USING INDEX ix_c",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_freshness'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrid_freshness","expect_rc": 0},
+    {"name": "seed catalog and independence controls","sql": "CREATE TABLE pgrid_freshness.control_t(v text); INSERT INTO pgrid_freshness.control_t VALUES('untouched'); CREATE SEQUENCE pgrid_freshness.guard START 7; CREATE TABLE pgrid_freshness.a(id int NOT NULL); CREATE UNIQUE INDEX ix_a ON pgrid_freshness.a(id); CREATE TABLE pgrid_freshness.b(id int NOT NULL); CREATE UNIQUE INDEX ix_b ON pgrid_freshness.b(id); CREATE TABLE pgrid_freshness.c(id int NOT NULL); CREATE UNIQUE INDEX ix_c ON pgrid_freshness.c(id);","expect_rc": 0},
+    {"name": "record pre-audit catalog","sql": "CREATE TABLE pgrid_freshness.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_freshness'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "review",
+    "statements": 4,
+    "findings": 3,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": ["complete","unverified","unverified","unverified"],
+    "statement_indices": [0,1,2,3],
+    "finding_entries": [{"index": 1,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"},{"index": 2,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"},{"index": 3,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"}],
+    "evidence_gaps": 3,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","reason_code": "unproven_replica_identity_index","required_facts": ["target_table.pg_replica_identity_index"]},{"index": 2,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","reason_code": "unproven_replica_identity_index","required_facts": ["target_table.pg_replica_identity_index"]},{"index": 3,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","reason_code": "unproven_replica_identity_index","required_facts": ["target_table.pg_replica_identity_index"]}],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation IDs, file identities and index flags","sql": "SELECT count(*) FROM ((TABLE pgrid_freshness.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_freshness'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_freshness'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrid_freshness.receipt)) AS deltas","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(v='untouched') FROM pgrid_freshness.control_t","expect": "t"},
+    {"assert": "audit does not issue the sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrid_freshness.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attachment","sql": "ALTER TABLE pgrid_freshness.a ADD COLUMN other int","expect_rc": 0},
+    {"name": "native attachment","sql": "ALTER TABLE pgrid_freshness.a REPLICA IDENTITY USING INDEX ix_a","expect_rc": 0},
+    {"name": "native attachment","sql": "ALTER TABLE pgrid_freshness.b REPLICA IDENTITY USING INDEX ix_b","expect_rc": 0},
+    {"name": "native refusal 42601","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_freshness.b RENAME COLUMN IF EXISTS id TO changed","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42601:"]},
+    {"name": "native attachment","sql": "ALTER TABLE pgrid_freshness.c REPLICA IDENTITY USING INDEX ix_c","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "driver-selected index and actual readiness","sql": "SELECT c.relreplident::text||':'||i.indisreplident::text||':'||i.indisvalid::text||':'||i.indisready::text FROM pg_index i JOIN pg_class c ON i.indrelid=c.oid WHERE i.indexrelid='pgrid_freshness.ix_c'::regclass","expect": "i:true:true:true"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_freshness CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_freshness'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-replica-index-scope",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-replica-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrid_scope"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_scope CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_scope'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrid_scope.unlogged_t REPLICA IDENTITY USING INDEX unlogged_ix;ALTER TABLE pgrid_scope.part REPLICA IDENTITY USING INDEX part_ix;ALTER TABLE pgrid_scope.typed REPLICA IDENTITY USING INDEX typed_ix;ALTER TABLE t REPLICA IDENTITY USING INDEX plain_ix;ALTER TABLE pgrid_scope.t REPLICA IDENTITY USING INDEX plain_ix, ADD COLUMN another int;ALTER TABLE IF EXISTS pgrid_scope.missing_table REPLICA IDENTITY USING INDEX missing_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_scope'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrid_scope","expect_rc": 0},
+    {"name": "seed catalog and independence controls","sql": "CREATE TABLE pgrid_scope.control_t(v text); INSERT INTO pgrid_scope.control_t VALUES('untouched'); CREATE SEQUENCE pgrid_scope.guard START 7; CREATE UNLOGGED TABLE pgrid_scope.unlogged_t(id int NOT NULL); CREATE UNIQUE INDEX unlogged_ix ON pgrid_scope.unlogged_t(id); CREATE TABLE pgrid_scope.part(id int NOT NULL) PARTITION BY RANGE(id); CREATE UNIQUE INDEX part_ix ON pgrid_scope.part(id); CREATE TYPE pgrid_scope.row_type AS (id int); CREATE TABLE pgrid_scope.typed OF pgrid_scope.row_type (id WITH OPTIONS NOT NULL); CREATE UNIQUE INDEX typed_ix ON pgrid_scope.typed(id); CREATE TABLE pgrid_scope.t(id int NOT NULL); CREATE UNIQUE INDEX plain_ix ON pgrid_scope.t(id);","expect_rc": 0},
+    {"name": "record pre-audit catalog","sql": "CREATE TABLE pgrid_scope.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_scope'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 6,
+    "findings": 6,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified","unverified","unverified","unverified","unverified","unverified"],
+    "statement_indices": [0,1,2,3,4,5],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"},{"index": 1,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"},{"index": 2,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"},{"index": 3,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"},{"index": 4,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"},{"index": 5,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"}],
+    "evidence_gaps": 6,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","reason_code": "unproven_replica_identity_index","required_facts": ["target_table.pg_replica_identity_index"]},{"index": 1,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","reason_code": "unproven_replica_identity_index","required_facts": ["target_table.pg_replica_identity_index"]},{"index": 2,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","reason_code": "unproven_replica_identity_index","required_facts": ["target_table.pg_replica_identity_index"]},{"index": 3,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","reason_code": "unproven_replica_identity_index","required_facts": ["target_table.pg_replica_identity_index"]},{"index": 4,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","reason_code": "unproven_replica_identity_index","required_facts": ["target_table.pg_replica_identity_index"]},{"index": 5,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","reason_code": "unproven_replica_identity_index","required_facts": ["target_table.pg_replica_identity_index"]}],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation IDs, file identities and index flags","sql": "SELECT count(*) FROM ((TABLE pgrid_scope.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_scope'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_scope'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrid_scope.receipt)) AS deltas","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(v='untouched') FROM pgrid_scope.control_t","expect": "t"},
+    {"assert": "audit does not issue the sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrid_scope.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attachment","sql": "ALTER TABLE pgrid_scope.unlogged_t REPLICA IDENTITY USING INDEX unlogged_ix","expect_rc": 0},
+    {"name": "native attachment","sql": "ALTER TABLE pgrid_scope.part REPLICA IDENTITY USING INDEX part_ix","expect_rc": 0},
+    {"name": "native attachment","sql": "ALTER TABLE pgrid_scope.typed REPLICA IDENTITY USING INDEX typed_ix","expect_rc": 0},
+    {"name": "native attachment","sql": "ALTER TABLE pgrid_scope.t REPLICA IDENTITY USING INDEX plain_ix","expect_rc": 0},
+    {"name": "native attachment","sql": "ALTER TABLE pgrid_scope.t REPLICA IDENTITY USING INDEX plain_ix, ADD COLUMN another int","expect_rc": 0},
+    {"name": "native attachment","sql": "ALTER TABLE IF EXISTS pgrid_scope.missing_table REPLICA IDENTITY USING INDEX missing_ix","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "driver-selected index and actual readiness","sql": "SELECT c.relreplident::text||':'||i.indisreplident::text||':'||i.indisvalid::text||':'||i.indisready::text FROM pg_index i JOIN pg_class c ON i.indrelid=c.oid WHERE i.indexrelid='pgrid_scope.plain_ix'::regclass","expect": "i:true:true:true"},
+    {"assert": "driver-selected index and actual readiness","sql": "SELECT c.relreplident::text||':'||i.indisreplident::text||':'||i.indisvalid::text||':'||i.indisready::text FROM pg_index i JOIN pg_class c ON i.indrelid=c.oid WHERE i.indexrelid='pgrid_scope.typed_ix'::regclass","expect": "i:true:true:true"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_scope CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_scope'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-replica-index-wrong-owner",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-replica-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrid_wrong_owner"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_wrong_owner CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_wrong_owner'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrid_wrong_owner.t REPLICA IDENTITY USING INDEX other_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_wrong_owner'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrid_wrong_owner","expect_rc": 0},
+    {"name": "seed catalog and independence controls","sql": "CREATE TABLE pgrid_wrong_owner.control_t(v text); INSERT INTO pgrid_wrong_owner.control_t VALUES('untouched'); CREATE SEQUENCE pgrid_wrong_owner.guard START 7; CREATE TABLE pgrid_wrong_owner.t(id int NOT NULL); CREATE TABLE pgrid_wrong_owner.u(id int NOT NULL); CREATE UNIQUE INDEX other_ix ON pgrid_wrong_owner.u(id);","expect_rc": 0},
+    {"name": "record pre-audit catalog","sql": "CREATE TABLE pgrid_wrong_owner.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_wrong_owner'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","metadata": {"reason_code": "index_not_on_table"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation IDs, file identities and index flags","sql": "SELECT count(*) FROM ((TABLE pgrid_wrong_owner.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_wrong_owner'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_wrong_owner'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrid_wrong_owner.receipt)) AS deltas","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(v='untouched') FROM pgrid_wrong_owner.control_t","expect": "t"},
+    {"assert": "audit does not issue the sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrid_wrong_owner.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_wrong_owner.t REPLICA IDENTITY USING INDEX other_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves table identity mode","sql": "SELECT relreplident::text FROM pg_class WHERE oid='pgrid_wrong_owner.t'::regclass","expect": "d"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_wrong_owner CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_wrong_owner'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-replica-index-wrong-kind",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-replica-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrid_wrong_kind"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_wrong_kind CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_wrong_kind'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrid_wrong_kind.t REPLICA IDENTITY USING INDEX other",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_wrong_kind'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrid_wrong_kind","expect_rc": 0},
+    {"name": "seed catalog and independence controls","sql": "CREATE TABLE pgrid_wrong_kind.control_t(v text); INSERT INTO pgrid_wrong_kind.control_t VALUES('untouched'); CREATE SEQUENCE pgrid_wrong_kind.guard START 7; CREATE TABLE pgrid_wrong_kind.t(id int NOT NULL); CREATE VIEW pgrid_wrong_kind.other AS SELECT id FROM pgrid_wrong_kind.t;","expect_rc": 0},
+    {"name": "record pre-audit catalog","sql": "CREATE TABLE pgrid_wrong_kind.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_wrong_kind'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","metadata": {"reason_code": "relation_not_index"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation IDs, file identities and index flags","sql": "SELECT count(*) FROM ((TABLE pgrid_wrong_kind.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_wrong_kind'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_wrong_kind'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrid_wrong_kind.receipt)) AS deltas","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(v='untouched') FROM pgrid_wrong_kind.control_t","expect": "t"},
+    {"assert": "audit does not issue the sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrid_wrong_kind.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_wrong_kind.t REPLICA IDENTITY USING INDEX other","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves table identity mode","sql": "SELECT relreplident::text FROM pg_class WHERE oid='pgrid_wrong_kind.t'::regclass","expect": "d"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_wrong_kind CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_wrong_kind'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-replica-index-deferred",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-replica-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrid_deferred"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_deferred CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_deferred'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrid_deferred.t REPLICA IDENTITY USING INDEX deferred_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_deferred'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrid_deferred","expect_rc": 0},
+    {"name": "seed catalog and independence controls","sql": "CREATE TABLE pgrid_deferred.control_t(v text); INSERT INTO pgrid_deferred.control_t VALUES('untouched'); CREATE SEQUENCE pgrid_deferred.guard START 7; CREATE TABLE pgrid_deferred.t(id int NOT NULL, CONSTRAINT deferred_ix UNIQUE(id) DEFERRABLE);","expect_rc": 0},
+    {"name": "record pre-audit catalog","sql": "CREATE TABLE pgrid_deferred.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_deferred'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","metadata": {"reason_code": "index_not_immediate"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation IDs, file identities and index flags","sql": "SELECT count(*) FROM ((TABLE pgrid_deferred.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_deferred'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_deferred'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrid_deferred.receipt)) AS deltas","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(v='untouched') FROM pgrid_deferred.control_t","expect": "t"},
+    {"assert": "audit does not issue the sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrid_deferred.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 0A000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_deferred.t REPLICA IDENTITY USING INDEX deferred_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  0A000:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves table identity mode","sql": "SELECT relreplident::text FROM pg_class WHERE oid='pgrid_deferred.t'::regclass","expect": "d"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_deferred CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_deferred'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-replica-index-expression",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-replica-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrid_expression"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_expression CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_expression'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrid_expression.t REPLICA IDENTITY USING INDEX expression_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_expression'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrid_expression","expect_rc": 0},
+    {"name": "seed catalog and independence controls","sql": "CREATE TABLE pgrid_expression.control_t(v text); INSERT INTO pgrid_expression.control_t VALUES('untouched'); CREATE SEQUENCE pgrid_expression.guard START 7; CREATE TABLE pgrid_expression.t(id int NOT NULL); CREATE UNIQUE INDEX expression_ix ON pgrid_expression.t((id+1));","expect_rc": 0},
+    {"name": "record pre-audit catalog","sql": "CREATE TABLE pgrid_expression.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_expression'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","metadata": {"reason_code": "index_expression"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation IDs, file identities and index flags","sql": "SELECT count(*) FROM ((TABLE pgrid_expression.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_expression'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_expression'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrid_expression.receipt)) AS deltas","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(v='untouched') FROM pgrid_expression.control_t","expect": "t"},
+    {"assert": "audit does not issue the sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrid_expression.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 0A000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_expression.t REPLICA IDENTITY USING INDEX expression_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  0A000:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves table identity mode","sql": "SELECT relreplident::text FROM pg_class WHERE oid='pgrid_expression.t'::regclass","expect": "d"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_expression CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_expression'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-replica-index-partial",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-replica-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrid_partial"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_partial CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_partial'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrid_partial.t REPLICA IDENTITY USING INDEX partial_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_partial'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrid_partial","expect_rc": 0},
+    {"name": "seed catalog and independence controls","sql": "CREATE TABLE pgrid_partial.control_t(v text); INSERT INTO pgrid_partial.control_t VALUES('untouched'); CREATE SEQUENCE pgrid_partial.guard START 7; CREATE TABLE pgrid_partial.t(id int NOT NULL); CREATE UNIQUE INDEX partial_ix ON pgrid_partial.t(id) WHERE id>0;","expect_rc": 0},
+    {"name": "record pre-audit catalog","sql": "CREATE TABLE pgrid_partial.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_partial'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.valid","metadata": {"reason_code": "index_partial"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation IDs, file identities and index flags","sql": "SELECT count(*) FROM ((TABLE pgrid_partial.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_partial'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_partial'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrid_partial.receipt)) AS deltas","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(v='untouched') FROM pgrid_partial.control_t","expect": "t"},
+    {"assert": "audit does not issue the sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrid_partial.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 0A000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrid_partial.t REPLICA IDENTITY USING INDEX partial_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  0A000:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves table identity mode","sql": "SELECT relreplident::text FROM pg_class WHERE oid='pgrid_partial.t'::regclass","expect": "d"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_partial CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_partial'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-replica-index-guard-absent",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-replica-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgrid_guard_absent"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_guard_absent CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_guard_absent'","expect": "0"}}]},
+   "sql": "ALTER TABLE IF EXISTS pgrid_guard_absent.missing REPLICA IDENTITY USING INDEX missing_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_guard_absent'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrid_guard_absent","expect_rc": 0},
+    {"name": "seed catalog and independence controls","sql": "CREATE TABLE pgrid_guard_absent.control_t(v text); INSERT INTO pgrid_guard_absent.control_t VALUES('untouched'); CREATE SEQUENCE pgrid_guard_absent.guard START 7; ","expect_rc": 0},
+    {"name": "record pre-audit catalog","sql": "CREATE TABLE pgrid_guard_absent.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_guard_absent'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.replica_identity_using_index.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGReplicaIdentity","KeyAttributesKnown","CanUniqueKnown","IndexKnown"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation IDs, file identities and index flags","sql": "SELECT count(*) FROM ((TABLE pgrid_guard_absent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_guard_absent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relreplident,i.indisreplident,i.indisvalid,i.indisready FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrid_guard_absent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrid_guard_absent.receipt)) AS deltas","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(v='untouched') FROM pgrid_guard_absent.control_t","expect": "t"},
+    {"assert": "audit does not issue the sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrid_guard_absent.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attachment","sql": "ALTER TABLE IF EXISTS pgrid_guard_absent.missing REPLICA IDENTITY USING INDEX missing_ix","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "guard skipped absent relation","sql": "SELECT to_regclass('pgrid_guard_absent.missing') IS NULL","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrid_guard_absent CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrid_guard_absent'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
    "id": "pg-column-identity-add-duplicates",
    "anchor": "postgres17",
    "dialect": "postgresql",
@@ -5785,6 +6482,22 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.replica-index-offline",
+  "T37.cli.replica-index-disabled",
+  "T37.cli.replica-index-other-modes",
+  "T37.meta.pg-replica-index-eligible",
+  "T37.meta.pg-replica-index-binding",
+  "T37.meta.pg-replica-index-structure",
+  "T37.meta.pg-replica-index-keys",
+  "T37.meta.pg-replica-index-invalid-build",
+  "T37.meta.pg-replica-index-freshness",
+  "T37.meta.pg-replica-index-scope",
+  "T37.meta.pg-replica-index-wrong-owner",
+  "T37.meta.pg-replica-index-wrong-kind",
+  "T37.meta.pg-replica-index-deferred",
+  "T37.meta.pg-replica-index-expression",
+  "T37.meta.pg-replica-index-partial",
+  "T37.meta.pg-replica-index-guard-absent",
   "T37.cli.column-identity-add-offline",
   "T37.cli.column-identity-rename-offline",
   "T37.cli.column-identity-table-guard-offline",
