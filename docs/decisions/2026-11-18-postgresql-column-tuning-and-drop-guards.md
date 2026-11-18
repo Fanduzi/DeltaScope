@@ -3,7 +3,49 @@
 Date: 2026-11-18
 Status: Accepted
 Related milestone: F09 / `milestone/pg-alter-semantics` (D6)
-Related commits: D5 shipped `26dde9ad`; D5 history closeout/research baseline `4eac7c11`; D6 implementation not yet delivered
+Related commits: D5 shipped `26dde9ad`; D5 history closeout/research baseline `4eac7c11`; D6 facts `2299f216`, rules `65387b5f`, canonical/inventory `f97c7398`, underflow correction and shipped code `fa37a41b`
+
+## Delivery record
+
+Bounded D6 code delivered at **`fa37a41b46ffbf280c71114eb85441381c57c85f`**.
+The milestone fast-forwarded local main from
+`26dde9adbec574ddaeae5d01b461d15c7fa2065a` and pushed main normally across that
+same range. At delivery verification, HEAD/main/origin/main and the directly
+observed remote main all equaled fa37. No force-push, tag, release, branch
+removal, issue or PR closure was performed. F09 and the full program stay open.
+
+Final code verification:
+
+- `go build ./...`, `go test ./...`, `CGO_ENABLED=1 go test -tags postgresql ./...`.
+- `make ddl-inventory-gate sql-corpus-gates ddl-coverage-catalog-test`.
+- `golangci-lint run ./...`, `golangci-lint run --build-tags postgresql ./...`.
+- `gofmt -l internal/ cmd/ pkg/` empty; `git diff --check` clean.
+- `python3 scripts/ddl_golden.py run --task all --artifact-dir /tmp/ddl-golden-pg-column-tuning-final-fa37a41b`:
+  **50 tasks, 3468/3468 cases, 61220 assertions**, all per-task artifacts at
+  fa37, every execution count nonzero, no failed assertion/case.
+- `python3 scripts/ddl_golden.py validate --artifact /tmp/ddl-golden-pg-column-tuning-final-fa37a41b/all/artifact.json` passed.
+  T37 is **136/136, 2186 assertions**, 59 new native driver actions (40 successes,
+  19 exact refusals). Merged-root build/tests/contracts/lints/format/validate
+  passed again before the normal push.
+
+Exact-SHA CI, independently checked through run and check APIs:
+[Go/PG/lint 44267963771](https://github.com/Fanduzi/DeltaScope/actions/runs/44267963771)
+and [TLS E2E 44267963701](https://github.com/Fanduzi/DeltaScope/actions/runs/44267963701)
+succeeded; Cloudflare Pages succeeded too. All five checks were completed and
+successful for fa37, with no required job skipped. A separate single-agent
+read-only phase (no delegation) rechecked refs, tracked decision/source,
+artifacts, CI, privacy and scope: zero unresolved P1/P2. The original complete
+user-worktree snapshot and release worktree at c096d7f7 were preserved; owned
+fixtures were cleaned and unrelated h1run20/mac-connector services were not
+stopped or pruned.
+
+Actual scope: `git diff --name-only 26dde9ad...fa37a41b` has **62 paths**.
+The native-evidence task `65387b5f..f97c7398` has seven paths; the corrective
+review task `f97c7398..fa37a41b` has 25. All original 301 row statuses and
+19-family/63-row dimensional denominators remain. Paragraphs below describe
+historical candidate stages, not unfulfilled delivery conditions. This
+historical documentation commit does not claim that the fa37 aggregate or CI
+validated a newer documentation HEAD.
 
 ## Context
 
@@ -209,7 +251,8 @@ bounded evidence, not full execution/dependency/permission certification.
 Layout evidence is copy-only, not a new eligibility validator. All original
 subaction sets, 301 rows, row statuses and 19-family/63-row denominators stay
 unchanged. The matrix is generated from YAML. Final fixed-HEAD all-task gates,
-read-only review, merge/push and exact-SHA CI remain required before delivery.
+read-only review, merge/push and exact-SHA CI were the remaining pre-delivery
+conditions; the fa37 delivery record above supplies their verified outcome.
 
 ### Read-only review correction: native floating underflow
 
@@ -247,7 +290,7 @@ case, profile or native refusal is dropped or weakened; new exact gap and
 catalog/data/file/guard checks supplement them. The inventory's existing mixed
 option cell and source-generated matrix include underflow explicitly without
 changing any row or declared dimension. A new fixed-HEAD aggregate/review and
-the complete merge/push/exact-SHA CI chain are still required.
+the complete merge/push/exact-SHA CI chain were rerun at fa37 as recorded above.
 
 ## Consequences
 

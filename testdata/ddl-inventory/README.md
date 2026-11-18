@@ -95,7 +95,10 @@ revokes global old directories: fresh controls precede it and later gaps stay
 explicit. No sampling/data/expression/permission analysis or sequential engine
 is added. All original subaction sets, 301 row statuses and original program
 denominators remain unchanged; generate `matrix.json` from YAML. This is not
-whole-row/F09 completion or final same-HEAD delivery proof.
+whole-row/F09 completion. The bounded code slice shipped as fa37a41b after
+50 exact-HEAD tasks/3468 cases/61220 assertions, validate and accurate-SHA
+Go/PG/lint/TLS/Pages success; the decision record preserves that historical
+code attribution separately from later documentation HEADs.
 
 ## Row contract
 

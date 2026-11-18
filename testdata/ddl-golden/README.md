@@ -29,7 +29,11 @@ statistics (also for authored -1), not an invented -1 catalog value. Literal
 zero, normal/max/clamp, fractions/duplicates/RESET, quoted/nonfinite/overflow,
 parser, scope and no-immediate-rewrite controls remain distinct. Original
 118 objects/profiles/IDs remain unchanged from the D6 compatibility commit.
-Inventory binds exact cells; final same-HEAD all-task/CI delivery is pending.
+Inventory binds exact cells. Final shipped fa37a41b aggregate is 50 tasks,
+3468/3468 cases, 61220 assertions, validated at
+`/tmp/ddl-golden-pg-column-tuning-final-fa37a41b/all/artifact.json`.
+Accurate-SHA Go/PG/lint/TLS/Pages checks passed; see the decision delivery
+record. Later historical doc commits are not attributed to that code artifact.
 
 The f97 all-task candidate passed 50 tasks/3468 cases/61202 assertions but did
 not ship: review caught Go silently rounding a nonzero Float to zero/subnormal
@@ -37,7 +41,8 @@ where native PG17 strtod refuses ERANGE. The existing opaque-value case now
 pins the correction, exact gaps, real-zero/zero-exponent/small-normal controls
 and native minimum-normal success despite a conservative boundary gap. This
 adds 18 assertions without removing any old check. Old f97 aggregate evidence
-cannot substitute for the corrected HEAD's complete rerun.
+cannot substitute for the corrected fa37 HEAD's complete rerun, which passed
+as recorded above.
 
 ## T37 PostgreSQL existing-column generation contract
 

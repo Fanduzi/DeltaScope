@@ -225,7 +225,7 @@ Cloudflare Pages succeeded for the exact final SHA. Milestone
 `23c9f4f9..26dde9ad` has seven. These are historical delivery facts, not
 same-HEAD proof for a later docs commit. **F09 and the full goal remain open.**
 
-### D6 approved column tuning and DROP guards (not delivered)
+### D6 column tuning and DROP guards (bounded slice delivered)
 
 At D5-history baseline `4eac7c11`, 72 PG17.7 native shapes and 144 real offline/
 metadata-aware CLI calls covered remaining tuning/storage/options/RID/rename/
@@ -278,8 +278,20 @@ normal values. Parser/application/SDK/HTTP/MCP/corpus regression and the same
 136 frozen IDs now pass 2186 focused assertions; 59 native steps include 40
 successes/19 refusals. No existing check/ID/profile is removed, no new blocker
 is added, and no source/HEAD changed during f97 TASK=all. Its artifact remains
-historical; corrected fixed-HEAD all-task/read-only/merge/push/exact CI remain
-pending.
+historical. Corrected final code **fa37a41b46ffbf280c71114eb85441381c57c85f**
+passed all 50 tasks, **3468/3468 cases, 61220 assertions**, with all per-task
+artifacts at fa37, nonzero counts and no failure; validate passed. Final
+artifact: `/tmp/ddl-golden-pg-column-tuning-final-fa37a41b/all/artifact.json`.
+FF-only merged/pushed main from 26dde9ad to fa37; merged-root foundation gates
+and final independent read-only checks passed, zero unresolved P1/P2. Accurate
+SHA CI [Go/PG/lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44267963771),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44267963701) and
+Pages succeeded (all five checks). Main/origin/actual remote all equaled fa37
+at verification; complete original workspace snapshot/release worktree and
+unrelated services were preserved. `26dde9ad...fa37` milestone scope is 62
+paths; `f97c7398..fa37` corrective task is 25, native-evidence task is seven.
+The decision record was required and committed with the bounded implementation;
+this later historical doc HEAD does not inherit fa37's aggregate attribution.
 Other original F09 dimensions continue in the queue, not permanent deferral.
 
 ## Family index
