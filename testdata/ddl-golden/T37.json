@@ -6,6 +6,23 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-column-tuning": {
+    "enable": {
+     "ddl.pg.alter.column.statistics.target.valid": {"level": "blocker"},
+     "ddl.pg.alter.column.statistics.clamp.warn": {"level": "warning"},
+     "ddl.pg.alter.column.options.valid": {"level": "blocker"},
+     "ddl.alter.drop_column.exists.require": {"level": "blocker"},
+     "ddl.pg.alter.drop_column.advisory": {"level": "warning"}
+    }
+   },
+   "pg-column-tuning-advice": {
+    "enable": {
+     "ddl.alter.drop_column.exists.require": {"level": "blocker"},
+     "ddl.pg.alter.drop_column.advisory": {"level": "warning"},
+     "ddl.pg.alter.set_reloptions.warn": {"level": "warning"},
+     "ddl.pg.alter.set_access_method.warn": {"level": "warning"}
+    }
+   },
    "pg-column-generation": {"enable": {
     "ddl.pg.alter.column.generation.transition.valid": {"level": "blocker"},
     "ddl.pg.alter.identity.sequence_options.valid": {"level": "blocker"},
@@ -1843,6 +1860,57 @@
  },
  "cli_cases": [
   {
+   "id": "column-tuning-statistics-offline", "dialect": "postgresql", "policy": "pg-column-tuning",
+   "sql": "ALTER TABLE app.a ALTER COLUMN id SET STATISTICS -2;ALTER TABLE app.b ALTER COLUMN id SET STATISTICS 10001", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 2, "findings": 0, "diagnostics": 0, "unsupported": 0, "rule_summary_loaded": 5, "coverage": "unverified", "statement_coverage": ["unverified", "unverified"], "statement_indices": [0, 1], "finding_entries": [], "evidence_gaps": 3,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "reason_code": "unproven_column_tuning", "required_facts": ["instance.version"]}, {"index": 1, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "reason_code": "unproven_column_tuning", "required_facts": ["instance.version"]}, {"index": 1, "rule_id": "ddl.pg.alter.column.statistics.clamp.warn", "reason_code": "unproven_column_tuning", "required_facts": ["instance.version"]}]}
+  },
+  {
+   "id": "column-tuning-default-offline", "dialect": "postgresql", "policy": "pg-column-tuning",
+   "sql": "ALTER TABLE app.a ALTER COLUMN id SET STATISTICS DEFAULT;ALTER TABLE app.b ALTER COLUMN id SET STATISTICS -1;ALTER TABLE app.c ALTER COLUMN id SET STATISTICS 0", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 3, "findings": 0, "diagnostics": 0, "unsupported": 0, "rule_summary_loaded": 5, "coverage": "unverified", "statement_coverage": ["unverified", "unverified", "unverified"], "statement_indices": [0, 1, 2], "finding_entries": [], "evidence_gaps": 3,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "reason_code": "unproven_column_tuning", "required_facts": ["instance.version"]}, {"index": 1, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "reason_code": "unproven_column_tuning", "required_facts": ["instance.version"]}, {"index": 2, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "reason_code": "unproven_column_tuning", "required_facts": ["instance.version"]}]}
+  },
+  {
+   "id": "column-tuning-options-offline", "dialect": "postgresql", "policy": "pg-column-tuning",
+   "sql": "ALTER TABLE app.a ALTER COLUMN id SET(n_distinct=-1.1);ALTER TABLE app.b ALTER COLUMN id SET(n_distinct=1,n_distinct=2);ALTER TABLE app.c ALTER COLUMN id SET(unknown_option=1)", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 3, "findings": 0, "diagnostics": 0, "unsupported": 0, "rule_summary_loaded": 5, "coverage": "unverified", "statement_indices": [0, 1, 2], "finding_entries": [], "evidence_gaps": 3,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column.options.valid", "reason_code": "unproven_column_tuning", "required_facts": ["instance.version"]}, {"index": 1, "rule_id": "ddl.pg.alter.column.options.valid", "reason_code": "unproven_column_tuning", "required_facts": ["instance.version"]}, {"index": 2, "rule_id": "ddl.pg.alter.column.options.valid", "reason_code": "unproven_column_tuning", "required_facts": ["instance.version"]}]}
+  },
+  {
+   "id": "column-tuning-reset-offline", "dialect": "postgresql", "policy": "pg-column-tuning",
+   "sql": "ALTER TABLE app.a ALTER COLUMN id RESET(unknown_option);ALTER TABLE app.b ALTER COLUMN id RESET(n_distinct,n_distinct)", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 2, "findings": 0, "diagnostics": 0, "unsupported": 0, "rule_summary_loaded": 5, "coverage": "unverified", "statement_indices": [0, 1], "finding_entries": [], "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column.options.valid", "reason_code": "unproven_column_tuning", "required_facts": ["instance.version"]}, {"index": 1, "rule_id": "ddl.pg.alter.column.options.valid", "reason_code": "unproven_column_tuning", "required_facts": ["instance.version"]}]}
+  },
+  {
+   "id": "column-tuning-drop-guard-offline", "dialect": "postgresql", "policy": "pg-column-tuning", "sql": "ALTER TABLE app.t DROP COLUMN IF EXISTS ghost", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "rule_summary_loaded": 5, "coverage": "unverified", "statement_indices": [0], "evidence_gaps": 1,
+    "finding_entries": [{"rule_id": "ddl.pg.alter.drop_column.advisory", "level": "warning"}], "evidence_gap_entries": [{"rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["instance.version"]}]}
+  },
+  {
+   "id": "column-tuning-drop-cascade-offline", "dialect": "postgresql", "policy": "pg-column-tuning", "sql": "ALTER TABLE app.t DROP COLUMN c CASCADE", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "rule_summary_loaded": 5, "coverage": "unverified", "statement_indices": [0], "evidence_gaps": 1,
+    "finding_entries": [{"rule_id": "ddl.pg.alter.drop_column.advisory", "level": "warning"}], "evidence_gap_entries": [{"rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["instance.version"]}]}
+  },
+  {
+   "id": "column-tuning-disabled", "dialect": "postgresql", "policy": "all-rules-disabled", "sql": "ALTER TABLE app.a ALTER COLUMN id SET STATISTICS -2;ALTER TABLE app.b ALTER COLUMN id SET(n_distinct=-1.1);ALTER TABLE app.c DROP COLUMN ghost", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 3, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "finding_entries": [], "serialized_not_contains": ["rule_summary"]}
+  },
+  {
+   "id": "column-tuning-mysql", "dialect": "mysql", "policy": "pg-column-tuning", "sql": "ALTER TABLE app.t MODIFY COLUMN id int", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "rule_summary_loaded": 5, "rule_summary_applicable": 0, "coverage": "complete", "evidence_gaps": 0, "finding_entries": []}
+  },
+  {
+   "id": "column-tuning-tidb", "dialect": "tidb", "policy": "pg-column-tuning", "sql": "ALTER TABLE app.t MODIFY COLUMN id int", "args": ["--fail-on", "none"],
+   "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "rule_summary_loaded": 5, "rule_summary_applicable": 0, "coverage": "complete", "evidence_gaps": 0, "finding_entries": []}
+  },
+  {
+   "id": "column-tuning-parser-retention", "dialect": "postgresql", "policy": "pg-column-tuning", "sql": "ALTER TABLE app.t ALTER COLUMN id SET STATISTICS 10001;ALTER TABLE app.t ALTER CONSTRAINT ck NOT ENFORCED", "args": ["--fail-on", "none"],
+   "expect": {"exit": 2, "verdict": "review", "statements": 1, "findings": 0, "diagnostics": 1, "unsupported": 0, "rule_summary_loaded": 5, "coverage": "incomplete", "statement_coverage": ["unverified"], "finding_entries": [], "evidence_gaps": 2,
+    "evidence_gap_entries": [{"rule_id": "ddl.pg.alter.column.statistics.target.valid", "reason_code": "unproven_column_tuning", "required_facts": ["instance.version"]}, {"rule_id": "ddl.pg.alter.column.statistics.clamp.warn", "reason_code": "unproven_column_tuning", "required_facts": ["instance.version"]}]}
+  },
+  {
    "id": "column-generation-target-offline", "dialect": "postgresql", "policy": "pg-column-generation", "notes": "ADD IDENTITY: no observed PG17/catalog proof is not a target-legality success",
    "sql": "ALTER TABLE app.t ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY", "args": ["--fail-on", "none"],
    "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "evidence_gaps": 2,
@@ -3642,6 +3710,287 @@
  ],
  "metadata_cases": [
   {
+   "id": "pg-column-tuning-scope", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-column-tuning",
+   "notes": "Inheritance parent/child, partition root/member and unlogged tables are measured native controls but remain outside the approved ordinary-table fact stage; gaps are not support",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgtune37_scope"},
+   "fixture": {"cleanup": [{"name": "remove owned scope schema", "fixture_key": "schema", "sql": "DROP SCHEMA pgtune37_scope CASCADE", "verify": {"assert": "scope schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_scope'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgtune37_scope.parent_t ALTER COLUMN id SET STATISTICS 10;ALTER TABLE pgtune37_scope.child_t ALTER COLUMN id SET STATISTICS 10;ALTER TABLE pgtune37_scope.root_t ALTER COLUMN id SET STATISTICS 10;ALTER TABLE pgtune37_scope.part_t ALTER COLUMN id SET STATISTICS 10;ALTER TABLE pgtune37_scope.unlogged_t ALTER COLUMN id SET STATISTICS 10", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove scope schema absent", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "absence before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_scope'", "expect": "0"}]},
+    {"name": "claim scope schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgtune37_scope", "expect_rc": 0},
+    {"name": "seed each out-of-stage table kind", "sql": "CREATE TABLE pgtune37_scope.parent_t(id int);CREATE TABLE pgtune37_scope.child_t() INHERITS(pgtune37_scope.parent_t);CREATE TABLE pgtune37_scope.root_t(id int) PARTITION BY RANGE(id);CREATE TABLE pgtune37_scope.part_t PARTITION OF pgtune37_scope.root_t DEFAULT;CREATE UNLOGGED TABLE pgtune37_scope.unlogged_t(id int);INSERT INTO pgtune37_scope.parent_t VALUES(41);INSERT INTO pgtune37_scope.root_t VALUES(41);INSERT INTO pgtune37_scope.unlogged_t VALUES(41);CREATE SEQUENCE pgtune37_scope.guard START 7", "expect_rc": 0},
+    {"name": "snapshot scope attributes and file identities", "sql": "CREATE TABLE pgtune37_scope.receipt AS SELECT c.oid relid,c.relfilenode fileid,a.attnum,a.attname name,a.attstattarget target,COALESCE(a.attoptions::text,'') opts FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtune37_scope'::regnamespace AND c.relkind IN('r','p') AND c.relname!='receipt' AND a.attnum>0 AND NOT a.attisdropped", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "review", "statements": 5, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "statement_coverage": ["unverified", "unverified", "unverified", "unverified", "unverified"], "statement_indices": [0,1,2,3,4], "rule_summary_loaded": 5, "finding_entries": [], "evidence_gaps": 5,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "reason_code": "unproven_column_tuning", "required_facts": ["target_table.pg_columns"]}, {"index": 1, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "reason_code": "unproven_column_tuning", "required_facts": ["target_table.pg_columns"]}, {"index": 2, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "reason_code": "unproven_column_tuning", "required_facts": ["target_table.pg_columns"]}, {"index": 3, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "reason_code": "unproven_column_tuning", "required_facts": ["target_table.pg_columns"]}, {"index": 4, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "reason_code": "unproven_column_tuning", "required_facts": ["target_table.pg_columns"]}]},
+   "post_verify": [
+    {"assert": "audit never changes out-of-stage attributes or files", "sql": "SELECT count(*) FROM pgtune37_scope.receipt r LEFT JOIN pg_class c ON c.oid=r.relid LEFT JOIN pg_attribute a ON a.attrelid=r.relid AND a.attnum=r.attnum WHERE c.oid IS NULL OR c.relfilenode!=r.fileid OR a.attname IS DISTINCT FROM r.name OR a.attstattarget IS DISTINCT FROM r.target OR COALESCE(a.attoptions::text,'')!=r.opts", "expect": "0"},
+    {"assert": "audit preserves out-of-stage data", "sql": "SELECT (SELECT count(*) FROM ONLY pgtune37_scope.parent_t WHERE id=41)+(SELECT count(*) FROM pgtune37_scope.root_t WHERE id=41)+(SELECT count(*) FROM pgtune37_scope.unlogged_t WHERE id=41)", "expect": "3"},
+    {"assert": "audit never advances scope guard", "sql": "SELECT last_value::text||':'||is_called::text FROM pgtune37_scope.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native inheritance-parent statistics control", "sql": "ALTER TABLE pgtune37_scope.parent_t ALTER COLUMN id SET STATISTICS 10", "expect_rc": 0},
+    {"name": "native inheritance-child statistics control", "sql": "ALTER TABLE pgtune37_scope.child_t ALTER COLUMN id SET STATISTICS 10", "expect_rc": 0},
+    {"name": "native partition-root statistics control", "sql": "ALTER TABLE pgtune37_scope.root_t ALTER COLUMN id SET STATISTICS 10", "expect_rc": 0},
+    {"name": "native partition-member statistics control", "sql": "ALTER TABLE pgtune37_scope.part_t ALTER COLUMN id SET STATISTICS 10", "expect_rc": 0},
+    {"name": "native unlogged statistics control", "sql": "ALTER TABLE pgtune37_scope.unlogged_t ALTER COLUMN id SET STATISTICS 10", "expect_rc": 0}
+   ],
+   "structure": [{"assert": "only native controls set out-of-stage targets", "sql": "SELECT count(*) FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid WHERE c.relnamespace='pgtune37_scope'::regnamespace AND a.attname='id' AND a.attstattarget=10", "expect": "5"}],
+   "teardown": [{"name": "drop owned scope schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgtune37_scope CASCADE", "expect_rc": 0, "verify": [{"assert": "scope schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_scope'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-column-tuning-no-rewrite-advice", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-column-tuning-advice",
+   "notes": "No new predicate: fillfactor SET, same heap method and partition-root method settings retain conditional warnings, independently prove no immediate file rewrite and no audit execution",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgtune37_layout"},
+   "fixture": {"cleanup": [{"name": "remove owned layout schema", "fixture_key": "schema", "sql": "DROP SCHEMA pgtune37_layout CASCADE", "verify": {"assert": "layout schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_layout'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgtune37_layout.empty_t DROP COLUMN IF EXISTS ghost;ALTER TABLE pgtune37_layout.fill_t SET(fillfactor=70);ALTER TABLE pgtune37_layout.heap_t SET ACCESS METHOD heap;ALTER TABLE pgtune37_layout.root_t SET ACCESS METHOD heap", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove layout schema absent", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "absence before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_layout'", "expect": "0"}]},
+    {"name": "claim layout schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgtune37_layout", "expect_rc": 0},
+    {"name": "seed heap and partition physical controls", "sql": "CREATE TABLE pgtune37_layout.fill_t(id int,payload text);CREATE TABLE pgtune37_layout.heap_t(id int);CREATE TABLE pgtune37_layout.root_t(id int) PARTITION BY RANGE(id);CREATE TABLE pgtune37_layout.part_t PARTITION OF pgtune37_layout.root_t DEFAULT;INSERT INTO pgtune37_layout.fill_t VALUES(41,'unchanged-payload');INSERT INTO pgtune37_layout.heap_t VALUES(41);INSERT INTO pgtune37_layout.root_t VALUES(41);CREATE TABLE pgtune37_layout.empty_t();INSERT INTO pgtune37_layout.empty_t DEFAULT VALUES;CREATE SEQUENCE pgtune37_layout.guard START 7", "expect_rc": 0},
+    {"name": "snapshot reloptions, methods and physical file identities", "sql": "CREATE TABLE pgtune37_layout.receipt AS SELECT c.oid relid,c.relfilenode fileid,c.relam am,COALESCE(c.reloptions::text,'') opts FROM pg_class c WHERE c.relnamespace='pgtune37_layout'::regnamespace AND c.relkind IN('r','p') AND c.relname!='receipt'", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "review", "statements": 4, "findings": 3, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "rule_summary_loaded": 4, "statement_indices": [0,1,2,3],
+    "finding_entries": [{"index": 1, "rule_id": "ddl.pg.alter.set_reloptions.warn", "level": "warning"}, {"index": 2, "rule_id": "ddl.pg.alter.set_access_method.warn", "level": "warning"}, {"index": 3, "rule_id": "ddl.pg.alter.set_access_method.warn", "level": "warning"}],
+    "serialized_not_contains": ["table will be rewritten", "Some options require a table rewrite (e.g. fillfactor)", "data loss or corruption"]},
+   "post_verify": [
+    {"assert": "audit changes no layout, method or file identity", "sql": "SELECT count(*) FROM pgtune37_layout.receipt r LEFT JOIN pg_class c ON c.oid=r.relid WHERE c.oid IS NULL OR c.relfilenode!=r.fileid OR c.relam!=r.am OR COALESCE(c.reloptions::text,'')!=r.opts", "expect": "0"},
+    {"assert": "audit preserves all physical-control data", "sql": "SELECT (SELECT count(*) FROM pgtune37_layout.fill_t WHERE id=41 AND payload='unchanged-payload')+(SELECT count(*) FROM pgtune37_layout.heap_t WHERE id=41)+(SELECT count(*) FROM pgtune37_layout.root_t WHERE id=41)", "expect": "3"},
+    {"assert": "audit never advances layout guard", "sql": "SELECT last_value::text||':'||is_called::text FROM pgtune37_layout.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native fresh known-empty guarded DROP is no-op", "sql": "ALTER TABLE pgtune37_layout.empty_t DROP COLUMN IF EXISTS ghost", "expect_rc": 0, "stderr_contains": ["skipping"]},
+    {"name": "native SET fillfactor does not rewrite now", "sql": "ALTER TABLE pgtune37_layout.fill_t SET(fillfactor=70)", "expect_rc": 0},
+    {"name": "native selecting current heap method is no-op", "sql": "ALTER TABLE pgtune37_layout.heap_t SET ACCESS METHOD heap", "expect_rc": 0},
+    {"name": "native partition-root method setting does not rewrite members", "sql": "ALTER TABLE pgtune37_layout.root_t SET ACCESS METHOD heap", "expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "fresh known-empty guarded no-op keeps its row", "sql": "SELECT count(*) FROM pgtune37_layout.empty_t", "expect": "1"},
+    {"assert": "native layout controls preserve all physical file identities", "sql": "SELECT count(*) FROM pgtune37_layout.receipt r JOIN pg_class c ON c.oid=r.relid WHERE c.relfilenode!=r.fileid", "expect": "0"},
+    {"assert": "only native driver installs fillfactor", "sql": "SELECT reloptions::text FROM pg_class WHERE oid='pgtune37_layout.fill_t'::regclass", "expect": "{fillfactor=70}"},
+    {"assert": "heap and root now explicitly name heap access method", "sql": "SELECT count(*) FROM pg_class c JOIN pg_am a ON a.oid=c.relam WHERE c.relnamespace='pgtune37_layout'::regnamespace AND c.relname IN('heap_t','root_t') AND a.amname='heap'", "expect": "2"},
+    {"assert": "native controls preserve row payloads", "sql": "SELECT (SELECT count(*) FROM pgtune37_layout.fill_t WHERE id=41 AND payload='unchanged-payload')+(SELECT count(*) FROM pgtune37_layout.heap_t WHERE id=41)+(SELECT count(*) FROM pgtune37_layout.root_t WHERE id=41)", "expect": "3"}
+   ],
+   "teardown": [{"name": "drop owned layout schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgtune37_layout CASCADE", "expect_rc": 0, "verify": [{"assert": "layout schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_layout'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-column-tuning-unknown-values", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-column-tuning",
+   "notes": "Quoted numeric succeeds natively while NaN/Infinity/overflow/unknown SET refuse; all opaque values remain gaps, not guessed blockers. Int32 grammar overflow remains parser-error, not a synthesized statistic value",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgtune37_opaque"},
+   "fixture": {"cleanup": [{"name": "remove owned opaque schema", "fixture_key": "schema", "sql": "DROP SCHEMA pgtune37_opaque CASCADE", "verify": {"assert": "opaque schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_opaque'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgtune37_opaque.quoted_t ALTER COLUMN id SET(n_distinct='1');ALTER TABLE pgtune37_opaque.nan_t ALTER COLUMN id SET(n_distinct='NaN');ALTER TABLE pgtune37_opaque.infinity_t ALTER COLUMN id SET(n_distinct='Infinity');ALTER TABLE pgtune37_opaque.overflow_t ALTER COLUMN id SET(n_distinct=1e309);ALTER TABLE pgtune37_opaque.extension_t ALTER COLUMN id SET(unknown_option=1);ALTER TABLE pgtune37_opaque.stat_overflow_t ALTER COLUMN id SET STATISTICS 2147483648", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove opaque schema absent", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "absence before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_opaque'", "expect": "0"}]},
+    {"name": "claim opaque schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgtune37_opaque", "expect_rc": 0},
+    {"name": "seed opaque-value controls", "sql": "CREATE TABLE pgtune37_opaque.quoted_t(id int);CREATE TABLE pgtune37_opaque.nan_t(id int);CREATE TABLE pgtune37_opaque.infinity_t(id int);CREATE TABLE pgtune37_opaque.overflow_t(id int);CREATE TABLE pgtune37_opaque.extension_t(id int);CREATE TABLE pgtune37_opaque.stat_overflow_t(id int);INSERT INTO pgtune37_opaque.quoted_t VALUES(41);INSERT INTO pgtune37_opaque.nan_t VALUES(41);INSERT INTO pgtune37_opaque.infinity_t VALUES(41);INSERT INTO pgtune37_opaque.overflow_t VALUES(41);INSERT INTO pgtune37_opaque.extension_t VALUES(41);INSERT INTO pgtune37_opaque.stat_overflow_t VALUES(41);CREATE SEQUENCE pgtune37_opaque.guard START 7", "expect_rc": 0},
+    {"name": "snapshot opaque attributes and files", "sql": "CREATE TABLE pgtune37_opaque.receipt AS SELECT c.oid relid,c.relfilenode fileid,a.attnum,a.attname name,a.attstattarget target,COALESCE(a.attoptions::text,'') opts FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtune37_opaque'::regnamespace AND c.relkind='r' AND c.relname!='receipt' AND a.attnum>0 AND NOT a.attisdropped", "expect_rc": 0}
+   ],
+   "expect": {"exit": 2, "verdict": "review", "statements": 5, "findings": 0, "diagnostics": 1, "unsupported": 0, "coverage": "incomplete", "statement_coverage": ["unverified", "unverified", "unverified", "unverified", "unverified"], "statement_indices": [0,1,2,3,4], "rule_summary_loaded": 5, "finding_entries": [], "evidence_gaps": 5,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column.options.valid", "reason_code": "unproven_column_tuning", "required_facts": ["column.options"]}, {"index": 1, "rule_id": "ddl.pg.alter.column.options.valid", "reason_code": "unproven_column_tuning", "required_facts": ["column.options"]}, {"index": 2, "rule_id": "ddl.pg.alter.column.options.valid", "reason_code": "unproven_column_tuning", "required_facts": ["column.options"]}, {"index": 3, "rule_id": "ddl.pg.alter.column.options.valid", "reason_code": "unproven_column_tuning", "required_facts": ["column.options"]}, {"index": 4, "rule_id": "ddl.pg.alter.column.options.valid", "reason_code": "unproven_column_tuning", "required_facts": ["column.options"]}], "serialized_not_contains": ["PGColumnTuning", "StatisticsValue", "ValueKind"]},
+   "post_verify": [
+    {"assert": "audit never applies opaque/refused declarations", "sql": "SELECT count(*) FROM pgtune37_opaque.receipt r LEFT JOIN pg_class c ON c.oid=r.relid LEFT JOIN pg_attribute a ON a.attrelid=r.relid AND a.attnum=r.attnum WHERE c.oid IS NULL OR c.relfilenode!=r.fileid OR a.attname IS DISTINCT FROM r.name OR a.attstattarget IS DISTINCT FROM r.target OR COALESCE(a.attoptions::text,'')!=r.opts", "expect": "0"},
+    {"assert": "audit preserves all opaque fixture data", "sql": "SELECT (SELECT count(*) FROM pgtune37_opaque.quoted_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opaque.nan_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opaque.infinity_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opaque.overflow_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opaque.extension_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opaque.stat_overflow_t WHERE id=41)", "expect": "6"},
+    {"assert": "audit never advances opaque guard", "sql": "SELECT last_value::text||':'||is_called::text FROM pgtune37_opaque.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native quoted numeric can succeed despite conservative gap", "sql": "ALTER TABLE pgtune37_opaque.quoted_t ALTER COLUMN id SET(n_distinct='1')", "expect_rc": 0},
+    {"name": "native quoted NaN refusal is not a guessed product verdict", "sql": "ALTER TABLE pgtune37_opaque.nan_t ALTER COLUMN id SET(n_distinct='NaN')", "via": "stdin", "expect_rc": 3, "stderr_contains": ["22023"]},
+    {"name": "native quoted infinity refusal", "sql": "ALTER TABLE pgtune37_opaque.infinity_t ALTER COLUMN id SET(n_distinct='Infinity')", "via": "stdin", "expect_rc": 3, "stderr_contains": ["22023"]},
+    {"name": "native overflowing numeric literal refusal", "sql": "ALTER TABLE pgtune37_opaque.overflow_t ALTER COLUMN id SET(n_distinct=1e309)", "via": "stdin", "expect_rc": 3, "stderr_contains": ["22023"]},
+    {"name": "native unknown key refusal on the unextended anchor", "sql": "ALTER TABLE pgtune37_opaque.extension_t ALTER COLUMN id SET(unknown_option=1)", "via": "stdin", "expect_rc": 3, "stderr_contains": ["22023"]},
+    {"name": "native statistics int32 grammar overflow", "sql": "ALTER TABLE pgtune37_opaque.stat_overflow_t ALTER COLUMN id SET STATISTICS 2147483648", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42601"]}
+   ],
+   "structure": [
+    {"assert": "only native quoted numeric installs an option", "sql": "SELECT attoptions::text FROM pg_attribute WHERE attrelid='pgtune37_opaque.quoted_t'::regclass AND attname='id'", "expect": "{n_distinct=1}"},
+    {"assert": "all native refusals preserve initial option/statistics state", "sql": "SELECT count(*) FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid WHERE c.relnamespace='pgtune37_opaque'::regnamespace AND c.relname IN('nan_t','infinity_t','overflow_t','extension_t','stat_overflow_t') AND a.attname='id' AND a.attoptions IS NULL AND a.attstattarget IS NULL", "expect": "5"}
+   ],
+   "teardown": [{"name": "drop owned opaque schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgtune37_opaque CASCADE", "expect_rc": 0, "verify": [{"assert": "opaque schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_opaque'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-column-tuning-prior-ddl", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-column-tuning",
+   "notes": "Unapplied DROP/ADD and same-statement statistics/options: withdraw old target proof rather than guessing absence, no-op or prospective attributes",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgtune37_prior"},
+   "fixture": {"cleanup": [{"name": "remove owned prefix schema", "fixture_key": "schema", "sql": "DROP SCHEMA pgtune37_prior CASCADE", "verify": {"assert": "prefix schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_prior'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgtune37_prior.drop_t DROP COLUMN id;ALTER TABLE pgtune37_prior.drop_t DROP COLUMN IF EXISTS id;ALTER TABLE pgtune37_prior.add_t ADD COLUMN n int;ALTER TABLE pgtune37_prior.add_t ALTER COLUMN n SET STATISTICS 10;ALTER TABLE pgtune37_prior.multi_t ALTER COLUMN id SET STATISTICS 10,ALTER COLUMN id SET(n_distinct=0.5)", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove prefix schema absent", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "absence before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_prior'", "expect": "0"}]},
+    {"name": "claim prefix schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgtune37_prior", "expect_rc": 0},
+    {"name": "seed original columns and prefix data", "sql": "CREATE TABLE pgtune37_prior.drop_t(id int);CREATE TABLE pgtune37_prior.add_t(id int);CREATE TABLE pgtune37_prior.multi_t(id int);INSERT INTO pgtune37_prior.drop_t VALUES(41);INSERT INTO pgtune37_prior.add_t VALUES(41);INSERT INTO pgtune37_prior.multi_t VALUES(41);CREATE SEQUENCE pgtune37_prior.guard START 7", "expect_rc": 0},
+    {"name": "snapshot prefix attributes and files", "sql": "CREATE TABLE pgtune37_prior.receipt AS SELECT c.oid relid,c.relfilenode fileid,a.attnum,a.attname name,a.attstattarget target,COALESCE(a.attoptions::text,'') opts FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtune37_prior'::regnamespace AND c.relkind='r' AND c.relname!='receipt' AND a.attnum>0 AND NOT a.attisdropped", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "review", "statements": 5, "findings": 2, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "statement_coverage": ["complete", "unverified", "complete", "unverified", "unverified"], "statement_indices": [0,1,2,3,4], "rule_summary_loaded": 5, "evidence_gaps": 4,
+    "finding_entries": [{"index": 0, "rule_id": "ddl.pg.alter.drop_column.advisory", "level": "warning"}, {"index": 1, "rule_id": "ddl.pg.alter.drop_column.advisory", "level": "warning"}],
+    "evidence_gap_entries": [{"index": 1, "rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["target_table.pg_columns"]}, {"index": 3, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "reason_code": "unproven_column_tuning", "required_facts": ["target_table.pg_columns"]}, {"index": 4, "rule_id": "ddl.pg.alter.column.options.valid", "reason_code": "unproven_column_tuning", "required_facts": ["target_table.pg_columns"]}, {"index": 4, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "reason_code": "unproven_column_tuning", "required_facts": ["target_table.pg_columns"]}]},
+   "post_verify": [
+    {"assert": "audit does not apply any prefix or ALTER sibling", "sql": "SELECT count(*) FROM pgtune37_prior.receipt r LEFT JOIN pg_class c ON c.oid=r.relid LEFT JOIN pg_attribute a ON a.attrelid=r.relid AND a.attnum=r.attnum WHERE c.oid IS NULL OR c.relfilenode!=r.fileid OR a.attname IS DISTINCT FROM r.name OR a.attstattarget IS DISTINCT FROM r.target OR COALESCE(a.attoptions::text,'')!=r.opts", "expect": "0"},
+    {"assert": "audit never adds prospective column n", "sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgtune37_prior.add_t'::regclass AND attname='n' AND NOT attisdropped", "expect": "0"},
+    {"assert": "audit keeps every original prefix row", "sql": "SELECT (SELECT count(*) FROM pgtune37_prior.drop_t WHERE id=41)+(SELECT count(*) FROM pgtune37_prior.add_t WHERE id=41)+(SELECT count(*) FROM pgtune37_prior.multi_t WHERE id=41)", "expect": "3"},
+    {"assert": "audit never advances prefix guard", "sql": "SELECT last_value::text||':'||is_called::text FROM pgtune37_prior.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native first DROP applies", "sql": "ALTER TABLE pgtune37_prior.drop_t DROP COLUMN id", "expect_rc": 0},
+    {"name": "native second guarded DROP sees the removed column", "sql": "ALTER TABLE pgtune37_prior.drop_t DROP COLUMN IF EXISTS id", "expect_rc": 0, "stderr_contains": ["skipping"]},
+    {"name": "native ADD creates prospective column", "sql": "ALTER TABLE pgtune37_prior.add_t ADD COLUMN n int", "expect_rc": 0},
+    {"name": "native statistics command sees preceding ADD", "sql": "ALTER TABLE pgtune37_prior.add_t ALTER COLUMN n SET STATISTICS 10", "expect_rc": 0},
+    {"name": "native same-statement subcommands both execute", "sql": "ALTER TABLE pgtune37_prior.multi_t ALTER COLUMN id SET STATISTICS 10,ALTER COLUMN id SET(n_distinct=0.5)", "expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "only driver removes original column", "sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgtune37_prior.drop_t'::regclass AND attname='id' AND NOT attisdropped", "expect": "0"},
+    {"assert": "only driver adds and tunes prospective column", "sql": "SELECT attstattarget FROM pg_attribute WHERE attrelid='pgtune37_prior.add_t'::regclass AND attname='n' AND NOT attisdropped", "expect": "10"},
+    {"assert": "only native sibling commands change both attributes", "sql": "SELECT attstattarget::text||':'||attoptions::text FROM pg_attribute WHERE attrelid='pgtune37_prior.multi_t'::regclass AND attname='id'", "expect": "10:{n_distinct=0.5}"}
+   ],
+   "teardown": [{"name": "drop owned prefix schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgtune37_prior CASCADE", "expect_rc": 0, "verify": [{"assert": "prefix schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_prior'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-column-tuning-prior-parser", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-column-tuning",
+   "notes": "PG18 NOT ENFORCED stays parser-error; subsequent supported clamping statement retains exact stale-target gaps and incomplete/exit2, never lexical recovery",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgtune37_parse"},
+   "fixture": {"cleanup": [{"name": "remove owned parser schema", "fixture_key": "schema", "sql": "DROP SCHEMA pgtune37_parse CASCADE", "verify": {"assert": "parser schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_parse'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgtune37_parse.t ALTER CONSTRAINT ck NOT ENFORCED;ALTER TABLE pgtune37_parse.t ALTER COLUMN id SET STATISTICS 10001", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove parser schema absent", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "absence before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_parse'", "expect": "0"}]},
+    {"name": "claim parser schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgtune37_parse", "expect_rc": 0},
+    {"name": "seed supported parser-failure sibling", "sql": "CREATE TABLE pgtune37_parse.t(id int CONSTRAINT ck CHECK(id>0));INSERT INTO pgtune37_parse.t VALUES(41);CREATE SEQUENCE pgtune37_parse.guard START 7", "expect_rc": 0},
+    {"name": "snapshot parser-sibling file identity", "sql": "CREATE TABLE pgtune37_parse.receipt AS SELECT relfilenode FROM pg_class WHERE oid='pgtune37_parse.t'::regclass", "expect_rc": 0}
+   ],
+   "expect": {"exit": 2, "verdict": "review", "statements": 1, "findings": 0, "diagnostics": 1, "unsupported": 0, "coverage": "incomplete", "statement_coverage": ["unverified"], "rule_summary_loaded": 5, "finding_entries": [], "evidence_gaps": 2,
+    "evidence_gap_entries": [{"rule_id": "ddl.pg.alter.column.statistics.target.valid", "reason_code": "unproven_column_tuning", "required_facts": ["target_table.pg_columns"]}, {"rule_id": "ddl.pg.alter.column.statistics.clamp.warn", "reason_code": "unproven_column_tuning", "required_facts": ["target_table.pg_columns"]}]},
+   "post_verify": [
+    {"assert": "audit preserves native NULL default statistics", "sql": "SELECT (attstattarget IS NULL)::text FROM pg_attribute WHERE attrelid='pgtune37_parse.t'::regclass AND attname='id'", "expect": "true"},
+    {"assert": "audit never rewrites parser-sibling file", "sql": "SELECT (c.relfilenode=r.relfilenode)::text FROM pg_class c CROSS JOIN pgtune37_parse.receipt r WHERE c.oid='pgtune37_parse.t'::regclass", "expect": "true"},
+    {"assert": "audit never changes parser-sibling row", "sql": "SELECT id FROM pgtune37_parse.t", "expect": "41"},
+    {"assert": "audit never advances parser guard", "sql": "SELECT last_value::text||':'||is_called::text FROM pgtune37_parse.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native PG17 rejects PG18 syntax independently", "sql": "ALTER TABLE pgtune37_parse.t ALTER CONSTRAINT ck NOT ENFORCED", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42601"]},
+    {"name": "native supported sibling clamps successfully", "sql": "ALTER TABLE pgtune37_parse.t ALTER COLUMN id SET STATISTICS 10001", "expect_rc": 0, "stderr_contains": ["10000"]}
+   ],
+   "structure": [{"assert": "only native supported sibling changes statistics", "sql": "SELECT attstattarget FROM pg_attribute WHERE attrelid='pgtune37_parse.t'::regclass AND attname='id'", "expect": "10000"}],
+   "teardown": [{"name": "drop owned parser schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgtune37_parse CASCADE", "expect_rc": 0, "verify": [{"assert": "parser schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_parse'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-column-tuning-drop-guards", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-column-tuning",
+   "notes": "Fresh missing lowercase id must not bind quoted ID; following DROP targets retain global-staleness gaps, not simulated outcomes. Independent native controls retain guards/CASCADE/dependency/empty-table receipts; separate statistics/options/layout cases pin fresh no-op/present/empty targets",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgtune37_drop"},
+   "fixture": {"cleanup": [{"name": "remove owned drop schema", "fixture_key": "schema", "sql": "DROP SCHEMA pgtune37_drop CASCADE", "verify": {"assert": "drop schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_drop'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgtune37_drop.missing_t DROP COLUMN id;ALTER TABLE pgtune37_drop.noop_t DROP COLUMN IF EXISTS ghost;ALTER TABLE pgtune37_drop.quoted_t DROP COLUMN IF EXISTS \"ID\";ALTER TABLE pgtune37_drop.lower_t DROP COLUMN id;ALTER TABLE pgtune37_drop.restrict_t DROP COLUMN c;ALTER TABLE pgtune37_drop.cascade_t DROP COLUMN c CASCADE;ALTER TABLE pgtune37_drop.guardcascade_t DROP COLUMN IF EXISTS ghost CASCADE;ALTER TABLE pgtune37_drop.empty_t DROP COLUMN IF EXISTS ghost", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove drop schema absent", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "absence before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_drop'", "expect": "0"}]},
+    {"name": "claim drop schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgtune37_drop", "expect_rc": 0},
+    {"name": "seed exact columns, dependent views and empty table", "sql": "CREATE TABLE pgtune37_drop.noop_t(id int);CREATE TABLE pgtune37_drop.missing_t(\"ID\" int);CREATE TABLE pgtune37_drop.quoted_t(id int,\"ID\" int);CREATE TABLE pgtune37_drop.lower_t(id int,\"ID\" int);CREATE TABLE pgtune37_drop.restrict_t(id int,c int);CREATE TABLE pgtune37_drop.cascade_t(id int,c int);CREATE TABLE pgtune37_drop.guardcascade_t(id int);CREATE TABLE pgtune37_drop.empty_t();INSERT INTO pgtune37_drop.noop_t VALUES(41);INSERT INTO pgtune37_drop.missing_t VALUES(42);INSERT INTO pgtune37_drop.quoted_t VALUES(41,42);INSERT INTO pgtune37_drop.lower_t VALUES(41,42);INSERT INTO pgtune37_drop.restrict_t VALUES(41,101);INSERT INTO pgtune37_drop.cascade_t VALUES(41,101);INSERT INTO pgtune37_drop.guardcascade_t VALUES(41);INSERT INTO pgtune37_drop.empty_t DEFAULT VALUES;CREATE VIEW pgtune37_drop.restrict_v AS SELECT c FROM pgtune37_drop.restrict_t;CREATE VIEW pgtune37_drop.cascade_v AS SELECT c FROM pgtune37_drop.cascade_t;CREATE SEQUENCE pgtune37_drop.guard START 7", "expect_rc": 0},
+    {"name": "snapshot all exact column and file identities", "sql": "CREATE TABLE pgtune37_drop.receipt AS SELECT c.oid relid,c.relfilenode fileid,a.attnum,a.attname name,a.attstattarget target,COALESCE(a.attoptions::text,'') opts FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtune37_drop'::regnamespace AND c.relkind='r' AND c.relname!='receipt' AND a.attnum>0 AND NOT a.attisdropped", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "reject", "statements": 8, "findings": 9, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "statement_coverage": ["complete", "unverified", "unverified", "unverified", "unverified", "unverified", "unverified", "unverified"], "evidence_gaps": 7, "rule_summary_loaded": 5, "statement_indices": [0,1,2,3,4,5,6,7],
+    "finding_entries": [{"index": 0, "rule_id": "ddl.alter.drop_column.exists.require", "level": "blocker"}, {"index": 0, "rule_id": "ddl.pg.alter.drop_column.advisory", "level": "warning"}, {"index": 1, "rule_id": "ddl.pg.alter.drop_column.advisory", "level": "warning"}, {"index": 2, "rule_id": "ddl.pg.alter.drop_column.advisory", "level": "warning"}, {"index": 3, "rule_id": "ddl.pg.alter.drop_column.advisory", "level": "warning"}, {"index": 4, "rule_id": "ddl.pg.alter.drop_column.advisory", "level": "warning"}, {"index": 5, "rule_id": "ddl.pg.alter.drop_column.advisory", "level": "warning"}, {"index": 6, "rule_id": "ddl.pg.alter.drop_column.advisory", "level": "warning"}, {"index": 7, "rule_id": "ddl.pg.alter.drop_column.advisory", "level": "warning"}],
+    "evidence_gap_entries": [{"index": 1, "rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["target_table.pg_columns"]}, {"index": 2, "rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["target_table.pg_columns"]}, {"index": 3, "rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["target_table.pg_columns"]}, {"index": 4, "rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["target_table.pg_columns"]}, {"index": 5, "rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["target_table.pg_columns"]}, {"index": 6, "rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["target_table.pg_columns"]}, {"index": 7, "rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["target_table.pg_columns"]}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.alter.drop_column.exists.require", "metadata": {"table": "missing_t", "name": "id", "exists": false}}, {"index": 2, "rule_id": "ddl.pg.alter.drop_column.advisory", "metadata": {"target": "ID"}}, {"index": 3, "rule_id": "ddl.pg.alter.drop_column.advisory", "metadata": {"target": "id"}}]},
+   "post_verify": [
+    {"assert": "audit retains all exact attributes and file identities", "sql": "SELECT count(*) FROM pgtune37_drop.receipt r LEFT JOIN pg_class c ON c.oid=r.relid LEFT JOIN pg_attribute a ON a.attrelid=r.relid AND a.attnum=r.attnum WHERE c.oid IS NULL OR c.relfilenode!=r.fileid OR a.attname IS DISTINCT FROM r.name OR a.attstattarget IS DISTINCT FROM r.target OR COALESCE(a.attoptions::text,'')!=r.opts", "expect": "0"},
+    {"assert": "audit never cascades dependent views", "sql": "SELECT count(*) FROM pg_class WHERE relnamespace='pgtune37_drop'::regnamespace AND relname IN('restrict_v','cascade_v')", "expect": "2"},
+    {"assert": "audit preserves data, including case-distinct values and empty-table row", "sql": "SELECT (SELECT count(*) FROM pgtune37_drop.noop_t WHERE id=41)+(SELECT count(*) FROM pgtune37_drop.missing_t WHERE \"ID\"=42)+(SELECT count(*) FROM pgtune37_drop.quoted_t WHERE id=41 AND \"ID\"=42)+(SELECT count(*) FROM pgtune37_drop.lower_t WHERE id=41 AND \"ID\"=42)+(SELECT count(*) FROM pgtune37_drop.restrict_t WHERE id=41 AND c=101)+(SELECT count(*) FROM pgtune37_drop.cascade_t WHERE id=41 AND c=101)+(SELECT count(*) FROM pgtune37_drop.guardcascade_t WHERE id=41)+(SELECT count(*) FROM pgtune37_drop.empty_t)", "expect": "8"},
+    {"assert": "audit never advances drop guard", "sql": "SELECT last_value::text||':'||is_called::text FROM pgtune37_drop.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native lowercase missing target does not bind quoted uppercase", "sql": "ALTER TABLE pgtune37_drop.missing_t DROP COLUMN id", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42703"]},
+    {"name": "native missing guarded DROP no-op", "sql": "ALTER TABLE pgtune37_drop.noop_t DROP COLUMN IF EXISTS ghost", "expect_rc": 0, "stderr_contains": ["skipping"]},
+    {"name": "native quoted target removes only uppercase column", "sql": "ALTER TABLE pgtune37_drop.quoted_t DROP COLUMN IF EXISTS \"ID\"", "expect_rc": 0},
+    {"name": "native lowercase target removes only lowercase column", "sql": "ALTER TABLE pgtune37_drop.lower_t DROP COLUMN id", "expect_rc": 0},
+    {"name": "native dependency refusal remains a separate boundary", "sql": "ALTER TABLE pgtune37_drop.restrict_t DROP COLUMN c", "via": "stdin", "expect_rc": 3, "stderr_contains": ["2BP01"]},
+    {"name": "native CASCADE removes the dependent view", "sql": "ALTER TABLE pgtune37_drop.cascade_t DROP COLUMN c CASCADE", "expect_rc": 0},
+    {"name": "native guarded CASCADE absence is still no-op", "sql": "ALTER TABLE pgtune37_drop.guardcascade_t DROP COLUMN IF EXISTS ghost CASCADE", "expect_rc": 0, "stderr_contains": ["skipping"]},
+    {"name": "native known-empty table guard no-op", "sql": "ALTER TABLE pgtune37_drop.empty_t DROP COLUMN IF EXISTS ghost", "expect_rc": 0, "stderr_contains": ["skipping"]}
+   ],
+   "structure": [
+    {"assert": "native quoted DROP retains lowercase value", "sql": "SELECT id FROM pgtune37_drop.quoted_t", "expect": "41"},
+    {"assert": "native lowercase DROP retains quoted uppercase value", "sql": "SELECT \"ID\" FROM pgtune37_drop.lower_t", "expect": "42"},
+    {"assert": "only native CASCADE removes its view", "sql": "SELECT (to_regclass('pgtune37_drop.restrict_v') IS NOT NULL)::text||':'||(to_regclass('pgtune37_drop.cascade_v') IS NULL)::text", "expect": "true:true"},
+    {"assert": "native RESTRICT refusal keeps column data", "sql": "SELECT c FROM pgtune37_drop.restrict_t", "expect": "101"},
+    {"assert": "known-empty guarded no-op preserves its row", "sql": "SELECT count(*) FROM pgtune37_drop.empty_t", "expect": "1"}
+   ],
+   "teardown": [{"name": "drop owned guard schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgtune37_drop CASCADE", "expect_rc": 0, "verify": [{"assert": "drop schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_drop'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-column-tuning-options", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-column-tuning",
+   "notes": "Builtin option lower/finite upper/fraction/duplicate/inherited checks and SET versus RESET; duplicate RESET and unknown RESET are native successes, not last-wins SET validation",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgtune37_opt"},
+   "fixture": {"cleanup": [{"name": "remove owned options schema", "fixture_key": "schema", "sql": "DROP SCHEMA pgtune37_opt CASCADE", "verify": {"assert": "options schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_opt'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgtune37_opt.low_t ALTER COLUMN id SET(n_distinct=-1.1);ALTER TABLE pgtune37_opt.dup_t ALTER COLUMN id SET(n_distinct=1,n_distinct=2);ALTER TABLE pgtune37_opt.lower_t ALTER COLUMN id SET(n_distinct=-1);ALTER TABLE pgtune37_opt.positive_t ALTER COLUMN id SET(n_distinct=12.5);ALTER TABLE pgtune37_opt.negative_t ALTER COLUMN id SET(n_distinct=-0.5);ALTER TABLE pgtune37_opt.max_t ALTER COLUMN id SET(n_distinct=1.7976931348623157e308);ALTER TABLE pgtune37_opt.inherited_t ALTER COLUMN id SET(n_distinct_inherited=-2);ALTER TABLE pgtune37_opt.reset_unknown_t ALTER COLUMN id RESET(unknown_option);ALTER TABLE pgtune37_opt.reset_repeat_t ALTER COLUMN id RESET(n_distinct,n_distinct);ALTER TABLE pgtune37_opt.missing_set_t ALTER COLUMN ghost SET(n_distinct=0);ALTER TABLE pgtune37_opt.missing_reset_t ALTER COLUMN ghost RESET(unknown_option);ALTER TABLE pgtune37_opt.quoted_t DROP COLUMN IF EXISTS \"ID\"", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove options schema absent", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "absence before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_opt'", "expect": "0"}]},
+    {"name": "claim options schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgtune37_opt", "expect_rc": 0},
+    {"name": "seed independent option targets", "sql": "CREATE TABLE pgtune37_opt.low_t(id int);CREATE TABLE pgtune37_opt.dup_t(id int);CREATE TABLE pgtune37_opt.lower_t(id int);CREATE TABLE pgtune37_opt.positive_t(id int);CREATE TABLE pgtune37_opt.negative_t(id int);CREATE TABLE pgtune37_opt.max_t(id int);CREATE TABLE pgtune37_opt.inherited_t(id int);CREATE TABLE pgtune37_opt.reset_unknown_t(id int);CREATE TABLE pgtune37_opt.reset_repeat_t(id int);CREATE TABLE pgtune37_opt.missing_set_t(id int);CREATE TABLE pgtune37_opt.missing_reset_t(id int);INSERT INTO pgtune37_opt.low_t VALUES(41);INSERT INTO pgtune37_opt.dup_t VALUES(41);INSERT INTO pgtune37_opt.lower_t VALUES(41);INSERT INTO pgtune37_opt.positive_t VALUES(41);INSERT INTO pgtune37_opt.negative_t VALUES(41);INSERT INTO pgtune37_opt.max_t VALUES(41);INSERT INTO pgtune37_opt.inherited_t VALUES(41);INSERT INTO pgtune37_opt.reset_unknown_t VALUES(41);INSERT INTO pgtune37_opt.reset_repeat_t VALUES(41);INSERT INTO pgtune37_opt.missing_set_t VALUES(41);INSERT INTO pgtune37_opt.missing_reset_t VALUES(41);ALTER TABLE pgtune37_opt.reset_unknown_t ALTER COLUMN id SET(n_distinct=0.5);ALTER TABLE pgtune37_opt.reset_repeat_t ALTER COLUMN id SET(n_distinct=0.5);CREATE TABLE pgtune37_opt.quoted_t(id int,\"ID\" int);INSERT INTO pgtune37_opt.quoted_t VALUES(41,42);CREATE SEQUENCE pgtune37_opt.guard START 7", "expect_rc": 0},
+    {"name": "snapshot option attributes and file identities", "sql": "CREATE TABLE pgtune37_opt.receipt AS SELECT c.oid relid,c.relfilenode fileid,a.attnum,a.attname name,a.attstattarget target,COALESCE(a.attoptions::text,'') opts FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtune37_opt'::regnamespace AND c.relkind='r' AND c.relname!='receipt' AND a.attnum>0 AND NOT a.attisdropped", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "reject", "statements": 12, "findings": 6, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "rule_summary_loaded": 5, "statement_indices": [0,1,2,3,4,5,6,7,8,9,10,11],
+    "finding_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column.options.valid", "level": "blocker"}, {"index": 1, "rule_id": "ddl.pg.alter.column.options.valid", "level": "blocker"}, {"index": 6, "rule_id": "ddl.pg.alter.column.options.valid", "level": "blocker"}, {"index": 9, "rule_id": "ddl.pg.alter.column.options.valid", "level": "blocker"}, {"index": 10, "rule_id": "ddl.pg.alter.column.options.valid", "level": "blocker"}, {"index": 11, "rule_id": "ddl.pg.alter.drop_column.advisory", "level": "warning"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.pg.alter.column.options.valid", "metadata": {"reason_code": "column_option_out_of_range", "parameter": "n_distinct"}}, {"index": 1, "rule_id": "ddl.pg.alter.column.options.valid", "metadata": {"reason_code": "column_option_duplicate", "parameter": "n_distinct"}}, {"index": 6, "rule_id": "ddl.pg.alter.column.options.valid", "metadata": {"reason_code": "column_option_out_of_range", "parameter": "n_distinct_inherited"}}, {"index": 9, "rule_id": "ddl.pg.alter.column.options.valid", "metadata": {"reason_code": "column_absent", "column": "ghost"}}, {"index": 10, "rule_id": "ddl.pg.alter.column.options.valid", "metadata": {"reason_code": "column_absent", "column": "ghost"}}], "serialized_not_contains": ["PGColumnTuning", "StatisticsValue"]},
+   "post_verify": [
+    {"assert": "audit changes no option value or file identity", "sql": "SELECT count(*) FROM pgtune37_opt.receipt r LEFT JOIN pg_class c ON c.oid=r.relid LEFT JOIN pg_attribute a ON a.attrelid=r.relid AND a.attnum=r.attnum WHERE c.oid IS NULL OR c.relfilenode!=r.fileid OR a.attname IS DISTINCT FROM r.name OR a.attstattarget IS DISTINCT FROM r.target OR COALESCE(a.attoptions::text,'')!=r.opts", "expect": "0"},
+    {"assert": "audit keeps every seeded data row", "sql": "SELECT (SELECT count(*) FROM pgtune37_opt.low_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opt.dup_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opt.lower_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opt.positive_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opt.negative_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opt.max_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opt.inherited_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opt.reset_unknown_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opt.reset_repeat_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opt.missing_set_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opt.missing_reset_t WHERE id=41)+(SELECT count(*) FROM pgtune37_opt.quoted_t WHERE id=41 AND \"ID\"=42)", "expect": "12"},
+    {"assert": "audit never advances options guard", "sql": "SELECT last_value::text||':'||is_called::text FROM pgtune37_opt.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native below-range option refusal", "sql": "ALTER TABLE pgtune37_opt.low_t ALTER COLUMN id SET(n_distinct=-1.1)", "via": "stdin", "expect_rc": 3, "stderr_contains": ["22023"]},
+    {"name": "native duplicate SET refusal", "sql": "ALTER TABLE pgtune37_opt.dup_t ALTER COLUMN id SET(n_distinct=1,n_distinct=2)", "via": "stdin", "expect_rc": 3, "stderr_contains": ["22023"]},
+    {"name": "native exact lower bound", "sql": "ALTER TABLE pgtune37_opt.lower_t ALTER COLUMN id SET(n_distinct=-1)", "expect_rc": 0},
+    {"name": "native positive fraction is legal", "sql": "ALTER TABLE pgtune37_opt.positive_t ALTER COLUMN id SET(n_distinct=12.5)", "expect_rc": 0},
+    {"name": "native negative fraction control", "sql": "ALTER TABLE pgtune37_opt.negative_t ALTER COLUMN id SET(n_distinct=-0.5)", "expect_rc": 0},
+    {"name": "native finite DBL_MAX control", "sql": "ALTER TABLE pgtune37_opt.max_t ALTER COLUMN id SET(n_distinct=1.7976931348623157e308)", "expect_rc": 0},
+    {"name": "native inherited option below-range refusal", "sql": "ALTER TABLE pgtune37_opt.inherited_t ALTER COLUMN id SET(n_distinct_inherited=-2)", "via": "stdin", "expect_rc": 3, "stderr_contains": ["22023"]},
+    {"name": "native unknown RESET is no-op", "sql": "ALTER TABLE pgtune37_opt.reset_unknown_t ALTER COLUMN id RESET(unknown_option)", "expect_rc": 0},
+    {"name": "native repeated RESET removes known key once", "sql": "ALTER TABLE pgtune37_opt.reset_repeat_t ALTER COLUMN id RESET(n_distinct,n_distinct)", "expect_rc": 0},
+    {"name": "native SET still requires the column", "sql": "ALTER TABLE pgtune37_opt.missing_set_t ALTER COLUMN ghost SET(n_distinct=0)", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42703"]},
+    {"name": "native RESET still requires the column", "sql": "ALTER TABLE pgtune37_opt.missing_reset_t ALTER COLUMN ghost RESET(unknown_option)", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42703"]},
+    {"name": "native quoted DROP binds only the uppercase column", "sql": "ALTER TABLE pgtune37_opt.quoted_t DROP COLUMN IF EXISTS \"ID\"", "expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "fresh quoted DROP leaves lowercase data intact", "sql": "SELECT id FROM pgtune37_opt.quoted_t", "expect": "41"},
+    {"assert": "refused options remain absent", "sql": "SELECT count(*) FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid WHERE c.relnamespace='pgtune37_opt'::regnamespace AND c.relname IN('low_t','dup_t','inherited_t','missing_set_t','missing_reset_t') AND a.attname='id' AND a.attoptions IS NULL", "expect": "5"},
+    {"assert": "native lower/fraction controls record expected numeric options", "sql": "SELECT count(*) FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid CROSS JOIN LATERAL unnest(a.attoptions) o WHERE c.relnamespace='pgtune37_opt'::regnamespace AND a.attname='id' AND ((c.relname='lower_t' AND split_part(o,'=',2)::float8=-1) OR (c.relname='positive_t' AND split_part(o,'=',2)::float8=12.5) OR (c.relname='negative_t' AND split_part(o,'=',2)::float8=-0.5) OR (c.relname='max_t' AND split_part(o,'=',2)::float8='1.7976931348623157e308'::float8))", "expect": "4"},
+    {"assert": "unknown RESET preserves a different known option", "sql": "SELECT attoptions::text FROM pg_attribute WHERE attrelid='pgtune37_opt.reset_unknown_t'::regclass AND attname='id'", "expect": "{n_distinct=0.5}"},
+    {"assert": "repeated RESET actually removes the known option", "sql": "SELECT (attoptions IS NULL)::text FROM pg_attribute WHERE attrelid='pgtune37_opt.reset_repeat_t'::regclass AND attname='id'", "expect": "true"}
+   ],
+   "teardown": [{"name": "drop owned options schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgtune37_opt CASCADE", "expect_rc": 0, "verify": [{"assert": "options schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_opt'", "expect": "0"}]}]
+  },
+  {
+   "id": "pg-column-tuning-statistics", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-column-tuning",
+   "notes": "Native range versus clamping: below -1 refuses; DEFAULT/-1/zero/upper and int32-max controls; exact missing-column target; audit never changes attributes/data/file identity",
+   "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgtune37_stat"},
+   "fixture": {"cleanup": [{"name": "remove owned statistics schema", "fixture_key": "schema", "sql": "DROP SCHEMA pgtune37_stat CASCADE", "verify": {"assert": "statistics schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_stat'", "expect": "0"}}]},
+   "sql": "ALTER TABLE pgtune37_stat.low_t ALTER COLUMN id SET STATISTICS -2;ALTER TABLE pgtune37_stat.default_t ALTER COLUMN id SET STATISTICS DEFAULT;ALTER TABLE pgtune37_stat.minus_t ALTER COLUMN id SET STATISTICS -1;ALTER TABLE pgtune37_stat.zero_t ALTER COLUMN id SET STATISTICS 0;ALTER TABLE pgtune37_stat.upper_t ALTER COLUMN id SET STATISTICS 10000;ALTER TABLE pgtune37_stat.clamp_t ALTER COLUMN id SET STATISTICS 10001;ALTER TABLE pgtune37_stat.max_t ALTER COLUMN id SET STATISTICS 2147483647;ALTER TABLE pgtune37_stat.missing_t ALTER COLUMN ghost SET STATISTICS 10;ALTER TABLE pgtune37_stat.noop_t DROP COLUMN IF EXISTS id CASCADE", "args": ["--fail-on", "none"],
+   "setup": [
+    {"name": "prove statistics schema absent", "fixture_key": "schema", "requires_absence": true, "sql": "SELECT 1", "expect_rc": 0, "verify": [{"assert": "absence before ownership", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_stat'", "expect": "0"}]},
+    {"name": "claim statistics schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgtune37_stat", "expect_rc": 0},
+    {"name": "seed independent statistics targets and data", "sql": "CREATE TABLE pgtune37_stat.low_t(id int);CREATE TABLE pgtune37_stat.default_t(id int);CREATE TABLE pgtune37_stat.minus_t(id int);CREATE TABLE pgtune37_stat.zero_t(id int);CREATE TABLE pgtune37_stat.upper_t(id int);CREATE TABLE pgtune37_stat.clamp_t(id int);CREATE TABLE pgtune37_stat.max_t(id int);CREATE TABLE pgtune37_stat.missing_t(id int);INSERT INTO pgtune37_stat.low_t VALUES(41);INSERT INTO pgtune37_stat.default_t VALUES(41);INSERT INTO pgtune37_stat.minus_t VALUES(41);INSERT INTO pgtune37_stat.zero_t VALUES(41);INSERT INTO pgtune37_stat.upper_t VALUES(41);INSERT INTO pgtune37_stat.clamp_t VALUES(41);INSERT INTO pgtune37_stat.max_t VALUES(41);INSERT INTO pgtune37_stat.missing_t VALUES(41);CREATE TABLE pgtune37_stat.noop_t(\"ID\" int);INSERT INTO pgtune37_stat.noop_t VALUES(42);CREATE SEQUENCE pgtune37_stat.guard START 7", "expect_rc": 0},
+    {"name": "snapshot independent attribute and file identities", "sql": "CREATE TABLE pgtune37_stat.receipt AS SELECT c.oid relid,c.relfilenode fileid,a.attnum,a.attname name,a.attstattarget target,COALESCE(a.attoptions::text,'') opts FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtune37_stat'::regnamespace AND c.relkind='r' AND c.relname!='receipt' AND a.attnum>0 AND NOT a.attisdropped", "expect_rc": 0}
+   ],
+   "expect": {"exit": 0, "verdict": "reject", "statements": 9, "findings": 4, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "rule_summary_loaded": 5, "statement_indices": [0,1,2,3,4,5,6,7,8], "evidence_gaps": 0,
+    "finding_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "level": "blocker"}, {"index": 5, "rule_id": "ddl.pg.alter.column.statistics.clamp.warn", "level": "warning"}, {"index": 6, "rule_id": "ddl.pg.alter.column.statistics.clamp.warn", "level": "warning"}, {"index": 7, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "level": "blocker"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "metadata": {"reason_code": "statistics_target_below_default", "column": "id"}}, {"index": 5, "rule_id": "ddl.pg.alter.column.statistics.clamp.warn", "metadata": {"reason_code": "statistics_target_clamped", "table": "clamp_t"}}, {"index": 7, "rule_id": "ddl.pg.alter.column.statistics.target.valid", "metadata": {"reason_code": "column_absent", "column": "ghost"}}], "serialized_not_contains": ["PGColumnTuning", "StatisticsValue"]},
+   "post_verify": [
+    {"assert": "audit leaves every target attribute and file identity unchanged", "sql": "SELECT count(*) FROM pgtune37_stat.receipt r LEFT JOIN pg_class c ON c.oid=r.relid LEFT JOIN pg_attribute a ON a.attrelid=r.relid AND a.attnum=r.attnum WHERE c.oid IS NULL OR c.relfilenode!=r.fileid OR a.attname IS DISTINCT FROM r.name OR a.attstattarget IS DISTINCT FROM r.target OR COALESCE(a.attoptions::text,'')!=r.opts", "expect": "0"},
+    {"assert": "audit leaves all nine data rows unchanged", "sql": "SELECT (SELECT count(*) FROM pgtune37_stat.low_t WHERE id=41)+(SELECT count(*) FROM pgtune37_stat.default_t WHERE id=41)+(SELECT count(*) FROM pgtune37_stat.minus_t WHERE id=41)+(SELECT count(*) FROM pgtune37_stat.zero_t WHERE id=41)+(SELECT count(*) FROM pgtune37_stat.upper_t WHERE id=41)+(SELECT count(*) FROM pgtune37_stat.clamp_t WHERE id=41)+(SELECT count(*) FROM pgtune37_stat.max_t WHERE id=41)+(SELECT count(*) FROM pgtune37_stat.missing_t WHERE id=41)+(SELECT count(*) FROM pgtune37_stat.noop_t WHERE \"ID\"=42)", "expect": "9"},
+    {"assert": "audit never advances statistics guard", "sql": "SELECT last_value::text||':'||is_called::text FROM pgtune37_stat.guard", "expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native below-default refusal", "sql": "ALTER TABLE pgtune37_stat.low_t ALTER COLUMN id SET STATISTICS -2", "via": "stdin", "expect_rc": 3, "stderr_contains": ["22023"]},
+    {"name": "native DEFAULT control", "sql": "ALTER TABLE pgtune37_stat.default_t ALTER COLUMN id SET STATISTICS DEFAULT", "expect_rc": 0},
+    {"name": "native minus-one control", "sql": "ALTER TABLE pgtune37_stat.minus_t ALTER COLUMN id SET STATISTICS -1", "expect_rc": 0},
+    {"name": "native zero control", "sql": "ALTER TABLE pgtune37_stat.zero_t ALTER COLUMN id SET STATISTICS 0", "expect_rc": 0},
+    {"name": "native exact maximum control", "sql": "ALTER TABLE pgtune37_stat.upper_t ALTER COLUMN id SET STATISTICS 10000", "expect_rc": 0},
+    {"name": "native above-maximum clamps instead of refusing", "sql": "ALTER TABLE pgtune37_stat.clamp_t ALTER COLUMN id SET STATISTICS 10001", "expect_rc": 0, "stderr_contains": ["10000"]},
+    {"name": "native int32-max also clamps", "sql": "ALTER TABLE pgtune37_stat.max_t ALTER COLUMN id SET STATISTICS 2147483647", "expect_rc": 0, "stderr_contains": ["10000"]},
+    {"name": "native missing statistics column", "sql": "ALTER TABLE pgtune37_stat.missing_t ALTER COLUMN ghost SET STATISTICS 10", "via": "stdin", "expect_rc": 3, "stderr_contains": ["42703"]},
+    {"name": "native fresh guarded lowercase absence cannot bind uppercase column", "sql": "ALTER TABLE pgtune37_stat.noop_t DROP COLUMN IF EXISTS id CASCADE", "expect_rc": 0, "stderr_contains": ["skipping"]}
+   ],
+   "structure": [
+    {"assert": "fresh guarded no-op retains uppercase column data", "sql": "SELECT \"ID\" FROM pgtune37_stat.noop_t", "expect": "42"},
+    {"assert": "only driver alters statistics targets and refusals keep defaults", "sql": "SELECT string_agg(c.relname||':'||COALESCE(a.attstattarget::text,'default'),',' ORDER BY c.relname) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtune37_stat'::regnamespace AND a.attname='id'", "expect": "clamp_t:10000,default_t:default,low_t:default,max_t:10000,minus_t:default,missing_t:default,upper_t:10000,zero_t:0"},
+    {"assert": "driver statistics declarations never rewrite files", "sql": "SELECT count(*) FROM pgtune37_stat.receipt r JOIN pg_class c ON c.oid=r.relid WHERE c.relfilenode!=r.fileid", "expect": "0"}
+   ],
+   "teardown": [{"name": "drop owned statistics schema", "fixture_key": "schema", "drops_fixture": true, "sql": "DROP SCHEMA pgtune37_stat CASCADE", "expect_rc": 0, "verify": [{"assert": "statistics schema absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgtune37_stat'", "expect": "0"}]}]
+  },
+  {
    "id": "pg-column-generation-prior-ddl", "anchor": "postgres17", "dialect": "postgresql", "policy": "pg-column-generation", "notes": "ADD/DROP IDENTITY and earlier ALTER subcommands invalidate old column proof without a PG prospective-state model",
    "connect": {"host": "127.0.0.1", "port": 25432, "user": "postgres", "database": "postgres", "schema": "pgcg37_prior"},
    "fixture": {"cleanup": [{"name": "remove owned column-prefix schema", "fixture_key": "schema", "sql": "DROP SCHEMA pgcg37_prior CASCADE", "verify": {"assert": "prefix namespace absent", "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgcg37_prior'", "expect": "0"}}]},
@@ -4313,6 +4662,24 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.column-tuning-statistics-offline",
+  "T37.cli.column-tuning-default-offline",
+  "T37.cli.column-tuning-options-offline",
+  "T37.cli.column-tuning-reset-offline",
+  "T37.cli.column-tuning-drop-guard-offline",
+  "T37.cli.column-tuning-drop-cascade-offline",
+  "T37.cli.column-tuning-disabled",
+  "T37.cli.column-tuning-mysql",
+  "T37.cli.column-tuning-tidb",
+  "T37.cli.column-tuning-parser-retention",
+  "T37.meta.pg-column-tuning-statistics",
+  "T37.meta.pg-column-tuning-options",
+  "T37.meta.pg-column-tuning-drop-guards",
+  "T37.meta.pg-column-tuning-prior-ddl",
+  "T37.meta.pg-column-tuning-prior-parser",
+  "T37.meta.pg-column-tuning-unknown-values",
+  "T37.meta.pg-column-tuning-scope",
+  "T37.meta.pg-column-tuning-no-rewrite-advice",
   "T37.db.postgres17.ddl",
   "T37.db.postgres17.syntax_negative",
   "T37.cli.alter-table-columns",

@@ -175,6 +175,42 @@ Implementation seams: [shared rules](../../internal/domain/rule/ddl/postgresql_c
 [corpus](../../testdata/sql-corpus/postgresql/ddl/findings/column_tuning_invalid.expected.yaml)
 and [T37](../../testdata/ddl-golden/T37.json).
 
+### Frozen canonical and inventory evidence
+
+All 18 frozen additions are present: ten CLI and eight owned metadata cases,
+**136/136 cases, 2168 assertions** in focused candidate execution (495 additive
+assertions over the corrected old 118/1673). Mechanical comparison preserves
+all 118 old case objects, required IDs and independent profiles. Fifty-one
+native driver actions include 36 successes and 15 exact refusals (22023,
+42703, 2BP01 and 42601), with independent attribute/file/data/guard receipts,
+post-audit non-execution checks and ownership-limited absent/cleanup proofs.
+The artifact at
+`/tmp/ddl-golden-pg-column-tuning-canonical-v3/T37/artifact.json` is a
+`65387b5f` plus candidate-worktree check, not the final D6 same-HEAD aggregate.
+
+The first additive replay was 133/136. Its fixture assumptions were corrected,
+not the product: all-off omits rule_summary; preceding DROP conservatively
+revokes global target directories, even across different named tables. Fresh
+missing-case collision, guarded CASCADE no-op, quoted present target and
+known-empty no-op controls now occur before their request's first DROP;
+subsequent targets explicitly assert every owed gap. No generic PostgreSQL
+prospective-state engine or freshness shortcut was added to turn this green.
+Native quoted/default/RESET/refusal controls remain independent. PG17's
+`attstattarget` default is **NULL**, including SET STATISTICS -1; explicit
+zero remains zero. A separate native probe and the PG17 catalog manual verify
+this representation rather than inventing a -1 catalog fact.
+
+Exact inventory binding touches seven original subactions across three mixed
+F09 rows: DROP, guarded CASCADE and multi-action; STATISTICS and n_distinct/
+RESET; and two existing layout-advice cells. The only cell status changes
+make multi-action and n_distinct/RESET **mixed**, honestly retaining unapplied
+state and opaque/extension/value gaps. Other existing audited cells receive
+bounded evidence, not full execution/dependency/permission certification.
+Layout evidence is copy-only, not a new eligibility validator. All original
+subaction sets, 301 rows, row statuses and 19-family/63-row denominators stay
+unchanged. The matrix is generated from YAML. Final fixed-HEAD all-task gates,
+read-only review, merge/push and exact-SHA CI remain required before delivery.
+
 ## Consequences
 
 Value ownership, SET versus RESET and guarded absence must remain distinct.
@@ -185,6 +221,7 @@ false blocker or adding a tuning check does not close F09 by association.
 ## Links
 
 - [PG17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
+- [PG17 pg_attribute: NULL default statistics target](https://www.postgresql.org/docs/17/catalog-pg-attribute.html)
 - [PG17.7 reloptions range and duplicate handling](https://github.com/postgres/postgres/blob/REL_17_7/src/backend/access/common/reloptions.c)
 - [D5 directory/freshness contract](2026-11-18-postgresql-column-generation-transitions.md)
 - [Original program ledger](../plans/2026-11-17-rule-backlog-ledger.md)

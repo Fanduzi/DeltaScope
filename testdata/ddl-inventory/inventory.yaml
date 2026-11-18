@@ -6903,7 +6903,7 @@ rows:
     status: mixed_coverage
     parser_status: recognized
     audit_status: mixed
-    status_evidence: "2026-11-16 generated/identity tranche: add-column-generation-declaration gains ddl.pg.column.generation.declaration.valid and ddl.pg.column.identity.cycle.warn with T37 CLI/default-conflict/cycle controls and native catalog/no-execution proof. Existing-column identity transitions, RENAME and other columns semantics are not promoted; row remains mixed. Historical: 2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 9 shapes -> 8 audited, 1 notice_only; golden manifests and native execution evidence land with the owner task"
+    status_evidence: "2026-11-18 D6: DROP COLUMN retains its audited bounded exact fresh PG17 target/guard check, not dependency or permission legality. Missing lowercase targets cannot bind quoted uppercase columns; guarded proven no-ops suppress the old blocker/advice. DROP invalidates global old catalogs, so multi-action is explicitly mixed rather than claiming prospective state. All original subactions/rows stay retained. Historical: 2026-11-16 generated/identity tranche: add-column-generation-declaration gains ddl.pg.column.generation.declaration.valid and ddl.pg.column.identity.cycle.warn with T37 CLI/default-conflict/cycle controls and native catalog/no-execution proof. Existing-column identity transitions, RENAME and other columns semantics are not promoted; row remains mixed. Historical: 2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 9 shapes -> 8 audited, 1 notice_only; golden manifests and native execution evidence land with the owner task"
     targets: column add/drop/rename/type changes, cascade, multi-action
     applicability:
       - anchor: postgresql17
@@ -6963,7 +6963,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.drop-column.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.drop-column.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, 'file:testdata/ddl-golden/T37.json#DROP COLUMN', file:testdata/ddl-golden/T37.json#pg-column-tuning-drop-guards, file:testdata/ddl-golden/T37.json#pg-column-tuning-options, file:testdata/ddl-golden/T37.json#pg-column-tuning-statistics, file:testdata/ddl-golden/T37.json#column-tuning-drop-guard-offline, file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_invalid.expected.yaml#ddl.alter.drop_column.exists.require]
       - subaction_id: DROP COLUMN IF EXISTS CASCADE
         parser_status: recognized
         audit_status: audited
@@ -6974,7 +6974,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.drop-column-if-exists-cascade.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.drop-column-if-exists-cascade.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, 'file:testdata/ddl-golden/T37.json#DROP COLUMN IF EXISTS', file:testdata/ddl-golden/T37.json#pg-column-tuning-statistics, file:testdata/ddl-golden/T37.json#pg-column-tuning-drop-guards, file:testdata/ddl-golden/T37.json#pg-column-tuning-no-rewrite-advice, file:testdata/ddl-golden/T37.json#column-tuning-drop-cascade-offline, file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_controls.expected.yaml#ddl.alter.drop_column.exists.require]
       - subaction_id: RENAME COLUMN
         parser_status: recognized
         audit_status: notice_only
@@ -7010,15 +7010,15 @@ rows:
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.alter-column-type-using.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
       - subaction_id: multi-action
         parser_status: recognized
-        audit_status: audited
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.multi-action.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.multi-action.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#alter-table-columns-multi-action, file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-ddl, file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-parser, file:testdata/ddl-golden/T37.json#column-tuning-parser-retention]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, gate:T37, file:testdata/sql-corpus/postgresql/ddl/findings/generation_declaration_invalid.expected.yaml]
@@ -7043,7 +7043,7 @@ rows:
     status: mixed_coverage
     parser_status: recognized
     audit_status: mixed
-    status_evidence: "2026-11-18 D5: exact fresh ordinary persistent PG17 column/sequence facts bind six existing subactions to the approved transition/options blockers and RESTART/CYCLE risks. SET GENERATED / DROP EXPRESSION and RESTART gain audited bounded target/risk checks; nullability/default/identity-options remain mixed because data, expression and unread current-value scopes are not certified. ADD/DROP IDENTITY keeps audited status with stronger exact target/guard/native proof. Other attributes and whole F09 remain open; no row or denominator promotion. Historical T33 offline probes remain baseline evidence, not D5 proof."
+    status_evidence: "2026-11-18 D6: SET STATISTICS keeps audited bounded numeric/target checks and adds native clamping rather than rejecting values above 10000. SET n_distinct / RESET is mixed: known builtin numeric ranges/duplicate SET keys/targets are checked, but opaque/quoted/overflow/extension SET members remain gaps; unknown and duplicate RESET can be native no-ops. PG17 catalog NULL represents the default, including authored -1. Precise native/refusal/no-execution and prior-DDL/parser/scope gaps supplement, not replace, D5 evidence. 2026-11-18 D5: exact fresh ordinary persistent PG17 column/sequence facts bind six existing subactions to the approved transition/options blockers and RESTART/CYCLE risks. SET GENERATED / DROP EXPRESSION and RESTART gain audited bounded target/risk checks; nullability/default/identity-options remain mixed because data, expression and unread current-value scopes are not certified. ADD/DROP IDENTITY keeps audited status with stronger exact target/guard/native proof. Other attributes and whole F09 remain open; no row or denominator promotion. Historical T33 offline probes remain baseline evidence, not D5 proof."
     targets: nullability, defaults, identity/generated, statistics, storage
     applicability:
       - anchor: postgresql17
@@ -7130,7 +7130,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-statistics.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-statistics.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, 'file:testdata/ddl-golden/T37.json#SET STATISTICS', file:testdata/ddl-golden/T37.json#pg-column-tuning-statistics, file:testdata/ddl-golden/T37.json#column-tuning-statistics-offline, file:testdata/ddl-golden/T37.json#column-tuning-default-offline, file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-ddl, file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-parser, file:testdata/ddl-golden/T37.json#pg-column-tuning-scope, file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_invalid.expected.yaml#ddl.pg.alter.column.statistics.target.valid, file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_clamp.expected.yaml#ddl.pg.alter.column.statistics.clamp.warn]
       - subaction_id: SET STORAGE / COMPRESSION
         parser_status: recognized
         audit_status: audited
@@ -7144,15 +7144,15 @@ rows:
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-storage-compression.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
       - subaction_id: SET n_distinct / RESET
         parser_status: recognized
-        audit_status: audited
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-n-distinct-reset.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-n-distinct-reset.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#n_distinct, file:testdata/ddl-golden/T37.json#pg-column-tuning-options, file:testdata/ddl-golden/T37.json#pg-column-tuning-unknown-values, file:testdata/ddl-golden/T37.json#column-tuning-options-offline, file:testdata/ddl-golden/T37.json#column-tuning-reset-offline, file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-ddl, file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_invalid.expected.yaml#ddl.pg.alter.column.options.valid, file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_controls.expected.yaml#ddl.pg.alter.column.options.valid]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, gate:T37, file:testdata/ddl-golden/T37.json]
@@ -7567,7 +7567,7 @@ rows:
     status: mixed_coverage
     parser_status: recognized
     audit_status: mixed
-    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 8 shapes -> 7 audited, 1 silent; golden manifests and native execution evidence land with the owner task. 2026-11-15 T48 (#131) closure: golden T37 pins SET WITHOUT OIDS as a dead form — parses and audits to zero findings under the enable-all policy (recorded rule gap, native exec verified), no silent-pass ambiguity remains"
+    status_evidence: "2026-11-18 D6 copy-only correction: owned T37 native controls show SET fillfactor, same heap access method and partition-root method settings do not immediately rewrite existing files. This binds truthful conditional advice only; no storage-parameter/access-method legality predicate, subaction status or wider F09 support is promoted. Historical: 2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 8 shapes -> 7 audited, 1 silent; golden manifests and native execution evidence land with the owner task. 2026-11-15 T48 (#131) closure: golden T37 pins SET WITHOUT OIDS as a dead form — parses and audits to zero findings under the enable-all policy (recorded rule gap, native exec verified), no silent-pass ambiguity remains"
     targets: storage parameters, tablespace, logging, replica identity
     applicability:
       - anchor: postgresql17
@@ -7588,7 +7588,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.set-reset-storage-parameters.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.set-reset-storage-parameters.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#pg-column-tuning-no-rewrite-advice, file:internal/domain/rule/ddl/postgresql_alter_table_rules.go#newSetReloptionsWarnRule, file:docs/decisions/2026-11-18-postgresql-column-tuning-and-drop-guards.md#Public Contract]
       - subaction_id: SET TABLESPACE
         parser_status: recognized
         audit_status: audited
@@ -7621,7 +7621,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.set-access-method.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.set-access-method.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#pg-column-tuning-no-rewrite-advice, file:internal/domain/rule/ddl/postgresql_alter_table_rules.go#newSetAccessMethodWarnRule, file:docs/decisions/2026-11-18-postgresql-column-tuning-and-drop-guards.md#Public Contract]
       - subaction_id: SET LOGGED/UNLOGGED
         parser_status: recognized
         audit_status: audited

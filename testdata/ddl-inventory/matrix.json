@@ -7608,7 +7608,13 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.drop-column.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#DROP COLUMN",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-drop-guards",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-options",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-statistics",
+                "file:testdata/ddl-golden/T37.json#column-tuning-drop-guard-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_invalid.expected.yaml#ddl.alter.drop_column.exists.require"
               ]
             }
           ]
@@ -7627,7 +7633,13 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.drop-column-if-exists-cascade.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#DROP COLUMN IF EXISTS",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-statistics",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-drop-guards",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-no-rewrite-advice",
+                "file:testdata/ddl-golden/T37.json#column-tuning-drop-cascade-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_controls.expected.yaml#ddl.alter.drop_column.exists.require"
               ]
             }
           ]
@@ -7692,7 +7704,7 @@
         {
           "subaction_id": "multi-action",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -7700,10 +7712,14 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "audited",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.multi-action.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#alter-table-columns-multi-action",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-ddl",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-parser",
+                "file:testdata/ddl-golden/T37.json#column-tuning-parser-retention"
               ]
             }
           ]
@@ -7897,7 +7913,16 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-statistics.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#SET STATISTICS",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-statistics",
+                "file:testdata/ddl-golden/T37.json#column-tuning-statistics-offline",
+                "file:testdata/ddl-golden/T37.json#column-tuning-default-offline",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-ddl",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-parser",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-scope",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_invalid.expected.yaml#ddl.pg.alter.column.statistics.target.valid",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_clamp.expected.yaml#ddl.pg.alter.column.statistics.clamp.warn"
               ]
             }
           ]
@@ -7924,7 +7949,7 @@
         {
           "subaction_id": "SET n_distinct / RESET",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -7932,10 +7957,18 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "audited",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-n-distinct-reset.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#n_distinct",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-options",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-unknown-values",
+                "file:testdata/ddl-golden/T37.json#column-tuning-options-offline",
+                "file:testdata/ddl-golden/T37.json#column-tuning-reset-offline",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-prior-ddl",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_invalid.expected.yaml#ddl.pg.alter.column.options.valid",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_controls.expected.yaml#ddl.pg.alter.column.options.valid"
               ]
             }
           ]
@@ -8574,7 +8607,10 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.set-reset-storage-parameters.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-no-rewrite-advice",
+                "file:internal/domain/rule/ddl/postgresql_alter_table_rules.go#newSetReloptionsWarnRule",
+                "file:docs/decisions/2026-11-18-postgresql-column-tuning-and-drop-guards.md#Public Contract"
               ]
             }
           ]
@@ -8631,7 +8667,10 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.set-access-method.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#pg-column-tuning-no-rewrite-advice",
+                "file:internal/domain/rule/ddl/postgresql_alter_table_rules.go#newSetAccessMethodWarnRule",
+                "file:docs/decisions/2026-11-18-postgresql-column-tuning-and-drop-guards.md#Public Contract"
               ]
             }
           ]

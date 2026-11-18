@@ -72,6 +72,28 @@ partition, unlogged, stale/parser, unmodeled and data/current-value gaps remain
 explicit accepted-stage boundaries, not whole-F09 completion. Regenerate
 `matrix.json` from YAML; never edit its generated contents.
 
+## PostgreSQL column tuning and guarded-drop tranche
+
+D6 binds seven original subactions in three already-mixed F09 rows. Columns:
+DROP COLUMN / guarded CASCADE gain exact fresh PG17 target/guard/native proof;
+multi-action becomes **mixed**, not claimed prospective-state support.
+Column attributes: SET STATISTICS retains audited bounded declaration/target
+proof with DEFAULT/-1/zero/max/native-clamp controls; n_distinct/RESET becomes
+**mixed** because quoted/nonfinite/overflow/extension SET values remain gaps.
+Unknown and duplicate RESET are native successes, not invalid SET declarations.
+Two options cells bind corrected fillfactor/same-AM/partition advice and file
+identity controls only; they do not gain parameter/method eligibility support.
+
+T37 keeps all old 118 objects/profiles/IDs and adds the 18 frozen cases (136,
+2168 assertions); 51 independent native actions, attribute/file/data/guard
+receipts and owned cleanup distinguish refusals, no-ops and execution. Catalog
+NULL represents PG17 default statistics, including authored -1. Earlier DROP
+revokes global old directories: fresh controls precede it and later gaps stay
+explicit. No sampling/data/expression/permission analysis or sequential engine
+is added. All original subaction sets, 301 row statuses and original program
+denominators remain unchanged; generate `matrix.json` from YAML. This is not
+whole-row/F09 completion or final same-HEAD delivery proof.
+
 ## Row contract
 
 Every row carries: `id` (stable, unique), `product` (`mysql`/`tidb`),

@@ -15,7 +15,21 @@ weakened. The first replay's 115/118 failure remains recorded; corrected
 candidate replay is 118/118, **1673 assertions** (12 added). These candidate
 artifacts do not replace final same-HEAD aggregate evidence. The 18 D6 case IDs
 were frozen in the [decision](../../docs/decisions/2026-11-18-postgresql-column-tuning-and-drop-guards.md)
-before implementation; native additions/inventory/final delivery are pending.
+before implementation. All 18 additions now run: **136 required cases,
+2168 assertions** (495 additive). Eight owned metadata fixtures contain 51
+native driver steps (36 successes/15 exact refusals), independent attribute,
+file/data/guard and no-audit-execution receipts plus owned absence/cleanup.
+
+The first additive replay's 133/136 failures remain recorded: all-off correctly
+omits rule_summary, and DROP's existing global freshness cutoff withholds
+later target facts even for another table. Fresh guard/quoted/missing/empty
+controls occur before a request's first DROP, while all later gaps are pinned;
+no product scope or freshness policy is relaxed. PG17 defaults use NULL catalog
+statistics (also for authored -1), not an invented -1 catalog value. Literal
+zero, normal/max/clamp, fractions/duplicates/RESET, quoted/nonfinite/overflow,
+parser, scope and no-immediate-rewrite controls remain distinct. Original
+118 objects/profiles/IDs remain unchanged from the D6 compatibility commit.
+Inventory binds exact cells; final same-HEAD all-task/CI delivery is pending.
 
 ## T37 PostgreSQL existing-column generation contract
 

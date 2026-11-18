@@ -258,8 +258,18 @@ non-execution; quoted/nonfinite/overflow inputs remain honest gaps. Three old
 offline DROP expectations are corrected from false complete to unverified with
 12 additional exact gap assertions: all 118 IDs/profiles/SQL/verdict/finding
 checks remain; corrected T37 is 118/118, 1673 assertions. Neither candidate is
-final delivery. The 18 frozen additions, native canonical/inventory and final
-fixed-HEAD delivery remain subsequent work.
+final delivery. The 18 frozen additions now pass 136/136, 2168 assertions,
+including 51 native actions (36 successes/15 exact refusals) with independent
+attribute/file/data/guard/no-execution and ownership-cleanup receipts. All old
+118 case objects/profiles remain unchanged. First additive 133/136 fixture
+failures are preserved and explained: omitted all-off summary and global
+freshness after DROP, not product changes or weaker oracles. Fresh controls
+precede DROP; every later gap stays pinned. PG17 default statistics are catalog
+NULL, including authored -1, as verified natively and in its catalog manual.
+Seven exact subactions across columns/attributes/options bind this evidence;
+only multi-action and n_distinct/RESET become honestly mixed, and layout is
+copy-only. Original row/subaction denominators and 301 row statuses remain.
+Final fixed-HEAD aggregate/read-only review/merge/push/exact CI remain pending.
 Other original F09 dimensions continue in the queue, not permanent deferral.
 
 ## Family index
