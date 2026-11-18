@@ -49,6 +49,28 @@ For `CREATE TABLE t → PROCEDURE → ADD c → CREATE INDEX idx_c(c)` under the
 | MySQL DROP | complete, lifecycle notice only | pass/complete, nil error | review/unverified, nil error |
 | TiDB DROP | incomplete, vendor boundary | review/incomplete, unsupported error | review/incomplete, unsupported error |
 
+### PostgreSQL column storage/compression and system targets
+
+| Rule | PostgreSQL 17 | MySQL/TiDB | Evidence |
+| --- | --- | --- | --- |
+| `ddl.pg.alter.column.storage.valid` | Invalid mode/absent or inapplicable target/type blocker | Not applicable | Exact fresh ordinary persistent non-inheritance/non-partition user/system directory; actual type typstorage |
+| `ddl.pg.alter.column.compression.valid` | Invalid method/target/type/build blocker | Not applicable | Same directory/type; real GUC enum lz4 known/support, not the selected default |
+
+Approved default-on/no params. STORAGE follows native case-insensitive modes;
+compression methods are case-sensitive. Compression default allows fixed-length
+types; current STORAGE PLAIN does not disable a toastable type's declaration.
+User known-empty and observed negative-attnum system directories stay separate;
+related generation/tuning/DROP checks do not mistake system members for absence
+or guarded no-op. Proved inapplicable system DROP suppresses its deletion advice,
+not independent forbid rules. Missing system/type/build/authored/version or stale/
+misbound/ambiguous facts remain attributable unverified/review gaps, not fake
+success. New gaps are unproven_column_storage/unproven_column_compression.
+
+No privileged pg_config read, parser expansion, expression/data/privilege/
+dependency analysis or PostgreSQL post-state simulation. SET STORAGE/COMPRESSION
+alone does not immediately rewrite/recompress existing data. New blocker metadata
+omits arbitrary methods, private type/build facts and provider errors.
+
 ### PostgreSQL column tuning and guarded drops
 
 | Rule | PostgreSQL 17 | MySQL/TiDB | Metadata |

@@ -1,0 +1,30 @@
+name: column_format_invalid
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    storage_t:
+      exists: true
+      pg_columns: &fixed
+        ordinary: true
+        columns: [{name: id, identity: '', generated: '', type_width: 32, type_storage: p, not_null: false, has_default: false, primary_key: false}]
+    compression_t:
+      exists: true
+      pg_columns: *fixed
+    method_t:
+      exists: true
+      pg_columns: *fixed
+    mode_t:
+      exists: true
+      pg_columns: *fixed
+    missing_t:
+      exists: true
+      pg_columns: *fixed
+expect:
+  parse_ok: true
+  statements: {count: 5}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.column.storage.valid, ddl.pg.alter.column.compression.valid]

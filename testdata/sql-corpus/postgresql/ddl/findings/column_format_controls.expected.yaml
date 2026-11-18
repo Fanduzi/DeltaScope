@@ -1,0 +1,35 @@
+name: column_format_controls
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7, pg_compression_lz4_known: true, pg_compression_lz4_supported: true}
+  tables:
+    plain_t:
+      exists: true
+      pg_columns: &fixed
+        ordinary: true
+        columns: [{name: id, identity: '', generated: '', type_width: 32, type_storage: p, not_null: false, has_default: false, primary_key: false}]
+    default_t:
+      exists: true
+      pg_columns: *fixed
+    comp_default_t:
+      exists: true
+      pg_columns: *fixed
+    text_t:
+      exists: true
+      pg_columns: &toastable
+        ordinary: true
+        columns: [{name: id, identity: '', generated: '', type_width: -1, type_storage: x, not_null: false, has_default: false, primary_key: false}]
+    pglz_t:
+      exists: true
+      pg_columns: *toastable
+    lz4_t:
+      exists: true
+      pg_columns: *toastable
+expect:
+  parse_ok: true
+  statements: {count: 6}
+  unsupported: {count: 0}
+  findings:
+    exclude: [ddl.pg.alter.column.storage.valid, ddl.pg.alter.column.compression.valid]

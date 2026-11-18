@@ -1,0 +1,19 @@
+name: column_format_build_unavailable
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7, pg_compression_lz4_known: true, pg_compression_lz4_supported: false}
+  tables:
+    t:
+      exists: true
+      pg_columns:
+        ordinary: true
+        columns: [{name: id, identity: '', generated: '', type_width: -1, type_storage: x, not_null: false, has_default: false, primary_key: false}]
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.column.compression.valid]
+    exclude: [ddl.pg.alter.column.storage.valid]

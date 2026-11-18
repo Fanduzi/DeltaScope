@@ -124,9 +124,12 @@ func (r pgColumnTuningRule) assess(s spec.Statement, index int) (string, string,
 	if !known {
 		return "", "target_table.pg_columns", ""
 	}
-	if member == nil {
+	if member == nil || member.System {
 		if r.id == ruleIDPGColumnStatisticsClampWarn {
 			return "", "", ""
+		}
+		if member != nil {
+			return "system_column_inapplicable", "", ""
 		}
 		return "column_absent", "", ""
 	}
@@ -176,11 +179,11 @@ func (r pgColumnTuningRule) Evaluate(ctx context.Context, s spec.Statement) ([]r
 		if reason == "" {
 			continue
 		}
-		message := "PostgreSQL column statistics target has a proven invalid value or missing target"
+		message := "PostgreSQL column statistics target has a proven invalid value, missing column or inapplicable system target"
 		suggestion := "use DEFAULT or an integer target of at least -1 and verify the exact target column; values above the native maximum are clamped, not rejected"
 		switch r.id {
 		case ruleIDPGColumnOptionsValid:
-			message = "PostgreSQL column options have a proven invalid value, duplicate key or missing target"
+			message = "PostgreSQL column options have a proven invalid value, duplicate key, missing column or inapplicable system target"
 			suggestion = "verify the exact column, remove duplicate builtin keys and correct the n_distinct/n_distinct_inherited numeric range; unknown extension keys and opaque values are not guessed"
 		case ruleIDPGColumnStatisticsClampWarn:
 			message = "PostgreSQL lowers this statistics target to its native maximum"
@@ -207,6 +210,9 @@ func pgDropColumnTarget(s spec.Statement, index int) (bool, string, string) {
 	member, known := pgColumnTargetState(s, index)
 	if !known {
 		return false, "", "target_table.pg_columns"
+	}
+	if member != nil && member.System {
+		return false, "system_column_inapplicable", ""
 	}
 	guard := s.DDL.Alter[index].Options["if_exists"]
 	if guard != "true" && guard != "false" {
@@ -238,7 +244,14 @@ func (r alterObjectExistenceRule) evaluatePGDropColumn(ctx context.Context, s sp
 		}
 		_, reason, _ := pgDropColumnTarget(s, i)
 		if reason != "" {
-			findings = append(findings, rule.Finding{Level: r.level, Message: fmt.Sprintf("column %q does not exist on table %q", a.Name, s.DDL.Table.Name), Suggestion: "verify the exact column identity or use IF EXISTS for intentional absent-column no-ops; dependency and permission legality are not proved", Metadata: map[string]any{"table": s.DDL.Table.Name, "action": a.Action, "name": a.Name, "exists": false}})
+			message := fmt.Sprintf("column %q does not exist on table %q", a.Name, s.DDL.Table.Name)
+			metadata := map[string]any{"table": s.DDL.Table.Name, "action": a.Action, "name": a.Name, "exists": false}
+			if reason == "system_column_inapplicable" {
+				message = "PostgreSQL does not allow dropping this observed system column"
+				metadata["exists"] = true
+				metadata["reason_code"] = reason
+			}
+			findings = append(findings, rule.Finding{Level: r.level, Message: message, Suggestion: "verify the exact user-column identity; IF EXISTS protects only absent targets, not existing system columns; dependency and permission legality are not proved", Metadata: metadata})
 		}
 	}
 	return findings, nil

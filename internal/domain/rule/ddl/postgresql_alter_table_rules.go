@@ -60,7 +60,7 @@ func (r pgAlterActionAdvisoryRule) Evaluate(ctx context.Context, statement spec.
 			return nil, err
 		}
 		if r.id == ruleIDPGAlterDropColumnAdvisory {
-			if noop, _, _ := pgDropColumnTarget(statement, i); noop {
+			if noop, reason, _ := pgDropColumnTarget(statement, i); noop || reason == "system_column_inapplicable" {
 				continue
 			}
 		}

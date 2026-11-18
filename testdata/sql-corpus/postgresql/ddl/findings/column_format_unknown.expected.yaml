@@ -1,0 +1,26 @@
+name: column_format_unknown
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    type_t:
+      exists: true
+      pg_columns:
+        ordinary: true
+        columns: [{name: id, identity: '', generated: '', type_width: -1, not_null: false, has_default: false, primary_key: false}]
+    build_t:
+      exists: true
+      pg_columns:
+        ordinary: true
+        columns: [{name: id, identity: '', generated: '', type_width: -1, type_storage: x, not_null: false, has_default: false, primary_key: false}]
+    system_t:
+      exists: true
+      pg_columns: {ordinary: true, columns: []}
+expect:
+  parse_ok: true
+  statements: {count: 3}
+  unsupported: {count: 0}
+  findings:
+    exclude: [ddl.pg.alter.column.storage.valid, ddl.pg.alter.column.compression.valid, ddl.alter.drop_column.exists.require]

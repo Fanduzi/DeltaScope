@@ -592,6 +592,50 @@ Maintainer notes: [decision](../decisions/2026-11-17-postgresql-alter-constraint
 
 ---
 
+## DDL: PostgreSQL Column Storage and Compression (2 rules)
+
+Default-enabled, parameterless blockers, requiring real observed PG17:
+
+| Rule | Bounded check |
+| --- | --- |
+| `ddl.pg.alter.column.storage.valid` | Invalid case-insensitive STORAGE mode, proven absent user column/system-target inapplicability, or non-PLAIN strategy on a proven non-TOAST-aware type |
+| `ddl.pg.alter.column.compression.valid` | Invalid case-sensitive COMPRESSION method, absent/inapplicable target, nondefault compression on a non-TOAST-aware type, or lz4 unavailable in the observed build enum |
+
+STORAGE accepts PLAIN/EXTERNAL/EXTENDED/MAIN/DEFAULT with native case ownership;
+Unicode lowercase lookalikes are not silently accepted. Actual `pg_type.typstorage`
+establishes type readiness and DEFAULT strategy, not a type-name/integer-width
+guess or current column `attstorage`. COMPRESSION accepts pglz/lz4/default;
+quoted upper-case names are not equivalent. Compression default is legal on
+fixed-length types. A toastable text column using STORAGE PLAIN may still
+receive pglz/lz4. A selected pglz default does not prove lz4 unavailable: support
+comes from the complete observed `default_toast_compression` GUC enum in the
+existing ordinary-reader pg_settings read, without privileged pg_config access.
+
+Exact fresh ordinary persistent non-inheritance/non-partition target facts are
+required; intrinsic mode/method refusals need the observed version, not an
+invented target. Missing/stale/misbound/ambiguous/unmodeled proof retains
+`unproven_column_storage` or `unproven_column_compression` (unverified, at least
+review), requiring the relevant `instance.version`, `target_table.pg_columns`,
+`column.storage_strategy`, `column.compression_method`, `column.type_storage`
+or `instance.pg_compression_lz4`. Earlier related DDL/parser failures/ALTER
+siblings invalidate old proof; no post-state, privilege or dependency simulation.
+
+Observed negative-attnum system members are separate from user Columns; an
+empty user directory never proves ctid absent. Related existing generation,
+statistics/options and DROP checks reject proven inapplicable system targets,
+not fictitious absence. IF EXISTS does not make an existing system column a
+no-op; the old DROP ID remains and its deletion advice is suppressed for that
+proved inapplicable target. Missing system observations remain gaps. Exact
+quoted upper-case user names are not conflated with system members.
+
+SET STORAGE/COMPRESSION does not itself rewrite/recompress existing rows, nor
+certify future ratio, data, dependencies, privileges or successful execution.
+New blocker findings contain bounded action/identifiers/reason, not method
+payloads, private catalog/build facts or provider errors. Independent forbids
+and MySQL/TiDB stay unchanged. Other F09 dimensions remain open.
+
+[Decision and exact evidence](../decisions/2026-11-18-postgresql-column-storage-compression-targets.md).
+
 ## DDL: PostgreSQL Column Tuning and Guarded Drops (3 new rules)
 
 Default-enabled, parameterless, with real observed PG17 facts:

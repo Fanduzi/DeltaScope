@@ -256,6 +256,8 @@ type corpusSequenceDefinition struct {
 }
 
 type corpusInstanceFacts struct {
+	PGCompressionLZ4Known          bool   `yaml:"pg_compression_lz4_known,omitempty"`
+	PGCompressionLZ4Supported      bool   `yaml:"pg_compression_lz4_supported,omitempty"`
 	Version                        string `yaml:"version,omitempty"`
 	DefaultCharset                 string `yaml:"default_charset,omitempty"`
 	InnoDBLargePrefixEnabled       bool   `yaml:"innodb_large_prefix_enabled,omitempty"`
@@ -373,8 +375,9 @@ type corpusIndex struct {
 }
 
 type corpusPGColumnCatalog struct {
-	Ordinary *bool                 `yaml:"ordinary"`
-	Columns  []corpusPGColumnState `yaml:"columns"`
+	Ordinary      *bool                 `yaml:"ordinary"`
+	Columns       []corpusPGColumnState `yaml:"columns"`
+	SystemColumns []corpusPGColumnState `yaml:"system_columns,omitempty"`
 }
 
 type corpusPGColumnState struct {
@@ -382,6 +385,8 @@ type corpusPGColumnState struct {
 	Identity         *string                        `yaml:"identity"`
 	Generated        *string                        `yaml:"generated"`
 	TypeWidth        *int                           `yaml:"type_width"`
+	TypeStorage      string                         `yaml:"type_storage,omitempty"`
+	System           bool                           `yaml:"system,omitempty"`
 	NotNull          *bool                          `yaml:"not_null"`
 	HasDefault       *bool                          `yaml:"has_default"`
 	PrimaryKey       *bool                          `yaml:"primary_key"`

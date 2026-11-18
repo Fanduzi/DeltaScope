@@ -574,6 +574,41 @@ FK 告警不放宽 `ddl.table.foreign_key.forbid`；原有 CHECK NOT VALID 和 N
 
 ---
 
+## DDL：PostgreSQL 列 STORAGE / COMPRESSION（2 条规则）
+
+默认开启、无参数、blocker，要求真实观测 PG17：
+
+| 规则 | 限定检查 |
+| --- | --- |
+| `ddl.pg.alter.column.storage.valid` | 非法大小写不敏感 STORAGE 模式、已证明用户列缺失/系统目标不适用、或不具备 TOAST 能力类型上的非 PLAIN 策略 |
+| `ddl.pg.alter.column.compression.valid` | 非法大小写敏感压缩方法、已证明缺失/不适用目标、非 TOAST 类型上的非 default 压缩、或真实构建枚举证明 lz4 不可用 |
+
+STORAGE 接受 PLAIN/EXTERNAL/EXTENDED/MAIN/DEFAULT，遵循原生大小写语义，不把 Unicode
+小写仿形误当合法模式。实际 `pg_type.typstorage` 证明类型能力和 DEFAULT 策略，不能用
+类型名/整数宽度或当前列 `attstorage` 替代。COMPRESSION 接受 pglz/lz4/default，quoted
+大写名称不等价；固定长度类型允许 compression default；toastable text 即使当前 STORAGE
+PLAIN 仍可设置 pglz/lz4。当前默认选 pglz 不代表 lz4 不可用；复用普通用户可读的
+pg_settings 查询，从 `default_toast_compression` 的完整 enumvals 证明构建支持，
+不新增受限 pg_config 读取。
+
+目标结论要求精确、新鲜的普通持久非继承/非分区表事实；内在非法模式/方法只需真实版本，
+不伪造目标。未知/过期/错绑定/歧义/未建模事实保留 `unproven_column_storage` 或
+`unproven_column_compression`（unverified、至少 review），按需指明 `instance.version`、
+`target_table.pg_columns`、`column.storage_strategy`、`column.compression_method`、
+`column.type_storage`、`instance.pg_compression_lz4`。相关前序 DDL/parser failure/较早
+ALTER 子动作撤销旧证明，不模拟后态、权限或依赖。
+
+真实负 attnum 系统成员与用户 Columns 分开；用户目录为空不证明 ctid 缺失。相关既有
+生成列、统计/选项和 DROP 检查对已证明不适用的系统目标准确拒绝，不再谎称缺失。
+IF EXISTS 不能把真实系统列变成 no-op；保留旧 DROP ID，并抑制这类已证明不可执行目标的
+删除 advisory。系统事实未给仍是 gap；quoted 大写用户名称不与系统成员混同。
+
+设置 STORAGE/COMPRESSION 本身不重写/重压缩既有行，不证明未来压缩率、数据、依赖、权限
+或执行成功。新 blocker finding 仅含有界动作/标识符/原因，不输出方法载荷、私有目录/构建
+事实或 provider 错误。独立 forbid 和 MySQL/TiDB 不变；F09 其他维度继续开放。
+
+[决策与精确证据](../decisions/2026-11-18-postgresql-column-storage-compression-targets.md)。
+
 ## DDL：PostgreSQL 列调优与 guarded DROP（3 条新规则）
 
 默认开启、无参数，要求真实观测的 PG17：

@@ -954,6 +954,8 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGColumnStatisticsTargetValid, construct: newPGColumnStatisticsTargetRule},
 		{ruleID: ruleIDPGColumnStatisticsClampWarn, construct: newPGColumnStatisticsClampRule},
 		{ruleID: ruleIDPGColumnOptionsValid, construct: newPGColumnOptionsRule},
+		{ruleID: ruleIDPGColumnStorageValid, construct: newPGColumnStorageRule},
+		{ruleID: ruleIDPGColumnCompressionValid, construct: newPGColumnCompressionRule},
 		{ruleID: ruleIDPGColumnGenerationTransitionValid, construct: newPGColumnGenerationTransitionRule},
 		{ruleID: ruleIDPGAlterIdentityOptionsValid, construct: newPGAlterIdentityOptionsRule},
 		{ruleID: ruleIDPGAlterIdentityRestartWarn, construct: newPGAlterIdentityRestartRule},

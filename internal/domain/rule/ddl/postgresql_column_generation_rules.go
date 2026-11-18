@@ -94,6 +94,9 @@ func pgColumnTransitionTarget(s spec.Statement, index int) (*spec.PGColumnState,
 	if c == nil {
 		return nil, "column_absent", ""
 	}
+	if c.System {
+		return c, "system_column_inapplicable", ""
+	}
 	a := s.DDL.Alter[index]
 	switch a.Action {
 	case "add_identity":

@@ -16,6 +16,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 | handler.go | Binds Gin HTTP requests to public APIs, emits diagnostic error envelopes that retain the full partial audit result beside the bounded transport error, and maps MCP `connection_ref` to field-level `invalid_request` instead of opaque `invalid_json` |
 | handler_unsupported_diagnostics_evidence_test.go | Verifies HTTP parser diagnostics preserve the review-floored partial result, valid statements/findings, locations, context, error status, and no-leak boundaries |
 | handler_unsupported_verdict_floor_postgresql_tag_test.go | Verifies HTTP PostgreSQL `SELECT 1` keeps non-success status and serializes the review-floored unsupported result with the retained incomplete-coverage statement |
+| audit_column_format_postgresql_tag_test.go | HTTP JSON proof for STORAGE/COMPRESSION/type/default/case, unknown lz4 gap and shared system-target rejection without fake guarded no-op or private method metadata |
 | audit_column_tuning_postgresql_tag_test.go | HTTP JSON proof for D6 statistics/options/clamp and old DROP ID, guarded no-op and unknown/underflow proof; metadata omits numeric/private payloads |
 | audit_column_generation_postgresql_tag_test.go | Pins D5 target/options blockers, RESTART/CYCLE warnings and unknown-catalog gaps over real HTTP audit JSON |
 | audit_constraint_target_postgresql_tag_test.go | Real SDK/provider-backed HTTP parity for three target blockers, guarded no-op silence and unverified/review gaps; no transport-local semantics |

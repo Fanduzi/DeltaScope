@@ -234,12 +234,16 @@ func summaryForRule(ruleID string) string {
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	switch ruleID {
+	case "ddl.pg.alter.column.storage.valid":
+		return "Observed PG17 column STORAGE: rejects invalid case-insensitive modes, absent user columns, proved system targets or non-PLAIN strategies on a non-TOAST-aware type. Actual type typstorage supplies DEFAULT; unknown facts remain gaps."
+	case "ddl.pg.alter.column.compression.valid":
+		return "Observed PG17 column COMPRESSION: rejects invalid case-sensitive methods, absent user columns, proved system targets, nondefault compression on non-TOAST-aware types or lz4 unavailable in the observed build enum. DEFAULT allows fixed-length types; current STORAGE PLAIN is not a type restriction."
 	case "ddl.pg.alter.column.statistics.target.valid":
-		return "Observed PG17 statistics declaration: targets below -1 or proved missing columns block; DEFAULT/-1 and normal targets are allowed. Above-maximum targets are clamped, not refused. Unknown facts remain gaps."
+		return "Observed PG17 statistics declaration: targets below -1, proved missing user columns or inapplicable system targets block; DEFAULT/-1 and normal targets are allowed. Above-maximum targets are clamped, not refused. Unknown facts remain gaps."
 	case "ddl.pg.alter.column.statistics.clamp.warn":
 		return "Warns when an applicable explicit PG17 statistics target exceeds 10000 and the backend lowers it to 10000. DEFAULT and normal values are silent; unknown or proved-invalid targets do not invent a clamp finding."
 	case "ddl.pg.alter.column.options.valid":
-		return "Checks known builtin PG17 column SET options n_distinct/n_distinct_inherited for range [-1, DBL_MAX] and duplicate keys, plus exact SET/RESET target existence. Unknown SET keys/opaque values remain gaps; unknown RESET names are not inherently errors."
+		return "Checks known builtin PG17 column SET options n_distinct/n_distinct_inherited for range [-1, DBL_MAX] and duplicate keys, plus exact SET/RESET target existence and system inapplicability. Unknown SET keys/opaque values remain gaps; unknown RESET names are not inherently errors."
 	case "ddl.pg.alter.column.generation.transition.valid":
 		return "PG17 existing-column generation preconditions: exact fresh ordinary-table identity/generated/type/NOT NULL/DEFAULT/PK facts. Proven conflicts block; guards preserve known no-ops. Data, expression, permission and stale/ambiguous facts are not guessed."
 	case "ddl.pg.alter.identity.sequence_options.valid":
@@ -295,6 +299,10 @@ func statementKindsForRule(ruleID string) []string {
 
 func triggerExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.alter.column.storage.valid":
+		return "ALTER TABLE t ALTER COLUMN fixed_integer SET STORAGE EXTERNAL;"
+	case ruleID == "ddl.pg.alter.column.compression.valid":
+		return "ALTER TABLE t ALTER COLUMN fixed_integer SET COMPRESSION pglz;"
 	case ruleID == "ddl.pg.alter.column.statistics.target.valid":
 		return "ALTER TABLE t ALTER COLUMN c SET STATISTICS -2;"
 	case ruleID == "ddl.pg.alter.column.statistics.clamp.warn":
@@ -350,6 +358,10 @@ func triggerExampleForRule(ruleID string) string {
 
 func validExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.alter.column.storage.valid":
+		return "ALTER TABLE t ALTER COLUMN fixed_integer SET STORAGE DEFAULT;"
+	case ruleID == "ddl.pg.alter.column.compression.valid":
+		return "ALTER TABLE t ALTER COLUMN fixed_integer SET COMPRESSION default;"
 	case ruleID == "ddl.pg.alter.column.statistics.target.valid", ruleID == "ddl.pg.alter.column.statistics.clamp.warn":
 		return "ALTER TABLE t ALTER COLUMN c SET STATISTICS DEFAULT;"
 	case ruleID == "ddl.pg.alter.column.options.valid":
@@ -422,6 +434,8 @@ func configExampleForRule(ruleID string, policy domainpolicy.RulePolicy) string 
 
 func remediationForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.pg.alter.column.storage.valid", ruleID == "ddl.pg.alter.column.compression.valid":
+		return "Verify fresh exact ordinary-table PG17 user/system membership, actual type typstorage and observed lz4 enum capability. Preserve storage/method case ownership, allow compression default on fixed-length types and do not mistake current STORAGE PLAIN for type ineligibility. Unknown/stale facts stay gaps; these declarations do not immediately rewrite or recompress existing data."
 	case strings.HasPrefix(ruleID, "ddl.pg.alter.column.statistics."), ruleID == "ddl.pg.alter.column.options.valid":
 		return "Resolve exact fresh observed-PG17 column facts; correct known numeric ranges and duplicate SET keys. Statistics above 10000 are clamped, not refused. Preserve unknown/extension/opaque cases as gaps and distinguish RESET removal from SET validation."
 	case strings.HasPrefix(ruleID, "ddl.pg.alter.identity."), ruleID == "ddl.pg.alter.column.generation.transition.valid":
@@ -510,14 +524,18 @@ func metadataNotesForRule(ruleID string) *MetadataNotes {
 		return nil
 	}
 	switch ruleID {
+	case "ddl.pg.alter.column.storage.valid", "ddl.pg.alter.column.compression.valid":
+		return &MetadataNotes{Kinds: kinds,
+			Required: "Observed PG17, exact fresh ordinary persistent non-inheritance/non-partition user/system column directories, actual pg_type.typstorage and complete pg_settings enum evidence for lz4 when needed. Intrinsic method/mode refusals require the observed version, not a fabricated target.",
+			Missing:  "Unknown/stale/misbound/ambiguous scope, authored method/strategy, type or build facts retain unproven_column_storage/unproven_column_compression gaps (unverified/review). User-directory absence does not prove system absence; no privilege/data/dependency/execution or post-state certification."}
 	case "ddl.pg.alter.column.statistics.target.valid", "ddl.pg.alter.column.statistics.clamp.warn", "ddl.pg.alter.column.options.valid":
 		return &MetadataNotes{Kinds: kinds,
 			Required: "Observed PG17 and exact fresh ordinary persistent non-inheritance/non-partition column facts. Intrinsic modeled numeric refusals require the observed version but not an invented catalog.",
-			Missing:  "Unknown/stale/misbound/ambiguous facts or unmodeled/quoted/nonfinite/extension SET values retain unproven_column_tuning gaps (unverified/review). No data/expression/permission or PG post-state inference."}
+			Missing:  "Unknown/stale/misbound/ambiguous user/system facts or unmodeled/quoted/nonfinite/extension SET values retain unproven_column_tuning gaps (unverified/review). No data/expression/permission or PG post-state inference."}
 	case "ddl.alter.drop_column.exists.require", "ddl.pg.alter.drop_column.advisory":
 		return &MetadataNotes{Kinds: kinds,
-			Required: "For PostgreSQL, exact fresh ordinary-table PG17 column/guard facts distinguish absent unguarded targets from proven IF EXISTS no-ops; only the latter suppress deletion advice. Other dialects retain their existing member-existence semantics.",
-			Missing:  "The PostgreSQL existence check reports unproven_column_target for unknown version/guard/catalog, ambiguity, stale or misbound proof. Conditional advice is not deletion/execution proof; independent forbids stay effective."}
+			Required: "For PostgreSQL, exact fresh ordinary-table PG17 user/system column/guard facts distinguish absent unguarded targets from proven IF EXISTS no-ops and inapplicable existing system targets; proved no-op/system inapplicability suppress deletion advice. Other dialects retain existing semantics.",
+			Missing:  "The PostgreSQL existence check reports unproven_column_target for unknown version/guard/user or system catalog, ambiguity, stale or misbound proof; user-directory absence never proves a system member absent. Conditional advice is not deletion/execution proof; independent forbids stay effective."}
 	case "ddl.pg.alter.column.generation.transition.valid", "ddl.pg.alter.identity.sequence_options.valid", "ddl.pg.alter.identity.restart.warn", "ddl.pg.alter.identity.cycle.warn":
 		return &MetadataNotes{Kinds: kinds,
 			Required: "Observed PG17, exact fresh ordinary persistent non-inheritance/non-partition column facts and actual dependency-bound stable identity sequence parameters. Examples assume these premises; observed version alone suffices for intrinsic options refusals.",
@@ -554,7 +572,7 @@ func metadataNotesForRule(ruleID string) *MetadataNotes {
 
 func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 	switch ruleID {
-	case "ddl.pg.alter.column.statistics.target.valid", "ddl.pg.alter.column.statistics.clamp.warn", "ddl.pg.alter.column.options.valid", "ddl.alter.drop_column.exists.require", "ddl.pg.alter.drop_column.advisory":
+	case "ddl.pg.alter.column.storage.valid", "ddl.pg.alter.column.compression.valid", "ddl.pg.alter.column.statistics.target.valid", "ddl.pg.alter.column.statistics.clamp.warn", "ddl.pg.alter.column.options.valid", "ddl.alter.drop_column.exists.require", "ddl.pg.alter.drop_column.advisory":
 		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true
 	case "ddl.pg.alter.column.generation.transition.valid", "ddl.pg.alter.identity.sequence_options.valid", "ddl.pg.alter.identity.restart.warn", "ddl.pg.alter.identity.cycle.warn":
 		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true
@@ -918,6 +936,8 @@ func sourceForRule() string {
 const unknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
 
 var metadataAwareRuleIDs = map[string]bool{
+	"ddl.pg.alter.column.storage.valid":                    true,
+	"ddl.pg.alter.column.compression.valid":                true,
 	"ddl.pg.alter.column.statistics.target.valid":          true,
 	"ddl.pg.alter.column.statistics.clamp.warn":            true,
 	"ddl.pg.alter.column.options.valid":                    true,

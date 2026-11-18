@@ -106,6 +106,43 @@ This is model/provider compatibility evidence, **not** a system-target rule or
 D7 validity delivery; the existing system-target verdicts still need the next
 shared-rule commit and final same-HEAD canonical evidence.
 
+The shared-rule candidate (4f157146 + dirty source, not final) replays **56
+native / 112 CLI** shapes: 20 successes, 27 0A000, seven 22023 and two 42703.
+Every metadata-aware success/refusal matches native and the original 42 native
+SQLSTATEs are unchanged. Evidence at
+`/tmp/ds-pg-d7-rules-scope-4f157146/evidence.json` records base/dirty status,
+tracked-diff, new-rule-source and binary SHA256. It is not a clean-HEAD canonical
+substitute. Related system operations are not all 0A000: ADD IDENTITY on ctid
+reaches the integer-type refusal **22023**; the inapplicable-system finding must
+not be mistaken for a copied native SQLSTATE or general execution simulation.
+The Unicode lookalike `"PLAİN"` also rejects 22023 and is not canonicalized to
+PLAIN by Unicode lowercase. System guard/no-op and deletion/clamp-risk tests
+were red before the shared correction and green afterward.
+
+The final shared-rule candidate v2 (still 4f157146 + dirty source, not delivery)
+passes build, full default/PG-tagged tests, inventory/corpus/coverage contracts,
+both lint lanes and format/diff checks. Original T37 remains byte-for-byte
+unchanged at **136/136, 2,186 assertions** in
+`/tmp/ddl-golden-pg-column-format-rules-v2-4f157146/T37/artifact.json`.
+`/tmp/ds-pg-d7-rules-scope-v2-4f157146/evidence.json` repeats all 56 native/112
+CLI shapes with identical SQLSTATEs and 56/56 live success/refusal matches at
+the candidate's new binary/source hashes. Application/SDK/HTTP/MCP tests pin
+shared findings/default controls and unverified build gaps without private
+method metadata; the application also pins prior-DDL/parser/sibling invalidation.
+A separate red/green test confirms unknown authored method/strategy facts do
+not hide an independently proved absent or inapplicable system target.
+The first lint retry corrected only an import group; no check was disabled.
+Canonical additions, exact inventory binding and final all-task proof remain
+for the next evidence task, not implied by these compatibility gates.
+
+The candidate's first default/PG full suites failed only for the two missing
+new corpus rule targets; the missing fixtures are added rather than excluding
+the new rules or weakening the coverage gate. Seven additive corpus pairs cover
+invalid/type/control/system/build-unavailable/unknown and non-PG cases. A native
+without-lz4 binary has not been run: negative-build unit/corpus facts and the
+upstream USE_LZ4 enum gate are distinct from the actual anchor's positive lz4
+read. This limitation does not convert an unobserved build into proved false.
+
 As verified 2026-11-18, the project remains pg_query_go/v6.2.2/libpg_query17 with
 a pinned native PG17.7 anchor. The official current stable release is 18.7 and
 current 17 minor is 17.12. Neither is substituted into the parser/fixture or

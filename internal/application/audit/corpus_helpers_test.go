@@ -89,6 +89,8 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 	if metadata.Instance != nil {
 		provider.instance = &spec.InstanceFacts{
 			Version:                            metadata.Instance.Version,
+			PGCompressionLZ4Known:              metadata.Instance.PGCompressionLZ4Known,
+			PGCompressionLZ4Supported:          metadata.Instance.PGCompressionLZ4Supported,
 			DefaultCharset:                     metadata.Instance.DefaultCharset,
 			InnoDBLargePrefixEnabled:           metadata.Instance.InnoDBLargePrefixEnabled,
 			InnoDBLargePrefixKnown:             metadata.Instance.InnoDBLargePrefixKnown,
@@ -584,18 +586,26 @@ func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusT
 	}
 	if cat := snapshot.PGColumns; cat != nil && cat.Ordinary != nil {
 		out.PGColumns = &spec.PGColumnCatalog{Ordinary: *cat.Ordinary}
-		if cat.Columns != nil {
-			out.PGColumns.Columns = make([]spec.PGColumnState, 0, len(cat.Columns))
-			for _, member := range cat.Columns {
-				if member.Name == "" || member.Identity == nil || member.Generated == nil || member.TypeWidth == nil || member.NotNull == nil || member.HasDefault == nil || member.PrimaryKey == nil {
-					out.PGColumns.Columns = nil
+		for namespace, members := range [][]corpusPGColumnState{cat.Columns, cat.SystemColumns} {
+			if members == nil {
+				continue
+			}
+			states := make([]spec.PGColumnState, 0, len(members))
+			for _, member := range members {
+				if member.Name == "" || member.Identity == nil || member.Generated == nil || member.TypeWidth == nil || member.NotNull == nil || member.HasDefault == nil || member.PrimaryKey == nil || member.System != (namespace == 1) {
+					states = nil
 					break
 				}
-				state := spec.PGColumnState{Name: member.Name, Identity: *member.Identity, Generated: *member.Generated, TypeWidth: *member.TypeWidth, NotNull: *member.NotNull, HasDefault: *member.HasDefault, PrimaryKey: *member.PrimaryKey}
+				state := spec.PGColumnState{Name: member.Name, Identity: *member.Identity, Generated: *member.Generated, TypeWidth: *member.TypeWidth, TypeStorage: member.TypeStorage, System: member.System, NotNull: *member.NotNull, HasDefault: *member.HasDefault, PrimaryKey: *member.PrimaryKey}
 				if seq := member.IdentitySequence; seq != nil {
 					state.IdentitySequence = &spec.PGIdentitySequenceState{TypeWidth: seq.TypeWidth, Definition: spec.SequenceDefinition{Start: seq.Start, Increment: seq.Increment, MinValue: seq.MinValue, MaxValue: seq.MaxValue, CacheValue: seq.CacheValue, Cycle: seq.Cycle}}
 				}
-				out.PGColumns.Columns = append(out.PGColumns.Columns, state)
+				states = append(states, state)
+			}
+			if namespace == 0 {
+				out.PGColumns.Columns = states
+			} else {
+				out.PGColumns.SystemColumns = states
 			}
 		}
 	}

@@ -529,6 +529,8 @@ const (
 	ruleIDPGColumnStatisticsTargetValid     = "ddl.pg.alter.column.statistics.target.valid"
 	ruleIDPGColumnStatisticsClampWarn       = "ddl.pg.alter.column.statistics.clamp.warn"
 	ruleIDPGColumnOptionsValid              = "ddl.pg.alter.column.options.valid"
+	ruleIDPGColumnStorageValid              = "ddl.pg.alter.column.storage.valid"
+	ruleIDPGColumnCompressionValid          = "ddl.pg.alter.column.compression.valid"
 	ruleIDPGColumnGenerationTransitionValid = "ddl.pg.alter.column.generation.transition.valid"
 	ruleIDPGAlterIdentityOptionsValid       = "ddl.pg.alter.identity.sequence_options.valid"
 	ruleIDPGAlterIdentityRestartWarn        = "ddl.pg.alter.identity.restart.warn"

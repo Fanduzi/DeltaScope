@@ -9,6 +9,8 @@ func ddlPgRules() map[string]RulePolicy {
 		"ddl.pg.alter.column.statistics.target.valid": {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.pg.alter.column.statistics.clamp.warn":   {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
 		"ddl.pg.alter.column.options.valid":           {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
+		"ddl.pg.alter.column.storage.valid":           {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
+		"ddl.pg.alter.column.compression.valid":       {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		// Bounded PG17 existing-column generation checks and authored identity risks.
 		"ddl.pg.alter.column.generation.transition.valid": {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.pg.alter.identity.sequence_options.valid":    {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},

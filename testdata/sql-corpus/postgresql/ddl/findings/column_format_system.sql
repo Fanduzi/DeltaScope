@@ -1,0 +1,7 @@
+ALTER TABLE app.storage_t ALTER COLUMN ctid SET STORAGE PLAIN;
+ALTER TABLE app.compression_t ALTER COLUMN ctid SET COMPRESSION default;
+ALTER TABLE app.statistics_t ALTER COLUMN ctid SET STATISTICS DEFAULT;
+ALTER TABLE app.options_t ALTER COLUMN ctid SET (n_distinct=0.5);
+ALTER TABLE app.reset_t ALTER COLUMN ctid RESET (n_distinct);
+ALTER TABLE app.generation_t ALTER COLUMN ctid DROP IDENTITY IF EXISTS;
+ALTER TABLE app.drop_t DROP COLUMN IF EXISTS ctid;

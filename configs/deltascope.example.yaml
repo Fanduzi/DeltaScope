@@ -1031,6 +1031,12 @@ rules:
   ddl.pg.alter.column.statistics.clamp.warn:
     enabled: true
     level: warning
+  ddl.pg.alter.column.storage.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.alter.column.compression.valid:
+    enabled: true
+    level: blocker
   ddl.pg.alter.column.options.valid:
     enabled: true
     level: blocker
