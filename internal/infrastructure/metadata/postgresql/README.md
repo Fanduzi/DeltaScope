@@ -4,6 +4,12 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 
 ## Files
 
+The table snapshot's identity query uses the exact catalog namespace and
+relation name across all relation kinds. Its private `PGRelation` observation
+can distinguish a sequence or index from a missing relation while the existing
+shape loader still returns table shapes for its original relation kinds.
+`pg_temp` remains unobserved because it is a session alias.
+
 | File | Responsibility |
 |------|---------------|
 | open.go | Formats PostgreSQL metadata connection DSNs and opens pgx stdlib `database/sql` handles |
@@ -12,6 +18,7 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 | column_state_test.go | Pins quoted/duplicate/empty/unknown/scope facts, separate column/sequence types, int64 values, serial/domain controls, SQL privacy and query/scan/iteration/close error arms |
 | instance_namespace_test.go | Pins actual pg_catalog version/settings and CASE/membership/row operators rather than search_path namesakes; unknown capability stays unknown |
 | column_format_test.go | Pins observed type/system directories and empty-user preservation, exact quoted names, enum-derived lz4 known/false/unknown, system-qualified attribute/type comparisons and non-last-wins/error arms without privileged pg_config |
+| relation_state_test.go | Verifies exact relation reads, absent and non-table kinds, unbound scopes, error propagation and JSON privacy |
 | constraint_state.go | Loads all target-bound `pg_constraint` names/kinds/validated flags with parameterized exact schema/table identity, no expressions/definitions; errors propagate before publishing the non-nil complete directory and duplicate rows stay visible |
 | constraint_state_test.go | Pins complete/empty/quoted/duplicate catalog reads and query/scan/iteration errors without a live database |
 | provider.go | Loads normalized dialect, schema, instance-fact (including private known/support lz4 facts from the existing pg_catalog.pg_settings enum read with system-qualified version and comparison operators), table snapshot, and plain-`EXPLAIN` plan-estimate data from PostgreSQL catalogs and planner stats |

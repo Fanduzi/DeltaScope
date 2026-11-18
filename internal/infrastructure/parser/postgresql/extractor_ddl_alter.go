@@ -29,9 +29,10 @@ func extractAlterTableStmt(statement spec.Statement, stmt *pg_query.AlterTableSt
 	}
 
 	ddl := &spec.DDL{
-		Operation: spec.DDLOperationAlterTable,
-		Table:     tableFromRangeVar(stmt.GetRelation()),
-		Alter:     make([]spec.Alter, 0, len(stmt.GetCmds())),
+		Operation:       spec.DDLOperationAlterTable,
+		PGTableIfExists: stmt.GetMissingOk(),
+		Table:           tableFromRangeVar(stmt.GetRelation()),
+		Alter:           make([]spec.Alter, 0, len(stmt.GetCmds())),
 	}
 	for _, item := range stmt.GetCmds() {
 		cmd := item.GetAlterTableCmd()
@@ -240,8 +241,9 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 	switch stmt.GetRenameType() {
 	case pg_query.ObjectType_OBJECT_COLUMN:
 		statement.DDL = &spec.DDL{
-			Operation: spec.DDLOperationAlterTable,
-			Table:     table,
+			Operation:       spec.DDLOperationAlterTable,
+			PGTableIfExists: stmt.GetRelationType() == pg_query.ObjectType_OBJECT_TABLE && stmt.GetMissingOk(),
+			Table:           table,
 			Alter: []spec.Alter{{
 				Action: "rename_column",
 				Name:   stmt.GetSubname(),
@@ -254,9 +256,10 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 		return statement
 	case pg_query.ObjectType_OBJECT_TABLE:
 		statement.DDL = &spec.DDL{
-			Operation: spec.DDLOperationAlterTable,
-			Table:     table,
-			Alter:     []spec.Alter{{Action: "rename_table", Name: table.Name, Options: map[string]string{"new_name": stmt.GetNewname()}}},
+			Operation:       spec.DDLOperationAlterTable,
+			PGTableIfExists: stmt.GetMissingOk(),
+			Table:           table,
+			Alter:           []spec.Alter{{Action: "rename_table", Name: table.Name, Options: map[string]string{"new_name": stmt.GetNewname()}}},
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_INDEX:
@@ -485,8 +488,9 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 		return statement
 	}
 	statement.DDL = &spec.DDL{
-		Operation: spec.DDLOperationAlterTable,
-		Table:     tableFromRangeVar(stmt.GetRelation()),
+		Operation:       spec.DDLOperationAlterTable,
+		PGTableIfExists: stmt.GetObjectType() == pg_query.ObjectType_OBJECT_TABLE && stmt.GetMissingOk(),
+		Table:           tableFromRangeVar(stmt.GetRelation()),
 		Alter: []spec.Alter{{
 			Action:  "set_schema",
 			Options: map[string]string{"new_schema": stmt.GetNewschema()},
@@ -831,7 +835,12 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		if unsupported := hasUnsupportedColumnConstraint(column); unsupported != nil {
 			return spec.Alter{}, false, unsupported
 		}
-		return spec.Alter{Action: "add_column", Name: column.GetColname(), Column: &spec.AlterColumn{Definition: columnPtr(columnFromDef(column))}}, true, nil
+		return spec.Alter{
+			Action:                 "add_column",
+			Name:                   column.GetColname(),
+			Column:                 &spec.AlterColumn{Definition: columnPtr(columnFromDef(column))},
+			PGAddColumnIfNotExists: cmd.GetMissingOk(),
+		}, true, nil
 	case pg_query.AlterTableType_AT_DropColumn:
 		return spec.Alter{Action: "drop_column", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}, Options: map[string]string{
 			"if_exists": strconv.FormatBool(cmd.GetMissingOk()),

@@ -148,21 +148,27 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, _ spec.Dialect, schema
 
 	tableRow := p.db.QueryRowContext(ctx, `
 		select c.relkind,
-		       obj_description(c.oid, 'pg_class') as table_comment,
+		       pg_catalog.obj_description(c.oid, 'pg_class') as table_comment,
 		       c.reltuples
 		from pg_catalog.pg_class c
-		join pg_catalog.pg_namespace n on n.oid = c.relnamespace
-		where n.nspname = $1 and c.relname = $2 and c.relkind in ('r','p','v','m','f')
+		join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) c.relnamespace
+		where n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text
+		  and c.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text
 	`, schema, table)
 
 	var relkind string
 	var comment sql.NullString
 	var reltuples sql.NullFloat64
-	if err := tableRow.Scan(&relkind, &comment, &reltuples); err != nil {
-		if err == sql.ErrNoRows {
-			return snapshot, nil
-		}
+	err := tableRow.Scan(&relkind, &comment, &reltuples)
+	if err != nil && err != sql.ErrNoRows {
 		return nil, fmt.Errorf("query table snapshot: %w", err)
+	}
+	// pg_temp is an alias for the session's actual temporary namespace.
+	if schema != "" && schema != "pg_temp" && table != "" {
+		snapshot.PGRelation = spec.PGRelationState{Name: table, Kind: relkind}
+	}
+	if err == sql.ErrNoRows || tableTypeFromRelkind(relkind) == "UNKNOWN" {
+		return snapshot, nil
 	}
 
 	snapshot.Exists = true

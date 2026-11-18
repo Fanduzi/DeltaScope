@@ -91,6 +91,10 @@ type InstanceFacts = spec.InstanceFacts
 // TableSnapshot mirrors metadata-aware target table snapshots for public providers.
 type TableSnapshot = spec.TableSnapshot
 
+// PGRelationState carries the schema-local relation observation for custom PostgreSQL providers.
+// TableSnapshot.PGRelation stays out of serialized metadata.
+type PGRelationState = spec.PGRelationState
+
 // PGConstraintState carries bounded PostgreSQL catalog facts for public providers.
 // TableSnapshot.PGConstraints remains excluded from serialized metadata.
 type PGConstraintState = spec.PGConstraintState

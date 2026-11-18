@@ -907,6 +907,9 @@ func targetTableName(statement spec.Statement) string {
 		switch statement.DDL.Operation {
 		case spec.DDLOperationCreateTable, spec.DDLOperationAlterTable, spec.DDLOperationDropTable, spec.DDLOperationTruncateTable,
 			spec.DDLOperationSplitRegion, spec.DDLOperationCompactTable:
+			if statement.Dialect == spec.DialectPostgreSQL {
+				return statement.DDL.Table.Name
+			}
 			return strings.TrimSpace(statement.DDL.Table.Name)
 		default:
 			return ""

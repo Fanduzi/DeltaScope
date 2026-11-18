@@ -358,6 +358,14 @@ type TTLConfig struct {
 	JobInterval   string `json:"-"`
 }
 
+// PGRelationState is an exact schema-local pg_class observation, including
+// relation kinds outside the table snapshot. A zero Name means unobserved.
+// A nonempty Name with an empty Kind proves absence in TableSnapshot.Schema.
+type PGRelationState struct {
+	Name string
+	Kind string
+}
+
 // TableSnapshot is the current metadata-backed shape of a target table.
 // Member collections keep their source semantics: a nil Columns marks a
 // withheld column set (unknown), while PrimaryKey/Indexes/Constraints treat
@@ -381,7 +389,8 @@ type TableSnapshot struct {
 	PGConstraints []PGConstraintState `json:"-"`
 	// PGColumns is a complete, exact-name generation-state directory; nil
 	// means unobserved/stale, never absence. It carries no expressions.
-	PGColumns *PGColumnCatalog `json:"-"`
+	PGColumns  *PGColumnCatalog `json:"-"`
+	PGRelation PGRelationState  `json:"-"`
 
 	// TTL is the catalog/prospective TTL configuration when one is proven
 	// present. nil means either proven absence (TTLKnown=true) or an

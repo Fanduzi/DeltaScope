@@ -6,6 +6,8 @@ type DDL struct {
 	Operation DDLOperation     `json:"operation,omitempty"`
 	Table     *Table           `json:"table,omitempty"`
 	View      *ViewDeclaration `json:"-"`
+	// PGTableIfExists is the authored PostgreSQL ALTER TABLE relation guard.
+	PGTableIfExists bool `json:"-"`
 	// Targets lists every table-level object identity the statement names, in
 	// source order: each DROP TABLE/VIEW name, each TRUNCATE relation, each
 	// RENAME TABLE source and destination pair-wise, and ALTER TABLE
@@ -989,6 +991,8 @@ type Alter struct {
 	PGColumnTuning *PGColumnTuning `json:"-"`
 	// PGCompressionMethod retains the exact authored AST name; nil is unobserved.
 	PGCompressionMethod *string `json:"-"`
+	// PGAddColumnIfNotExists is the authored ADD COLUMN guard, separate from the table guard.
+	PGAddColumnIfNotExists bool `json:"-"`
 	// Constraints carries CHECK members declared inside column definitions
 	// of the same alter spec (ADD/MODIFY/CHANGE COLUMN ... CHECK(...)) —
 	// the in-column form the catalog stores as a table-level CHECK member.

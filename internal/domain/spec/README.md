@@ -91,6 +91,10 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGColumnTuning`, `PGColumnOption`, `PGColumnOptionValueKind`
   Private authored statistics DEFAULT/literal and ordered SET/RESET key/value
   facts; numeric means proven finite AST literal, never parsed expression text.
+- `PGRelationState` carries the exact name and catalog kind within the snapshot schema.
+  A zero name means unobserved and an empty kind with a known name means absent.
+  `TableSnapshot.PGRelation`, `DDL.PGTableIfExists` and `Alter.PGAddColumnIfNotExists`
+  are internal evidence excluded from JSON.
 - `PGColumnTransition`, `PGColumnCatalog`, `PGColumnState`, `PGIdentitySequenceState`
   Internal authored/cached evidence; `PGColumnCatalog.FindColumn` proves exact-name
   binding or user absence only for a complete ordinary-table user directory;

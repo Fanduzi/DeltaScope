@@ -91,6 +91,10 @@ Stable public package surface for library consumers.
   `PGCompressionLZ4Known`/`PGCompressionLZ4Supported` distinguish an observed
   build enum answer from the selected compression default or no observation.
 - `TableSnapshot`
+- `PGRelationState` carries exact schema-local relation evidence for custom providers.
+  Use `TableSnapshot.Schema` with the observed `Name`, and an empty `Kind` only
+  when the relation is proven absent across all catalog kinds. Leave the state
+  zero when not observed. `TableSnapshot.PGRelation` is excluded from JSON.
 - `PGColumnCatalog`, `PGColumnState`, `PGIdentitySequenceState`, `SequenceDefinition`
   Bounded custom-provider column facts. `TableSnapshot.PGColumns` is private
   JSON evidence; user `Columns` nil is unobserved, non-nil empty means no user

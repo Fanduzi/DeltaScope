@@ -2,11 +2,11 @@ package audit
 
 import "github.com/Fanduzi/DeltaScope/internal/domain/spec"
 
-// invalidateStalePGTargetCatalogs withholds column/constraint proof after unapplied
-// DDL; it never predicts a post-state or mutates the provider's cached snapshot.
+// invalidateStalePGTargetCatalogs withholds catalog proof after unapplied DDL.
+// It never predicts a post-state or mutates the provider's cached snapshot.
 func invalidateStalePGTargetCatalogs(statements []spec.Statement, failures []parseFailure) {
 	stale := make(map[[2]string]bool)
-	allStale := false
+	allStale, earlierDDL := false, false
 	var earliest *parseFailure
 	for i := range failures {
 		f := &failures[i]
@@ -18,17 +18,25 @@ func invalidateStalePGTargetCatalogs(statements []spec.Statement, failures []par
 		if earliest != nil && (statement.Line <= 0 || earliest.Line <= 0 || failureBefore(earliest.Line, earliest.Column, statement.Line, statement.Column)) {
 			allStale = true
 		}
-		if m := statement.Metadata; m != nil && m.TargetTable != nil && m.TargetTable.Table != nil {
-			name := m.TargetTable.Table.Name
+		if m := statement.Metadata; m != nil && m.TargetTable != nil {
+			name := m.TargetTable.PGRelation.Name
+			if m.TargetTable.Table != nil {
+				name = m.TargetTable.Table.Name
+			}
 			if statement.DDL != nil && statement.DDL.Table != nil {
 				name = statement.DDL.Table.Name
 			}
-			key := [2]string{m.Schema, name}
-			if allStale || stale[key] {
+			staleMembers := allStale || stale[[2]string{m.Schema, name}]
+			// Earlier DDL can create implicit relations under other names.
+			staleRelation := earlierDDL && m.TargetTable.PGRelation.Name != ""
+			if staleMembers || staleRelation {
 				metadata := *m
 				snapshot := *m.TargetTable
-				snapshot.PGConstraints = nil
-				snapshot.PGColumns = nil
+				if staleMembers {
+					snapshot.PGConstraints = nil
+					snapshot.PGColumns = nil
+				}
+				snapshot.PGRelation = spec.PGRelationState{}
 				metadata.TargetTable = &snapshot
 				statements[i].Metadata = &metadata
 			}
@@ -41,6 +49,7 @@ func invalidateStalePGTargetCatalogs(statements []spec.Statement, failures []par
 		if statement.Kind != spec.KindDDL {
 			continue
 		}
+		earlierDDL = true
 		ddl := statement.DDL
 		if ddl == nil || len(ddl.TableTargets()) == 0 || ddl.OmittedTargets > 0 || ddl.Operation == spec.DDLOperationDropTable || ddl.Operation == spec.DDLOperationRenameTable {
 			allStale = true
