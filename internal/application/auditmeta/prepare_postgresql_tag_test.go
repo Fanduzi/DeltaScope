@@ -6,10 +6,56 @@ package auditmeta
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
+
+func TestPreparePGAlterTableKeepsExactTargetsAndGuard(t *testing.T) {
+	for _, tc := range []struct {
+		sql, wantSchema string
+		wantCalls       []string
+		wantError       bool
+	}{
+		{`ALTER TABLE IF EXISTS missing ADD COLUMN id int`, "", []string{"missing"}, false},
+		{`ALTER TABLE missing ADD COLUMN id int`, "", []string{"missing"}, true},
+		{`ALTER TABLE " " ADD COLUMN id int`, "app", []string{" "}, false},
+		{`ALTER TABLE " app ".t ADD COLUMN id int`, " app ", nil, false},
+	} {
+		t.Run(tc.sql, func(t *testing.T) {
+			client := &fakeClient{detectDialect: spec.DialectPostgreSQL, schemasByTable: map[string][]string{" ": {"app"}}}
+			prepared, err := Prepare(context.Background(), Request{
+				SQL: tc.sql,
+				OpenClient: func(ConnectionConfig) (Client, error) {
+					return client, nil
+				},
+			})
+			if !slices.Equal(client.findSchemaCalls, tc.wantCalls) {
+				t.Fatalf("schema lookups=%q want=%q", client.findSchemaCalls, tc.wantCalls)
+			}
+			if tc.wantError {
+				var typed *Error
+				if !errors.As(err, &typed) || typed.Kind != ErrorSchemaHintRequired || !client.closed {
+					t.Fatalf("unguarded miss: %+v %v", prepared, err)
+				}
+				return
+			}
+			if err != nil || prepared.Schema != tc.wantSchema {
+				t.Fatalf("schema=%+v want=%q, err=%v", prepared, tc.wantSchema, err)
+			}
+			_ = prepared.Client.Close()
+		})
+	}
+}
+
+func TestPGSchemaInferenceKeepsQuotedCaseDistinct(t *testing.T) {
+	targets, err := collectTargetTables(context.Background(), `ALTER TABLE "App"."T" ADD COLUMN id int; ALTER TABLE app.t ADD COLUMN id int`, spec.DialectPostgreSQL)
+	want := []schemaTarget{{Schema: "App", Name: "T", RequiresExisting: true}, {Schema: "app", Name: "t", RequiresExisting: true}}
+	if err != nil || !slices.Equal(targets, want) {
+		t.Fatalf("schema targets=%+v want=%+v err=%v", targets, want, err)
+	}
+}
 
 func TestPrepareIgnoresCreateViewForSchemaInference(t *testing.T) {
 	t.Parallel()

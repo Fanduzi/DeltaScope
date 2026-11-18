@@ -36,7 +36,10 @@ func collectTargetTables(ctx context.Context, sqlText string, dialect spec.Diale
 			if target.Name == "" {
 				continue
 			}
-			key := targetKey{schema: strings.ToLower(target.Schema), name: strings.ToLower(target.Name)}
+			key := targetKey{schema: target.Schema, name: target.Name}
+			if dialect != spec.DialectPostgreSQL {
+				key.schema, key.name = strings.ToLower(key.schema), strings.ToLower(key.name)
+			}
 			existing, ok := targetsByName[key]
 			if ok {
 				existing.RequiresExisting = existing.RequiresExisting || target.RequiresExisting
@@ -64,6 +67,9 @@ func statementTargets(statement spec.Statement) []schemaTarget {
 			return nil
 		}
 		requiresExisting := statement.DDL.Operation != spec.DDLOperationCreateTable
+		if statement.Dialect == spec.DialectPostgreSQL && statement.DDL.PGTableIfExists {
+			requiresExisting = false
+		}
 		tables := statement.DDL.TableTargets()
 		if statement.DDL.Operation == spec.DDLOperationAlterTable && len(tables) > 1 &&
 			!ddlContainsExchangePartition(statement.DDL) {
@@ -78,12 +84,15 @@ func statementTargets(statement spec.Statement) []schemaTarget {
 		}
 		targets := make([]schemaTarget, 0, len(tables))
 		for _, table := range tables {
-			name := strings.TrimSpace(table.Name)
+			name, schema := table.Name, table.Schema
+			if statement.Dialect != spec.DialectPostgreSQL {
+				name, schema = strings.TrimSpace(name), strings.TrimSpace(schema)
+			}
 			if name == "" {
 				continue
 			}
 			targets = append(targets, schemaTarget{
-				Schema:           strings.TrimSpace(table.Schema),
+				Schema:           schema,
 				Name:             name,
 				RequiresExisting: requiresExisting,
 			})

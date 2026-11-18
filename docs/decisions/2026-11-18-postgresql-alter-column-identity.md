@@ -137,6 +137,20 @@ returned zero with no residual containers. The two augmented T37 controls keep
 all existing IDs and prior oracles. The focused replay passed 173/173 with 3390
 assertions and 37 native steps: 17 successes and 20 exact refusals.
 
+## Metadata preparation without a schema flag
+
+A separate real CLI review at `1fb0372b` found that metadata preparation
+rejected a guarded unqualified missing relation before rules ran. It also
+trimmed an all-whitespace quoted table prior to schema discovery. PostgreSQL
+DDL targets now remain exact at preparation, and a guarded schema inference
+miss reaches the normal evidence gaps. An unguarded miss retains the existing
+schema-hint error. The existing T37 unqualified absence and quoted-name cases
+now exercise the actual no-schema CLI path with the same native oracles.
+The targeted replay again passed 173/173 and 3390 assertions.
+The `1fb0372b` all run stopped before edits (exit 143), followed by owned-only
+cleanup with no residual containers and the original 16 container identities
+preserved.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

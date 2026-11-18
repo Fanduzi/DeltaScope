@@ -40,10 +40,10 @@ func (p *Provider) FindSchemasForTable(ctx context.Context, table string) ([]str
 	rows, err := p.db.QueryContext(ctx, `
 		select distinct n.nspname as schema_name
 		from pg_catalog.pg_class c
-		join pg_catalog.pg_namespace n on n.oid = c.relnamespace
-		where c.relname = $1
-		  and c.relkind in ('r','p','v','m','f')
-		  and n.nspname not in ('pg_catalog', 'information_schema')
+		join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) c.relnamespace
+		where c.relname OPERATOR(pg_catalog.=) $1::pg_catalog.text
+		  and c.relkind OPERATOR(pg_catalog.=) any(array['r','p','v','m','f']::pg_catalog."char"[])
+		  and not (n.nspname OPERATOR(pg_catalog.=) any(array['pg_catalog','information_schema']::pg_catalog.text[]))
 		order by n.nspname
 	`, table)
 	if err != nil {

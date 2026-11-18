@@ -191,7 +191,7 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 		if err != nil {
 			return nil, fmt.Errorf("resolve index owner: %w", err)
 		}
-		if tableName != "" {
+		if tableName != "" && (metadataSchema != "" || statement.DDL == nil || !statement.DDL.PGTableIfExists) {
 			key := [2]string{metadataSchema, tableName}
 			snapshot, ok := snapshots[key]
 			if !ok {
@@ -936,6 +936,9 @@ func metadataTargetSchema(request *MetadataRequest, statement spec.Statement) st
 	}
 	if request == nil {
 		return ""
+	}
+	if statement.Dialect == spec.DialectPostgreSQL && statement.DDL != nil {
+		return request.Schema
 	}
 	return strings.TrimSpace(request.Schema)
 }
