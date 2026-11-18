@@ -5,6 +5,36 @@ Status: Accepted
 Milestone: F09 / `milestone/pg-alter-semantics` (D7)
 Baseline: `90a68a8b` historical D6 closeout; shipped D6 code `fa37a41b`
 
+## Delivered Verification
+
+Final product: **b966f73c76352507a8dcf03b01063e0f43255564**. From base
+`fa37a41b46ffbf280c71114eb85441381c57c85f`, the milestone was FF-only merged
+and normally pushed to main. At independent delivery verification, local HEAD,
+main, origin/main and actual remote main all named b966. No tag/release or
+branch deletion was performed. Later historical documentation HEADs do not own
+this product's artifacts or CI.
+
+The fixed-HEAD aggregate passed **50 tasks, 3488/3488 cases, 61810 assertions**:
+`/tmp/ddl-golden-pg-column-format-final-catalog-b966f73c/all/artifact.json`.
+Every per-task and CLI build carries the same complete SHA, nonzero execution,
+unique required/executed IDs and no failure/skip; validate passed. T37 is
+**156/156, 2776 assertions**, including 52 native steps (25 success/27 exact
+refusal). Candidate and merged-root build, default/PG tests, inventory/corpus/
+coverage contracts, both lint lanes and format/diff gates passed. Separate
+single-agent read-only acceptance ended with no unresolved P1/P2.
+
+Exact-SHA [Go/PG/lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44305816088),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44305816080) and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/134807127588) all succeeded.
+The final task commit changes 10 paths; the fa37...b966 milestone changes 68,
+including the preceding D6 historical-doc commit. Complete original workspace
+status, the protected c096 release branch/worktree and 16 unrelated container
+name/ID observations were preserved; all 50 task cleanups returned zero with no
+residual owned containers. This does not certify unrelated business data.
+
+The rejected 9c/d445 and dirty focused evidence below remain historical only.
+D7 is delivered; the other original F09 dimensions remain in the queue.
+
 ## Context
 
 At 90a, 42 native PostgreSQL 17.7 storage/compression shapes and 84 real offline/

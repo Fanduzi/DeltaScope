@@ -54,6 +54,8 @@ anchors or cases may be deleted to improve the percentage.
 | D3 | PostgreSQL ALTER PK index-build / FK initial-validation warnings and UNIQUE USING INDEX notice correction | Extractor `37fa8fd1`, rules `f9f3601e`, native/inventory and final shipping `8aa9e3c8`; T37; [decision](../decisions/2026-11-17-postgresql-alter-constraint-build-risk.md) | Identity/default and wider constraint legality remain open; D4 below adds bounded target proof |
 | D4 | PG17 exact constraint existence/kind/guard checks and no-op notices, with accepted conservative freshness gaps | Facts `be3a5570`, rules `8482b193`, native/inventory `ed6fe765`, final `aa7f8872`; T37; [decision](../decisions/2026-11-17-postgresql-constraint-target-evidence.md) | Data/dependencies/permissions/inheritance/partition and general PG ordered execution remain outside target proof; other F09 dimensions open |
 | D5 | PG17 ordinary-table existing-column generation target/options blockers and RESTART/CYCLE risks with explicit data/current/freshness gaps | Facts `1e8c773d`, rules `23c9f4f9`, native/inventory and final `26dde9ad`; T37; [decision](../decisions/2026-11-18-postgresql-column-generation-transitions.md) | Broader data/expression/current/permission/partition/inheritance and other original F09 dimensions remain open |
+| D6 | PG17 statistics/options legality and guarded DROP target proof, preserving underflow and freshness gaps | Facts `2299f216`, rules `65387b5f`, evidence `f97c7398`, corrected final `fa37a41b`; T37; [decision](../decisions/2026-11-18-postgresql-column-tuning-and-drop-guards.md) | Broader table options/kinds, dependencies/permissions and general order remain open |
+| D7 | PG17 ordinary-table STORAGE/COMPRESSION validity, real type/system/build facts and shared D5/D6 system-target correction | Facts `4f157146`, rules `631575a6`, evidence `9c0cf73a`, source corrections `d445cc5b`/final `b966f73c`; T37; [decision](../decisions/2026-11-18-postgresql-column-storage-compression-targets.md) | Other F09 dimensions remain open; no complete low-privilege, no-lz4 native platform or global historical-query hardening claim |
 
 D1/D2 passed their final single-HEAD TASK=all aggregates and CI. Their
 verified implementation baseline is `d8cceea6`: **50 tasks,
@@ -294,7 +296,7 @@ The decision record was required and committed with the bounded implementation;
 this later historical doc HEAD does not inherit fa37's aggregate attribution.
 Other original F09 dimensions continue in the queue, not permanent deferral.
 
-### D7 storage/compression and system targets (implemented; delivery pending)
+### D7 storage/compression and system targets (bounded slice delivered)
 
 Approved default-on, parameterless blockers:
 `ddl.pg.alter.column.storage.valid` and `ddl.pg.alter.column.compression.valid`.
@@ -346,9 +348,21 @@ p:x controls; focused candidate is 156/156, 2776 assertions at
 `/tmp/ddl-golden-pg-column-format-catalog-source-d445cc5b/T37/artifact.json`
 (d445 + dirty corrected source), still 52 native steps. d445's full aggregate is
 historical, not the corrected HEAD's proof. No source/HEAD changed during its run.
-Final full gates, new fixed final-HEAD all/validate, independent read-only review,
-FF-only merge, normal push and exact-SHA CI remain pending. Main/origin main
-still points to shipped fa37a41b. **D7, F09 and the total goal are not closed.**
+Final **b966f73c76352507a8dcf03b01063e0f43255564** passed all **50 tasks,
+3488/3488 cases, 61810 assertions** and validate, with all per-task/CLI builds
+at that same SHA, nonzero/unique required IDs, no failed/skipped cases and all
+owned cleanup rc0/residual[]. T37 is **156/156, 2776 assertions**, with unchanged
+52 native steps (25 success/27 exact refusal). Candidate and merged-root full
+build/default+PG tests/contracts/both lint lanes/format/diff passed. Independent
+read-only acceptance had zero unresolved P1/P2. From fa37, FF-only merge and
+normal push yielded main/origin/actual remote b966. Exact-SHA
+[Go/PG/lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44305816088),
+[TLS](https://github.com/Fanduzi/DeltaScope/actions/runs/44305816080) and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/134807127588) succeeded.
+Original complete status, c096 release worktree/branch and 16 unrelated service
+name/IDs were retained. Task diff d445..b966 is10 paths; milestone fa37...b966
+is68. These results belong to b966, never a later historical-doc HEAD.
+**D7 is delivered; F09 and the total goal remain open.**
 Other original table options, rename/owner/type, dependency/permission,
 inheritance/partition and general-order dimensions continue, not silent deferral.
 
@@ -368,7 +382,7 @@ new default behavior is approved per family before implementation.
 | F06 | TiDB recovery/flashback | 1 | T16 | unreviewed |
 | F07 | PostgreSQL schema/collation | 2 | T35 | unreviewed |
 | F08 | PostgreSQL CREATE TABLE | 6 | T36 | D2 delivered; remaining dimensions unreviewed |
-| F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2 ADD COLUMN, D3/D4 constraints, D5 generation and D6 tuning delivered; D7 storage/compression/system candidate, remaining dimensions open |
+| F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2 ADD COLUMN, D3/D4 constraints, D5 generation, D6 tuning and D7 storage/compression/system targets delivered; remaining dimensions open |
 | F10 | PostgreSQL DROP/TRUNCATE | 2 | T38 | unreviewed |
 | F11 | PostgreSQL indexes/operator families | 4 | T39 | unreviewed |
 | F12 | PostgreSQL views/materialized views | 5 | T40 | unreviewed |
@@ -422,8 +436,8 @@ insufficient.
 | F08 | `postgresql.create-table-partitioning` | PARTITION BY RANGE; PARTITION BY LIST; PARTITION BY HASH; PARTITION OF; PARTITION OF DEFAULT; INHERITS | unreviewed |
 | F08 | `postgresql.create-table-temporary` | TEMP/TEMPORARY; GLOBAL TEMPORARY compat noise; UNLOGGED; ON COMMIT actions | unreviewed |
 | F08 | `postgresql.create-table-like` | LIKE basic; INCLUDING options | unreviewed |
-| F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 system/ordering evidence candidate; rename/type/general dimensions open |
-| F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 generation and D6 statistics/options delivered with accepted gaps; D7 storage/compression/system candidate, broader data/expression/current/kind scopes open |
+| F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 bounded system/ordering evidence delivered; rename/type/general dimensions open |
+| F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 generation and D6 statistics/options delivered with accepted gaps; D7 bounded storage/compression/system delivered, broader data/expression/current/kind scopes open |
 | F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; remaining dimensions open |
 | F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | unreviewed |
 | F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | unreviewed |
@@ -477,14 +491,23 @@ artifact honestly; it is not a fresh implementation golden result.
 
 ## Administrative queue
 
-- #149: check `go list -m -versions github.com/pganalyze/pg_query_go/v7` and
-  primary release evidence; comment only for an actual newly released binding.
-  Keep the five PG18 parser-error candidates explicit until a separately
-  approved upgrade/promotion is verified.
-- PR #112: review the unmerged guidance changes against current file-header and
-  agent instructions; provide a recommendation without merging or closing.
-- PR #150: review the historical T20 readonly report and evidence/privacy
-  provenance; provide a recommendation without merging or closing.
+- #149 checked 2026-11-18 against official tags/releases and `go list`: v7 has
+  no published versions and `@latest` has no matching version. Existing v6.2.5
+  (2026-09-30) still binds PG17, not the awaited PG18 Go binding; project stays
+  v6.2.2. The five PG18 candidates remain parser_error and guidance tests passed.
+  No new binding was found, so no comment/closure/upgrade occurred. Future
+  publication still requires separately approved upgrade/promotion verification.
+- PR #112 reviewed at `0fa922d0` (all three commits): recommend modifying then
+  retaining the thin router, restoring explicit L3 retirement/non-gating and
+  reconciling ignored local guidance; old-head lint failure is not CI green.
+  [Recommendation](https://github.com/Fanduzi/DeltaScope/pull/112#issuecomment-6977093461)
+  was submitted; PR remains OPEN, without merge/closure/history rewriting.
+- PR #150 reviewed at `99cffb17`: recommend preserving the redacted historical
+  T20 report, not treating its 2f01/b33 evidence as current-HEAD acceptance or
+  closure of resource/data-loss/privacy uncertainties. Public artifact hashes,
+  35/497 and 8-executed/12-reused identities were checked, not private forensics.
+  [Recommendation](https://github.com/Fanduzi/DeltaScope/pull/150#issuecomment-6977362746)
+  was submitted; PR remains OPEN and unchanged, without merge/closure.
 - Release/tag decisions are outside this program's push authorization.
 
 ## Ledger verification at creation

@@ -48,7 +48,16 @@ native red/fixed controls now preserve the same IDs/selectors; enum-reader adds
 assertions at d445 + dirty source, still 52 native DDL steps. No old aggregate
 substitutes for the corrected committed HEAD's full all/validate/read-only review.
 See the [decision](../../docs/decisions/2026-11-18-postgresql-column-storage-compression-targets.md).
-Full D7 delivery and other F09 dimensions remain open.
+D7 shipped **b966f73c76352507a8dcf03b01063e0f43255564** after all **50 tasks,
+3488/3488 cases, 61810 assertions** and validate; T37 is **156/156, 2776
+assertions**, still 52 native steps (25 success/27 refusal). All per-task/CLI
+builds use that complete SHA, with nonzero/no-failure/no-skip execution and owned
+cleanup rc0/residual[]. Full candidate/merged-root gates and independent review
+passed, then FF-only merge/normal push and exact-SHA Go/PG/lint/TLS/Pages CI
+succeeded; links are in the decision. Original workspace, protected release
+worktree and unrelated services were retained. No inventory status/denominator
+is promoted by delivery, and this source evidence is not attributed to later
+docs HEADs. Other original F09 dimensions remain open.
 
 ## PostgreSQL generation-declaration tranche
 

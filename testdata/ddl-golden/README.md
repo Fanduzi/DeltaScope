@@ -5,6 +5,21 @@ Per-task manifests for the milestone DDL golden-path runner
 
 ## T37 D7 storage/compression and observed system targets
 
+Delivered **b966f73c76352507a8dcf03b01063e0f43255564** passed **50 tasks,
+3488/3488 cases, 61810 assertions** and validate at
+`/tmp/ddl-golden-pg-column-format-final-catalog-b966f73c/all/artifact.json`.
+All per-task/CLI SHAs match, with nonzero execution and no failure/skip; all
+50 cleanups returned zero/residual[]. T37 is **156/156, 2776 assertions**,
+still 52 native DDL steps (25 success/27 exact refusal). Final and merged-root
+full gates plus separate read-only review passed; FF-only merge/normal push
+and exact-SHA [Go/PG/lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44305816088),
+[TLS](https://github.com/Fanduzi/DeltaScope/actions/runs/44305816080) and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/134807127588) succeeded.
+This source artifact does not prove a later historical-doc HEAD. D7 is delivered,
+not the remaining F09 dimensions or the whole program.
+
+### Historical candidates (not final delivery proof)
+
 The later d445 full candidate passed all 50 tasks, 3488/3488 cases and 61808
 assertions/validate, but separate read-only review rejected two new unqualified
 column-catalog comparisons. Shadow smallint/integer <> fabricated known-empty;
@@ -12,7 +27,7 @@ OID equality supplied the wrong type storage strategy. Only D7's new attribute
 filter/type join now use system operators. Permanent query-source tests and two
 actual-provider native red/fixed probes pin the correction. The same frozen
 enum-reader adds 0:7 attribute and p:x type controls without removing any old
-case/profile/ID/check. Latest focused candidate is **156/156, 2776 assertions**
+case/profile/ID/check. That corrective focused candidate was **156/156, 2776 assertions**
 (590 over old 136), still 52 native DDL steps, at
 `/tmp/ddl-golden-pg-column-format-catalog-source-d445cc5b/T37/artifact.json`.
 It is d445 plus dirty corrected source; d445's all result is historical and
