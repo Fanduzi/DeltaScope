@@ -92,7 +92,8 @@ Normalized statement specifications used as the stable input for rule evaluation
   Private authored statistics DEFAULT/literal and ordered SET/RESET key/value
   facts; numeric means proven finite AST literal, never parsed expression text.
 - `PGReplicaIdentityIndex` carries private exact table/index attachment facts and nullable observations. `PG17Observed` checks the actual PostgreSQL 17 server banner.
-- `PGRelationState` carries the exact name and catalog kind within the snapshot schema.
+- `PGTableReloption` preserves ordered SET/RESET members, argument presence and bounded value facts. `Alter.PGTableReloptions` is excluded from JSON.
+- `PGRelationState` carries the exact name and catalog kind within the snapshot schema, including the observed built-in heap marker.
   A zero name means unobserved and an empty kind with a known name means absent.
   `TableSnapshot.PGRelation`, `DDL.PGTableIfExists`, `DDL.PGTableCatalogQualified`
   and `Alter.PGAddColumnIfNotExists` are internal evidence excluded from JSON.

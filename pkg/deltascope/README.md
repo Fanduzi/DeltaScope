@@ -95,6 +95,8 @@ Stable public package surface for library consumers.
   Use `TableSnapshot.Schema` with the observed `Name`, and an empty `Kind` only
   when the relation is proven absent across all catalog kinds. Leave the state
   zero when not observed. `TableSnapshot.PGRelation` is excluded from JSON.
+  A true `Heap` records the observed built-in heap method for SET/RESET checks.
+
 - `PGColumnCatalog`, `PGColumnState`, `PGIdentitySequenceState`, `SequenceDefinition`
   Bounded custom-provider column facts. `TableSnapshot.PGColumns` is private
   JSON evidence; user `Columns` nil is unobserved, non-nil empty means no user

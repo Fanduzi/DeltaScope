@@ -5,7 +5,7 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 ## Files
 
 The table snapshot's identity query uses the exact catalog namespace and
-relation name across all relation kinds. Its private `PGRelation` observation
+relation name across all relation kinds, with a built-in heap marker for D10. Its private `PGRelation` observation
 can distinguish a sequence or index from a missing relation while the existing
 shape loader still returns table shapes for its original relation kinds.
 `pg_temp` remains unobserved because it is a session alias. The column query

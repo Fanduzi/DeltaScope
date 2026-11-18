@@ -995,6 +995,8 @@ type Alter struct {
 	PGCompressionMethod *string `json:"-"`
 	// PGAddColumnIfNotExists is the authored ADD COLUMN guard, separate from the table guard.
 	PGAddColumnIfNotExists bool `json:"-"`
+	// PGTableReloptions preserves exact ordered SET/RESET table declarations.
+	PGTableReloptions []PGTableReloption `json:"-"`
 	// Constraints carries CHECK members declared inside column definitions
 	// of the same alter spec (ADD/MODIFY/CHANGE COLUMN ... CHECK(...)) —
 	// the in-column form the catalog stores as a table-level CHECK member.

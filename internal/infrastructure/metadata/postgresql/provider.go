@@ -149,7 +149,7 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, _ spec.Dialect, schema
 	tableRow := p.db.QueryRowContext(ctx, `
 		select c.relkind,
 		       pg_catalog.obj_description(c.oid, 'pg_class') as table_comment,
-		       c.reltuples
+		       c.reltuples, c.relam OPERATOR(pg_catalog.=) 2::pg_catalog.oid
 		from pg_catalog.pg_class c
 		join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) c.relnamespace
 		where n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text
@@ -159,13 +159,14 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, _ spec.Dialect, schema
 	var relkind string
 	var comment sql.NullString
 	var reltuples sql.NullFloat64
-	err := tableRow.Scan(&relkind, &comment, &reltuples)
+	var heap bool // PostgreSQL HEAP_TABLE_AM_OID
+	err := tableRow.Scan(&relkind, &comment, &reltuples, &heap)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, fmt.Errorf("query table snapshot: %w", err)
 	}
 	// pg_temp is an alias for the session's actual temporary namespace.
 	if schema != "" && schema != "pg_temp" && table != "" {
-		snapshot.PGRelation = spec.PGRelationState{Name: table, Kind: relkind}
+		snapshot.PGRelation = spec.PGRelationState{Name: table, Kind: relkind, Heap: heap}
 	}
 	if err == sql.ErrNoRows || tableTypeFromRelkind(relkind) == "UNKNOWN" {
 		return snapshot, nil

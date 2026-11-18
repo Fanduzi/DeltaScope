@@ -1087,22 +1087,15 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		return spec.Alter{Action: "force_rls"}, true, nil
 	case pg_query.AlterTableType_AT_NoForceRowSecurity:
 		return spec.Alter{Action: "no_force_rls"}, true, nil
-	case pg_query.AlterTableType_AT_SetRelOptions:
-		count := 0
-		if defNode := cmd.GetDef(); defNode != nil {
-			if list := defNode.GetList(); list != nil {
-				count = len(list.GetItems())
-			}
+	case pg_query.AlterTableType_AT_SetRelOptions, pg_query.AlterTableType_AT_ResetRelOptions:
+		items := cmd.GetDef().GetList().GetItems()
+		reset := cmd.GetSubtype() == pg_query.AlterTableType_AT_ResetRelOptions
+		action, countKey := "set_reloptions", "option_count"
+		if reset {
+			action, countKey = "reset_reloptions", "reset_count"
 		}
-		return spec.Alter{Action: "set_reloptions", Options: map[string]string{"option_count": strconv.Itoa(count), "has_reloptions": "true"}}, true, nil
-	case pg_query.AlterTableType_AT_ResetRelOptions:
-		count := 0
-		if defNode := cmd.GetDef(); defNode != nil {
-			if list := defNode.GetList(); list != nil {
-				count = len(list.GetItems())
-			}
-		}
-		return spec.Alter{Action: "reset_reloptions", Options: map[string]string{"reset_count": strconv.Itoa(count), "has_reloptions": "true"}}, true, nil
+		return spec.Alter{Action: action, Options: map[string]string{countKey: strconv.Itoa(len(items)), "has_reloptions": "true"},
+			PGTableReloptions: pgTableReloptions(items, reset)}, true, nil
 	case pg_query.AlterTableType_AT_SetStatistics:
 		kind := "default"
 		if cmd.GetDef() != nil {

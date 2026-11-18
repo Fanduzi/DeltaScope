@@ -365,6 +365,8 @@ type TTLConfig struct {
 type PGRelationState struct {
 	Name string
 	Kind string
+	// Heap is true only for an observed built-in heap access method.
+	Heap bool
 }
 
 // TableSnapshot is the current metadata-backed shape of a target table.

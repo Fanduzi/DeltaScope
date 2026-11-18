@@ -134,8 +134,8 @@ func TestLoadInstanceFactsMapsPostgreSQLSettings(t *testing.T) {
 func TestLoadTableSnapshotUsesCatalogsAndPlannerStats(t *testing.T) {
 	db, queryLog := openTestDB(t, map[string]testQueryResult{
 		"obj_description(c.oid, 'pg_class')": {
-			columns: []string{"relkind", "table_comment", "reltuples"},
-			rows:    [][]driver.Value{{"r", "application users", float64(321)}},
+			columns: []string{"relkind", "table_comment", "reltuples", "heap"},
+			rows:    [][]driver.Value{{"r", "application users", float64(321), true}},
 		},
 		"from pg_catalog.pg_attribute": {
 			columns: []string{"column_name", "data_type", "character_maximum_length", "character_set_name", "collation_name", "is_nullable", "column_default", "is_identity", "column_comment"},
@@ -182,6 +182,9 @@ func TestLoadTableSnapshotUsesCatalogsAndPlannerStats(t *testing.T) {
 
 	if !snapshot.Exists {
 		t.Fatalf("expected snapshot to exist, got %#v", snapshot)
+	}
+	if snapshot.PGRelation != (spec.PGRelationState{Name: "users", Kind: "r", Heap: true}) {
+		t.Fatalf("expected exact built-in heap observation, got %+v", snapshot.PGRelation)
 	}
 	if snapshot.Table == nil || snapshot.Table.Name != "users" || snapshot.Table.Comment != "application users" {
 		t.Fatalf("expected table metadata to be populated, got %#v", snapshot.Table)

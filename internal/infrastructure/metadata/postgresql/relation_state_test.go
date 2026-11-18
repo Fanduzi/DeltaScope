@@ -26,9 +26,9 @@ func TestLoadTableSnapshotObservesAllPGRelationKinds(t *testing.T) {
 		{name: "catalog error", schema: "app", queryErr: errors.New("read failed")},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			result := testQueryResult{columns: []string{"relkind", "table_comment", "reltuples"}, err: tc.queryErr}
+			result := testQueryResult{columns: []string{"relkind", "table_comment", "reltuples", "heap"}, err: tc.queryErr}
 			if tc.kind != "" {
-				result.rows = [][]driver.Value{{tc.kind, nil, nil}}
+				result.rows = [][]driver.Value{{tc.kind, nil, nil, false}}
 			}
 			db, log := openTestDB(t, map[string]testQueryResult{"pg_catalog.obj_description": result})
 			defer db.Close()
@@ -50,7 +50,7 @@ func TestLoadTableSnapshotObservesAllPGRelationKinds(t *testing.T) {
 				t.Fatalf("relation=%+v want=%+v", s.PGRelation, want)
 			}
 			queries := log.Queries()
-			if len(queries) != 1 || strings.Count(queries[0], "OPERATOR(pg_catalog.=)") != 3 || strings.Contains(queries[0], "relkind in") {
+			if len(queries) != 1 || strings.Count(queries[0], "OPERATOR(pg_catalog.=)") != 4 || strings.Contains(queries[0], "relkind in") {
 				t.Fatalf("unexpected catalog query: %v", queries)
 			}
 			encoded, err := json.Marshal(s)
