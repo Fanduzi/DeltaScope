@@ -101,7 +101,8 @@ Stable public package surface for library consumers.
   columns. `SystemColumns` separately carries real negative-attnum members with
   `System` true; missing system facts never establish absence or guarded no-op.
   `TypeStorage` is actual `pg_type.typstorage`, not the current column strategy.
-  Exact names and `Ordinary` scope are required; sequence parameters are
+  Exact names and `Ordinary` scope are required. Set `Typed` for tables created
+  with `CREATE TABLE … OF`; D8 target rules leave those tables unverified. Sequence parameters are
   stable definition facts, never current/next issuance values. SDK and application
   adapters deep-copy both directories and nested pointers; expressions are not carried.
 - `ViewSnapshot`, `ViewDefinition`, `ViewColumnBinding` for metadata-provider view facts

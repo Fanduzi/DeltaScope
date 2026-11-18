@@ -10,7 +10,7 @@ import (
 func TestPGColumnIdentityProof(t *testing.T) {
 	for _, tc := range []struct {
 		name, action, source, destination, ruleID, reason, missing string
-		guard, sibling, unobservedVersion, stale                   bool
+		guard, sibling, unobservedVersion, stale, typed            bool
 	}{
 		{name: "add duplicate", action: "add_column", source: "id", ruleID: ruleIDAlterAddColumnExistsForbid, reason: "column_already_exists"},
 		{name: "guard duplicate", action: "add_column", source: "id", ruleID: ruleIDAlterAddColumnExistsForbid, guard: true},
@@ -25,6 +25,8 @@ func TestPGColumnIdentityProof(t *testing.T) {
 		{name: "rename unobserved system", action: "rename_column", source: "id", destination: "xmin", ruleID: ruleIDAlterRenameColumnTargetExistsForbid, missing: "target_table.pg_columns"},
 		{name: "no destination finding on absent source", action: "rename_column", source: "missing", destination: "id", ruleID: ruleIDAlterRenameColumnTargetExistsForbid},
 		{name: "phase ordering withheld", action: "add_column", source: "id", ruleID: ruleIDAlterAddColumnExistsForbid, missing: "target_table.pg_columns", sibling: true, guard: true},
+		{name: "typed ADD guard requires scope proof", action: "add_column", source: "id", ruleID: ruleIDAlterAddColumnExistsForbid, missing: "target_table.pg_columns", typed: true, guard: true},
+		{name: "typed RENAME requires scope proof", action: "rename_column", source: "id", ruleID: ruleIDAlterRenameColumnExistsRequire, missing: "target_table.pg_columns", typed: true},
 		{name: "offline", action: "add_column", source: "id", ruleID: ruleIDAlterAddColumnExistsForbid, missing: "instance.version", unobservedVersion: true},
 		{name: "stale", action: "rename_column", source: "id", ruleID: ruleIDAlterRenameColumnExistsRequire, missing: "target_table.pg_columns", stale: true},
 	} {
@@ -33,7 +35,7 @@ func TestPGColumnIdentityProof(t *testing.T) {
 			s.DDL.Alter[0].Name = tc.source
 			s.DDL.Alter[0].Column = &spec.AlterColumn{OldName: tc.source, Definition: &spec.Column{Name: tc.destination}}
 			s.DDL.Alter[0].PGAddColumnIfNotExists = tc.guard
-			s.Metadata.TargetTable.PGColumns = &spec.PGColumnCatalog{Ordinary: true, Columns: []spec.PGColumnState{{Name: "id"}, {Name: " "}}, SystemColumns: []spec.PGColumnState{{Name: "ctid", System: true}}}
+			s.Metadata.TargetTable.PGColumns = &spec.PGColumnCatalog{Ordinary: true, Typed: tc.typed, Columns: []spec.PGColumnState{{Name: "id"}, {Name: " "}}, SystemColumns: []spec.PGColumnState{{Name: "ctid", System: true}}}
 			if tc.sibling {
 				s.DDL.Alter = append(s.DDL.Alter, spec.Alter{Action: "drop_column", Name: tc.source})
 			}

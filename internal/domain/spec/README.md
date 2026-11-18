@@ -96,6 +96,7 @@ Normalized statement specifications used as the stable input for rule evaluation
   `TableSnapshot.PGRelation`, `DDL.PGTableIfExists` and `Alter.PGAddColumnIfNotExists`
   are internal evidence excluded from JSON.
 - `PGColumnTransition`, `PGColumnCatalog`, `PGColumnState`, `PGIdentitySequenceState`
+  The private catalog carries an observed `Typed` marker for D8 ADD/RENAME scope.
   Internal authored/cached evidence; `PGColumnCatalog.FindColumn` proves exact-name
   binding or user absence only for a complete ordinary-table user directory;
   absent system observations never prove system absence. `SystemColumns` carries

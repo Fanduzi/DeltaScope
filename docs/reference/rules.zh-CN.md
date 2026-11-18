@@ -427,7 +427,7 @@ TiDB 的 ALTER VIEW 和裸 CHECK OPTION 仍是厂商边界。缺少必要事实�
 
 在 MySQL 和 TiDB 上，`ddl.alter.change_column.target.exists.forbid` 与 `ddl.alter.rename_column.target.exists.forbid` 在新名属于另一列时各报告一条 blocker。旧名与新名是同一身份时不是自冲突。列集合未知时仍是既有 `unknown_table_state` 缺口，不把新名说成空闲。关闭这两条规则也不会让有序状态发布已知重名。
 
-对已观测的 PostgreSQL 17，既有 ADD、RENAME 列规则使用普通持久表的精确、新鲜列目录。ADD 重复用户列时报告 blocker，带 `IF NOT EXISTS` 则静默，并抑制三条描述实际新增的提示。独立声明规则仍运行。已观测的系统列重名不受 guard 保护。RENAME 先检查源列，缺失或系统源列报告 blocker。目的名已存在时也报告 blocker，包括改成原名。引号中的大小写和空格按原样比较。范围不明、目录过期或存在多个子动作时报告 `unproven_column_identity`。独立 RENAME 禁止策略仍适用。
+对已观测的 PostgreSQL 17，既有 ADD、RENAME 列规则使用普通持久非类型表的精确、新鲜列目录。ADD 重复用户列时报告 blocker，带 `IF NOT EXISTS` 则静默，并抑制三条描述实际新增的提示。独立声明规则仍运行。已观测的系统列重名不受 guard 保护。RENAME 先检查源列，缺失或系统源列报告 blocker。目的名已存在时也报告 blocker，包括改成原名。引号中的大小写和空格按原样比较。范围不明、目录过期或存在多个子动作时报告 `unproven_column_identity`。独立 RENAME 禁止策略仍适用。
 
 PostgreSQL `ALTER TABLE IF EXISTS` 的既有存在性规则在已证明限定名缺失或已观测到任意类型关系时静默。未限定名在指定 schema 内查无、关系观察过期或身份未绑定时报告 `unproven_alter_table_relation`。已存在关系仍需满足子动作自身条件。本切片不验证类型转换、表达式、依赖或权限。
 

@@ -55,6 +55,9 @@ func pgColumnIdentityTarget(s spec.Statement, index int, ruleID string) (reason,
 	}
 	a := s.DDL.Alter[index]
 	catalog := pgColumnTargetCatalog(s, index)
+	if catalog != nil && catalog.Typed {
+		return "", "target_table.pg_columns"
+	}
 	member, known := catalog.FindColumn(a.Name)
 	if !known {
 		return "", "target_table.pg_columns"
@@ -111,7 +114,11 @@ func pgAddColumnNoop(s spec.Statement, index int) bool {
 	if len(s.DDL.Alter) != 1 || !s.DDL.Alter[index].PGAddColumnIfNotExists {
 		return false
 	}
-	member, known := pgColumnTargetState(s, index)
+	catalog := pgColumnTargetCatalog(s, index)
+	if catalog != nil && catalog.Typed {
+		return false
+	}
+	member, known := catalog.FindColumn(s.DDL.Alter[index].Name)
 	return known && member != nil && !member.System
 }
 

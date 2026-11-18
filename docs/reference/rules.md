@@ -441,7 +441,7 @@ usable state. PostgreSQL uses its own evidence-gap reasons for the checks descri
 On MySQL and TiDB, `ddl.alter.change_column.target.exists.forbid` and `ddl.alter.rename_column.target.exists.forbid` report one blocker when the new name belongs to another column. The same old and new identity is not a self-conflict. An unknown column set is the existing `unknown_table_state` gap, not a claim that the new name is free. Closing either rule does not let ordered state publish a known duplicate name.
 
 On observed PostgreSQL 17, the existing ADD and RENAME column rules use an exact,
-fresh catalog of ordinary persistent tables. ADD rejects an existing user name
+fresh catalog of ordinary persistent, non-typed tables. ADD rejects an existing user name
 unless `IF NOT EXISTS` is authored. A proven guarded duplicate suppresses the
 three ADD execution advisories while independent declaration rules still run.
 An observed system column conflicts even with the guard. RENAME checks the

@@ -37,6 +37,7 @@ type PGColumnState struct {
 // Ordinary proves a persistent, non-inheritance/non-partition ordinary table.
 type PGColumnCatalog struct {
 	Ordinary      bool
+	Typed         bool            // Observed pg_class.reloftype is nonzero.
 	Columns       []PGColumnState // nil is unobserved; non-nil empty proves no user columns
 	SystemColumns []PGColumnState // nil is unobserved, never proof that system targets are absent
 }

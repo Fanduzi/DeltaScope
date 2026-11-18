@@ -4442,45 +4442,50 @@
    "anchor": "postgres17",
    "dialect": "postgresql",
    "policy": "pg-column-identity",
-   "notes": "Inherited, partitioned and unlogged tables remain unverified by this ordinary-persistent subset.",
+   "notes": "Inherited, partitioned and unlogged tables remain unverified by this ordinary-persistent subset. A typed table also stays unverified even if its relation is persistent and has no inheritance edges.",
    "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcol38_scope"},
    "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_scope CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_scope'","expect": "0"}}]},
-   "sql": "ALTER TABLE pgcol38_scope.child RENAME COLUMN c TO moved;ALTER TABLE pgcol38_scope.part RENAME COLUMN c TO moved;ALTER TABLE pgcol38_scope.unlogged ADD COLUMN new_col int",
+   "sql": "ALTER TABLE pgcol38_scope.child RENAME COLUMN c TO moved;ALTER TABLE pgcol38_scope.part RENAME COLUMN c TO moved;ALTER TABLE pgcol38_scope.unlogged ADD COLUMN new_col int;ALTER TABLE pgcol38_scope.typed ADD COLUMN IF NOT EXISTS c int NOT NULL;ALTER TABLE pgcol38_scope.typed ADD COLUMN fresh int;ALTER TABLE pgcol38_scope.typed RENAME COLUMN c TO moved",
    "args": ["--fail-on","none"],
    "setup": [
     {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_scope'","expect": "0"}]},
     {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcol38_scope","expect_rc": 0},
-    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_scope.control_t(payload text);INSERT INTO pgcol38_scope.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_scope.guard START 7;CREATE TABLE pgcol38_scope.parent(c int);CREATE TABLE pgcol38_scope.child() INHERITS(pgcol38_scope.parent);CREATE TABLE pgcol38_scope.part(c int) PARTITION BY RANGE(c);CREATE UNLOGGED TABLE pgcol38_scope.unlogged(c int);CREATE TABLE pgcol38_scope.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_scope'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+    {"name": "seed and capture catalog","sql": "CREATE TABLE pgcol38_scope.control_t(payload text);INSERT INTO pgcol38_scope.control_t VALUES('unchanged');CREATE SEQUENCE pgcol38_scope.guard START 7;CREATE TABLE pgcol38_scope.parent(c int);CREATE TABLE pgcol38_scope.child() INHERITS(pgcol38_scope.parent);CREATE TABLE pgcol38_scope.part(c int) PARTITION BY RANGE(c);CREATE UNLOGGED TABLE pgcol38_scope.unlogged(c int);CREATE TYPE pgcol38_scope.shape AS (c int);CREATE TABLE pgcol38_scope.typed OF pgcol38_scope.shape;INSERT INTO pgcol38_scope.typed VALUES (7);CREATE TABLE pgcol38_scope.receipt AS SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_scope'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
    ],
    "expect": {
     "exit": 0,
     "verdict": "review",
-    "statements": 3,
-    "findings": 1,
+    "statements": 6,
+    "findings": 3,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "unverified",
-    "statement_coverage": ["unverified","unverified","unverified"],
-    "statement_indices": [0,1,2],
-    "finding_entries": [{"index": 2,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
-    "evidence_gaps": 5,
-    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 0,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 2,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]}],
+    "statement_coverage": ["unverified","unverified","unverified","unverified","unverified","unverified"],
+    "statement_indices": [0,1,2,3,4,5],
+    "finding_entries": [{"index": 2,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"},{"index": 3,"rule_id": "ddl.pg.alter.add_column.non_null_no_default.warn","level": "warning"},{"index": 4,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
+    "evidence_gaps": 9,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 0,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 2,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 3,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 4,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 5,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 5,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]}],
     "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
     "rule_summary_loaded": 7
    },
    "post_verify": [
     {"assert": "audit preserves exact relation names, file identities and attributes","sql": "SELECT count(*) FROM ((TABLE pgcol38_scope.receipt EXCEPT (SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_scope'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid, c.relfilenode,c.relname,c.relkind,a.attnum,a.attname,a.atttypid,a.attnotnull,a.atthasdef FROM pg_class c LEFT JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum<>0 AND NOT a.attisdropped WHERE c.relnamespace='pgcol38_scope'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol38_scope.receipt)) AS catalog_delta","expect": "0"},
     {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(payload='unchanged') FROM pgcol38_scope.control_t","expect": "t"},
-    {"assert": "audit does not issue sequence values","sql": "SELECT last_value::text||':'||is_called::text FROM pgcol38_scope.guard","expect": "7:false"}
+    {"assert": "audit does not issue sequence values","sql": "SELECT last_value::text||':'||is_called::text FROM pgcol38_scope.guard","expect": "7:false"},
+    {"assert": "typed relation and exact payload preserved","sql": "SELECT (c.reloftype='pgcol38_scope.shape'::regtype)::text||':'||(SELECT c FROM pgcol38_scope.typed) FROM pg_class c WHERE c.oid='pgcol38_scope.typed'::regclass","expect": "true:7"}
    ],
    "execute": [
     {"name": "inherited source refuses","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_scope.child RENAME COLUMN c TO moved","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]},
     {"name": "partitioned source can rename natively","sql": "ALTER TABLE pgcol38_scope.part RENAME COLUMN c TO moved","expect_rc": 0},
-    {"name": "unlogged ADD can land natively","sql": "ALTER TABLE pgcol38_scope.unlogged ADD COLUMN new_col int","expect_rc": 0}
+    {"name": "unlogged ADD can land natively","sql": "ALTER TABLE pgcol38_scope.unlogged ADD COLUMN new_col int","expect_rc": 0},
+    {"name": "typed table refuses ADD COLUMN IF NOT EXISTS c int NOT NULL","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_scope.typed ADD COLUMN IF NOT EXISTS c int NOT NULL","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]},
+    {"name": "typed table refuses ADD COLUMN fresh int","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_scope.typed ADD COLUMN fresh int","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]},
+    {"name": "typed table refuses RENAME COLUMN c TO moved","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol38_scope.typed RENAME COLUMN c TO moved","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]}
    ],
    "structure": [
     {"assert": "driver rename in excluded kind","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgcol38_scope.part'::regclass AND attname='moved' AND NOT attisdropped","expect": "1"},
-    {"assert": "driver ADD in excluded kind","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgcol38_scope.unlogged'::regclass AND attname='new_col' AND NOT attisdropped","expect": "1"}
+    {"assert": "driver ADD in excluded kind","sql": "SELECT count(*) FROM pg_attribute WHERE attrelid='pgcol38_scope.unlogged'::regclass AND attname='new_col' AND NOT attisdropped","expect": "1"},
+    {"assert": "typed table retained original column and data after native refusals","sql": "SELECT string_agg(attname::text,',' ORDER BY attnum)||':'||(SELECT c FROM pgcol38_scope.typed) FROM pg_attribute WHERE attrelid='pgcol38_scope.typed'::regclass AND attnum>0 AND NOT attisdropped","expect": "c:7"}
    ],
    "teardown": [
     {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcol38_scope CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol38_scope'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}

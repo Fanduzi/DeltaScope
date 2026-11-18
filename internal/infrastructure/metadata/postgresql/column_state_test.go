@@ -11,10 +11,10 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
-var pgColumnCatalogTestColumns = []string{"ordinary", "name", "identity", "generated", "type", "notnull", "hasdef", "pk", "seqtype", "start", "increment", "min", "max", "cache", "cycle", "attnum", "typstorage"}
+var pgColumnCatalogTestColumns = []string{"ordinary", "name", "identity", "generated", "type", "notnull", "hasdef", "pk", "seqtype", "start", "increment", "min", "max", "cache", "cycle", "attnum", "typstorage", "typed"}
 
 func pgColumnCatalogTestRow(name, identity, generated string, typeOID int64, notNull, hasDefault, pk, sequence bool) []driver.Value {
-	row := []driver.Value{true, name, identity, generated, typeOID, notNull, hasDefault, pk, nil, nil, nil, nil, nil, nil, nil, int64(1), "p"}
+	row := []driver.Value{true, name, identity, generated, typeOID, notNull, hasDefault, pk, nil, nil, nil, nil, nil, nil, nil, int64(1), "p", false}
 	if sequence {
 		copy(row[8:15], []driver.Value{int64(20), int64(2147483648), int64(1), int64(1), int64(math.MaxInt64), int64(1), false})
 	}
@@ -66,7 +66,7 @@ func TestLoadPGColumnCatalog(t *testing.T) {
 			t.Fatalf("forbidden query member %q", bad)
 		}
 	}
-	for _, good := range []string{"pg_catalog.pg_depend", "dep.deptype = 'i'", "pg_catalog.pg_sequence", "$1", "$2", "pg_catalog.pg_inherits", "c.relpersistence = 'p'", "a.attnum = any(pk.conkey)"} {
+	for _, good := range []string{"pg_catalog.pg_depend", "dep.deptype = 'i'", "pg_catalog.pg_sequence", "$1", "$2", "pg_catalog.pg_inherits", "c.relpersistence = 'p'", "a.attnum = any(pk.conkey)", "c.reloftype OPERATOR(pg_catalog.<>) 0::pg_catalog.oid"} {
 		if !strings.Contains(q[0], good) {
 			t.Fatalf("missing query premise %q", good)
 		}
@@ -74,7 +74,7 @@ func TestLoadPGColumnCatalog(t *testing.T) {
 }
 
 func TestPGColumnCatalogEmptyUnknownAndAmbiguous(t *testing.T) {
-	empty := []driver.Value{true, nil, nil, nil, nil, nil, nil, false, nil, nil, nil, nil, nil, nil, nil, nil, nil}
+	empty := []driver.Value{true, nil, nil, nil, nil, nil, nil, false, nil, nil, nil, nil, nil, nil, nil, nil, nil, false}
 	duplicate := pgColumnCatalogTestRow("id", "d", "", 20, true, false, false, true)
 	unsupported := pgColumnCatalogTestRow("id", "d", "", 20, true, false, false, true)
 	unsupported[0] = false
@@ -103,6 +103,20 @@ func TestPGColumnCatalogEmptyUnknownAndAmbiguous(t *testing.T) {
 				t.Fatalf("member=%+v known=%v", m, known)
 			}
 		})
+	}
+}
+
+func TestPGColumnCatalogObservesTypedTable(t *testing.T) {
+	row := pgColumnCatalogTestRow("id", "", "", 23, true, false, false, false)
+	row[len(row)-1] = true
+	db, _ := openTestDB(t, map[string]testQueryResult{"as generation_ordinary": {columns: pgColumnCatalogTestColumns, rows: [][]driver.Value{row}}})
+	defer db.Close()
+	snapshot := &spec.TableSnapshot{Schema: "app", Table: &spec.Table{Name: "t"}}
+	if err := NewProvider(db).loadPGColumnCatalog(context.Background(), snapshot); err != nil {
+		t.Fatal(err)
+	}
+	if c := snapshot.PGColumns; c == nil || !c.Ordinary || !c.Typed || !c.Clone().Typed {
+		t.Fatalf("typed table observation lost: %+v", c)
 	}
 }
 

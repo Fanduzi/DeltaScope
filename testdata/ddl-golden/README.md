@@ -8,8 +8,8 @@ Per-task manifests for the milestone DDL golden-path runner
 D8 adds 17 cases under an isolated profile, preserving the existing 156 IDs
 and profiles. Five prior offline cases now pin the new evidence gaps with
 unchanged finding assertions. The additive T37 replay reached 173/173 and
-3368 assertions. Its 32 native steps include 17 successes and 15 exact
-SQLSTATE refusals. The T36 partitioned ADD control keeps its original notice
+3380 assertions after adding typed-table controls to the existing scope case.
+Its 35 native steps include 17 successes and 18 exact SQLSTATE refusals. The T36 partitioned ADD control keeps its original notice
 and reports an explicit ordinary-table facts gap. See the
 [decision](../../docs/decisions/2026-11-18-postgresql-alter-column-identity.md).
 

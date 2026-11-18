@@ -137,8 +137,8 @@ Maintainer notes: [decision](../decisions/2026-11-17-postgresql-constraint-targe
 ### PostgreSQL ALTER column identity and existence guards
 
 On observed PostgreSQL 17, the existing ADD COLUMN duplicate and RENAME COLUMN
-source/destination rules use exact names in a fresh ordinary persistent table
-catalog. The ADD guard skips a proven existing user column. A system name
+source/destination rules use exact names in a fresh ordinary persistent table catalog. Typed tables remain outside
+this column-identity scope. The ADD guard skips a proven existing user column. A system name
 still collides. RENAME treats the same exact name as occupied. Earlier related
 DDL, parser errors and multiple ALTER actions can withhold the column proof.
 The parent `ALTER TABLE IF EXISTS` existence check distinguishes a qualified

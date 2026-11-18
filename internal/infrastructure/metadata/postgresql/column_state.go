@@ -16,7 +16,7 @@ func (p *Provider) loadPGColumnCatalog(ctx context.Context, snapshot *spec.Table
 		       a.atttypid, a.attnotnull, a.atthasdef,
 		       exists (select 1 from pg_catalog.pg_constraint pk where pk.conrelid = c.oid and pk.contype = 'p' and a.attnum = any(pk.conkey)),
 		       seq.seqtypid, seq.seqstart, seq.seqincrement, seq.seqmin, seq.seqmax, seq.seqcache, seq.seqcycle,
-		       a.attnum, typ.typstorage::text
+		       a.attnum, typ.typstorage::text, c.reloftype OPERATOR(pg_catalog.<>) 0::pg_catalog.oid
 		from pg_catalog.pg_class c
 		join pg_catalog.pg_namespace n on n.oid = c.relnamespace
 		left join pg_catalog.pg_attribute a on a.attrelid = c.oid and a.attnum OPERATOR(pg_catalog.<>) 0 and not a.attisdropped
@@ -34,17 +34,17 @@ func (p *Provider) loadPGColumnCatalog(ctx context.Context, snapshot *spec.Table
 	defer rows.Close()
 	var catalog *spec.PGColumnCatalog
 	for rows.Next() {
-		var ordinary, pk bool
+		var ordinary, pk, typed bool
 		var name, identity, generated, typeStorage sql.NullString
 		var typeOID, seqType, start, increment, min, max, cache, attributeNumber sql.NullInt64
 		var notNull, hasDefault, cycle sql.NullBool
 		if err := rows.Scan(&ordinary, &name, &identity, &generated, &typeOID, &notNull, &hasDefault, &pk,
-			&seqType, &start, &increment, &min, &max, &cache, &cycle, &attributeNumber, &typeStorage); err != nil {
+			&seqType, &start, &increment, &min, &max, &cache, &cycle, &attributeNumber, &typeStorage, &typed); err != nil {
 			return fmt.Errorf("scan column generation catalog: %w", err)
 		}
 		if catalog == nil {
-			catalog = &spec.PGColumnCatalog{Ordinary: ordinary, Columns: make([]spec.PGColumnState, 0), SystemColumns: make([]spec.PGColumnState, 0)}
-		} else if catalog.Ordinary != ordinary {
+			catalog = &spec.PGColumnCatalog{Ordinary: ordinary, Typed: typed, Columns: make([]spec.PGColumnState, 0), SystemColumns: make([]spec.PGColumnState, 0)}
+		} else if catalog.Ordinary != ordinary || catalog.Typed != typed {
 			return fmt.Errorf("inconsistent column generation table scope")
 		}
 		if !name.Valid {

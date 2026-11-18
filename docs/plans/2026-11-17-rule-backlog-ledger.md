@@ -372,7 +372,8 @@ User-approved reuse of three column target IDs and the existing table-existence
 ID. `5b96f34f` retains distinct private AST guards and exact relation observations.
 `c94a15da` consumes PG17 ordinary-table column facts, preserves separate policy
 findings, and gaps stale or unproven cases. Seventeen new T37 cases passed in
-the focused replay (173/173, 3368 assertions and 32 native steps). The RENAME
+the focused replay (173/173, 3380 assertions and 35 native steps, including
+three typed-table scope refusals found in read-only review). The RENAME
 child is mixed after evidence binding; the parent and original denominators
 stay intact. TYPE/USING, general ordering and action eligibility for other
 relation kinds remain in scope for future slices. See the

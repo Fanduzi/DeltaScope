@@ -102,6 +102,24 @@ The column inventory row stays mixed; only the RENAME COLUMN child and anchor
 classification moves from notice-only to mixed. Existing IDs, profiles and
 inventory denominators remain attached to their original scopes.
 
+## Typed tables found in read-only review
+
+The separately reviewed `cca065cd` CLI reported complete coverage for three
+ADD/RENAME statements on `CREATE TABLE … OF`. Native PG17.7 refused each with
+`42809` before a column guard could take effect. This exposed a gap in the
+scope check because a typed relation can be persistent, `relkind=r` and have
+no inheritance edges. D8 now gates on the system-qualified `reloftype`
+observation as well. Prior column-rule scope continues to use its existing
+contract. The existing T37 scope case verifies the three native refusals and
+the preserved type binding and payload. The focused candidate replay passed
+173/173, 3380 assertions and 35 native steps (17 successes and 18 refusals).
+
+The `cca065cd` full runner was stopped before further edits. Its exit 143 is
+an interruption. Cleanup first failed because Compose needs an interpolation
+value. The retry used an ephemeral value, removed the owned project, and
+confirmed all 16 original container identities. The final candidate needs a
+fresh full run and a separate review.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
