@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-table-tablespace": {"enable": {"ddl.pg.alter.tablespace.target.valid": {"level": "blocker"}, "ddl.pg.alter.set_tablespace.notice": {"level": "notice"}}},
    "pg-table-reloptions": {"enable": {"ddl.pg.alter.reloptions.valid": {"level": "blocker"}, "ddl.pg.alter.set_reloptions.warn": {"level": "warning"}, "ddl.pg.alter.reset_reloptions.notice": {"level": "notice"}}},
    "pg-replica-index": {"enable": {"ddl.pg.alter.replica_identity_using_index.valid": {"level": "blocker"}, "ddl.pg.alter.replica_identity_using_index.notice": {"level": "notice"}, "ddl.pg.alter.replica_identity_full.warn": {"level": "warning"}, "ddl.pg.alter.replica_identity_nothing.warn": {"level": "warning"}}},
    "pg-column-identity": {"enable": {"ddl.alter.add_column.exists.forbid": {"level": "blocker"}, "ddl.alter.rename_column.exists.require": {"level": "blocker"}, "ddl.alter.rename_column.target.exists.forbid": {"level": "blocker"}, "ddl.table.exists.alter.require": {"level": "blocker"}, "ddl.pg.alter.add_column.nullable.notice": {"level": "notice"}, "ddl.pg.alter.add_column.non_null_no_default.warn": {"level": "warning"}, "ddl.pg.alter.add_column.non_null_default.rewrite.warn": {"level": "warning"}}},
@@ -1876,6 +1877,51 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "table-tablespace-offline",
+   "dialect": "postgresql",
+   "policy": "pg-table-tablespace",
+   "sql": "ALTER TABLE app.t SET TABLESPACE pg_default",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_tablespace.notice","level": "notice"}],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.tablespace.target.valid","reason_code": "unproven_table_tablespace","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGTableTablespace","SameKnown"],
+    "rule_summary_loaded": 2
+   }
+  },
+  {
+   "id": "table-tablespace-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.t SET TABLESPACE missing",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableTablespace","SameKnown"]
+   }
+  },
   {
    "id": "table-reloptions-offline",
    "dialect": "postgresql",
@@ -4017,6 +4063,386 @@
   }
  ],
  "metadata_cases": [
+  {
+   "id": "pg-table-tablespace-missing",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-tablespace",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtsp_missing"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_missing CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_missing'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtsp_missing.t SET TABLESPACE pg_missing_d11",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_missing'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtsp_missing","expect_rc": 0},
+    {"name": "seed and capture fixture files and catalogs","sql": "CREATE TABLE pgtsp_missing.t(id int,payload text); INSERT INTO pgtsp_missing.t VALUES(1,'keep'); CREATE SEQUENCE pgtsp_missing.guard START 7; ; CREATE TABLE pgtsp_missing.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_missing'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_tablespace.notice","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.tablespace.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableTablespace","SameKnown"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.tablespace.target.valid","metadata": {"reason_code": "tablespace_absent"}}]
+   },
+   "post_verify": [
+    {"assert": "audit never moves files or changes tablespaces","sql": "SELECT count(*) FROM ((TABLE pgtsp_missing.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_missing'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_missing'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgtsp_missing.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgtsp_missing.t","expect": "t"},
+    {"assert": "audit does not issue a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtsp_missing.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42704","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtsp_missing.t SET TABLESPACE pg_missing_d11","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42704:"]}
+   ],
+   "structure": [
+    {"assert": "native file identity comparison","sql": "SELECT (c.relfilenode = r.relfilenode) FROM pg_class c JOIN pgtsp_missing.receipt r ON r.oid=c.oid WHERE c.oid='pgtsp_missing.t'::regclass","expect": "t"},
+    {"assert": "native effective tablespace","sql": "SELECT quote_ident(t.spcname) FROM pg_class c JOIN pg_database d ON d.datname=current_database() JOIN pg_tablespace t ON t.oid=CASE WHEN c.reltablespace=0 THEN d.dattablespace ELSE c.reltablespace END WHERE c.oid='pgtsp_missing.t'::regclass","expect": "pg_default"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_missing CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_missing'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-tablespace-global",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-tablespace",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtsp_global"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_global CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_global'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtsp_global.t SET TABLESPACE pg_global",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_global'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtsp_global","expect_rc": 0},
+    {"name": "seed and capture fixture files and catalogs","sql": "CREATE TABLE pgtsp_global.t(id int,payload text); INSERT INTO pgtsp_global.t VALUES(1,'keep'); CREATE SEQUENCE pgtsp_global.guard START 7; ; CREATE TABLE pgtsp_global.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_global'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_tablespace.notice","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.tablespace.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableTablespace","SameKnown"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.tablespace.target.valid","metadata": {"reason_code": "tablespace_global_inapplicable"}}]
+   },
+   "post_verify": [
+    {"assert": "audit never moves files or changes tablespaces","sql": "SELECT count(*) FROM ((TABLE pgtsp_global.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_global'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_global'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgtsp_global.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgtsp_global.t","expect": "t"},
+    {"assert": "audit does not issue a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtsp_global.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 22023","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtsp_global.t SET TABLESPACE pg_global","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  22023:"]}
+   ],
+   "structure": [
+    {"assert": "native file identity comparison","sql": "SELECT (c.relfilenode = r.relfilenode) FROM pg_class c JOIN pgtsp_global.receipt r ON r.oid=c.oid WHERE c.oid='pgtsp_global.t'::regclass","expect": "t"},
+    {"assert": "native effective tablespace","sql": "SELECT quote_ident(t.spcname) FROM pg_class c JOIN pg_database d ON d.datname=current_database() JOIN pg_tablespace t ON t.oid=CASE WHEN c.reltablespace=0 THEN d.dattablespace ELSE c.reltablespace END WHERE c.oid='pgtsp_global.t'::regclass","expect": "pg_default"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_global CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_global'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-tablespace-same-default",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-tablespace",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtsp_same_default"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_same_default CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_same_default'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtsp_same_default.t SET TABLESPACE pg_default",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_same_default'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtsp_same_default","expect_rc": 0},
+    {"name": "seed and capture fixture files and catalogs","sql": "CREATE TABLE pgtsp_same_default.t(id int,payload text); INSERT INTO pgtsp_same_default.t VALUES(1,'keep'); CREATE SEQUENCE pgtsp_same_default.guard START 7; ; CREATE TABLE pgtsp_same_default.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_same_default'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_tablespace.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableTablespace","SameKnown","requests a destination on PostgreSQL"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit never moves files or changes tablespaces","sql": "SELECT count(*) FROM ((TABLE pgtsp_same_default.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_same_default'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_same_default'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgtsp_same_default.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgtsp_same_default.t","expect": "t"},
+    {"assert": "audit does not issue a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtsp_same_default.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgtsp_same_default.t SET TABLESPACE pg_default","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native file identity comparison","sql": "SELECT (c.relfilenode = r.relfilenode) FROM pg_class c JOIN pgtsp_same_default.receipt r ON r.oid=c.oid WHERE c.oid='pgtsp_same_default.t'::regclass","expect": "t"},
+    {"assert": "native effective tablespace","sql": "SELECT quote_ident(t.spcname) FROM pg_class c JOIN pg_database d ON d.datname=current_database() JOIN pg_tablespace t ON t.oid=CASE WHEN c.reltablespace=0 THEN d.dattablespace ELSE c.reltablespace END WHERE c.oid='pgtsp_same_default.t'::regclass","expect": "pg_default"},
+    {"assert": "native zero stored tablespace uses database default","sql": "SELECT reltablespace=0 FROM pg_class WHERE oid='pgtsp_same_default.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_same_default CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_same_default'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-tablespace-same-named",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-tablespace",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtsp_same_named"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_same_named CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_same_named'","expect": "0"}},{"name": "remove owned tablespace","fixture_key": "space","sql": "DROP TABLESPACE \" Pgtsp Same \"","verify": {"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Pgtsp Same '","expect": "0"},"depends_on": "remove owned schema"}]},
+   "sql": "ALTER TABLE pgtsp_same_named.t SET TABLESPACE \" Pgtsp Same \"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_same_named'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtsp_same_named","expect_rc": 0},
+    {"name": "prove destination name absent","fixture_key": "space","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Pgtsp Same '","expect": "0"}]},
+    {"name": "create directory inside the disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgtsp_same_named_space'","expect_rc": 0},
+    {"name": "claim named tablespace","fixture_key": "space","creates_fixture": true,"sql": "CREATE TABLESPACE \" Pgtsp Same \" LOCATION '/tmp/pgtsp_same_named_space'","expect_rc": 0},
+    {"name": "seed and capture fixture files and catalogs","sql": "CREATE TABLE pgtsp_same_named.t(id int,payload text) TABLESPACE \" Pgtsp Same \"; INSERT INTO pgtsp_same_named.t VALUES(1,'keep'); CREATE SEQUENCE pgtsp_same_named.guard START 7; ; CREATE TABLE pgtsp_same_named.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_same_named'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_tablespace.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableTablespace","SameKnown","requests a destination on PostgreSQL"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit never moves files or changes tablespaces","sql": "SELECT count(*) FROM ((TABLE pgtsp_same_named.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_same_named'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_same_named'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgtsp_same_named.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgtsp_same_named.t","expect": "t"},
+    {"assert": "audit does not issue a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtsp_same_named.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgtsp_same_named.t SET TABLESPACE \" Pgtsp Same \"","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native file identity comparison","sql": "SELECT (c.relfilenode = r.relfilenode) FROM pg_class c JOIN pgtsp_same_named.receipt r ON r.oid=c.oid WHERE c.oid='pgtsp_same_named.t'::regclass","expect": "t"},
+    {"assert": "native effective tablespace","sql": "SELECT quote_ident(t.spcname) FROM pg_class c JOIN pg_database d ON d.datname=current_database() JOIN pg_tablespace t ON t.oid=CASE WHEN c.reltablespace=0 THEN d.dattablespace ELSE c.reltablespace END WHERE c.oid='pgtsp_same_named.t'::regclass","expect": "\" Pgtsp Same \""}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_same_named CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_same_named'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove owned tablespace","fixture_key": "space","sql": "DROP TABLESPACE \" Pgtsp Same \"","verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Pgtsp Same '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-tablespace-move",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-tablespace",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtsp_move"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_move CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_move'","expect": "0"}},{"name": "remove owned tablespace","fixture_key": "space","sql": "DROP TABLESPACE \"pgtsp_move\"","verify": {"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname='pgtsp_move'","expect": "0"},"depends_on": "remove owned schema"}]},
+   "sql": "ALTER TABLE pgtsp_move.t SET TABLESPACE \"pgtsp_move\"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_move'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtsp_move","expect_rc": 0},
+    {"name": "prove destination name absent","fixture_key": "space","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname='pgtsp_move'","expect": "0"}]},
+    {"name": "create directory inside the disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgtsp_move_space'","expect_rc": 0},
+    {"name": "claim named tablespace","fixture_key": "space","creates_fixture": true,"sql": "CREATE TABLESPACE \"pgtsp_move\" LOCATION '/tmp/pgtsp_move_space'","expect_rc": 0},
+    {"name": "seed and capture fixture files and catalogs","sql": "CREATE TABLE pgtsp_move.t(id int,payload text); INSERT INTO pgtsp_move.t VALUES(1,'keep'); CREATE SEQUENCE pgtsp_move.guard START 7; ; CREATE TABLE pgtsp_move.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_move'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_tablespace.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableTablespace","SameKnown"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit never moves files or changes tablespaces","sql": "SELECT count(*) FROM ((TABLE pgtsp_move.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_move'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_move'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgtsp_move.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgtsp_move.t","expect": "t"},
+    {"assert": "audit does not issue a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtsp_move.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgtsp_move.t SET TABLESPACE \"pgtsp_move\"","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native file identity comparison","sql": "SELECT (c.relfilenode = r.relfilenode) FROM pg_class c JOIN pgtsp_move.receipt r ON r.oid=c.oid WHERE c.oid='pgtsp_move.t'::regclass","expect": "f"},
+    {"assert": "native effective tablespace","sql": "SELECT quote_ident(t.spcname) FROM pg_class c JOIN pg_database d ON d.datname=current_database() JOIN pg_tablespace t ON t.oid=CASE WHEN c.reltablespace=0 THEN d.dattablespace ELSE c.reltablespace END WHERE c.oid='pgtsp_move.t'::regclass","expect": "pgtsp_move"},
+    {"assert": "data retained by native move","sql": "SELECT id::text||':'||payload FROM pgtsp_move.t","expect": "1:keep"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_move CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_move'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove owned tablespace","fixture_key": "space","sql": "DROP TABLESPACE \"pgtsp_move\"","verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname='pgtsp_move'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-tablespace-scope",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-tablespace",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtsp_scope"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_scope CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_scope'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtsp_scope.part SET TABLESPACE pg_default;ALTER TABLE t SET TABLESPACE pg_default;ALTER TABLE pgtsp_scope.t SET TABLESPACE pg_default, ADD COLUMN c int",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_scope'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtsp_scope","expect_rc": 0},
+    {"name": "seed and capture fixture files and catalogs","sql": "CREATE TABLE pgtsp_scope.t(id int,payload text); INSERT INTO pgtsp_scope.t VALUES(1,'keep'); CREATE SEQUENCE pgtsp_scope.guard START 7; CREATE TABLE pgtsp_scope.part(id int) PARTITION BY RANGE(id); CREATE TABLE pgtsp_scope.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_scope'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 3,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified","unverified","unverified"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_tablespace.notice","level": "notice"},{"index": 1,"rule_id": "ddl.pg.alter.set_tablespace.notice","level": "notice"},{"index": 2,"rule_id": "ddl.pg.alter.set_tablespace.notice","level": "notice"}],
+    "evidence_gaps": 3,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.tablespace.target.valid","reason_code": "unproven_table_tablespace","required_facts": ["target_table.pg_tablespace"]},{"index": 1,"rule_id": "ddl.pg.alter.tablespace.target.valid","reason_code": "unproven_table_tablespace","required_facts": ["target_table.pg_tablespace"]},{"index": 2,"rule_id": "ddl.pg.alter.tablespace.target.valid","reason_code": "unproven_table_tablespace","required_facts": ["target_table.pg_tablespace"]}],
+    "serialized_not_contains": ["PGTableTablespace","SameKnown"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit never moves files or changes tablespaces","sql": "SELECT count(*) FROM ((TABLE pgtsp_scope.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_scope'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_scope'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgtsp_scope.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgtsp_scope.t","expect": "t"},
+    {"assert": "audit does not issue a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtsp_scope.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgtsp_scope.part SET TABLESPACE pg_default","expect_rc": 0},
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgtsp_scope.t SET TABLESPACE pg_default","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native file identity comparison","sql": "SELECT (c.relfilenode = r.relfilenode) FROM pg_class c JOIN pgtsp_scope.receipt r ON r.oid=c.oid WHERE c.oid='pgtsp_scope.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_scope CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_scope'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-tablespace-freshness",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-tablespace",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtsp_freshness"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_freshness CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_freshness'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtsp_freshness.t ADD COLUMN new_id integer;ALTER TABLE pgtsp_freshness.t SET TABLESPACE pg_default;ALTER TABLE pgtsp_freshness.t RENAME COLUMN IF EXISTS id TO moved;ALTER TABLE pgtsp_freshness.t SET TABLESPACE pg_default",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_freshness'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtsp_freshness","expect_rc": 0},
+    {"name": "seed and capture fixture files and catalogs","sql": "CREATE TABLE pgtsp_freshness.t(id int,payload text); INSERT INTO pgtsp_freshness.t VALUES(1,'keep'); CREATE SEQUENCE pgtsp_freshness.guard START 7; ; CREATE TABLE pgtsp_freshness.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_freshness'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 2,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": ["complete","unverified","unverified"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 1,"rule_id": "ddl.pg.alter.set_tablespace.notice","level": "notice"},{"index": 2,"rule_id": "ddl.pg.alter.set_tablespace.notice","level": "notice"}],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.pg.alter.tablespace.target.valid","reason_code": "unproven_table_tablespace","required_facts": ["target_table.pg_tablespace"]},{"index": 2,"rule_id": "ddl.pg.alter.tablespace.target.valid","reason_code": "unproven_table_tablespace","required_facts": ["target_table.pg_tablespace"]}],
+    "serialized_not_contains": ["PGTableTablespace","SameKnown"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit never moves files or changes tablespaces","sql": "SELECT count(*) FROM ((TABLE pgtsp_freshness.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_freshness'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_freshness'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgtsp_freshness.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgtsp_freshness.t","expect": "t"},
+    {"assert": "audit does not issue a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtsp_freshness.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgtsp_freshness.t ADD COLUMN new_id integer","expect_rc": 0},
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgtsp_freshness.t SET TABLESPACE pg_default","expect_rc": 0},
+    {"name": "native refusal 42601","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtsp_freshness.t RENAME COLUMN IF EXISTS id TO moved","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42601:"]}
+   ],
+   "structure": [
+    {"assert": "native predecessor was applied","sql": "SELECT EXISTS(SELECT FROM pg_attribute WHERE attrelid='pgtsp_freshness.t'::regclass AND attname='new_id')","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_freshness CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_freshness'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-tablespace-guard-absent",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-tablespace",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtsp_guard_absent"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_guard_absent CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_guard_absent'","expect": "0"}}]},
+   "sql": "ALTER TABLE IF EXISTS pgtsp_guard_absent.missing SET TABLESPACE pg_missing_d11",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_guard_absent'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtsp_guard_absent","expect_rc": 0},
+    {"name": "seed and capture fixture files and catalogs","sql": "CREATE TABLE pgtsp_guard_absent.t(id int,payload text); INSERT INTO pgtsp_guard_absent.t VALUES(1,'keep'); CREATE SEQUENCE pgtsp_guard_absent.guard START 7; ; CREATE TABLE pgtsp_guard_absent.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_guard_absent'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_tablespace.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableTablespace","SameKnown"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit never moves files or changes tablespaces","sql": "SELECT count(*) FROM ((TABLE pgtsp_guard_absent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_guard_absent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_guard_absent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgtsp_guard_absent.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact payload and row count","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgtsp_guard_absent.t","expect": "t"},
+    {"assert": "audit does not issue a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtsp_guard_absent.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE IF EXISTS pgtsp_guard_absent.missing SET TABLESPACE pg_missing_d11","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "guard skipped missing relation","sql": "SELECT to_regclass('pgtsp_guard_absent.missing') IS NULL","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtsp_guard_absent CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_guard_absent'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
   {
    "id": "pg-table-reloptions-fillfactor-controls",
    "anchor": "postgres17",
@@ -7094,6 +7520,16 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.table-tablespace-offline",
+  "T37.cli.table-tablespace-disabled",
+  "T37.meta.pg-table-tablespace-missing",
+  "T37.meta.pg-table-tablespace-global",
+  "T37.meta.pg-table-tablespace-same-default",
+  "T37.meta.pg-table-tablespace-same-named",
+  "T37.meta.pg-table-tablespace-move",
+  "T37.meta.pg-table-tablespace-scope",
+  "T37.meta.pg-table-tablespace-freshness",
+  "T37.meta.pg-table-tablespace-guard-absent",
   "T37.cli.table-reloptions-offline",
   "T37.cli.table-reloptions-disabled",
   "T37.meta.pg-table-reloptions-fillfactor-controls",

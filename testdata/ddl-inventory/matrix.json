@@ -8697,7 +8697,18 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.set-tablespace.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#table-tablespace-offline",
+                "file:testdata/ddl-golden/T37.json#table-tablespace-disabled",
+                "file:testdata/ddl-golden/T37.json#pg-table-tablespace-missing",
+                "file:testdata/ddl-golden/T37.json#pg-table-tablespace-global",
+                "file:testdata/ddl-golden/T37.json#pg-table-tablespace-same-default",
+                "file:testdata/ddl-golden/T37.json#pg-table-tablespace-same-named",
+                "file:testdata/ddl-golden/T37.json#pg-table-tablespace-move",
+                "file:testdata/ddl-golden/T37.json#pg-table-tablespace-scope",
+                "file:testdata/ddl-golden/T37.json#pg-table-tablespace-freshness",
+                "file:testdata/ddl-golden/T37.json#pg-table-tablespace-guard-absent",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/table_tablespace_target.expected.yaml#ddl.pg.alter.tablespace.target.valid"
               ]
             }
           ]

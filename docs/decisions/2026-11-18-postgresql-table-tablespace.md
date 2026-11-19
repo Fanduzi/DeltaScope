@@ -56,6 +56,24 @@ Keep existing cases and profiles. Real CLI audit must preserve rows, files,
 current tablespace and an independent sequence before the native leg.
 The matrix binds only the original `SET TABLESPACE` evidence cell.
 
+## Evidence bindings
+
+`34ec33f6` binds the private observation and `c319179e` adds the shared rule.
+T37 retains all 203 prior cases and profiles. Ten additions under an isolated
+profile bring the focused run to 213/213 and 4655 assertions. The eight live
+cases include eleven native controls (eight successes and three precise
+refusals). The first replay found two unsubstituted expected space names.
+Correcting the expected fixture names preserved every native check.
+
+An independent real CLI and native probe used a database created with a custom
+default tablespace. Its heap had zero stored `reltablespace`; selecting the
+actual database default produced the same-space notice and preserved the
+original file, payload and sequence before and after native execution.
+See `/tmp/ds-pg-d11-custom-db-default-c319179e/evidence.json`.
+
+Eleven selectors bind the original `SET TABLESPACE` cell. The generated
+matrix retains all row and subaction classifications and denominators.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

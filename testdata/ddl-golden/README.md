@@ -3,6 +3,14 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D11 PostgreSQL single-table tablespace destinations
+
+D11 retains the 203 earlier T37 cases and their profiles. Ten additions bring
+focused T37 to 213/213 and 4655 assertions. Eleven native steps include eight
+successes and three precise refusals. Independent catalog and file checks
+verify same-space choices and physical moves. See the
+[decision](../../docs/decisions/2026-11-18-postgresql-table-tablespace.md).
+
 ## T37 D10 PostgreSQL heap table storage options
 
 D10 retains the 189 earlier T37 cases, their profiles, and their 3922
