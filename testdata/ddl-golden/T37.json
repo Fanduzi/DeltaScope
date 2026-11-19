@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-table-persistence": {"enable": {"ddl.pg.alter.persistence.transition.valid": {"level": "blocker"}, "ddl.pg.alter.set_logged.notice": {"level": "notice"}, "ddl.pg.alter.set_unlogged.notice": {"level": "notice"}}},
    "pg-table-access-method": {"enable": {"ddl.pg.alter.access_method.target.valid": {"level": "blocker"}, "ddl.pg.alter.set_access_method.warn": {"level": "warning"}}},
    "pg-table-tablespace": {"enable": {"ddl.pg.alter.tablespace.target.valid": {"level": "blocker"}, "ddl.pg.alter.set_tablespace.notice": {"level": "notice"}}},
    "pg-table-reloptions": {"enable": {"ddl.pg.alter.reloptions.valid": {"level": "blocker"}, "ddl.pg.alter.set_reloptions.warn": {"level": "warning"}, "ddl.pg.alter.reset_reloptions.notice": {"level": "notice"}}},
@@ -1878,6 +1879,51 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "table-persistence-offline",
+   "dialect": "postgresql",
+   "policy": "pg-table-persistence",
+   "sql": "ALTER TABLE app.t SET LOGGED",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_logged.notice","level": "notice"}],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.persistence.transition.valid","reason_code": "unproven_table_persistence","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGTablePersistence","ForeignKeyUnknown"],
+    "rule_summary_loaded": 3
+   }
+  },
+  {
+   "id": "table-persistence-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.t SET UNLOGGED",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTablePersistence","ForeignKeyUnknown"]
+   }
+  },
   {
    "id": "table-access-method-offline",
    "dialect": "postgresql",
@@ -4109,6 +4155,518 @@
   }
  ],
  "metadata_cases": [
+  {
+   "id": "pg-table-persistence-same-logged",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-persistence",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgper_same_logged"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_same_logged CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_same_logged'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgper_same_logged.t SET LOGGED",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_same_logged'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgper_same_logged","expect_rc": 0},
+    {"name": "seed and capture persistence and file identities","sql": "CREATE TABLE pgper_same_logged.t(id int PRIMARY KEY,payload text); INSERT INTO pgper_same_logged.t VALUES(1,'keep'); CREATE SEQUENCE pgper_same_logged.guard START 7; CREATE TABLE pgper_same_logged.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_same_logged'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_logged.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTablePersistence","ForeignKeyUnknown","requests a persistence change"],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"assert": "audit preserves persistence and file identity","sql": "SELECT count(*) FROM ((TABLE pgper_same_logged.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_same_logged'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_same_logged'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgper_same_logged.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgper_same_logged.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgper_same_logged.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgper_same_logged.t SET LOGGED","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native file identity and persistence","sql": "SELECT c.relpersistence::text||':'||(c.relfilenode=r.relfilenode)::text FROM pg_class c JOIN pgper_same_logged.receipt r ON r.oid=c.oid WHERE c.oid='pgper_same_logged.t'::regclass","expect": "p:true"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_same_logged CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_same_logged'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-persistence-same-unlogged",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-persistence",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgper_same_unlogged"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_same_unlogged CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_same_unlogged'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgper_same_unlogged.t SET UNLOGGED",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_same_unlogged'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgper_same_unlogged","expect_rc": 0},
+    {"name": "seed and capture persistence and file identities","sql": "CREATE UNLOGGED TABLE pgper_same_unlogged.t(id int PRIMARY KEY,payload text); INSERT INTO pgper_same_unlogged.t VALUES(1,'keep'); CREATE SEQUENCE pgper_same_unlogged.guard START 7; CREATE TABLE pgper_same_unlogged.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_same_unlogged'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_unlogged.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTablePersistence","ForeignKeyUnknown","requests a persistence change"],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"assert": "audit preserves persistence and file identity","sql": "SELECT count(*) FROM ((TABLE pgper_same_unlogged.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_same_unlogged'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_same_unlogged'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgper_same_unlogged.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgper_same_unlogged.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgper_same_unlogged.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgper_same_unlogged.t SET UNLOGGED","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native file identity and persistence","sql": "SELECT c.relpersistence::text||':'||(c.relfilenode=r.relfilenode)::text FROM pg_class c JOIN pgper_same_unlogged.receipt r ON r.oid=c.oid WHERE c.oid='pgper_same_unlogged.t'::regclass","expect": "u:true"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_same_unlogged CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_same_unlogged'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-persistence-change",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-persistence",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgper_change"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_change CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_change'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgper_change.t SET LOGGED",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_change'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgper_change","expect_rc": 0},
+    {"name": "seed and capture persistence and file identities","sql": "CREATE UNLOGGED TABLE pgper_change.t(id int PRIMARY KEY,payload text); INSERT INTO pgper_change.t VALUES(1,'keep'); CREATE SEQUENCE pgper_change.guard START 7; CREATE TABLE pgper_change.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_change'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_logged.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTablePersistence","ForeignKeyUnknown"],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"assert": "audit preserves persistence and file identity","sql": "SELECT count(*) FROM ((TABLE pgper_change.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_change'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_change'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgper_change.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgper_change.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgper_change.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgper_change.t SET LOGGED","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native file identity and persistence","sql": "SELECT c.relpersistence::text||':'||(c.relfilenode=r.relfilenode)::text FROM pg_class c JOIN pgper_change.receipt r ON r.oid=c.oid WHERE c.oid='pgper_change.t'::regclass","expect": "p:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_change CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_change'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-persistence-direct-publication",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-persistence",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgper_direct_publication"},
+   "fixture": {"cleanup": [{"name": "remove pgper_direct_publication_direct","fixture_key": "pgper_direct_publication_direct","sql": "DROP PUBLICATION pgper_direct_publication_direct","verify": {"assert": "owned publication absent","sql": "SELECT count(*) FROM pg_catalog.pg_publication WHERE pubname='pgper_direct_publication_direct'","expect": "0"}},{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_direct_publication CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_direct_publication'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgper_direct_publication.t SET UNLOGGED",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_direct_publication'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgper_direct_publication","expect_rc": 0},
+    {"name": "seed and capture persistence and file identities","sql": "CREATE TABLE pgper_direct_publication.t(id int PRIMARY KEY,payload text); INSERT INTO pgper_direct_publication.t VALUES(1,'keep'); CREATE SEQUENCE pgper_direct_publication.guard START 7; CREATE TABLE pgper_direct_publication.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_direct_publication'::regnamespace AND c.relname<>'receipt'","expect_rc": 0},
+    {"name": "prove publication absent","fixture_key": "pgper_direct_publication_direct","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned publication absent","sql": "SELECT count(*) FROM pg_catalog.pg_publication WHERE pubname='pgper_direct_publication_direct'","expect": "0"}]},
+    {"name": "claim publication","fixture_key": "pgper_direct_publication_direct","creates_fixture": true,"sql": "CREATE PUBLICATION pgper_direct_publication_direct FOR TABLE pgper_direct_publication.t","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_unlogged.notice","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.persistence.transition.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTablePersistence","ForeignKeyUnknown"],
+    "rule_summary_loaded": 3,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.persistence.transition.valid","metadata": {"reason_code": "persistence_direct_publication"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves persistence and file identity","sql": "SELECT count(*) FROM ((TABLE pgper_direct_publication.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_direct_publication'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_direct_publication'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgper_direct_publication.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgper_direct_publication.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgper_direct_publication.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 55000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgper_direct_publication.t SET UNLOGGED","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  55000:"]}
+   ],
+   "structure": [
+    {"assert": "native file identity and persistence","sql": "SELECT c.relpersistence::text||':'||(c.relfilenode=r.relfilenode)::text FROM pg_class c JOIN pgper_direct_publication.receipt r ON r.oid=c.oid WHERE c.oid='pgper_direct_publication.t'::regclass","expect": "p:true"}
+   ],
+   "teardown": [
+    {"name": "remove pgper_direct_publication_direct","fixture_key": "pgper_direct_publication_direct","sql": "DROP PUBLICATION pgper_direct_publication_direct","verify": [{"assert": "owned publication absent","sql": "SELECT count(*) FROM pg_catalog.pg_publication WHERE pubname='pgper_direct_publication_direct'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_direct_publication CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_direct_publication'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-persistence-all-schema-publication",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-persistence",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgper_all_schema_publication"},
+   "fixture": {"cleanup": [{"name": "remove pgper_all_schema_publication_namespace","fixture_key": "pgper_all_schema_publication_namespace","sql": "DROP PUBLICATION pgper_all_schema_publication_namespace","verify": {"assert": "owned publication absent","sql": "SELECT count(*) FROM pg_catalog.pg_publication WHERE pubname='pgper_all_schema_publication_namespace'","expect": "0"}},{"name": "remove pgper_all_schema_publication_all","fixture_key": "pgper_all_schema_publication_all","sql": "DROP PUBLICATION pgper_all_schema_publication_all","verify": {"assert": "owned publication absent","sql": "SELECT count(*) FROM pg_catalog.pg_publication WHERE pubname='pgper_all_schema_publication_all'","expect": "0"}},{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_all_schema_publication CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_all_schema_publication'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgper_all_schema_publication.t SET UNLOGGED",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_all_schema_publication'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgper_all_schema_publication","expect_rc": 0},
+    {"name": "seed and capture persistence and file identities","sql": "CREATE TABLE pgper_all_schema_publication.t(id int PRIMARY KEY,payload text); INSERT INTO pgper_all_schema_publication.t VALUES(1,'keep'); CREATE SEQUENCE pgper_all_schema_publication.guard START 7; CREATE TABLE pgper_all_schema_publication.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_all_schema_publication'::regnamespace AND c.relname<>'receipt'","expect_rc": 0},
+    {"name": "prove publication absent","fixture_key": "pgper_all_schema_publication_all","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned publication absent","sql": "SELECT count(*) FROM pg_catalog.pg_publication WHERE pubname='pgper_all_schema_publication_all'","expect": "0"}]},
+    {"name": "claim publication","fixture_key": "pgper_all_schema_publication_all","creates_fixture": true,"sql": "CREATE PUBLICATION pgper_all_schema_publication_all FOR ALL TABLES","expect_rc": 0},
+    {"name": "prove publication absent","fixture_key": "pgper_all_schema_publication_namespace","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned publication absent","sql": "SELECT count(*) FROM pg_catalog.pg_publication WHERE pubname='pgper_all_schema_publication_namespace'","expect": "0"}]},
+    {"name": "claim publication","fixture_key": "pgper_all_schema_publication_namespace","creates_fixture": true,"sql": "CREATE PUBLICATION pgper_all_schema_publication_namespace FOR TABLES IN SCHEMA pgper_all_schema_publication","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_unlogged.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTablePersistence","ForeignKeyUnknown"],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"assert": "audit preserves persistence and file identity","sql": "SELECT count(*) FROM ((TABLE pgper_all_schema_publication.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_all_schema_publication'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_all_schema_publication'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgper_all_schema_publication.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgper_all_schema_publication.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgper_all_schema_publication.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgper_all_schema_publication.t SET UNLOGGED","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native file identity and persistence","sql": "SELECT c.relpersistence::text||':'||(c.relfilenode=r.relfilenode)::text FROM pg_class c JOIN pgper_all_schema_publication.receipt r ON r.oid=c.oid WHERE c.oid='pgper_all_schema_publication.t'::regclass","expect": "u:false"}
+   ],
+   "teardown": [
+    {"name": "remove pgper_all_schema_publication_namespace","fixture_key": "pgper_all_schema_publication_namespace","sql": "DROP PUBLICATION pgper_all_schema_publication_namespace","verify": [{"assert": "owned publication absent","sql": "SELECT count(*) FROM pg_catalog.pg_publication WHERE pubname='pgper_all_schema_publication_namespace'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove pgper_all_schema_publication_all","fixture_key": "pgper_all_schema_publication_all","sql": "DROP PUBLICATION pgper_all_schema_publication_all","verify": [{"assert": "owned publication absent","sql": "SELECT count(*) FROM pg_catalog.pg_publication WHERE pubname='pgper_all_schema_publication_all'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_all_schema_publication CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_all_schema_publication'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-persistence-inbound-fk",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-persistence",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgper_inbound_fk"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_inbound_fk CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_inbound_fk'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgper_inbound_fk.t SET UNLOGGED",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_inbound_fk'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgper_inbound_fk","expect_rc": 0},
+    {"name": "seed and capture persistence and file identities","sql": "CREATE TABLE pgper_inbound_fk.t(id int PRIMARY KEY,payload text); INSERT INTO pgper_inbound_fk.t VALUES(1,'keep'); CREATE SEQUENCE pgper_inbound_fk.guard START 7; CREATE TABLE pgper_inbound_fk.other(id int REFERENCES pgper_inbound_fk.t(id)); CREATE TABLE pgper_inbound_fk.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_inbound_fk'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_unlogged.notice","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.persistence.transition.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTablePersistence","ForeignKeyUnknown"],
+    "rule_summary_loaded": 3,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.persistence.transition.valid","metadata": {"reason_code": "persistence_inbound_foreign_key"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves persistence and file identity","sql": "SELECT count(*) FROM ((TABLE pgper_inbound_fk.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_inbound_fk'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_inbound_fk'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgper_inbound_fk.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgper_inbound_fk.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgper_inbound_fk.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgper_inbound_fk.t SET UNLOGGED","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native file identity and persistence","sql": "SELECT c.relpersistence::text||':'||(c.relfilenode=r.relfilenode)::text FROM pg_class c JOIN pgper_inbound_fk.receipt r ON r.oid=c.oid WHERE c.oid='pgper_inbound_fk.t'::regclass","expect": "p:true"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_inbound_fk CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_inbound_fk'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-persistence-outbound-fk",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-persistence",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgper_outbound_fk"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_outbound_fk CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_outbound_fk'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgper_outbound_fk.t SET LOGGED",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_outbound_fk'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgper_outbound_fk","expect_rc": 0},
+    {"name": "seed and capture persistence and file identities","sql": "CREATE UNLOGGED TABLE pgper_outbound_fk.t(id int PRIMARY KEY,payload text); INSERT INTO pgper_outbound_fk.t VALUES(1,'keep'); CREATE SEQUENCE pgper_outbound_fk.guard START 7; CREATE UNLOGGED TABLE pgper_outbound_fk.other(id int PRIMARY KEY); INSERT INTO pgper_outbound_fk.other VALUES(1); ALTER TABLE pgper_outbound_fk.t ADD FOREIGN KEY(id) REFERENCES pgper_outbound_fk.other(id); CREATE TABLE pgper_outbound_fk.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_outbound_fk'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_logged.notice","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.persistence.transition.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTablePersistence","ForeignKeyUnknown"],
+    "rule_summary_loaded": 3,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.persistence.transition.valid","metadata": {"reason_code": "persistence_outbound_foreign_key"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves persistence and file identity","sql": "SELECT count(*) FROM ((TABLE pgper_outbound_fk.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_outbound_fk'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_outbound_fk'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgper_outbound_fk.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgper_outbound_fk.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgper_outbound_fk.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgper_outbound_fk.t SET LOGGED","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native file identity and persistence","sql": "SELECT c.relpersistence::text||':'||(c.relfilenode=r.relfilenode)::text FROM pg_class c JOIN pgper_outbound_fk.receipt r ON r.oid=c.oid WHERE c.oid='pgper_outbound_fk.t'::regclass","expect": "u:true"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_outbound_fk CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_outbound_fk'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-persistence-self-fk",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-persistence",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgper_self_fk"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_self_fk CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_self_fk'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgper_self_fk.t SET UNLOGGED",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_self_fk'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgper_self_fk","expect_rc": 0},
+    {"name": "seed and capture persistence and file identities","sql": "CREATE TABLE pgper_self_fk.t(id int PRIMARY KEY,payload text); INSERT INTO pgper_self_fk.t VALUES(1,'keep'); CREATE SEQUENCE pgper_self_fk.guard START 7; ALTER TABLE pgper_self_fk.t ADD FOREIGN KEY(id) REFERENCES pgper_self_fk.t(id); CREATE TABLE pgper_self_fk.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_self_fk'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_unlogged.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTablePersistence","ForeignKeyUnknown"],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"assert": "audit preserves persistence and file identity","sql": "SELECT count(*) FROM ((TABLE pgper_self_fk.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_self_fk'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_self_fk'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgper_self_fk.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgper_self_fk.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgper_self_fk.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgper_self_fk.t SET UNLOGGED","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native file identity and persistence","sql": "SELECT c.relpersistence::text||':'||(c.relfilenode=r.relfilenode)::text FROM pg_class c JOIN pgper_self_fk.receipt r ON r.oid=c.oid WHERE c.oid='pgper_self_fk.t'::regclass","expect": "u:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_self_fk CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_self_fk'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-persistence-scope",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-persistence",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgper_scope"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_scope CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_scope'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgper_scope.part SET UNLOGGED;ALTER TABLE t SET LOGGED;ALTER TABLE pgper_scope.t SET LOGGED, ADD COLUMN c int",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_scope'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgper_scope","expect_rc": 0},
+    {"name": "seed and capture persistence and file identities","sql": "CREATE TABLE pgper_scope.t(id int PRIMARY KEY,payload text); INSERT INTO pgper_scope.t VALUES(1,'keep'); CREATE SEQUENCE pgper_scope.guard START 7; CREATE TABLE pgper_scope.part(id int) PARTITION BY RANGE(id); CREATE TABLE pgper_scope.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_scope'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 3,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified","unverified","unverified"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_unlogged.notice","level": "notice"},{"index": 1,"rule_id": "ddl.pg.alter.set_logged.notice","level": "notice"},{"index": 2,"rule_id": "ddl.pg.alter.set_logged.notice","level": "notice"}],
+    "evidence_gaps": 3,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.persistence.transition.valid","reason_code": "unproven_table_persistence","required_facts": ["target_table.pg_persistence"]},{"index": 1,"rule_id": "ddl.pg.alter.persistence.transition.valid","reason_code": "unproven_table_persistence","required_facts": ["target_table.pg_persistence"]},{"index": 2,"rule_id": "ddl.pg.alter.persistence.transition.valid","reason_code": "unproven_table_persistence","required_facts": ["target_table.pg_persistence"]}],
+    "serialized_not_contains": ["PGTablePersistence","ForeignKeyUnknown"],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"assert": "audit preserves persistence and file identity","sql": "SELECT count(*) FROM ((TABLE pgper_scope.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_scope'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_scope'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgper_scope.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgper_scope.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgper_scope.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgper_scope.part SET UNLOGGED","expect_rc": 0},
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgper_scope.t SET LOGGED","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native file identity and persistence","sql": "SELECT c.relpersistence::text||':'||(c.relfilenode=r.relfilenode)::text FROM pg_class c JOIN pgper_scope.receipt r ON r.oid=c.oid WHERE c.oid='pgper_scope.t'::regclass","expect": "p:true"},
+    {"assert": "native partition root preserves its catalog and file","sql": "SELECT (c.relpersistence=r.relpersistence AND c.relfilenode=r.relfilenode) FROM pg_class c JOIN pgper_scope.receipt r ON r.oid=c.oid WHERE c.oid='pgper_scope.part'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_scope CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_scope'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-persistence-freshness",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-persistence",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgper_freshness"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_freshness CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_freshness'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgper_freshness.t ADD COLUMN new_id integer;ALTER TABLE pgper_freshness.t SET UNLOGGED;ALTER TABLE pgper_freshness.t RENAME COLUMN IF EXISTS id TO moved;ALTER TABLE pgper_freshness.t SET LOGGED",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_freshness'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgper_freshness","expect_rc": 0},
+    {"name": "seed and capture persistence and file identities","sql": "CREATE TABLE pgper_freshness.t(id int PRIMARY KEY,payload text); INSERT INTO pgper_freshness.t VALUES(1,'keep'); CREATE SEQUENCE pgper_freshness.guard START 7; CREATE TABLE pgper_freshness.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_freshness'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 2,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": ["complete","unverified","unverified"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 1,"rule_id": "ddl.pg.alter.set_unlogged.notice","level": "notice"},{"index": 2,"rule_id": "ddl.pg.alter.set_logged.notice","level": "notice"}],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.pg.alter.persistence.transition.valid","reason_code": "unproven_table_persistence","required_facts": ["target_table.pg_persistence"]},{"index": 2,"rule_id": "ddl.pg.alter.persistence.transition.valid","reason_code": "unproven_table_persistence","required_facts": ["target_table.pg_persistence"]}],
+    "serialized_not_contains": ["PGTablePersistence","ForeignKeyUnknown"],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"assert": "audit preserves persistence and file identity","sql": "SELECT count(*) FROM ((TABLE pgper_freshness.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_freshness'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_freshness'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgper_freshness.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgper_freshness.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgper_freshness.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgper_freshness.t ADD COLUMN new_id integer","expect_rc": 0},
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgper_freshness.t SET UNLOGGED","expect_rc": 0},
+    {"name": "native refusal 42601","sql": "\\set VERBOSITY verbose\nALTER TABLE pgper_freshness.t RENAME COLUMN IF EXISTS id TO moved","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42601:"]}
+   ],
+   "structure": [
+    {"assert": "native file identity and persistence","sql": "SELECT c.relpersistence::text||':'||(c.relfilenode=r.relfilenode)::text FROM pg_class c JOIN pgper_freshness.receipt r ON r.oid=c.oid WHERE c.oid='pgper_freshness.t'::regclass","expect": "u:false"},
+    {"assert": "native predecessor was applied","sql": "SELECT EXISTS(SELECT FROM pg_attribute WHERE attrelid='pgper_freshness.t'::regclass AND attname='new_id')","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_freshness CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_freshness'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-persistence-guard-absent",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-persistence",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgper_guard_absent"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_guard_absent CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_guard_absent'","expect": "0"}}]},
+   "sql": "ALTER TABLE IF EXISTS pgper_guard_absent.missing SET UNLOGGED",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_guard_absent'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgper_guard_absent","expect_rc": 0},
+    {"name": "seed and capture persistence and file identities","sql": "CREATE TABLE pgper_guard_absent.t(id int PRIMARY KEY,payload text); INSERT INTO pgper_guard_absent.t VALUES(1,'keep'); CREATE SEQUENCE pgper_guard_absent.guard START 7; CREATE TABLE pgper_guard_absent.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_guard_absent'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_unlogged.notice","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTablePersistence","ForeignKeyUnknown"],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"assert": "audit preserves persistence and file identity","sql": "SELECT count(*) FROM ((TABLE pgper_guard_absent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_guard_absent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relpersistence FROM pg_class c WHERE c.relnamespace='pgper_guard_absent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgper_guard_absent.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgper_guard_absent.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgper_guard_absent.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE IF EXISTS pgper_guard_absent.missing SET UNLOGGED","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "guard skipped missing relation","sql": "SELECT to_regclass('pgper_guard_absent.missing') IS NULL","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgper_guard_absent CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgper_guard_absent'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
   {
    "id": "pg-table-access-method-missing",
    "anchor": "postgres17",
@@ -7934,6 +8492,19 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.table-persistence-offline",
+  "T37.cli.table-persistence-disabled",
+  "T37.meta.pg-table-persistence-same-logged",
+  "T37.meta.pg-table-persistence-same-unlogged",
+  "T37.meta.pg-table-persistence-change",
+  "T37.meta.pg-table-persistence-direct-publication",
+  "T37.meta.pg-table-persistence-all-schema-publication",
+  "T37.meta.pg-table-persistence-inbound-fk",
+  "T37.meta.pg-table-persistence-outbound-fk",
+  "T37.meta.pg-table-persistence-self-fk",
+  "T37.meta.pg-table-persistence-scope",
+  "T37.meta.pg-table-persistence-freshness",
+  "T37.meta.pg-table-persistence-guard-absent",
   "T37.cli.table-access-method-offline",
   "T37.cli.table-access-method-disabled",
   "T37.meta.pg-table-access-method-missing",

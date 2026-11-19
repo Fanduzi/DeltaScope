@@ -65,6 +65,19 @@ Keep every earlier case and profile. Bind only the original `SET LOGGED/UNLOGGED
 inventory evidence cell. Each canonical live case checks the catalog, relation
 file identity, data and an unrelated sequence before independent native steps.
 
+## Evidence bindings
+
+`a8767e9c` binds private catalog facts. `dc2a3bbb` implements the shared blocker
+and gives same-persistence requests precise no-rewrite wording. The focused
+candidate passed T37 236/236 with 5333 assertions. All 223 earlier cases and
+profiles are preserved. Thirteen new cases include fourteen native steps
+with ten successes and four precise refusals. The catalog, file, payload and
+sequence oracles run independently before native execution. The full run at
+the fixed candidate SHA is required for delivery.
+
+Fourteen evidence selectors bind the original SET LOGGED/UNLOGGED anchor.
+Existing row and subaction classifications and denominators are preserved.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

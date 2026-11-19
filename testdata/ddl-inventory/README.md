@@ -16,6 +16,13 @@ honestly — not a count of implemented rules.
 | T06-CLOSEOUT.md | Final T06 (#85) technical closeout index (T06技术收口材料齐备): binds every accepted dimension to the traceability rows, the SHA-frozen umbrella evidence, and the owner boundary for deferred dimensions; issue #85 stays open |
 | evidence/ | Per-row offline CLI probe captures (`<row-id>.probes.txt`): recorded `deltascope audit` output for the row's `sql_shape` at every declared version (`=== version <v> (target …)` sections). Regenerate by re-running the probe commands recorded in the file header |
 
+## PostgreSQL ordinary-table persistence transitions
+
+D13 binds the exact PG17 ordinary-table persistence, publication and foreign-key
+evidence to the original `SET LOGGED/UNLOGGED` anchor. Other relation kinds,
+permissions, replication behavior and runtime lock outcomes remain separate.
+Existing row and subaction classifications and denominators are preserved.
+
 ## PostgreSQL ordinary-table access method destinations
 
 D12 binds exact PG17 method presence, kind and same-method evidence to the

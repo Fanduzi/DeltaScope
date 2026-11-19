@@ -3,6 +3,15 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D13 PostgreSQL ordinary-table persistence transitions
+
+D13 preserves all 223 prior T37 cases and profiles. Thirteen additions bring
+focused T37 to 236/236 with 5333 assertions. Fourteen native steps include ten
+successes and four precise SQLSTATE refusals. The suite covers same-persistence
+requests, direct publication, directional foreign keys and independent file
+and row state. See the
+[decision](../../docs/decisions/2026-11-18-postgresql-table-persistence.md).
+
 ## T37 D12 PostgreSQL ordinary-table access method destinations
 
 D12 preserves all 213 earlier T37 cases and their profiles. Ten additions
