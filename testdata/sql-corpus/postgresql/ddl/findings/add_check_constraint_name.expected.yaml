@@ -1,0 +1,18 @@
+name: add_check_constraint_name
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    t:
+      exists: true
+      pg_relation: {name: t, kind: r}
+      pg_columns: {ordinary: true, columns: []}
+      pg_constraints: [{name: " Exact Check ", type: c, validated: true}]
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.add_check.name.available]

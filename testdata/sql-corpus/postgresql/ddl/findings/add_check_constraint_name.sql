@@ -1,0 +1,1 @@
+ALTER TABLE app.t ADD CONSTRAINT " Exact Check " CHECK (1 > 0) NOT VALID;

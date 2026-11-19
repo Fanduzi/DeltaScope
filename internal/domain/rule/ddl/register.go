@@ -693,6 +693,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		// PostgreSQL migration-safety rules (PG-only).
 		{ruleID: ruleIDPGCreateIndexConcurrentlyRequire, construct: newCreateIndexConcurrentlyRequiredRule},
 		{ruleID: ruleIDPGAlterAddColumnNonNullDefaultRewriteWarn, construct: newAddColumnNonNullDefaultRewriteWarnRule},
+		{ruleID: ruleIDPGAlterAddCheckNameAvailable, construct: newPGAddCheckNameRule},
 		{ruleID: ruleIDPGAlterAddCheckNotValidRequire, construct: newAddCheckNotValidRequiredRule},
 		{ruleID: ruleIDPGAlterColumnTypeDestinationValid, construct: newPGColumnTypeDestinationRule},
 		{ruleID: ruleIDPGAlterColumnTypeSourceValid, construct: newPGColumnTypeSourceRule},

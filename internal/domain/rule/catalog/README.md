@@ -21,6 +21,8 @@ The PostgreSQL TYPE source entry advertises the default blocker and exact column
 
 The PostgreSQL rename and SET SCHEMA target entries expose default blockers based on exact catalog evidence.
 
+The PostgreSQL CHECK name entry describes the exact live constraint-directory prerequisite for the default blocker.
+
 The PostgreSQL column type destination entry describes the default blocker and its exact catalog premises.
 
 The bulk tablespace target entry advertises the default blocker and required PostgreSQL 17 endpoint and role facts.

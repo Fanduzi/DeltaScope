@@ -151,6 +151,10 @@ func newAlterObjectExistenceRule(ruleID string, actions []string, objectLabel st
 func (r alterObjectExistenceRule) ID() string { return r.ruleID }
 
 func (r alterObjectExistenceRule) AppliesTo(statement spec.Statement) bool {
+	if r.ruleID == ruleIDAlterAddIndexExistsForbid && pgNamedAddCheck(statement) &&
+		pgConstraintTargetVersionKnown(statement) && spec.PGOrdinaryTableBound(statement) {
+		return false // A CHECK uses the table's constraint namespace.
+	}
 	if action := r.pgColumnIdentityAction(statement); action != "" {
 		return pgColumnIdentityAction(statement, action)
 	}

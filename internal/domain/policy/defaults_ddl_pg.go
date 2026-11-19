@@ -27,6 +27,11 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelWarning,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.alter.add_check.name.available": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
 		"ddl.pg.alter.add_check.not_valid.require": {
 			Enabled: true,
 			Level:   rule.LevelWarning,

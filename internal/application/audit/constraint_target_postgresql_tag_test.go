@@ -33,7 +33,8 @@ func TestPGConstraintTargetPipeline(t *testing.T) {
 			if tc.members != nil {
 				original = append([]spec.PGConstraintState{}, tc.members...)
 			}
-			snapshot := &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: tc.members}
+			snapshot := &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: tc.members,
+				PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}
 			p := &fakeMetadataProvider{instance: &spec.InstanceFacts{Version: "PostgreSQL 17.7"}, snapshot: snapshot}
 			r, err := AuditSQL(context.Background(), Request{SQL: tc.sql, Dialect: spec.DialectPostgreSQL, Schema: "app", MetadataProvider: p})
 			if err != nil || string(r.Verdict) != tc.verdict {

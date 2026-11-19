@@ -72,6 +72,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_bulk_tablespace_rules.go | Checks named PG17 bulk endpoints and ordered owner filters and reports observed same-space selections |
 | postgresql_table_owner_rules.go | Checks PG17 ordinary-table OWNER TO targets without exposing role names or inspecting permissions |
 | postgresql_table_namespace_rules.go | Checks exact PG17 RENAME TO and SET SCHEMA primary relation and row-type destinations |
+| postgresql_add_check_name_rules.go | Checks exact names of single named PostgreSQL 17 ADD CHECK declarations against the fresh table constraint directory |
 | postgresql_column_type_destination_rules.go | Checks exact PG17 column type destinations and bounds unobserved identities |
 | postgresql_column_type_source_rules.go | Checks exact PG17 source-column preconditions for TYPE and TYPE USING |
 | postgresql_table_persistence_rules.go | Checks PG17 ordinary-table persistence transitions and corrects same-persistence advice |

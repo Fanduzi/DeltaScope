@@ -1569,6 +1569,11 @@ rules:
     params:
       suffix: ""
 
+  ddl.pg.alter.add_check.name.available:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.pg.alter.add_check.not_valid.require:
     enabled: true
     level: warning

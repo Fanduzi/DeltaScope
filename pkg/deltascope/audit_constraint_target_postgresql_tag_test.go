@@ -14,13 +14,14 @@ func TestAuditPGConstraintTargetContract(t *testing.T) {
 		sql, id, verdict string
 		members          []PGConstraintState
 	}{
+		{`ALTER TABLE app.t ADD CONSTRAINT " Exact Check " CHECK (1 > 0) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", []PGConstraintState{{Name: " Exact Check ", Type: "c", Validated: true}}},
 		{"ALTER TABLE app.t VALIDATE CONSTRAINT c", "ddl.pg.alter.validate_constraint.target.require", "reject", []PGConstraintState{{Name: "c", Type: "u", Validated: true}}},
 		{"ALTER TABLE app.t ALTER CONSTRAINT c DEFERRABLE", "ddl.pg.alter.constraint_deferrability.target.require", "reject", []PGConstraintState{{Name: "c", Type: "c", Validated: true}}},
 		{"ALTER TABLE app.t DROP CONSTRAINT c", "ddl.pg.alter.drop_constraint.target.require", "reject", []PGConstraintState{}},
 		{"ALTER TABLE app.t DROP CONSTRAINT IF EXISTS c", "", "pass", []PGConstraintState{}},
 		{"ALTER TABLE app.t VALIDATE CONSTRAINT c", "", "pass", []PGConstraintState{{Name: "c", Type: "c", Validated: true}}},
 	} {
-		p := &fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"}, snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"}, PGConstraints: tc.members, Options: map[string]string{"private": "private_catalog_payload"}}}
+		p := &fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"}, snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"}, PGConstraints: tc.members, PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}, Options: map[string]string{"private": "private_catalog_payload"}}}
 		r, err := Audit(context.Background(), Request{SQL: tc.sql, Dialect: DialectPostgreSQL, Schema: "app", MetadataProvider: p})
 		if err != nil || string(r.Verdict) != tc.verdict {
 			t.Fatalf("result=%+v err=%v", r, err)
