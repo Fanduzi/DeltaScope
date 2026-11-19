@@ -1674,6 +1674,10 @@ rules:
     level: notice
     params:
 
+  ddl.pg.alter.access_method.target.valid:
+    enabled: true
+    level: blocker
+    params:
   ddl.pg.alter.set_access_method.warn:
     enabled: true
     level: warning

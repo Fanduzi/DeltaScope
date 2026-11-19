@@ -719,6 +719,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterUnloggedNotice, construct: newSetUnloggedNoticeRule},
 		{ruleID: ruleIDPGAlterTableTablespaceTargetValid, construct: newPGTableTablespaceRule},
 		{ruleID: ruleIDPGAlterSetTablespaceNotice, construct: newSetTablespaceNoticeRule},
+		{ruleID: ruleIDPGAlterTableAccessMethodTargetValid, construct: newPGTableAccessMethodRule},
 		{ruleID: ruleIDPGAlterSetAccessMethodWarn, construct: newSetAccessMethodWarnRule},
 		{ruleID: ruleIDPGAlterEnableReplicaTriggerNotice, construct: newEnableReplicaTriggerNoticeRule},
 		{ruleID: ruleIDPGAlterEnableAlwaysTriggerNotice, construct: newEnableAlwaysTriggerNoticeRule},

@@ -197,3 +197,35 @@ func TestMCPTableTablespace(t *testing.T) {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }
+
+type tableAccessMethodAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (tableAccessMethodAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	return &spec.ObjectSnapshot{PGTableAccessMethod: &spec.PGTableAccessMethod{Schema: req.Schema, Table: req.Qualifiers["table"], Name: req.Name, Kind: "i"}}, nil
+}
+
+func TestMCPTableAccessMethod(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := tableAccessMethodAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER TABLE app.t SET ACCESS METHOD btree", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"access_method_wrong_kind"`) || !strings.Contains(string(body), `"ddl.pg.alter.access_method.target.valid"`) || strings.Contains(string(body), "PGTableAccessMethod") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}

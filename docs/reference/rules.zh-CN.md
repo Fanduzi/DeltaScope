@@ -1272,6 +1272,10 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 `v0.32.0` 是 **PostgreSQL 边界支持就绪门控**。这是一个决策里程碑，不是功能发布。未新增规则 ID。Characterization 测试记录了 generated 和 identity 列的稳定 AST 事实；就绪报告推荐 `v0.33.0` 作为窄事实保留包。未变更任何生产 extractor、spec、rule 或 policy 代码。
 
+### PostgreSQL 普通表访问方法目标
+
+`ddl.pg.alter.access_method.target.valid` 默认级别为 blocker。适用于已观测 PostgreSQL 17、限定名精确且目录新鲜的普通持久非类型表，排除共享及 mapped 关系。已证明目标访问方法缺失或属于索引方法时报告拒绝。裸 `DEFAULT` 读取当前有效设置，引号名称按原样匹配。证据不足时报告 `unproven_table_access_method`。既有 warning 会注明已证明的同方法选择保留原表文件。
+
 ### PostgreSQL 单表表空间目标
 
 `ddl.pg.alter.tablespace.target.valid` 默认级别为 blocker。适用于已观测 PostgreSQL 17、限定名精确且目录新鲜的普通持久非类型表，排除共享及 mapped 关系。已证目标缺失或为 `pg_global` 时报告拒绝。证据缺失或过期时报告 `unproven_table_tablespace`。零值 `reltablespace` 对应实际数据库默认空间。既有提示在已证明同空间时说明文件不会被复制，其余情况以条件措辞描述文件移动。

@@ -341,6 +341,13 @@ func (r pgAlterStorageLayoutRule) Evaluate(ctx context.Context, statement spec.S
 				risk = "PostgreSQL still checks the prerequisites and takes a lock on the table."
 			}
 		}
+		if r.id == ruleIDPGAlterSetAccessMethodWarn {
+			if facts := boundPGTableAccessMethod(statement); facts != nil && facts.Kind == "t" && facts.SameKnown && facts.Same {
+				message = fmt.Sprintf("ALTER TABLE SET ACCESS METHOD %s selects the current access method on PostgreSQL", value)
+				why = "The observed selection matches the table's current access method. Selecting it does not rewrite table files."
+				risk = "PostgreSQL still checks the prerequisites and takes a lock on the table."
+			}
+		}
 		findings = append(findings, rule.Finding{
 			Level:   r.level,
 			Message: message,

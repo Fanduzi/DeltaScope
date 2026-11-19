@@ -160,6 +160,11 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.alter.access_method.target.valid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
 		"ddl.pg.alter.set_access_method.warn": {
 			Enabled: true,
 			Level:   rule.LevelWarning,

@@ -13,6 +13,8 @@ The PostgreSQL heap table reloptions entry advertises the default blocker and li
 
 The PostgreSQL single-table tablespace entry advertises the default blocker and live destination evidence.
 
+The PostgreSQL ordinary-table access method entry advertises the default blocker and live method evidence.
+
 ## Files
 
 | File | Responsibility |

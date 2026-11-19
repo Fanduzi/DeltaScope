@@ -40,18 +40,19 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
 		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
-		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 {
+		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
 }
 
 type corpusFixtureMetadataProvider struct {
-	instance           *spec.InstanceFacts
-	tables             map[string]*spec.TableSnapshot
-	indexOwners        map[string]string
-	pgTableTablespaces []corpusPGTableTablespace
-	pgReplicaIndexes   []corpusPGReplicaIndex
+	instance             *spec.InstanceFacts
+	tables               map[string]*spec.TableSnapshot
+	indexOwners          map[string]string
+	pgTableAccessMethods []corpusPGTableAccessMethod
+	pgTableTablespaces   []corpusPGTableTablespace
+	pgReplicaIndexes     []corpusPGReplicaIndex
 	// placement nil means the catalog is unvouched; a non-nil map is the
 	// proven policy set (empty map = proven-empty).
 	placement map[string]*spec.PlacementPolicyFact
@@ -85,10 +86,11 @@ type corpusFixtureMetadataProvider struct {
 
 func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataProvider {
 	provider := &corpusFixtureMetadataProvider{
-		tables:             make(map[string]*spec.TableSnapshot, len(metadata.Tables)),
-		indexOwners:        make(map[string]string, len(metadata.IndexOwners)),
-		pgTableTablespaces: metadata.PGTableTablespaces,
-		pgReplicaIndexes:   metadata.PGReplicaIndexes,
+		tables:               make(map[string]*spec.TableSnapshot, len(metadata.Tables)),
+		indexOwners:          make(map[string]string, len(metadata.IndexOwners)),
+		pgTableAccessMethods: metadata.PGTableAccessMethods,
+		pgTableTablespaces:   metadata.PGTableTablespaces,
+		pgReplicaIndexes:     metadata.PGReplicaIndexes,
 	}
 	if metadata.Instance != nil {
 		provider.instance = &spec.InstanceFacts{
@@ -448,6 +450,18 @@ func parseCorpusUint(text string) (uint64, bool) {
 // `schema.name`. An unkeyed identity or a nil sequence map is unvouched,
 // never a silent absent; non-sequence lookups stay unavailable.
 func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if request.Type == "table_access_method" {
+		for _, seed := range p.pgTableAccessMethods {
+			if seed.Schema == request.Schema && seed.Table == request.Qualifiers["table"] && seed.Name == request.Name && request.Qualifiers["is_default"] == strconv.FormatBool(seed.Default) {
+				facts := &spec.PGTableAccessMethod{Schema: seed.Schema, Table: seed.Table, Name: seed.Name, Default: seed.Default, Kind: seed.Kind}
+				if seed.Same != nil {
+					facts.Same, facts.SameKnown = *seed.Same, true
+				}
+				return &spec.ObjectSnapshot{PGTableAccessMethod: facts}, nil
+			}
+		}
+		return nil, nil
+	}
 	if request.Type == "table_tablespace" {
 		for _, seed := range p.pgTableTablespaces {
 			if seed.Schema == request.Schema && seed.Table == request.Qualifiers["table"] && seed.Name == request.Name {

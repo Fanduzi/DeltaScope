@@ -314,6 +314,7 @@ const (
 	ruleIDPGAlterUnloggedNotice                             = "ddl.pg.alter.set_unlogged.notice"
 	ruleIDPGAlterTableTablespaceTargetValid                 = "ddl.pg.alter.tablespace.target.valid"
 	ruleIDPGAlterSetTablespaceNotice                        = "ddl.pg.alter.set_tablespace.notice"
+	ruleIDPGAlterTableAccessMethodTargetValid               = "ddl.pg.alter.access_method.target.valid"
 	ruleIDPGAlterSetAccessMethodWarn                        = "ddl.pg.alter.set_access_method.warn"
 	ruleIDPGAlterEnableReplicaTriggerNotice                 = "ddl.pg.alter.enable_replica_trigger.notice"
 	ruleIDPGAlterEnableAlwaysTriggerNotice                  = "ddl.pg.alter.enable_always_trigger.notice"

@@ -1344,6 +1344,16 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 
 `v0.32.0` is the **PostgreSQL Boundary Support-Readiness Gate**. It is a decision milestone, not a feature release. No new rule IDs were added. Characterization tests document stable AST facts about generated and identity columns; a readiness report recommends `v0.33.0` as a narrow fact-preservation pack. No production extractor, spec, rule, or policy code changed.
 
+### PostgreSQL ordinary-table access method destinations
+
+`ddl.pg.alter.access_method.target.valid` is a default blocker for a fresh,
+exact schema-qualified ordinary persistent non-typed table on observed
+PostgreSQL 17. The catalog check excludes shared and mapped storage and
+rejects a missing or index access method. Bare `DEFAULT` uses the effective
+server setting. A quoted name is matched exactly. Unknown scope or catalog
+facts produce `unproven_table_access_method`. The existing warning identifies
+proven same-method selection and explains that it leaves table files in place.
+
 ### PostgreSQL single-table tablespace destinations
 
 `ddl.pg.alter.tablespace.target.valid` is a default blocker. For observed

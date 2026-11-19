@@ -134,6 +134,15 @@ The Go provider `PGConstraintState` alias and copied directory retain private fa
 
 Maintainer notes: [decision](../decisions/2026-11-17-postgresql-constraint-target-evidence.md). Other F09 dimensions remain open.
 
+### PostgreSQL ordinary-table access method destinations
+
+`ddl.pg.alter.access_method.target.valid` checks PG17 method existence and kind
+using fresh exact catalog facts for ordinary persistent non-typed nonshared
+nonmapped tables. Bare DEFAULT resolves through the effective session setting.
+When the choice matches the current method, the existing warning explains the
+absence of a rewrite. Partition-root behavior, privileges, locking and custom
+handler behavior remain independent.
+
 ### PostgreSQL single-table tablespace destinations
 
 The default `ddl.pg.alter.tablespace.target.valid` blocker checks destination
