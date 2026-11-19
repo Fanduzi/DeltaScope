@@ -10,6 +10,10 @@ bring the focused run to 245/245 and 5589 assertions. The nine native controls
 include four successes and five exact SQLSTATE refusals. See the
 [decision](../../docs/decisions/2026-11-18-postgresql-column-type-source.md).
 
+The final `7ba14c4c` run passed 50 tasks, 3577 cases and 64628 assertions.
+Artifact validation and all five exact-SHA CI checks passed. The decision
+record links the artifact and CI.
+
 ## T37 D13 PostgreSQL ordinary-table persistence transitions
 
 D13 preserves all 223 prior T37 cases and profiles. Thirteen additions bring

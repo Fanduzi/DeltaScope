@@ -68,6 +68,26 @@ required for delivery.
 Evidence references bind the original ALTER COLUMN TYPE and ALTER COLUMN TYPE
 USING anchors. Existing row and subaction classifications remain intact.
 
+## Delivered verification
+
+D14 shipped at `7ba14c4c9ed75444f269f15a25ad63942233a9a6` from
+`33f87fd76b8b7e8e780d0165f3df77ec1c8ae5f9` via fast-forward and normal push.
+The exact SHA passed 50 canonical tasks, all 3577 cases and 64628 assertions,
+with zero failures or skips. T37 passed all 245 cases and 5589 assertions.
+Nine native steps included four successes and five precise refusals. Validator,
+independent read-only review, candidate and merged-root gates, and owned cleanup
+passed. Original workspace status, protected worktrees and 16 unrelated
+container identities were preserved. The final task changed seven paths and
+the milestone changed 26.
+
+- [Go, PostgreSQL and lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44487916234)
+- [CLI TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44487916208)
+- [Pages](https://github.com/Fanduzi/DeltaScope/runs/135436041896)
+
+Final artifact: `/tmp/ddl-golden-pg-column-type-source-final-7ba14c4c/all/artifact.json`.
+These results belong to the shipped D14 SHA. Destination types, conversion and
+other F09 dimensions remain open.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
