@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-column-type-source": {"enable": {"ddl.pg.alter.column_type.source.valid": {"level": "blocker"}, "ddl.pg.alter.set_data_type.rewrite.warn": {"level": "warning"}}},
    "pg-table-persistence": {"enable": {"ddl.pg.alter.persistence.transition.valid": {"level": "blocker"}, "ddl.pg.alter.set_logged.notice": {"level": "notice"}, "ddl.pg.alter.set_unlogged.notice": {"level": "notice"}}},
    "pg-table-access-method": {"enable": {"ddl.pg.alter.access_method.target.valid": {"level": "blocker"}, "ddl.pg.alter.set_access_method.warn": {"level": "warning"}}},
    "pg-table-tablespace": {"enable": {"ddl.pg.alter.tablespace.target.valid": {"level": "blocker"}, "ddl.pg.alter.set_tablespace.notice": {"level": "notice"}}},
@@ -1879,6 +1880,51 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "column-type-source-offline",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-source",
+   "sql": "ALTER TABLE app.t ALTER COLUMN id TYPE bigint",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.source.valid","reason_code": "unproven_column_type_source","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGColumnCatalog","SystemColumns"],
+    "rule_summary_loaded": 2
+   }
+  },
+  {
+   "id": "column-type-source-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.t ALTER COLUMN ctid TYPE bigint",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCatalog","SystemColumns"]
+   }
+  },
   {
    "id": "table-persistence-offline",
    "dialect": "postgresql",
@@ -4155,6 +4201,327 @@
   }
  ],
  "metadata_cases": [
+  {
+   "id": "pg-column-type-source-missing",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-source",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_missing"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_missing CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_missing'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_missing.t ALTER COLUMN \"ID\" TYPE bigint",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_missing'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_missing","expect_rc": 0},
+    {"name": "seed and capture catalog and file identities","sql": "CREATE TABLE pgtype_missing.t(id int,payload text); INSERT INTO pgtype_missing.t VALUES(1,'keep'); CREATE SEQUENCE pgtype_missing.guard START 7; CREATE TABLE pgtype_missing.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_missing'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.column_type.source.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCatalog","SystemColumns"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.source.valid","metadata": {"reason_code": "column_absent"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtype_missing.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_missing'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_missing'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt') EXCEPT TABLE pgtype_missing.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgtype_missing.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_missing.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42703","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_missing.t ALTER COLUMN \"ID\" TYPE bigint","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42703:"]}
+   ],
+   "structure": [
+    {"assert": "native file and column identity still match the original catalog","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid AND a.atttypmod=r.atttypmod) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtype_missing.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtype_missing.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_missing CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_missing'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-source-system",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-source",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_system"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_system CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_system'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_system.t ALTER COLUMN ctid TYPE text",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_system'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_system","expect_rc": 0},
+    {"name": "seed and capture catalog and file identities","sql": "CREATE TABLE pgtype_system.t(id int,payload text); INSERT INTO pgtype_system.t VALUES(1,'keep'); CREATE SEQUENCE pgtype_system.guard START 7; CREATE TABLE pgtype_system.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_system'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.column_type.source.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCatalog","SystemColumns"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.source.valid","metadata": {"reason_code": "system_column_inapplicable"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtype_system.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_system'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_system'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt') EXCEPT TABLE pgtype_system.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgtype_system.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_system.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 0A000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_system.t ALTER COLUMN ctid TYPE text","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  0A000:"]}
+   ],
+   "structure": [
+    {"assert": "native file and column identity still match the original catalog","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid AND a.atttypmod=r.atttypmod) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtype_system.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtype_system.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_system CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_system'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-source-generated-using",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-source",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_generated_using"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_generated_using CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_generated_using'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_generated_using.t ALTER COLUMN stored TYPE integer USING stored",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_generated_using'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_generated_using","expect_rc": 0},
+    {"name": "seed and capture catalog and file identities","sql": "CREATE TABLE pgtype_generated_using.t(id int,payload text); INSERT INTO pgtype_generated_using.t VALUES(1,'keep'); CREATE SEQUENCE pgtype_generated_using.guard START 7; ALTER TABLE pgtype_generated_using.t ADD COLUMN stored int GENERATED ALWAYS AS (id+1) STORED; CREATE TABLE pgtype_generated_using.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_generated_using'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.column_type.source.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCatalog","SystemColumns"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.source.valid","metadata": {"reason_code": "generated_column_using_inapplicable"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtype_generated_using.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_generated_using'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_generated_using'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt') EXCEPT TABLE pgtype_generated_using.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgtype_generated_using.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_generated_using.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42611","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_generated_using.t ALTER COLUMN stored TYPE integer USING stored","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42611:"]}
+   ],
+   "structure": [
+    {"assert": "native file and column identity still match the original catalog","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid AND a.atttypmod=r.atttypmod) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtype_generated_using.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtype_generated_using.t'::regclass AND a.attname='id'","expect": "t"},
+    {"assert": "generated source stays stored","sql": "SELECT attgenerated::text FROM pg_attribute WHERE attrelid='pgtype_generated_using.t'::regclass AND attname='stored'","expect": "s"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_generated_using CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_generated_using'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-source-ordinary",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-source",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_ordinary"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_ordinary CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_ordinary'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_ordinary.t ALTER COLUMN id TYPE bigint USING id",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_ordinary'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_ordinary","expect_rc": 0},
+    {"name": "seed and capture catalog and file identities","sql": "CREATE TABLE pgtype_ordinary.t(id int,payload text); INSERT INTO pgtype_ordinary.t VALUES(1,'keep'); CREATE SEQUENCE pgtype_ordinary.guard START 7; CREATE TABLE pgtype_ordinary.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_ordinary'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCatalog","SystemColumns"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtype_ordinary.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_ordinary'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_ordinary'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt') EXCEPT TABLE pgtype_ordinary.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgtype_ordinary.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_ordinary.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgtype_ordinary.t ALTER COLUMN id TYPE bigint USING id","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native result and type","sql": "SELECT id::text||':'||pg_typeof(id)::text FROM pgtype_ordinary.t","expect": "1:bigint"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_ordinary CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_ordinary'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-source-scope",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-source",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_scope"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_scope CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_scope'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_scope.part ALTER COLUMN id TYPE bigint;ALTER TABLE t ALTER COLUMN id TYPE bigint;ALTER TABLE pgtype_scope.t ALTER COLUMN id TYPE bigint, ADD COLUMN c int",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_scope'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_scope","expect_rc": 0},
+    {"name": "seed and capture catalog and file identities","sql": "CREATE TABLE pgtype_scope.t(id int,payload text); INSERT INTO pgtype_scope.t VALUES(1,'keep'); CREATE SEQUENCE pgtype_scope.guard START 7; CREATE TABLE pgtype_scope.part(id int) PARTITION BY RANGE(id); CREATE TABLE pgtype_scope.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_scope'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 3,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified","unverified","unverified"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 1,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 2,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
+    "evidence_gaps": 3,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.source.valid","reason_code": "unproven_column_type_source","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.pg.alter.column_type.source.valid","reason_code": "unproven_column_type_source","required_facts": ["target_table.pg_columns"]},{"index": 2,"rule_id": "ddl.pg.alter.column_type.source.valid","reason_code": "unproven_column_type_source","required_facts": ["target_table.pg_columns"]}],
+    "serialized_not_contains": ["PGColumnCatalog","SystemColumns"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtype_scope.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_scope'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_scope'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt') EXCEPT TABLE pgtype_scope.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgtype_scope.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_scope.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_scope.part ALTER COLUMN id TYPE bigint","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native file and column identity still match the original catalog","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid AND a.atttypmod=r.atttypmod) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtype_scope.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtype_scope.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_scope CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_scope'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-source-freshness",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-source",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_freshness"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_freshness CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_freshness'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_freshness.t ADD COLUMN new_id integer;ALTER TABLE pgtype_freshness.t ALTER COLUMN id TYPE bigint USING id;ALTER TABLE pgtype_freshness.t RENAME COLUMN IF EXISTS id TO moved;ALTER TABLE pgtype_freshness.t ALTER COLUMN id TYPE bigint USING id",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_freshness'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_freshness","expect_rc": 0},
+    {"name": "seed and capture catalog and file identities","sql": "CREATE TABLE pgtype_freshness.t(id int,payload text); INSERT INTO pgtype_freshness.t VALUES(1,'keep'); CREATE SEQUENCE pgtype_freshness.guard START 7; CREATE TABLE pgtype_freshness.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_freshness'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 2,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": ["complete","unverified","unverified"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 1,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 2,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.pg.alter.column_type.source.valid","reason_code": "unproven_column_type_source","required_facts": ["target_table.pg_columns"]},{"index": 2,"rule_id": "ddl.pg.alter.column_type.source.valid","reason_code": "unproven_column_type_source","required_facts": ["target_table.pg_columns"]}],
+    "serialized_not_contains": ["PGColumnCatalog","SystemColumns"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtype_freshness.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_freshness'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_freshness'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt') EXCEPT TABLE pgtype_freshness.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgtype_freshness.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_freshness.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgtype_freshness.t ADD COLUMN new_id integer","expect_rc": 0},
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgtype_freshness.t ALTER COLUMN id TYPE bigint USING id","expect_rc": 0},
+    {"name": "native refusal 42601","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_freshness.t RENAME COLUMN IF EXISTS id TO moved","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42601:"]}
+   ],
+   "structure": [
+    {"assert": "native predecessor was applied","sql": "SELECT EXISTS(SELECT FROM pg_attribute WHERE attrelid='pgtype_freshness.t'::regclass AND attname='new_id')","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_freshness CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_freshness'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-source-guard-absent",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-source",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_guard_absent"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_guard_absent CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_guard_absent'","expect": "0"}}]},
+   "sql": "ALTER TABLE IF EXISTS pgtype_guard_absent.missing ALTER COLUMN id TYPE bigint",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_guard_absent'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_guard_absent","expect_rc": 0},
+    {"name": "seed and capture catalog and file identities","sql": "CREATE TABLE pgtype_guard_absent.t(id int,payload text); INSERT INTO pgtype_guard_absent.t VALUES(1,'keep'); CREATE SEQUENCE pgtype_guard_absent.guard START 7; CREATE TABLE pgtype_guard_absent.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_guard_absent'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCatalog","SystemColumns"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtype_guard_absent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_guard_absent'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtype_guard_absent'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt') EXCEPT TABLE pgtype_guard_absent.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgtype_guard_absent.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_guard_absent.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE IF EXISTS pgtype_guard_absent.missing ALTER COLUMN id TYPE bigint","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "guard skipped missing relation","sql": "SELECT to_regclass('pgtype_guard_absent.missing') IS NULL","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_guard_absent CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_guard_absent'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
   {
    "id": "pg-table-persistence-same-logged",
    "anchor": "postgres17",
@@ -8492,6 +8859,15 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.column-type-source-offline",
+  "T37.cli.column-type-source-disabled",
+  "T37.meta.pg-column-type-source-missing",
+  "T37.meta.pg-column-type-source-system",
+  "T37.meta.pg-column-type-source-generated-using",
+  "T37.meta.pg-column-type-source-ordinary",
+  "T37.meta.pg-column-type-source-scope",
+  "T37.meta.pg-column-type-source-freshness",
+  "T37.meta.pg-column-type-source-guard-absent",
   "T37.cli.table-persistence-offline",
   "T37.cli.table-persistence-disabled",
   "T37.meta.pg-table-persistence-same-logged",

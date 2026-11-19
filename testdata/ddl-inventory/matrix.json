@@ -7696,7 +7696,14 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.alter-column-type.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#column-type-source-offline",
+                "file:testdata/ddl-golden/T37.json#column-type-source-disabled",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-source-missing",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-source-system",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-source-scope",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-source-guard-absent",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_source_preconditions.expected.yaml#ddl.pg.alter.column_type.source.valid"
               ]
             }
           ]
@@ -7715,7 +7722,11 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.columns.alter-column-type-using.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-source-generated-using",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-source-ordinary",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-source-freshness",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_source_preconditions.expected.yaml#ddl.pg.alter.column_type.source.valid"
               ]
             }
           ]

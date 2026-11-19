@@ -3,6 +3,13 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D14 PostgreSQL ALTER COLUMN TYPE source checks
+
+D14 preserves all 236 prior T37 cases and policy profiles. Nine additions
+bring the focused run to 245/245 and 5589 assertions. The nine native controls
+include four successes and five exact SQLSTATE refusals. See the
+[decision](../../docs/decisions/2026-11-18-postgresql-column-type-source.md).
+
 ## T37 D13 PostgreSQL ordinary-table persistence transitions
 
 D13 preserves all 223 prior T37 cases and profiles. Thirteen additions bring

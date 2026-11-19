@@ -56,6 +56,18 @@ check exact catalogs, file identity, rows and an independent sequence before
 running native controls. Existing parser and metadata facts do not require an
 extractor or provider change for this slice.
 
+## Evidence bindings
+
+`588f0cd1` implements the shared source blocker and updates the rewrite advice.
+The focused candidate passed T37 245/245 with 5589 assertions, preserving all
+236 prior cases and policy profiles. Nine additions include nine native steps:
+four successes and five exact refusals. The catalog, file, payload and sequence
+oracles run independently before native execution. The final fixed-SHA run is
+required for delivery.
+
+Evidence references bind the original ALTER COLUMN TYPE and ALTER COLUMN TYPE
+USING anchors. Existing row and subaction classifications remain intact.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
