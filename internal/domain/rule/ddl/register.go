@@ -710,6 +710,8 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterDropConstraintTargetRequire, construct: newPGDropConstraintTargetRule},
 		{ruleID: ruleIDPGAlterValidateConstraintAdvisory, construct: newValidateConstraintAdvisoryRule},
 		{ruleID: ruleIDPGAlterAddColumnNullableNotice, construct: newAddColumnNullableNoticeRule},
+		{ruleID: ruleIDPGAlterRenameTableTargetValid, construct: newPGRenameTableTargetRule},
+		{ruleID: ruleIDPGAlterSetSchemaTargetValid, construct: newPGSetSchemaTargetRule},
 		{ruleID: ruleIDPGAlterSetSchemaAdvisory, construct: newSetSchemaAdvisoryRule},
 		{ruleID: ruleIDPGAlterOwnerAdvisory, construct: newOwnerAdvisoryRule},
 		{ruleID: ruleIDPGAlterEnableTriggerNotice, construct: newEnableTriggerNoticeRule},

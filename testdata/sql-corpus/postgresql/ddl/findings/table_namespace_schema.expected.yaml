@@ -1,0 +1,19 @@
+name: table_namespace_schema
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    t:
+      exists: true
+      pg_relation: {name: t, kind: r}
+      pg_columns: {ordinary: true, columns: []}
+  pg_table_namespaces:
+    - {schema: app, table: t, action: set_schema, destination: missing_schema}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.set_schema.target.valid, ddl.pg.alter.set_schema.advisory]

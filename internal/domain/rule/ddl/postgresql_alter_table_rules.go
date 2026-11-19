@@ -83,6 +83,14 @@ func (r pgAlterActionAdvisoryRule) Evaluate(ctx context.Context, statement spec.
 				risk = "PostgreSQL still checks the target and takes a lock."
 			}
 		}
+		if r.id == ruleIDPGAlterSetSchemaAdvisory {
+			message = fmt.Sprintf(r.message, statement.DDL.Table.Name)
+			if facts := boundPGTableNamespace(statement); facts != nil && facts.SchemaExists && facts.SameSchema {
+				message = fmt.Sprintf("ALTER TABLE SET SCHEMA on %q selects the current schema on PostgreSQL", statement.DDL.Table.Name)
+				why = "The table is already in the requested schema, so this request does not relocate it."
+				risk = "PostgreSQL still checks the request and takes a lock."
+			}
+		}
 		findings = append(findings, rule.Finding{
 			Level:   r.level,
 			Message: message,
@@ -198,9 +206,9 @@ func newValidateConstraintAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRul
 func newSetSchemaAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return newPGAlterActionAdvisoryRule(
 		ruleIDPGAlterSetSchemaAdvisory, rule.LevelNotice, "set_schema", "schema",
-		"ALTER TABLE SET SCHEMA moves table %q to a different schema on PostgreSQL",
-		"SET SCHEMA changes the schema containing the table. Dependent objects (views, foreign keys, functions referencing the table by schema-qualified name) may break after the move.",
-		"Applications that reference the table by its old schema-qualified name will fail. Existing prepared statements may be invalidated.",
+		"ALTER TABLE SET SCHEMA on %q requests relocation on PostgreSQL",
+		"A successful schema change relocates the table and associated catalog objects. A request for the current schema leaves them in place.",
+		"A move can affect callers that refer to the old schema-qualified name.",
 		"Verify all schema-qualified references are updated after the move. Consider whether renaming or a synonym would be less disruptive.",
 		cfg,
 	)

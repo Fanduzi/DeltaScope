@@ -301,6 +301,8 @@ const (
 	ruleIDPGAlterDropConstraintTargetRequire                = "ddl.pg.alter.drop_constraint.target.require"
 	ruleIDPGAlterValidateConstraintAdvisory                 = "ddl.pg.alter.validate_constraint.advisory"
 	ruleIDPGAlterAddColumnNullableNotice                    = "ddl.pg.alter.add_column.nullable.notice"
+	ruleIDPGAlterRenameTableTargetValid                     = "ddl.pg.alter.rename_table.target.valid"
+	ruleIDPGAlterSetSchemaTargetValid                       = "ddl.pg.alter.set_schema.target.valid"
 	ruleIDPGAlterSetSchemaAdvisory                          = "ddl.pg.alter.set_schema.advisory"
 	ruleIDPGAlterOwnerAdvisory                              = "ddl.pg.alter.owner.advisory"
 	ruleIDPGAlterEnableTriggerNotice                        = "ddl.pg.alter.enable_trigger.notice"

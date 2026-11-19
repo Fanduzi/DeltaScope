@@ -184,3 +184,22 @@ func TestAuditColumnTypeSourceThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing exact source finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditTableNamespaceThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGTableNamespace: &spec.PGTableNamespace{Schema: "app", Table: "t", Action: "rename_table", Destination: "Occupied Type", SchemaExists: true, SameSchema: true, RowTypeConflict: true, RowTypeConflictKnown: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t RENAME TO "Occupied Type"`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "Occupied Type" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.rename_table.target.valid" && f.Metadata["reason_code"] == "destination_row_type_conflict" {
+			return
+		}
+	}
+	t.Fatalf("missing destination finding: %+v", result.Statements[0].Findings)
+}

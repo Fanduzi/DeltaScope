@@ -1272,6 +1272,10 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 `v0.32.0` 是 **PostgreSQL 边界支持就绪门控**。这是一个决策里程碑，不是功能发布。未新增规则 ID。Characterization 测试记录了 generated 和 identity 列的稳定 AST 事实；就绪报告推荐 `v0.33.0` 作为窄事实保留包。未变更任何生产 extractor、spec、rule 或 policy 代码。
 
+### PostgreSQL 普通表改名与目标 schema
+
+`ddl.pg.alter.rename_table.target.valid` 和 `ddl.pg.alter.set_schema.target.valid` 默认级别为 blocker，适用于已观测 PostgreSQL 17 上精确限定名、目录新鲜的普通持久非类型表。RENAME 检查目标关系名与行类型名，识别已观测到可让位的自动生成数组类型。既有改名禁止规则独立生效。SET SCHEMA 检查目标 schema 存在性及主表、行类型的命名冲突，既有 notice 会识别同 schema 请求。证据不足时报告 `unproven_table_namespace_destination`。从属索引、序列、类型及权限另行判断。
+
 ### PostgreSQL ALTER COLUMN TYPE 源列检查
 
 `ddl.pg.alter.column_type.source.valid` 默认级别为 blocker，适用于已观测 PostgreSQL 17 上精确限定名、目录新鲜的普通持久非类型表。源列已证缺失、为实际系统列，或为指定 `USING` 的存储生成列时报告拒绝。证据不足时报告 `unproven_column_type_source`。目标类型、依赖、转换表达式和行数据仍是独立维度。既有迁移提示继续说明可能的重写与锁影响。

@@ -115,6 +115,16 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.alter.rename_table.target.valid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter.set_schema.target.valid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
 		"ddl.pg.alter.set_schema.advisory": {
 			Enabled: true,
 			Level:   rule.LevelNotice,

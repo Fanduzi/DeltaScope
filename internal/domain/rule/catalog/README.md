@@ -19,6 +19,8 @@ The PostgreSQL ordinary-table persistence entry advertises the default blocker a
 
 The PostgreSQL TYPE source entry advertises the default blocker and exact column evidence.
 
+The PostgreSQL rename and SET SCHEMA target entries expose default blockers based on exact catalog evidence.
+
 ## Files
 
 | File | Responsibility |

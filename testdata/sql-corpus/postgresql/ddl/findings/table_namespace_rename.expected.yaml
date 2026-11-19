@@ -1,0 +1,19 @@
+name: table_namespace_rename
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    t:
+      exists: true
+      pg_relation: {name: t, kind: r}
+      pg_columns: {ordinary: true, columns: []}
+  pg_table_namespaces:
+    - {schema: app, table: t, action: rename_table, destination: occupied_type, schema_exists: true, same_schema: true, row_type_conflict: true, row_type_conflict_known: true}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.rename_table.target.valid, ddl.alter.rename_table.forbid]

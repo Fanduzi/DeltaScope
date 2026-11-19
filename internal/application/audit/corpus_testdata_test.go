@@ -110,6 +110,7 @@ type corpusMetadata struct {
 	Instance             *corpusInstanceFacts           `yaml:"instance,omitempty"`
 	Tables               map[string]corpusTableSnapshot `yaml:"tables,omitempty"`
 	IndexOwners          map[string]string              `yaml:"index_owners,omitempty"`
+	PGTableNamespaces    []corpusPGTableNamespace       `yaml:"pg_table_namespaces,omitempty"`
 	PGTablePersistences  []corpusPGTablePersistence     `yaml:"pg_table_persistences,omitempty"`
 	PGTableAccessMethods []corpusPGTableAccessMethod    `yaml:"pg_table_access_methods,omitempty"`
 	PGTableTablespaces   []corpusPGTableTablespace      `yaml:"pg_table_tablespaces,omitempty"`
@@ -297,6 +298,18 @@ type corpusInstanceFacts struct {
 	MySQLSuperReadOnlyKnown  bool `yaml:"mysql_super_read_only_known,omitempty"`
 	MySQLReadOnlyExempt      bool `yaml:"mysql_read_only_exempt,omitempty"`
 	MySQLReadOnlyExemptKnown bool `yaml:"mysql_read_only_exempt_known,omitempty"`
+}
+
+type corpusPGTableNamespace struct {
+	Schema               string `yaml:"schema"`
+	Table                string `yaml:"table"`
+	Action               string `yaml:"action"`
+	Destination          string `yaml:"destination"`
+	SchemaExists         bool   `yaml:"schema_exists,omitempty"`
+	SameSchema           bool   `yaml:"same_schema,omitempty"`
+	RelationConflict     bool   `yaml:"relation_conflict,omitempty"`
+	RowTypeConflict      bool   `yaml:"row_type_conflict,omitempty"`
+	RowTypeConflictKnown bool   `yaml:"row_type_conflict_known,omitempty"`
 }
 
 type corpusPGTablePersistence struct {

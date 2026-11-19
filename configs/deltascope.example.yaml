@@ -1785,6 +1785,14 @@ rules:
     level: notice
     params:
 
+  ddl.pg.alter.rename_table.target.valid:
+    enabled: true
+    level: blocker
+    params:
+  ddl.pg.alter.set_schema.target.valid:
+    enabled: true
+    level: blocker
+    params:
   ddl.pg.alter.set_schema.advisory:
     enabled: true
     level: notice
