@@ -5,8 +5,9 @@ Per-task manifests for the milestone DDL golden-path runner
 
 ## T37 D17 PostgreSQL bulk tablespace targets
 
-Twelve new cases bring focused T37 to 282/282 and 6,979 assertions. Fifteen
-native commands verify ordered role checks, endpoint lookup, same-space
+Delivered `6b394bd8` passed all 50 tasks, 3,614/3,614 cases and 66,018
+assertions. T37 passed 282/282 and 6,979 assertions. Fifteen native
+commands verify ordered role checks, endpoint lookup, same-space
 selection, filtering and NOWAIT. All 270 prior cases and profiles are
 preserved. See the [decision](../../docs/decisions/2026-11-19-postgresql-bulk-table-tablespace-targets.md).
 

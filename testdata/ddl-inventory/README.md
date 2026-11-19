@@ -18,7 +18,8 @@ honestly — not a count of implemented rules.
 
 ## PostgreSQL bulk table tablespace targets
 
-D17 adds thirteen selectors to the PG17 ALL IN TABLESPACE SET TABLESPACE cell.
+D17 at `6b394bd8` adds thirteen selectors to the PG17 ALL IN TABLESPACE SET
+TABLESPACE cell.
 They cover ordered owner filters, both endpoints, conditional same-space
 selection and stale evidence. The existing classifications and dimensions
 are preserved.

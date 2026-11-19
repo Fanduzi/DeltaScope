@@ -73,6 +73,21 @@ Candidate CLI confirmation at `72472c0e`'s parent with the rule change in the
 worktree reproduced the 12 baseline native outcomes and correctly rejected
 all seven refusals online. See `/tmp/ds-pg-d17-candidate-cli-bb9f3050/evidence.json`.
 
+## Delivered evidence
+
+`6b394bd8645b428114f16d96e8451d8217c9b72a` passed all 50 canonical tasks,
+with 3,614/3,614 cases and 66,018 assertions, zero failures and zero skips.
+T37 passed 282/282 cases and 6,979 assertions. Validator, independent read-only
+review, owned cleanup and merged-root gates passed. The original working
+tree, protected release worktree and sixteen Docker identities matched.
+
+The milestone was merged FF-only and pushed normally to `main`.
+[Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44561730379),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44561730094) and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/135692783952) passed for
+this SHA. The final artifact is
+`/tmp/ddl-golden-pg-bulk-tablespace-target-final-6b394bd8/all/artifact.json`.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
