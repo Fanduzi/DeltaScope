@@ -310,6 +310,7 @@ const (
 	ruleIDPGAlterReplicaIdentityNothingWarn                 = "ddl.pg.alter.replica_identity_nothing.warn"
 	ruleIDPGAlterReplicaIdentityIndexValid                  = "ddl.pg.alter.replica_identity_using_index.valid"
 	ruleIDPGAlterReplicaIdentityUsingIndexNotice            = "ddl.pg.alter.replica_identity_using_index.notice"
+	ruleIDPGAlterTablePersistenceValid                      = "ddl.pg.alter.persistence.transition.valid"
 	ruleIDPGAlterLoggedNotice                               = "ddl.pg.alter.set_logged.notice"
 	ruleIDPGAlterUnloggedNotice                             = "ddl.pg.alter.set_unlogged.notice"
 	ruleIDPGAlterTableTablespaceTargetValid                 = "ddl.pg.alter.tablespace.target.valid"

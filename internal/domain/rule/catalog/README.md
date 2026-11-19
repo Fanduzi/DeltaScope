@@ -15,6 +15,8 @@ The PostgreSQL single-table tablespace entry advertises the default blocker and 
 
 The PostgreSQL ordinary-table access method entry advertises the default blocker and live method evidence.
 
+The PostgreSQL ordinary-table persistence entry advertises the default blocker and live dependency evidence.
+
 ## Files
 
 | File | Responsibility |

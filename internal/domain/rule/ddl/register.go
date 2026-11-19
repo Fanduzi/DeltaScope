@@ -715,6 +715,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterDisableTriggerWarn, construct: newDisableTriggerWarnRule},
 		{ruleID: ruleIDPGAlterAttachPartitionAdvisory, construct: newAttachPartitionAdvisoryRule},
 		{ruleID: ruleIDPGAlterDetachPartitionWarn, construct: newDetachPartitionWarnRule},
+		{ruleID: ruleIDPGAlterTablePersistenceValid, construct: newPGTablePersistenceRule},
 		{ruleID: ruleIDPGAlterLoggedNotice, construct: newSetLoggedNoticeRule},
 		{ruleID: ruleIDPGAlterUnloggedNotice, construct: newSetUnloggedNoticeRule},
 		{ruleID: ruleIDPGAlterTableTablespaceTargetValid, construct: newPGTableTablespaceRule},

@@ -134,6 +134,14 @@ The Go provider `PGConstraintState` alias and copied directory retain private fa
 
 Maintainer notes: [decision](../decisions/2026-11-17-postgresql-constraint-target-evidence.md). Other F09 dimensions remain open.
 
+### PostgreSQL ordinary-table persistence transitions
+
+`ddl.pg.alter.persistence.transition.valid` checks direct publication and
+direction-specific foreign-key preconditions on fresh, exact PostgreSQL 17
+ordinary permanent and unlogged tables. It excludes shared, mapped, typed
+and inherited or partitioned relations. Current-persistence requests are
+physical no-ops in this scope. Uncertain facts remain gaps.
+
 ### PostgreSQL ordinary-table access method destinations
 
 `ddl.pg.alter.access_method.target.valid` checks PG17 method existence and kind

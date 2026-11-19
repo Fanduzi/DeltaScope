@@ -110,6 +110,7 @@ type corpusMetadata struct {
 	Instance             *corpusInstanceFacts           `yaml:"instance,omitempty"`
 	Tables               map[string]corpusTableSnapshot `yaml:"tables,omitempty"`
 	IndexOwners          map[string]string              `yaml:"index_owners,omitempty"`
+	PGTablePersistences  []corpusPGTablePersistence     `yaml:"pg_table_persistences,omitempty"`
 	PGTableAccessMethods []corpusPGTableAccessMethod    `yaml:"pg_table_access_methods,omitempty"`
 	PGTableTablespaces   []corpusPGTableTablespace      `yaml:"pg_table_tablespaces,omitempty"`
 	PGReplicaIndexes     []corpusPGReplicaIndex         `yaml:"pg_replica_indexes,omitempty"`
@@ -296,6 +297,16 @@ type corpusInstanceFacts struct {
 	MySQLSuperReadOnlyKnown  bool `yaml:"mysql_super_read_only_known,omitempty"`
 	MySQLReadOnlyExempt      bool `yaml:"mysql_read_only_exempt,omitempty"`
 	MySQLReadOnlyExemptKnown bool `yaml:"mysql_read_only_exempt_known,omitempty"`
+}
+
+type corpusPGTablePersistence struct {
+	Schema             string `yaml:"schema"`
+	Table              string `yaml:"table"`
+	Current            string `yaml:"current"`
+	Logged             bool   `yaml:"logged,omitempty"`
+	DirectPublication  bool   `yaml:"direct_publication,omitempty"`
+	ForeignKeyConflict bool   `yaml:"foreign_key_conflict,omitempty"`
+	ForeignKeyUnknown  bool   `yaml:"foreign_key_unknown,omitempty"`
 }
 
 type corpusPGTableAccessMethod struct {

@@ -40,7 +40,7 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
 		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
-		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 {
+		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
@@ -50,6 +50,7 @@ type corpusFixtureMetadataProvider struct {
 	instance             *spec.InstanceFacts
 	tables               map[string]*spec.TableSnapshot
 	indexOwners          map[string]string
+	pgTablePersistences  []corpusPGTablePersistence
 	pgTableAccessMethods []corpusPGTableAccessMethod
 	pgTableTablespaces   []corpusPGTableTablespace
 	pgReplicaIndexes     []corpusPGReplicaIndex
@@ -88,6 +89,7 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 	provider := &corpusFixtureMetadataProvider{
 		tables:               make(map[string]*spec.TableSnapshot, len(metadata.Tables)),
 		indexOwners:          make(map[string]string, len(metadata.IndexOwners)),
+		pgTablePersistences:  metadata.PGTablePersistences,
 		pgTableAccessMethods: metadata.PGTableAccessMethods,
 		pgTableTablespaces:   metadata.PGTableTablespaces,
 		pgReplicaIndexes:     metadata.PGReplicaIndexes,
@@ -450,6 +452,15 @@ func parseCorpusUint(text string) (uint64, bool) {
 // `schema.name`. An unkeyed identity or a nil sequence map is unvouched,
 // never a silent absent; non-sequence lookups stay unavailable.
 func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if request.Type == "table_persistence" {
+		for _, seed := range p.pgTablePersistences {
+			if seed.Schema == request.Schema && seed.Table == request.Name && seed.Logged == (request.Qualifiers["action"] == "set_logged") {
+				facts := spec.PGTablePersistence(seed)
+				return &spec.ObjectSnapshot{PGTablePersistence: &facts}, nil
+			}
+		}
+		return nil, nil
+	}
 	if request.Type == "table_access_method" {
 		for _, seed := range p.pgTableAccessMethods {
 			if seed.Schema == request.Schema && seed.Table == request.Qualifiers["table"] && seed.Name == request.Name && request.Qualifiers["is_default"] == strconv.FormatBool(seed.Default) {

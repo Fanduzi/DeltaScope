@@ -74,12 +74,21 @@ func (r pgAlterActionAdvisoryRule) Evaluate(ctx context.Context, statement spec.
 		if alter.Name != "" {
 			message = fmt.Sprintf(r.message, alter.Name)
 		}
+		why, risk := r.why, r.risk
+		if r.id == ruleIDPGAlterLoggedNotice || r.id == ruleIDPGAlterUnloggedNotice {
+			message = fmt.Sprintf(r.message, statement.DDL.Table.Name)
+			if facts := boundPGTablePersistence(statement); facts != nil && facts.Same() {
+				message = fmt.Sprintf("ALTER TABLE on %q selects its current persistence on PostgreSQL", statement.DDL.Table.Name)
+				why = "The requested persistence already holds. This request does not rewrite table files."
+				risk = "PostgreSQL still checks the target and takes a lock."
+			}
+		}
 		findings = append(findings, rule.Finding{
 			Level:   r.level,
 			Message: message,
 			Explanation: &rule.FindingExplanation{
-				Why:        r.why,
-				Risk:       r.risk,
+				Why:        why,
+				Risk:       risk,
 				Suggestion: r.suggestion,
 			},
 			Metadata: map[string]any{
@@ -259,9 +268,9 @@ func newDetachPartitionWarnRule(cfg policy.RulePolicy) (rule.StatementRule, erro
 func newSetLoggedNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return newPGAlterActionAdvisoryRule(
 		ruleIDPGAlterLoggedNotice, rule.LevelNotice, "set_logged", "table",
-		"ALTER TABLE SET LOGGED on table %q — table will be crash-safe on PostgreSQL",
-		"SET LOGGED marks the table as logged, meaning writes are written to the write-ahead log and survive crashes. This is the default for permanent tables.",
-		"Temporary or unlogged tables switched to logged will begin generating WAL. On large tables this may increase WAL volume significantly.",
+		"ALTER TABLE SET LOGGED on %q requests a persistence change on PostgreSQL",
+		"A successful change to logged persistence makes table writes subject to normal WAL and crash recovery. Permanent tables already have this persistence.",
+		"Changing an unlogged table to logged can rewrite the table and increase WAL volume.",
 		"Verify that the increased WAL volume is acceptable for the replication and backup infrastructure.",
 		cfg,
 	)
@@ -270,9 +279,9 @@ func newSetLoggedNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 func newSetUnloggedNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return newPGAlterActionAdvisoryRule(
 		ruleIDPGAlterUnloggedNotice, rule.LevelNotice, "set_unlogged", "table",
-		"ALTER TABLE SET UNLOGGED on table %q — table will NOT survive crashes on PostgreSQL",
-		"SET UNLOGGED marks the table as unlogged, meaning writes are not written to the write-ahead log. The table is automatically truncated after a crash or unclean shutdown.",
-		"All data in this table will be lost after a crash, power failure, or unclean restart. Replication streams will not include changes to this table.",
+		"ALTER TABLE SET UNLOGGED on %q requests a persistence change on PostgreSQL",
+		"A successful change to unlogged persistence can rewrite the table. After an unclean shutdown PostgreSQL truncates unlogged tables.",
+		"Unlogged data is vulnerable to loss after an unclean shutdown and is excluded from normal WAL replication.",
 		"Ensure no business-critical data is stored in this table. Use unlogged tables only for ephemeral data (caches, session stores, temporary computation results) that can be rebuilt.",
 		cfg,
 	)

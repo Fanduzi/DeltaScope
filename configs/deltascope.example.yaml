@@ -1772,6 +1772,10 @@ rules:
     level: warning
     params:
 
+  ddl.pg.alter.persistence.transition.valid:
+    enabled: true
+    level: blocker
+    params:
   ddl.pg.alter.set_logged.notice:
     enabled: true
     level: notice

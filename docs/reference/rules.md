@@ -1344,6 +1344,16 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 
 `v0.32.0` is the **PostgreSQL Boundary Support-Readiness Gate**. It is a decision milestone, not a feature release. No new rule IDs were added. Characterization tests document stable AST facts about generated and identity columns; a readiness report recommends `v0.33.0` as a narrow fact-preservation pack. No production extractor, spec, rule, or policy code changed.
 
+### PostgreSQL ordinary-table persistence transitions
+
+`ddl.pg.alter.persistence.transition.valid` defaults to blocker for a fresh,
+exact, schema-qualified ordinary non-typed PostgreSQL 17 table. It checks
+permanent-to-unlogged requests against direct publication membership and
+inbound foreign keys from other permanent tables. An unlogged-to-logged
+request checks outbound foreign keys to nonpermanent tables. Unknown scope
+or dependencies yield `unproven_table_persistence`. Existing notices explain
+that a proven request for the current persistence leaves files in place.
+
 ### PostgreSQL ordinary-table access method destinations
 
 `ddl.pg.alter.access_method.target.valid` is a default blocker for a fresh,
