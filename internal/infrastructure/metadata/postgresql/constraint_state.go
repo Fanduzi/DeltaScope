@@ -9,11 +9,12 @@ import (
 
 func (p *Provider) loadPGConstraintStates(ctx context.Context, snapshot *spec.TableSnapshot) error {
 	rows, err := p.db.QueryContext(ctx, `
-		select pc.conname, pc.contype::text, pc.convalidated
+		select pc.conname, pc.contype::pg_catalog.text, pc.convalidated
 		from pg_catalog.pg_constraint pc
-		join pg_catalog.pg_class tbl on tbl.oid = pc.conrelid
-		join pg_catalog.pg_namespace n on n.oid = tbl.relnamespace
-		where n.nspname = $1 and tbl.relname = $2
+		join pg_catalog.pg_class tbl on tbl.oid OPERATOR(pg_catalog.=) pc.conrelid
+		join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) tbl.relnamespace
+		where n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text
+		  and tbl.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text
 		order by pc.oid
 	`, snapshot.Schema, snapshot.Table.Name)
 	if err != nil {

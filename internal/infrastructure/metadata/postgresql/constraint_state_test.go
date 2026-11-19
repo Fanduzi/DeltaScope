@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -37,6 +38,16 @@ func TestLoadPGConstraintStates(t *testing.T) {
 			q := log.Queries()
 			if len(q) != 1 || containsQueryFragment(q, "conbin") || containsQueryFragment(q, "pg_get_constraintdef") || containsQueryFragment(q, "contype =") {
 				t.Fatalf("query=%v", q)
+			}
+			for _, predicate := range []string{
+				"tbl.oid OPERATOR(pg_catalog.=) pc.conrelid",
+				"n.oid OPERATOR(pg_catalog.=) tbl.relnamespace",
+				"n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text",
+				"tbl.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text",
+			} {
+				if !strings.Contains(q[0], predicate) {
+					t.Errorf("unbound constraint catalog predicate %q", predicate)
+				}
 			}
 		})
 	}
