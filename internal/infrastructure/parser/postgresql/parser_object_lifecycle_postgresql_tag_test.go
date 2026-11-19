@@ -266,8 +266,8 @@ func TestPGExtractorAlterTableOwnerToNormalized(t *testing.T) {
 	if alter.Action != "change_owner" {
 		t.Fatalf("expected action 'change_owner', got %q", alter.Action)
 	}
-	if alter.Options["owner"] != "app_owner" {
-		t.Fatalf("expected options['owner']='app_owner', got %q", alter.Options["owner"])
+	if alter.PGTableOwner != (spec.PGTableOwnerTarget{Kind: "named", Name: "app_owner"}) {
+		t.Fatalf("unexpected owner selection: %+v", alter.PGTableOwner)
 	}
 }
 

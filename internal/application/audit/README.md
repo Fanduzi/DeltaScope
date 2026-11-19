@@ -98,6 +98,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | service_multi_target_denylist_postgresql_tag_test.go | Verifies PostgreSQL multi-target DROP keeps distinct dotted qualified identities as separate denylist findings |
 | service_unsupported_verdict_floor_postgresql_tag_test.go | Verifies the application unsupported-statement review floor for PostgreSQL `SELECT 1`, mixed audited siblings, unchanged `review`/`reject`, and metadata-aware inheritance |
 | corpus_coverage_test.go | Verifies every non-deferred shipped rule has corpus coverage for its supported dialect targets, including MySQL/TiDB-only metadata rules |
+| postgresql_table_owner_metadata.go | Binds exact private PostgreSQL 17 owner-target observations after target freshness checks |
 | postgresql_table_namespace_metadata.go | Binds exact private PostgreSQL 17 rename and schema destination observations after target freshness checks |
 | postgresql_table_persistence_metadata.go | Binds private PG17 persistence transition evidence after exact target freshness checks |
 | postgresql_table_access_method_metadata.go | Binds private PostgreSQL 17 access-method kind and same-method facts after the target freshness check |

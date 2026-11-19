@@ -20,6 +20,7 @@ comparisons for the member and scope binding.
 | column_state_test.go | Pins quoted/duplicate/empty/unknown/scope facts, separate column/sequence types, int64 values, serial/domain controls, SQL privacy and query/scan/iteration/close error arms |
 | instance_namespace_test.go | Pins actual pg_catalog version/settings and CASE/membership/row operators rather than search_path namesakes; unknown capability stays unknown |
 | column_format_test.go | Pins observed type/system directories and empty-user preservation, exact quoted names, enum-derived lz4 known/false/unknown, system-qualified attribute/type comparisons and non-last-wins/error arms without privileged pg_config |
+| table_owner.go | Observes exact PG17 table owner targets using role identity and sameness with no permission or membership reads |
 | table_namespace.go | Observes exact PG17 table rename and schema destinations, including primary relation and row-type collisions |
 | table_persistence.go | Reads observed PG17 persistence, direct publication and directional foreign-key preconditions for ordinary tables without reading dependency names |
 | table_access_method.go | Reads the named or effective-default PG17 access method and compares it to the bound ordinary table’s actual method without invoking handlers |

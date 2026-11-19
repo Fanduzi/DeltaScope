@@ -977,14 +977,26 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 	case pg_query.AlterTableType_AT_DropNotNull:
 		return spec.Alter{Action: "drop_not_null", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Definition: &spec.Column{Name: cmd.GetName(), NotNull: false}, Change: &spec.AlterColumnChange{TouchesNullability: true}}, PGColumnTransition: pgColumnTransitionFromCmd(cmd)}, true, nil
 	case pg_query.AlterTableType_AT_ChangeOwner:
-		owner := ""
-		if no := cmd.GetNewowner(); no != nil {
-			owner = no.GetRolename()
+		target := spec.PGTableOwnerTarget{}
+		owner := cmd.GetNewowner()
+		switch owner.GetRoletype() {
+		case pg_query.RoleSpecType_ROLESPEC_CSTRING:
+			if owner.GetRolename() != "" {
+				target = spec.PGTableOwnerTarget{Kind: "named", Name: owner.GetRolename()}
+			}
+		case pg_query.RoleSpecType_ROLESPEC_CURRENT_USER:
+			target.Kind = "current_user"
+		case pg_query.RoleSpecType_ROLESPEC_CURRENT_ROLE:
+			target.Kind = "current_role"
+		case pg_query.RoleSpecType_ROLESPEC_SESSION_USER:
+			target.Kind = "session_user"
+		case pg_query.RoleSpecType_ROLESPEC_PUBLIC:
+			target.Kind = "public"
 		}
-		if owner == "" {
+		if target.Kind == "" {
 			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "changeowner", Reason: "postgresql alter table owner role is missing"}
 		}
-		return spec.Alter{Action: "change_owner", Options: map[string]string{"owner": owner}}, true, nil
+		return spec.Alter{Action: "change_owner", PGTableOwner: target}, true, nil
 	case pg_query.AlterTableType_AT_EnableTrig:
 		name := cmd.GetName()
 		if name != "" {

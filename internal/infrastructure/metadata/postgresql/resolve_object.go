@@ -18,6 +18,8 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 		switch req.Type {
 		case "replica_identity_index":
 			return p.resolveReplicaIdentityIndex(ctx, req)
+		case "table_owner":
+			return p.resolveTableOwner(ctx, req)
 		case "table_namespace":
 			return p.resolveTableNamespace(ctx, req)
 		case "table_persistence":
