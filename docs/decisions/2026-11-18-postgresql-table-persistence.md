@@ -78,6 +78,25 @@ the fixed candidate SHA is required for delivery.
 Fourteen evidence selectors bind the original SET LOGGED/UNLOGGED anchor.
 Existing row and subaction classifications and denominators are preserved.
 
+## Delivered verification
+
+D13 shipped at `33f87fd76b8b7e8e780d0165f3df77ec1c8ae5f9` from
+`28de6dc545bb007246513f606e9ed802903515f4` via fast-forward and normal push.
+The exact SHA passed 50 canonical tasks, all 3568 cases and 64372 assertions,
+with zero failures or skips. T37 passed 236/236 with 5333 assertions and 14
+native steps, including ten successes and four precise refusals. Validator,
+independent read-only review, candidate and merged-root gates, and owned
+cleanup passed. Original workspace status, protected worktrees and 16
+unrelated container identities were preserved. The final task changed seven
+paths and the milestone changed 40.
+
+- [Go, PostgreSQL and lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44477122026)
+- [CLI TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44477122064)
+- [Pages](https://github.com/Fanduzi/DeltaScope/runs/135400501667)
+
+Final artifact: `/tmp/ddl-golden-pg-table-persistence-final-33f87fd7/all/artifact.json`.
+These results belong to the shipped D13 SHA. Other F09 dimensions stay open.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

@@ -12,6 +12,10 @@ requests, direct publication, directional foreign keys and independent file
 and row state. See the
 [decision](../../docs/decisions/2026-11-18-postgresql-table-persistence.md).
 
+The final `33f87fd7` run passed all 50 tasks, 3568 cases and 64372 assertions,
+with validation and no failures or skips. All five exact-SHA CI checks passed.
+The decision record links the artifact and CI.
+
 ## T37 D12 PostgreSQL ordinary-table access method destinations
 
 D12 preserves all 213 earlier T37 cases and their profiles. Ten additions
