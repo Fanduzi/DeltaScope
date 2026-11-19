@@ -10,6 +10,7 @@ type Metadata struct {
 	Version           *VersionIdentity        `json:"version,omitempty"`
 	TargetTable       *TableSnapshot          `json:"target_table,omitempty"`
 	PGReplicaIdentity *PGReplicaIdentityIndex `json:"-"`
+	PGTableTablespace *PGTableTablespace      `json:"-"`
 	View              *ViewMetadata           `json:"-"`
 	// ExchangeTable is the ordered pre-state projection of the
 	// EXCHANGE PARTITION counterpart table — the second object identity
@@ -796,6 +797,7 @@ type ObjectSnapshot struct {
 	// definition parameters are never runtime issuance progress (T21/#100).
 	Sequence          *SequenceDefinition     `json:"-"`
 	PGReplicaIdentity *PGReplicaIdentityIndex `json:"-"`
+	PGTableTablespace *PGTableTablespace      `json:"-"`
 	// SequenceReferences is the bounded inbound-reference read for a proven
 	// sequence identity — the catalog's owner-slot/target edge list. A nil
 	// slice means the read never happened — never a proven-empty set;
