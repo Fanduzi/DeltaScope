@@ -56,6 +56,25 @@ Keep prior cases and profiles. Bind only the original OWNER TO inventory
 cell. The real CLI and PG17.7 native legs use task-owned roles and relations,
 exact owner/file readback, a payload row and an independent sequence guard.
 
+## Evidence bindings
+
+`b0f20d4a` preserves private RoleSpec and owner observations. `21ef828e` adds
+the shared blocker and contextual same-owner notice. Focused T37 passed
+270/270 with 6362 assertions, preserving all 258 prior cases and profiles.
+The twelve additions include thirteen native commands with eight successes
+and five exact refusals, including a parser-boundary control. Independent
+checks protect owner and file identity, exact data and a sequence guard.
+
+A separate real CLI probe configured different effective and session roles.
+CURRENT_USER and CURRENT_ROLE matched the observed owner while SESSION_USER
+resolved differently. Audit preserved the fixture in every case. This probe
+belongs to the working-tree candidate at `b0f20d4a` and is retained at
+`/tmp/ds-pg-d16-owner-session-probe-b0f20d4a/evidence.json`.
+
+Thirteen evidence selectors bind the original OWNER TO cell. Inventory
+classifications and denominators remain intact. The full run at the final
+committed SHA is required for delivery.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

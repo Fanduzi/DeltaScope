@@ -7716,7 +7716,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.rename-owner.owner-to.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.rename-owner.owner-to.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#table-owner-target-offline, file:testdata/ddl-golden/T37.json#table-owner-target-disabled, file:testdata/ddl-golden/T37.json#pg-table-owner-target-missing, file:testdata/ddl-golden/T37.json#pg-table-owner-target-exact, file:testdata/ddl-golden/T37.json#pg-table-owner-target-same, file:testdata/ddl-golden/T37.json#pg-table-owner-target-effective, file:testdata/ddl-golden/T37.json#pg-table-owner-target-session, file:testdata/ddl-golden/T37.json#pg-table-owner-target-quoted-alias, file:testdata/ddl-golden/T37.json#pg-table-owner-target-public, file:testdata/ddl-golden/T37.json#pg-table-owner-target-scope, file:testdata/ddl-golden/T37.json#pg-table-owner-target-freshness, file:testdata/ddl-golden/T37.json#pg-table-owner-target-guard-absent, file:testdata/sql-corpus/postgresql/ddl/findings/table_owner_target.expected.yaml#ddl.pg.alter.owner.target.valid]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.rename-owner.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]

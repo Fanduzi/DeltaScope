@@ -3,6 +3,13 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D16 PostgreSQL ordinary-table owner targets
+
+D16 preserves all 258 earlier cases and their profiles. Twelve additions
+bring focused T37 to 270/270 with 6362 assertions. Thirteen native steps include
+eight successes and five precise refusals. See the
+[decision](../../docs/decisions/2026-11-18-postgresql-table-owner-target.md).
+
 ## T37 D15 PostgreSQL ordinary-table rename and schema destinations
 
 D15 preserves all 245 prior T37 cases and their profiles. Thirteen additions

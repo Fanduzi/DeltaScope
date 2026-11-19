@@ -16,6 +16,12 @@ honestly — not a count of implemented rules.
 | T06-CLOSEOUT.md | Final T06 (#85) technical closeout index (T06技术收口材料齐备): binds every accepted dimension to the traceability rows, the SHA-frozen umbrella evidence, and the owner boundary for deferred dimensions; issue #85 stays open |
 | evidence/ | Per-row offline CLI probe captures (`<row-id>.probes.txt`): recorded `deltascope audit` output for the row's `sql_shape` at every declared version (`=== version <v> (target …)` sections). Regenerate by re-running the probe commands recorded in the file header |
 
+## PostgreSQL ordinary-table owner targets
+
+D16 binds exact role existence, special role syntax and observed owner sameness
+to the original `OWNER TO` cell. The decision keeps permission and execution
+premises separate. Existing classifications and denominators are preserved.
+
 ## PostgreSQL ordinary-table rename and schema destinations
 
 D15 binds exact PG17 primary relation, row-type and namespace evidence to the
