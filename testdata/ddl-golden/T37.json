@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-table-access-method": {"enable": {"ddl.pg.alter.access_method.target.valid": {"level": "blocker"}, "ddl.pg.alter.set_access_method.warn": {"level": "warning"}}},
    "pg-table-tablespace": {"enable": {"ddl.pg.alter.tablespace.target.valid": {"level": "blocker"}, "ddl.pg.alter.set_tablespace.notice": {"level": "notice"}}},
    "pg-table-reloptions": {"enable": {"ddl.pg.alter.reloptions.valid": {"level": "blocker"}, "ddl.pg.alter.set_reloptions.warn": {"level": "warning"}, "ddl.pg.alter.reset_reloptions.notice": {"level": "notice"}}},
    "pg-replica-index": {"enable": {"ddl.pg.alter.replica_identity_using_index.valid": {"level": "blocker"}, "ddl.pg.alter.replica_identity_using_index.notice": {"level": "notice"}, "ddl.pg.alter.replica_identity_full.warn": {"level": "warning"}, "ddl.pg.alter.replica_identity_nothing.warn": {"level": "warning"}}},
@@ -1877,6 +1878,51 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "table-access-method-offline",
+   "dialect": "postgresql",
+   "policy": "pg-table-access-method",
+   "sql": "ALTER TABLE app.t SET ACCESS METHOD DEFAULT",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_access_method.warn","level": "warning"}],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.access_method.target.valid","reason_code": "unproven_table_access_method","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGTableAccessMethod","SameKnown"],
+    "rule_summary_loaded": 2
+   }
+  },
+  {
+   "id": "table-access-method-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.t SET ACCESS METHOD btree",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableAccessMethod","SameKnown"]
+   }
+  },
   {
    "id": "table-tablespace-offline",
    "dialect": "postgresql",
@@ -4063,6 +4109,374 @@
   }
  ],
  "metadata_cases": [
+  {
+   "id": "pg-table-access-method-missing",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-access-method",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgam_missing"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_missing CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_missing'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgam_missing.t SET ACCESS METHOD \"Heap\"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_missing'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgam_missing","expect_rc": 0},
+    {"name": "seed and capture method and file identities","sql": "CREATE TABLE pgam_missing.t(id int,payload text) USING heap; INSERT INTO pgam_missing.t VALUES(1,'keep'); CREATE SEQUENCE pgam_missing.guard START 7; CREATE TABLE pgam_missing.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_missing'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_access_method.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.access_method.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableAccessMethod","SameKnown"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.access_method.target.valid","metadata": {"reason_code": "access_method_absent"}}]
+   },
+   "post_verify": [
+    {"assert": "audit never changes method or file identity","sql": "SELECT count(*) FROM ((TABLE pgam_missing.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_missing'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_missing'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgam_missing.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgam_missing.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgam_missing.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42704","sql": "\\set VERBOSITY verbose\nALTER TABLE pgam_missing.t SET ACCESS METHOD \"Heap\"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42704:"]}
+   ],
+   "structure": [
+    {"assert": "native file and method still match the original catalogs","sql": "SELECT (c.relfilenode=r.relfilenode AND c.relam=r.relam) FROM pg_class c JOIN pgam_missing.receipt r ON r.oid=c.oid WHERE c.oid='pgam_missing.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_missing CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_missing'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-access-method-index-kind",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-access-method",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgam_index_kind"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_index_kind CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_index_kind'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgam_index_kind.t SET ACCESS METHOD btree",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_index_kind'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgam_index_kind","expect_rc": 0},
+    {"name": "seed and capture method and file identities","sql": "CREATE TABLE pgam_index_kind.t(id int,payload text) USING heap; INSERT INTO pgam_index_kind.t VALUES(1,'keep'); CREATE SEQUENCE pgam_index_kind.guard START 7; CREATE TABLE pgam_index_kind.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_index_kind'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_access_method.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.access_method.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableAccessMethod","SameKnown"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.access_method.target.valid","metadata": {"reason_code": "access_method_wrong_kind"}}]
+   },
+   "post_verify": [
+    {"assert": "audit never changes method or file identity","sql": "SELECT count(*) FROM ((TABLE pgam_index_kind.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_index_kind'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_index_kind'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgam_index_kind.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgam_index_kind.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgam_index_kind.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 55000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgam_index_kind.t SET ACCESS METHOD btree","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  55000:"]}
+   ],
+   "structure": [
+    {"assert": "native file and method still match the original catalogs","sql": "SELECT (c.relfilenode=r.relfilenode AND c.relam=r.relam) FROM pg_class c JOIN pgam_index_kind.receipt r ON r.oid=c.oid WHERE c.oid='pgam_index_kind.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_index_kind CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_index_kind'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-access-method-same",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-access-method",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgam_same"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_same CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_same'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgam_same.t SET ACCESS METHOD heap",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_same'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgam_same","expect_rc": 0},
+    {"name": "seed and capture method and file identities","sql": "CREATE TABLE pgam_same.t(id int,payload text) USING heap; INSERT INTO pgam_same.t VALUES(1,'keep'); CREATE SEQUENCE pgam_same.guard START 7; CREATE TABLE pgam_same.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_same'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_access_method.warn","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableAccessMethod","SameKnown","changing a stored table's method can require a rewrite"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit never changes method or file identity","sql": "SELECT count(*) FROM ((TABLE pgam_same.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_same'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_same'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgam_same.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgam_same.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgam_same.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgam_same.t SET ACCESS METHOD heap","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native file and method still match the original catalogs","sql": "SELECT (c.relfilenode=r.relfilenode AND c.relam=r.relam) FROM pg_class c JOIN pgam_same.receipt r ON r.oid=c.oid WHERE c.oid='pgam_same.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_same CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_same'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-access-method-default",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-access-method",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgam_default"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_default CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_default'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgam_default.t SET ACCESS METHOD DEFAULT",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_default'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgam_default","expect_rc": 0},
+    {"name": "seed and capture method and file identities","sql": "CREATE TABLE pgam_default.t(id int,payload text) USING heap; INSERT INTO pgam_default.t VALUES(1,'keep'); CREATE SEQUENCE pgam_default.guard START 7; CREATE TABLE pgam_default.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_default'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_access_method.warn","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableAccessMethod","SameKnown","changing a stored table's method can require a rewrite"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit never changes method or file identity","sql": "SELECT count(*) FROM ((TABLE pgam_default.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_default'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_default'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgam_default.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgam_default.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgam_default.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgam_default.t SET ACCESS METHOD DEFAULT","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native file and method still match the original catalogs","sql": "SELECT (c.relfilenode=r.relfilenode AND c.relam=r.relam) FROM pg_class c JOIN pgam_default.receipt r ON r.oid=c.oid WHERE c.oid='pgam_default.t'::regclass","expect": "t"},
+    {"assert": "effective setting matches actual method","sql": "SELECT a.amname::text=current_setting('default_table_access_method') FROM pg_class c JOIN pg_am a ON a.oid=c.relam WHERE c.oid='pgam_default.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_default CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_default'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-access-method-quoted-default",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-access-method",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgam_quoted_default"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_quoted_default CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_quoted_default'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgam_quoted_default.t SET ACCESS METHOD \"default\"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_quoted_default'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgam_quoted_default","expect_rc": 0},
+    {"name": "seed and capture method and file identities","sql": "CREATE TABLE pgam_quoted_default.t(id int,payload text) USING heap; INSERT INTO pgam_quoted_default.t VALUES(1,'keep'); CREATE SEQUENCE pgam_quoted_default.guard START 7; CREATE TABLE pgam_quoted_default.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_quoted_default'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_access_method.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.access_method.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableAccessMethod","SameKnown"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.access_method.target.valid","metadata": {"reason_code": "access_method_absent"}}]
+   },
+   "post_verify": [
+    {"assert": "audit never changes method or file identity","sql": "SELECT count(*) FROM ((TABLE pgam_quoted_default.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_quoted_default'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_quoted_default'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgam_quoted_default.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgam_quoted_default.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgam_quoted_default.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42704","sql": "\\set VERBOSITY verbose\nALTER TABLE pgam_quoted_default.t SET ACCESS METHOD \"default\"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42704:"]}
+   ],
+   "structure": [
+    {"assert": "native file and method still match the original catalogs","sql": "SELECT (c.relfilenode=r.relfilenode AND c.relam=r.relam) FROM pg_class c JOIN pgam_quoted_default.receipt r ON r.oid=c.oid WHERE c.oid='pgam_quoted_default.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_quoted_default CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_quoted_default'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-access-method-scope",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-access-method",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgam_scope"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_scope CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_scope'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgam_scope.part SET ACCESS METHOD heap;ALTER TABLE t SET ACCESS METHOD heap;ALTER TABLE pgam_scope.t SET ACCESS METHOD heap, ADD COLUMN c int",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_scope'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgam_scope","expect_rc": 0},
+    {"name": "seed and capture method and file identities","sql": "CREATE TABLE pgam_scope.t(id int,payload text) USING heap; INSERT INTO pgam_scope.t VALUES(1,'keep'); CREATE SEQUENCE pgam_scope.guard START 7; CREATE TABLE pgam_scope.part(id int) PARTITION BY RANGE(id); CREATE TABLE pgam_scope.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_scope'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 3,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified","unverified","unverified"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_access_method.warn","level": "warning"},{"index": 1,"rule_id": "ddl.pg.alter.set_access_method.warn","level": "warning"},{"index": 2,"rule_id": "ddl.pg.alter.set_access_method.warn","level": "warning"}],
+    "evidence_gaps": 3,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.access_method.target.valid","reason_code": "unproven_table_access_method","required_facts": ["target_table.pg_access_method"]},{"index": 1,"rule_id": "ddl.pg.alter.access_method.target.valid","reason_code": "unproven_table_access_method","required_facts": ["target_table.pg_access_method"]},{"index": 2,"rule_id": "ddl.pg.alter.access_method.target.valid","reason_code": "unproven_table_access_method","required_facts": ["target_table.pg_access_method"]}],
+    "serialized_not_contains": ["PGTableAccessMethod","SameKnown"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit never changes method or file identity","sql": "SELECT count(*) FROM ((TABLE pgam_scope.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_scope'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_scope'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgam_scope.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgam_scope.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgam_scope.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgam_scope.part SET ACCESS METHOD heap","expect_rc": 0},
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgam_scope.t SET ACCESS METHOD heap","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native file and method still match the original catalogs","sql": "SELECT (c.relfilenode=r.relfilenode AND c.relam=r.relam) FROM pg_class c JOIN pgam_scope.receipt r ON r.oid=c.oid WHERE c.oid='pgam_scope.t'::regclass","expect": "t"},
+    {"assert": "native partition root now specifies heap","sql": "SELECT a.amname FROM pg_class c JOIN pg_am a ON a.oid=c.relam WHERE c.oid='pgam_scope.part'::regclass","expect": "heap"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_scope CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_scope'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-access-method-freshness",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-access-method",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgam_freshness"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_freshness CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_freshness'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgam_freshness.t ADD COLUMN new_id integer;ALTER TABLE pgam_freshness.t SET ACCESS METHOD heap;ALTER TABLE pgam_freshness.t RENAME COLUMN IF EXISTS id TO moved;ALTER TABLE pgam_freshness.t SET ACCESS METHOD DEFAULT",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_freshness'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgam_freshness","expect_rc": 0},
+    {"name": "seed and capture method and file identities","sql": "CREATE TABLE pgam_freshness.t(id int,payload text) USING heap; INSERT INTO pgam_freshness.t VALUES(1,'keep'); CREATE SEQUENCE pgam_freshness.guard START 7; CREATE TABLE pgam_freshness.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_freshness'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 2,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": ["complete","unverified","unverified"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 1,"rule_id": "ddl.pg.alter.set_access_method.warn","level": "warning"},{"index": 2,"rule_id": "ddl.pg.alter.set_access_method.warn","level": "warning"}],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.pg.alter.access_method.target.valid","reason_code": "unproven_table_access_method","required_facts": ["target_table.pg_access_method"]},{"index": 2,"rule_id": "ddl.pg.alter.access_method.target.valid","reason_code": "unproven_table_access_method","required_facts": ["target_table.pg_access_method"]}],
+    "serialized_not_contains": ["PGTableAccessMethod","SameKnown"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit never changes method or file identity","sql": "SELECT count(*) FROM ((TABLE pgam_freshness.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_freshness'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_freshness'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgam_freshness.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgam_freshness.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgam_freshness.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgam_freshness.t ADD COLUMN new_id integer","expect_rc": 0},
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgam_freshness.t SET ACCESS METHOD heap","expect_rc": 0},
+    {"name": "native refusal 42601","sql": "\\set VERBOSITY verbose\nALTER TABLE pgam_freshness.t RENAME COLUMN IF EXISTS id TO moved","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42601:"]}
+   ],
+   "structure": [
+    {"assert": "native predecessor was applied","sql": "SELECT EXISTS(SELECT FROM pg_attribute WHERE attrelid='pgam_freshness.t'::regclass AND attname='new_id')","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_freshness CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_freshness'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-access-method-guard-absent",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-access-method",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgam_guard_absent"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_guard_absent CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_guard_absent'","expect": "0"}}]},
+   "sql": "ALTER TABLE IF EXISTS pgam_guard_absent.missing SET ACCESS METHOD missing_d12",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_guard_absent'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgam_guard_absent","expect_rc": 0},
+    {"name": "seed and capture method and file identities","sql": "CREATE TABLE pgam_guard_absent.t(id int,payload text) USING heap; INSERT INTO pgam_guard_absent.t VALUES(1,'keep'); CREATE SEQUENCE pgam_guard_absent.guard START 7; CREATE TABLE pgam_guard_absent.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_guard_absent'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_access_method.warn","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableAccessMethod","SameKnown"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit never changes method or file identity","sql": "SELECT count(*) FROM ((TABLE pgam_guard_absent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_guard_absent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.relam FROM pg_class c WHERE c.relnamespace='pgam_guard_absent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgam_guard_absent.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgam_guard_absent.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgam_guard_absent.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE IF EXISTS pgam_guard_absent.missing SET ACCESS METHOD missing_d12","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "guard skipped missing relation","sql": "SELECT to_regclass('pgam_guard_absent.missing') IS NULL","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgam_guard_absent CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgam_guard_absent'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
   {
    "id": "pg-table-tablespace-missing",
    "anchor": "postgres17",
@@ -7520,6 +7934,16 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.table-access-method-offline",
+  "T37.cli.table-access-method-disabled",
+  "T37.meta.pg-table-access-method-missing",
+  "T37.meta.pg-table-access-method-index-kind",
+  "T37.meta.pg-table-access-method-same",
+  "T37.meta.pg-table-access-method-default",
+  "T37.meta.pg-table-access-method-quoted-default",
+  "T37.meta.pg-table-access-method-scope",
+  "T37.meta.pg-table-access-method-freshness",
+  "T37.meta.pg-table-access-method-guard-absent",
   "T37.cli.table-tablespace-offline",
   "T37.cli.table-tablespace-disabled",
   "T37.meta.pg-table-tablespace-missing",

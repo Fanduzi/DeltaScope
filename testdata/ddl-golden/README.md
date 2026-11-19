@@ -3,6 +3,14 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D12 PostgreSQL ordinary-table access method destinations
+
+D12 preserves all 213 earlier T37 cases and their profiles. Ten additions
+bring the focused run to 223/223 with 4943 assertions. Eleven native controls
+include seven successes and four precise SQLSTATE refusals. The same-method
+and bare DEFAULT cases independently compare the table method and file identity.
+See the [decision](../../docs/decisions/2026-11-18-postgresql-table-access-method.md).
+
 ## T37 D11 PostgreSQL single-table tablespace destinations
 
 D11 retains the 203 earlier T37 cases and their profiles. Ten additions bring

@@ -59,6 +59,19 @@ Retain all existing cases and profiles. Bind only the original `SET ACCESS
 METHOD` inventory evidence cell. Each real CLI audit has independent catalog,
 file, data and sequence checks before the native leg.
 
+## Evidence bindings
+
+`e64fd4bb` binds private catalog facts. `683ffd81` adds the shared blocker and
+same-method wording to the existing warning. The focused candidate passed T37
+223/223 with 4943 assertions. All 213 original case objects and profiles remain
+exact. Ten additions under an isolated profile include eleven native steps,
+with seven successes and four exact SQLSTATE refusals. Catalog, file, payload
+and sequence checks prove the audit leaves the fixture intact. The fixed-SHA
+full run is required for delivery.
+
+Eleven selectors bind the original `SET ACCESS METHOD` cell. The generated
+matrix preserves the row and subaction classifications and denominators.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
