@@ -575,6 +575,23 @@ RENAME TO and SET SCHEMA gain evidence. Dependent moves and OWNER TO remain
 open. See the
 [decision](../decisions/2026-11-18-postgresql-table-namespace-destination.md).
 
+D15 shipped at `a303a8b414b8179b9371cc3a6924019f39464cc8` from
+`7ba14c4c9ed75444f269f15a25ad63942233a9a6` via fast-forward and normal push.
+The fixed SHA passed 50 canonical tasks, all 3590 cases and 65040 assertions,
+with zero failures or skips. T37 passed all 258 cases and 6001 assertions.
+Seventeen native steps included nine successes and eight precise refusals.
+Validation, independent review, candidate and merged-root gates, and owned
+cleanup passed. Original workspace status, protected worktrees and 16 unrelated
+container identities were preserved. The final task changed seven paths and
+the milestone changed 41.
+
+- [Go, PostgreSQL and lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44500330984)
+- [CLI TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44500331544)
+- [Pages](https://github.com/Fanduzi/DeltaScope/runs/135478226302)
+
+Final artifact: `/tmp/ddl-golden-pg-table-namespace-destination-final-a303a8b4/all/artifact.json`.
+Dependent moves and other F09 dimensions remain open.
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.
@@ -649,7 +666,7 @@ insufficient.
 | F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 generation and D6 statistics/options delivered with accepted gaps; D7 bounded storage/compression/system delivered, broader data/expression/current/kind scopes open |
 | F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; remaining dimensions open |
 | F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | partial:D9 bounded attachment delivered; D10 bounded heap declarations delivered; D11 single-table tablespace delivered; D12 ordinary-table methods delivered; D13 persistence delivered; other dimensions open |
-| F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | partial:D15 primary destination checks in verification; dependent moves and owner remain open |
+| F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | partial:D15 primary destination checks delivered; dependent moves and owner remain open |
 | F10 | `postgresql.drop-table` | DROP TABLE; IF EXISTS / multi-target | unreviewed |
 | F10 | `postgresql.truncate-table` | TRUNCATE basic; RESTART/CONTINUE IDENTITY; ONLY / CASCADE | unreviewed |
 | F11 | `postgresql.create-index` | CREATE INDEX basic; UNIQUE; CONCURRENTLY; USING method; expression index; partial WHERE; INCLUDE / NULLS DISTINCT; opclass/parameters; WITH/TABLESPACE | unreviewed |

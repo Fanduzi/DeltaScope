@@ -80,6 +80,25 @@ Each original RENAME TO or SET SCHEMA cell gains nine evidence references.
 Existing row and subaction classifications and denominators are preserved.
 Final acceptance depends on the full run at the committed candidate SHA.
 
+## Delivered verification
+
+D15 shipped at `a303a8b414b8179b9371cc3a6924019f39464cc8` from
+`7ba14c4c9ed75444f269f15a25ad63942233a9a6` via fast-forward and normal push.
+The fixed SHA passed 50 canonical tasks, all 3590 cases and 65040 assertions,
+with zero failures or skips. T37 passed all 258 cases and 6001 assertions.
+Seventeen native steps included nine successes and eight precise refusals.
+Validation, independent review, candidate and merged-root gates, and owned
+cleanup passed. Original workspace status, protected worktrees and 16 unrelated
+container identities were preserved. The final task changed seven paths and
+the milestone changed 41.
+
+- [Go, PostgreSQL and lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44500330984)
+- [CLI TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44500331544)
+- [Pages](https://github.com/Fanduzi/DeltaScope/runs/135478226302)
+
+Final artifact: `/tmp/ddl-golden-pg-table-namespace-destination-final-a303a8b4/all/artifact.json`.
+Dependent moves and other F09 dimensions remain open.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

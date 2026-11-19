@@ -10,6 +10,10 @@ bring focused T37 to 258/258 with 6001 assertions. Seventeen native steps includ
 nine successes and eight precise refusals. See the
 [decision](../../docs/decisions/2026-11-18-postgresql-table-namespace-destination.md).
 
+The fixed `a303a8b4` run passed 50 tasks, 3590 cases and 65040 assertions.
+Validation and all five exact-SHA CI checks passed. The decision record links
+the final artifact and CI.
+
 ## T37 D14 PostgreSQL ALTER COLUMN TYPE source checks
 
 D14 preserves all 236 prior T37 cases and policy profiles. Nine additions
