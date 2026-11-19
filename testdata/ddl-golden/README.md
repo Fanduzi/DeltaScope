@@ -5,10 +5,11 @@ Per-task manifests for the milestone DDL golden-path runner
 
 ## T37 D16 PostgreSQL ordinary-table owner targets
 
-D16 preserves all 258 earlier cases and their profiles. Twelve additions
-bring focused T37 to 270/270 with 6362 assertions. Thirteen native steps include
-eight successes and five precise refusals. See the
-[decision](../../docs/decisions/2026-11-18-postgresql-table-owner-target.md).
+D16 preserves all 258 earlier cases and their profiles. The delivered SHA
+`1a03cd0d3ff1d89f8a37fb70149dbae1635c8b9e` passed T37 with 270/270 cases and
+6,362 assertions. Thirteen native steps include eight successes and five
+precise refusals. The full run passed 3,602/3,602 cases and 65,401 assertions
+across 50 tasks. See the [decision](../../docs/decisions/2026-11-18-postgresql-table-owner-target.md).
 
 ## T37 D15 PostgreSQL ordinary-table rename and schema destinations
 

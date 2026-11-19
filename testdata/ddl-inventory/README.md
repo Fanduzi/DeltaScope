@@ -20,7 +20,9 @@ honestly — not a count of implemented rules.
 
 D16 binds exact role existence, special role syntax and observed owner sameness
 to the original `OWNER TO` cell. The decision keeps permission and execution
-premises separate. Existing classifications and denominators are preserved.
+premises separate. Thirteen selectors bind the PG17 applicability of this
+cell to evidence delivered at `1a03cd0d`. Existing classifications and
+denominators are preserved.
 
 ## PostgreSQL ordinary-table rename and schema destinations
 

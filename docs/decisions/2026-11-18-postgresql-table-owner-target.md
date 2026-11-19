@@ -75,6 +75,24 @@ Thirteen evidence selectors bind the original OWNER TO cell. Inventory
 classifications and denominators remain intact. The full run at the final
 committed SHA is required for delivery.
 
+## Delivered evidence
+
+`1a03cd0d3ff1d89f8a37fb70149dbae1635c8b9e` passed all 50 canonical tasks,
+with 3,602/3,602 cases, 65,401 assertions, zero failures and zero skips. T37
+passed 270/270 and 6,362 assertions. The validator and merged-root gates
+passed, followed by FF-only merge and normal push to `main`.
+
+[Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44542728143),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44542728376) and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/135625272372) passed on this
+SHA. The final artifact is
+`/tmp/ddl-golden-pg-table-owner-target-final-1a03cd0d/all/artifact.json`.
+
+The worktree status matched its original bytes. All sixteen protected Docker
+identities matched. An additional container appeared in the start snapshot
+and was absent at review. Its lifecycle could not be verified. All fifty
+cleanup receipts list only the dedicated Golden project resources.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
