@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-table-namespace-destination": {"enable": {"ddl.pg.alter.rename_table.target.valid": {"level": "blocker"}, "ddl.pg.alter.set_schema.target.valid": {"level": "blocker"}, "ddl.alter.rename_table.forbid": {"level": "blocker"}, "ddl.pg.alter.set_schema.advisory": {"level": "notice"}}},
    "pg-column-type-source": {"enable": {"ddl.pg.alter.column_type.source.valid": {"level": "blocker"}, "ddl.pg.alter.set_data_type.rewrite.warn": {"level": "warning"}}},
    "pg-table-persistence": {"enable": {"ddl.pg.alter.persistence.transition.valid": {"level": "blocker"}, "ddl.pg.alter.set_logged.notice": {"level": "notice"}, "ddl.pg.alter.set_unlogged.notice": {"level": "notice"}}},
    "pg-table-access-method": {"enable": {"ddl.pg.alter.access_method.target.valid": {"level": "blocker"}, "ddl.pg.alter.set_access_method.warn": {"level": "warning"}}},
@@ -1880,6 +1881,51 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "table-namespace-destination-offline",
+   "dialect": "postgresql",
+   "policy": "pg-table-namespace-destination",
+   "sql": "ALTER TABLE app.t RENAME TO u; ALTER TABLE app.t SET SCHEMA target",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified","unverified"],
+    "statement_indices": [0,1],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.rename_table.forbid","level": "blocker"},{"index": 1,"rule_id": "ddl.pg.alter.set_schema.advisory","level": "notice"}],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.rename_table.target.valid","reason_code": "unproven_table_namespace_destination","required_facts": ["instance.version"]},{"index": 1,"rule_id": "ddl.pg.alter.set_schema.target.valid","reason_code": "unproven_table_namespace_destination","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGTableNamespace","RowTypeConflictKnown"],
+    "rule_summary_loaded": 4
+   }
+  },
+  {
+   "id": "table-namespace-destination-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.t RENAME TO t",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableNamespace","RowTypeConflictKnown"]
+   }
+  },
   {
    "id": "column-type-source-offline",
    "dialect": "postgresql",
@@ -4201,6 +4247,538 @@
   }
  ],
  "metadata_cases": [
+  {
+   "id": "pg-table-namespace-rename-relation",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-namespace-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgns_rename_relation"},
+   "fixture": {"cleanup": [{"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_rename_relation CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_rename_relation'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgns_rename_relation.t RENAME TO taken",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source schema absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_rename_relation'","expect": "0"}]},
+    {"name": "claim source schema","fixture_key": "source","creates_fixture": true,"sql": "CREATE SCHEMA pgns_rename_relation","expect_rc": 0},
+    {"name": "seed and capture relations and types","sql": "CREATE TABLE pgns_rename_relation.t(id int,payload text); INSERT INTO pgns_rename_relation.t VALUES(1,'keep'); CREATE SEQUENCE pgns_rename_relation.guard START 7; CREATE SEQUENCE pgns_rename_relation.taken; CREATE TABLE pgns_rename_relation.receipt AS SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_rename_relation','pgns_rename_relation_dst') AND c.relname NOT IN ('receipt','types_receipt'); CREATE TABLE pgns_rename_relation.types_receipt AS SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_rename_relation','pgns_rename_relation_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.rename_table.forbid","level": "blocker"},{"index": 0,"rule_id": "ddl.pg.alter.rename_table.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableNamespace","RowTypeConflictKnown"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.rename_table.target.valid","metadata": {"reason_code": "destination_relation_conflict"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation and file identity","sql": "SELECT count(*) FROM ((TABLE pgns_rename_relation.receipt EXCEPT (SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_rename_relation','pgns_rename_relation_dst') AND c.relname NOT IN ('receipt','types_receipt'))) UNION ALL ((SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_rename_relation','pgns_rename_relation_dst') AND c.relname NOT IN ('receipt','types_receipt')) EXCEPT TABLE pgns_rename_relation.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type names and array links","sql": "SELECT count(*) FROM ((TABLE pgns_rename_relation.types_receipt EXCEPT (SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_rename_relation','pgns_rename_relation_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt'))) UNION ALL ((SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_rename_relation','pgns_rename_relation_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')) EXCEPT TABLE pgns_rename_relation.types_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgns_rename_relation.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgns_rename_relation.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42P07","sql": "\\set VERBOSITY verbose\nALTER TABLE pgns_rename_relation.t RENAME TO taken","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P07:"]},
+    {"name": "native refusal 42P07","sql": "\\set VERBOSITY verbose\nALTER TABLE pgns_rename_relation.t RENAME TO t","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P07:"]}
+   ],
+   "structure": [
+    {"assert": "original table files retained","sql": "SELECT c.relfilenode=r.relfilenode FROM pg_class c JOIN pgns_rename_relation.receipt r ON r.oid=c.oid WHERE c.oid='pgns_rename_relation.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_rename_relation CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_rename_relation'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-namespace-rename-type",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-namespace-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgns_rename_type"},
+   "fixture": {"cleanup": [{"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_rename_type CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_rename_type'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgns_rename_type.t RENAME TO occupied_type",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source schema absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_rename_type'","expect": "0"}]},
+    {"name": "claim source schema","fixture_key": "source","creates_fixture": true,"sql": "CREATE SCHEMA pgns_rename_type","expect_rc": 0},
+    {"name": "seed and capture relations and types","sql": "CREATE TABLE pgns_rename_type.t(id int,payload text); INSERT INTO pgns_rename_type.t VALUES(1,'keep'); CREATE SEQUENCE pgns_rename_type.guard START 7; CREATE TYPE pgns_rename_type.occupied_type AS ENUM ('fixture'); CREATE TABLE pgns_rename_type.receipt AS SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_rename_type','pgns_rename_type_dst') AND c.relname NOT IN ('receipt','types_receipt'); CREATE TABLE pgns_rename_type.types_receipt AS SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_rename_type','pgns_rename_type_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.rename_table.forbid","level": "blocker"},{"index": 0,"rule_id": "ddl.pg.alter.rename_table.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableNamespace","RowTypeConflictKnown"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.rename_table.target.valid","metadata": {"reason_code": "destination_row_type_conflict"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation and file identity","sql": "SELECT count(*) FROM ((TABLE pgns_rename_type.receipt EXCEPT (SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_rename_type','pgns_rename_type_dst') AND c.relname NOT IN ('receipt','types_receipt'))) UNION ALL ((SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_rename_type','pgns_rename_type_dst') AND c.relname NOT IN ('receipt','types_receipt')) EXCEPT TABLE pgns_rename_type.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type names and array links","sql": "SELECT count(*) FROM ((TABLE pgns_rename_type.types_receipt EXCEPT (SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_rename_type','pgns_rename_type_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt'))) UNION ALL ((SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_rename_type','pgns_rename_type_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')) EXCEPT TABLE pgns_rename_type.types_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgns_rename_type.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgns_rename_type.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42710","sql": "\\set VERBOSITY verbose\nALTER TABLE pgns_rename_type.t RENAME TO occupied_type","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42710:"]}
+   ],
+   "structure": [
+    {"assert": "original table files retained","sql": "SELECT c.relfilenode=r.relfilenode FROM pg_class c JOIN pgns_rename_type.receipt r ON r.oid=c.oid WHERE c.oid='pgns_rename_type.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_rename_type CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_rename_type'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-namespace-rename-array",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-namespace-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgns_rename_array"},
+   "fixture": {"cleanup": [{"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_rename_array CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_rename_array'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgns_rename_array.t RENAME TO _fixture_elem",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source schema absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_rename_array'","expect": "0"}]},
+    {"name": "claim source schema","fixture_key": "source","creates_fixture": true,"sql": "CREATE SCHEMA pgns_rename_array","expect_rc": 0},
+    {"name": "seed and capture relations and types","sql": "CREATE TABLE pgns_rename_array.t(id int,payload text); INSERT INTO pgns_rename_array.t VALUES(1,'keep'); CREATE SEQUENCE pgns_rename_array.guard START 7; CREATE TYPE pgns_rename_array.fixture_elem AS ENUM ('fixture'); CREATE TABLE pgns_rename_array.receipt AS SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_rename_array','pgns_rename_array_dst') AND c.relname NOT IN ('receipt','types_receipt'); CREATE TABLE pgns_rename_array.types_receipt AS SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_rename_array','pgns_rename_array_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.rename_table.forbid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableNamespace","RowTypeConflictKnown"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation and file identity","sql": "SELECT count(*) FROM ((TABLE pgns_rename_array.receipt EXCEPT (SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_rename_array','pgns_rename_array_dst') AND c.relname NOT IN ('receipt','types_receipt'))) UNION ALL ((SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_rename_array','pgns_rename_array_dst') AND c.relname NOT IN ('receipt','types_receipt')) EXCEPT TABLE pgns_rename_array.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type names and array links","sql": "SELECT count(*) FROM ((TABLE pgns_rename_array.types_receipt EXCEPT (SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_rename_array','pgns_rename_array_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt'))) UNION ALL ((SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_rename_array','pgns_rename_array_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')) EXCEPT TABLE pgns_rename_array.types_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgns_rename_array.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgns_rename_array.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgns_rename_array.t RENAME TO _fixture_elem","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native table retained its identity under the array name","sql": "SELECT c.relname,r.relfilenode=c.relfilenode FROM pg_class c JOIN pgns_rename_array.receipt r ON r.oid=c.oid WHERE r.relname='t'","expect": "_fixture_elem|t"},
+    {"assert": "original array was relocated","sql": "SELECT a.typname<>'_fixture_elem' FROM pg_type e JOIN pg_type a ON a.oid=e.typarray WHERE e.oid='pgns_rename_array.fixture_elem'::regtype","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_rename_array CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_rename_array'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-namespace-rename-exact",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-namespace-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgns_rename_exact"},
+   "fixture": {"cleanup": [{"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_rename_exact CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_rename_exact'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgns_rename_exact.\" T \" RENAME TO \" t \"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source schema absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_rename_exact'","expect": "0"}]},
+    {"name": "claim source schema","fixture_key": "source","creates_fixture": true,"sql": "CREATE SCHEMA pgns_rename_exact","expect_rc": 0},
+    {"name": "seed and capture relations and types","sql": "CREATE TABLE pgns_rename_exact.t(id int,payload text); INSERT INTO pgns_rename_exact.t VALUES(1,'keep'); CREATE SEQUENCE pgns_rename_exact.guard START 7; CREATE TABLE pgns_rename_exact.\" T \"(id int); CREATE TABLE pgns_rename_exact.receipt AS SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_rename_exact','pgns_rename_exact_dst') AND c.relname NOT IN ('receipt','types_receipt'); CREATE TABLE pgns_rename_exact.types_receipt AS SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_rename_exact','pgns_rename_exact_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.rename_table.forbid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableNamespace","RowTypeConflictKnown"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation and file identity","sql": "SELECT count(*) FROM ((TABLE pgns_rename_exact.receipt EXCEPT (SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_rename_exact','pgns_rename_exact_dst') AND c.relname NOT IN ('receipt','types_receipt'))) UNION ALL ((SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_rename_exact','pgns_rename_exact_dst') AND c.relname NOT IN ('receipt','types_receipt')) EXCEPT TABLE pgns_rename_exact.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type names and array links","sql": "SELECT count(*) FROM ((TABLE pgns_rename_exact.types_receipt EXCEPT (SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_rename_exact','pgns_rename_exact_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt'))) UNION ALL ((SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_rename_exact','pgns_rename_exact_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')) EXCEPT TABLE pgns_rename_exact.types_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgns_rename_exact.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgns_rename_exact.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgns_rename_exact.\" T \" RENAME TO \" t \"","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native rename keeps quoted whitespace and case","sql": "SELECT c.relname=' t ' AND c.relfilenode=r.relfilenode FROM pg_class c JOIN pgns_rename_exact.receipt r ON r.oid=c.oid WHERE r.relname=' T '","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_rename_exact CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_rename_exact'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-namespace-schema-missing",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-namespace-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgns_schema_missing"},
+   "fixture": {"cleanup": [{"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_schema_missing CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_missing'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgns_schema_missing.t SET SCHEMA missing_d15",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source schema absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_missing'","expect": "0"}]},
+    {"name": "claim source schema","fixture_key": "source","creates_fixture": true,"sql": "CREATE SCHEMA pgns_schema_missing","expect_rc": 0},
+    {"name": "seed and capture relations and types","sql": "CREATE TABLE pgns_schema_missing.t(id int,payload text); INSERT INTO pgns_schema_missing.t VALUES(1,'keep'); CREATE SEQUENCE pgns_schema_missing.guard START 7; CREATE TABLE pgns_schema_missing.receipt AS SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_schema_missing','pgns_schema_missing_dst') AND c.relname NOT IN ('receipt','types_receipt'); CREATE TABLE pgns_schema_missing.types_receipt AS SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_schema_missing','pgns_schema_missing_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.advisory","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableNamespace","RowTypeConflictKnown"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","metadata": {"reason_code": "destination_schema_absent"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation and file identity","sql": "SELECT count(*) FROM ((TABLE pgns_schema_missing.receipt EXCEPT (SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_schema_missing','pgns_schema_missing_dst') AND c.relname NOT IN ('receipt','types_receipt'))) UNION ALL ((SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_schema_missing','pgns_schema_missing_dst') AND c.relname NOT IN ('receipt','types_receipt')) EXCEPT TABLE pgns_schema_missing.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type names and array links","sql": "SELECT count(*) FROM ((TABLE pgns_schema_missing.types_receipt EXCEPT (SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_schema_missing','pgns_schema_missing_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt'))) UNION ALL ((SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_schema_missing','pgns_schema_missing_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')) EXCEPT TABLE pgns_schema_missing.types_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgns_schema_missing.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgns_schema_missing.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 3F000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgns_schema_missing.t SET SCHEMA missing_d15","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  3F000:"]}
+   ],
+   "structure": [
+    {"assert": "original table files retained","sql": "SELECT c.relfilenode=r.relfilenode FROM pg_class c JOIN pgns_schema_missing.receipt r ON r.oid=c.oid WHERE c.oid='pgns_schema_missing.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_schema_missing CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_missing'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-namespace-schema-same",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-namespace-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgns_schema_same"},
+   "fixture": {"cleanup": [{"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_schema_same CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_same'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgns_schema_same.t SET SCHEMA pgns_schema_same",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source schema absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_same'","expect": "0"}]},
+    {"name": "claim source schema","fixture_key": "source","creates_fixture": true,"sql": "CREATE SCHEMA pgns_schema_same","expect_rc": 0},
+    {"name": "seed and capture relations and types","sql": "CREATE TABLE pgns_schema_same.t(id int,payload text); INSERT INTO pgns_schema_same.t VALUES(1,'keep'); CREATE SEQUENCE pgns_schema_same.guard START 7; CREATE TABLE pgns_schema_same.receipt AS SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_schema_same','pgns_schema_same_dst') AND c.relname NOT IN ('receipt','types_receipt'); CREATE TABLE pgns_schema_same.types_receipt AS SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_schema_same','pgns_schema_same_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.advisory","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableNamespace","RowTypeConflictKnown","requests relocation on PostgreSQL"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation and file identity","sql": "SELECT count(*) FROM ((TABLE pgns_schema_same.receipt EXCEPT (SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_schema_same','pgns_schema_same_dst') AND c.relname NOT IN ('receipt','types_receipt'))) UNION ALL ((SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_schema_same','pgns_schema_same_dst') AND c.relname NOT IN ('receipt','types_receipt')) EXCEPT TABLE pgns_schema_same.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type names and array links","sql": "SELECT count(*) FROM ((TABLE pgns_schema_same.types_receipt EXCEPT (SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_schema_same','pgns_schema_same_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt'))) UNION ALL ((SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_schema_same','pgns_schema_same_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')) EXCEPT TABLE pgns_schema_same.types_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgns_schema_same.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgns_schema_same.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgns_schema_same.t SET SCHEMA pgns_schema_same","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "original table files retained","sql": "SELECT c.relfilenode=r.relfilenode FROM pg_class c JOIN pgns_schema_same.receipt r ON r.oid=c.oid WHERE c.oid='pgns_schema_same.t'::regclass","expect": "t"},
+    {"assert": "source namespace unchanged","sql": "SELECT c.relnamespace=r.relnamespace FROM pg_class c JOIN pgns_schema_same.receipt r ON r.oid=c.oid WHERE c.oid='pgns_schema_same.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_schema_same CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_same'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-namespace-schema-relation",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-namespace-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgns_schema_relation"},
+   "fixture": {"cleanup": [{"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_schema_relation CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_relation'","expect": "0"}},{"name": "remove owned destination schema","fixture_key": "destination","sql": "DROP SCHEMA pgns_schema_relation_dst CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_relation_dst'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgns_schema_relation.t SET SCHEMA pgns_schema_relation_dst",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source schema absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_relation'","expect": "0"}]},
+    {"name": "claim source schema","fixture_key": "source","creates_fixture": true,"sql": "CREATE SCHEMA pgns_schema_relation","expect_rc": 0},
+    {"name": "prove destination schema absent","fixture_key": "destination","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_relation_dst'","expect": "0"}]},
+    {"name": "claim destination schema","fixture_key": "destination","creates_fixture": true,"sql": "CREATE SCHEMA pgns_schema_relation_dst","expect_rc": 0},
+    {"name": "seed and capture relations and types","sql": "CREATE TABLE pgns_schema_relation.t(id int,payload text); INSERT INTO pgns_schema_relation.t VALUES(1,'keep'); CREATE SEQUENCE pgns_schema_relation.guard START 7; CREATE SEQUENCE pgns_schema_relation_dst.t; CREATE TABLE pgns_schema_relation.receipt AS SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_schema_relation','pgns_schema_relation_dst') AND c.relname NOT IN ('receipt','types_receipt'); CREATE TABLE pgns_schema_relation.types_receipt AS SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_schema_relation','pgns_schema_relation_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.advisory","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableNamespace","RowTypeConflictKnown"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","metadata": {"reason_code": "destination_relation_conflict"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation and file identity","sql": "SELECT count(*) FROM ((TABLE pgns_schema_relation.receipt EXCEPT (SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_schema_relation','pgns_schema_relation_dst') AND c.relname NOT IN ('receipt','types_receipt'))) UNION ALL ((SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_schema_relation','pgns_schema_relation_dst') AND c.relname NOT IN ('receipt','types_receipt')) EXCEPT TABLE pgns_schema_relation.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type names and array links","sql": "SELECT count(*) FROM ((TABLE pgns_schema_relation.types_receipt EXCEPT (SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_schema_relation','pgns_schema_relation_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt'))) UNION ALL ((SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_schema_relation','pgns_schema_relation_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')) EXCEPT TABLE pgns_schema_relation.types_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgns_schema_relation.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgns_schema_relation.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42P07","sql": "\\set VERBOSITY verbose\nALTER TABLE pgns_schema_relation.t SET SCHEMA pgns_schema_relation_dst","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P07:"]}
+   ],
+   "structure": [
+    {"assert": "original table files retained","sql": "SELECT c.relfilenode=r.relfilenode FROM pg_class c JOIN pgns_schema_relation.receipt r ON r.oid=c.oid WHERE c.oid='pgns_schema_relation.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_schema_relation CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_relation'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove owned destination schema","fixture_key": "destination","sql": "DROP SCHEMA pgns_schema_relation_dst CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_relation_dst'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-namespace-schema-type",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-namespace-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgns_schema_type"},
+   "fixture": {"cleanup": [{"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_schema_type CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_type'","expect": "0"}},{"name": "remove owned destination schema","fixture_key": "destination","sql": "DROP SCHEMA pgns_schema_type_dst CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_type_dst'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgns_schema_type.t SET SCHEMA pgns_schema_type_dst",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source schema absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_type'","expect": "0"}]},
+    {"name": "claim source schema","fixture_key": "source","creates_fixture": true,"sql": "CREATE SCHEMA pgns_schema_type","expect_rc": 0},
+    {"name": "prove destination schema absent","fixture_key": "destination","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_type_dst'","expect": "0"}]},
+    {"name": "claim destination schema","fixture_key": "destination","creates_fixture": true,"sql": "CREATE SCHEMA pgns_schema_type_dst","expect_rc": 0},
+    {"name": "seed and capture relations and types","sql": "CREATE TABLE pgns_schema_type.t(id int,payload text); INSERT INTO pgns_schema_type.t VALUES(1,'keep'); CREATE SEQUENCE pgns_schema_type.guard START 7; CREATE TYPE pgns_schema_type_dst.t AS ENUM ('fixture'); CREATE TABLE pgns_schema_type.receipt AS SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_schema_type','pgns_schema_type_dst') AND c.relname NOT IN ('receipt','types_receipt'); CREATE TABLE pgns_schema_type.types_receipt AS SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_schema_type','pgns_schema_type_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.advisory","level": "notice"},{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableNamespace","RowTypeConflictKnown"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","metadata": {"reason_code": "destination_row_type_conflict"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation and file identity","sql": "SELECT count(*) FROM ((TABLE pgns_schema_type.receipt EXCEPT (SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_schema_type','pgns_schema_type_dst') AND c.relname NOT IN ('receipt','types_receipt'))) UNION ALL ((SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_schema_type','pgns_schema_type_dst') AND c.relname NOT IN ('receipt','types_receipt')) EXCEPT TABLE pgns_schema_type.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type names and array links","sql": "SELECT count(*) FROM ((TABLE pgns_schema_type.types_receipt EXCEPT (SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_schema_type','pgns_schema_type_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt'))) UNION ALL ((SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_schema_type','pgns_schema_type_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')) EXCEPT TABLE pgns_schema_type.types_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgns_schema_type.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgns_schema_type.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42710","sql": "\\set VERBOSITY verbose\nALTER TABLE pgns_schema_type.t SET SCHEMA pgns_schema_type_dst","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42710:"]}
+   ],
+   "structure": [
+    {"assert": "original table files retained","sql": "SELECT c.relfilenode=r.relfilenode FROM pg_class c JOIN pgns_schema_type.receipt r ON r.oid=c.oid WHERE c.oid='pgns_schema_type.t'::regclass","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_schema_type CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_type'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove owned destination schema","fixture_key": "destination","sql": "DROP SCHEMA pgns_schema_type_dst CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_type_dst'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-namespace-schema-move",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-namespace-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgns_schema_move"},
+   "fixture": {"cleanup": [{"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_schema_move CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_move'","expect": "0"}},{"name": "remove owned destination schema","fixture_key": "destination","sql": "DROP SCHEMA pgns_schema_move_dst CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_move_dst'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgns_schema_move.t SET SCHEMA pgns_schema_move_dst",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source schema absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_move'","expect": "0"}]},
+    {"name": "claim source schema","fixture_key": "source","creates_fixture": true,"sql": "CREATE SCHEMA pgns_schema_move","expect_rc": 0},
+    {"name": "prove destination schema absent","fixture_key": "destination","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_move_dst'","expect": "0"}]},
+    {"name": "claim destination schema","fixture_key": "destination","creates_fixture": true,"sql": "CREATE SCHEMA pgns_schema_move_dst","expect_rc": 0},
+    {"name": "seed and capture relations and types","sql": "CREATE TABLE pgns_schema_move.t(id int,payload text); INSERT INTO pgns_schema_move.t VALUES(1,'keep'); CREATE SEQUENCE pgns_schema_move.guard START 7; CREATE TABLE pgns_schema_move_dst.other(id int); CREATE INDEX owned_index ON pgns_schema_move_dst.other(id); CREATE INDEX owned_index ON pgns_schema_move.t(id); CREATE TABLE pgns_schema_move.receipt AS SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_schema_move','pgns_schema_move_dst') AND c.relname NOT IN ('receipt','types_receipt'); CREATE TABLE pgns_schema_move.types_receipt AS SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_schema_move','pgns_schema_move_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.advisory","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableNamespace","RowTypeConflictKnown"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation and file identity","sql": "SELECT count(*) FROM ((TABLE pgns_schema_move.receipt EXCEPT (SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_schema_move','pgns_schema_move_dst') AND c.relname NOT IN ('receipt','types_receipt'))) UNION ALL ((SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_schema_move','pgns_schema_move_dst') AND c.relname NOT IN ('receipt','types_receipt')) EXCEPT TABLE pgns_schema_move.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type names and array links","sql": "SELECT count(*) FROM ((TABLE pgns_schema_move.types_receipt EXCEPT (SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_schema_move','pgns_schema_move_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt'))) UNION ALL ((SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_schema_move','pgns_schema_move_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')) EXCEPT TABLE pgns_schema_move.types_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgns_schema_move.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgns_schema_move.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42P07","sql": "\\set VERBOSITY verbose\nALTER TABLE pgns_schema_move.t SET SCHEMA pgns_schema_move_dst","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P07:"]},
+    {"name": "native statement succeeds","sql": "DROP INDEX pgns_schema_move_dst.owned_index","expect_rc": 0},
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgns_schema_move.t SET SCHEMA pgns_schema_move_dst","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native move preserves table identity and file","sql": "SELECT c.relnamespace='pgns_schema_move_dst'::regnamespace AND c.relfilenode=r.relfilenode FROM pg_class c JOIN pgns_schema_move.receipt r ON r.oid=c.oid WHERE r.relname='t'","expect": "t"},
+    {"assert": "native move retains data","sql": "SELECT id::text||':'||payload FROM pgns_schema_move_dst.t","expect": "1:keep"}
+   ],
+   "teardown": [
+    {"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_schema_move CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_move'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove owned destination schema","fixture_key": "destination","sql": "DROP SCHEMA pgns_schema_move_dst CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_schema_move_dst'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-namespace-freshness",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-namespace-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgns_freshness"},
+   "fixture": {"cleanup": [{"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_freshness CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_freshness'","expect": "0"}},{"name": "remove owned destination schema","fixture_key": "destination","sql": "DROP SCHEMA pgns_freshness_dst CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_freshness_dst'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgns_freshness.t ADD COLUMN added int;ALTER TABLE pgns_freshness.t RENAME TO taken;ALTER TABLE pgns_freshness.t RENAME COLUMN IF EXISTS id TO moved;ALTER TABLE pgns_freshness.t SET SCHEMA pgns_freshness_dst",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source schema absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_freshness'","expect": "0"}]},
+    {"name": "claim source schema","fixture_key": "source","creates_fixture": true,"sql": "CREATE SCHEMA pgns_freshness","expect_rc": 0},
+    {"name": "prove destination schema absent","fixture_key": "destination","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_freshness_dst'","expect": "0"}]},
+    {"name": "claim destination schema","fixture_key": "destination","creates_fixture": true,"sql": "CREATE SCHEMA pgns_freshness_dst","expect_rc": 0},
+    {"name": "seed and capture relations and types","sql": "CREATE TABLE pgns_freshness.t(id int,payload text); INSERT INTO pgns_freshness.t VALUES(1,'keep'); CREATE SEQUENCE pgns_freshness.guard START 7; CREATE TABLE pgns_freshness.receipt AS SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_freshness','pgns_freshness_dst') AND c.relname NOT IN ('receipt','types_receipt'); CREATE TABLE pgns_freshness.types_receipt AS SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_freshness','pgns_freshness_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 2,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": ["complete","unverified","unverified"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 1,"rule_id": "ddl.alter.rename_table.forbid","level": "blocker"},{"index": 2,"rule_id": "ddl.pg.alter.set_schema.advisory","level": "notice"}],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.pg.alter.rename_table.target.valid","reason_code": "unproven_table_namespace_destination","required_facts": ["target_table.pg_namespace_destination"]},{"index": 2,"rule_id": "ddl.pg.alter.set_schema.target.valid","reason_code": "unproven_table_namespace_destination","required_facts": ["target_table.pg_namespace_destination"]}],
+    "serialized_not_contains": ["PGTableNamespace","RowTypeConflictKnown"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation and file identity","sql": "SELECT count(*) FROM ((TABLE pgns_freshness.receipt EXCEPT (SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_freshness','pgns_freshness_dst') AND c.relname NOT IN ('receipt','types_receipt'))) UNION ALL ((SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_freshness','pgns_freshness_dst') AND c.relname NOT IN ('receipt','types_receipt')) EXCEPT TABLE pgns_freshness.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type names and array links","sql": "SELECT count(*) FROM ((TABLE pgns_freshness.types_receipt EXCEPT (SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_freshness','pgns_freshness_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt'))) UNION ALL ((SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_freshness','pgns_freshness_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')) EXCEPT TABLE pgns_freshness.types_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgns_freshness.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgns_freshness.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgns_freshness.t ADD COLUMN added int","expect_rc": 0},
+    {"name": "native refusal 42601","sql": "\\set VERBOSITY verbose\nALTER TABLE pgns_freshness.t RENAME COLUMN IF EXISTS id TO moved","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42601:"]},
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgns_freshness.t SET SCHEMA pgns_freshness_dst","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native predecessor column is present","sql": "SELECT EXISTS(SELECT FROM pg_attribute WHERE attrelid='pgns_freshness_dst.t'::regclass AND attname='added')","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_freshness CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_freshness'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove owned destination schema","fixture_key": "destination","sql": "DROP SCHEMA pgns_freshness_dst CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_freshness_dst'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-table-namespace-guard-absent",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-table-namespace-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgns_guard_absent"},
+   "fixture": {"cleanup": [{"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_guard_absent CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_guard_absent'","expect": "0"}}]},
+   "sql": "ALTER TABLE IF EXISTS pgns_guard_absent.missing SET SCHEMA missing_d15",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source schema absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_guard_absent'","expect": "0"}]},
+    {"name": "claim source schema","fixture_key": "source","creates_fixture": true,"sql": "CREATE SCHEMA pgns_guard_absent","expect_rc": 0},
+    {"name": "seed and capture relations and types","sql": "CREATE TABLE pgns_guard_absent.t(id int,payload text); INSERT INTO pgns_guard_absent.t VALUES(1,'keep'); CREATE SEQUENCE pgns_guard_absent.guard START 7; CREATE TABLE pgns_guard_absent.receipt AS SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_guard_absent','pgns_guard_absent_dst') AND c.relname NOT IN ('receipt','types_receipt'); CREATE TABLE pgns_guard_absent.types_receipt AS SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_guard_absent','pgns_guard_absent_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.advisory","level": "notice"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGTableNamespace","RowTypeConflictKnown"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact relation and file identity","sql": "SELECT count(*) FROM ((TABLE pgns_guard_absent.receipt EXCEPT (SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_guard_absent','pgns_guard_absent_dst') AND c.relname NOT IN ('receipt','types_receipt'))) UNION ALL ((SELECT c.oid,c.relnamespace,c.relname,c.relkind,c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('pgns_guard_absent','pgns_guard_absent_dst') AND c.relname NOT IN ('receipt','types_receipt')) EXCEPT TABLE pgns_guard_absent.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type names and array links","sql": "SELECT count(*) FROM ((TABLE pgns_guard_absent.types_receipt EXCEPT (SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_guard_absent','pgns_guard_absent_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt'))) UNION ALL ((SELECT t.oid,t.typnamespace,t.typname,t.typelem,t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN ('pgns_guard_absent','pgns_guard_absent_dst') AND t.typname NOT IN ('receipt','_receipt','types_receipt','_types_receipt')) EXCEPT TABLE pgns_guard_absent.types_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgns_guard_absent.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgns_guard_absent.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE IF EXISTS pgns_guard_absent.missing SET SCHEMA missing_d15","expect_rc": 0},
+    {"name": "native statement succeeds","sql": "ALTER TABLE IF EXISTS pgns_guard_absent.missing RENAME TO t","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "bound absent relation stayed absent","sql": "SELECT to_regclass('pgns_guard_absent.missing') IS NULL","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned source schema","fixture_key": "source","sql": "DROP SCHEMA pgns_guard_absent CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgns_guard_absent'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
   {
    "id": "pg-column-type-source-missing",
    "anchor": "postgres17",
@@ -8859,6 +9437,19 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.table-namespace-destination-offline",
+  "T37.cli.table-namespace-destination-disabled",
+  "T37.meta.pg-table-namespace-rename-relation",
+  "T37.meta.pg-table-namespace-rename-type",
+  "T37.meta.pg-table-namespace-rename-array",
+  "T37.meta.pg-table-namespace-rename-exact",
+  "T37.meta.pg-table-namespace-schema-missing",
+  "T37.meta.pg-table-namespace-schema-same",
+  "T37.meta.pg-table-namespace-schema-relation",
+  "T37.meta.pg-table-namespace-schema-type",
+  "T37.meta.pg-table-namespace-schema-move",
+  "T37.meta.pg-table-namespace-freshness",
+  "T37.meta.pg-table-namespace-guard-absent",
   "T37.cli.column-type-source-offline",
   "T37.cli.column-type-source-disabled",
   "T37.meta.pg-column-type-source-missing",

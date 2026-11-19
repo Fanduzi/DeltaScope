@@ -66,6 +66,20 @@ Preserve prior cases and profiles. Bind only the original RENAME TO and SET
 SCHEMA inventory evidence cells. Each live case checks catalogs, file, data
 and an unrelated sequence before its independent native execution.
 
+## Evidence bindings
+
+`35157dfe` binds the private destination observation. `c71c189a` adds both
+approved rules and the current-schema branch of the existing notice. The
+focused T37 candidate passed 258/258 and 6001 assertions. All 245 original
+cases and profiles are preserved. Thirteen additions include seventeen
+native steps, with nine successes and eight exact refusals. The attached
+index conflict case also proves that passing the primary destination checks
+does not certify the complete relocation.
+
+Each original RENAME TO or SET SCHEMA cell gains nine evidence references.
+Existing row and subaction classifications and denominators are preserved.
+Final acceptance depends on the full run at the committed candidate SHA.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

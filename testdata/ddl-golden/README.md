@@ -3,6 +3,13 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D15 PostgreSQL ordinary-table rename and schema destinations
+
+D15 preserves all 245 prior T37 cases and their profiles. Thirteen additions
+bring focused T37 to 258/258 with 6001 assertions. Seventeen native steps include
+nine successes and eight precise refusals. See the
+[decision](../../docs/decisions/2026-11-18-postgresql-table-namespace-destination.md).
+
 ## T37 D14 PostgreSQL ALTER COLUMN TYPE source checks
 
 D14 preserves all 236 prior T37 cases and policy profiles. Nine additions
