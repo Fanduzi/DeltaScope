@@ -11,6 +11,10 @@ include seven successes and four precise SQLSTATE refusals. The same-method
 and bare DEFAULT cases independently compare the table method and file identity.
 See the [decision](../../docs/decisions/2026-11-18-postgresql-table-access-method.md).
 
+The final fixed `28de6dc5` run passed all 50 tasks, 3555 cases and 63982
+assertions with validation and no failures or skips. All five exact-SHA CI
+checks passed. The decision record links the artifact and CI.
+
 ## T37 D11 PostgreSQL single-table tablespace destinations
 
 D11 retains the 203 earlier T37 cases and their profiles. Ten additions bring

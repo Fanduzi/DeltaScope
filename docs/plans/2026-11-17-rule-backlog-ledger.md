@@ -493,6 +493,23 @@ same-method wording. Focused T37 passed 223/223 and 4943 assertions with eleven
 native controls. Only the original SET ACCESS METHOD evidence cell changes.
 See the [decision](../decisions/2026-11-18-postgresql-table-access-method.md).
 
+D12 shipped at `28de6dc545bb007246513f606e9ed802903515f4` from
+`42259221dd283c5a46f87934a9806716ad44fae2` via fast-forward and normal push.
+The final SHA passed 50 canonical tasks, all 3555 cases and 63982 assertions,
+with zero failures or skips. T37 passed 223/223 with 4943 assertions and 11
+native steps, including seven successes and four precise refusals. Validator,
+independent read-only review, candidate and merged-root gates, and owned
+cleanup passed. Worktrees, original workspace status and 16 unrelated
+container identities were preserved. The final task changed seven paths and
+the milestone changed 39.
+
+- [Go, PostgreSQL and lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44465411159)
+- [CLI TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44465411176)
+- [Pages](https://github.com/Fanduzi/DeltaScope/runs/135361995843)
+
+Final artifact: `/tmp/ddl-golden-pg-table-access-method-final-28de6dc5/all/artifact.json`.
+These results belong to the shipped D12 SHA. Other F09 dimensions stay open.
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.
@@ -566,7 +583,7 @@ insufficient.
 | F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 bounded system/ordering evidence delivered; D8 exact ADD/RENAME target and guard evidence delivered; TYPE/USING and broader eligibility/order remain open |
 | F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 generation and D6 statistics/options delivered with accepted gaps; D7 bounded storage/compression/system delivered, broader data/expression/current/kind scopes open |
 | F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; remaining dimensions open |
-| F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | partial:D9 bounded attachment delivered; D10 bounded heap declarations delivered; D11 single-table tablespace delivered; D12 ordinary-table methods in verification; other dimensions open |
+| F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | partial:D9 bounded attachment delivered; D10 bounded heap declarations delivered; D11 single-table tablespace delivered; D12 ordinary-table methods delivered; other dimensions open |
 | F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | unreviewed |
 | F10 | `postgresql.drop-table` | DROP TABLE; IF EXISTS / multi-target | unreviewed |
 | F10 | `postgresql.truncate-table` | TRUNCATE basic; RESTART/CONTINUE IDENTITY; ONLY / CASCADE | unreviewed |

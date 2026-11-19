@@ -72,6 +72,25 @@ full run is required for delivery.
 Eleven selectors bind the original `SET ACCESS METHOD` cell. The generated
 matrix preserves the row and subaction classifications and denominators.
 
+## Delivered verification
+
+D12 shipped at `28de6dc545bb007246513f606e9ed802903515f4` from
+`42259221dd283c5a46f87934a9806716ad44fae2` via fast-forward and normal push.
+The final SHA passed 50 canonical tasks, all 3555 cases and 63982 assertions,
+with zero failures or skips. T37 passed 223/223 with 4943 assertions and 11
+native steps, including seven successes and four precise refusals. Validator,
+independent read-only review, candidate and merged-root gates, and owned
+cleanup passed. Worktrees, original workspace status and 16 unrelated
+container identities were preserved. The final task changed seven paths and
+the milestone changed 39.
+
+- [Go, PostgreSQL and lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44465411159)
+- [CLI TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44465411176)
+- [Pages](https://github.com/Fanduzi/DeltaScope/runs/135361995843)
+
+Final artifact: `/tmp/ddl-golden-pg-table-access-method-final-28de6dc5/all/artifact.json`.
+These results belong to the shipped D12 SHA. Other F09 dimensions stay open.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
