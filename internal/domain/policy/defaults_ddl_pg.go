@@ -150,6 +150,11 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.alter.tablespace.target.valid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
 		"ddl.pg.alter.set_tablespace.notice": {
 			Enabled: true,
 			Level:   rule.LevelNotice,

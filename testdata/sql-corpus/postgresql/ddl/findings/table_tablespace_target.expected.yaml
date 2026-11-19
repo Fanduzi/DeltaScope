@@ -1,0 +1,19 @@
+name: table_tablespace_target
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    t:
+      exists: true
+      pg_relation: {name: t, kind: r}
+      pg_columns: {ordinary: true, columns: []}
+  pg_table_tablespaces:
+    - {schema: app, table: t, name: missing_space, exists: false}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.tablespace.target.valid, ddl.pg.alter.set_tablespace.notice]

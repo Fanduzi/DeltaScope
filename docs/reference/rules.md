@@ -963,7 +963,7 @@ These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-sa
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
-| `ddl.pg.alter.set_tablespace.notice` | `ALTER TABLE ... SET TABLESPACE` moves the table to a different tablespace — informational notice | notice | No |
+| `ddl.pg.alter.set_tablespace.notice` | `ALTER TABLE ... SET TABLESPACE` describes the request and recognizes proven same-space selection | notice | No |
 | `ddl.pg.alter.set_access_method.warn` | `ALTER TABLE ... SET ACCESS METHOD` changes the table access method — warns about rewrite and compatibility implications | warning | No |
 
 ### Trigger / Rule Residual (v0.130.0)
@@ -1343,6 +1343,16 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 ### PostgreSQL Boundary Support-Readiness Gate (v0.32.0)
 
 `v0.32.0` is the **PostgreSQL Boundary Support-Readiness Gate**. It is a decision milestone, not a feature release. No new rule IDs were added. Characterization tests document stable AST facts about generated and identity columns; a readiness report recommends `v0.33.0` as a narrow fact-preservation pack. No production extractor, spec, rule, or policy code changed.
+
+### PostgreSQL single-table tablespace destinations
+
+`ddl.pg.alter.tablespace.target.valid` is a default blocker. For observed
+PostgreSQL 17, it checks a fresh exact schema-qualified ordinary persistent
+non-typed table with nonshared, nonmapped storage. A missing destination or
+`pg_global` is rejected. Unbound or stale facts yield
+`unproven_table_tablespace`. The effective current location uses the actual
+database default for zero `reltablespace`. The existing notice identifies
+proven same-space selection and describes file moves conditionally.
 
 ### PostgreSQL heap table storage options
 

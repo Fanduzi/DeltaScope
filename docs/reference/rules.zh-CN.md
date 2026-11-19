@@ -902,7 +902,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
-| `ddl.pg.alter.set_tablespace.notice` | `ALTER TABLE ... SET TABLESPACE` 将表移至不同表空间——信息性提示 | notice | 否 |
+| `ddl.pg.alter.set_tablespace.notice` | `ALTER TABLE ... SET TABLESPACE` 描述移动请求，并识别已证明的同表空间选择 | notice | 否 |
 | `ddl.pg.alter.set_access_method.warn` | `ALTER TABLE ... SET ACCESS METHOD` 更改表访问方法——警告 rewrite 和兼容性影响 | warning | 否 |
 
 ### Trigger / Rule 残留（v0.130.0）
@@ -1271,6 +1271,10 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 ### PostgreSQL 边界支持就绪门控（v0.32.0）
 
 `v0.32.0` 是 **PostgreSQL 边界支持就绪门控**。这是一个决策里程碑，不是功能发布。未新增规则 ID。Characterization 测试记录了 generated 和 identity 列的稳定 AST 事实；就绪报告推荐 `v0.33.0` 作为窄事实保留包。未变更任何生产 extractor、spec、rule 或 policy 代码。
+
+### PostgreSQL 单表表空间目标
+
+`ddl.pg.alter.tablespace.target.valid` 默认级别为 blocker。适用于已观测 PostgreSQL 17、限定名精确且目录新鲜的普通持久非类型表，排除共享及 mapped 关系。已证目标缺失或为 `pg_global` 时报告拒绝。证据缺失或过期时报告 `unproven_table_tablespace`。零值 `reltablespace` 对应实际数据库默认空间。既有提示在已证明同空间时说明文件不会被复制，其余情况以条件措辞描述文件移动。
 
 ### PostgreSQL heap 表存储选项
 

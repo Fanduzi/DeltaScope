@@ -134,6 +134,15 @@ The Go provider `PGConstraintState` alias and copied directory retain private fa
 
 Maintainer notes: [decision](../decisions/2026-11-17-postgresql-constraint-target-evidence.md). Other F09 dimensions remain open.
 
+### PostgreSQL single-table tablespace destinations
+
+The default `ddl.pg.alter.tablespace.target.valid` blocker checks destination
+presence and `pg_global` eligibility on a fresh exact PG17 ordinary persistent
+non-typed table with nonshared, nonmapped storage. The same-space comparison
+uses the table's effective current location and the database's actual default.
+The check leaves privilege, lock and capacity evidence to independent work.
+Bulk tablespace movement remains a separate scope.
+
 ### PostgreSQL heap table storage option declarations
 
 The default `ddl.pg.alter.reloptions.valid` blocker checks bounded SET/RESET
@@ -784,7 +793,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.alter.replica_identity_using_index.notice` | `ALTER TABLE ... REPLICA IDENTITY USING INDEX ...` uses a specific index for WAL old-row images — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.alter.set_logged.notice` | `ALTER TABLE ... SET LOGGED` changes an unlogged table to logged — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.alter.set_unlogged.notice` | `ALTER TABLE ... SET UNLOGGED` changes a logged table to unlogged — informational notice | ✓ | ✗ | notice |
-| `ddl.pg.alter.set_tablespace.notice` | `ALTER TABLE ... SET TABLESPACE` moves the table to a different tablespace — informational notice (v0.130.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.set_tablespace.notice` | `ALTER TABLE ... SET TABLESPACE` describes the request and recognizes proven same-space selection (introduced in v0.130.0) | ✓ | ✗ | notice |
 | `ddl.pg.alter.set_access_method.warn` | `ALTER TABLE ... SET ACCESS METHOD` changes the table access method — warns about rewrite and compatibility implications (v0.130.0) | ✓ | ✗ | warning |
 | `ddl.pg.alter.enable_replica_trigger.notice` | `ALTER TABLE ... ENABLE REPLICA TRIGGER` enables a trigger in replica mode — informational notice (v0.130.0) | ✓ | ✗ | notice |
 | `ddl.pg.alter.enable_always_trigger.notice` | `ALTER TABLE ... ENABLE ALWAYS TRIGGER` enables a trigger in always mode — informational notice (v0.130.0) | ✓ | ✗ | notice |

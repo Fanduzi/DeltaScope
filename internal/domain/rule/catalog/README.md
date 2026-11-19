@@ -11,6 +11,8 @@ The PostgreSQL replica identity catalog entry advertises default blocker and liv
 
 The PostgreSQL heap table reloptions entry advertises the default blocker and live catalog scope.
 
+The PostgreSQL single-table tablespace entry advertises the default blocker and live destination evidence.
+
 ## Files
 
 | File | Responsibility |

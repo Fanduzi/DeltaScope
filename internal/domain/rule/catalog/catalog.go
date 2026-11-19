@@ -234,6 +234,8 @@ func summaryForRule(ruleID string) string {
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	switch ruleID {
+	case "ddl.pg.alter.tablespace.target.valid":
+		return "Checks the named SET TABLESPACE destination for an observed, exactly bound PostgreSQL 17 ordinary table. Missing destinations and pg_global block. Unknown catalog evidence remains a gap."
 	case "ddl.pg.alter.reloptions.valid":
 		return "Checks bounded SET and RESET declarations for a fresh exact PostgreSQL 17 ordinary heap table. Known duplicate or invalid values block; unknown scope or options remain gaps."
 	case "ddl.pg.alter.replica_identity_using_index.valid":
@@ -948,6 +950,7 @@ func sourceForRule() string {
 const unknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
 
 var metadataAwareRuleIDs = map[string]bool{
+	"ddl.pg.alter.tablespace.target.valid":                 true,
 	"ddl.pg.alter.reloptions.valid":                        true,
 	"ddl.pg.alter.replica_identity_using_index.valid":      true,
 	"ddl.pg.alter.column.storage.valid":                    true,

@@ -333,12 +333,20 @@ func (r pgAlterStorageLayoutRule) Evaluate(ctx context.Context, statement spec.S
 		}
 		value := alter.Options[r.optionKey]
 		message := fmt.Sprintf(r.message, value)
+		why, risk := r.why, r.risk
+		if r.id == ruleIDPGAlterSetTablespaceNotice {
+			if facts := boundPGTableTablespace(statement); facts != nil && facts.Exists && !facts.Global && facts.SameKnown && facts.Same {
+				message = fmt.Sprintf("ALTER TABLE SET TABLESPACE %s selects the current tablespace on PostgreSQL", value)
+				why = "The requested tablespace is the table's current location. Selecting it does not copy table files."
+				risk = "PostgreSQL still checks the prerequisites and takes a lock on the table."
+			}
+		}
 		findings = append(findings, rule.Finding{
 			Level:   r.level,
 			Message: message,
 			Explanation: &rule.FindingExplanation{
-				Why:        r.why,
-				Risk:       r.risk,
+				Why:        why,
+				Risk:       risk,
 				Suggestion: r.suggestion,
 			},
 			Metadata: metadata,
@@ -350,9 +358,9 @@ func (r pgAlterStorageLayoutRule) Evaluate(ctx context.Context, statement spec.S
 func newSetTablespaceNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return newPGAlterStorageLayoutRule(
 		ruleIDPGAlterSetTablespaceNotice, rule.LevelNotice, "set_tablespace", "tablespace",
-		"ALTER TABLE SET TABLESPACE %s on PostgreSQL — table files will be moved",
-		"SET TABLESPACE moves all data files for the table to the named tablespace. This requires an ACCESS EXCLUSIVE lock and copies all data to the new location.",
-		"The table is inaccessible during the move. On large tables this can cause significant downtime. The target tablespace must have enough disk space.",
+		"ALTER TABLE SET TABLESPACE %s requests a destination on PostgreSQL",
+		"Changing the tablespace of a stored table can copy its files under an ACCESS EXCLUSIVE lock. Selecting the current tablespace leaves its files in place.",
+		"A physical move can block access and requires sufficient space at the destination.",
 		"Schedule during a maintenance window. Verify the target tablespace exists and has sufficient capacity. Consider whether the move is necessary or if the current tablespace is adequate.",
 		cfg,
 	)

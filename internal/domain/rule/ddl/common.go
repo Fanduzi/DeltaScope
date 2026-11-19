@@ -312,6 +312,7 @@ const (
 	ruleIDPGAlterReplicaIdentityUsingIndexNotice            = "ddl.pg.alter.replica_identity_using_index.notice"
 	ruleIDPGAlterLoggedNotice                               = "ddl.pg.alter.set_logged.notice"
 	ruleIDPGAlterUnloggedNotice                             = "ddl.pg.alter.set_unlogged.notice"
+	ruleIDPGAlterTableTablespaceTargetValid                 = "ddl.pg.alter.tablespace.target.valid"
 	ruleIDPGAlterSetTablespaceNotice                        = "ddl.pg.alter.set_tablespace.notice"
 	ruleIDPGAlterSetAccessMethodWarn                        = "ddl.pg.alter.set_access_method.warn"
 	ruleIDPGAlterEnableReplicaTriggerNotice                 = "ddl.pg.alter.enable_replica_trigger.notice"
