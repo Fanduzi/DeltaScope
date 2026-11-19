@@ -7703,7 +7703,22 @@
                 "file:testdata/ddl-golden/T37.json#pg-column-type-source-system",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-source-scope",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-source-guard-absent",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_source_preconditions.expected.yaml#ddl.pg.alter.column_type.source.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_source_preconditions.expected.yaml#ddl.pg.alter.column_type.source.valid",
+                "file:testdata/ddl-golden/T37.json#column-type-destination-offline",
+                "file:testdata/ddl-golden/T37.json#column-type-destination-disabled",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-missing-schema",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-missing-type",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-shell",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-missing-array",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-pseudo",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-pseudo-array",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-exact",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-scope",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-three-part",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-temp-alias",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-freshness",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-source-missing",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-guard-absent"
               ]
             }
           ]
@@ -7726,7 +7741,10 @@
                 "file:testdata/ddl-golden/T37.json#pg-column-type-source-generated-using",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-source-ordinary",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-source-freshness",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_source_preconditions.expected.yaml#ddl.pg.alter.column_type.source.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_source_preconditions.expected.yaml#ddl.pg.alter.column_type.source.valid",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-using",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-using-missing",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_destination.expected.yaml#ddl.pg.alter.column_type.destination.valid"
               ]
             }
           ]

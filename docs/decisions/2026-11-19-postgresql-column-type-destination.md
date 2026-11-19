@@ -56,6 +56,8 @@ probe `/tmp/ds-pg-d18-destination-ast.log`.
 - `T37.meta.pg-column-type-destination-using`
 - `T37.meta.pg-column-type-destination-using-missing`
 - `T37.meta.pg-column-type-destination-scope`
+- `T37.meta.pg-column-type-destination-three-part`
+- `T37.meta.pg-column-type-destination-temp-alias`
 - `T37.meta.pg-column-type-destination-freshness`
 - `T37.meta.pg-column-type-destination-source-missing`
 - `T37.meta.pg-column-type-destination-guard-absent`
@@ -63,6 +65,22 @@ probe `/tmp/ds-pg-d18-destination-ast.log`.
 Keep all prior T37 cases and profiles. Bind exact evidence only to ALTER
 COLUMN TYPE and ALTER COLUMN TYPE USING at the PG17 anchor. Keep independent
 catalog, file, payload and sequence oracles and separate native execution.
+
+## Evidence bindings
+
+`36b6957a` binds private exact destinations and shares the D14 source-column
+premise. `e124c553` adds the default blocker across SDK, CLI, HTTP and MCP. A
+real CLI run with those rule changes in the worktree at `36b6957a` matched all
+nine approved destination refusals. See
+`/tmp/ds-pg-d18-candidate-cli-36b6957a/evidence.json`.
+
+The first focused T37 iteration passed 294/297 cases. Three new assertions
+used the source-rule gap code or placed a target-scope test after a prior DDL.
+After correcting the gap code and isolating unqualified, three-part and
+`pg_temp` cases, T37 passed 299/299 cases and 7,604 assertions. Eighteen native
+commands produced six successes and twelve exact refusals. The 282 previous
+cases and profiles were preserved. Fifteen selectors were added to the
+original TYPE cell and three to TYPE USING. Classifications were preserved.
 
 ## Sources
 

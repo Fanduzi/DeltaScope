@@ -16,6 +16,12 @@ honestly — not a count of implemented rules.
 | T06-CLOSEOUT.md | Final T06 (#85) technical closeout index (T06技术收口材料齐备): binds every accepted dimension to the traceability rows, the SHA-frozen umbrella evidence, and the owner boundary for deferred dimensions; issue #85 stays open |
 | evidence/ | Per-row offline CLI probe captures (`<row-id>.probes.txt`): recorded `deltascope audit` output for the row's `sql_shape` at every declared version (`=== version <v> (target …)` sections). Regenerate by re-running the probe commands recorded in the file header |
 
+## PostgreSQL column type destinations
+
+D18 adds precise PG17 selectors under ALTER COLUMN TYPE and ALTER COLUMN TYPE
+USING. The remaining conversion, expression, dependency and rewrite premises
+have separate evidence requirements. Inventory classifications are preserved.
+
 ## PostgreSQL bulk table tablespace targets
 
 D17 at `6b394bd8` adds thirteen selectors to the PG17 ALL IN TABLESPACE SET

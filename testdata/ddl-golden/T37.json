@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-column-type-destination": {"enable": {"ddl.pg.alter.column_type.destination.valid": {"level": "blocker"}, "ddl.pg.alter.set_data_type.rewrite.warn": {"level": "warning"}}},
    "pg-bulk-tablespace-target": {"enable": {"ddl.pg.alter.move_all_tablespace.target.valid": {"level": "blocker"}, "ddl.pg.alter.move_all_tablespace.notice": {"level": "notice"}}},
    "pg-table-owner-target": {"enable": {"ddl.pg.alter.owner.target.valid": {"level": "blocker"}, "ddl.pg.alter.owner.advisory": {"level": "notice"}}},
    "pg-table-namespace-destination": {"enable": {"ddl.pg.alter.rename_table.target.valid": {"level": "blocker"}, "ddl.pg.alter.set_schema.target.valid": {"level": "blocker"}, "ddl.alter.rename_table.forbid": {"level": "blocker"}, "ddl.pg.alter.set_schema.advisory": {"level": "notice"}}},
@@ -1883,6 +1884,51 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "column-type-destination-offline",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "sql": "ALTER TABLE app.t ALTER COLUMN id TYPE pg_catalog.cstring",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","reason_code": "unproven_column_type_destination","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2
+   }
+  },
+  {
+   "id": "column-type-destination-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.t ALTER COLUMN id TYPE pg_catalog.cstring",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"]
+   }
+  },
   {
    "id": "bulk-tablespace-offline",
    "dialect": "postgresql",
@@ -4339,6 +4385,751 @@
   }
  ],
  "metadata_cases": [
+  {
+   "id": "pg-column-type-destination-missing-schema",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtypedst_missing_schema"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_missing_schema CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_missing_schema'","expect": "0"}},{"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": {"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtypedst_missing_schema.t ALTER COLUMN id TYPE \"Type.Schema D18\".\"Exact Type\"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_missing_schema'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtypedst_missing_schema","expect_rc": 0},
+    {"name": "prove type schema absent","fixture_key": "types","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}]},
+    {"name": "claim exact type schema","fixture_key": "types","creates_fixture": true,"sql": "CREATE SCHEMA \" Type.Schema D18 \"","expect_rc": 0},
+    {"name": "seed and capture type, column and file identities","sql": "CREATE DOMAIN \" Type.Schema D18 \".\"Exact Type\" AS integer CHECK (VALUE > 0); CREATE TYPE \" Type.Schema D18 \".\"Shell Type\"; CREATE TABLE pgtypedst_missing_schema.t(id int,payload text, arr int[]); INSERT INTO pgtypedst_missing_schema.t VALUES(1,'keep',ARRAY[1,2]); CREATE SEQUENCE pgtypedst_missing_schema.guard START 7; CREATE TABLE pgtypedst_missing_schema.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_missing_schema'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'; CREATE TABLE pgtypedst_missing_schema.type_receipt AS SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "destination_type_schema_absent"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_missing_schema.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_missing_schema'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_missing_schema'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt') EXCEPT TABLE pgtypedst_missing_schema.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_missing_schema.type_receipt EXCEPT (SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '))) UNION ALL ((SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')) EXCEPT TABLE pgtypedst_missing_schema.type_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep' AND arr=ARRAY[1,2]) FROM pgtypedst_missing_schema.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtypedst_missing_schema.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 3F000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtypedst_missing_schema.t ALTER COLUMN id TYPE \"Type.Schema D18\".\"Exact Type\"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  3F000:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves column and file identity","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtypedst_missing_schema.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtypedst_missing_schema.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_missing_schema CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_missing_schema'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-destination-missing-type",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtypedst_missing_type"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_missing_type CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_missing_type'","expect": "0"}},{"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": {"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtypedst_missing_type.t ALTER COLUMN id TYPE \" Type.Schema D18 \".\"exact type\"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_missing_type'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtypedst_missing_type","expect_rc": 0},
+    {"name": "prove type schema absent","fixture_key": "types","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}]},
+    {"name": "claim exact type schema","fixture_key": "types","creates_fixture": true,"sql": "CREATE SCHEMA \" Type.Schema D18 \"","expect_rc": 0},
+    {"name": "seed and capture type, column and file identities","sql": "CREATE DOMAIN \" Type.Schema D18 \".\"Exact Type\" AS integer CHECK (VALUE > 0); CREATE TYPE \" Type.Schema D18 \".\"Shell Type\"; CREATE TABLE pgtypedst_missing_type.t(id int,payload text, arr int[]); INSERT INTO pgtypedst_missing_type.t VALUES(1,'keep',ARRAY[1,2]); CREATE SEQUENCE pgtypedst_missing_type.guard START 7; CREATE TABLE pgtypedst_missing_type.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_missing_type'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'; CREATE TABLE pgtypedst_missing_type.type_receipt AS SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "destination_type_absent"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_missing_type.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_missing_type'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_missing_type'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt') EXCEPT TABLE pgtypedst_missing_type.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_missing_type.type_receipt EXCEPT (SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '))) UNION ALL ((SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')) EXCEPT TABLE pgtypedst_missing_type.type_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep' AND arr=ARRAY[1,2]) FROM pgtypedst_missing_type.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtypedst_missing_type.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42704","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtypedst_missing_type.t ALTER COLUMN id TYPE \" Type.Schema D18 \".\"exact type\"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42704:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves column and file identity","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtypedst_missing_type.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtypedst_missing_type.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_missing_type CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_missing_type'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-destination-shell",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtypedst_shell"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_shell CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_shell'","expect": "0"}},{"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": {"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtypedst_shell.t ALTER COLUMN id TYPE \" Type.Schema D18 \".\"Shell Type\"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_shell'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtypedst_shell","expect_rc": 0},
+    {"name": "prove type schema absent","fixture_key": "types","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}]},
+    {"name": "claim exact type schema","fixture_key": "types","creates_fixture": true,"sql": "CREATE SCHEMA \" Type.Schema D18 \"","expect_rc": 0},
+    {"name": "seed and capture type, column and file identities","sql": "CREATE DOMAIN \" Type.Schema D18 \".\"Exact Type\" AS integer CHECK (VALUE > 0); CREATE TYPE \" Type.Schema D18 \".\"Shell Type\"; CREATE TABLE pgtypedst_shell.t(id int,payload text, arr int[]); INSERT INTO pgtypedst_shell.t VALUES(1,'keep',ARRAY[1,2]); CREATE SEQUENCE pgtypedst_shell.guard START 7; CREATE TABLE pgtypedst_shell.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_shell'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'; CREATE TABLE pgtypedst_shell.type_receipt AS SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "destination_type_undefined"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_shell.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_shell'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_shell'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt') EXCEPT TABLE pgtypedst_shell.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_shell.type_receipt EXCEPT (SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '))) UNION ALL ((SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')) EXCEPT TABLE pgtypedst_shell.type_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep' AND arr=ARRAY[1,2]) FROM pgtypedst_shell.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtypedst_shell.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42704","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtypedst_shell.t ALTER COLUMN id TYPE \" Type.Schema D18 \".\"Shell Type\"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42704:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves column and file identity","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtypedst_shell.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtypedst_shell.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_shell CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_shell'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-destination-missing-array",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtypedst_missing_array"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_missing_array CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_missing_array'","expect": "0"}},{"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": {"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtypedst_missing_array.t ALTER COLUMN arr TYPE \" Type.Schema D18 \".\"Shell Type\"[]",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_missing_array'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtypedst_missing_array","expect_rc": 0},
+    {"name": "prove type schema absent","fixture_key": "types","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}]},
+    {"name": "claim exact type schema","fixture_key": "types","creates_fixture": true,"sql": "CREATE SCHEMA \" Type.Schema D18 \"","expect_rc": 0},
+    {"name": "seed and capture type, column and file identities","sql": "CREATE DOMAIN \" Type.Schema D18 \".\"Exact Type\" AS integer CHECK (VALUE > 0); CREATE TYPE \" Type.Schema D18 \".\"Shell Type\"; CREATE TABLE pgtypedst_missing_array.t(id int,payload text, arr int[]); INSERT INTO pgtypedst_missing_array.t VALUES(1,'keep',ARRAY[1,2]); CREATE SEQUENCE pgtypedst_missing_array.guard START 7; CREATE TABLE pgtypedst_missing_array.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_missing_array'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'; CREATE TABLE pgtypedst_missing_array.type_receipt AS SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "destination_array_type_absent"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_missing_array.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_missing_array'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_missing_array'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt') EXCEPT TABLE pgtypedst_missing_array.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_missing_array.type_receipt EXCEPT (SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '))) UNION ALL ((SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')) EXCEPT TABLE pgtypedst_missing_array.type_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep' AND arr=ARRAY[1,2]) FROM pgtypedst_missing_array.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtypedst_missing_array.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42704","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtypedst_missing_array.t ALTER COLUMN arr TYPE \" Type.Schema D18 \".\"Shell Type\"[]","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42704:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves column and file identity","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtypedst_missing_array.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtypedst_missing_array.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_missing_array CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_missing_array'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-destination-pseudo",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtypedst_pseudo"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_pseudo CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_pseudo'","expect": "0"}},{"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": {"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtypedst_pseudo.t ALTER COLUMN id TYPE pg_catalog.cstring",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_pseudo'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtypedst_pseudo","expect_rc": 0},
+    {"name": "prove type schema absent","fixture_key": "types","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}]},
+    {"name": "claim exact type schema","fixture_key": "types","creates_fixture": true,"sql": "CREATE SCHEMA \" Type.Schema D18 \"","expect_rc": 0},
+    {"name": "seed and capture type, column and file identities","sql": "CREATE DOMAIN \" Type.Schema D18 \".\"Exact Type\" AS integer CHECK (VALUE > 0); CREATE TYPE \" Type.Schema D18 \".\"Shell Type\"; CREATE TABLE pgtypedst_pseudo.t(id int,payload text, arr int[]); INSERT INTO pgtypedst_pseudo.t VALUES(1,'keep',ARRAY[1,2]); CREATE SEQUENCE pgtypedst_pseudo.guard START 7; CREATE TABLE pgtypedst_pseudo.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_pseudo'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'; CREATE TABLE pgtypedst_pseudo.type_receipt AS SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "destination_pseudo_type_inapplicable"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_pseudo.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_pseudo'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_pseudo'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt') EXCEPT TABLE pgtypedst_pseudo.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_pseudo.type_receipt EXCEPT (SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '))) UNION ALL ((SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')) EXCEPT TABLE pgtypedst_pseudo.type_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep' AND arr=ARRAY[1,2]) FROM pgtypedst_pseudo.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtypedst_pseudo.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtypedst_pseudo.t ALTER COLUMN id TYPE pg_catalog.cstring","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves column and file identity","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtypedst_pseudo.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtypedst_pseudo.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_pseudo CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_pseudo'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-destination-pseudo-array",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtypedst_pseudo_array"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_pseudo_array CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_pseudo_array'","expect": "0"}},{"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": {"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtypedst_pseudo_array.t ALTER COLUMN arr TYPE pg_catalog.cstring[]",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_pseudo_array'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtypedst_pseudo_array","expect_rc": 0},
+    {"name": "prove type schema absent","fixture_key": "types","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}]},
+    {"name": "claim exact type schema","fixture_key": "types","creates_fixture": true,"sql": "CREATE SCHEMA \" Type.Schema D18 \"","expect_rc": 0},
+    {"name": "seed and capture type, column and file identities","sql": "CREATE DOMAIN \" Type.Schema D18 \".\"Exact Type\" AS integer CHECK (VALUE > 0); CREATE TYPE \" Type.Schema D18 \".\"Shell Type\"; CREATE TABLE pgtypedst_pseudo_array.t(id int,payload text, arr int[]); INSERT INTO pgtypedst_pseudo_array.t VALUES(1,'keep',ARRAY[1,2]); CREATE SEQUENCE pgtypedst_pseudo_array.guard START 7; CREATE TABLE pgtypedst_pseudo_array.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_pseudo_array'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'; CREATE TABLE pgtypedst_pseudo_array.type_receipt AS SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "destination_pseudo_type_inapplicable"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_pseudo_array.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_pseudo_array'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_pseudo_array'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt') EXCEPT TABLE pgtypedst_pseudo_array.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_pseudo_array.type_receipt EXCEPT (SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '))) UNION ALL ((SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')) EXCEPT TABLE pgtypedst_pseudo_array.type_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep' AND arr=ARRAY[1,2]) FROM pgtypedst_pseudo_array.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtypedst_pseudo_array.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtypedst_pseudo_array.t ALTER COLUMN arr TYPE pg_catalog.cstring[]","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]},
+    {"name": "native refusal 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtypedst_pseudo_array.t ALTER COLUMN arr TYPE pg_catalog._cstring","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves column and file identity","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtypedst_pseudo_array.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtypedst_pseudo_array.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_pseudo_array CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_pseudo_array'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-destination-exact",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtypedst_exact"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_exact CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_exact'","expect": "0"}},{"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": {"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtypedst_exact.t ALTER COLUMN id TYPE \" Type.Schema D18 \".\"Exact Type\"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_exact'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtypedst_exact","expect_rc": 0},
+    {"name": "prove type schema absent","fixture_key": "types","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}]},
+    {"name": "claim exact type schema","fixture_key": "types","creates_fixture": true,"sql": "CREATE SCHEMA \" Type.Schema D18 \"","expect_rc": 0},
+    {"name": "seed and capture type, column and file identities","sql": "CREATE DOMAIN \" Type.Schema D18 \".\"Exact Type\" AS integer CHECK (VALUE > 0); CREATE TYPE \" Type.Schema D18 \".\"Shell Type\"; CREATE TABLE pgtypedst_exact.t(id int,payload text, arr int[]); INSERT INTO pgtypedst_exact.t VALUES(1,'keep',ARRAY[1,2]); CREATE SEQUENCE pgtypedst_exact.guard START 7; CREATE TABLE pgtypedst_exact.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_exact'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'; CREATE TABLE pgtypedst_exact.type_receipt AS SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_exact.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_exact'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_exact'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt') EXCEPT TABLE pgtypedst_exact.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_exact.type_receipt EXCEPT (SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '))) UNION ALL ((SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')) EXCEPT TABLE pgtypedst_exact.type_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep' AND arr=ARRAY[1,2]) FROM pgtypedst_exact.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtypedst_exact.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgtypedst_exact.t ALTER COLUMN id TYPE \" Type.Schema D18 \".\"Exact Type\"","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "exact domain type and payload","sql": "SELECT id::text||':'||payload FROM pgtypedst_exact.t WHERE pg_typeof(id)=(SELECT t.oid FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname=' Type.Schema D18 ' AND t.typname='Exact Type')","expect": "1:keep"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_exact CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_exact'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-destination-using",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtypedst_using"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_using CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_using'","expect": "0"}},{"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": {"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtypedst_using.t ALTER COLUMN arr TYPE \" Type.Schema D18 \".\"Exact Type\"[][] USING arr",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_using'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtypedst_using","expect_rc": 0},
+    {"name": "prove type schema absent","fixture_key": "types","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}]},
+    {"name": "claim exact type schema","fixture_key": "types","creates_fixture": true,"sql": "CREATE SCHEMA \" Type.Schema D18 \"","expect_rc": 0},
+    {"name": "seed and capture type, column and file identities","sql": "CREATE DOMAIN \" Type.Schema D18 \".\"Exact Type\" AS integer CHECK (VALUE > 0); CREATE TYPE \" Type.Schema D18 \".\"Shell Type\"; CREATE TABLE pgtypedst_using.t(id int,payload text, arr int[]); INSERT INTO pgtypedst_using.t VALUES(1,'keep',ARRAY[1,2]); CREATE SEQUENCE pgtypedst_using.guard START 7; CREATE TABLE pgtypedst_using.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_using'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'; CREATE TABLE pgtypedst_using.type_receipt AS SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_using.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_using'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_using'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt') EXCEPT TABLE pgtypedst_using.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_using.type_receipt EXCEPT (SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '))) UNION ALL ((SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')) EXCEPT TABLE pgtypedst_using.type_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep' AND arr=ARRAY[1,2]) FROM pgtypedst_using.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtypedst_using.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgtypedst_using.t ALTER COLUMN arr TYPE \" Type.Schema D18 \".\"Exact Type\"[][] USING arr","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "domain array identity and values","sql": "SELECT arr::text||':'||payload FROM pgtypedst_using.t WHERE pg_typeof(arr)=(SELECT t.typarray FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname=' Type.Schema D18 ' AND t.typname='Exact Type')","expect": "{1,2}:keep"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_using CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_using'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-destination-using-missing",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtypedst_using_missing"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_using_missing CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_using_missing'","expect": "0"}},{"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": {"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtypedst_using_missing.t ALTER COLUMN id TYPE \" Type.Schema D18 \".\"exact type\" USING id",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_using_missing'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtypedst_using_missing","expect_rc": 0},
+    {"name": "prove type schema absent","fixture_key": "types","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}]},
+    {"name": "claim exact type schema","fixture_key": "types","creates_fixture": true,"sql": "CREATE SCHEMA \" Type.Schema D18 \"","expect_rc": 0},
+    {"name": "seed and capture type, column and file identities","sql": "CREATE DOMAIN \" Type.Schema D18 \".\"Exact Type\" AS integer CHECK (VALUE > 0); CREATE TYPE \" Type.Schema D18 \".\"Shell Type\"; CREATE TABLE pgtypedst_using_missing.t(id int,payload text, arr int[]); INSERT INTO pgtypedst_using_missing.t VALUES(1,'keep',ARRAY[1,2]); CREATE SEQUENCE pgtypedst_using_missing.guard START 7; CREATE TABLE pgtypedst_using_missing.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_using_missing'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'; CREATE TABLE pgtypedst_using_missing.type_receipt AS SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "destination_type_absent"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_using_missing.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_using_missing'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_using_missing'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt') EXCEPT TABLE pgtypedst_using_missing.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_using_missing.type_receipt EXCEPT (SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '))) UNION ALL ((SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')) EXCEPT TABLE pgtypedst_using_missing.type_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep' AND arr=ARRAY[1,2]) FROM pgtypedst_using_missing.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtypedst_using_missing.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42704","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtypedst_using_missing.t ALTER COLUMN id TYPE \" Type.Schema D18 \".\"exact type\" USING id","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42704:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves column and file identity","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtypedst_using_missing.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtypedst_using_missing.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_using_missing CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_using_missing'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-destination-scope",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtypedst_scope"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_scope CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_scope'","expect": "0"}},{"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": {"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtypedst_scope.t ALTER COLUMN id TYPE text",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_scope'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtypedst_scope","expect_rc": 0},
+    {"name": "prove type schema absent","fixture_key": "types","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}]},
+    {"name": "claim exact type schema","fixture_key": "types","creates_fixture": true,"sql": "CREATE SCHEMA \" Type.Schema D18 \"","expect_rc": 0},
+    {"name": "seed and capture type, column and file identities","sql": "CREATE DOMAIN \" Type.Schema D18 \".\"Exact Type\" AS integer CHECK (VALUE > 0); CREATE TYPE \" Type.Schema D18 \".\"Shell Type\"; CREATE TABLE pgtypedst_scope.t(id int,payload text, arr int[]); INSERT INTO pgtypedst_scope.t VALUES(1,'keep',ARRAY[1,2]); CREATE SEQUENCE pgtypedst_scope.guard START 7; CREATE TABLE pgtypedst_scope.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_scope'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'; CREATE TABLE pgtypedst_scope.type_receipt AS SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","reason_code": "unproven_column_type_destination","required_facts": ["column.type_destination_identity"]}],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_scope.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_scope'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_scope'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt') EXCEPT TABLE pgtypedst_scope.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_scope.type_receipt EXCEPT (SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '))) UNION ALL ((SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')) EXCEPT TABLE pgtypedst_scope.type_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep' AND arr=ARRAY[1,2]) FROM pgtypedst_scope.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtypedst_scope.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "BEGIN;ALTER TABLE pgtypedst_scope.t ALTER COLUMN id TYPE text;ROLLBACK","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves column and file identity","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtypedst_scope.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtypedst_scope.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_scope CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_scope'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-destination-three-part",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtypedst_three_part"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_three_part CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_three_part'","expect": "0"}},{"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": {"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtypedst_three_part.t ALTER COLUMN id TYPE postgres.pg_catalog.int4",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_three_part'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtypedst_three_part","expect_rc": 0},
+    {"name": "prove type schema absent","fixture_key": "types","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}]},
+    {"name": "claim exact type schema","fixture_key": "types","creates_fixture": true,"sql": "CREATE SCHEMA \" Type.Schema D18 \"","expect_rc": 0},
+    {"name": "seed and capture type, column and file identities","sql": "CREATE DOMAIN \" Type.Schema D18 \".\"Exact Type\" AS integer CHECK (VALUE > 0); CREATE TYPE \" Type.Schema D18 \".\"Shell Type\"; CREATE TABLE pgtypedst_three_part.t(id int,payload text, arr int[]); INSERT INTO pgtypedst_three_part.t VALUES(1,'keep',ARRAY[1,2]); CREATE SEQUENCE pgtypedst_three_part.guard START 7; CREATE TABLE pgtypedst_three_part.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_three_part'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'; CREATE TABLE pgtypedst_three_part.type_receipt AS SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","reason_code": "unproven_column_type_destination","required_facts": ["column.type_destination_identity"]}],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_three_part.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_three_part'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_three_part'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt') EXCEPT TABLE pgtypedst_three_part.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_three_part.type_receipt EXCEPT (SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '))) UNION ALL ((SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')) EXCEPT TABLE pgtypedst_three_part.type_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep' AND arr=ARRAY[1,2]) FROM pgtypedst_three_part.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtypedst_three_part.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgtypedst_three_part.t ALTER COLUMN id TYPE postgres.pg_catalog.int4","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves column and file identity","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtypedst_three_part.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtypedst_three_part.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_three_part CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_three_part'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-destination-temp-alias",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtypedst_temp_alias"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_temp_alias CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_temp_alias'","expect": "0"}},{"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": {"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtypedst_temp_alias.t ALTER COLUMN id TYPE pg_temp.unavailable_d18",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_temp_alias'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtypedst_temp_alias","expect_rc": 0},
+    {"name": "prove type schema absent","fixture_key": "types","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}]},
+    {"name": "claim exact type schema","fixture_key": "types","creates_fixture": true,"sql": "CREATE SCHEMA \" Type.Schema D18 \"","expect_rc": 0},
+    {"name": "seed and capture type, column and file identities","sql": "CREATE DOMAIN \" Type.Schema D18 \".\"Exact Type\" AS integer CHECK (VALUE > 0); CREATE TYPE \" Type.Schema D18 \".\"Shell Type\"; CREATE TABLE pgtypedst_temp_alias.t(id int,payload text, arr int[]); INSERT INTO pgtypedst_temp_alias.t VALUES(1,'keep',ARRAY[1,2]); CREATE SEQUENCE pgtypedst_temp_alias.guard START 7; CREATE TABLE pgtypedst_temp_alias.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_temp_alias'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'; CREATE TABLE pgtypedst_temp_alias.type_receipt AS SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","reason_code": "unproven_column_type_destination","required_facts": ["column.type_destination_identity"]}],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_temp_alias.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_temp_alias'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_temp_alias'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt') EXCEPT TABLE pgtypedst_temp_alias.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_temp_alias.type_receipt EXCEPT (SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '))) UNION ALL ((SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')) EXCEPT TABLE pgtypedst_temp_alias.type_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep' AND arr=ARRAY[1,2]) FROM pgtypedst_temp_alias.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtypedst_temp_alias.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 3F000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtypedst_temp_alias.t ALTER COLUMN id TYPE pg_temp.unavailable_d18","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  3F000:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves column and file identity","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtypedst_temp_alias.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtypedst_temp_alias.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_temp_alias CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_temp_alias'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-destination-freshness",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtypedst_freshness"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_freshness CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_freshness'","expect": "0"}},{"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": {"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtypedst_freshness.t ADD COLUMN new_id integer;ALTER TABLE pgtypedst_freshness.t ALTER COLUMN id TYPE \" Type.Schema D18 \".\"exact type\";ALTER TABLE pgtypedst_freshness.t RENAME COLUMN IF EXISTS id TO moved;ALTER TABLE pgtypedst_freshness.t ALTER COLUMN id TYPE \" Type.Schema D18 \".\"exact type\"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_freshness'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtypedst_freshness","expect_rc": 0},
+    {"name": "prove type schema absent","fixture_key": "types","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}]},
+    {"name": "claim exact type schema","fixture_key": "types","creates_fixture": true,"sql": "CREATE SCHEMA \" Type.Schema D18 \"","expect_rc": 0},
+    {"name": "seed and capture type, column and file identities","sql": "CREATE DOMAIN \" Type.Schema D18 \".\"Exact Type\" AS integer CHECK (VALUE > 0); CREATE TYPE \" Type.Schema D18 \".\"Shell Type\"; CREATE TABLE pgtypedst_freshness.t(id int,payload text, arr int[]); INSERT INTO pgtypedst_freshness.t VALUES(1,'keep',ARRAY[1,2]); CREATE SEQUENCE pgtypedst_freshness.guard START 7; CREATE TABLE pgtypedst_freshness.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_freshness'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'; CREATE TABLE pgtypedst_freshness.type_receipt AS SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 2,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": ["complete","unverified","unverified"],
+    "statement_indices": [0,1,2],
+    "finding_entries": [{"index": 1,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 2,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.pg.alter.column_type.destination.valid","reason_code": "unproven_column_type_destination","required_facts": ["target_table.pg_columns"]},{"index": 2,"rule_id": "ddl.pg.alter.column_type.destination.valid","reason_code": "unproven_column_type_destination","required_facts": ["target_table.pg_columns"]}],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_freshness.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_freshness'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_freshness'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt') EXCEPT TABLE pgtypedst_freshness.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_freshness.type_receipt EXCEPT (SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '))) UNION ALL ((SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')) EXCEPT TABLE pgtypedst_freshness.type_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep' AND arr=ARRAY[1,2]) FROM pgtypedst_freshness.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtypedst_freshness.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE pgtypedst_freshness.t ADD COLUMN new_id integer","expect_rc": 0},
+    {"name": "native refusal 42704","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtypedst_freshness.t ALTER COLUMN id TYPE \" Type.Schema D18 \".\"exact type\"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42704:"]},
+    {"name": "native refusal 42601","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtypedst_freshness.t RENAME COLUMN IF EXISTS id TO moved","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42601:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves column and file identity","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtypedst_freshness.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtypedst_freshness.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_freshness CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_freshness'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-destination-source-missing",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtypedst_source_missing"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_source_missing CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_source_missing'","expect": "0"}},{"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": {"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtypedst_source_missing.t ALTER COLUMN \"Id\" TYPE pg_catalog.cstring",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_source_missing'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtypedst_source_missing","expect_rc": 0},
+    {"name": "prove type schema absent","fixture_key": "types","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}]},
+    {"name": "claim exact type schema","fixture_key": "types","creates_fixture": true,"sql": "CREATE SCHEMA \" Type.Schema D18 \"","expect_rc": 0},
+    {"name": "seed and capture type, column and file identities","sql": "CREATE DOMAIN \" Type.Schema D18 \".\"Exact Type\" AS integer CHECK (VALUE > 0); CREATE TYPE \" Type.Schema D18 \".\"Shell Type\"; CREATE TABLE pgtypedst_source_missing.t(id int,payload text, arr int[]); INSERT INTO pgtypedst_source_missing.t VALUES(1,'keep',ARRAY[1,2]); CREATE SEQUENCE pgtypedst_source_missing.guard START 7; CREATE TABLE pgtypedst_source_missing.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_source_missing'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'; CREATE TABLE pgtypedst_source_missing.type_receipt AS SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_source_missing.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_source_missing'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_source_missing'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt') EXCEPT TABLE pgtypedst_source_missing.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_source_missing.type_receipt EXCEPT (SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '))) UNION ALL ((SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')) EXCEPT TABLE pgtypedst_source_missing.type_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep' AND arr=ARRAY[1,2]) FROM pgtypedst_source_missing.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtypedst_source_missing.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42703","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtypedst_source_missing.t ALTER COLUMN \"Id\" TYPE pg_catalog.cstring","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42703:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves column and file identity","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtypedst_source_missing.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtypedst_source_missing.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_source_missing CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_source_missing'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-destination-guard-absent",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-destination",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtypedst_guard_absent"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_guard_absent CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_guard_absent'","expect": "0"}},{"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": {"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}}]},
+   "sql": "ALTER TABLE IF EXISTS pgtypedst_guard_absent.missing ALTER COLUMN id TYPE pg_catalog.cstring",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_guard_absent'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtypedst_guard_absent","expect_rc": 0},
+    {"name": "prove type schema absent","fixture_key": "types","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}]},
+    {"name": "claim exact type schema","fixture_key": "types","creates_fixture": true,"sql": "CREATE SCHEMA \" Type.Schema D18 \"","expect_rc": 0},
+    {"name": "seed and capture type, column and file identities","sql": "CREATE DOMAIN \" Type.Schema D18 \".\"Exact Type\" AS integer CHECK (VALUE > 0); CREATE TYPE \" Type.Schema D18 \".\"Shell Type\"; CREATE TABLE pgtypedst_guard_absent.t(id int,payload text, arr int[]); INSERT INTO pgtypedst_guard_absent.t VALUES(1,'keep',ARRAY[1,2]); CREATE SEQUENCE pgtypedst_guard_absent.guard START 7; CREATE TABLE pgtypedst_guard_absent.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_guard_absent'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt'; CREATE TABLE pgtypedst_guard_absent.type_receipt AS SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves relation file identity and column catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_guard_absent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_guard_absent'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attgenerated FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtypedst_guard_absent'::regnamespace AND a.attnum>0 AND NOT a.attisdropped AND c.relname<>'receipt' AND c.relname<>'type_receipt') EXCEPT TABLE pgtypedst_guard_absent.receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact type catalog","sql": "SELECT count(*) FROM ((TABLE pgtypedst_guard_absent.type_receipt EXCEPT (SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '))) UNION ALL ((SELECT oid, typname, typtype, typisdefined, typarray FROM pg_catalog.pg_type WHERE typnamespace=(SELECT oid FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 ')) EXCEPT TABLE pgtypedst_guard_absent.type_receipt)) AS delta","expect": "0"},
+    {"assert": "audit preserves exact rows","sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep' AND arr=ARRAY[1,2]) FROM pgtypedst_guard_absent.t","expect": "t"},
+    {"assert": "audit never issues a sequence value","sql": "SELECT last_value::text||':'||is_called::text FROM pgtypedst_guard_absent.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native statement succeeds","sql": "ALTER TABLE IF EXISTS pgtypedst_guard_absent.missing ALTER COLUMN id TYPE pg_catalog.cstring","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves column and file identity","sql": "SELECT (c.relfilenode=r.relfilenode AND a.atttypid=r.atttypid) FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid JOIN pgtypedst_guard_absent.receipt r ON r.oid=c.oid AND r.attnum=a.attnum WHERE c.oid='pgtypedst_guard_absent.t'::regclass AND a.attname='id'","expect": "t"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtypedst_guard_absent CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtypedst_guard_absent'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "remove type schema","fixture_key": "types","sql": "DROP SCHEMA \" Type.Schema D18 \" CASCADE","verify": [{"assert": "owned type schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname=' Type.Schema D18 '","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
   {
    "id": "pg-bulk-tablespace-missing-source",
    "anchor": "postgres17",
@@ -10621,6 +11412,23 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.column-type-destination-offline",
+  "T37.cli.column-type-destination-disabled",
+  "T37.meta.pg-column-type-destination-missing-schema",
+  "T37.meta.pg-column-type-destination-missing-type",
+  "T37.meta.pg-column-type-destination-shell",
+  "T37.meta.pg-column-type-destination-missing-array",
+  "T37.meta.pg-column-type-destination-pseudo",
+  "T37.meta.pg-column-type-destination-pseudo-array",
+  "T37.meta.pg-column-type-destination-exact",
+  "T37.meta.pg-column-type-destination-using",
+  "T37.meta.pg-column-type-destination-using-missing",
+  "T37.meta.pg-column-type-destination-scope",
+  "T37.meta.pg-column-type-destination-three-part",
+  "T37.meta.pg-column-type-destination-temp-alias",
+  "T37.meta.pg-column-type-destination-freshness",
+  "T37.meta.pg-column-type-destination-source-missing",
+  "T37.meta.pg-column-type-destination-guard-absent",
   "T37.cli.bulk-tablespace-offline",
   "T37.cli.bulk-tablespace-disabled",
   "T37.meta.pg-bulk-tablespace-missing-source",

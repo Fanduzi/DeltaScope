@@ -3,6 +3,13 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D18 PostgreSQL column type destinations
+
+Focused T37 passed 299/299 and 7,604 assertions. Seventeen additions preserve
+all 282 earlier cases and profiles. Native cases exercise exact targets,
+shells, arrays, pseudo-types, USING and statement-scope boundaries. See the
+[decision](../../docs/decisions/2026-11-19-postgresql-column-type-destination.md).
+
 ## T37 D17 PostgreSQL bulk tablespace targets
 
 Delivered `6b394bd8` passed all 50 tasks, 3,614/3,614 cases and 66,018
