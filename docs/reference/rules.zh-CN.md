@@ -1272,6 +1272,10 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 `v0.32.0` 是 **PostgreSQL 边界支持就绪门控**。这是一个决策里程碑，不是功能发布。未新增规则 ID。Characterization 测试记录了 generated 和 identity 列的稳定 AST 事实；就绪报告推荐 `v0.33.0` 作为窄事实保留包。未变更任何生产 extractor、spec、rule 或 policy 代码。
 
+### PostgreSQL 列类型目标
+
+`ddl.pg.alter.column_type.destination.valid` 默认级别为 blocker。它在已观测的 PostgreSQL 17 上先核对普通表和用户源列，再检查 `TYPE` 或 `TYPE USING` 的精确两段限定目标。缺失 schema、类型、关联数组、未定义 shell type 或不适用的伪类型可以触发拒绝。未限定名、三段名、临时 schema 或过期观察报告 `unproven_column_type_destination`。类型转换、参数、排序规则、权限、依赖和实际重写分别判断。
+
 ### PostgreSQL 批量表空间目标
 
 `ddl.pg.alter.move_all_tablespace.target.valid` 默认级别为 blocker，适用于已观测的 PostgreSQL 17。它按声明顺序检查 `OWNED BY` 角色，随后检查源和目标空间是否存在，以及两侧是否涉及 `pg_global`。裸会话别名按观测连接解析。观察缺失或过期时报告 `unproven_bulk_tablespace_targets`。既有 notice 描述事务内的移动请求，或有证据的同空间选择。权限、表筛选、存储和当前锁状态需分别判断。发现省略角色名和目录标识。

@@ -1344,6 +1344,16 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 
 `v0.32.0` is the **PostgreSQL Boundary Support-Readiness Gate**. It is a decision milestone, not a feature release. No new rule IDs were added. Characterization tests document stable AST facts about generated and identity columns; a readiness report recommends `v0.33.0` as a narrow fact-preservation pack. No production extractor, spec, rule, or policy code changed.
 
+### PostgreSQL column type destinations
+
+`ddl.pg.alter.column_type.destination.valid` defaults to blocker. On observed
+PostgreSQL 17 it checks an exact two-part TYPE or TYPE USING destination once
+the ordinary table and user source column are proven. Missing schemas, types
+and associated arrays, shell types and direct pseudo-types can block.
+Unqualified, three-part, temporary or stale bindings yield
+`unproven_column_type_destination`. The rule leaves conversion, modifiers,
+collations, permissions, dependencies and rewrite to separate checks.
+
 ### PostgreSQL bulk table tablespace targets
 
 `ddl.pg.alter.move_all_tablespace.target.valid` defaults to blocker. On

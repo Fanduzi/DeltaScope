@@ -240,3 +240,22 @@ func TestAuditBulkTablespaceThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing bulk target finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditColumnTypeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true, Columns: []PGColumnState{{Name: "id"}}}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGColumnType: &spec.PGColumnTypeState{Target: spec.PGColumnTypeTarget{Schema: "pg_catalog", Name: "cstring", Array: true}, SchemaExists: true, BaseExists: true, Resolved: true, Defined: true, Pseudo: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t ALTER COLUMN id TYPE pg_catalog.cstring[]`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "cstring" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.column_type.destination.valid" && f.Metadata["reason_code"] == "destination_pseudo_type_inapplicable" {
+			return
+		}
+	}
+	t.Fatalf("missing type destination finding: %+v", result.Statements[0].Findings)
+}

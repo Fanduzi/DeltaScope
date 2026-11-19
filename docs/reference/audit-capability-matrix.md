@@ -134,6 +134,13 @@ The Go provider `PGConstraintState` alias and copied directory retain private fa
 
 Maintainer notes: [decision](../decisions/2026-11-17-postgresql-constraint-target-evidence.md). Other F09 dimensions remain open.
 
+### PostgreSQL column type destinations
+
+The default PG17 destination blocker uses a fresh ordinary table and source
+column, exact qualified type identity and the associated array link. It
+covers direct undefined and pseudo-type cases. Type conversion, dependencies
+and physical rewrites require separate evidence.
+
 ### PostgreSQL bulk table tablespace targets
 
 On observed PostgreSQL 17, the default bulk move target rule checks ordered

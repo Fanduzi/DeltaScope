@@ -2,6 +2,8 @@
 
 Policy model for rule configuration and future audit settings.
 
+The default PostgreSQL column type destination rule checks observed exact destinations at blocker level.
+
 The default PostgreSQL bulk tablespace target rule checks observed endpoints and ordered role filters at blocker level.
 
 ## Files

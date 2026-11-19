@@ -1,0 +1,22 @@
+name: column_type_destination
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    t:
+      exists: true
+      pg_relation: {name: t, kind: r}
+      pg_columns:
+        ordinary: true
+        columns:
+          - {name: id, identity: '', generated: '', type_width: 32, type_storage: p, not_null: false, has_default: false, primary_key: false}
+  pg_column_types:
+    - {schema: pg_catalog, name: cstring, array: true, schema_exists: true, base_exists: true, resolved: true, defined: true, pseudo: true}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.column_type.destination.valid, ddl.pg.alter.set_data_type.rewrite.warn]

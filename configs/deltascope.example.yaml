@@ -1771,6 +1771,11 @@ rules:
     level: notice
     params:
 
+  ddl.pg.alter.column_type.destination.valid:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.pg.alter.column_type.source.valid:
     enabled: true
     level: blocker
