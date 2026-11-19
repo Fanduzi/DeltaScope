@@ -74,6 +74,26 @@ See `/tmp/ds-pg-d11-custom-db-default-c319179e/evidence.json`.
 Eleven selectors bind the original `SET TABLESPACE` cell. The generated
 matrix retains all row and subaction classifications and denominators.
 
+## Delivered verification
+
+D11 shipped at `42259221dd283c5a46f87934a9806716ad44fae2` from
+`61cb93b1c69840281d75f5ee4f58e0ddf1f996b0` via fast-forward and normal push.
+The final fixed SHA passed 50 canonical tasks, 3545/3545 cases and 63694
+assertions, with zero failures or skips. T37 passed 213/213 with 4655 assertions
+and 11 native steps (8 successes and 3 precise refusals). Validator, independent
+read-only review, candidate and merged-root gates, and owned cleanup passed.
+The original workspace, protected worktrees and 16 unrelated container
+identities remained intact. The final task changed seven paths and the
+milestone changed 39.
+
+- [Go, PostgreSQL and lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44443726717)
+- [CLI TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44443726908)
+- [Pages](https://github.com/Fanduzi/DeltaScope/runs/135290776391)
+
+Final artifact: `/tmp/ddl-golden-pg-table-tablespace-final-42259221/all/artifact.json`.
+These results belong to the shipped D11 SHA. Bulk movement and the other F09
+dimensions stay open.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

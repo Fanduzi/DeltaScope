@@ -11,6 +11,10 @@ successes and three precise refusals. Independent catalog and file checks
 verify same-space choices and physical moves. See the
 [decision](../../docs/decisions/2026-11-18-postgresql-table-tablespace.md).
 
+The final fixed `42259221` run passed 50 tasks, 3545/3545 cases and 63694
+assertions with validation and no failures or skips. All five exact-SHA CI
+checks passed. See the decision record for the artifact and CI links.
+
 ## T37 D10 PostgreSQL heap table storage options
 
 D10 retains the 189 earlier T37 cases, their profiles, and their 3922
