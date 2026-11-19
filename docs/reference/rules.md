@@ -1344,6 +1344,17 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 
 `v0.32.0` is the **PostgreSQL Boundary Support-Readiness Gate**. It is a decision milestone, not a feature release. No new rule IDs were added. Characterization tests document stable AST facts about generated and identity columns; a readiness report recommends `v0.33.0` as a narrow fact-preservation pack. No production extractor, spec, rule, or policy code changed.
 
+### PostgreSQL ordinary-table owner targets
+
+`ddl.pg.alter.owner.target.valid` defaults to blocker. On observed PostgreSQL 17
+it checks a fresh, exact, schema-qualified ordinary persistent non-typed table.
+It rejects a proven missing literal role or `PUBLIC`. Quoted role names retain
+their exact spelling. Bare `CURRENT_USER`, `CURRENT_ROLE` and `SESSION_USER`
+resolve in the observed audit session. Missing observations yield
+`unproven_table_owner_target`. The existing notice describes the request or a
+proven match in the observed session. Findings omit role names. This check does
+not assess ownership privileges or namespace grants.
+
 ### PostgreSQL ordinary-table rename and schema destinations
 
 `ddl.pg.alter.rename_table.target.valid` and `ddl.pg.alter.set_schema.target.valid`

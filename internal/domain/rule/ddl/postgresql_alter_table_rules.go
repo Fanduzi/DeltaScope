@@ -70,9 +70,11 @@ func (r pgAlterActionAdvisoryRule) Evaluate(ctx context.Context, statement spec.
 				continue
 			}
 		}
-		message := r.message
-		if alter.Name != "" {
-			message = fmt.Sprintf(r.message, alter.Name)
+		message, target := r.message, alter.Name
+		if r.id == ruleIDPGAlterOwnerAdvisory {
+			message, target = fmt.Sprintf(r.message, statement.DDL.Table.Name), ""
+		} else if target != "" {
+			message = fmt.Sprintf(r.message, target)
 		}
 		why, risk := r.why, r.risk
 		if r.id == ruleIDPGAlterLoggedNotice || r.id == ruleIDPGAlterUnloggedNotice {
@@ -91,6 +93,13 @@ func (r pgAlterActionAdvisoryRule) Evaluate(ctx context.Context, statement spec.
 				risk = "PostgreSQL still checks the request and takes a lock."
 			}
 		}
+		if r.id == ruleIDPGAlterOwnerAdvisory {
+			if facts := boundPGTableOwner(statement); facts != nil && facts.Target.Kind != "public" && facts.Exists && facts.Same {
+				message = fmt.Sprintf("ALTER TABLE OWNER TO on %q selects its observed owner on PostgreSQL", statement.DDL.Table.Name)
+				why = "The requested owner matches the table owner in the observed session."
+				risk = "Execution under a different session identity can resolve a session alias differently."
+			}
+		}
 		findings = append(findings, rule.Finding{
 			Level:   r.level,
 			Message: message,
@@ -103,7 +112,7 @@ func (r pgAlterActionAdvisoryRule) Evaluate(ctx context.Context, statement spec.
 				"operation": "alter_table",
 				"action":    r.action,
 				"table":     statement.DDL.Table.Name,
-				"target":    alter.Name,
+				"target":    target,
 			},
 		})
 	}
@@ -217,9 +226,9 @@ func newSetSchemaAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRule, error)
 func newOwnerAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return newPGAlterActionAdvisoryRule(
 		ruleIDPGAlterOwnerAdvisory, rule.LevelNotice, "change_owner", "owner",
-		"ALTER TABLE OWNER TO changes ownership of table %q on PostgreSQL",
-		"OWNER TO transfers table ownership to a different role. Permissions, default privileges, and role-based access policies may be affected.",
-		"The new owner gains full control over the table. Scripts or policies expecting the previous owner may behave differently.",
+		"ALTER TABLE OWNER TO on %q requests an ownership change on PostgreSQL",
+		"OWNER TO requests a target owner. A change can affect permissions, default privileges and access policies.",
+		"If ownership changes, scripts and policies that rely on the previous owner may behave differently.",
 		"Verify the new role has appropriate permissions and that no automation depends on the current owner.",
 		cfg,
 	)

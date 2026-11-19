@@ -1650,6 +1650,10 @@ rules:
     params:
       required: true
 
+  ddl.pg.alter.owner.target.valid:
+    enabled: true
+    level: blocker
+    params:
   ddl.pg.alter.owner.advisory:
     enabled: true
     level: notice

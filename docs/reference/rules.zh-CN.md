@@ -1272,6 +1272,10 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 `v0.32.0` 是 **PostgreSQL 边界支持就绪门控**。这是一个决策里程碑，不是功能发布。未新增规则 ID。Characterization 测试记录了 generated 和 identity 列的稳定 AST 事实；就绪报告推荐 `v0.33.0` 作为窄事实保留包。未变更任何生产 extractor、spec、rule 或 policy 代码。
 
+### PostgreSQL 普通表所有者目标
+
+`ddl.pg.alter.owner.target.valid` 默认级别为 blocker，适用于已观测 PostgreSQL 17 上限定名精确、目录新鲜的普通持久非类型表。已证明字面角色缺失或目标为 `PUBLIC` 时报告拒绝。引号角色名按原样匹配。裸 `CURRENT_USER`、`CURRENT_ROLE`、`SESSION_USER` 以实际观测的审计会话为准。缺少观察时报告 `unproven_table_owner_target`。既有 notice 描述请求或本会话中已证明的同所有者选择。发现不输出角色名，也不判断变更权限或 schema 授权。
+
 ### PostgreSQL 普通表改名与目标 schema
 
 `ddl.pg.alter.rename_table.target.valid` 和 `ddl.pg.alter.set_schema.target.valid` 默认级别为 blocker，适用于已观测 PostgreSQL 17 上精确限定名、目录新鲜的普通持久非类型表。RENAME 检查目标关系名与行类型名，识别已观测到可让位的自动生成数组类型。既有改名禁止规则独立生效。SET SCHEMA 检查目标 schema 存在性及主表、行类型的命名冲突，既有 notice 会识别同 schema 请求。证据不足时报告 `unproven_table_namespace_destination`。从属索引、序列、类型及权限另行判断。

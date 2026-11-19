@@ -134,6 +134,14 @@ The Go provider `PGConstraintState` alias and copied directory retain private fa
 
 Maintainer notes: [decision](../decisions/2026-11-17-postgresql-constraint-target-evidence.md). Other F09 dimensions remain open.
 
+### PostgreSQL ordinary-table owner targets
+
+The default `ddl.pg.alter.owner.target.valid` blocker checks literal-role
+existence and the PUBLIC pseudo-role for observed PG17 ordinary persistent
+non-typed tables. Role aliases resolve in the observed session. Missing scope
+or role proof remains an evidence gap. Grants and execution permissions are
+separate. OWNER TO findings omit role names.
+
 ### PostgreSQL ordinary-table rename and schema destinations
 
 The PG17 default rename- and schema-target blockers use exact, fresh ordinary

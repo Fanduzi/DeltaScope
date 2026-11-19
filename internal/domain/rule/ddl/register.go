@@ -713,6 +713,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterRenameTableTargetValid, construct: newPGRenameTableTargetRule},
 		{ruleID: ruleIDPGAlterSetSchemaTargetValid, construct: newPGSetSchemaTargetRule},
 		{ruleID: ruleIDPGAlterSetSchemaAdvisory, construct: newSetSchemaAdvisoryRule},
+		{ruleID: ruleIDPGAlterTableOwnerTargetValid, construct: newPGTableOwnerTargetRule},
 		{ruleID: ruleIDPGAlterOwnerAdvisory, construct: newOwnerAdvisoryRule},
 		{ruleID: ruleIDPGAlterEnableTriggerNotice, construct: newEnableTriggerNoticeRule},
 		{ruleID: ruleIDPGAlterDisableTriggerWarn, construct: newDisableTriggerWarnRule},

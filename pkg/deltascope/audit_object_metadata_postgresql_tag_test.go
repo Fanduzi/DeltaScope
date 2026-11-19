@@ -203,3 +203,22 @@ func TestAuditTableNamespaceThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing destination finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditTableOwnerThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGTableOwner: &spec.PGTableOwnerState{Schema: "app", Table: "t", Target: spec.PGTableOwnerTarget{Kind: "named", Name: " Missing Owner "}}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t OWNER TO " Missing Owner "`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != " Missing Owner " {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.owner.target.valid" && f.Metadata["reason_code"] == "owner_role_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing owner target finding: %+v", result.Statements[0].Findings)
+}

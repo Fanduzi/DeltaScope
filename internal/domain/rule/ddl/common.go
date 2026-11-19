@@ -304,6 +304,7 @@ const (
 	ruleIDPGAlterRenameTableTargetValid                     = "ddl.pg.alter.rename_table.target.valid"
 	ruleIDPGAlterSetSchemaTargetValid                       = "ddl.pg.alter.set_schema.target.valid"
 	ruleIDPGAlterSetSchemaAdvisory                          = "ddl.pg.alter.set_schema.advisory"
+	ruleIDPGAlterTableOwnerTargetValid                      = "ddl.pg.alter.owner.target.valid"
 	ruleIDPGAlterOwnerAdvisory                              = "ddl.pg.alter.owner.advisory"
 	ruleIDPGAlterEnableTriggerNotice                        = "ddl.pg.alter.enable_trigger.notice"
 	ruleIDPGAlterDisableTriggerWarn                         = "ddl.pg.alter.disable_trigger.warn"
