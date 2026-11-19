@@ -16,6 +16,13 @@ honestly — not a count of implemented rules.
 | T06-CLOSEOUT.md | Final T06 (#85) technical closeout index (T06技术收口材料齐备): binds every accepted dimension to the traceability rows, the SHA-frozen umbrella evidence, and the owner boundary for deferred dimensions; issue #85 stays open |
 | evidence/ | Per-row offline CLI probe captures (`<row-id>.probes.txt`): recorded `deltascope audit` output for the row's `sql_shape` at every declared version (`=== version <v> (target …)` sections). Regenerate by re-running the probe commands recorded in the file header |
 
+## PostgreSQL named CHECK constraints
+
+D19 adds six evidence selectors each to ADD CHECK and ADD CHECK NOT VALID at
+the PostgreSQL 17 anchor. These cases cover exact names and relevant scope
+boundaries. Predicate validity, existing rows and inheritance are tracked
+separately.
+
 ## PostgreSQL column type destinations
 
 D18 at `1bc8709c` adds fifteen PG17 selectors under ALTER COLUMN TYPE and

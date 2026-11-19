@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-add-check-name": {"enable": {"ddl.pg.alter.add_check.name.available": {"level": "blocker"}, "ddl.pg.alter.add_check.not_valid.require": {"level": "warning"}, "ddl.alter.add_index.exists.forbid": {"level": "blocker"}}},
    "pg-column-type-destination": {"enable": {"ddl.pg.alter.column_type.destination.valid": {"level": "blocker"}, "ddl.pg.alter.set_data_type.rewrite.warn": {"level": "warning"}}},
    "pg-bulk-tablespace-target": {"enable": {"ddl.pg.alter.move_all_tablespace.target.valid": {"level": "blocker"}, "ddl.pg.alter.move_all_tablespace.notice": {"level": "notice"}}},
    "pg-table-owner-target": {"enable": {"ddl.pg.alter.owner.target.valid": {"level": "blocker"}, "ddl.pg.alter.owner.advisory": {"level": "notice"}}},
@@ -1884,6 +1885,49 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "add-check-name-offline",
+   "dialect": "postgresql",
+   "policy": "pg-add-check-name",
+   "sql": "ALTER TABLE app.t ADD CONSTRAINT \" Exact Check \" CHECK (id > 0) NOT VALID",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_check.name.available","reason_code": "unproven_check_constraint_name","required_facts": ["instance.version"]}],
+    "rule_summary_loaded": 3
+   }
+  },
+  {
+   "id": "add-check-name-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.t ADD CONSTRAINT \" Exact Check \" CHECK (id > 0) NOT VALID",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": []
+   }
+  },
   {
    "id": "column-type-destination-offline",
    "dialect": "postgresql",
@@ -4385,6 +4429,379 @@
   }
  ],
  "metadata_cases": [
+  {
+   "id": "pg-add-check-name-duplicate",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-add-check-name",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcheck_duplicate"},
+   "fixture": {"cleanup": [{"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_duplicate CASCADE","verify": {"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_duplicate'","expect": "0","assert": "owned schema absent"}}]},
+   "sql": "ALTER TABLE pgcheck_duplicate.t ADD CONSTRAINT \" Exact Check \" CHECK (id > 0)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_duplicate'","expect": "0","assert": "owned schema absent"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcheck_duplicate","expect_rc": 0},
+    {"name": "seed and capture constraint and file identities","sql": "CREATE TABLE pgcheck_duplicate.t(id int,payload text,CONSTRAINT \" Exact Check \" CHECK (id > 0)); INSERT INTO pgcheck_duplicate.t VALUES(1,'keep'); CREATE SEQUENCE pgcheck_duplicate.guard START 7; CREATE TABLE pgcheck_duplicate.receipt AS SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_duplicate'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_check.not_valid.require","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.add_check.name.available","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "rule_summary_loaded": 3,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.add_check.name.available","metadata": {"constraint": " Exact Check ","reason_code": "constraint_name_occupied"}}]
+   },
+   "post_verify": [
+    {"sql": "SELECT count(*) FROM ((TABLE pgcheck_duplicate.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_duplicate'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_duplicate'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcheck_duplicate.receipt)) AS delta","expect": "0","assert": "audit preserves exact constraint and file identities"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_duplicate.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_duplicate.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "execute": [
+    {"name": "native rejects exact collision","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcheck_duplicate.t ADD CONSTRAINT \" Exact Check \" CHECK (id > 0)","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42710:"]}
+   ],
+   "structure": [
+    {"sql": "SELECT count(*) FROM ((TABLE pgcheck_duplicate.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_duplicate'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_duplicate'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcheck_duplicate.receipt)) AS delta","expect": "0","assert": "native refusal preserves constraint and file identities"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_duplicate.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_duplicate.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_duplicate CASCADE","verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_duplicate'","expect": "0","assert": "owned schema absent"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-add-check-name-duplicate-not-valid",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-add-check-name",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcheck_duplicate_not_valid"},
+   "fixture": {"cleanup": [{"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_duplicate_not_valid CASCADE","verify": {"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_duplicate_not_valid'","expect": "0","assert": "owned schema absent"}}]},
+   "sql": "ALTER TABLE pgcheck_duplicate_not_valid.t ADD CONSTRAINT \" Exact Check \" CHECK (id > 0) NOT VALID",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_duplicate_not_valid'","expect": "0","assert": "owned schema absent"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcheck_duplicate_not_valid","expect_rc": 0},
+    {"name": "seed and capture constraint and file identities","sql": "CREATE TABLE pgcheck_duplicate_not_valid.t(id int,payload text,CONSTRAINT \" Exact Check \" CHECK (id > 0)); INSERT INTO pgcheck_duplicate_not_valid.t VALUES(1,'keep'); CREATE SEQUENCE pgcheck_duplicate_not_valid.guard START 7; CREATE TABLE pgcheck_duplicate_not_valid.receipt AS SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_duplicate_not_valid'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_check.name.available","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "rule_summary_loaded": 3,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.add_check.name.available","metadata": {"constraint": " Exact Check ","reason_code": "constraint_name_occupied"}}]
+   },
+   "post_verify": [
+    {"sql": "SELECT count(*) FROM ((TABLE pgcheck_duplicate_not_valid.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_duplicate_not_valid'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_duplicate_not_valid'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcheck_duplicate_not_valid.receipt)) AS delta","expect": "0","assert": "audit preserves exact constraint and file identities"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_duplicate_not_valid.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_duplicate_not_valid.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "execute": [
+    {"name": "native rejects guarded-validation collision","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcheck_duplicate_not_valid.t ADD CONSTRAINT \" Exact Check \" CHECK (id > 0) NOT VALID","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42710:"]}
+   ],
+   "structure": [
+    {"sql": "SELECT count(*) FROM ((TABLE pgcheck_duplicate_not_valid.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_duplicate_not_valid'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_duplicate_not_valid'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcheck_duplicate_not_valid.receipt)) AS delta","expect": "0","assert": "native refusal preserves constraint and file identities"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_duplicate_not_valid.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_duplicate_not_valid.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_duplicate_not_valid CASCADE","verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_duplicate_not_valid'","expect": "0","assert": "owned schema absent"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-add-check-name-other-kind",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-add-check-name",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcheck_other_kind"},
+   "fixture": {"cleanup": [{"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_other_kind CASCADE","verify": {"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_other_kind'","expect": "0","assert": "owned schema absent"}}]},
+   "sql": "ALTER TABLE pgcheck_other_kind.t ADD CONSTRAINT \" Exact Check \" CHECK (id > 0)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_other_kind'","expect": "0","assert": "owned schema absent"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcheck_other_kind","expect_rc": 0},
+    {"name": "seed and capture constraint and file identities","sql": "CREATE TABLE pgcheck_other_kind.t(id int,payload text,CONSTRAINT \" Exact Check \" PRIMARY KEY (id)); INSERT INTO pgcheck_other_kind.t VALUES(1,'keep'); CREATE SEQUENCE pgcheck_other_kind.guard START 7; CREATE TABLE pgcheck_other_kind.receipt AS SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_other_kind'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_check.not_valid.require","level": "warning"},{"index": 0,"rule_id": "ddl.pg.alter.add_check.name.available","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "rule_summary_loaded": 3,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.add_check.name.available","metadata": {"constraint": " Exact Check ","reason_code": "constraint_name_occupied"}}]
+   },
+   "post_verify": [
+    {"sql": "SELECT count(*) FROM ((TABLE pgcheck_other_kind.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_other_kind'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_other_kind'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcheck_other_kind.receipt)) AS delta","expect": "0","assert": "audit preserves exact constraint and file identities"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_other_kind.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_other_kind.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "execute": [
+    {"name": "native rejects CHECK name occupied by primary key","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcheck_other_kind.t ADD CONSTRAINT \" Exact Check \" CHECK (id > 0)","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42710:"]}
+   ],
+   "structure": [
+    {"sql": "SELECT count(*) FROM ((TABLE pgcheck_other_kind.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_other_kind'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_other_kind'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcheck_other_kind.receipt)) AS delta","expect": "0","assert": "native refusal preserves constraint and file identities"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_other_kind.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_other_kind.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_other_kind CASCADE","verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_other_kind'","expect": "0","assert": "owned schema absent"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-add-check-name-exact-control",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-add-check-name",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcheck_exact_control"},
+   "fixture": {"cleanup": [{"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_exact_control CASCADE","verify": {"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_exact_control'","expect": "0","assert": "owned schema absent"}}]},
+   "sql": "ALTER TABLE pgcheck_exact_control.t ADD CONSTRAINT \"EXACT CHECK\" CHECK (id > 0)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_exact_control'","expect": "0","assert": "owned schema absent"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcheck_exact_control","expect_rc": 0},
+    {"name": "seed and capture constraint and file identities","sql": "CREATE TABLE pgcheck_exact_control.t(id int,payload text,CONSTRAINT \"Exact Check\" PRIMARY KEY (id)); INSERT INTO pgcheck_exact_control.t VALUES(1,'keep'); CREATE SEQUENCE pgcheck_exact_control.guard START 7; CREATE INDEX \" Index Only \" ON pgcheck_exact_control.t(id); CREATE TABLE pgcheck_exact_control.receipt AS SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_exact_control'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_check.not_valid.require","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"sql": "SELECT count(*) FROM ((TABLE pgcheck_exact_control.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_exact_control'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_exact_control'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcheck_exact_control.receipt)) AS delta","expect": "0","assert": "audit preserves exact constraint and file identities"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_exact_control.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_exact_control.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "execute": [
+    {"name": "native adds distinct literal name","sql": "ALTER TABLE pgcheck_exact_control.t ADD CONSTRAINT \"EXACT CHECK\" CHECK (id > 0)","expect_rc": 0},
+    {"name": "native accepts exact index-only name","sql": "ALTER TABLE pgcheck_exact_control.t ADD CONSTRAINT \" Index Only \" CHECK (id > 0) NOT VALID","expect_rc": 0}
+   ],
+   "structure": [
+    {"sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE conrelid='pgcheck_exact_control.t'::regclass AND conname IN ('EXACT CHECK','Exact Check',' Index Only ')","expect": "3","assert": "literal constraint and primary spellings survive"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_exact_control.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_exact_control.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_exact_control CASCADE","verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_exact_control'","expect": "0","assert": "owned schema absent"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-add-check-name-unnamed",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-add-check-name",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcheck_unnamed"},
+   "fixture": {"cleanup": [{"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_unnamed CASCADE","verify": {"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_unnamed'","expect": "0","assert": "owned schema absent"}}]},
+   "sql": "ALTER TABLE pgcheck_unnamed.t ADD CHECK (id > 0)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_unnamed'","expect": "0","assert": "owned schema absent"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcheck_unnamed","expect_rc": 0},
+    {"name": "seed and capture constraint and file identities","sql": "CREATE TABLE pgcheck_unnamed.t(id int,payload text,CONSTRAINT \" Exact Check \" CHECK (id > 0)); INSERT INTO pgcheck_unnamed.t VALUES(1,'keep'); CREATE SEQUENCE pgcheck_unnamed.guard START 7; CREATE TABLE pgcheck_unnamed.receipt AS SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_unnamed'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_check.not_valid.require","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"sql": "SELECT count(*) FROM ((TABLE pgcheck_unnamed.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_unnamed'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_unnamed'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcheck_unnamed.receipt)) AS delta","expect": "0","assert": "audit preserves exact constraint and file identities"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_unnamed.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_unnamed.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "execute": [
+    {"name": "native chooses a different name","sql": "ALTER TABLE pgcheck_unnamed.t ADD CHECK (id > 0)","expect_rc": 0}
+   ],
+   "structure": [
+    {"sql": "SELECT count(DISTINCT conname) FROM pg_catalog.pg_constraint WHERE conrelid='pgcheck_unnamed.t'::regclass AND contype='c'","expect": "2","assert": "generated and literal CHECK names are distinct"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_unnamed.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_unnamed.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_unnamed CASCADE","verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_unnamed'","expect": "0","assert": "owned schema absent"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-add-check-name-inherited",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-add-check-name",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcheck_inherited"},
+   "fixture": {"cleanup": [{"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_inherited CASCADE","verify": {"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_inherited'","expect": "0","assert": "owned schema absent"}}]},
+   "sql": "ALTER TABLE pgcheck_inherited.child ADD CONSTRAINT \" Exact Check \" CHECK (id > 0)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_inherited'","expect": "0","assert": "owned schema absent"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcheck_inherited","expect_rc": 0},
+    {"name": "seed and capture constraint and file identities","sql": "CREATE TABLE pgcheck_inherited.t(id int,payload text,CONSTRAINT \" Exact Check \" CHECK (id > 0)); INSERT INTO pgcheck_inherited.t VALUES(1,'keep'); CREATE SEQUENCE pgcheck_inherited.guard START 7; CREATE TABLE pgcheck_inherited.child() INHERITS (pgcheck_inherited.t); CREATE TABLE pgcheck_inherited.receipt AS SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_inherited'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_check.not_valid.require","level": "warning"}],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_check.name.available","reason_code": "unproven_check_constraint_name","required_facts": ["target_table.pg_constraint_scope"]}],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"sql": "SELECT count(*) FROM ((TABLE pgcheck_inherited.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_inherited'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_inherited'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcheck_inherited.receipt)) AS delta","expect": "0","assert": "audit preserves exact constraint and file identities"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_inherited.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_inherited.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "execute": [
+    {"name": "native merges a purely inherited constraint","sql": "ALTER TABLE pgcheck_inherited.child ADD CONSTRAINT \" Exact Check \" CHECK (id > 0)","expect_rc": 0}
+   ],
+   "structure": [
+    {"sql": "SELECT conislocal AND coninhcount=1 FROM pg_catalog.pg_constraint WHERE conrelid='pgcheck_inherited.child'::regclass AND conname=' Exact Check '","expect": "t","assert": "constraint becomes local while retaining parent count"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_inherited.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_inherited.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_inherited CASCADE","verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_inherited'","expect": "0","assert": "owned schema absent"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-add-check-name-guarded-absent",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-add-check-name",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcheck_guarded_absent"},
+   "fixture": {"cleanup": [{"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_guarded_absent CASCADE","verify": {"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_guarded_absent'","expect": "0","assert": "owned schema absent"}}]},
+   "sql": "ALTER TABLE IF EXISTS pgcheck_guarded_absent.missing ADD CONSTRAINT \" Exact Check \" CHECK (id > 0)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_guarded_absent'","expect": "0","assert": "owned schema absent"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcheck_guarded_absent","expect_rc": 0},
+    {"name": "seed and capture constraint and file identities","sql": "CREATE TABLE pgcheck_guarded_absent.t(id int,payload text,CONSTRAINT \" Exact Check \" CHECK (id > 0)); INSERT INTO pgcheck_guarded_absent.t VALUES(1,'keep'); CREATE SEQUENCE pgcheck_guarded_absent.guard START 7; CREATE TABLE pgcheck_guarded_absent.receipt AS SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_guarded_absent'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_check.not_valid.require","level": "warning"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"sql": "SELECT count(*) FROM ((TABLE pgcheck_guarded_absent.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_guarded_absent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_guarded_absent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcheck_guarded_absent.receipt)) AS delta","expect": "0","assert": "audit preserves exact constraint and file identities"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_guarded_absent.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_guarded_absent.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "execute": [
+    {"name": "native skips proven qualified absence","sql": "ALTER TABLE IF EXISTS pgcheck_guarded_absent.missing ADD CONSTRAINT \" Exact Check \" CHECK (id > 0)","expect_rc": 0}
+   ],
+   "structure": [
+    {"sql": "SELECT count(*) FROM ((TABLE pgcheck_guarded_absent.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_guarded_absent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_guarded_absent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcheck_guarded_absent.receipt)) AS delta","expect": "0","assert": "native refusal preserves constraint and file identities"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_guarded_absent.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_guarded_absent.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_guarded_absent CASCADE","verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_guarded_absent'","expect": "0","assert": "owned schema absent"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-add-check-name-scope-order",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-add-check-name",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcheck_scope_order"},
+   "fixture": {"cleanup": [{"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_scope_order CASCADE","verify": {"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_scope_order'","expect": "0","assert": "owned schema absent"}}]},
+   "sql": "ALTER TABLE pgcheck_scope_order.t ADD COLUMN predecessor integer;ALTER TABLE pgcheck_scope_order.t ADD CONSTRAINT \" Exact Check \" CHECK (id > 0) NOT VALID",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_scope_order'","expect": "0","assert": "owned schema absent"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcheck_scope_order","expect_rc": 0},
+    {"name": "seed and capture constraint and file identities","sql": "CREATE TABLE pgcheck_scope_order.t(id int,payload text,CONSTRAINT \" Exact Check \" CHECK (id > 0)); INSERT INTO pgcheck_scope_order.t VALUES(1,'keep'); CREATE SEQUENCE pgcheck_scope_order.guard START 7; CREATE TABLE pgcheck_scope_order.receipt AS SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_scope_order'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["complete","unverified"],
+    "statement_indices": [0,1],
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.pg.alter.add_check.name.available","reason_code": "unproven_check_constraint_name","required_facts": ["target_table.pg_constraint_scope"]}],
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {"sql": "SELECT count(*) FROM ((TABLE pgcheck_scope_order.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_scope_order'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,k.conname,k.contype,k.convalidated,k.conislocal,k.coninhcount FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcheck_scope_order'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcheck_scope_order.receipt)) AS delta","expect": "0","assert": "audit preserves exact constraint and file identities"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_scope_order.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_scope_order.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "execute": [
+    {"name": "native applies the predecessor","sql": "ALTER TABLE pgcheck_scope_order.t ADD COLUMN predecessor integer","expect_rc": 0},
+    {"name": "native still rejects the duplicate","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcheck_scope_order.t ADD CONSTRAINT \" Exact Check \" CHECK (id > 0) NOT VALID","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42710:"]}
+   ],
+   "structure": [
+    {"sql": "SELECT EXISTS(SELECT FROM pg_catalog.pg_attribute WHERE attrelid='pgcheck_scope_order.t'::regclass AND attname='predecessor')","expect": "t","assert": "predecessor column was applied"},
+    {"sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgcheck_scope_order.t","expect": "t","assert": "retains the exact payload"},
+    {"sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_scope_order.guard","expect": "7:false","assert": "retains the independent sequence"}
+   ],
+   "teardown": [
+    {"name": "drop owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcheck_scope_order CASCADE","verify": [{"sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_scope_order'","expect": "0","assert": "owned schema absent"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
   {
    "id": "pg-column-type-destination-missing-schema",
    "anchor": "postgres17",
@@ -11412,6 +11829,16 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.add-check-name-offline",
+  "T37.cli.add-check-name-disabled",
+  "T37.meta.pg-add-check-name-duplicate",
+  "T37.meta.pg-add-check-name-duplicate-not-valid",
+  "T37.meta.pg-add-check-name-other-kind",
+  "T37.meta.pg-add-check-name-exact-control",
+  "T37.meta.pg-add-check-name-unnamed",
+  "T37.meta.pg-add-check-name-inherited",
+  "T37.meta.pg-add-check-name-guarded-absent",
+  "T37.meta.pg-add-check-name-scope-order",
   "T37.cli.column-type-destination-offline",
   "T37.cli.column-type-destination-disabled",
   "T37.meta.pg-column-type-destination-missing-schema",

@@ -3,6 +3,14 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D19 PostgreSQL named CHECK constraints
+
+Focused T37 passed 309/309 cases and 7,870 assertions. The ten new cases
+preserve all 299 earlier cases and their policy profiles. Native controls
+separate exact constraint collisions from distinct case, standalone index
+names, inherited merges and guarded absence.
+[Decision](../../docs/decisions/2026-11-19-postgresql-check-constraint-name.md)
+
 ## T37 D18 PostgreSQL column type destinations
 
 Delivered `1bc8709c` passed all 50 tasks with 3,631/3,631 cases and 66,643

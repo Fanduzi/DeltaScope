@@ -69,6 +69,18 @@ Keep all previous cases and profiles. Bind exact evidence only to ADD CHECK
 and ADD CHECK NOT VALID at the PG17 anchor. Native controls and audit
 oracles use owned relations and no execution through the audit path.
 
+## Evidence bindings
+
+`99162180` binds the constraint directory comparisons to PostgreSQL system
+operators. `9055f9fd` adds the approved blocker and corrects the overlapping
+index rule. Five live CLI comparisons at `99162180` with the rule worktree
+matched the native name outcomes across both namespaces. The focused T37
+candidate passed 309/309 cases and 7,870 assertions, with all 299 earlier
+cases and profiles preserved. Ten new native commands produced six successes
+and four exact `42710` refusals. The validator passed. Six selectors attach
+to ADD CHECK and six to ADD CHECK NOT VALID. Inventory classifications and
+the original denominator are preserved.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

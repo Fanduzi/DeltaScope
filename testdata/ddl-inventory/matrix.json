@@ -8171,7 +8171,13 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.add-check.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-duplicate",
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-other-kind",
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-exact-control",
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-unnamed",
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-inherited",
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-guarded-absent"
               ]
             }
           ]
@@ -8191,7 +8197,13 @@
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.add-check-not-valid.probes.txt",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "file:testdata/ddl-golden/T37.json"
+                "file:testdata/ddl-golden/T37.json",
+                "file:testdata/ddl-golden/T37.json#add-check-name-offline",
+                "file:testdata/ddl-golden/T37.json#add-check-name-disabled",
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-duplicate-not-valid",
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-exact-control",
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-scope-order",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/add_check_constraint_name.expected.yaml#ddl.pg.alter.add_check.name.available"
               ]
             }
           ]
