@@ -13,6 +13,7 @@ type Metadata struct {
 	PGTableTablespace   *PGTableTablespace      `json:"-"`
 	PGTableAccessMethod *PGTableAccessMethod    `json:"-"`
 	PGTablePersistence  *PGTablePersistence     `json:"-"`
+	PGTableNamespace    *PGTableNamespace       `json:"-"`
 	View                *ViewMetadata           `json:"-"`
 	// ExchangeTable is the ordered pre-state projection of the
 	// EXCHANGE PARTITION counterpart table — the second object identity
@@ -802,6 +803,7 @@ type ObjectSnapshot struct {
 	PGTableTablespace   *PGTableTablespace      `json:"-"`
 	PGTableAccessMethod *PGTableAccessMethod    `json:"-"`
 	PGTablePersistence  *PGTablePersistence     `json:"-"`
+	PGTableNamespace    *PGTableNamespace       `json:"-"`
 	// SequenceReferences is the bounded inbound-reference read for a proven
 	// sequence identity — the catalog's owner-slot/target edge list. A nil
 	// slice means the read never happened — never a proven-empty set;
