@@ -10,6 +10,7 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 | extractor.go | Defines the PostgreSQL extracted-statement wrapper and extractor that populates normalized spec fields (column `NotNull`, `Default`, constraints) for ALTER TABLE ADD COLUMN statements |
 | extractor_table_reloptions.go | Retains private ordered table-option keys, namespaces, argument presence and bounded fillfactor/Boolean facts |
 | parser_table_owner_postgresql_tag_test.go | Verifies exact private role names, session aliases and PUBLIC in ALTER TABLE OWNER TO |
+| parser_bulk_tablespace_postgresql_tag_test.go | Verifies precise endpoints, ordered private role selections and NOWAIT in bulk ALTER TABLE |
 | extractor_ddl_alter.go | Normalizes PostgreSQL ALTER actions; retains private exact compression-method AST and existing storage_kind without claiming applicability; ADD PRIMARY KEY/UNIQUE preserve explicit `using_index=true\|false`, never inferred eligibility; DROP CONSTRAINT preserves `if_exists`/`cascade` (omission/RESTRICT false) |
 | parser_constraint_target_postgresql_tag_test.go | Pins DROP constraint guard/CASCADE/RESTRICT/omission and exact quoted names without widening parser support |
 | parser_constraint_build_postgresql_tag_test.go | Pins plain/reused-index PK and UNIQUE declarations, unnamed/quoted controls, and absence of the index-reuse marker on FK/CHECK |

@@ -997,6 +997,8 @@ type Alter struct {
 	PGAddColumnIfNotExists bool `json:"-"`
 	// PGTableOwner carries the authored RoleSpec without serializing it.
 	PGTableOwner PGTableOwnerTarget `json:"-"`
+	// PGBulkTablespace preserves the authored endpoint and role selections.
+	PGBulkTablespace *PGBulkTablespaceTarget `json:"-"`
 	// PGTableReloptions preserves exact ordered SET/RESET table declarations.
 	PGTableReloptions []PGTableReloption `json:"-"`
 	// Constraints carries CHECK members declared inside column definitions

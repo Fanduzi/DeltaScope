@@ -3,8 +3,10 @@ package audit
 import "github.com/Fanduzi/DeltaScope/internal/domain/spec"
 
 // invalidateStalePGTargetCatalogs withholds catalog proof after unapplied DDL.
+// It returns the prefix whose cluster-wide identities can still use live facts.
 // It never predicts a post-state or mutates the provider's cached snapshot.
-func invalidateStalePGTargetCatalogs(statements []spec.Statement, failures []parseFailure) {
+func invalidateStalePGTargetCatalogs(statements []spec.Statement, failures []parseFailure) int {
+	freshPrefix := len(statements)
 	stale := make(map[[2]string]bool)
 	allStale, earlierDDL := false, false
 	var earliest *parseFailure
@@ -17,6 +19,9 @@ func invalidateStalePGTargetCatalogs(statements []spec.Statement, failures []par
 	for i, statement := range statements {
 		if earliest != nil && (statement.Line <= 0 || earliest.Line <= 0 || failureBefore(earliest.Line, earliest.Column, statement.Line, statement.Column)) {
 			allStale = true
+		}
+		if (allStale || earlierDDL) && freshPrefix == len(statements) {
+			freshPrefix = i
 		}
 		if m := statement.Metadata; m != nil && m.TargetTable != nil {
 			name := m.TargetTable.PGRelation.Name
@@ -72,4 +77,5 @@ func invalidateStalePGTargetCatalogs(statements []spec.Statement, failures []par
 			}
 		}
 	}
+	return freshPrefix
 }

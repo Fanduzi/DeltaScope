@@ -6,6 +6,18 @@ type PGTableOwnerTarget struct {
 	Kind, Name string
 }
 
+// Valid reports whether the role selection contains exactly the decoded facts for its kind.
+func (t PGTableOwnerTarget) Valid() bool {
+	switch t.Kind {
+	case "named":
+		return t.Name != ""
+	case "current_user", "current_role", "session_user", "public":
+		return t.Name == ""
+	default:
+		return false
+	}
+}
+
 // PGTableOwnerState records one target lookup in the observed session.
 // A missing observation is represented by a nil state.
 type PGTableOwnerState struct {
@@ -21,15 +33,8 @@ func PGTableOwnerSelection(s Statement) PGTableOwnerTarget {
 		return PGTableOwnerTarget{}
 	}
 	target := s.DDL.Alter[0].PGTableOwner
-	switch target.Kind {
-	case "named":
-		if target.Name != "" {
-			return target
-		}
-	case "current_user", "current_role", "session_user", "public":
-		if target.Name == "" {
-			return target
-		}
+	if target.Valid() {
+		return target
 	}
 	return PGTableOwnerTarget{}
 }

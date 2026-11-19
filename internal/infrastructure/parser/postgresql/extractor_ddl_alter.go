@@ -814,10 +814,21 @@ func extractAlterTableMoveAllStmt(statement spec.Statement, stmt *pg_query.Alter
 	if source == "" || target == "" {
 		return unsupportedStatement(statement, "alter_table_move_all", "postgresql alter table move all tablespace names are missing")
 	}
+	move := &spec.PGBulkTablespaceTarget{Source: source, Destination: target, Nowait: stmt.GetNowait()}
+	for _, node := range stmt.GetRoles() {
+		role := pgRoleSelection(node.GetRoleSpec())
+		if !role.Valid() {
+			// Keep the existing normalized action when the role cannot be modeled.
+			move = nil
+			break
+		}
+		move.Roles = append(move.Roles, role)
+	}
 	statement.DDL = &spec.DDL{
 		Operation: spec.DDLOperationAlterTable,
 		Alter: []spec.Alter{{
-			Action: "move_all_tablespace",
+			Action:           "move_all_tablespace",
+			PGBulkTablespace: move,
 			Options: map[string]string{
 				"object_type":        "table",
 				"source_tablespace":  source,
@@ -827,6 +838,23 @@ func extractAlterTableMoveAllStmt(statement spec.Statement, stmt *pg_query.Alter
 		}},
 	}
 	return statement
+}
+
+func pgRoleSelection(role *pg_query.RoleSpec) spec.PGTableOwnerTarget {
+	switch role.GetRoletype() {
+	case pg_query.RoleSpecType_ROLESPEC_CSTRING:
+		return spec.PGTableOwnerTarget{Kind: "named", Name: role.GetRolename()}
+	case pg_query.RoleSpecType_ROLESPEC_CURRENT_USER:
+		return spec.PGTableOwnerTarget{Kind: "current_user"}
+	case pg_query.RoleSpecType_ROLESPEC_CURRENT_ROLE:
+		return spec.PGTableOwnerTarget{Kind: "current_role"}
+	case pg_query.RoleSpecType_ROLESPEC_SESSION_USER:
+		return spec.PGTableOwnerTarget{Kind: "session_user"}
+	case pg_query.RoleSpecType_ROLESPEC_PUBLIC:
+		return spec.PGTableOwnerTarget{Kind: "public"}
+	default:
+		return spec.PGTableOwnerTarget{}
+	}
 }
 
 func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.UnsupportedDetail) {
@@ -977,23 +1005,8 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 	case pg_query.AlterTableType_AT_DropNotNull:
 		return spec.Alter{Action: "drop_not_null", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Definition: &spec.Column{Name: cmd.GetName(), NotNull: false}, Change: &spec.AlterColumnChange{TouchesNullability: true}}, PGColumnTransition: pgColumnTransitionFromCmd(cmd)}, true, nil
 	case pg_query.AlterTableType_AT_ChangeOwner:
-		target := spec.PGTableOwnerTarget{}
-		owner := cmd.GetNewowner()
-		switch owner.GetRoletype() {
-		case pg_query.RoleSpecType_ROLESPEC_CSTRING:
-			if owner.GetRolename() != "" {
-				target = spec.PGTableOwnerTarget{Kind: "named", Name: owner.GetRolename()}
-			}
-		case pg_query.RoleSpecType_ROLESPEC_CURRENT_USER:
-			target.Kind = "current_user"
-		case pg_query.RoleSpecType_ROLESPEC_CURRENT_ROLE:
-			target.Kind = "current_role"
-		case pg_query.RoleSpecType_ROLESPEC_SESSION_USER:
-			target.Kind = "session_user"
-		case pg_query.RoleSpecType_ROLESPEC_PUBLIC:
-			target.Kind = "public"
-		}
-		if target.Kind == "" {
+		target := pgRoleSelection(cmd.GetNewowner())
+		if !target.Valid() {
 			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "changeowner", Reason: "postgresql alter table owner role is missing"}
 		}
 		return spec.Alter{Action: "change_owner", PGTableOwner: target}, true, nil

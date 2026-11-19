@@ -15,6 +15,7 @@ type Metadata struct {
 	PGTablePersistence  *PGTablePersistence     `json:"-"`
 	PGTableNamespace    *PGTableNamespace       `json:"-"`
 	PGTableOwner        *PGTableOwnerState      `json:"-"`
+	PGBulkTablespace    *PGBulkTablespaceState  `json:"-"`
 	View                *ViewMetadata           `json:"-"`
 	// ExchangeTable is the ordered pre-state projection of the
 	// EXCHANGE PARTITION counterpart table — the second object identity
@@ -806,6 +807,7 @@ type ObjectSnapshot struct {
 	PGTablePersistence  *PGTablePersistence     `json:"-"`
 	PGTableNamespace    *PGTableNamespace       `json:"-"`
 	PGTableOwner        *PGTableOwnerState      `json:"-"`
+	PGBulkTablespace    *PGBulkTablespaceState  `json:"-"`
 	// SequenceReferences is the bounded inbound-reference read for a proven
 	// sequence identity — the catalog's owner-slot/target edge list. A nil
 	// slice means the read never happened — never a proven-empty set;
@@ -842,10 +844,11 @@ type ObjectSnapshot struct {
 
 // ObjectLookupRequest describes one object to resolve from live metadata.
 type ObjectLookupRequest struct {
-	Schema     string
-	Type       string
-	Name       string
-	Qualifiers map[string]string
+	Schema           string
+	Type             string
+	Name             string
+	Qualifiers       map[string]string
+	PGBulkTablespace *PGBulkTablespaceTarget `json:"-"`
 	// RequestVersion carries the request-level OBSERVED version identity
 	// the caller already adjudicated for this object's family — the SRS
 	// family binds it so the provider channel's own version query can
