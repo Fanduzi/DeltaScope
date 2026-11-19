@@ -90,6 +90,25 @@ evidence can replace the final fixed-SHA full run.
 The original SET/RESET storage parameters anchor receives 15 additional
 selectors. The matrix retains its original row and subaction classifications.
 
+## Delivered verification
+
+D10 shipped at `61cb93b1c69840281d75f5ee4f58e0ddf1f996b0` from
+`cb2e7c360944a8716a20a8c73c378bc25440ae24` via fast-forward and normal push.
+The fixed SHA passed 50 canonical tasks, 3535/3535 cases and 63391 assertions,
+with zero failures or skips. T37 passed 203/203 with 4352 assertions and 27
+native steps (16 successes and 11 precise refusals). The validator, independent
+read-only review, candidate and merged-root gates, and owned cleanup passed.
+The original workspace, protected worktrees and 16 unrelated container
+identities remained intact. The final task changed seven paths and the
+milestone changed 45.
+
+- [Go, PostgreSQL and lint CI](https://github.com/Fanduzi/DeltaScope/actions/runs/44431053316)
+- [CLI TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44431053280)
+- [Pages](https://github.com/Fanduzi/DeltaScope/runs/135248351056)
+
+Final artifact: `/tmp/ddl-golden-pg-table-reloptions-final-61cb93b1/all/artifact.json`.
+The bounded heap declarations are delivered. Other F09 dimensions stay open.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

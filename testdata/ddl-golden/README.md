@@ -13,6 +13,10 @@ options, physical file identity, payload and the sequence guard before any
 native execution. See the
 [decision](../../docs/decisions/2026-11-18-postgresql-table-reloptions.md).
 
+The shipped `61cb93b1` run passed 50 tasks, 3535/3535 cases and 63391
+assertions. The validator and all five exact-SHA CI checks passed. The decision
+record links the final artifact and CI.
+
 ## T37 D9 PostgreSQL replica identity index attachment
 
 D9 adds 16 cases, preserving the 173 earlier T37 cases and all existing
