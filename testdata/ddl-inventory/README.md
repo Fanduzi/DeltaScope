@@ -18,8 +18,8 @@ honestly — not a count of implemented rules.
 
 ## PostgreSQL column type destinations
 
-D18 adds precise PG17 selectors under ALTER COLUMN TYPE and ALTER COLUMN TYPE
-USING. The remaining conversion, expression, dependency and rewrite premises
+D18 at `1bc8709c` adds fifteen PG17 selectors under ALTER COLUMN TYPE and
+three under ALTER COLUMN TYPE USING. The remaining conversion, expression, dependency and rewrite premises
 have separate evidence requirements. Inventory classifications are preserved.
 
 ## PostgreSQL bulk table tablespace targets

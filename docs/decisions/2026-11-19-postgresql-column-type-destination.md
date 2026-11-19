@@ -82,6 +82,20 @@ commands produced six successes and twelve exact refusals. The 282 previous
 cases and profiles were preserved. Fifteen selectors were added to the
 original TYPE cell and three to TYPE USING. Classifications were preserved.
 
+## Delivered evidence
+
+`1bc8709c7f18072ca24f1f5d597cb3a5403e88df` passed all 50 canonical tasks, with
+3,631/3,631 cases and 66,643 assertions. T37 passed 299/299 cases and 7,604
+assertions. The validator, independent review, task cleanup and merged-root
+gates passed. The original working tree, release worktree and sixteen
+protected container identities matched.
+
+The milestone was merged FF-only and pushed normally to `main`.
+[Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44622791333),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44622791505), and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/135908765356) passed on this SHA. The final artifact is
+`/tmp/ddl-golden-pg-column-type-destination-final-1bc8709c/all/artifact.json`.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

@@ -5,8 +5,9 @@ Per-task manifests for the milestone DDL golden-path runner
 
 ## T37 D18 PostgreSQL column type destinations
 
-Focused T37 passed 299/299 and 7,604 assertions. Seventeen additions preserve
-all 282 earlier cases and profiles. Native cases exercise exact targets,
+Delivered `1bc8709c` passed all 50 tasks with 3,631/3,631 cases and 66,643
+assertions. T37 passed 299/299 with 7,604 assertions and preserved all 282
+earlier cases and profiles. Native cases exercise exact targets,
 shells, arrays, pseudo-types, USING and statement-scope boundaries. See the
 [decision](../../docs/decisions/2026-11-19-postgresql-column-type-destination.md).
 
