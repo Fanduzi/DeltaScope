@@ -1767,6 +1767,10 @@ rules:
     level: notice
     params:
 
+  ddl.pg.alter.column_type.source.valid:
+    enabled: true
+    level: blocker
+    params:
   ddl.pg.alter.set_data_type.rewrite.warn:
     enabled: true
     level: warning

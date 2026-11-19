@@ -1344,6 +1344,16 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 
 `v0.32.0` is the **PostgreSQL Boundary Support-Readiness Gate**. It is a decision milestone, not a feature release. No new rule IDs were added. Characterization tests document stable AST facts about generated and identity columns; a readiness report recommends `v0.33.0` as a narrow fact-preservation pack. No production extractor, spec, rule, or policy code changed.
 
+### PostgreSQL ALTER COLUMN TYPE source checks
+
+`ddl.pg.alter.column_type.source.valid` defaults to blocker for a fresh,
+exact, schema-qualified ordinary persistent non-typed PostgreSQL 17 table.
+It rejects a proven missing source column, system source column or `USING`
+on a stored generated source. Unknown evidence yields
+`unproven_column_type_source`. Destination types, dependencies, conversion
+expressions and row data are outside this check. Existing migration advice
+continues to report possible rewrite and lock impact.
+
 ### PostgreSQL ordinary-table persistence transitions
 
 `ddl.pg.alter.persistence.transition.valid` defaults to blocker for a fresh,

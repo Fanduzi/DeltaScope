@@ -234,6 +234,8 @@ func summaryForRule(ruleID string) string {
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	switch ruleID {
+	case "ddl.pg.alter.column_type.source.valid":
+		return "Checks the exact PG17 TYPE or TYPE USING source on a fresh ordinary persistent table. Missing sources, system columns and USING on a generated column block."
 	case "ddl.pg.alter.persistence.transition.valid":
 		return "Checks PG17 ordinary-table LOGGED and UNLOGGED transitions for direct publication membership and direction-specific foreign keys. A proven same-persistence request leaves the files in place."
 	case "ddl.pg.alter.access_method.target.valid":
@@ -954,6 +956,7 @@ func sourceForRule() string {
 const unknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
 
 var metadataAwareRuleIDs = map[string]bool{
+	"ddl.pg.alter.column_type.source.valid":                true,
 	"ddl.pg.alter.persistence.transition.valid":            true,
 	"ddl.pg.alter.access_method.target.valid":              true,
 	"ddl.pg.alter.tablespace.target.valid":                 true,

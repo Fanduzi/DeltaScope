@@ -1,0 +1,37 @@
+name: column_type_source_preconditions
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    missing_t:
+      exists: true
+      pg_relation: {name: missing_t, kind: r}
+      pg_columns: &ordinary
+        ordinary: true
+        columns:
+          - {name: id, identity: '', generated: '', type_width: 32, type_storage: p, not_null: false, has_default: false, primary_key: false}
+        system_columns:
+          - {name: ctid, identity: '', generated: '', type_width: -1, type_storage: p, not_null: true, has_default: false, primary_key: false, system: true}
+    system_t:
+      exists: true
+      pg_relation: {name: system_t, kind: r}
+      pg_columns: *ordinary
+    generated_t:
+      exists: true
+      pg_relation: {name: generated_t, kind: r}
+      pg_columns:
+        ordinary: true
+        columns:
+          - {name: stored, identity: '', generated: s, type_width: 32, type_storage: p, not_null: false, has_default: true, primary_key: false}
+    ordinary_t:
+      exists: true
+      pg_relation: {name: ordinary_t, kind: r}
+      pg_columns: *ordinary
+expect:
+  parse_ok: true
+  statements: {count: 4}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.column_type.source.valid, ddl.pg.alter.set_data_type.rewrite.warn]

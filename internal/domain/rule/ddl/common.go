@@ -274,6 +274,7 @@ const (
 	ruleIDPGCreateIndexConcurrentlyRequire                  = "ddl.pg.create_index.concurrently.require"
 	ruleIDPGAlterAddColumnNonNullDefaultRewriteWarn         = "ddl.pg.alter.add_column.non_null_default.rewrite.warn"
 	ruleIDPGAlterAddCheckNotValidRequire                    = "ddl.pg.alter.add_check.not_valid.require"
+	ruleIDPGAlterColumnTypeSourceValid                      = "ddl.pg.alter.column_type.source.valid"
 	ruleIDPGAlterSetDataTypeRewriteWarn                     = "ddl.pg.alter.set_data_type.rewrite.warn"
 	ruleIDPGTableForeignKeyCrossSchemaAdvisory              = "ddl.pg.table.foreign_key.cross_schema.advisory"
 	ruleIDPGAlterNotValidConstraintValidateRequire          = "ddl.pg.alter.not_valid_constraint.validate.require"

@@ -134,6 +134,13 @@ The Go provider `PGConstraintState` alias and copied directory retain private fa
 
 Maintainer notes: [decision](../decisions/2026-11-17-postgresql-constraint-target-evidence.md). Other F09 dimensions remain open.
 
+### PostgreSQL ALTER COLUMN TYPE source checks
+
+The default `ddl.pg.alter.column_type.source.valid` blocker covers exact PG17
+source identity for ordinary persistent non-typed tables and preserves gaps
+on missing evidence. Actual system columns and generated columns with USING
+are refused. The rule does not validate destination types or evaluate casts.
+
 ### PostgreSQL ordinary-table persistence transitions
 
 `ddl.pg.alter.persistence.transition.valid` checks direct publication and

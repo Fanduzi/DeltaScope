@@ -168,3 +168,19 @@ func TestAuditTablePersistenceThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing persistence finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditColumnTypeSourceThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+		snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+			PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true, Columns: []PGColumnState{{Name: "id"}}}}}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t ALTER COLUMN "ID" TYPE bigint`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(result.Statements) != 1 {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.column_type.source.valid" && f.Metadata["reason_code"] == "column_absent" && f.Metadata["column"] == "ID" {
+			return
+		}
+	}
+	t.Fatalf("missing exact source finding: %+v", result.Statements[0].Findings)
+}

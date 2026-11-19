@@ -17,6 +17,8 @@ The PostgreSQL ordinary-table access method entry advertises the default blocker
 
 The PostgreSQL ordinary-table persistence entry advertises the default blocker and live dependency evidence.
 
+The PostgreSQL TYPE source entry advertises the default blocker and exact column evidence.
+
 ## Files
 
 | File | Responsibility |

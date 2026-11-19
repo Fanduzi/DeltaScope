@@ -694,6 +694,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGCreateIndexConcurrentlyRequire, construct: newCreateIndexConcurrentlyRequiredRule},
 		{ruleID: ruleIDPGAlterAddColumnNonNullDefaultRewriteWarn, construct: newAddColumnNonNullDefaultRewriteWarnRule},
 		{ruleID: ruleIDPGAlterAddCheckNotValidRequire, construct: newAddCheckNotValidRequiredRule},
+		{ruleID: ruleIDPGAlterColumnTypeSourceValid, construct: newPGColumnTypeSourceRule},
 		{ruleID: ruleIDPGAlterSetDataTypeRewriteWarn, construct: newSetDataTypeRewriteWarnRule},
 		{ruleID: ruleIDPGTableForeignKeyCrossSchemaAdvisory, construct: newTableForeignKeyCrossSchemaAdvisoryRule},
 		{ruleID: ruleIDPGDropIndexAdvisory, construct: newDropIndexAdvisoryRule},

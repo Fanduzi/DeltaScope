@@ -240,8 +240,8 @@ func (r setDataTypeRewriteWarnRule) Evaluate(ctx context.Context, statement spec
 			Level:   r.level,
 			Message: fmt.Sprintf("ALTER COLUMN %q SET DATA TYPE carries table rewrite risk on PostgreSQL", alter.Name),
 			Explanation: &rule.FindingExplanation{
-				Why:        "PostgreSQL ALTER TABLE ... ALTER COLUMN ... SET DATA TYPE typically rewrites the entire table to convert existing row data.",
-				Risk:       "The rewrite holds an ACCESS EXCLUSIVE lock, blocking all concurrent access for the duration of the conversion.",
+				Why:        "A PostgreSQL type change can require a table rewrite to convert existing rows. The conversion and any USING expression affect whether a rewrite is needed.",
+				Risk:       "The type change takes an ACCESS EXCLUSIVE lock. A rewrite can extend the time that other sessions are blocked.",
 				Suggestion: "Assess table size and lock impact first. For large tables, use a phased migration: add a shadow column with the new type, backfill in batches, switch application reads, then drop the old column.",
 			},
 			Metadata: map[string]any{
