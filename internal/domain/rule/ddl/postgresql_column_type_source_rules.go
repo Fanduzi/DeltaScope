@@ -27,21 +27,11 @@ func assessPGColumnTypeSource(s spec.Statement) (reason, fact string) {
 	if exists, known := pgAlterRelation(s); s.DDL.PGTableIfExists && known && !exists {
 		return "", ""
 	}
-	if len(s.DDL.Alter) != 1 || !spec.PGOrdinaryTableBound(s) {
+	reason, known := spec.PGColumnTypeSource(s)
+	if !known {
 		return "", "target_table.pg_columns"
 	}
-	member, known := pgColumnTargetState(s, 0)
-	switch {
-	case !known:
-		return "", "target_table.pg_columns"
-	case member == nil:
-		return "column_absent", ""
-	case member.System:
-		return "system_column_inapplicable", ""
-	case member.Generated == "s" && s.DDL.Alter[0].Options["has_using"] == "true":
-		return "generated_column_using_inapplicable", ""
-	}
-	return "", ""
+	return reason, ""
 }
 
 func (r pgColumnTypeSourceRule) Evaluate(ctx context.Context, s spec.Statement) ([]rule.Finding, error) {

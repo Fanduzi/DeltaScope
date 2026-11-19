@@ -246,6 +246,9 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 		if err := enrichPGTableOwners(ctx, request, enriched); err != nil {
 			return nil, err
 		}
+		if err := enrichPGColumnTypes(ctx, request, enriched); err != nil {
+			return nil, err
+		}
 	}
 	return enriched, nil
 }

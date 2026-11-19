@@ -15,6 +15,7 @@ type Metadata struct {
 	PGTablePersistence  *PGTablePersistence     `json:"-"`
 	PGTableNamespace    *PGTableNamespace       `json:"-"`
 	PGTableOwner        *PGTableOwnerState      `json:"-"`
+	PGColumnType        *PGColumnTypeState      `json:"-"`
 	PGBulkTablespace    *PGBulkTablespaceState  `json:"-"`
 	View                *ViewMetadata           `json:"-"`
 	// ExchangeTable is the ordered pre-state projection of the
@@ -807,6 +808,7 @@ type ObjectSnapshot struct {
 	PGTablePersistence  *PGTablePersistence     `json:"-"`
 	PGTableNamespace    *PGTableNamespace       `json:"-"`
 	PGTableOwner        *PGTableOwnerState      `json:"-"`
+	PGColumnType        *PGColumnTypeState      `json:"-"`
 	PGBulkTablespace    *PGBulkTablespaceState  `json:"-"`
 	// SequenceReferences is the bounded inbound-reference read for a proven
 	// sequence identity — the catalog's owner-slot/target edge list. A nil

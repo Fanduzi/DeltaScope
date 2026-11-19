@@ -993,6 +993,8 @@ type Alter struct {
 	PGColumnTuning *PGColumnTuning `json:"-"`
 	// PGCompressionMethod retains the exact authored AST name; nil is unobserved.
 	PGCompressionMethod *string `json:"-"`
+	// PGColumnType preserves the exact modeled TYPE destination privately.
+	PGColumnType PGColumnTypeTarget `json:"-"`
 	// PGAddColumnIfNotExists is the authored ADD COLUMN guard, separate from the table guard.
 	PGAddColumnIfNotExists bool `json:"-"`
 	// PGTableOwner carries the authored RoleSpec without serializing it.

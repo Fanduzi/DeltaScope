@@ -990,6 +990,10 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "alter_column_type", Reason: "postgresql alter column type payload is missing"}
 		}
 		alter := spec.Alter{Action: "set_data_type", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Definition: &spec.Column{Name: cmd.GetName(), Type: typeNameString(column.GetTypeName())}}}
+		target := column.GetTypeName()
+		if names := target.GetNames(); len(names) == 2 && !target.GetPctType() {
+			alter.PGColumnType = spec.PGColumnTypeTarget{Schema: stringNodeValue(names[0]), Name: stringNodeValue(names[1]), Array: len(target.GetArrayBounds()) > 0}
+		}
 		if column.GetRawDefault() != nil {
 			alter.Options = map[string]string{"has_using": "true"}
 		}
