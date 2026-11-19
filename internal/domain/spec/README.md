@@ -91,6 +91,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGColumnTuning`, `PGColumnOption`, `PGColumnOptionValueKind`
   Private authored statistics DEFAULT/literal and ordered SET/RESET key/value
   facts; numeric means proven finite AST literal, never parsed expression text.
+- `PGTablePersistence` carries the observed persistence and bounded dependency facts privately. `PGExactTableBound` checks exact fresh relation identity before scope-specific checks.
 - `PGTableAccessMethod` retains exact named or bare DEFAULT selection, observed kind and comparison with the current method. The private observation stays out of JSON.
 - `PGTableTablespace` retains the exact destination, presence, scope and comparison with the effective current location. The private observation stays out of JSON.
 - `PGReplicaIdentityIndex` carries private exact table/index attachment facts and nullable observations. `PG17Observed` checks the actual PostgreSQL 17 server banner. `PGOrdinaryTableBound` verifies fresh, exact schema-qualified ordinary persistent non-typed scope.

@@ -107,6 +107,16 @@ func clonePGColumnMembers(members []PGColumnState) []PGColumnState {
 
 // PGOrdinaryTableBound checks the fresh, qualified ordinary persistent non-typed target.
 func PGOrdinaryTableBound(s Statement) bool {
+	if !PGExactTableBound(s) {
+		return false
+	}
+	catalog := s.Metadata.TargetTable.PGColumns
+	return catalog != nil && catalog.Ordinary && !catalog.Typed
+}
+
+// PGExactTableBound checks the identity and freshness of the live relation.
+// Callers must establish the table shape their rule requires.
+func PGExactTableBound(s Statement) bool {
 	if s.DDL == nil || s.DDL.Table == nil || s.DDL.PGTableCatalogQualified || s.Metadata == nil || s.Metadata.TargetTable == nil {
 		return false
 	}
@@ -114,6 +124,5 @@ func PGOrdinaryTableBound(s Statement) bool {
 	return table.Name != "" && table.Schema != "" && table.Schema != "pg_temp" &&
 		s.Metadata.Schema == table.Schema && snapshot.Schema == table.Schema && snapshot.Exists &&
 		snapshot.Table != nil && snapshot.Table.Name == table.Name &&
-		snapshot.PGRelation.Name == table.Name && snapshot.PGRelation.Kind == "r" &&
-		snapshot.PGColumns != nil && snapshot.PGColumns.Ordinary && !snapshot.PGColumns.Typed
+		snapshot.PGRelation.Name == table.Name && snapshot.PGRelation.Kind == "r"
 }

@@ -234,6 +234,9 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 		if err := enrichPGTableAccessMethods(ctx, request, enriched); err != nil {
 			return nil, err
 		}
+		if err := enrichPGTablePersistence(ctx, request, enriched); err != nil {
+			return nil, err
+		}
 	}
 	return enriched, nil
 }
