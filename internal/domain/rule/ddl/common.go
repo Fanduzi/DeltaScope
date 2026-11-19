@@ -514,6 +514,7 @@ const (
 	ruleIDPGAlterAddIdentityNotice            = "ddl.pg.alter.add_identity.notice"
 	ruleIDPGAlterAddExclusionConstraintNotice = "ddl.pg.alter.add_exclusion_constraint.notice"
 	ruleIDPGAlterMoveAllTablespaceNotice      = "ddl.pg.alter.move_all_tablespace.notice"
+	ruleIDPGBulkTablespaceTargetsValid        = "ddl.pg.alter.move_all_tablespace.target.valid"
 	// MySQL/TiDB lifecycle notice rules.
 	ruleIDRenameTableNotice                = "ddl.rename_table.notice"
 	ruleIDCreateIndexNotice                = "ddl.create_index.notice"

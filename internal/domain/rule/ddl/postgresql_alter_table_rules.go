@@ -993,12 +993,20 @@ func (r pgAlterBoundedNoticeRule) Evaluate(ctx context.Context, statement spec.S
 				metadata[k] = v
 			}
 		}
+		message, why, risk := r.message, r.why, r.risk
+		if r.id == ruleIDPGAlterMoveAllTablespaceNotice {
+			if _, _, same := assessPGBulkTablespace(statement); same {
+				message = "ALTER TABLE ALL IN TABLESPACE selects the same observed PostgreSQL tablespace"
+				why = "The observed source and destination resolve to the same tablespace."
+				risk = "PostgreSQL checks the target tablespace privileges before it can skip the move."
+			}
+		}
 		findings = append(findings, rule.Finding{
 			Level:   r.level,
-			Message: r.message,
+			Message: message,
 			Explanation: &rule.FindingExplanation{
-				Why:        r.why,
-				Risk:       r.risk,
+				Why:        why,
+				Risk:       risk,
 				Suggestion: r.suggestion,
 			},
 			Metadata: metadata,
@@ -1051,10 +1059,10 @@ func newMoveAllTablespaceNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, 
 	return newPGAlterBoundedNoticeRule(
 		ruleIDPGAlterMoveAllTablespaceNotice, rule.LevelNotice, "move_all_tablespace",
 		[]string{"object_type", "source_tablespace", "target_tablespace", "has_table_identity"}, true,
-		"ALTER TABLE ALL IN TABLESPACE SET TABLESPACE on PostgreSQL — all tables moved between tablespaces",
-		"ALL IN TABLESPACE moves all tables (or other objects) from one tablespace to another. Each table requires an ACCESS EXCLUSIVE lock during its move.",
-		"Moving all tables can cause significant downtime on large databases. The operation is not atomic — a failure partway through leaves some tables in the source and some in the target tablespace.",
-		"Schedule during a maintenance window. Verify the target tablespace has sufficient capacity for all objects being moved.",
+		"ALTER TABLE ALL IN TABLESPACE requests a bulk tablespace move on PostgreSQL",
+		"The statement requests a transactional move of matching tables in the connected database.",
+		"A move can take ACCESS EXCLUSIVE locks and consume storage. NOWAIT can reject the statement if a required lock is unavailable.",
+		"Confirm the selection, locks, and destination capacity before executing the statement.",
 		cfg,
 	)
 }

@@ -21,6 +21,8 @@ The PostgreSQL TYPE source entry advertises the default blocker and exact column
 
 The PostgreSQL rename and SET SCHEMA target entries expose default blockers based on exact catalog evidence.
 
+The bulk tablespace target entry advertises the default blocker and required PostgreSQL 17 endpoint and role facts.
+
 The PostgreSQL ordinary-table owner target entry advertises the default blocker and private role evidence.
 
 ## Files

@@ -1031,7 +1031,7 @@ These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-sa
 | `ddl.pg.alter.set_expression.notice` | `ALTER TABLE ... ALTER COLUMN ... SET EXPRESSION` sets a generated column expression — informational notice | notice | No |
 | `ddl.pg.alter.add_identity.notice` | `ALTER TABLE ... ALTER COLUMN ... ADD GENERATED ... AS IDENTITY` adds identity to an existing column — informational notice | notice | No |
 | `ddl.pg.alter.add_exclusion_constraint.notice` | `ALTER TABLE ... ADD CONSTRAINT ... EXCLUDE USING` adds an exclusion constraint — informational notice | notice | No |
-| `ddl.pg.alter.move_all_tablespace.notice` | `ALTER TABLE ALL IN TABLESPACE ... SET TABLESPACE ...` moves all tables in a tablespace — informational notice | notice | No |
+| `ddl.pg.alter.move_all_tablespace.notice` | `ALTER TABLE ALL IN TABLESPACE ... SET TABLESPACE ...` requests a transactional tablespace move for matching tables | notice | No |
 
 > **Note (v0.170.0):** These rules are PostgreSQL-specific and offline. Final parseable boundary findings emit bounded metadata only: operation, action, table, column (for SET EXPRESSION and ADD IDENTITY), and constraint name (for ADD EXCLUSION CONSTRAINT). No expression body, sequence options, exclusion operators/predicates, operator class names, catalog state, or raw SQL are emitted.
 
@@ -1343,6 +1343,17 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 ### PostgreSQL Boundary Support-Readiness Gate (v0.32.0)
 
 `v0.32.0` is the **PostgreSQL Boundary Support-Readiness Gate**. It is a decision milestone, not a feature release. No new rule IDs were added. Characterization tests document stable AST facts about generated and identity columns; a readiness report recommends `v0.33.0` as a narrow fact-preservation pack. No production extractor, spec, rule, or policy code changed.
+
+### PostgreSQL bulk table tablespace targets
+
+`ddl.pg.alter.move_all_tablespace.target.valid` defaults to blocker. On
+observed PostgreSQL 17 it checks exact `OWNED BY` role selections in order,
+then source and destination tablespace existence and the `pg_global`
+restriction. Bare session aliases resolve in the observed connection. A
+missing or stale observation yields `unproven_bulk_tablespace_targets`.
+The notice describes a transactional request or an observed same-space
+selection. Privileges, table selection, storage and current locks are
+separate premises. Findings omit role names and catalog identifiers.
 
 ### PostgreSQL ordinary-table owner targets
 

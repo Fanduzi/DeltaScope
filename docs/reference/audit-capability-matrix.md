@@ -134,6 +134,14 @@ The Go provider `PGConstraintState` alias and copied directory retain private fa
 
 Maintainer notes: [decision](../decisions/2026-11-17-postgresql-constraint-target-evidence.md). Other F09 dimensions remain open.
 
+### PostgreSQL bulk table tablespace targets
+
+On observed PostgreSQL 17, the default bulk move target rule checks ordered
+role selection, exact endpoint existence and the restriction on `pg_global`.
+The notice reports the request or the observed same-space selection. Access
+rights, actual object selection, storage and NOWAIT lock availability remain
+separate premises.
+
 ### PostgreSQL ordinary-table owner targets
 
 The default `ddl.pg.alter.owner.target.valid` blocker checks literal-role
@@ -860,7 +868,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.alter.set_expression.notice` | `ALTER TABLE ... ALTER COLUMN ... SET EXPRESSION` sets a generated column expression | ✓ | ✗ | notice (v0.170.0) |
 | `ddl.pg.alter.add_identity.notice` | `ALTER TABLE ... ALTER COLUMN ... ADD GENERATED ... AS IDENTITY` adds identity to an existing column | ✓ | ✗ | notice (v0.170.0) |
 | `ddl.pg.alter.add_exclusion_constraint.notice` | `ALTER TABLE ... ADD CONSTRAINT ... EXCLUDE USING` adds an exclusion constraint | ✓ | ✗ | notice (v0.170.0) |
-| `ddl.pg.alter.move_all_tablespace.notice` | `ALTER TABLE ALL IN TABLESPACE ... SET TABLESPACE ...` moves all tables in a tablespace | ✓ | ✗ | notice (v0.170.0) |
+| `ddl.pg.alter.move_all_tablespace.notice` | `ALTER TABLE ALL IN TABLESPACE ... SET TABLESPACE ...` requests a transactional tablespace move for matching tables | ✓ | ✗ | notice (v0.170.0) |
 
 > **Note:** Trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) are now normalized and reuse the `enable_trigger` and `disable_trigger` rules above. `REPLICA IDENTITY DEFAULT` is normalized and intentionally silent. This is not full PostgreSQL ALTER TABLE coverage. These rules are offline-only and do not require a database connection. DeltaScope does not verify whether `REPLICA IDENTITY USING INDEX` names a valid, unique, or non-partial index. DeltaScope does not verify whether the target table is currently logged or unlogged. v0.130.0 findings do not emit trigger function names, trigger body, rule query/command text, tablespace names, access method names, or reloption keys/values. v0.140.0 findings do not emit raw SQL, option names/values, storage parameter names, compression method names, compression_kind, partition bounds, or catalog index names. v0.150.0 findings do not emit parent table names or typed table type names. v0.170.0 findings do not emit expression body, sequence options, exclusion operators/predicates, or raw SQL.
 

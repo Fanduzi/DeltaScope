@@ -1,0 +1,13 @@
+name: bulk_tablespace_target
+dialect: postgresql
+category: ddl
+metadata:
+  instance: {version: PostgreSQL 17.7}
+  pg_bulk_tablespaces:
+    - {source: " Exact Source ", destination: " Missing Destination ", source_exists: true, destination_exists: false}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.move_all_tablespace.target.valid, ddl.pg.alter.move_all_tablespace.notice]

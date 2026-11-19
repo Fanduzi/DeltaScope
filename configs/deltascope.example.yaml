@@ -1961,6 +1961,11 @@ rules:
     level: notice
     params:
 
+  ddl.pg.alter.move_all_tablespace.target.valid:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.pg.alter.move_all_tablespace.notice:
     enabled: true
     level: notice

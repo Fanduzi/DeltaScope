@@ -970,7 +970,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 | `ddl.pg.alter.set_expression.notice` | `ALTER TABLE ... ALTER COLUMN ... SET EXPRESSION` 设置生成列表达式——信息性提示 | notice | 否 |
 | `ddl.pg.alter.add_identity.notice` | `ALTER TABLE ... ALTER COLUMN ... ADD GENERATED ... AS IDENTITY` 为已有列添加身份——信息性提示 | notice | 否 |
 | `ddl.pg.alter.add_exclusion_constraint.notice` | `ALTER TABLE ... ADD CONSTRAINT ... EXCLUDE USING` 添加排除约束——信息性提示 | notice | 否 |
-| `ddl.pg.alter.move_all_tablespace.notice` | `ALTER TABLE ALL IN TABLESPACE ... SET TABLESPACE ...` 移动表空间中的所有表——信息性提示 | notice | 否 |
+| `ddl.pg.alter.move_all_tablespace.notice` | `ALTER TABLE ALL IN TABLESPACE ... SET TABLESPACE ...` 请求在事务内移动符合条件的表 | notice | 否 |
 
 > **注（v0.170.0）：** 这些规则是 PostgreSQL 专用且离线的。最终可解析边界 finding 仅输出有限元数据：operation、action、table、column（仅 SET EXPRESSION 和 ADD IDENTITY）以及 constraint name（仅 ADD EXCLUSION CONSTRAINT）。不输出表达式主体、序列选项、排除操作符/谓词、操作符类名、目录状态或原始 SQL。
 
@@ -1271,6 +1271,10 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 ### PostgreSQL 边界支持就绪门控（v0.32.0）
 
 `v0.32.0` 是 **PostgreSQL 边界支持就绪门控**。这是一个决策里程碑，不是功能发布。未新增规则 ID。Characterization 测试记录了 generated 和 identity 列的稳定 AST 事实；就绪报告推荐 `v0.33.0` 作为窄事实保留包。未变更任何生产 extractor、spec、rule 或 policy 代码。
+
+### PostgreSQL 批量表空间目标
+
+`ddl.pg.alter.move_all_tablespace.target.valid` 默认级别为 blocker，适用于已观测的 PostgreSQL 17。它按声明顺序检查 `OWNED BY` 角色，随后检查源和目标空间是否存在，以及两侧是否涉及 `pg_global`。裸会话别名按观测连接解析。观察缺失或过期时报告 `unproven_bulk_tablespace_targets`。既有 notice 描述事务内的移动请求，或有证据的同空间选择。权限、表筛选、存储和当前锁状态需分别判断。发现省略角色名和目录标识。
 
 ### PostgreSQL 普通表所有者目标
 

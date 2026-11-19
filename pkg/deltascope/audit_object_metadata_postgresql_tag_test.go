@@ -222,3 +222,21 @@ func TestAuditTableOwnerThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing owner target finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditBulkTablespaceThroughSDK(t *testing.T) {
+	target := spec.PGBulkTablespaceTarget{Source: " Exact Source ", Destination: "missing", Nowait: true}
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"}},
+		objectSnapshot:       &spec.ObjectSnapshot{PGBulkTablespace: &spec.PGBulkTablespaceState{Target: target, SourceExists: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE ALL IN TABLESPACE " Exact Source " SET TABLESPACE missing NOWAIT`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].PGBulkTablespace == nil || !provider.objectCalls[0].PGBulkTablespace.Matches(target) {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.move_all_tablespace.target.valid" && f.Metadata["reason_code"] == "destination_tablespace_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing bulk target finding: %+v", result.Statements[0].Findings)
+}

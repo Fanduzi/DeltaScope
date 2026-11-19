@@ -351,3 +351,37 @@ func TestMCPTableOwner(t *testing.T) {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }
+
+type bulkTablespaceAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (bulkTablespaceAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "bulk_tablespace" || req.PGBulkTablespace == nil {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGBulkTablespace: &spec.PGBulkTablespaceState{Target: *req.PGBulkTablespace, SourceExists: true}}, nil
+}
+
+func TestMCPBulkTablespace(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := bulkTablespaceAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7"}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER TABLE ALL IN TABLESPACE left_space SET TABLESPACE missing", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"destination_tablespace_absent"`) || !strings.Contains(string(body), `"ddl.pg.alter.move_all_tablespace.target.valid"`) || strings.Contains(string(body), "PGBulkTablespace") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}

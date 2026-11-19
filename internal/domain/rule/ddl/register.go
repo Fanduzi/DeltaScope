@@ -941,6 +941,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterAddIdentityNotice, construct: newAddIdentityNoticeRule},
 		{ruleID: ruleIDPGAlterAddExclusionConstraintNotice, construct: newAddExclusionConstraintNoticeRule},
 		{ruleID: ruleIDPGAlterMoveAllTablespaceNotice, construct: newMoveAllTablespaceNoticeRule},
+		{ruleID: ruleIDPGBulkTablespaceTargetsValid, construct: newPGBulkTablespaceRule},
 		// MySQL/TiDB lifecycle notice rules.
 		{ruleID: ruleIDRenameTableNotice, construct: newRenameTableNoticeRule},
 		{ruleID: ruleIDCreateIndexNotice, construct: newCreateIndexNoticeRule},

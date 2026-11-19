@@ -234,6 +234,8 @@ func summaryForRule(ruleID string) string {
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	switch ruleID {
+	case "ddl.pg.alter.move_all_tablespace.target.valid":
+		return "Checks observed PostgreSQL 17 bulk move tablespaces and ordered owner-filter role existence. Missing endpoints, pg_global, missing literal roles and PUBLIC block."
 	case "ddl.pg.alter.owner.target.valid":
 		return "Checks an exact PostgreSQL 17 ordinary-table owner target. An observed missing named role or PUBLIC blocks. Session aliases use the observed session without checking permissions."
 	case "ddl.pg.alter.rename_table.target.valid":
@@ -962,6 +964,7 @@ func sourceForRule() string {
 const unknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
 
 var metadataAwareRuleIDs = map[string]bool{
+	"ddl.pg.alter.move_all_tablespace.target.valid":        true,
 	"ddl.pg.alter.owner.target.valid":                      true,
 	"ddl.pg.alter.rename_table.target.valid":               true,
 	"ddl.pg.alter.set_schema.target.valid":                 true,

@@ -1,0 +1,1 @@
+ALTER TABLE ALL IN TABLESPACE " Exact Source " SET TABLESPACE " Missing Destination " NOWAIT;

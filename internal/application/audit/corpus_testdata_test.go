@@ -111,6 +111,7 @@ type corpusMetadata struct {
 	Tables               map[string]corpusTableSnapshot `yaml:"tables,omitempty"`
 	IndexOwners          map[string]string              `yaml:"index_owners,omitempty"`
 	PGTableOwners        []corpusPGTableOwner           `yaml:"pg_table_owners,omitempty"`
+	PGBulkTablespaces    []corpusPGBulkTablespace       `yaml:"pg_bulk_tablespaces,omitempty"`
 	PGTableNamespaces    []corpusPGTableNamespace       `yaml:"pg_table_namespaces,omitempty"`
 	PGTablePersistences  []corpusPGTablePersistence     `yaml:"pg_table_persistences,omitempty"`
 	PGTableAccessMethods []corpusPGTableAccessMethod    `yaml:"pg_table_access_methods,omitempty"`
@@ -299,6 +300,13 @@ type corpusInstanceFacts struct {
 	MySQLSuperReadOnlyKnown  bool `yaml:"mysql_super_read_only_known,omitempty"`
 	MySQLReadOnlyExempt      bool `yaml:"mysql_read_only_exempt,omitempty"`
 	MySQLReadOnlyExemptKnown bool `yaml:"mysql_read_only_exempt_known,omitempty"`
+}
+
+type corpusPGBulkTablespace struct {
+	Source            string `yaml:"source"`
+	Destination       string `yaml:"destination"`
+	SourceExists      bool   `yaml:"source_exists"`
+	DestinationExists bool   `yaml:"destination_exists"`
 }
 
 type corpusPGTableOwner struct {

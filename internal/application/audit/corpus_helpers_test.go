@@ -40,7 +40,7 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
 		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
-		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 {
+		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
@@ -51,6 +51,7 @@ type corpusFixtureMetadataProvider struct {
 	tables               map[string]*spec.TableSnapshot
 	indexOwners          map[string]string
 	pgTableOwners        []corpusPGTableOwner
+	pgBulkTablespaces    []corpusPGBulkTablespace
 	pgTableNamespaces    []corpusPGTableNamespace
 	pgTablePersistences  []corpusPGTablePersistence
 	pgTableAccessMethods []corpusPGTableAccessMethod
@@ -92,6 +93,7 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 		tables:               make(map[string]*spec.TableSnapshot, len(metadata.Tables)),
 		indexOwners:          make(map[string]string, len(metadata.IndexOwners)),
 		pgTableOwners:        metadata.PGTableOwners,
+		pgBulkTablespaces:    metadata.PGBulkTablespaces,
 		pgTableNamespaces:    metadata.PGTableNamespaces,
 		pgTablePersistences:  metadata.PGTablePersistences,
 		pgTableAccessMethods: metadata.PGTableAccessMethods,
@@ -456,6 +458,19 @@ func parseCorpusUint(text string) (uint64, bool) {
 // `schema.name`. An unkeyed identity or a nil sequence map is unvouched,
 // never a silent absent; non-sequence lookups stay unavailable.
 func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if request.Type == "bulk_tablespace" {
+		target := request.PGBulkTablespace
+		if target != nil && len(target.Roles) == 0 {
+			for _, seed := range p.pgBulkTablespaces {
+				if seed.Source == target.Source && seed.Destination == target.Destination {
+					return &spec.ObjectSnapshot{PGBulkTablespace: &spec.PGBulkTablespaceState{
+						Target: *target, SourceExists: seed.SourceExists, DestinationExists: seed.DestinationExists,
+					}}, nil
+				}
+			}
+		}
+		return nil, nil
+	}
 	if request.Type == "table_owner" {
 		for _, seed := range p.pgTableOwners {
 			if seed.Schema == request.Schema && seed.Table == request.Qualifiers["table"] && seed.Kind == request.Qualifiers["kind"] && seed.Name == request.Name {
