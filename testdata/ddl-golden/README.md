@@ -3,6 +3,13 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D17 PostgreSQL bulk tablespace targets
+
+Twelve new cases bring focused T37 to 282/282 and 6,979 assertions. Fifteen
+native commands verify ordered role checks, endpoint lookup, same-space
+selection, filtering and NOWAIT. All 270 prior cases and profiles are
+preserved. See the [decision](../../docs/decisions/2026-11-19-postgresql-bulk-table-tablespace-targets.md).
+
 ## T37 D16 PostgreSQL ordinary-table owner targets
 
 D16 preserves all 258 earlier cases and their profiles. The delivered SHA

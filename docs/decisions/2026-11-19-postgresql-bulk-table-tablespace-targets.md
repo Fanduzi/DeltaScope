@@ -60,6 +60,19 @@ by success when the lock was released. See
 `/tmp/ds-pg-f09-bulk-tablespace-edges-1a03cd0d/evidence.json` and
 `/tmp/ds-pg-f09-tablespace-readonly-summary.md`.
 
+## Evidence bindings
+
+`bb9f3050` adds the private AST and catalog observations. `72472c0e` adds the
+shared default blocker and contextual notice. With the pending evidence
+manifest, T37 passed 282/282 cases and 6,979 assertions, including four native
+successes and eleven exact refusals. The artifact validator passed. Thirteen
+selectors bind the existing PG17 ALL IN TABLESPACE SET TABLESPACE cell while
+preserving the original classifications, case profiles and inventory counts.
+
+Candidate CLI confirmation at `72472c0e`'s parent with the rule change in the
+worktree reproduced the 12 baseline native outcomes and correctly rejected
+all seven refusals online. See `/tmp/ds-pg-d17-candidate-cli-bb9f3050/evidence.json`.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

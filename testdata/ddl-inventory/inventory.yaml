@@ -7610,7 +7610,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.all-in-tablespace-set-tablespace.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.all-in-tablespace-set-tablespace.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#bulk-tablespace-offline, file:testdata/ddl-golden/T37.json#bulk-tablespace-disabled, file:testdata/ddl-golden/T37.json#pg-bulk-tablespace-missing-source, file:testdata/ddl-golden/T37.json#pg-bulk-tablespace-missing-destination, file:testdata/ddl-golden/T37.json#pg-bulk-tablespace-global, file:testdata/ddl-golden/T37.json#pg-bulk-tablespace-global-destination, file:testdata/ddl-golden/T37.json#pg-bulk-tablespace-same, file:testdata/ddl-golden/T37.json#pg-bulk-tablespace-role-precedence, file:testdata/ddl-golden/T37.json#pg-bulk-tablespace-public, file:testdata/ddl-golden/T37.json#pg-bulk-tablespace-role-aliases, file:testdata/ddl-golden/T37.json#pg-bulk-tablespace-owned-nowait, file:testdata/ddl-golden/T37.json#pg-bulk-tablespace-freshness, file:testdata/sql-corpus/postgresql/ddl/findings/bulk_tablespace_target.expected.yaml#ddl.pg.alter.move_all_tablespace.target.valid]
       - subaction_id: SET ACCESS METHOD
         parser_status: recognized
         audit_status: audited
