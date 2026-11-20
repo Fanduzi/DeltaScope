@@ -25,7 +25,7 @@ func TestPGConstraintTargetPipeline(t *testing.T) {
 		{"unvalidated target", "ALTER TABLE app.t VALIDATE CONSTRAINT c", "pass", []spec.PGConstraintState{{Name: "c", Type: "f", Validated: false}}, 0, 0},
 		{"unobserved catalog", "ALTER TABLE app.t VALIDATE CONSTRAINT c", "review", nil, 0, 1},
 		{"add then validate", "ALTER TABLE app.t ADD CONSTRAINT c CHECK(id>0) NOT VALID;ALTER TABLE app.t VALIDATE CONSTRAINT c", "review", []spec.PGConstraintState{}, 0, 1},
-		{"drop then validate", "ALTER TABLE app.t DROP CONSTRAINT c;ALTER TABLE app.t VALIDATE CONSTRAINT c", "review", []spec.PGConstraintState{{Name: "c", Type: "c", Validated: true}}, 0, 1},
+		{"drop then validate", "ALTER TABLE app.t DROP CONSTRAINT c;ALTER TABLE app.t VALIDATE CONSTRAINT c", "review", []spec.PGConstraintState{{Name: "c", Type: "c", Validated: true, InheritanceKnown: true}}, 0, 1},
 		{"same statement prefix", "ALTER TABLE app.t ADD CONSTRAINT c CHECK(id>0) NOT VALID, VALIDATE CONSTRAINT c", "review", []spec.PGConstraintState{}, 0, 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

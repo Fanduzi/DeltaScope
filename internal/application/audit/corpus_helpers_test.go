@@ -726,7 +726,14 @@ func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusT
 				out.PGConstraints = nil
 				break
 			}
-			out.PGConstraints = append(out.PGConstraints, spec.PGConstraintState{Name: member.Name, Type: member.Type, Validated: *member.Validated})
+			state := spec.PGConstraintState{Name: member.Name, Type: member.Type, Validated: *member.Validated}
+			if member.Inherited != nil {
+				state.InheritanceKnown, state.Inherited = true, *member.Inherited
+			}
+			if member.PartitionChildren != nil {
+				state.PartitionCheckHasChildrenKnown, state.PartitionCheckHasChildren = true, *member.PartitionChildren
+			}
+			out.PGConstraints = append(out.PGConstraints, state)
 		}
 	}
 	out.PGRelation = spec.PGRelationState{Name: snapshot.PGRelation.Name, Kind: snapshot.PGRelation.Kind, Heap: snapshot.PGRelation.Heap}

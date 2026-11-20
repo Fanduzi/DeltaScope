@@ -99,6 +99,26 @@ func (r pgConstraintTargetRule) assess(s spec.Statement, index int) (*spec.PGCon
 	if r.id == ruleIDPGAlterValidateConstraintTargetRequire && member.Type != "c" && member.Type != "f" || r.id == ruleIDPGAlterConstraintDeferrabilityTargetRequire && member.Type != "f" {
 		return member, "constraint_kind_mismatch", ""
 	}
+	if r.id == ruleIDPGAlterDropConstraintTargetRequire && len(s.DDL.Alter) == 1 && member.Type == "c" {
+		table, relation := s.DDL.Table, s.Metadata.TargetTable.PGRelation
+		if !s.DDL.PGTableCatalogQualified && table.Schema != "" && table.Schema != "pg_temp" &&
+			(relation.Kind == "" || relation.Kind == "r" || relation.Kind == "p") {
+			if relation.Name != table.Name || relation.Kind == "" || !member.InheritanceKnown {
+				return member, "", "constraint.pg_inheritance"
+			}
+			if member.Inherited {
+				return member, "constraint_inherited", ""
+			}
+			if relation.Kind == "p" && s.DDL.PGTableOnly {
+				if !member.PartitionCheckHasChildrenKnown {
+					return member, "", "constraint.pg_partition_children"
+				}
+				if member.PartitionCheckHasChildren {
+					return member, "constraint_partition_parent_only", ""
+				}
+			}
+		}
+	}
 	if r.id == ruleIDPGAlterDropConstraintTargetRequire && len(s.DDL.Alter) == 1 &&
 		s.DDL.Alter[0].Options["cascade"] == "false" && (member.Type == "p" || member.Type == "u") {
 		table, catalog := s.DDL.Table, s.Metadata.TargetTable.PGColumns
@@ -158,6 +178,12 @@ func (r pgConstraintTargetRule) Evaluate(ctx context.Context, s spec.Statement) 
 		switch reason {
 		case "constraint_kind_mismatch":
 			message = "PostgreSQL constraint target has an unsupported kind for this action"
+		case "constraint_inherited":
+			message = "PostgreSQL cannot drop an inherited check constraint directly"
+			suggestion = "Review the constraint on the parent table before changing it"
+		case "constraint_partition_parent_only":
+			message = "PostgreSQL cannot drop this check constraint from only the partitioned parent while partitions exist"
+			suggestion = "Review the parent and partition constraints before changing this check"
 		case "constraint_referenced_by_foreign_key":
 			message = "A foreign key directly depends on the selected PostgreSQL constraint's supporting index"
 			suggestion = "Review the foreign-key dependency before dropping the key with RESTRICT"

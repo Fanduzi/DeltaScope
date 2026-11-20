@@ -22,11 +22,17 @@ func TestAuditSQLPGConstraintTarget(t *testing.T) {
 		{`ALTER TABLE app.t ADD FOREIGN KEY (id) REFERENCES app.t ("Missing") NOT VALID`, "ddl.pg.alter.add_foreign_key.targets.valid", "reject", []spec.PGConstraintState{}},
 		{"ALTER TABLE app.t VALIDATE CONSTRAINT c", "ddl.pg.alter.validate_constraint.target.require", "reject", []spec.PGConstraintState{}},
 		{"ALTER TABLE app.t ALTER CONSTRAINT c DEFERRABLE", "ddl.pg.alter.constraint_deferrability.target.require", "reject", []spec.PGConstraintState{}},
+		{"ALTER TABLE app.t DROP CONSTRAINT IF EXISTS c CASCADE", "ddl.pg.alter.drop_constraint.target.require", "reject", []spec.PGConstraintState{{Name: "c", Type: "c", Validated: true, InheritanceKnown: true, Inherited: true}}},
+		{"ALTER TABLE ONLY app.t DROP CONSTRAINT c CASCADE", "ddl.pg.alter.drop_constraint.target.require", "reject", []spec.PGConstraintState{{Name: "c", Type: "c", Validated: true, InheritanceKnown: true, PartitionCheckHasChildrenKnown: true, PartitionCheckHasChildren: true}}},
 		{"ALTER TABLE app.t DROP CONSTRAINT c", "ddl.pg.alter.drop_constraint.target.require", "reject", []spec.PGConstraintState{}},
 		{"ALTER TABLE app.t DROP CONSTRAINT IF EXISTS c", "", "pass", []spec.PGConstraintState{}},
 		{"ALTER TABLE app.t VALIDATE CONSTRAINT c", "", "review", nil},
 	} {
-		client := &mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL, snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: tc.members, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true, Columns: []spec.PGColumnState{{Name: "id"}}}}}
+		kind := "r"
+		if len(tc.members) == 1 && tc.members[0].PartitionCheckHasChildrenKnown {
+			kind = "p"
+		}
+		client := &mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL, snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: tc.members, PGRelation: spec.PGRelationState{Name: "t", Kind: kind}, PGColumns: &spec.PGColumnCatalog{Ordinary: true, Columns: []spec.PGColumnState{{Name: "id"}}}}}
 		prepareMetadataAudit = func(context.Context, auditmeta.Request) (*auditmeta.PreparedAudit, error) {
 			return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app", DialectSource: "request", SchemaSource: "request"}, nil
 		}

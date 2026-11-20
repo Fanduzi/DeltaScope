@@ -16,7 +16,7 @@ import (
 func pgTargetStatement(action string, members []spec.PGConstraintState) spec.Statement {
 	return spec.Statement{Dialect: spec.DialectPostgreSQL, Kind: spec.KindDDL,
 		DDL:      &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Schema: "app", Name: "t"}, Alter: []spec.Alter{{Action: action, Name: "c", Options: map[string]string{"if_exists": "false", "expression": "private_expression_marker"}}}},
-		Metadata: &spec.Metadata{Schema: "app", Instance: &spec.InstanceFacts{Version: "PostgreSQL 17.7"}, TargetTable: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: members}}}
+		Metadata: &spec.Metadata{Schema: "app", Instance: &spec.InstanceFacts{Version: "PostgreSQL 17.7"}, TargetTable: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: members, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}}}}
 }
 
 func TestPGConstraintTargetArms(t *testing.T) {
@@ -31,7 +31,7 @@ func TestPGConstraintTargetArms(t *testing.T) {
 			for _, kind := range []string{"", "c", "f", "p", "u", "x"} {
 				members := []spec.PGConstraintState{}
 				if kind != "" {
-					members = append(members, spec.PGConstraintState{Name: "c", Type: kind})
+					members = append(members, spec.PGConstraintState{Name: "c", Type: kind, InheritanceKnown: kind == "c"})
 				}
 				s := pgTargetStatement(tc.action, members)
 				f, err := r.Evaluate(context.Background(), s)
@@ -233,7 +233,7 @@ func TestPGDropConstraintDirectReference(t *testing.T) {
 		{name: "check", kind: "c", cascade: "false"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			s := pgTargetStatement("drop_constraint", []spec.PGConstraintState{{Name: "c", Type: tc.kind}})
+			s := pgTargetStatement("drop_constraint", []spec.PGConstraintState{{Name: "c", Type: tc.kind, InheritanceKnown: tc.kind == "c"}})
 			s.DDL.Alter[0].Options["cascade"] = tc.cascade
 			s.Metadata.TargetTable.PGColumns = &spec.PGColumnCatalog{Ordinary: true}
 			s.Metadata.TargetTable.PGRelation = spec.PGRelationState{Name: "t", Kind: "r"}
@@ -246,6 +246,77 @@ func TestPGDropConstraintDirectReference(t *testing.T) {
 			g := r.EvidenceGaps(s)
 			if len(g) != 0 && !tc.gap || tc.gap && (len(g) != 1 || g[0].ReasonCode != "unproven_constraint_target" || !reflect.DeepEqual(g[0].RequiredFacts, []string{"constraint.pg_foreign_key_references"})) {
 				t.Fatalf("gaps=%+v", g)
+			}
+		})
+	}
+}
+
+func TestPGDropInheritedCheck(t *testing.T) {
+	r := pgConstraintTargetRule{id: ruleIDPGAlterDropConstraintTargetRequire, level: rule.LevelBlocker}
+	for _, tc := range []struct {
+		name, kind                                        string
+		known, inherited, guard, cascade, stale, boundary bool
+	}{
+		{name: "inherited", kind: "r", known: true, inherited: true},
+		{name: "guard cannot hide inherited check", kind: "r", known: true, inherited: true, guard: true},
+		{name: "cascade cannot hide inherited check", kind: "r", known: true, inherited: true, cascade: true},
+		{name: "partitioned table", kind: "p", known: true, inherited: true},
+		{name: "local", kind: "r", known: true},
+		{name: "unobserved", kind: "r"},
+		{name: "stale", known: true, inherited: true, stale: true},
+		{name: "unsupported kind", kind: "f", known: true, inherited: true, boundary: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := pgTargetStatement("drop_constraint", []spec.PGConstraintState{{Name: "c", Type: "c", InheritanceKnown: tc.known, Inherited: tc.inherited}})
+			s.Metadata.TargetTable.PGRelation = spec.PGRelationState{Name: "t", Kind: tc.kind}
+			if tc.stale {
+				s.Metadata.TargetTable.PGRelation = spec.PGRelationState{}
+			}
+			if tc.guard {
+				s.DDL.Alter[0].Options["if_exists"] = "true"
+			}
+			if tc.cascade {
+				s.DDL.Alter[0].Options["cascade"] = "true"
+			}
+			f, err := r.Evaluate(context.Background(), s)
+			want := tc.known && tc.inherited && !tc.stale && !tc.boundary
+			if err != nil || (len(f) == 1) != want || len(f) > 1 || len(f) == 1 && (f[0].Metadata["reason_code"] != "constraint_inherited" || f[0].Metadata["target_constraint_kind"] != "c") {
+				t.Fatalf("findings=%+v err=%v", f, err)
+			}
+			g := r.EvidenceGaps(s)
+			if len(g) > 1 || (len(g) == 1) != (!tc.known || tc.stale) || len(g) == 1 && (g[0].ReasonCode != "unproven_constraint_target" || !reflect.DeepEqual(g[0].RequiredFacts, []string{"constraint.pg_inheritance"})) {
+				t.Fatalf("gaps=%+v", g)
+			}
+		})
+	}
+}
+
+func TestPGDropPartitionCheckOnly(t *testing.T) {
+	r := pgConstraintTargetRule{id: ruleIDPGAlterDropConstraintTargetRequire, level: rule.LevelBlocker}
+	for _, tc := range []struct {
+		name, kind                       string
+		only, inherited, known, children bool
+		reason, gap                      string
+	}{
+		{name: "parent ONLY", kind: "p", only: true, known: true, children: true, reason: "constraint_partition_parent_only"},
+		{name: "no partitions", kind: "p", only: true, known: true},
+		{name: "children unknown", kind: "p", only: true, gap: "constraint.pg_partition_children"},
+		{name: "recursive", kind: "p", children: true, known: true},
+		{name: "ordinary parent ONLY", kind: "r", only: true},
+		{name: "inherited before ONLY", kind: "p", only: true, inherited: true, reason: "constraint_inherited"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := pgTargetStatement("drop_constraint", []spec.PGConstraintState{{Name: "c", Type: "c", InheritanceKnown: true, Inherited: tc.inherited, PartitionCheckHasChildrenKnown: tc.known, PartitionCheckHasChildren: tc.children}})
+			s.DDL.PGTableOnly = tc.only
+			s.Metadata.TargetTable.PGRelation.Kind = tc.kind
+			s.DDL.Alter[0].Options["cascade"] = "true"
+			f, err := r.Evaluate(context.Background(), s)
+			if err != nil || len(f) > 1 || (len(f) == 1) != (tc.reason != "") || len(f) == 1 && f[0].Metadata["reason_code"] != tc.reason {
+				t.Fatalf("findings=%+v err=%v", f, err)
+			}
+			gaps := r.EvidenceGaps(s)
+			if len(gaps) > 1 || (len(gaps) == 1) != (tc.gap != "") || len(gaps) == 1 && !reflect.DeepEqual(gaps[0].RequiredFacts, []string{tc.gap}) {
+				t.Fatalf("gaps=%+v", gaps)
 			}
 		})
 	}

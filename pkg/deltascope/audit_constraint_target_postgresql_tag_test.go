@@ -18,11 +18,17 @@ func TestAuditPGConstraintTargetContract(t *testing.T) {
 		{`ALTER TABLE app.t ADD FOREIGN KEY (id) REFERENCES app.t ("Missing") NOT VALID`, "ddl.pg.alter.add_foreign_key.targets.valid", "reject", []PGConstraintState{}},
 		{"ALTER TABLE app.t VALIDATE CONSTRAINT c", "ddl.pg.alter.validate_constraint.target.require", "reject", []PGConstraintState{{Name: "c", Type: "u", Validated: true}}},
 		{"ALTER TABLE app.t ALTER CONSTRAINT c DEFERRABLE", "ddl.pg.alter.constraint_deferrability.target.require", "reject", []PGConstraintState{{Name: "c", Type: "c", Validated: true}}},
+		{"ALTER TABLE app.t DROP CONSTRAINT IF EXISTS c CASCADE", "ddl.pg.alter.drop_constraint.target.require", "reject", []PGConstraintState{{Name: "c", Type: "c", Validated: true, InheritanceKnown: true, Inherited: true}}},
+		{"ALTER TABLE ONLY app.t DROP CONSTRAINT c CASCADE", "ddl.pg.alter.drop_constraint.target.require", "reject", []PGConstraintState{{Name: "c", Type: "c", Validated: true, InheritanceKnown: true, PartitionCheckHasChildrenKnown: true, PartitionCheckHasChildren: true}}},
 		{"ALTER TABLE app.t DROP CONSTRAINT c", "ddl.pg.alter.drop_constraint.target.require", "reject", []PGConstraintState{}},
 		{"ALTER TABLE app.t DROP CONSTRAINT IF EXISTS c", "", "pass", []PGConstraintState{}},
 		{"ALTER TABLE app.t VALIDATE CONSTRAINT c", "", "pass", []PGConstraintState{{Name: "c", Type: "c", Validated: true}}},
 	} {
-		p := &fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"}, snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"}, PGConstraints: tc.members, PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true, Columns: []PGColumnState{{Name: "id"}}}, Options: map[string]string{"private": "private_catalog_payload"}}}
+		kind := "r"
+		if len(tc.members) == 1 && tc.members[0].PartitionCheckHasChildrenKnown {
+			kind = "p"
+		}
+		p := &fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"}, snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"}, PGConstraints: tc.members, PGRelation: PGRelationState{Name: "t", Kind: kind}, PGColumns: &PGColumnCatalog{Ordinary: true, Columns: []PGColumnState{{Name: "id"}}}, Options: map[string]string{"private": "private_catalog_payload"}}}
 		r, err := Audit(context.Background(), Request{SQL: tc.sql, Dialect: DialectPostgreSQL, Schema: "app", MetadataProvider: p})
 		if err != nil || string(r.Verdict) != tc.verdict {
 			t.Fatalf("result=%+v err=%v", r, err)

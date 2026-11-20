@@ -530,9 +530,11 @@ type corpusPGIdentitySequenceState struct {
 }
 
 type corpusPGConstraint struct {
-	Name      string `yaml:"name"`
-	Type      string `yaml:"type"`
-	Validated *bool  `yaml:"validated"`
+	Name              string `yaml:"name"`
+	Type              string `yaml:"type"`
+	Inherited         *bool  `yaml:"inherited,omitempty"`
+	PartitionChildren *bool  `yaml:"partition_children,omitempty"`
+	Validated         *bool  `yaml:"validated"`
 }
 
 type corpusConstraint struct {
