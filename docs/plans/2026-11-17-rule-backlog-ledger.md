@@ -764,6 +764,10 @@ DROP CONSTRAINT and three to DROP CONSTRAINT CASCADE at PostgreSQL 17.
 Foreign-table and non-CHECK inheritance, recursive dependency closure,
 permissions and locks remain separate premises. The final commit is in
 verification.
+The first fixed run at `6c351ff3` was interrupted to update the SDK
+metadata-provider contract for the new `PGConstraintState` fields. Its
+own Compose resources were cleaned. Verification restarts at the new
+commit with the SDK documentation included.
 [D25](../decisions/2026-11-20-postgresql-drop-inherited-check.md)
 [D26](../decisions/2026-11-20-postgresql-drop-check-only.md)
 
