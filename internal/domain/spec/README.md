@@ -112,7 +112,7 @@ Normalized statement specifications used as the stable input for rule evaluation
   A zero name means unobserved and an empty kind with a known name means absent.
   `TableSnapshot.PGRelation`, `DDL.PGTableIfExists`, `DDL.PGTableCatalogQualified`
   and `Alter.PGAddColumnIfNotExists` are internal evidence excluded from JSON.
-- `PGColumnTransition`, `PGColumnCatalog`, `PGColumnState`, `PGIdentitySequenceState`
+- `PGColumnTransition` (including a private SET DEFAULT reference flag), `PGColumnCatalog`, `PGColumnState`, `PGIdentitySequenceState`
   The private catalog carries an observed `Typed` marker for D8 ADD/RENAME scope.
   Internal authored/cached evidence; `PGColumnCatalog.FindColumn` proves exact-name
   binding or user absence only for a complete ordinary-table user directory;

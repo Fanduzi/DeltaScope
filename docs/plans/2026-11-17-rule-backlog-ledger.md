@@ -952,6 +952,25 @@ networks and Golden volumes.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44822676034/job/136587282297),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136587444478) succeeded at the delivered SHA.
 
+### D40–D43 PostgreSQL defaults, key types and TYPE ONLY
+
+`d4e6e681` checks column references and subqueries in SET DEFAULT after
+checking the target. `b7f9a436` checks native default operator class selection
+for constraint attachment and adds bounded foreign-key type comparisons for
+domains, enums and arrays. `0ccabf37` checks TYPE ONLY after proving the exact
+destination and scalar assignment.
+
+- [D40 SET DEFAULT decision](../decisions/2026-11-21-postgresql-set-default-expression-references.md)
+- [D41 operator class decision](../decisions/2026-11-21-postgresql-constraint-default-opclass-fallback.md)
+- [D42 foreign-key type decision](../decisions/2026-11-21-postgresql-foreign-key-domain-enum-array.md)
+- [D43 TYPE ONLY decision](../decisions/2026-11-21-postgresql-column-type-only-traversal.md)
+
+The isolated preview passed 535/535 T37 cases and 15,589 assertions. It added
+30 native controls, with 14 successes and 16 refusals. Three earlier cases
+now consume known facts in place of their former gaps. Their SQL and native
+controls are identical. Thirty-two selectors bind six PostgreSQL 17 cells.
+The fixed candidate is in verification.
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.
@@ -1055,6 +1074,76 @@ insufficient.
 | F19 | `postgresql.revoke` | REVOKE privileges; GRANT OPTION FOR; CASCADE/RESTRICT; role membership; object kinds | unreviewed |
 | F19 | `postgresql.create-language` | CREATE LANGUAGE; OR REPLACE TRUSTED; HANDLER form | unreviewed |
 <!-- END ORIGINAL 63 ROWS -->
+
+## F09 exact dimension review
+
+These five F09 rows have 40 authored labels and 40 normalized records at `d8cceea6`. The label sets match in each row. The normalized column records list `add-column-generation-declaration` first. Each entry gives the covered premise or reproduced boundary and the facts required for further work.
+
+### postgresql.alter-table.columns
+
+| Dimension | Covered premise or reproduced boundary | Remaining premise and evidence needed |
+| --- | --- | --- |
+| ADD COLUMN | D8 exact ordinary-table column identity and duplicate/system-name checks | D36 at `441e6b34` checks parent and partition traversal. Descendant merges, expression evaluation and effects after earlier ALTERs need separate facts. |
+| ADD COLUMN IF NOT EXISTS | D8 actual authored guard, user duplicate no-op, system-name conflict and guarded advice suppression | D36 at `441e6b34` distinguishes a direct partition-child refusal and the existing-user-column guard on an inheritance parent. Stale facts still yield a gap. |
+| DROP COLUMN | D6 exact existing target and D7 observed system-member refusal | D27 at `b6d73f04` checks direct view, materialized-view, stored generated-column and inbound FK blockers. D33 checks inherited columns, a direct partition key and partition-parent ONLY. Wider dependency closure needs separate evidence. |
+| DROP COLUMN IF EXISTS CASCADE | D6 proved user-member absence suppression and D7 system guard refusal | D33 checks inherited DROP even with the guard and CASCADE. Propagation, dependency closure and locks need separate evidence. |
+| RENAME COLUMN | D8 exact source, destination and same-name conflict; independent rename forbid stays | D33 checks direct inherited sources and ONLY with attached children. Descendant name collisions, multiple parents and dependency effects need separate facts. |
+| ALTER COLUMN TYPE | D14 source identity and D18 exact scoped destination identity | D30 at `36ef07e4` checks scoped literal modifiers, collation and scalar assignment (delivered). D34–D35 at `441e6b34` check direct view and generated-column dependencies plus inherited sources and direct partition keys. D43 adds a check for ONLY with attached children after exact destination and scalar assignment. Broader type identity, dependency and row conversion cases require separate facts. |
+| ALTER COLUMN TYPE USING | D14 generated-source restriction and D18 exact destination with USING | D34–D35 at `441e6b34` apply the same bounded dependency and source checks. USING result conversion, constraints, row values and rewrite need separate facts. |
+| multi-action | D6–D8 scope and freshness gaps describe why a previously loaded catalog may not apply | No general PostgreSQL execution projection. Any future supported batch relation must follow actual processing phases and preserve unknowns. |
+| add-column-generation-declaration | D2 bounded identity and generated declaration validity in ADD | D36 at `441e6b34` checks identity ADD on an ordinary inheritance parent. Expression legality, wider table kinds and data migration remain separate. |
+
+### postgresql.alter-table.column-attributes
+
+| Dimension | Covered premise or reproduced boundary | Remaining premise and evidence needed |
+| --- | --- | --- |
+| SET/DROP NOT NULL | D5 checks the ordinary target and identity or primary-key guard. D20 distinguishes an attached replica identity key from INCLUDE, unattached unique and FULL. | D39 at `683d84ac` checks partition-parent NOT NULL premises and ONLY traversal. User-data validity and other inheritance effects need separate evidence. |
+| SET/DROP DEFAULT | D5 target and conflict with identity or generation, D7 system scope | D40 checks raw column references and subqueries after the existing target checks. Type assignment, function resolution, dependencies and nonordinary relations need separate evidence. |
+| SET GENERATED / DROP EXPRESSION | D5 bounded existing generation/identity checks, D7 system controls | D35 at `441e6b34` checks inherited DROP EXPRESSION and attached-child ONLY. Expression evaluation, wider relation kinds and dependent results remain open. |
+| ADD/DROP IDENTITY | D5 type/default/nullability preconditions and guard semantics, D7 scope | Runtime identity values, sequence effects outside the verified dependency, and wider table kinds need separate evidence. |
+| identity options | D5 scalar/range/duplicate and stable, dependency-bound sequence definition | Unsupported option forms and runtime state need narrower AST or catalog evidence before a rule can decide. |
+| RESTART | D5 warns and distinguishes explicit RESTART from START/default changes | Runtime counter/issuance, session and sequence visibility are outside this observation. |
+| SET STATISTICS | D6 value and target blocker plus native clamp warning | Wider table kinds and statistical effectiveness need separate premises. |
+| SET STORAGE / COMPRESSION | D7 exact ordinary/system source, type strategy and observed build capabilities | Additional build anchors, wider table kinds, actual existing value storage and rewrite remain open. |
+| SET n_distinct / RESET | D6 keys/ranges/duplicates and stable numeric parsing, including overflow/underflow gaps | Unknown/opaque keys, precision edges and other relation kinds require independent evidence. |
+
+### postgresql.alter-table.constraints
+
+| Dimension | Covered premise or reproduced boundary | Remaining premise and evidence needed |
+| --- | --- | --- |
+| ADD PRIMARY KEY | D3 covers index build risk. D21 checks exact USING INDEX identity, ownership and catalog eligibility, including PRIMARY KEY with NULLS NOT DISTINCT. | D31 checks installed class defaults for exact type. D41 resolves binary-compatible and polymorphic defaults. Existing rows, locks and execution outcomes need separate evidence. |
+| ADD UNIQUE | D3 separates ordinary build risk from USING INDEX. D21 checks catalog eligibility and distinguishes same-name attachment from an occupied rename destination. | D31 checks installed class defaults for exact type. D41 resolves binary-compatible and polymorphic defaults. Execution prerequisites require separate facts. |
+| ADD FOREIGN KEY | D3 covers initial-validation risk. D22 covers exact table and column identity. D23 adds referenced key eligibility, omitted primary-key selection, duplicate referenced columns and arity. | D32 checks ON DELETE SET members. D37 at `683d84ac` checks scalar equality and distinguishes assignment-only casts from implicit casts. D42 checks nested domain bases and the native enum and array equality premises. Remaining polymorphic and custom conversion definitions require independent evidence. Row validity, runtime actions and privileges require separate facts. |
+| ADD CHECK | D19 approved exact named collision on a fresh ordinary table. Native same expression with new/unnamed CHECK succeeds; purely inherited constraint can merge. | Predicate validity, data and inheritance remain distinct. |
+| ADD CHECK NOT VALID | D19 approved exact collision. Existing follow-up distinguishes migration validation intent. Native can register over an old violation while invalid predicates still fail. | Expression legality, row checks and batch outcome are separate. |
+| DROP CONSTRAINT | D4 binds exact target and guard behavior. D24 checks direct RESTRICT foreign-key dependencies on the supporting index in the ordinary-table scope. | D25 and D26 at `7af6f84a` cover direct CHECK inheritance and partition-parent ONLY. Wider dependency closure and foreign-table inheritance need separate evidence. |
+| DROP CONSTRAINT CASCADE | D4 binds target, and native CASCADE removes a dependent FK while retaining the table and rows. | D25 and D26 at `7af6f84a` preserve direct inheritance and ONLY refusals under CASCADE. Dependency closure and lock or privilege requirements need separate catalog evidence. |
+| VALIDATE CONSTRAINT | D4 exact CHECK/FK kind and validated-state no-op. Native row validation can still refuse `23514` or `23503`. | D38 at `683d84ac` distinguishes ordinary and partitioned ONLY refusal, recursive validation, NO INHERIT and already validated checks. Row-data validity remains a separate evidence requirement. |
+| ALTER CONSTRAINT DEFERRABLE | D4 exact FK target and known kind; non-FK fails its kind premise | Wider FK dependencies, table shape and execution ordering remain open. |
+| ALTER CONSTRAINT NOT ENFORCED | PG17 parser error and #149 upgrade guidance | Requires published PG18 binding and approved version promotion. |
+| NOT NULL NOT VALID | PG17 parser error and #149 upgrade guidance | Requires published PG18 binding and approved version promotion. |
+| ALTER CONSTRAINT INHERIT/NO INHERIT | Both spelled alternatives retain PG17 parser errors and #149 upgrade guidance | Requires published PG18 binding and approved version promotion. |
+
+### postgresql.alter-table.options
+
+| Dimension | Covered premise or reproduced boundary | Remaining premise and evidence needed |
+| --- | --- | --- |
+| SET/RESET storage parameters | D10 bounded heap option declarations and verified native ranges | Additional access methods, relation kinds, version/namespace options and operational outcomes need independent evidence. |
+| SET TABLESPACE | D11 exact target existence/global restriction and existing observed same space | Physical move, space, privileges, partition/index/TOAST effects require new facts. |
+| ALL IN TABLESPACE SET TABLESPACE | D17 exact endpoint, ordered-role and pg_global premise, same-space context | `OWNED BY` member resolution, lock availability under NOWAIT, space and physical movement are separate. |
+| SET ACCESS METHOD | D12 ordinary exact method identity/support and selected same method | Moving physical storage, extension method behavior, other relation kinds and dependencies need separate evidence. |
+| SET LOGGED/UNLOGGED | D13 ordinary persistence, direct publication and FK preconditions | Wider relation kinds, dependency closure, WAL/durability and execution outcomes need separate support. |
+| REPLICA IDENTITY | D9 exact attached index candidate for USING INDEX, independent mode warnings | Downstream replication usability, invalid-build behavior and coverage of wider kinds stay separate. |
+| SET WITHOUT OIDS dead form | PG17 compatibility no-op proved on ordinary/partitioned tables; guards and wrong kinds verified independently | D29 at `36ef07e4` adds exact target-kind and guarded absence evidence (delivered). Removed WITH OIDS remains a parser error. |
+
+### postgresql.alter-table.rename-owner
+
+| Dimension | Covered premise or reproduced boundary | Remaining premise and evidence needed |
+| --- | --- | --- |
+| RENAME TO | D15 primary relation and row-type naming, including movable autogenerated array exception | Other dependent effects and authorization need separate evidence. |
+| SET SCHEMA | D15 direct destination schema/primary relation/row-type and same-schema; native constraints and owned sequence/index collisions remain distinct | D28 at `36ef07e4` checks exact attached index, owned sequence and array type collisions (delivered). Wider relation scope and permission evidence remain open. |
+| OWNER TO | D16 exact literal roles, PUBLIC and observed current/session alias semantics | Actual permissions, role membership/grants, partition or other object kinds and dependent ownership remain distinct. |
+
 
 ## Evidence required for each dimension review
 

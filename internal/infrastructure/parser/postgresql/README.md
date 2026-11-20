@@ -24,7 +24,7 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 | parser_column_identity_postgresql_tag_test.go | Verifies separate private ALTER TABLE and ADD COLUMN guard bits, three-part table identities and exact decoded identifiers |
 | parser_column_format_postgresql_tag_test.go | Pins exact authored compression method (including case/default), missing/unmodeled AST knownness, existing storage case retention and JSON privacy without SQL-text recovery |
 | parser_column_tuning_postgresql_tag_test.go | Pins tuning/default/zero/bounds/duplicates/opaque/int-float and PG-versus-Go underflow facts, JSON privacy and DROP COLUMN IF EXISTS/CASCADE/RESTRICT knownness |
-| extractor_column_transition.go | Preserves existing-column generation guards, mode counts and ordered sequence options without changing legacy projections; no SQL-text fallback or expression payload |
+| extractor_column_transition.go | Preserves existing-column generation guards, mode counts, ordered sequence options and the presence of disallowed SET DEFAULT references without retaining expression text |
 | parser_column_transition_postgresql_tag_test.go | Pins guards, duplicate modes/options, START versus RESTART, signed int64 boundaries/overflow, unmodeled members, old JSON shape and D2 isolation |
 | extractor_generation.go | Preserves lossless CREATE/ADD COLUMN generation declarations for bounded governance: repeated characteristics/options, signed int64 numeric options, NULL presence and scalar/array type proof; leaves legacy public projections unchanged and never retains expression bodies |
 | extractor_generation_postgresql_tag_test.go | Pins generation seam, duplicates, int64 extremes/overflow, scalar/array/custom types and CREATE/ADD COLUMN parity |
@@ -59,7 +59,7 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 
 ## Dependencies
 - Upstream: `internal/application/audit`, `internal/application/queryaccess`
-- Downstream: `github.com/pganalyze/pg_query_go/v6`, `internal/domain/spec`, `internal/domain/queryaccess`
+- Downstream: `github.com/pganalyze/pg_query_go/v6`, `google.golang.org/protobuf`, `internal/domain/spec`, `internal/domain/queryaccess`
 
 ## Notes
 - Query Access `EffectCandidate` values are **internal-only and untrusted**: they are resolver inputs (kind, ordinal, name path, arity, operand kind hints, aggregate/window/filter/cast flags), not a trust root. They must not be copied into `domain.Result`, reason codes, or SDK/CLI/HTTP JSON. Public outputs continue to use only bounded `unproven_*` reason codes. Structural `AND/OR/NOT` is not a catalog candidate.

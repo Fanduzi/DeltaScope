@@ -243,13 +243,13 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	case "ddl.pg.alter.set_schema.target.valid":
 		return "Checks the PostgreSQL 17 destination schema and exact collisions for an ordinary table, its row and array types, attached indexes and column-owned sequences."
 	case "ddl.pg.alter.add_foreign_key.targets.valid":
-		return "Checks PostgreSQL 17 ADD FOREIGN KEY relation and column identities, referenced key eligibility, column counts, scalar equality and ON DELETE SET column lists on fresh ordinary tables, including NOT VALID declarations."
+		return "Checks PostgreSQL 17 ADD FOREIGN KEY relation and column identities, referenced key eligibility, column counts, bounded equality for scalar, domain, enum and array types and ON DELETE SET column lists on fresh ordinary tables, including NOT VALID declarations."
 	case "ddl.pg.alter.constraint_using_index.valid":
-		return "Checks catalog preconditions for using an exact existing index in a PostgreSQL 17 PRIMARY KEY or UNIQUE constraint. Checks index ownership, shape, key sort, collation, options and observed default operator classes."
+		return "Checks catalog preconditions for using an exact existing index in a PostgreSQL 17 PRIMARY KEY or UNIQUE constraint. Checks index ownership, shape, key sort, collation, options and default operator classes resolved from exact and binary-compatible types."
 	case "ddl.pg.alter.add_check.name.available":
 		return "Checks a single explicitly named CHECK or CHECK NOT VALID against the exact constraint directory of a fresh ordinary PG17 table."
 	case "ddl.pg.alter.column_type.destination.valid":
-		return "Checks PostgreSQL 17 TYPE and TYPE USING destinations on a fresh exact ordinary table. Checks type identity, supported built-in modifiers, qualified collations and direct view or generated-column dependencies. TYPE without USING also checks assignment for observed scalar types."
+		return "Checks PostgreSQL 17 TYPE and TYPE USING destinations on a fresh exact ordinary table. Checks type identity, supported built-in modifiers, qualified collations and direct view or generated-column dependencies. TYPE without USING checks scalar assignment and whether an ONLY target requires child traversal."
 	case "ddl.pg.alter.column_type.source.valid":
 		return "Checks exact PostgreSQL 17 TYPE or TYPE USING sources. Missing ordinary user columns, system columns, generated columns with USING, inherited source columns and direct partition keys can block."
 	case "ddl.pg.alter.persistence.transition.valid":
@@ -281,7 +281,7 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	case "ddl.pg.alter.column.options.valid":
 		return "Checks known builtin PG17 column SET options n_distinct/n_distinct_inherited for range [-1, DBL_MAX] and duplicate keys, plus exact SET/RESET target existence and system inapplicability. Unknown SET keys/opaque values remain gaps; unknown RESET names are not inherently errors."
 	case "ddl.pg.alter.column.generation.transition.valid":
-		return "PG17 existing-column generation preconditions: exact fresh ordinary-table identity, generated, type, NOT NULL, DEFAULT and primary-key facts. DROP NOT NULL also checks live attached replica identity key slots. Proven conflicts block; guards preserve known no-ops. Data, expression, permission and stale/ambiguous facts are not guessed."
+		return "PG17 existing-column generation preconditions: exact fresh ordinary-table identity, generated, type, NOT NULL, DEFAULT and primary-key facts. SET DEFAULT checks column references and subqueries. NOT NULL checks partition traversal. DROP NOT NULL also checks live attached replica identity key slots. Proven conflicts block; guards preserve known no-ops. Data, runtime expression values, permissions and ambiguous facts require separate evidence."
 	case "ddl.pg.alter.identity.sequence_options.valid":
 		return "PG17 existing-column identity sequence options: rejects proven duplicate modes/options, invalid increment/cache/type/bounds/start/restart. ADD uses a new declaration; SET uses actual dependency-bound stable parameters. Missing facts or narrowed bounds needing unread current state remain gaps."
 	case "ddl.pg.alter.identity.restart.warn":

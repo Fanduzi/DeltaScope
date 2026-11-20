@@ -7779,7 +7779,13 @@
                 "file:testdata/ddl-golden/T37.json#pg-column-type-dependency-generated",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-dependency-fk-neutral",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-dependency-index-neutral",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_dependency.expected.yaml#ddl.pg.alter.column_type.destination.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_dependency.expected.yaml#ddl.pg.alter.column_type.destination.valid",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-only-inheritance",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-only-partition",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-only-assignment",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-only-missing-type",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-only-leaf",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_only_parent.expected.yaml#ddl.pg.alter.column_type.destination.valid"
               ]
             }
           ]
@@ -7808,7 +7814,8 @@
                 "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_destination.expected.yaml#ddl.pg.alter.column_type.destination.valid",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-using-explicit",
                 "file:testdata/ddl-golden/T37.json#pg-column-inherited-action-type-using-inherited",
-                "file:testdata/ddl-golden/T37.json#pg-column-type-dependency-using"
+                "file:testdata/ddl-golden/T37.json#pg-column-type-dependency-using",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-only-using"
               ]
             }
           ]
@@ -7930,7 +7937,17 @@
                 "file:testdata/ddl-golden/T37.json#SET/DROP DEFAULT",
                 "file:testdata/ddl-golden/T37.json#pg-column-generation-targets",
                 "file:testdata/ddl-golden/T37.json#column-generation-default-null-offline",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.column.generation.transition.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.column.generation.transition.valid",
+                "file:testdata/ddl-golden/T37.json#pg-column-default-references-column",
+                "file:testdata/ddl-golden/T37.json#pg-column-default-references-nested-column",
+                "file:testdata/ddl-golden/T37.json#pg-column-default-references-subquery",
+                "file:testdata/ddl-golden/T37.json#pg-column-default-references-identity-first",
+                "file:testdata/ddl-golden/T37.json#pg-column-default-references-generated-first",
+                "file:testdata/ddl-golden/T37.json#pg-column-default-references-absence-first",
+                "file:testdata/ddl-golden/T37.json#pg-column-default-references-string",
+                "file:testdata/ddl-golden/T37.json#pg-column-default-references-typmod-identifier",
+                "file:testdata/ddl-golden/T37.json#pg-column-default-references-drop",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_set_default_references.expected.yaml#ddl.pg.alter.column.generation.transition.valid"
               ]
             }
           ]
@@ -8197,7 +8214,8 @@
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-pk-eligible",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-absent",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-null-distinct",
-                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-primary-nondefault"
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-primary-nondefault",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-fallback-compatible-not-selected"
               ]
             }
           ]
@@ -8238,7 +8256,13 @@
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-explicit-nondefault",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-explicit-default",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-binary-compatibility",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_default_opclass.expected.yaml#ddl.pg.alter.constraint_using_index.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_default_opclass.expected.yaml#ddl.pg.alter.constraint_using_index.valid",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-fallback-domain-base",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-fallback-enum",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-fallback-array",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-fallback-range",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-fallback-multirange",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-fallback-composite"
               ]
             }
           ]
@@ -8314,7 +8338,15 @@
                 "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-domain",
                 "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-reordered",
                 "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-second-column",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/foreign_key_scalar_equality.expected.yaml#ddl.pg.alter.add_foreign_key.targets.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/foreign_key_scalar_equality.expected.yaml#ddl.pg.alter.add_foreign_key.targets.valid",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-nested-domain-match",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-domain-mismatch",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-enum-match",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-enum-mismatch",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-array-match",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-array-mismatch",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-enum-domain-mismatch",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-array-domain-match"
               ]
             }
           ]

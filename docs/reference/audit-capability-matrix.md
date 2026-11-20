@@ -102,7 +102,7 @@ Broader F09 storage/options/RID/rename/owner/state dimensions remain open.
 
 | Rule | PostgreSQL | MySQL/TiDB | Metadata |
 | --- | --- | --- | --- |
-| `ddl.pg.alter.column.generation.transition.valid` | Proven generation, identity, default and nullability preconditions, including live replica identity key slots for DROP NOT NULL | Not applicable | Required |
+| `ddl.pg.alter.column.generation.transition.valid` | Proven generation, identity, default and nullability preconditions, including disallowed SET DEFAULT references and live replica identity key slots for DROP NOT NULL | Not applicable | Required |
 | `ddl.pg.alter.identity.sequence_options.valid` | Proven duplicate/invalid option or stable-definition conflict blocker | Not applicable | Required; observed PG17 alone permits intrinsic refusals |
 | `ddl.pg.alter.identity.restart.warn` | Explicit RESTART value-reuse/blocking warning | Not applicable | Required |
 | `ddl.pg.alter.identity.cycle.warn` | Explicit ADD IDENTITY / SET CYCLE reuse warning | Not applicable | Required |
@@ -608,7 +608,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.create_index.concurrently.require` | `CREATE INDEX` without `CONCURRENTLY` holds an exclusive lock, blocking reads and writes. Finding metadata: `index_kind`, `access_method`, `column_count`, `included_column_count`, `has_predicate`, `has_expression_keys`, `expression_count` (bounded, no SQL text). | ✓ | ✗ | warning |
 | `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | Adding a `NOT NULL` column with a volatile default may trigger a full table rewrite. Finding metadata: `not_null`, `has_default`, `default_kind` (bounded classification, no expression text). | ✓ | ✗ | warning |
 | `ddl.pg.alter.constraint_using_index.valid` | Checks exact live index identity, ownership, validity, shape, key default properties including observed default operator classes and the primary-key NULLS NOT DISTINCT restriction | Gap | ✓ | blocker |
-| `ddl.pg.alter.add_foreign_key.targets.valid` | Checks exact table and column identities, referenced key eligibility, column counts, scalar equality and ON DELETE SET column lists, including NOT VALID declarations | Gap | ✓ | blocker |
+| `ddl.pg.alter.add_foreign_key.targets.valid` | Checks exact table and column identities, referenced key eligibility, column counts, bounded scalar, domain, enum and array equality and ON DELETE SET column lists, including NOT VALID declarations | Gap | ✓ | blocker |
 | `ddl.pg.alter.add_check.name.available` | Checks exact name availability for a single named CHECK, including NOT VALID, in the live PostgreSQL 17 ordinary-table constraint directory | Gap | ✓ | blocker |
 | `ddl.pg.alter.add_check.not_valid.require` | `ADD CHECK` constraint without `NOT VALID` requires a full table scan with `ACCESS EXCLUSIVE` lock | ✓ | ✗ | warning |
 | `ddl.pg.alter.set_data_type.rewrite.warn` | Changing a column type may require a full table rewrite depending on the conversion. Finding metadata: `has_using` (boolean, no USING expression text). | ✓ | ✗ | warning |
