@@ -5,7 +5,8 @@ Per-task manifests for the milestone DDL golden-path runner
 
 ## T37 D20 PostgreSQL DROP NOT NULL replica identity keys
 
-Focused T37 passed 317/317 cases and 8,105 assertions. Eight new cases retain
+Delivered `5799cd4d` passed 50 tasks, 3,649/3,649 cases and 67,144
+assertions. T37 passed 317/317 cases and 8,105 assertions. Eight new cases retain
 all 309 earlier cases and their profiles. Native controls distinguish live
 attached keys from INCLUDE, FULL and unattached indexes, and check primary
 key precedence. [Decision](../../docs/decisions/2026-11-20-postgresql-drop-not-null-replica-key.md)

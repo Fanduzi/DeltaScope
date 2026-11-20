@@ -18,7 +18,7 @@ honestly — not a count of implemented rules.
 
 ## PostgreSQL DROP NOT NULL replica identity keys
 
-D20 adds nine selectors to the existing SET/DROP NOT NULL PostgreSQL 17 cell.
+D20 at `5799cd4d` adds nine selectors to the existing SET/DROP NOT NULL PostgreSQL 17 cell.
 The same inventory classifications and denominator apply. Existing-row
 validation for SET NOT NULL remains a separate premise.
 

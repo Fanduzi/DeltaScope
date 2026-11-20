@@ -71,6 +71,20 @@ The new isolated profile tests known membership, known nonmembership and
 stale evidence. All 309 earlier cases and profiles were preserved. Nine
 selectors attach only to the SET/DROP NOT NULL PG17 inventory cell.
 
+## Delivered evidence
+
+`5799cd4d61f6145803f4bf65e78975472aa1a444` passed all 50 canonical tasks with 3,649/3,649 cases and
+67,144 assertions. T37 passed 317/317 cases and 8,105 assertions. The validator,
+independent review, owned cleanup and merged-root gates passed. The original
+worktree status, protected release worktree and sixteen container identities
+matched.
+
+The milestone was merged into `main` by fast-forward and pushed normally.
+[Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44663528166),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44663528266) and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/136047329510) passed for this SHA. The aggregate is
+`/tmp/ddl-golden-pg-drop-not-null-replica-key-final-5799cd4d/all/artifact.json`.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
