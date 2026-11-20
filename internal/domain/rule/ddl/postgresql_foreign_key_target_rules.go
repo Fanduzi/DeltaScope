@@ -64,9 +64,8 @@ func assessPGForeignKeyTargets(s spec.Statement) (reason, fact, column string) {
 			return "foreign_key_source_system_column", "", name
 		}
 	}
-	if len(target.ReferencedColumns) == 0 {
-		return "", "referenced_table.primary_key", ""
-	}
+	referenced := make(map[string]struct{}, len(target.ReferencedColumns))
+	duplicate := ""
 	for _, name := range target.ReferencedColumns {
 		member, known := ref.PGColumns.FindColumn(name)
 		if !known {
@@ -78,8 +77,76 @@ func assessPGForeignKeyTargets(s spec.Statement) (reason, fact, column string) {
 		if member.System {
 			return "foreign_key_reference_system_column", "", name
 		}
+		if _, repeated := referenced[name]; repeated && duplicate == "" {
+			duplicate = name
+		}
+		referenced[name] = struct{}{}
 	}
-	return "", "", ""
+	if duplicate != "" {
+		return "foreign_key_reference_column_duplicate", "", duplicate
+	}
+	reason, fact = assessPGForeignKeyKey(target, referenced, s.Metadata.PGForeignKeyKeys)
+	return reason, fact, ""
+}
+
+func assessPGForeignKeyKey(target *spec.PGForeignKeySelection, referenced map[string]struct{}, keys *spec.PGForeignKeyKeys) (reason, fact string) {
+	keyFact := "referenced_table.unique_key"
+	if len(referenced) == 0 {
+		keyFact = "referenced_table.primary_key"
+	}
+	if keys == nil || keys.Schema != target.Reference.Schema || keys.Table != target.Reference.Name {
+		return "", keyFact
+	}
+	width, primaryCount := 0, 0
+	deferred := false
+	for _, key := range keys.Keys {
+		if len(referenced) == 0 {
+			if !key.Primary {
+				continue
+			}
+			primaryCount++
+		} else if !matchesPGForeignKeyColumns(referenced, key.Columns) {
+			continue
+		}
+		if len(key.Columns) == 0 {
+			return "", keyFact
+		}
+		if key.Immediate {
+			width = len(key.Columns)
+		} else {
+			deferred = true
+		}
+	}
+	if primaryCount > 1 {
+		return "", keyFact
+	}
+	if width == 0 {
+		if deferred {
+			return "foreign_key_reference_key_deferrable", ""
+		}
+		if len(referenced) == 0 {
+			return "foreign_key_reference_primary_key_absent", ""
+		}
+		return "foreign_key_reference_unique_key_absent", ""
+	}
+	if len(target.Columns) != width {
+		return "foreign_key_column_count_mismatch", ""
+	}
+	return "", ""
+}
+
+func matchesPGForeignKeyColumns(referenced map[string]struct{}, columns []string) bool {
+	if len(columns) != len(referenced) {
+		return false
+	}
+	seen := make(map[string]struct{}, len(columns))
+	for _, name := range columns {
+		if _, wanted := referenced[name]; !wanted {
+			return false
+		}
+		seen[name] = struct{}{}
+	}
+	return len(seen) == len(referenced)
 }
 
 func (r pgForeignKeyTargetRule) Evaluate(ctx context.Context, s spec.Statement) ([]rule.Finding, error) {
@@ -102,6 +169,16 @@ func (r pgForeignKeyTargetRule) Evaluate(ctx context.Context, s spec.Statement) 
 		message = "A declared PostgreSQL foreign-key reference column does not exist"
 	case "foreign_key_source_system_column", "foreign_key_reference_system_column":
 		message = "PostgreSQL cannot use system columns in foreign keys"
+	case "foreign_key_reference_column_duplicate":
+		message = "PostgreSQL foreign keys cannot repeat a referenced column"
+	case "foreign_key_reference_primary_key_absent":
+		message = "PostgreSQL requires a referenced primary key when the reference column list is omitted"
+	case "foreign_key_reference_unique_key_absent":
+		message = "No eligible PostgreSQL unique index matches the referenced columns"
+	case "foreign_key_reference_key_deferrable":
+		message = "PostgreSQL requires a nondeferrable referenced key"
+	case "foreign_key_column_count_mismatch":
+		message = "The PostgreSQL foreign key and referenced key have different numbers of columns"
 	default:
 		return nil, nil
 	}

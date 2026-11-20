@@ -2,7 +2,7 @@
 
 Policy model for rule configuration and future audit settings.
 
-The default PostgreSQL ADD FOREIGN KEY targets blocker checks the exact referenced relation and the declared columns.
+The default PostgreSQL ADD FOREIGN KEY targets blocker checks exact relation and column identities, referenced key eligibility, and column counts.
 
 The default PostgreSQL `USING INDEX` blocker checks the catalog prerequisites for PRIMARY KEY and UNIQUE attachment.
 

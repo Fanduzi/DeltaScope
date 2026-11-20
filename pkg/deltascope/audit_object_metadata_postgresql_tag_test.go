@@ -278,3 +278,22 @@ func TestAuditConstraintUsingIndexThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing index attachment finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditForeignKeyReferenceKeysThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true, Columns: []PGColumnState{{Name: "id"}}}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGForeignKeyKeys: &spec.PGForeignKeyKeys{Schema: "app", Table: "t"}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t ADD FOREIGN KEY (id) REFERENCES app.t(id) NOT VALID`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "t" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.add_foreign_key.targets.valid" && f.Metadata["reason_code"] == "foreign_key_reference_unique_key_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing referenced unique key finding: %+v", result.Statements[0].Findings)
+}

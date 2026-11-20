@@ -106,19 +106,20 @@ type corpusFacts struct {
 
 // corpusMetadata carries optional metadata-aware audit fixtures.
 type corpusMetadata struct {
-	Schema               string                         `yaml:"schema,omitempty"`
-	Instance             *corpusInstanceFacts           `yaml:"instance,omitempty"`
-	Tables               map[string]corpusTableSnapshot `yaml:"tables,omitempty"`
-	IndexOwners          map[string]string              `yaml:"index_owners,omitempty"`
-	PGTableOwners        []corpusPGTableOwner           `yaml:"pg_table_owners,omitempty"`
-	PGConstraintIndexes  []corpusPGConstraintIndex      `yaml:"pg_constraint_indexes,omitempty"`
-	PGColumnTypes        []corpusPGColumnType           `yaml:"pg_column_types,omitempty"`
-	PGBulkTablespaces    []corpusPGBulkTablespace       `yaml:"pg_bulk_tablespaces,omitempty"`
-	PGTableNamespaces    []corpusPGTableNamespace       `yaml:"pg_table_namespaces,omitempty"`
-	PGTablePersistences  []corpusPGTablePersistence     `yaml:"pg_table_persistences,omitempty"`
-	PGTableAccessMethods []corpusPGTableAccessMethod    `yaml:"pg_table_access_methods,omitempty"`
-	PGTableTablespaces   []corpusPGTableTablespace      `yaml:"pg_table_tablespaces,omitempty"`
-	PGReplicaIndexes     []corpusPGReplicaIndex         `yaml:"pg_replica_indexes,omitempty"`
+	Schema                  string                         `yaml:"schema,omitempty"`
+	Instance                *corpusInstanceFacts           `yaml:"instance,omitempty"`
+	Tables                  map[string]corpusTableSnapshot `yaml:"tables,omitempty"`
+	IndexOwners             map[string]string              `yaml:"index_owners,omitempty"`
+	PGTableOwners           []corpusPGTableOwner           `yaml:"pg_table_owners,omitempty"`
+	PGForeignKeyDirectories []corpusPGForeignKeyKeys       `yaml:"pg_foreign_key_directories,omitempty"`
+	PGConstraintIndexes     []corpusPGConstraintIndex      `yaml:"pg_constraint_indexes,omitempty"`
+	PGColumnTypes           []corpusPGColumnType           `yaml:"pg_column_types,omitempty"`
+	PGBulkTablespaces       []corpusPGBulkTablespace       `yaml:"pg_bulk_tablespaces,omitempty"`
+	PGTableNamespaces       []corpusPGTableNamespace       `yaml:"pg_table_namespaces,omitempty"`
+	PGTablePersistences     []corpusPGTablePersistence     `yaml:"pg_table_persistences,omitempty"`
+	PGTableAccessMethods    []corpusPGTableAccessMethod    `yaml:"pg_table_access_methods,omitempty"`
+	PGTableTablespaces      []corpusPGTableTablespace      `yaml:"pg_table_tablespaces,omitempty"`
+	PGReplicaIndexes        []corpusPGReplicaIndex         `yaml:"pg_replica_indexes,omitempty"`
 	// PlacementPolicies is the proven TiDB policy catalog the provider
 	// reads once: a non-nil map (even empty) is a vouched policy set;
 	// bound_targets lists the proven inbound references the drop premise
@@ -302,6 +303,16 @@ type corpusInstanceFacts struct {
 	MySQLSuperReadOnlyKnown  bool `yaml:"mysql_super_read_only_known,omitempty"`
 	MySQLReadOnlyExempt      bool `yaml:"mysql_read_only_exempt,omitempty"`
 	MySQLReadOnlyExemptKnown bool `yaml:"mysql_read_only_exempt_known,omitempty"`
+}
+
+type corpusPGForeignKeyKeys struct {
+	Schema string `yaml:"schema"`
+	Table  string `yaml:"table"`
+	Keys   []struct {
+		Columns   []string `yaml:"columns"`
+		Primary   bool     `yaml:"primary"`
+		Immediate bool     `yaml:"immediate"`
+	} `yaml:"keys"`
 }
 
 type corpusPGConstraintIndex struct {

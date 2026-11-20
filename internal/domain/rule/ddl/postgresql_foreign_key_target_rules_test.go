@@ -15,6 +15,28 @@ func TestPGForeignKeyTargets(t *testing.T) {
 		change                     func(*spec.Statement, *spec.PGForeignKeySelection)
 	}{
 		{name: "exact identifiers"},
+		{name: "unobserved unique key", fact: "referenced_table.unique_key", change: func(s *spec.Statement, _ *spec.PGForeignKeySelection) { s.Metadata.PGForeignKeyKeys = nil }},
+		{name: "empty directory", reason: "foreign_key_reference_unique_key_absent", change: func(s *spec.Statement, _ *spec.PGForeignKeySelection) { s.Metadata.PGForeignKeyKeys.Keys = nil }},
+		{name: "case-distinct key", reason: "foreign_key_reference_unique_key_absent", change: func(s *spec.Statement, _ *spec.PGForeignKeySelection) {
+			s.Metadata.PGForeignKeyKeys.Keys[0].Columns[0] = "c,d"
+		}},
+		{name: "deferred candidate", reason: "foreign_key_reference_key_deferrable", change: func(s *spec.Statement, _ *spec.PGForeignKeySelection) {
+			s.Metadata.PGForeignKeyKeys.Keys[0].Immediate = false
+		}},
+		{name: "immediate candidate wins", change: func(s *spec.Statement, _ *spec.PGForeignKeySelection) {
+			s.Metadata.PGForeignKeyKeys.Keys = append([]spec.PGForeignKeyKey{{Columns: []string{"C,D"}}}, s.Metadata.PGForeignKeyKeys.Keys...)
+		}},
+		{name: "duplicate reference", reason: "foreign_key_reference_column_duplicate", column: "C,D", change: func(_ *spec.Statement, fk *spec.PGForeignKeySelection) { fk.ReferencedColumns = []string{"C,D", "C,D"} }},
+		{name: "arity counts source positions", reason: "foreign_key_column_count_mismatch", change: func(_ *spec.Statement, fk *spec.PGForeignKeySelection) { fk.Columns = []string{"A,B", "A,B"} }},
+		{name: "omitted actual primary", change: func(_ *spec.Statement, fk *spec.PGForeignKeySelection) { fk.ReferencedColumns = nil }},
+		{name: "standalone unique cannot replace primary", reason: "foreign_key_reference_primary_key_absent", change: func(s *spec.Statement, fk *spec.PGForeignKeySelection) {
+			fk.ReferencedColumns = nil
+			s.Metadata.PGForeignKeyKeys.Keys[0].Primary = false
+		}},
+		{name: "ambiguous primary", fact: "referenced_table.primary_key", change: func(s *spec.Statement, fk *spec.PGForeignKeySelection) {
+			fk.ReferencedColumns = nil
+			s.Metadata.PGForeignKeyKeys.Keys = append(s.Metadata.PGForeignKeyKeys.Keys, s.Metadata.PGForeignKeyKeys.Keys[0])
+		}},
 		{name: "missing reference before missing source", reason: "foreign_key_reference_absent", change: func(s *spec.Statement, fk *spec.PGForeignKeySelection) {
 			s.Metadata.PGForeignKeyReference.Exists = false
 			s.Metadata.PGForeignKeyReference.PGRelation.Kind = ""
@@ -31,7 +53,10 @@ func TestPGForeignKeyTargets(t *testing.T) {
 		{name: "system source", reason: "foreign_key_source_system_column", column: "ctid", change: func(_ *spec.Statement, fk *spec.PGForeignKeySelection) { fk.Columns[0] = "ctid" }},
 		{name: "missing reference column", reason: "foreign_key_reference_column_absent", column: "c,d", change: func(_ *spec.Statement, fk *spec.PGForeignKeySelection) { fk.ReferencedColumns[0] = "c,d" }},
 		{name: "system reference", reason: "foreign_key_reference_system_column", column: "ctid", change: func(_ *spec.Statement, fk *spec.PGForeignKeySelection) { fk.ReferencedColumns[0] = "ctid" }},
-		{name: "omitted reference columns", fact: "referenced_table.primary_key", change: func(_ *spec.Statement, fk *spec.PGForeignKeySelection) { fk.ReferencedColumns = nil }},
+		{name: "omitted reference columns", fact: "referenced_table.primary_key", change: func(s *spec.Statement, fk *spec.PGForeignKeySelection) {
+			fk.ReferencedColumns = nil
+			s.Metadata.PGForeignKeyKeys = nil
+		}},
 		{name: "partitioned reference", fact: "referenced_table.pg_columns", change: func(s *spec.Statement, _ *spec.PGForeignKeySelection) {
 			s.Metadata.PGForeignKeyReference.PGRelation.Kind = "p"
 		}},
@@ -59,6 +84,7 @@ func TestPGForeignKeyTargets(t *testing.T) {
 			}, Metadata: &spec.Metadata{Schema: "app", Instance: &spec.InstanceFacts{Version: "PostgreSQL 17.7"},
 				TargetTable: &spec.TableSnapshot{Schema: "app", Table: &spec.Table{Name: "t"}, Exists: true,
 					PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: catalog("A,B")},
+				PGForeignKeyKeys: &spec.PGForeignKeyKeys{Schema: "app", Table: "parent", Keys: []spec.PGForeignKeyKey{{Columns: []string{"C,D"}, Primary: true, Immediate: true}}},
 				PGForeignKeyReference: &spec.TableSnapshot{Schema: "app", Exists: true,
 					PGRelation: spec.PGRelationState{Name: "parent", Kind: "r"}, PGColumns: catalog("C,D")}}}
 			if tc.change != nil {
