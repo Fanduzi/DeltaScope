@@ -44,6 +44,39 @@ case now needs an expectation for the proved primary key. Retain its exact
 SQL, fixture, case ID and native checks. New isolated cases bind only to ADD
 FOREIGN KEY at the PG17 anchor.
 
+## New T37 cases
+
+- `T37.cli.fk-keys-offline`
+- `T37.cli.fk-keys-disabled`
+- `T37.meta.pg-fk-keys-include`
+- `T37.meta.pg-fk-keys-include-is-not-key`
+- `T37.meta.pg-fk-keys-implicit-no-primary`
+- `T37.meta.pg-fk-keys-implicit-deferred-primary`
+- `T37.meta.pg-fk-keys-explicit-deferred`
+- `T37.meta.pg-fk-keys-immediate-over-deferred`
+- `T37.meta.pg-fk-keys-nulls-not-distinct`
+- `T37.meta.pg-fk-keys-invalid`
+- `T37.meta.pg-fk-keys-partial-and-expression`
+- `T37.meta.pg-fk-keys-duplicate-reference`
+- `T37.meta.pg-fk-keys-reordered-repeated-source`
+- `T37.meta.pg-fk-keys-arity`
+
+## Evidence bindings
+
+`83577403` adds the private key directory. `75319194` applies it in the
+existing blocker. A real PG17.7 provider probe confirmed ordered key slots,
+known empty directories and exclusion of live invalid indexes. The CLI
+comparison at `83577403` with the rule in the worktree matched 12 native
+outcomes, including seven specific refusals and five accepted key premises.
+See `/tmp/ds-pg-d23-key-candidate-cli-83577403/evidence.json`.
+
+Focused T37 passed 368/368 cases and 9,807 assertions. Fourteen additional
+cases include twelve native commands, with four successes and eight exact
+refusals. The existing omitted-list case now proves the actual referenced
+primary key with its original SQL, ID, fixture and native oracles. All 354
+previous IDs and profiles remain. Fifteen selectors append to ADD FOREIGN KEY
+at the PG17 anchor. Inventory classifications and denominators are preserved.
+
 ## Sources
 
 - [PG17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

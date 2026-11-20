@@ -3,6 +3,13 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D23 PostgreSQL foreign-key referenced keys
+
+Focused T37 passed 368 cases and 9,807 assertions. Fourteen cases cover the
+referenced key predicates and arity. The existing omitted-column case now
+expects the observed primary key. All previous cases and profiles remain.
+[Decision](../../docs/decisions/2026-11-20-postgresql-foreign-key-referenced-keys.md)
+
 ## T37 D22 PostgreSQL foreign key targets
 
 Delivered `529d10b1` passed 50 tasks, 3,686 cases and 68,383 assertions.

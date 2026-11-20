@@ -8200,7 +8200,22 @@
                 "file:testdata/ddl-golden/T37.json#pg-fk-targets-stale",
                 "file:testdata/ddl-golden/T37.json#pg-fk-targets-guarded-absent",
                 "file:testdata/ddl-golden/T37.json#pg-fk-targets-validating",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/foreign_key_targets.expected.yaml#ddl.pg.alter.add_foreign_key.targets.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/foreign_key_targets.expected.yaml#ddl.pg.alter.add_foreign_key.targets.valid",
+                "file:testdata/ddl-golden/T37.json#fk-keys-offline",
+                "file:testdata/ddl-golden/T37.json#fk-keys-disabled",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-include",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-include-is-not-key",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-implicit-no-primary",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-implicit-deferred-primary",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-explicit-deferred",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-immediate-over-deferred",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-nulls-not-distinct",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-invalid",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-partial-and-expression",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-duplicate-reference",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-reordered-repeated-source",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-arity",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/foreign_key_referenced_keys.expected.yaml#ddl.pg.alter.add_foreign_key.targets.valid"
               ]
             }
           ]

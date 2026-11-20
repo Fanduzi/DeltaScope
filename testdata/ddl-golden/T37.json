@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-foreign-key-keys": {"enable": {"ddl.pg.alter.add_foreign_key.targets.valid": {"level": "blocker"}, "ddl.pg.alter.add_foreign_key.not_valid.require": {"level": "warning"}}},
    "pg-foreign-key-targets": {"enable": {"ddl.pg.alter.add_foreign_key.targets.valid": {"level": "blocker"}, "ddl.pg.alter.add_foreign_key.not_valid.require": {"level": "warning"}}},
    "pg-constraint-index": {"enable": {"ddl.pg.alter.constraint_using_index.valid": {"level": "blocker"}, "ddl.alter.add_index.exists.forbid": {"level": "blocker"}, "ddl.pg.alter.add_primary_key.concurrent_index.warn": {"level": "warning"}, "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory": {"level": "notice"}}},
    "pg-drop-not-null-replica-key": {"enable": {"ddl.pg.alter.column.generation.transition.valid": {"level": "blocker"}}},
@@ -1888,6 +1889,51 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "fk-keys-offline",
+   "dialect": "postgresql",
+   "policy": "pg-foreign-key-keys",
+   "sql": "ALTER TABLE app.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES app.keys(id) NOT VALID",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","reason_code": "unproven_foreign_key_targets","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys"],
+    "rule_summary_loaded": 2
+   }
+  },
+  {
+   "id": "fk-keys-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES app.keys(id) NOT VALID",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys"]
+   }
+  },
   {
    "id": "fk-targets-offline",
    "dialect": "postgresql",
@@ -4568,6 +4614,591 @@
  ],
  "metadata_cases": [
   {
+   "id": "pg-fk-keys-include",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-foreign-key-keys",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_include"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_include CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_include'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_include.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_include.keys(id) NOT VALID",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_include'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_include","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_include.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_include.child VALUES(1,'keep'); CREATE TABLE pgfkk_include.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_include.parent VALUES(1); CREATE TABLE pgfkk_include.neighbor(id int); CREATE SEQUENCE pgfkk_include.guard START 7; CREATE TABLE pgfkk_include.keys(id int, included int); CREATE UNIQUE INDEX candidate_ix ON pgfkk_include.keys(id) INCLUDE (included); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_include.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_include'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_include.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_include'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_include'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_include.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_include.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_include.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_include.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgfkk_include.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_include.keys(id) NOT VALID","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native attaches the expected reference","sql": "SELECT confrelid='pgfkk_include.keys'::regclass AND NOT convalidated FROM pg_catalog.pg_constraint WHERE conrelid='pgfkk_include.child'::regclass AND conname='fk_d22'","expect": "t"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_include.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_include.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_include.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_include CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_include'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-include-is-not-key",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-foreign-key-keys",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_include_is_not_key"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_include_is_not_key CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_include_is_not_key'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_include_is_not_key.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_include_is_not_key.keys(included) NOT VALID",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_include_is_not_key'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_include_is_not_key","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_include_is_not_key.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_include_is_not_key.child VALUES(1,'keep'); CREATE TABLE pgfkk_include_is_not_key.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_include_is_not_key.parent VALUES(1); CREATE TABLE pgfkk_include_is_not_key.neighbor(id int); CREATE SEQUENCE pgfkk_include_is_not_key.guard START 7; CREATE TABLE pgfkk_include_is_not_key.keys(id int, included int); CREATE UNIQUE INDEX candidate_ix ON pgfkk_include_is_not_key.keys(id) INCLUDE (included); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_include_is_not_key.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_include_is_not_key'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","metadata": {"reason_code": "foreign_key_reference_unique_key_absent"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_include_is_not_key.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_include_is_not_key'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_include_is_not_key'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_include_is_not_key.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_include_is_not_key.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_include_is_not_key.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_include_is_not_key.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42830","sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkk_include_is_not_key.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_include_is_not_key.keys(included) NOT VALID","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42830:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_include_is_not_key.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_include_is_not_key'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_include_is_not_key'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_include_is_not_key.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_include_is_not_key.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_include_is_not_key.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_include_is_not_key.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_include_is_not_key CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_include_is_not_key'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-implicit-no-primary",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-foreign-key-keys",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_implicit_no_primary"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_implicit_no_primary CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_implicit_no_primary'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_implicit_no_primary.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_implicit_no_primary.keys NOT VALID",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_implicit_no_primary'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_implicit_no_primary","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_implicit_no_primary.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_implicit_no_primary.child VALUES(1,'keep'); CREATE TABLE pgfkk_implicit_no_primary.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_implicit_no_primary.parent VALUES(1); CREATE TABLE pgfkk_implicit_no_primary.neighbor(id int); CREATE SEQUENCE pgfkk_implicit_no_primary.guard START 7; CREATE TABLE pgfkk_implicit_no_primary.keys(id int, included int); CREATE UNIQUE INDEX candidate_ix ON pgfkk_implicit_no_primary.keys(id) INCLUDE (included); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_implicit_no_primary.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_implicit_no_primary'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","metadata": {"reason_code": "foreign_key_reference_primary_key_absent"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_implicit_no_primary.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_implicit_no_primary'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_implicit_no_primary'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_implicit_no_primary.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_implicit_no_primary.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_implicit_no_primary.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_implicit_no_primary.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42704","sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkk_implicit_no_primary.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_implicit_no_primary.keys NOT VALID","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42704:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_implicit_no_primary.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_implicit_no_primary'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_implicit_no_primary'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_implicit_no_primary.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_implicit_no_primary.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_implicit_no_primary.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_implicit_no_primary.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_implicit_no_primary CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_implicit_no_primary'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-implicit-deferred-primary",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-foreign-key-keys",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_implicit_deferred_primary"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_implicit_deferred_primary CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_implicit_deferred_primary'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_implicit_deferred_primary.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_implicit_deferred_primary.keys NOT VALID",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_implicit_deferred_primary'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_implicit_deferred_primary","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_implicit_deferred_primary.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_implicit_deferred_primary.child VALUES(1,'keep'); CREATE TABLE pgfkk_implicit_deferred_primary.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_implicit_deferred_primary.parent VALUES(1); CREATE TABLE pgfkk_implicit_deferred_primary.neighbor(id int); CREATE SEQUENCE pgfkk_implicit_deferred_primary.guard START 7; CREATE TABLE pgfkk_implicit_deferred_primary.keys(id int PRIMARY KEY DEFERRABLE INITIALLY DEFERRED); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_implicit_deferred_primary.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_implicit_deferred_primary'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","metadata": {"reason_code": "foreign_key_reference_key_deferrable"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_implicit_deferred_primary.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_implicit_deferred_primary'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_implicit_deferred_primary'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_implicit_deferred_primary.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_implicit_deferred_primary.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_implicit_deferred_primary.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_implicit_deferred_primary.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 55000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkk_implicit_deferred_primary.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_implicit_deferred_primary.keys NOT VALID","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  55000:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_implicit_deferred_primary.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_implicit_deferred_primary'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_implicit_deferred_primary'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_implicit_deferred_primary.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_implicit_deferred_primary.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_implicit_deferred_primary.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_implicit_deferred_primary.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_implicit_deferred_primary CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_implicit_deferred_primary'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-explicit-deferred",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-foreign-key-keys",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_explicit_deferred"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_explicit_deferred CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_explicit_deferred'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_explicit_deferred.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_explicit_deferred.keys(id) NOT VALID",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_explicit_deferred'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_explicit_deferred","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_explicit_deferred.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_explicit_deferred.child VALUES(1,'keep'); CREATE TABLE pgfkk_explicit_deferred.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_explicit_deferred.parent VALUES(1); CREATE TABLE pgfkk_explicit_deferred.neighbor(id int); CREATE SEQUENCE pgfkk_explicit_deferred.guard START 7; CREATE TABLE pgfkk_explicit_deferred.keys(id int PRIMARY KEY DEFERRABLE INITIALLY DEFERRED); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_explicit_deferred.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_explicit_deferred'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","metadata": {"reason_code": "foreign_key_reference_key_deferrable"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_explicit_deferred.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_explicit_deferred'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_explicit_deferred'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_explicit_deferred.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_explicit_deferred.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_explicit_deferred.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_explicit_deferred.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 55000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkk_explicit_deferred.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_explicit_deferred.keys(id) NOT VALID","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  55000:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_explicit_deferred.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_explicit_deferred'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_explicit_deferred'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_explicit_deferred.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_explicit_deferred.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_explicit_deferred.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_explicit_deferred.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_explicit_deferred CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_explicit_deferred'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-immediate-over-deferred",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-foreign-key-keys",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_immediate_over_deferred"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_immediate_over_deferred CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_immediate_over_deferred'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_immediate_over_deferred.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_immediate_over_deferred.keys(id) NOT VALID",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_immediate_over_deferred'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_immediate_over_deferred","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_immediate_over_deferred.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_immediate_over_deferred.child VALUES(1,'keep'); CREATE TABLE pgfkk_immediate_over_deferred.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_immediate_over_deferred.parent VALUES(1); CREATE TABLE pgfkk_immediate_over_deferred.neighbor(id int); CREATE SEQUENCE pgfkk_immediate_over_deferred.guard START 7; CREATE TABLE pgfkk_immediate_over_deferred.keys(id int PRIMARY KEY DEFERRABLE INITIALLY DEFERRED); CREATE UNIQUE INDEX immediate_ix ON pgfkk_immediate_over_deferred.keys(id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_immediate_over_deferred.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_immediate_over_deferred'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_immediate_over_deferred.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_immediate_over_deferred'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_immediate_over_deferred'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_immediate_over_deferred.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_immediate_over_deferred.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_immediate_over_deferred.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_immediate_over_deferred.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgfkk_immediate_over_deferred.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_immediate_over_deferred.keys(id) NOT VALID","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native attaches the expected reference","sql": "SELECT confrelid='pgfkk_immediate_over_deferred.keys'::regclass AND NOT convalidated FROM pg_catalog.pg_constraint WHERE conrelid='pgfkk_immediate_over_deferred.child'::regclass AND conname='fk_d22'","expect": "t"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_immediate_over_deferred.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_immediate_over_deferred.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_immediate_over_deferred.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_immediate_over_deferred CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_immediate_over_deferred'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-nulls-not-distinct",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-foreign-key-keys",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_nulls_not_distinct"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_nulls_not_distinct CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_nulls_not_distinct'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_nulls_not_distinct.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_nulls_not_distinct.keys(id) NOT VALID",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_nulls_not_distinct'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_nulls_not_distinct","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_nulls_not_distinct.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_nulls_not_distinct.child VALUES(1,'keep'); CREATE TABLE pgfkk_nulls_not_distinct.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_nulls_not_distinct.parent VALUES(1); CREATE TABLE pgfkk_nulls_not_distinct.neighbor(id int); CREATE SEQUENCE pgfkk_nulls_not_distinct.guard START 7; CREATE TABLE pgfkk_nulls_not_distinct.keys(id int, included int); CREATE UNIQUE INDEX candidate_ix ON pgfkk_nulls_not_distinct.keys(id) NULLS NOT DISTINCT; ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_nulls_not_distinct.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_nulls_not_distinct'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_nulls_not_distinct.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_nulls_not_distinct'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_nulls_not_distinct'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_nulls_not_distinct.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_nulls_not_distinct.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_nulls_not_distinct.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_nulls_not_distinct.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgfkk_nulls_not_distinct.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_nulls_not_distinct.keys(id) NOT VALID","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native attaches the expected reference","sql": "SELECT confrelid='pgfkk_nulls_not_distinct.keys'::regclass AND NOT convalidated FROM pg_catalog.pg_constraint WHERE conrelid='pgfkk_nulls_not_distinct.child'::regclass AND conname='fk_d22'","expect": "t"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_nulls_not_distinct.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_nulls_not_distinct.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_nulls_not_distinct.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_nulls_not_distinct CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_nulls_not_distinct'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-invalid",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-foreign-key-keys",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_invalid"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_invalid CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_invalid'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_invalid.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_invalid.keys(id) NOT VALID",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_invalid'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_invalid","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_invalid.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_invalid.child VALUES(1,'keep'); CREATE TABLE pgfkk_invalid.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_invalid.parent VALUES(1); CREATE TABLE pgfkk_invalid.neighbor(id int); CREATE SEQUENCE pgfkk_invalid.guard START 7; CREATE TABLE pgfkk_invalid.keys(id int, included int); INSERT INTO pgfkk_invalid.keys(id) VALUES(4),(4); ","expect_rc": 0},
+    {"name": "failed concurrent build leaves live invalid key","sql": "CREATE UNIQUE INDEX CONCURRENTLY broken_key ON pgfkk_invalid.keys(id)","expect_rc": 1,"verify": [{"assert": "invalid index remains","sql": "SELECT indislive AND NOT indisvalid FROM pg_catalog.pg_index WHERE indexrelid='pgfkk_invalid.broken_key'::regclass","expect": "t"}]},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_invalid.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_invalid'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","metadata": {"reason_code": "foreign_key_reference_unique_key_absent"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_invalid.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_invalid'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_invalid'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_invalid.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_invalid.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_invalid.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_invalid.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42830","sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkk_invalid.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_invalid.keys(id) NOT VALID","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42830:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_invalid.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_invalid'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_invalid'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_invalid.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_invalid.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_invalid.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_invalid.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_invalid CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_invalid'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-partial-and-expression",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-foreign-key-keys",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_partial_and_expression"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_partial_and_expression CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_partial_and_expression'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_partial_and_expression.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_partial_and_expression.keys(id) NOT VALID",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_partial_and_expression'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_partial_and_expression","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_partial_and_expression.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_partial_and_expression.child VALUES(1,'keep'); CREATE TABLE pgfkk_partial_and_expression.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_partial_and_expression.parent VALUES(1); CREATE TABLE pgfkk_partial_and_expression.neighbor(id int); CREATE SEQUENCE pgfkk_partial_and_expression.guard START 7; CREATE TABLE pgfkk_partial_and_expression.keys(id int, included int); CREATE UNIQUE INDEX partial_ix ON pgfkk_partial_and_expression.keys(id) WHERE id > 1; CREATE UNIQUE INDEX expr_ix ON pgfkk_partial_and_expression.keys((id+1)); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_partial_and_expression.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_partial_and_expression'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","metadata": {"reason_code": "foreign_key_reference_unique_key_absent"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_partial_and_expression.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_partial_and_expression'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_partial_and_expression'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_partial_and_expression.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_partial_and_expression.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_partial_and_expression.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_partial_and_expression.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42830","sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkk_partial_and_expression.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\") REFERENCES pgfkk_partial_and_expression.keys(id) NOT VALID","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42830:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_partial_and_expression.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_partial_and_expression'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_partial_and_expression'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_partial_and_expression.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_partial_and_expression.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_partial_and_expression.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_partial_and_expression.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_partial_and_expression CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_partial_and_expression'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-duplicate-reference",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-foreign-key-keys",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_duplicate_reference"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_duplicate_reference CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_duplicate_reference'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_duplicate_reference.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\", \"A,B\") REFERENCES pgfkk_duplicate_reference.keys(id,id) NOT VALID",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_duplicate_reference'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_duplicate_reference","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_duplicate_reference.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_duplicate_reference.child VALUES(1,'keep'); CREATE TABLE pgfkk_duplicate_reference.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_duplicate_reference.parent VALUES(1); CREATE TABLE pgfkk_duplicate_reference.neighbor(id int); CREATE SEQUENCE pgfkk_duplicate_reference.guard START 7; CREATE TABLE pgfkk_duplicate_reference.keys(id int, \"Other,Id\" int, UNIQUE(id,\"Other,Id\")); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_duplicate_reference.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_duplicate_reference'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","metadata": {"reason_code": "foreign_key_reference_column_duplicate","column": "id"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_duplicate_reference.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_duplicate_reference'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_duplicate_reference'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_duplicate_reference.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_duplicate_reference.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_duplicate_reference.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_duplicate_reference.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42830","sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkk_duplicate_reference.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\", \"A,B\") REFERENCES pgfkk_duplicate_reference.keys(id,id) NOT VALID","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42830:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_duplicate_reference.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_duplicate_reference'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_duplicate_reference'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_duplicate_reference.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_duplicate_reference.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_duplicate_reference.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_duplicate_reference.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_duplicate_reference CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_duplicate_reference'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-reordered-repeated-source",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-foreign-key-keys",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_reordered_repeated_source"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_reordered_repeated_source CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_reordered_repeated_source'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_reordered_repeated_source.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\", \"A,B\") REFERENCES pgfkk_reordered_repeated_source.keys(\"Other,Id\",id) NOT VALID",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_reordered_repeated_source'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_reordered_repeated_source","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_reordered_repeated_source.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_reordered_repeated_source.child VALUES(1,'keep'); CREATE TABLE pgfkk_reordered_repeated_source.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_reordered_repeated_source.parent VALUES(1); CREATE TABLE pgfkk_reordered_repeated_source.neighbor(id int); CREATE SEQUENCE pgfkk_reordered_repeated_source.guard START 7; CREATE TABLE pgfkk_reordered_repeated_source.keys(id int, \"Other,Id\" int, UNIQUE(id,\"Other,Id\")); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_reordered_repeated_source.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_reordered_repeated_source'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys"],
+    "rule_summary_loaded": 2
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_reordered_repeated_source.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_reordered_repeated_source'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_reordered_repeated_source'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_reordered_repeated_source.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_reordered_repeated_source.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_reordered_repeated_source.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_reordered_repeated_source.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgfkk_reordered_repeated_source.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\", \"A,B\") REFERENCES pgfkk_reordered_repeated_source.keys(\"Other,Id\",id) NOT VALID","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native attaches the expected reference","sql": "SELECT confrelid='pgfkk_reordered_repeated_source.keys'::regclass AND NOT convalidated FROM pg_catalog.pg_constraint WHERE conrelid='pgfkk_reordered_repeated_source.child'::regclass AND conname='fk_d22'","expect": "t"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_reordered_repeated_source.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_reordered_repeated_source.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_reordered_repeated_source.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_reordered_repeated_source CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_reordered_repeated_source'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-arity",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-foreign-key-keys",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_arity"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_arity CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_arity'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_arity.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\", \"A,B\") REFERENCES pgfkk_arity.keys(id) NOT VALID",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_arity'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_arity","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_arity.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_arity.child VALUES(1,'keep'); CREATE TABLE pgfkk_arity.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_arity.parent VALUES(1); CREATE TABLE pgfkk_arity.neighbor(id int); CREATE SEQUENCE pgfkk_arity.guard START 7; CREATE TABLE pgfkk_arity.keys(id int, included int); CREATE UNIQUE INDEX candidate_ix ON pgfkk_arity.keys(id) INCLUDE (included); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_arity.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_arity'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys"],
+    "rule_summary_loaded": 2,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","metadata": {"reason_code": "foreign_key_column_count_mismatch"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_arity.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_arity'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_arity'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_arity.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_arity.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_arity.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_arity.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42830","sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkk_arity.child ADD CONSTRAINT fk_d22 FOREIGN KEY (\"A,B\", \"A,B\") REFERENCES pgfkk_arity.keys(id) NOT VALID","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42830:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_arity.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_arity'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_arity'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_arity.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_arity.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_arity.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_arity.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_arity CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_arity'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
    "id": "pg-fk-targets-exact",
    "anchor": "postgres17",
    "dialect": "postgresql",
@@ -4926,17 +5557,17 @@
    ],
    "expect": {
     "exit": 0,
-    "verdict": "review",
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "unverified",
-    "statement_coverage": ["unverified"],
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
     "statement_indices": [0],
     "finding_entries": [],
-    "evidence_gaps": 1,
-    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","reason_code": "unproven_foreign_key_targets","required_facts": ["referenced_table.primary_key"]}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
     "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified"],
     "rule_summary_loaded": 2
    },
@@ -13863,6 +14494,20 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.fk-keys-offline",
+  "T37.cli.fk-keys-disabled",
+  "T37.meta.pg-fk-keys-include",
+  "T37.meta.pg-fk-keys-include-is-not-key",
+  "T37.meta.pg-fk-keys-implicit-no-primary",
+  "T37.meta.pg-fk-keys-implicit-deferred-primary",
+  "T37.meta.pg-fk-keys-explicit-deferred",
+  "T37.meta.pg-fk-keys-immediate-over-deferred",
+  "T37.meta.pg-fk-keys-nulls-not-distinct",
+  "T37.meta.pg-fk-keys-invalid",
+  "T37.meta.pg-fk-keys-partial-and-expression",
+  "T37.meta.pg-fk-keys-duplicate-reference",
+  "T37.meta.pg-fk-keys-reordered-repeated-source",
+  "T37.meta.pg-fk-keys-arity",
   "T37.cli.fk-targets-offline",
   "T37.cli.fk-targets-disabled",
   "T37.meta.pg-fk-targets-exact",
