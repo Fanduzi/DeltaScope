@@ -828,7 +828,14 @@ native commands. Three existing expectations record the index conflict,
 missing offline version and unresolved domain assignment. The previous
 SQL, profiles, case IDs and native controls were preserved. The 301 parent
 classifications and 19-family/63-row denominator remain in place. The
-fixed candidate is in verification.
+fixed candidate passed verification.
+
+Delivered at `36ef07e478a6883ea0214b48819be72c231abf99` with 50 canonical tasks, 3,769/3,769 cases and 71,177 assertions. T37 passed 437/437 with 12,138 assertions. The aggregate validator, independent read-only review, owned cleanup and merged-root gates passed. All five CI checks succeeded at the delivered SHA.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44797329748/job/136500156332),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44797329748/job/136500156270),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44797329748/job/136500155755),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44797329708/job/136500155747),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136500314759).
 
 ## Family index
 
@@ -900,11 +907,11 @@ insufficient.
 | F08 | `postgresql.create-table-partitioning` | PARTITION BY RANGE; PARTITION BY LIST; PARTITION BY HASH; PARTITION OF; PARTITION OF DEFAULT; INHERITS | unreviewed |
 | F08 | `postgresql.create-table-temporary` | TEMP/TEMPORARY; GLOBAL TEMPORARY compat noise; UNLOGGED; ON COMMIT actions | unreviewed |
 | F08 | `postgresql.create-table-like` | LIKE basic; INCLUDING options | unreviewed |
-| F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 bounded system/ordering evidence delivered; D8 exact ADD/RENAME target and guard evidence delivered; D14 TYPE/USING source checks delivered; D18 exact destination checks and D27 direct DROP dependencies delivered; broader eligibility/order remain open |
+| F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 bounded system/ordering evidence delivered; D8 exact ADD/RENAME target and guard evidence delivered; D14 TYPE/USING source checks delivered; D18 exact destination, D27 direct DROP dependency and D30 bounded TYPE destination prerequisites delivered; broader eligibility/order remain open |
 | F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 generation and D6 statistics/options delivered with accepted gaps; D7 bounded storage/compression/system delivered; D20 replica identity key check delivered; broader data/expression/current/kind scopes open |
 | F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; D19 exact CHECK name checks delivered; D21 USING INDEX prerequisites delivered; D22 FK target checks delivered; D23 referenced key checks delivered; D24 direct FK dependencies and D25–D26 CHECK inheritance and partition-parent checks delivered; remaining dimensions open |
-| F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | partial:D9 bounded attachment delivered; D10 bounded heap declarations delivered; D11 single-table tablespace delivered; D12 ordinary-table methods delivered; D13 persistence delivered; D17 bulk tablespace prerequisites delivered; other dimensions open |
-| F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | partial:D15 primary destination checks delivered; D16 owner checks delivered; dependent moves and permissions remain open |
+| F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | partial:D9 bounded attachment delivered; D10 bounded heap declarations delivered; D11 single-table tablespace delivered; D12 ordinary-table methods delivered; D13 persistence delivered; D17 bulk tablespace prerequisites and D29 SET WITHOUT OIDS target evidence delivered; other dimensions open |
+| F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | partial:D15 primary destination checks delivered; D16 owner checks and D28 attached SET SCHEMA names delivered; wider dependent moves and permissions remain open |
 | F10 | `postgresql.drop-table` | DROP TABLE; IF EXISTS / multi-target | unreviewed |
 | F10 | `postgresql.truncate-table` | TRUNCATE basic; RESTART/CONTINUE IDENTITY; ONLY / CASCADE | unreviewed |
 | F11 | `postgresql.create-index` | CREATE INDEX basic; UNIQUE; CONCURRENTLY; USING method; expression index; partial WHERE; INCLUDE / NULLS DISTINCT; opclass/parameters; WITH/TABLESPACE | unreviewed |
