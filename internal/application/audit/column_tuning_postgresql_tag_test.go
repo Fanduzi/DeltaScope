@@ -36,7 +36,7 @@ func TestPGColumnTuningPipeline(t *testing.T) {
 		{"ALTER COLUMN id RESET(private_unknown_key)", "", "pass", false, false},
 		{"DROP COLUMN missing", "ddl.alter.drop_column.exists.require", "reject", false, false},
 		{"DROP COLUMN IF EXISTS missing", "", "pass", false, false},
-		{"DROP COLUMN IF EXISTS id", "ddl.pg.alter.drop_column.advisory", "review", false, false},
+		{"DROP COLUMN IF EXISTS id", "ddl.pg.alter.drop_column.advisory", "review", false, true},
 		{`DROP COLUMN "ID"`, "ddl.alter.drop_column.exists.require", "reject", false, false},
 		{"DROP COLUMN IF EXISTS missing", "ddl.pg.alter.drop_column.advisory", "review", true, true},
 	} {

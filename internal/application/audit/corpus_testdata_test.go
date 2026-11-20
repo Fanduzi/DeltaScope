@@ -111,6 +111,7 @@ type corpusMetadata struct {
 	Tables                     map[string]corpusTableSnapshot    `yaml:"tables,omitempty"`
 	IndexOwners                map[string]string                 `yaml:"index_owners,omitempty"`
 	PGTableOwners              []corpusPGTableOwner              `yaml:"pg_table_owners,omitempty"`
+	PGDropColumnDependencies   []corpusPGDropColumnDependency    `yaml:"pg_drop_column_dependencies,omitempty"`
 	PGDropConstraintReferences []corpusPGDropConstraintReference `yaml:"pg_drop_constraint_references,omitempty"`
 	PGForeignKeyDirectories    []corpusPGForeignKeyKeys          `yaml:"pg_foreign_key_directories,omitempty"`
 	PGConstraintIndexes        []corpusPGConstraintIndex         `yaml:"pg_constraint_indexes,omitempty"`
@@ -304,6 +305,13 @@ type corpusInstanceFacts struct {
 	MySQLSuperReadOnlyKnown  bool `yaml:"mysql_super_read_only_known,omitempty"`
 	MySQLReadOnlyExempt      bool `yaml:"mysql_read_only_exempt,omitempty"`
 	MySQLReadOnlyExemptKnown bool `yaml:"mysql_read_only_exempt_known,omitempty"`
+}
+
+type corpusPGDropColumnDependency struct {
+	Schema string `yaml:"schema"`
+	Table  string `yaml:"table"`
+	Column string `yaml:"column"`
+	Kind   string `yaml:"kind"`
 }
 
 type corpusPGDropConstraintReference struct {

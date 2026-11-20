@@ -219,12 +219,36 @@ func pgDropColumnTarget(s spec.Statement, index int) (bool, string, string) {
 		return false, "", "column.if_exists"
 	}
 	if member != nil {
-		return false, "", ""
+		reason, missing := pgDropColumnDependencyResult(s, index)
+		return false, reason, missing
 	}
 	if guard == "true" {
 		return true, "", ""
 	}
 	return false, "column_absent", ""
+}
+
+func pgDropColumnDependencyResult(s spec.Statement, index int) (reason, missing string) {
+	table, catalog := s.DDL.Table, s.Metadata.TargetTable.PGColumns
+	action := s.DDL.Alter[index]
+	if len(s.DDL.Alter) != 1 || action.Options["cascade"] != "false" || s.DDL.PGTableCatalogQualified ||
+		table.Schema == "" || table.Schema == "pg_temp" || catalog.Typed {
+		return "", ""
+	}
+	fact := s.Metadata.PGDropColumnDependency
+	if !spec.PGOrdinaryTableBound(s) || fact == nil || fact.Schema != table.Schema || fact.Table != table.Name || fact.Column != action.Name {
+		return "", "column.pg_dependencies"
+	}
+	switch fact.Kind {
+	case "view", "generated_column":
+		return "column_has_direct_dependency", ""
+	case "foreign_key":
+		return "column_referenced_by_foreign_key", ""
+	case "":
+		return "", ""
+	default:
+		return "", "column.pg_dependencies"
+	}
 }
 
 func (r alterObjectExistenceRule) evaluatePGDropColumn(ctx context.Context, s spec.Statement) ([]rule.Finding, error) {
@@ -243,16 +267,27 @@ func (r alterObjectExistenceRule) evaluatePGDropColumn(ctx context.Context, s sp
 			return nil, err
 		}
 		_, reason, _ := pgDropColumnTarget(s, i)
-		if reason != "" {
-			message := fmt.Sprintf("column %q does not exist on table %q", a.Name, s.DDL.Table.Name)
-			metadata := map[string]any{"table": s.DDL.Table.Name, "action": a.Action, "name": a.Name, "exists": false}
-			if reason == "system_column_inapplicable" {
-				message = "PostgreSQL does not allow dropping this observed system column"
-				metadata["exists"] = true
-				metadata["reason_code"] = reason
-			}
-			findings = append(findings, rule.Finding{Level: r.level, Message: message, Suggestion: "verify the exact user-column identity; IF EXISTS protects only absent targets, not existing system columns; dependency and permission legality are not proved", Metadata: metadata})
+		if reason == "" {
+			continue
 		}
+		message := fmt.Sprintf("column %q does not exist on table %q", a.Name, s.DDL.Table.Name)
+		suggestion := "Verify the exact column identity. IF EXISTS protects an absent column."
+		metadata := map[string]any{"table": s.DDL.Table.Name, "action": a.Action, "name": a.Name, "exists": reason != "column_absent"}
+		switch reason {
+		case "column_has_direct_dependency":
+			message = "A PostgreSQL view, materialized view or generated column depends on the selected column"
+			suggestion = "Review the direct dependency before dropping the column with RESTRICT"
+		case "column_referenced_by_foreign_key":
+			message = "A PostgreSQL foreign key references the selected column"
+			suggestion = "Review the foreign key before dropping the column with RESTRICT"
+		case "system_column_inapplicable":
+			message = "PostgreSQL does not allow dropping this observed system column"
+			suggestion = "Select a user column for DROP COLUMN"
+		}
+		if reason != "column_absent" {
+			metadata["reason_code"] = reason
+		}
+		findings = append(findings, rule.Finding{Level: r.level, Message: message, Suggestion: suggestion, Metadata: metadata})
 	}
 	return findings, nil
 }

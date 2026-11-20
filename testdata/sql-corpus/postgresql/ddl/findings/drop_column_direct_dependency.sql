@@ -1,0 +1,1 @@
+ALTER TABLE app.t DROP COLUMN IF EXISTS " Exact Column ";

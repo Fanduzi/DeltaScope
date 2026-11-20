@@ -440,7 +440,7 @@ PostgreSQL `ALTER TABLE IF EXISTS` 的既有存在性规则在已证明限定名
 | `ddl.table.exists.alter.require` | ALTER TABLE 目标表必须存在 | blocker | **是** |
 | `ddl.table.exists.create.forbid` | CREATE TABLE 目标表必须尚不存在 | blocker | **是** |
 | `ddl.alter.add_column.exists.forbid` | ADD COLUMN 目标列必须尚不存在 | blocker | **是** |
-| `ddl.alter.drop_column.exists.require` | DROP COLUMN 目标列必须存在 | blocker | **是** |
+| `ddl.alter.drop_column.exists.require` | 检查 DROP COLUMN 目标是否存在，以及 PostgreSQL RESTRICT 下的直接依赖 | blocker | **是** |
 | `ddl.alter.modify_column.exists.require` | MODIFY COLUMN 目标列必须存在 | blocker | **是** |
 | `ddl.alter.change_column.exists.require` | CHANGE COLUMN 源列必须存在 | blocker | **是** |
 | `ddl.alter.change_column.target.exists.forbid` | CHANGE COLUMN 新名不得属于另一列 | blocker | **是** |

@@ -568,7 +568,11 @@ func metadataNotesForRule(ruleID string) *MetadataNotes {
 		return &MetadataNotes{Kinds: kinds,
 			Required: "Observed PG17 and exact fresh ordinary persistent non-inheritance/non-partition column facts. Intrinsic modeled numeric refusals require the observed version but not an invented catalog.",
 			Missing:  "Unknown/stale/misbound/ambiguous user/system facts or unmodeled/quoted/nonfinite/extension SET values retain unproven_column_tuning gaps (unverified/review). No data/expression/permission or PG post-state inference."}
-	case "ddl.alter.drop_column.exists.require", "ddl.pg.alter.drop_column.advisory":
+	case "ddl.alter.drop_column.exists.require":
+		return &MetadataNotes{Kinds: kinds,
+			Required: "On PostgreSQL 17, exact fresh ordinary-table facts establish the column and IF EXISTS behavior. A single schema-qualified RESTRICT also uses bound direct view, generated-column and foreign-key dependencies.",
+			Missing:  "Unknown or stale identity, guard or applicable dependency facts report unproven_column_target. A bound empty observation satisfies the scoped dependency premise."}
+	case "ddl.pg.alter.drop_column.advisory":
 		return &MetadataNotes{Kinds: kinds,
 			Required: "For PostgreSQL, exact fresh ordinary-table PG17 user/system column/guard facts distinguish absent unguarded targets from proven IF EXISTS no-ops and inapplicable existing system targets; proved no-op/system inapplicability suppress deletion advice. Other dialects retain existing semantics.",
 			Missing:  "The PostgreSQL existence check reports unproven_column_target for unknown version/guard/user or system catalog, ambiguity, stale or misbound proof; user-directory absence never proves a system member absent. Conditional advice is not deletion/execution proof; independent forbids stay effective."}

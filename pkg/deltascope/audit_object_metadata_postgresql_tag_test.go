@@ -316,3 +316,22 @@ func TestAuditDropConstraintReferenceThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing direct constraint dependency finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditDropColumnDependencyThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true, Columns: []PGColumnState{{Name: "id"}}}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGDropColumnDependency: &spec.PGDropColumnDependency{Schema: "app", Table: "t", Column: "id", Kind: "foreign_key"}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t DROP COLUMN id RESTRICT`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "id" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.alter.drop_column.exists.require" && f.Metadata["reason_code"] == "column_referenced_by_foreign_key" {
+			return
+		}
+	}
+	t.Fatalf("missing direct column dependency finding: %+v", result.Statements[0].Findings)
+}

@@ -78,7 +78,7 @@ omits arbitrary methods, private type/build facts and provider errors.
 | `ddl.pg.alter.column.statistics.target.valid` | Proven below-default target/missing-column blocker | Not applicable | Observed PG17; exact fresh target facts for presence |
 | `ddl.pg.alter.column.statistics.clamp.warn` | Warns about native lowering above 10000, not rejection | Not applicable | Exact fresh applicable PG17 target |
 | `ddl.pg.alter.column.options.valid` | Builtin n_distinct/n_distinct_inherited range/duplicate SET key and missing SET/RESET target blocker | Not applicable | Observed PG17; exact fresh target facts for presence |
-| `ddl.alter.drop_column.exists.require` (existing ID) | Guarded proved absence is no-op; unguarded proved absence blocks | Existing semantics unchanged | Exact fresh ordinary-table column/guard/observed PG17 proof |
+| `ddl.alter.drop_column.exists.require` (existing ID) | Guarded proved absence is a no-op. Unguarded proved absence or a proven PostgreSQL direct RESTRICT dependency blocks | Existing semantics unchanged | Exact fresh ordinary-table column/guard/observed PG17 proof |
 
 Approved default-on, no new params. DEFAULT/-1 and normal statistics targets
 are silent; above-maximum values natively clamp. Unknown RESET names are not
