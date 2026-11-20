@@ -7733,7 +7733,21 @@
                 "file:testdata/ddl-golden/T37.json#pg-column-type-destination-temp-alias",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-destination-freshness",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-destination-source-missing",
-                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-guard-absent"
+                "file:testdata/ddl-golden/T37.json#pg-column-type-destination-guard-absent",
+                "file:testdata/ddl-golden/T37.json#column-type-coercion-offline",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-assignment-missing",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-assignment-numeric",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-assignment-io",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-domain-gap",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-varchar-invalid",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-numeric-invalid",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-numeric-negative-scale",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-varchar-data-overflow",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-collation-valid",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-collation-exact-case",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-collation-noncollatable",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-collation-searchpath",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_assignment.expected.yaml#ddl.pg.alter.column_type.destination.valid"
               ]
             }
           ]
@@ -7759,7 +7773,8 @@
                 "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_source_preconditions.expected.yaml#ddl.pg.alter.column_type.source.valid",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-destination-using",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-destination-using-missing",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_destination.expected.yaml#ddl.pg.alter.column_type.destination.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_destination.expected.yaml#ddl.pg.alter.column_type.destination.valid",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-using-explicit"
               ]
             }
           ]
@@ -8999,7 +9014,7 @@
         {
           "subaction_id": "SET WITHOUT OIDS dead form",
           "parser_status": "recognized",
-          "audit_status": "silent",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -9007,11 +9022,15 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.set-without-oids-dead-form.probes.txt",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "file:testdata/ddl-golden/T37.json"
+                "file:testdata/ddl-golden/T37.json",
+                "file:testdata/ddl-golden/T37.json#without-oids-native-ordinary",
+                "file:testdata/ddl-golden/T37.json#without-oids-native-guarded",
+                "file:testdata/ddl-golden/T37.json#without-oids-native-wrong-kind",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/set_without_oids_target_kind.expected.yaml#ddl.table.exists.alter.require"
               ]
             }
           ]
@@ -9091,7 +9110,19 @@
                 "file:testdata/ddl-golden/T37.json#pg-table-namespace-schema-move",
                 "file:testdata/ddl-golden/T37.json#pg-table-namespace-freshness",
                 "file:testdata/ddl-golden/T37.json#pg-table-namespace-guard-absent",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/table_namespace_schema.expected.yaml#ddl.pg.alter.set_schema.target.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/table_namespace_schema.expected.yaml#ddl.pg.alter.set_schema.target.valid",
+                "file:testdata/ddl-golden/T37.json#set-schema-companions-offline",
+                "file:testdata/ddl-golden/T37.json#pg-set-schema-companions-index",
+                "file:testdata/ddl-golden/T37.json#pg-set-schema-companions-serial",
+                "file:testdata/ddl-golden/T37.json#pg-set-schema-companions-identity",
+                "file:testdata/ddl-golden/T37.json#pg-set-schema-companions-array",
+                "file:testdata/ddl-golden/T37.json#pg-set-schema-companions-array-priority",
+                "file:testdata/ddl-golden/T37.json#pg-set-schema-companions-index-priority",
+                "file:testdata/ddl-golden/T37.json#pg-set-schema-companions-same-schema",
+                "file:testdata/ddl-golden/T37.json#pg-set-schema-companions-case-distinct",
+                "file:testdata/ddl-golden/T37.json#pg-set-schema-companions-reference-only",
+                "file:testdata/ddl-golden/T37.json#pg-set-schema-companions-stale",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/table_namespace_companion.expected.yaml#ddl.pg.alter.set_schema.target.valid"
               ]
             }
           ]

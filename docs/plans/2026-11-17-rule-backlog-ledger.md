@@ -806,6 +806,30 @@ Delivered at `b6d73f0407958d6bc6747a5f5b406e0b501dc9fd` with 50 canonical tasks,
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44790017587/job/136474898518),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136475059050).
 
+### D28–D30 PostgreSQL schema moves and column type prerequisites
+
+`576c9a2a` retains exact type modifiers and collation AST facts and reads
+schema companion and type prerequisites from PostgreSQL 17 catalogs.
+`f0f7b0b8` extends the existing blockers for three independent premises.
+
+- D28 checks associated array types, attached indexes and column-owned
+  sequences for name collisions during SET SCHEMA. It adds 12 selectors
+  to that subaction. [Decision](../decisions/2026-11-21-postgresql-table-schema-companions.md)
+- D29 checks exact SET WITHOUT OIDS target kind and guarded absence.
+  The PostgreSQL 17 compatibility operation still has no column effect.
+  Four selectors bind the subaction's mixed evidence. [Decision](../decisions/2026-11-21-postgresql-set-without-oids.md)
+- D30 checks bounded character and numeric type modifiers, qualified
+  collations and scalar assignment for TYPE without USING. Existing-value
+  conversion and USING expressions require separate evidence. Fifteen
+  selectors attach to TYPE and TYPE USING. [Decision](../decisions/2026-11-21-postgresql-column-type-coercion.md)
+
+T37 combined preview passed 437/437 with 12,138 assertions and 30 added
+native commands. Three existing expectations record the index conflict,
+missing offline version and unresolved domain assignment. The previous
+SQL, profiles, case IDs and native controls were preserved. The 301 parent
+classifications and 19-family/63-row denominator remain in place. The
+fixed candidate is in verification.
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.

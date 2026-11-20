@@ -6,6 +6,8 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-column-type-coercion": {"enable": {"ddl.pg.alter.column_type.destination.valid": {"level": "blocker"}}},
+   "pg-set-schema-companions": {"enable": {"ddl.pg.alter.set_schema.target.valid": {"level": "blocker"}}},
    "pg-drop-column-dependency": {"enable": {"ddl.alter.drop_column.exists.require": {"level": "blocker"}}},
    "pg-drop-check-only": {"enable": {"ddl.pg.alter.drop_constraint.target.require": {"level": "blocker"}}},
    "pg-drop-inherited-check": {"enable": {"ddl.pg.alter.drop_constraint.target.require": {"level": "blocker"}}},
@@ -1893,6 +1895,52 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "column-type-coercion-offline",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-coercion",
+   "sql": "ALTER TABLE app.t ALTER COLUMN v TYPE pg_catalog.int4",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","reason_code": "unproven_column_type_destination","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable"]
+   }
+  },
+  {
+   "id": "set-schema-companions-offline",
+   "dialect": "postgresql",
+   "policy": "pg-set-schema-companions",
+   "sql": "ALTER TABLE app.t SET SCHEMA dst",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","reason_code": "unproven_table_namespace_destination","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["OwnedSequenceConflict","ArrayTypeConflict","PGTableNamespace","Index Private","owned_private_seq"]
+   }
+  },
   {
    "id": "drop-column-dependency-offline",
    "dialect": "postgresql",
@@ -4628,15 +4676,17 @@
    "sql": "ALTER TABLE users SET WITHOUT OIDS",
    "expect": {
     "exit": 0,
-    "verdict": "pass",
+    "verdict": "review",
     "statements": 1,
     "findings": 0,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete"
+     "unverified"
     ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.table.exists.alter.require", "reason_code": "unproven_alter_table_relation", "required_facts": ["instance.version"]}],
     "statement_sql": [
      "ALTER TABLE users SET WITHOUT OIDS"
     ]
@@ -4752,6 +4802,1265 @@
   }
  ],
  "metadata_cases": [
+  {
+   "id": "pg-column-type-coercion-assignment-missing",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-coercion",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_assignment_missing"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_assignment_missing CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_assignment_missing'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_assignment_missing.t ALTER COLUMN v TYPE pg_catalog.int4",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_assignment_missing'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_assignment_missing","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE TABLE pgtype_coerce_assignment_missing.t(id int, v text); INSERT INTO pgtype_coerce_assignment_missing.t VALUES (1,'123'); CREATE SEQUENCE pgtype_coerce_assignment_missing.guard START 7; CREATE TABLE pgtype_coerce_assignment_missing.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_assignment_missing.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable"],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "destination_type_assignment_unavailable","column": "v"}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_assignment_missing.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_assignment_missing.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_assignment_missing.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_assignment_missing.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=('123')::text) FROM pgtype_coerce_assignment_missing.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_assignment_missing.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42804","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_coerce_assignment_missing.t ALTER COLUMN v TYPE pg_catalog.int4","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42804:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_assignment_missing.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_assignment_missing.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_assignment_missing.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_assignment_missing.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=('123')::text) FROM pgtype_coerce_assignment_missing.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_assignment_missing.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_assignment_missing CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_assignment_missing'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-coercion-assignment-numeric",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-coercion",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_assignment_numeric"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_assignment_numeric CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_assignment_numeric'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_assignment_numeric.t ALTER COLUMN v TYPE pg_catalog.int4",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_assignment_numeric'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_assignment_numeric","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE TABLE pgtype_coerce_assignment_numeric.t(id int, v numeric); INSERT INTO pgtype_coerce_assignment_numeric.t VALUES (1,1); CREATE SEQUENCE pgtype_coerce_assignment_numeric.guard START 7; CREATE TABLE pgtype_coerce_assignment_numeric.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_assignment_numeric.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable"]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_assignment_numeric.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_assignment_numeric.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_assignment_numeric.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_assignment_numeric.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(1)::text) FROM pgtype_coerce_assignment_numeric.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_assignment_numeric.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native conversion","sql": "ALTER TABLE pgtype_coerce_assignment_numeric.t ALTER COLUMN v TYPE pg_catalog.int4","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native destination type","sql": "SELECT pg_catalog.format_type(atttypid,atttypmod) FROM pg_catalog.pg_attribute WHERE attrelid='pgtype_coerce_assignment_numeric.t'::regclass AND attname='v'","expect": "integer"},
+    {"assert": "row identity retained","sql": "SELECT id FROM pgtype_coerce_assignment_numeric.t","expect": "1"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_assignment_numeric.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_assignment_numeric CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_assignment_numeric'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-coercion-assignment-io",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-coercion",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_assignment_io"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_assignment_io CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_assignment_io'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_assignment_io.t ALTER COLUMN v TYPE pg_catalog.text",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_assignment_io'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_assignment_io","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE TABLE pgtype_coerce_assignment_io.t(id int, v integer); INSERT INTO pgtype_coerce_assignment_io.t VALUES (1,4); CREATE SEQUENCE pgtype_coerce_assignment_io.guard START 7; CREATE TABLE pgtype_coerce_assignment_io.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_assignment_io.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable"]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_assignment_io.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_assignment_io.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_assignment_io.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_assignment_io.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_assignment_io.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_assignment_io.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native conversion","sql": "ALTER TABLE pgtype_coerce_assignment_io.t ALTER COLUMN v TYPE pg_catalog.text","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native destination type","sql": "SELECT pg_catalog.format_type(atttypid,atttypmod) FROM pg_catalog.pg_attribute WHERE attrelid='pgtype_coerce_assignment_io.t'::regclass AND attname='v'","expect": "text"},
+    {"assert": "row identity retained","sql": "SELECT id FROM pgtype_coerce_assignment_io.t","expect": "1"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_assignment_io.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_assignment_io CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_assignment_io'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-coercion-using-explicit",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-coercion",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_using_explicit"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_using_explicit CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_using_explicit'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_using_explicit.t ALTER COLUMN v TYPE pg_catalog.int4 USING v::int4",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_using_explicit'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_using_explicit","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE TABLE pgtype_coerce_using_explicit.t(id int, v text); INSERT INTO pgtype_coerce_using_explicit.t VALUES (1,'123'); CREATE SEQUENCE pgtype_coerce_using_explicit.guard START 7; CREATE TABLE pgtype_coerce_using_explicit.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_using_explicit.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable"]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_using_explicit.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_using_explicit.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_using_explicit.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_using_explicit.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=('123')::text) FROM pgtype_coerce_using_explicit.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_using_explicit.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native conversion","sql": "ALTER TABLE pgtype_coerce_using_explicit.t ALTER COLUMN v TYPE pg_catalog.int4 USING v::int4","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native destination type","sql": "SELECT pg_catalog.format_type(atttypid,atttypmod) FROM pg_catalog.pg_attribute WHERE attrelid='pgtype_coerce_using_explicit.t'::regclass AND attname='v'","expect": "integer"},
+    {"assert": "row identity retained","sql": "SELECT id FROM pgtype_coerce_using_explicit.t","expect": "1"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_using_explicit.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_using_explicit CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_using_explicit'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-coercion-domain-gap",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-coercion",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_domain_gap"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_domain_gap CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_domain_gap'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_domain_gap.t ALTER COLUMN v TYPE pg_catalog.int4",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_domain_gap'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_domain_gap","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE DOMAIN pgtype_coerce_domain_gap.d AS text;CREATE TABLE pgtype_coerce_domain_gap.t(id int, v pgtype_coerce_domain_gap.d); INSERT INTO pgtype_coerce_domain_gap.t VALUES (1,'123'); CREATE SEQUENCE pgtype_coerce_domain_gap.guard START 7; CREATE TABLE pgtype_coerce_domain_gap.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_domain_gap.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","reason_code": "unproven_column_type_destination","required_facts": ["column.type_assignment"]}],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable"]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_domain_gap.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_domain_gap.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_domain_gap.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_domain_gap.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=('123')::text) FROM pgtype_coerce_domain_gap.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_domain_gap.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42804","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_coerce_domain_gap.t ALTER COLUMN v TYPE pg_catalog.int4","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42804:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_domain_gap.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_domain_gap.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_domain_gap.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_domain_gap.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=('123')::text) FROM pgtype_coerce_domain_gap.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_domain_gap.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_domain_gap CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_domain_gap'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-coercion-varchar-invalid",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-coercion",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_varchar_invalid"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_varchar_invalid CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_varchar_invalid'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_varchar_invalid.t ALTER COLUMN v TYPE pg_catalog.varchar(0)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_varchar_invalid'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_varchar_invalid","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE TABLE pgtype_coerce_varchar_invalid.t(id int, v varchar); INSERT INTO pgtype_coerce_varchar_invalid.t VALUES (1,'abc'); CREATE SEQUENCE pgtype_coerce_varchar_invalid.guard START 7; CREATE TABLE pgtype_coerce_varchar_invalid.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_varchar_invalid.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable"],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "destination_character_type_modifier_invalid","column": "v"}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_varchar_invalid.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_varchar_invalid.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_varchar_invalid.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_varchar_invalid.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=('abc')::text) FROM pgtype_coerce_varchar_invalid.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_varchar_invalid.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 22023","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_coerce_varchar_invalid.t ALTER COLUMN v TYPE pg_catalog.varchar(0)","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  22023:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_varchar_invalid.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_varchar_invalid.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_varchar_invalid.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_varchar_invalid.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=('abc')::text) FROM pgtype_coerce_varchar_invalid.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_varchar_invalid.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_varchar_invalid CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_varchar_invalid'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-coercion-numeric-invalid",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-coercion",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_numeric_invalid"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_numeric_invalid CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_numeric_invalid'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_numeric_invalid.t ALTER COLUMN v TYPE pg_catalog.numeric(5,-1001)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_numeric_invalid'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_numeric_invalid","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE TABLE pgtype_coerce_numeric_invalid.t(id int, v numeric); INSERT INTO pgtype_coerce_numeric_invalid.t VALUES (1,4); CREATE SEQUENCE pgtype_coerce_numeric_invalid.guard START 7; CREATE TABLE pgtype_coerce_numeric_invalid.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_numeric_invalid.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable"],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "destination_numeric_type_modifier_invalid","column": "v"}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_numeric_invalid.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_numeric_invalid.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_numeric_invalid.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_numeric_invalid.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_numeric_invalid.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_numeric_invalid.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 22023","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_coerce_numeric_invalid.t ALTER COLUMN v TYPE pg_catalog.numeric(5,-1001)","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  22023:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_numeric_invalid.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_numeric_invalid.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_numeric_invalid.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_numeric_invalid.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_numeric_invalid.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_numeric_invalid.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_numeric_invalid CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_numeric_invalid'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-coercion-numeric-negative-scale",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-coercion",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_numeric_negative_scale"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_numeric_negative_scale CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_numeric_negative_scale'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_numeric_negative_scale.t ALTER COLUMN v TYPE pg_catalog.numeric(5,-2)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_numeric_negative_scale'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_numeric_negative_scale","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE TABLE pgtype_coerce_numeric_negative_scale.t(id int, v numeric); INSERT INTO pgtype_coerce_numeric_negative_scale.t VALUES (1,4); CREATE SEQUENCE pgtype_coerce_numeric_negative_scale.guard START 7; CREATE TABLE pgtype_coerce_numeric_negative_scale.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_numeric_negative_scale.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable"]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_numeric_negative_scale.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_numeric_negative_scale.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_numeric_negative_scale.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_numeric_negative_scale.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_numeric_negative_scale.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_numeric_negative_scale.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native conversion","sql": "ALTER TABLE pgtype_coerce_numeric_negative_scale.t ALTER COLUMN v TYPE pg_catalog.numeric(5,-2)","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native destination type","sql": "SELECT pg_catalog.format_type(atttypid,atttypmod) FROM pg_catalog.pg_attribute WHERE attrelid='pgtype_coerce_numeric_negative_scale.t'::regclass AND attname='v'","expect": "numeric(5,-2)"},
+    {"assert": "row identity retained","sql": "SELECT id FROM pgtype_coerce_numeric_negative_scale.t","expect": "1"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_numeric_negative_scale.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_numeric_negative_scale CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_numeric_negative_scale'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-coercion-varchar-data-overflow",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-coercion",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_varchar_data_overflow"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_varchar_data_overflow CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_varchar_data_overflow'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_varchar_data_overflow.t ALTER COLUMN v TYPE pg_catalog.varchar(2)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_varchar_data_overflow'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_varchar_data_overflow","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE TABLE pgtype_coerce_varchar_data_overflow.t(id int, v varchar); INSERT INTO pgtype_coerce_varchar_data_overflow.t VALUES (1,'abc'); CREATE SEQUENCE pgtype_coerce_varchar_data_overflow.guard START 7; CREATE TABLE pgtype_coerce_varchar_data_overflow.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_varchar_data_overflow.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable"]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_varchar_data_overflow.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_varchar_data_overflow.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_varchar_data_overflow.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_varchar_data_overflow.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=('abc')::text) FROM pgtype_coerce_varchar_data_overflow.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_varchar_data_overflow.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 22001","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_coerce_varchar_data_overflow.t ALTER COLUMN v TYPE pg_catalog.varchar(2)","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  22001:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_varchar_data_overflow.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_varchar_data_overflow.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_varchar_data_overflow.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_varchar_data_overflow.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=('abc')::text) FROM pgtype_coerce_varchar_data_overflow.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_varchar_data_overflow.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_varchar_data_overflow CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_varchar_data_overflow'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-coercion-collation-valid",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-coercion",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_collation_valid"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_collation_valid CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_collation_valid'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_collation_valid.t ALTER COLUMN v TYPE pg_catalog.text COLLATE pgtype_coerce_collation_valid.\" Exact Collation \"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_collation_valid'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_collation_valid","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE COLLATION pgtype_coerce_collation_valid.\" Exact Collation \" FROM pg_catalog.\"C\";CREATE TABLE pgtype_coerce_collation_valid.t(id int, v text); INSERT INTO pgtype_coerce_collation_valid.t VALUES (1,'abc'); CREATE SEQUENCE pgtype_coerce_collation_valid.guard START 7; CREATE TABLE pgtype_coerce_collation_valid.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_valid.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable"]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_collation_valid.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_valid.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_valid.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_collation_valid.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=('abc')::text) FROM pgtype_coerce_collation_valid.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_collation_valid.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native conversion","sql": "ALTER TABLE pgtype_coerce_collation_valid.t ALTER COLUMN v TYPE pg_catalog.text COLLATE pgtype_coerce_collation_valid.\" Exact Collation \"","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native destination type","sql": "SELECT pg_catalog.format_type(atttypid,atttypmod) FROM pg_catalog.pg_attribute WHERE attrelid='pgtype_coerce_collation_valid.t'::regclass AND attname='v'","expect": "text"},
+    {"assert": "row identity retained","sql": "SELECT id FROM pgtype_coerce_collation_valid.t","expect": "1"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_collation_valid.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_collation_valid CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_collation_valid'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-coercion-collation-exact-case",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-coercion",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_collation_exact_case"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_collation_exact_case CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_collation_exact_case'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_collation_exact_case.t ALTER COLUMN v TYPE pg_catalog.text COLLATE pgtype_coerce_collation_exact_case.\" exact collation \"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_collation_exact_case'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_collation_exact_case","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE COLLATION pgtype_coerce_collation_exact_case.\" Exact Collation \" FROM pg_catalog.\"C\";CREATE TABLE pgtype_coerce_collation_exact_case.t(id int, v text); INSERT INTO pgtype_coerce_collation_exact_case.t VALUES (1,'abc'); CREATE SEQUENCE pgtype_coerce_collation_exact_case.guard START 7; CREATE TABLE pgtype_coerce_collation_exact_case.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_exact_case.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable"],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "destination_collation_absent","column": "v"}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_collation_exact_case.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_exact_case.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_exact_case.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_collation_exact_case.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=('abc')::text) FROM pgtype_coerce_collation_exact_case.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_collation_exact_case.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42704","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_coerce_collation_exact_case.t ALTER COLUMN v TYPE pg_catalog.text COLLATE pgtype_coerce_collation_exact_case.\" exact collation \"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42704:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_collation_exact_case.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_exact_case.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_exact_case.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_collation_exact_case.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=('abc')::text) FROM pgtype_coerce_collation_exact_case.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_collation_exact_case.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_collation_exact_case CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_collation_exact_case'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-coercion-collation-noncollatable",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-coercion",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_collation_noncollatable"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_collation_noncollatable CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_collation_noncollatable'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_collation_noncollatable.t ALTER COLUMN v TYPE pg_catalog.int4 COLLATE pgtype_coerce_collation_noncollatable.\" Exact Collation \"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_collation_noncollatable'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_collation_noncollatable","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE COLLATION pgtype_coerce_collation_noncollatable.\" Exact Collation \" FROM pg_catalog.\"C\";CREATE TABLE pgtype_coerce_collation_noncollatable.t(id int, v int); INSERT INTO pgtype_coerce_collation_noncollatable.t VALUES (1,4); CREATE SEQUENCE pgtype_coerce_collation_noncollatable.guard START 7; CREATE TABLE pgtype_coerce_collation_noncollatable.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_noncollatable.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable"],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "destination_type_not_collatable","column": "v"}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_collation_noncollatable.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_noncollatable.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_noncollatable.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_collation_noncollatable.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_collation_noncollatable.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_collation_noncollatable.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42804","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_coerce_collation_noncollatable.t ALTER COLUMN v TYPE pg_catalog.int4 COLLATE pgtype_coerce_collation_noncollatable.\" Exact Collation \"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42804:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_collation_noncollatable.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_noncollatable.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_noncollatable.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_collation_noncollatable.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_collation_noncollatable.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_collation_noncollatable.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_collation_noncollatable CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_collation_noncollatable'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-coercion-collation-searchpath",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-coercion",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_collation_searchpath"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_collation_searchpath CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_collation_searchpath'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_collation_searchpath.t ALTER COLUMN v TYPE pg_catalog.text COLLATE \"C\"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_collation_searchpath'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_collation_searchpath","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE TABLE pgtype_coerce_collation_searchpath.t(id int, v text); INSERT INTO pgtype_coerce_collation_searchpath.t VALUES (1,'abc'); CREATE SEQUENCE pgtype_coerce_collation_searchpath.guard START 7; CREATE TABLE pgtype_coerce_collation_searchpath.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_searchpath.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","reason_code": "unproven_column_type_destination","required_facts": ["column.collation_identity"]}],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable"]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_collation_searchpath.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_searchpath.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_collation_searchpath.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_collation_searchpath.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=('abc')::text) FROM pgtype_coerce_collation_searchpath.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_collation_searchpath.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native conversion","sql": "ALTER TABLE pgtype_coerce_collation_searchpath.t ALTER COLUMN v TYPE pg_catalog.text COLLATE \"C\"","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native destination type","sql": "SELECT pg_catalog.format_type(atttypid,atttypmod) FROM pg_catalog.pg_attribute WHERE attrelid='pgtype_coerce_collation_searchpath.t'::regclass AND attname='v'","expect": "text"},
+    {"assert": "row identity retained","sql": "SELECT id FROM pgtype_coerce_collation_searchpath.t","expect": "1"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_collation_searchpath.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_collation_searchpath CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_collation_searchpath'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "without-oids-native-ordinary",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgnooids_ordinary"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgnooids_ordinary CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnooids_ordinary'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgnooids_ordinary.t SET WITHOUT OIDS",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnooids_ordinary'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgnooids_ordinary","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgnooids_ordinary.t(id int,payload text); INSERT INTO pgnooids_ordinary.t VALUES(1,'keep'); CREATE TABLE pgnooids_ordinary.p(id int) PARTITION BY RANGE(id); CREATE TABLE pgnooids_ordinary.child PARTITION OF pgnooids_ordinary.p DEFAULT; INSERT INTO pgnooids_ordinary.p VALUES(2); CREATE VIEW pgnooids_ordinary.v AS SELECT * FROM pgnooids_ordinary.t; CREATE SEQUENCE pgnooids_ordinary.target_seq; CREATE SEQUENCE pgnooids_ordinary.guard START 7; CREATE TABLE pgnooids_ordinary.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgnooids_ordinary'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnooids_ordinary.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgnooids_ordinary'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgnooids_ordinary'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgnooids_ordinary.receipt)) AS delta","expect": "0"},
+    {"assert": "ordinary and partition rows match","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgnooids_ordinary.t) AND (SELECT count(*)=1 AND bool_and(id=2) FROM pgnooids_ordinary.p)","expect": "t"},
+    {"assert": "retains independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnooids_ordinary.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native accepts compatibility operation","sql": "ALTER TABLE pgnooids_ordinary.t SET WITHOUT OIDS","expect_rc": 0},
+    {"name": "native accepts compatibility operation","sql": "ALTER TABLE pgnooids_ordinary.p SET WITHOUT OIDS","expect_rc": 0},
+    {"name": "native refuses 42601","sql": "\\set VERBOSITY verbose\nALTER TABLE pgnooids_ordinary.t SET WITH OIDS","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42601:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnooids_ordinary.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgnooids_ordinary'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgnooids_ordinary'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgnooids_ordinary.receipt)) AS delta","expect": "0"},
+    {"assert": "ordinary and partition rows match","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgnooids_ordinary.t) AND (SELECT count(*)=1 AND bool_and(id=2) FROM pgnooids_ordinary.p)","expect": "t"},
+    {"assert": "retains independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnooids_ordinary.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgnooids_ordinary CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnooids_ordinary'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "without-oids-native-guarded",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgnooids_guarded"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgnooids_guarded CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnooids_guarded'","expect": "0"}}]},
+   "sql": "ALTER TABLE IF EXISTS pgnooids_guarded.absent SET WITHOUT OIDS",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnooids_guarded'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgnooids_guarded","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgnooids_guarded.t(id int,payload text); INSERT INTO pgnooids_guarded.t VALUES(1,'keep'); CREATE TABLE pgnooids_guarded.p(id int) PARTITION BY RANGE(id); CREATE TABLE pgnooids_guarded.child PARTITION OF pgnooids_guarded.p DEFAULT; INSERT INTO pgnooids_guarded.p VALUES(2); CREATE VIEW pgnooids_guarded.v AS SELECT * FROM pgnooids_guarded.t; CREATE SEQUENCE pgnooids_guarded.target_seq; CREATE SEQUENCE pgnooids_guarded.guard START 7; CREATE TABLE pgnooids_guarded.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgnooids_guarded'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnooids_guarded.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgnooids_guarded'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgnooids_guarded'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgnooids_guarded.receipt)) AS delta","expect": "0"},
+    {"assert": "ordinary and partition rows match","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgnooids_guarded.t) AND (SELECT count(*)=1 AND bool_and(id=2) FROM pgnooids_guarded.p)","expect": "t"},
+    {"assert": "retains independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnooids_guarded.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native accepts compatibility operation","sql": "ALTER TABLE IF EXISTS pgnooids_guarded.absent SET WITHOUT OIDS","expect_rc": 0},
+    {"name": "native refuses 42P01","sql": "\\set VERBOSITY verbose\nALTER TABLE pgnooids_guarded.absent SET WITHOUT OIDS","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P01:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnooids_guarded.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgnooids_guarded'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgnooids_guarded'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgnooids_guarded.receipt)) AS delta","expect": "0"},
+    {"assert": "ordinary and partition rows match","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgnooids_guarded.t) AND (SELECT count(*)=1 AND bool_and(id=2) FROM pgnooids_guarded.p)","expect": "t"},
+    {"assert": "retains independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnooids_guarded.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgnooids_guarded CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnooids_guarded'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "without-oids-native-wrong-kind",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-identity",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgnooids_wrong_kind"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgnooids_wrong_kind CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnooids_wrong_kind'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgnooids_wrong_kind.v SET WITHOUT OIDS",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnooids_wrong_kind'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgnooids_wrong_kind","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgnooids_wrong_kind.t(id int,payload text); INSERT INTO pgnooids_wrong_kind.t VALUES(1,'keep'); CREATE TABLE pgnooids_wrong_kind.p(id int) PARTITION BY RANGE(id); CREATE TABLE pgnooids_wrong_kind.child PARTITION OF pgnooids_wrong_kind.p DEFAULT; INSERT INTO pgnooids_wrong_kind.p VALUES(2); CREATE VIEW pgnooids_wrong_kind.v AS SELECT * FROM pgnooids_wrong_kind.t; CREATE SEQUENCE pgnooids_wrong_kind.target_seq; CREATE SEQUENCE pgnooids_wrong_kind.guard START 7; CREATE TABLE pgnooids_wrong_kind.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgnooids_wrong_kind'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0, "rule_id": "ddl.table.exists.alter.require", "level": "blocker"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.table.exists.alter.require", "metadata": {"reason_code": "relation_wrong_kind", "exists": true}}],
+    "evidence_gaps": 0
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnooids_wrong_kind.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgnooids_wrong_kind'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgnooids_wrong_kind'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgnooids_wrong_kind.receipt)) AS delta","expect": "0"},
+    {"assert": "ordinary and partition rows match","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgnooids_wrong_kind.t) AND (SELECT count(*)=1 AND bool_and(id=2) FROM pgnooids_wrong_kind.p)","expect": "t"},
+    {"assert": "retains independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnooids_wrong_kind.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgnooids_wrong_kind.v SET WITHOUT OIDS","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]},
+    {"name": "native refuses 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgnooids_wrong_kind.target_seq SET WITHOUT OIDS","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnooids_wrong_kind.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgnooids_wrong_kind'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgnooids_wrong_kind'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgnooids_wrong_kind.receipt)) AS delta","expect": "0"},
+    {"assert": "ordinary and partition rows match","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgnooids_wrong_kind.t) AND (SELECT count(*)=1 AND bool_and(id=2) FROM pgnooids_wrong_kind.p)","expect": "t"},
+    {"assert": "retains independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnooids_wrong_kind.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgnooids_wrong_kind CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnooids_wrong_kind'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-set-schema-companions-index",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-set-schema-companions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgnsc_index"},
+   "fixture": {"cleanup": [{"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_index CASCADE","verify": {"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_index'","expect": "0"}},{"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_index_dst CASCADE","verify": {"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_index_dst'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgnsc_index.t SET SCHEMA pgnsc_index_dst",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source absent","fixture_key": "src","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_index'","expect": "0"}]},
+    {"name": "prove destination absent","fixture_key": "dst","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_index_dst'","expect": "0"}]},
+    {"name": "claim source","fixture_key": "src","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_index","expect_rc": 0},
+    {"name": "claim destination","fixture_key": "dst","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_index_dst","expect_rc": 0},
+    {"name": "seed companions and capture exact catalog identities","sql": "CREATE TABLE pgnsc_index.t(id int); INSERT INTO pgnsc_index.t VALUES(4); CREATE INDEX \" Index Private \" ON pgnsc_index.t(id); CREATE TABLE pgnsc_index_dst.\" Index Private \"(x int); CREATE SEQUENCE pgnsc_index.guard START 7; CREATE TABLE pgnsc_index.receipt AS SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_index','pgnsc_index_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_index','pgnsc_index_dst') AND t.typname NOT IN ('receipt','_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["OwnedSequenceConflict","ArrayTypeConflict","PGTableNamespace","Index Private","owned_private_seq"],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","metadata": {"reason_code": "destination_index_conflict"}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_index.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_index','pgnsc_index_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_index','pgnsc_index_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_index','pgnsc_index_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_index','pgnsc_index_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_index.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_index.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_index.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42P07","sql": "\\set VERBOSITY verbose\nALTER TABLE pgnsc_index.t SET SCHEMA pgnsc_index_dst","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P07:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_index.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_index','pgnsc_index_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_index','pgnsc_index_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_index','pgnsc_index_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_index','pgnsc_index_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_index.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_index.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_index.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_index_dst CASCADE","verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_index_dst'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_index CASCADE","verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_index'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-set-schema-companions-serial",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-set-schema-companions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgnsc_serial"},
+   "fixture": {"cleanup": [{"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_serial CASCADE","verify": {"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_serial'","expect": "0"}},{"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_serial_dst CASCADE","verify": {"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_serial_dst'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgnsc_serial.t SET SCHEMA pgnsc_serial_dst",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source absent","fixture_key": "src","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_serial'","expect": "0"}]},
+    {"name": "prove destination absent","fixture_key": "dst","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_serial_dst'","expect": "0"}]},
+    {"name": "claim source","fixture_key": "src","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_serial","expect_rc": 0},
+    {"name": "claim destination","fixture_key": "dst","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_serial_dst","expect_rc": 0},
+    {"name": "seed companions and capture exact catalog identities","sql": "CREATE TABLE pgnsc_serial.t(id serial); ALTER SEQUENCE pgnsc_serial.t_id_seq RENAME TO owned_private_seq; INSERT INTO pgnsc_serial.t VALUES(4); CREATE SEQUENCE pgnsc_serial_dst.owned_private_seq; CREATE SEQUENCE pgnsc_serial.guard START 7; CREATE TABLE pgnsc_serial.receipt AS SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_serial','pgnsc_serial_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_serial','pgnsc_serial_dst') AND t.typname NOT IN ('receipt','_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["OwnedSequenceConflict","ArrayTypeConflict","PGTableNamespace","Index Private","owned_private_seq"],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","metadata": {"reason_code": "destination_owned_sequence_conflict"}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_serial.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_serial','pgnsc_serial_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_serial','pgnsc_serial_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_serial','pgnsc_serial_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_serial','pgnsc_serial_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_serial.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_serial.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_serial.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42P07","sql": "\\set VERBOSITY verbose\nALTER TABLE pgnsc_serial.t SET SCHEMA pgnsc_serial_dst","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P07:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_serial.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_serial','pgnsc_serial_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_serial','pgnsc_serial_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_serial','pgnsc_serial_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_serial','pgnsc_serial_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_serial.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_serial.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_serial.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_serial_dst CASCADE","verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_serial_dst'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_serial CASCADE","verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_serial'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-set-schema-companions-identity",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-set-schema-companions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgnsc_identity"},
+   "fixture": {"cleanup": [{"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_identity CASCADE","verify": {"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_identity'","expect": "0"}},{"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_identity_dst CASCADE","verify": {"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_identity_dst'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgnsc_identity.t SET SCHEMA pgnsc_identity_dst",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source absent","fixture_key": "src","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_identity'","expect": "0"}]},
+    {"name": "prove destination absent","fixture_key": "dst","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_identity_dst'","expect": "0"}]},
+    {"name": "claim source","fixture_key": "src","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_identity","expect_rc": 0},
+    {"name": "claim destination","fixture_key": "dst","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_identity_dst","expect_rc": 0},
+    {"name": "seed companions and capture exact catalog identities","sql": "CREATE TABLE pgnsc_identity.t(id int GENERATED BY DEFAULT AS IDENTITY); ALTER SEQUENCE pgnsc_identity.t_id_seq RENAME TO owned_private_seq; INSERT INTO pgnsc_identity.t VALUES(4); CREATE SEQUENCE pgnsc_identity_dst.owned_private_seq; CREATE SEQUENCE pgnsc_identity.guard START 7; CREATE TABLE pgnsc_identity.receipt AS SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_identity','pgnsc_identity_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_identity','pgnsc_identity_dst') AND t.typname NOT IN ('receipt','_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["OwnedSequenceConflict","ArrayTypeConflict","PGTableNamespace","Index Private","owned_private_seq"],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","metadata": {"reason_code": "destination_owned_sequence_conflict"}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_identity.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_identity','pgnsc_identity_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_identity','pgnsc_identity_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_identity','pgnsc_identity_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_identity','pgnsc_identity_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_identity.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_identity.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_identity.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42P07","sql": "\\set VERBOSITY verbose\nALTER TABLE pgnsc_identity.t SET SCHEMA pgnsc_identity_dst","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P07:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_identity.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_identity','pgnsc_identity_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_identity','pgnsc_identity_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_identity','pgnsc_identity_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_identity','pgnsc_identity_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_identity.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_identity.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_identity.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_identity_dst CASCADE","verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_identity_dst'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_identity CASCADE","verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_identity'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-set-schema-companions-array",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-set-schema-companions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgnsc_array"},
+   "fixture": {"cleanup": [{"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_array CASCADE","verify": {"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_array'","expect": "0"}},{"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_array_dst CASCADE","verify": {"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_array_dst'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgnsc_array.t SET SCHEMA pgnsc_array_dst",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source absent","fixture_key": "src","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_array'","expect": "0"}]},
+    {"name": "prove destination absent","fixture_key": "dst","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_array_dst'","expect": "0"}]},
+    {"name": "claim source","fixture_key": "src","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_array","expect_rc": 0},
+    {"name": "claim destination","fixture_key": "dst","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_array_dst","expect_rc": 0},
+    {"name": "seed companions and capture exact catalog identities","sql": "CREATE TABLE pgnsc_array.t(id int); INSERT INTO pgnsc_array.t VALUES(4); CREATE TYPE pgnsc_array_dst._t AS ENUM('held'); CREATE SEQUENCE pgnsc_array.guard START 7; CREATE TABLE pgnsc_array.receipt AS SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_array','pgnsc_array_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_array','pgnsc_array_dst') AND t.typname NOT IN ('receipt','_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["OwnedSequenceConflict","ArrayTypeConflict","PGTableNamespace","Index Private","owned_private_seq"],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","metadata": {"reason_code": "destination_array_type_conflict"}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_array.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_array','pgnsc_array_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_array','pgnsc_array_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_array','pgnsc_array_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_array','pgnsc_array_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_array.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_array.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_array.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42710","sql": "\\set VERBOSITY verbose\nALTER TABLE pgnsc_array.t SET SCHEMA pgnsc_array_dst","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42710:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_array.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_array','pgnsc_array_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_array','pgnsc_array_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_array','pgnsc_array_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_array','pgnsc_array_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_array.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_array.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_array.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_array_dst CASCADE","verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_array_dst'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_array CASCADE","verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_array'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-set-schema-companions-array-priority",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-set-schema-companions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgnsc_array_priority"},
+   "fixture": {"cleanup": [{"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_array_priority CASCADE","verify": {"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_array_priority'","expect": "0"}},{"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_array_priority_dst CASCADE","verify": {"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_array_priority_dst'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgnsc_array_priority.t SET SCHEMA pgnsc_array_priority_dst",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source absent","fixture_key": "src","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_array_priority'","expect": "0"}]},
+    {"name": "prove destination absent","fixture_key": "dst","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_array_priority_dst'","expect": "0"}]},
+    {"name": "claim source","fixture_key": "src","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_array_priority","expect_rc": 0},
+    {"name": "claim destination","fixture_key": "dst","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_array_priority_dst","expect_rc": 0},
+    {"name": "seed companions and capture exact catalog identities","sql": "CREATE TABLE pgnsc_array_priority.t(id int); INSERT INTO pgnsc_array_priority.t VALUES(4); CREATE INDEX \" Index Private \" ON pgnsc_array_priority.t(id); CREATE TABLE pgnsc_array_priority_dst.\" Index Private \"(x int); CREATE TYPE pgnsc_array_priority_dst._t AS ENUM('held'); CREATE SEQUENCE pgnsc_array_priority.guard START 7; CREATE TABLE pgnsc_array_priority.receipt AS SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_array_priority','pgnsc_array_priority_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_array_priority','pgnsc_array_priority_dst') AND t.typname NOT IN ('receipt','_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["OwnedSequenceConflict","ArrayTypeConflict","PGTableNamespace","Index Private","owned_private_seq"],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","metadata": {"reason_code": "destination_array_type_conflict"}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_array_priority.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_array_priority','pgnsc_array_priority_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_array_priority','pgnsc_array_priority_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_array_priority','pgnsc_array_priority_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_array_priority','pgnsc_array_priority_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_array_priority.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_array_priority.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_array_priority.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42710","sql": "\\set VERBOSITY verbose\nALTER TABLE pgnsc_array_priority.t SET SCHEMA pgnsc_array_priority_dst","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42710:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_array_priority.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_array_priority','pgnsc_array_priority_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_array_priority','pgnsc_array_priority_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_array_priority','pgnsc_array_priority_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_array_priority','pgnsc_array_priority_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_array_priority.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_array_priority.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_array_priority.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_array_priority_dst CASCADE","verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_array_priority_dst'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_array_priority CASCADE","verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_array_priority'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-set-schema-companions-index-priority",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-set-schema-companions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgnsc_index_priority"},
+   "fixture": {"cleanup": [{"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_index_priority CASCADE","verify": {"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_index_priority'","expect": "0"}},{"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_index_priority_dst CASCADE","verify": {"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_index_priority_dst'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgnsc_index_priority.t SET SCHEMA pgnsc_index_priority_dst",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source absent","fixture_key": "src","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_index_priority'","expect": "0"}]},
+    {"name": "prove destination absent","fixture_key": "dst","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_index_priority_dst'","expect": "0"}]},
+    {"name": "claim source","fixture_key": "src","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_index_priority","expect_rc": 0},
+    {"name": "claim destination","fixture_key": "dst","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_index_priority_dst","expect_rc": 0},
+    {"name": "seed companions and capture exact catalog identities","sql": "CREATE TABLE pgnsc_index_priority.t(id int GENERATED BY DEFAULT AS IDENTITY); ALTER SEQUENCE pgnsc_index_priority.t_id_seq RENAME TO owned_private_seq; INSERT INTO pgnsc_index_priority.t VALUES(4); CREATE SEQUENCE pgnsc_index_priority_dst.owned_private_seq; CREATE INDEX \" Index Private \" ON pgnsc_index_priority.t(id); CREATE TABLE pgnsc_index_priority_dst.\" Index Private \"(x int); CREATE SEQUENCE pgnsc_index_priority.guard START 7; CREATE TABLE pgnsc_index_priority.receipt AS SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_index_priority','pgnsc_index_priority_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_index_priority','pgnsc_index_priority_dst') AND t.typname NOT IN ('receipt','_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["OwnedSequenceConflict","ArrayTypeConflict","PGTableNamespace","Index Private","owned_private_seq"],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.target.valid","metadata": {"reason_code": "destination_index_conflict"}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_index_priority.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_index_priority','pgnsc_index_priority_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_index_priority','pgnsc_index_priority_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_index_priority','pgnsc_index_priority_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_index_priority','pgnsc_index_priority_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_index_priority.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_index_priority.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_index_priority.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42P07","sql": "\\set VERBOSITY verbose\nALTER TABLE pgnsc_index_priority.t SET SCHEMA pgnsc_index_priority_dst","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P07:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_index_priority.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_index_priority','pgnsc_index_priority_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_index_priority','pgnsc_index_priority_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_index_priority','pgnsc_index_priority_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_index_priority','pgnsc_index_priority_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_index_priority.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_index_priority.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_index_priority.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_index_priority_dst CASCADE","verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_index_priority_dst'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_index_priority CASCADE","verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_index_priority'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-set-schema-companions-same-schema",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-set-schema-companions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgnsc_same_schema"},
+   "fixture": {"cleanup": [{"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_same_schema CASCADE","verify": {"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_same_schema'","expect": "0"}},{"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_same_schema_dst CASCADE","verify": {"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_same_schema_dst'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgnsc_same_schema.t SET SCHEMA pgnsc_same_schema",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source absent","fixture_key": "src","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_same_schema'","expect": "0"}]},
+    {"name": "prove destination absent","fixture_key": "dst","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_same_schema_dst'","expect": "0"}]},
+    {"name": "claim source","fixture_key": "src","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_same_schema","expect_rc": 0},
+    {"name": "claim destination","fixture_key": "dst","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_same_schema_dst","expect_rc": 0},
+    {"name": "seed companions and capture exact catalog identities","sql": "CREATE TABLE pgnsc_same_schema.t(id int); INSERT INTO pgnsc_same_schema.t VALUES(4); CREATE INDEX \" Index Private \" ON pgnsc_same_schema.t(id); CREATE TABLE pgnsc_same_schema_dst.\" Index Private \"(x int); CREATE SEQUENCE pgnsc_same_schema.guard START 7; CREATE TABLE pgnsc_same_schema.receipt AS SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_same_schema','pgnsc_same_schema_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_same_schema','pgnsc_same_schema_dst') AND t.typname NOT IN ('receipt','_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["OwnedSequenceConflict","ArrayTypeConflict","PGTableNamespace","Index Private","owned_private_seq"]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_same_schema.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_same_schema','pgnsc_same_schema_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_same_schema','pgnsc_same_schema_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_same_schema','pgnsc_same_schema_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_same_schema','pgnsc_same_schema_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_same_schema.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_same_schema.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_same_schema.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native schema move or no-op","sql": "ALTER TABLE pgnsc_same_schema.t SET SCHEMA pgnsc_same_schema","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_same_schema.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_same_schema','pgnsc_same_schema_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_same_schema','pgnsc_same_schema_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_same_schema','pgnsc_same_schema_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_same_schema','pgnsc_same_schema_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_same_schema.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_same_schema.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_same_schema.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_same_schema_dst CASCADE","verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_same_schema_dst'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_same_schema CASCADE","verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_same_schema'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-set-schema-companions-case-distinct",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-set-schema-companions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgnsc_case_distinct"},
+   "fixture": {"cleanup": [{"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_case_distinct CASCADE","verify": {"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_case_distinct'","expect": "0"}},{"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_case_distinct_dst CASCADE","verify": {"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_case_distinct_dst'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgnsc_case_distinct.t SET SCHEMA pgnsc_case_distinct_dst",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source absent","fixture_key": "src","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_case_distinct'","expect": "0"}]},
+    {"name": "prove destination absent","fixture_key": "dst","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_case_distinct_dst'","expect": "0"}]},
+    {"name": "claim source","fixture_key": "src","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_case_distinct","expect_rc": 0},
+    {"name": "claim destination","fixture_key": "dst","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_case_distinct_dst","expect_rc": 0},
+    {"name": "seed companions and capture exact catalog identities","sql": "CREATE TABLE pgnsc_case_distinct.t(id int); INSERT INTO pgnsc_case_distinct.t VALUES(4); CREATE INDEX \" Index Private \" ON pgnsc_case_distinct.t(id); CREATE TABLE pgnsc_case_distinct_dst.\" INDEX PRIVATE \"(x int); CREATE SEQUENCE pgnsc_case_distinct.guard START 7; CREATE TABLE pgnsc_case_distinct.receipt AS SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_case_distinct','pgnsc_case_distinct_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_case_distinct','pgnsc_case_distinct_dst') AND t.typname NOT IN ('receipt','_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["OwnedSequenceConflict","ArrayTypeConflict","PGTableNamespace","Index Private","owned_private_seq"]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_case_distinct.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_case_distinct','pgnsc_case_distinct_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_case_distinct','pgnsc_case_distinct_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_case_distinct','pgnsc_case_distinct_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_case_distinct','pgnsc_case_distinct_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_case_distinct.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_case_distinct.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_case_distinct.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native schema move or no-op","sql": "ALTER TABLE pgnsc_case_distinct.t SET SCHEMA pgnsc_case_distinct_dst","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "moved table retains row","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_case_distinct_dst.t","expect": "t"},
+    {"assert": "exact index moved","sql": "SELECT to_regclass('pgnsc_case_distinct_dst.\" Index Private \"') IS NOT NULL AND to_regclass('pgnsc_case_distinct_dst.\" INDEX PRIVATE \"') IS NOT NULL","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_case_distinct.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_case_distinct_dst CASCADE","verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_case_distinct_dst'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_case_distinct CASCADE","verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_case_distinct'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-set-schema-companions-reference-only",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-set-schema-companions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgnsc_reference_only"},
+   "fixture": {"cleanup": [{"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_reference_only CASCADE","verify": {"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_reference_only'","expect": "0"}},{"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_reference_only_dst CASCADE","verify": {"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_reference_only_dst'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgnsc_reference_only.t SET SCHEMA pgnsc_reference_only_dst",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source absent","fixture_key": "src","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_reference_only'","expect": "0"}]},
+    {"name": "prove destination absent","fixture_key": "dst","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_reference_only_dst'","expect": "0"}]},
+    {"name": "claim source","fixture_key": "src","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_reference_only","expect_rc": 0},
+    {"name": "claim destination","fixture_key": "dst","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_reference_only_dst","expect_rc": 0},
+    {"name": "seed companions and capture exact catalog identities","sql": "CREATE SEQUENCE pgnsc_reference_only.owned_private_seq; CREATE TABLE pgnsc_reference_only.t(id int DEFAULT nextval('pgnsc_reference_only.owned_private_seq')); INSERT INTO pgnsc_reference_only.t VALUES(4); CREATE TABLE pgnsc_reference_only_dst.owned_private_seq(x integer); CREATE SEQUENCE pgnsc_reference_only.guard START 7; CREATE TABLE pgnsc_reference_only.receipt AS SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_reference_only','pgnsc_reference_only_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_reference_only','pgnsc_reference_only_dst') AND t.typname NOT IN ('receipt','_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["OwnedSequenceConflict","ArrayTypeConflict","PGTableNamespace","Index Private","owned_private_seq"]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_reference_only.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_reference_only','pgnsc_reference_only_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_reference_only','pgnsc_reference_only_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_reference_only','pgnsc_reference_only_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_reference_only','pgnsc_reference_only_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_reference_only.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_reference_only.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_reference_only.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native schema move or no-op","sql": "ALTER TABLE pgnsc_reference_only.t SET SCHEMA pgnsc_reference_only_dst","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "moved table retains row","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_reference_only_dst.t","expect": "t"},
+    {"assert": "independent sequence stays in source","sql": "SELECT to_regclass('pgnsc_reference_only.owned_private_seq') IS NOT NULL","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_reference_only.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_reference_only_dst CASCADE","verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_reference_only_dst'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_reference_only CASCADE","verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_reference_only'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-set-schema-companions-stale",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-set-schema-companions",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgnsc_stale"},
+   "fixture": {"cleanup": [{"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_stale CASCADE","verify": {"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_stale'","expect": "0"}},{"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_stale_dst CASCADE","verify": {"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_stale_dst'","expect": "0"}}]},
+   "sql": "CREATE TABLE pgnsc_stale.neighbor(id int);ALTER TABLE pgnsc_stale.t SET SCHEMA pgnsc_stale_dst",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove source absent","fixture_key": "src","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_stale'","expect": "0"}]},
+    {"name": "prove destination absent","fixture_key": "dst","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_stale_dst'","expect": "0"}]},
+    {"name": "claim source","fixture_key": "src","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_stale","expect_rc": 0},
+    {"name": "claim destination","fixture_key": "dst","creates_fixture": true,"sql": "CREATE SCHEMA pgnsc_stale_dst","expect_rc": 0},
+    {"name": "seed companions and capture exact catalog identities","sql": "CREATE TABLE pgnsc_stale.t(id int); INSERT INTO pgnsc_stale.t VALUES(4); CREATE INDEX \" Index Private \" ON pgnsc_stale.t(id); CREATE TABLE pgnsc_stale_dst.\" Index Private \"(x int); CREATE SEQUENCE pgnsc_stale.guard START 7; CREATE TABLE pgnsc_stale.receipt AS SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_stale','pgnsc_stale_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_stale','pgnsc_stale_dst') AND t.typname NOT IN ('receipt','_receipt')","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["complete","unverified"],
+    "statement_indices": [0,1],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.pg.alter.set_schema.target.valid","reason_code": "unproven_table_namespace_destination","required_facts": ["target_table.pg_namespace_destination"]}],
+    "serialized_not_contains": ["OwnedSequenceConflict","ArrayTypeConflict","PGTableNamespace","Index Private","owned_private_seq"]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_stale.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_stale','pgnsc_stale_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_stale','pgnsc_stale_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_stale','pgnsc_stale_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_stale','pgnsc_stale_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_stale.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_stale.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_stale.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 42P07","sql": "\\set VERBOSITY verbose\nALTER TABLE pgnsc_stale.t SET SCHEMA pgnsc_stale_dst","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P07:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgnsc_stale.receipt EXCEPT (SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_stale','pgnsc_stale_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_stale','pgnsc_stale_dst') AND t.typname NOT IN ('receipt','_receipt'))) UNION ALL ((SELECT n.nspname,c.oid,c.relname,c.relkind::text,c.relfilenode FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN('pgnsc_stale','pgnsc_stale_dst') AND c.relname<>'receipt' UNION ALL SELECT n.nspname,t.oid,t.typname,'type',0::oid FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname IN('pgnsc_stale','pgnsc_stale_dst') AND t.typname NOT IN ('receipt','_receipt')) EXCEPT TABLE pgnsc_stale.receipt)) delta","expect": "0"},
+    {"assert": "keeps source values","sql": "SELECT count(*)=1 AND bool_and(id=4) FROM pgnsc_stale.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgnsc_stale.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "drop owned destination","fixture_key": "dst","sql": "DROP SCHEMA pgnsc_stale_dst CASCADE","verify": [{"assert": "destination schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_stale_dst'","expect": "0"}],"drops_fixture": true,"expect_rc": 0},
+    {"name": "drop owned source","fixture_key": "src","sql": "DROP SCHEMA pgnsc_stale CASCADE","verify": [{"assert": "source schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgnsc_stale'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
   {
    "id": "pg-drop-column-dependency-view",
    "anchor": "postgres17",
@@ -9634,12 +10943,12 @@
     "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
-    "statement_coverage": ["complete"],
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
     "statement_indices": [0],
     "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
-    "evidence_gaps": 0,
-    "evidence_gap_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column_type.destination.valid", "reason_code": "unproven_column_type_destination", "required_facts": ["column.type_assignment"]}],
     "serialized_not_contains": ["PGColumnType","PGColumnTypeState","BaseExists","SchemaExists"],
     "rule_summary_loaded": 2
    },
@@ -11547,18 +12856,19 @@
    ],
    "expect": {
     "exit": 0,
-    "verdict": "pass",
+    "verdict": "reject",
     "statements": 1,
-    "findings": 1,
+    "findings": 2,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "complete",
     "statement_coverage": ["complete"],
     "statement_indices": [0],
-    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_schema.advisory","level": "notice"}],
+    "finding_entries": [{"index": 0, "rule_id": "ddl.pg.alter.set_schema.advisory", "level": "notice"}, {"index": 0, "rule_id": "ddl.pg.alter.set_schema.target.valid", "level": "blocker"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.pg.alter.set_schema.target.valid", "metadata": {"reason_code": "destination_index_conflict"}}],
     "evidence_gaps": 0,
     "evidence_gap_entries": [],
-    "serialized_not_contains": ["PGTableNamespace","RowTypeConflictKnown"],
+    "serialized_not_contains": ["PGTableNamespace", "RowTypeConflictKnown"],
     "rule_summary_loaded": 4
    },
    "post_verify": [
@@ -16338,6 +17648,34 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.column-type-coercion-offline",
+  "T37.meta.pg-column-type-coercion-assignment-missing",
+  "T37.meta.pg-column-type-coercion-assignment-numeric",
+  "T37.meta.pg-column-type-coercion-assignment-io",
+  "T37.meta.pg-column-type-coercion-using-explicit",
+  "T37.meta.pg-column-type-coercion-domain-gap",
+  "T37.meta.pg-column-type-coercion-varchar-invalid",
+  "T37.meta.pg-column-type-coercion-numeric-invalid",
+  "T37.meta.pg-column-type-coercion-numeric-negative-scale",
+  "T37.meta.pg-column-type-coercion-varchar-data-overflow",
+  "T37.meta.pg-column-type-coercion-collation-valid",
+  "T37.meta.pg-column-type-coercion-collation-exact-case",
+  "T37.meta.pg-column-type-coercion-collation-noncollatable",
+  "T37.meta.pg-column-type-coercion-collation-searchpath",
+  "T37.meta.without-oids-native-ordinary",
+  "T37.meta.without-oids-native-guarded",
+  "T37.meta.without-oids-native-wrong-kind",
+  "T37.cli.set-schema-companions-offline",
+  "T37.meta.pg-set-schema-companions-index",
+  "T37.meta.pg-set-schema-companions-serial",
+  "T37.meta.pg-set-schema-companions-identity",
+  "T37.meta.pg-set-schema-companions-array",
+  "T37.meta.pg-set-schema-companions-array-priority",
+  "T37.meta.pg-set-schema-companions-index-priority",
+  "T37.meta.pg-set-schema-companions-same-schema",
+  "T37.meta.pg-set-schema-companions-case-distinct",
+  "T37.meta.pg-set-schema-companions-reference-only",
+  "T37.meta.pg-set-schema-companions-stale",
   "T37.cli.drop-column-dependency-offline",
   "T37.cli.drop-column-dependency-disabled",
   "T37.meta.pg-drop-column-dependency-view",

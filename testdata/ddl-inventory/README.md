@@ -22,6 +22,18 @@ D27 binds evidence to the PostgreSQL 17 DROP COLUMN subaction. The cases
 cover direct dependencies under RESTRICT and confirm the separate behavior
 of CASCADE and automatic local index or CHECK deletion.
 
+## PostgreSQL SET WITHOUT OIDS
+
+Three PostgreSQL 17 native selectors cover the compatibility operation,
+guarded absence, wrong relation kind and removed WITH OIDS syntax. The
+subaction uses mixed coverage for the bounded target-kind check.
+
+## PostgreSQL SET SCHEMA companion names
+
+Twelve selectors bind the PostgreSQL 17 SET SCHEMA subaction to precise
+catalog conflict checks for the associated array type, attached indexes
+and column-owned sequences. The rename-owner row retains its classification.
+
 ## PostgreSQL inherited CHECK drops and partition-parent traversal
 
 D25 and D26 add exact PostgreSQL 17 selectors on ALTER TABLE DROP CONSTRAINT

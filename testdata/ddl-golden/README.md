@@ -11,6 +11,19 @@ with the column. Additional cases pin stale and offline facts, exact names,
 policy disablement and the privacy of catalog evidence.
 [Decision](../../docs/decisions/2026-11-21-postgresql-drop-column-dependencies.md)
 
+## T37 PostgreSQL SET WITHOUT OIDS
+
+The compatibility form completes without changing catalog identities or
+rows on an ordinary table and a partitioned root. Separate native controls
+pin guarded absence, wrong relation kind and the removed WITH OIDS form.
+
+## T37 PostgreSQL SET SCHEMA companion names
+
+Native controls pin array, index and owned-sequence conflicts, exact naming,
+same-schema requests and a default that references an independent sequence.
+The original index-collision fixture retains its SQL and native refusal.
+[Decision](../../docs/decisions/2026-11-21-postgresql-table-schema-companions.md)
+
 ## T37 D25 and D26 PostgreSQL CHECK drops
 
 The native controls distinguish direct drops of inherited CHECKs, recursive
