@@ -3,6 +3,14 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D25 and D26 PostgreSQL CHECK drops
+
+The native controls distinguish direct drops of inherited CHECKs, recursive
+parent drops and ONLY on partitioned versus ordinary inheritance parents. T37
+also checks absent or stale facts, policy disablement and private catalog data.
+[D25](../../docs/decisions/2026-11-20-postgresql-drop-inherited-check.md)
+[D26](../../docs/decisions/2026-11-20-postgresql-drop-check-only.md)
+
 ## T37 D24 PostgreSQL DROP CONSTRAINT RESTRICT
 
 Focused T37 passed 377/377 cases and 10,087 assertions. Nine added

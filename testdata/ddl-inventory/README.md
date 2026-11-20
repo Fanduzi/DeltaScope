@@ -16,6 +16,13 @@ honestly — not a count of implemented rules.
 | T06-CLOSEOUT.md | Final T06 (#85) technical closeout index (T06技术收口材料齐备): binds every accepted dimension to the traceability rows, the SHA-frozen umbrella evidence, and the owner boundary for deferred dimensions; issue #85 stays open |
 | evidence/ | Per-row offline CLI probe captures (`<row-id>.probes.txt`): recorded `deltascope audit` output for the row's `sql_shape` at every declared version (`=== version <v> (target …)` sections). Regenerate by re-running the probe commands recorded in the file header |
 
+## PostgreSQL inherited CHECK drops and partition-parent traversal
+
+D25 and D26 add exact PostgreSQL 17 selectors on ALTER TABLE DROP CONSTRAINT
+and DROP CONSTRAINT CASCADE. They cover observed CHECK inheritance, locally
+merged CHECKs and the ONLY restriction on partitioned parents with children.
+The original constraint row remains mixed coverage.
+
 ## PostgreSQL direct foreign-key dependencies on constraint drops
 
 D24 adds ten selectors to DROP CONSTRAINT at the PostgreSQL 17 anchor.

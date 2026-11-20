@@ -747,6 +747,26 @@ Five removal events were captured, with nine entries left unattributed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44769973882/job/136404690740),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136404906482) passed after the merged-root gates.
 
+### D25–D26 PostgreSQL inherited CHECK drops and partition-parent ONLY
+
+`4f9d49e7` observes exact CHECK inheritance and child presence and retains
+ALTER traversal. `9695769e` extends the existing DROP target blocker. An
+inherited CHECK refuses direct DROP, including locally merged CHECKs and
+requests with IF EXISTS or CASCADE. For a local CHECK that propagates,
+ONLY on a partitioned parent with direct children has a separate reason.
+The rule records unavailable inheritance or child facts as evidence gaps.
+
+The temporary T37 preview passed 395/395 with 10,655 assertions. Its 17
+added native commands returned eight successes and nine `42P16` refusals.
+Two earlier batches keep their original SQL and native controls and now
+assert the precise stale-inheritance gap. Evidence adds 17 selectors to
+DROP CONSTRAINT and three to DROP CONSTRAINT CASCADE at PostgreSQL 17.
+Foreign-table and non-CHECK inheritance, recursive dependency closure,
+permissions and locks remain separate premises. The final commit is in
+verification.
+[D25](../decisions/2026-11-20-postgresql-drop-inherited-check.md)
+[D26](../decisions/2026-11-20-postgresql-drop-check-only.md)
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.

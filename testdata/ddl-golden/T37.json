@@ -6,6 +6,8 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-drop-check-only": {"enable": {"ddl.pg.alter.drop_constraint.target.require": {"level": "blocker"}}},
+   "pg-drop-inherited-check": {"enable": {"ddl.pg.alter.drop_constraint.target.require": {"level": "blocker"}}},
    "pg-drop-fk-reference": {"enable": {"ddl.pg.alter.drop_constraint.target.require": {"level": "blocker"}}},
    "pg-foreign-key-keys": {"enable": {"ddl.pg.alter.add_foreign_key.targets.valid": {"level": "blocker"}, "ddl.pg.alter.add_foreign_key.not_valid.require": {"level": "warning"}}},
    "pg-foreign-key-targets": {"enable": {"ddl.pg.alter.add_foreign_key.targets.valid": {"level": "blocker"}, "ddl.pg.alter.add_foreign_key.not_valid.require": {"level": "warning"}}},
@@ -1890,6 +1892,51 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "drop-inherited-check-offline",
+   "dialect": "postgresql",
+   "policy": "pg-drop-inherited-check",
+   "sql": "ALTER TABLE app.child DROP CONSTRAINT inherited_check",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","reason_code": "unproven_constraint_target","required_facts": ["target_table.pg_constraints"]}],
+    "serialized_not_contains": ["InheritanceKnown"],
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "drop-inherited-check-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.child DROP CONSTRAINT inherited_check",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown"]
+   }
+  },
   {
    "id": "drop-fk-reference-offline",
    "dialect": "postgresql",
@@ -4659,6 +4706,784 @@
   }
  ],
  "metadata_cases": [
+  {
+   "id": "pg-drop-check-only-partition-root",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-check-only",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdonly_partition_root"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_partition_root CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_partition_root'","expect": "0"}}]},
+   "sql": "ALTER TABLE ONLY pgdonly_partition_root.root DROP CONSTRAINT target_check",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_partition_root'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdonly_partition_root","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdonly_partition_root.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdonly_partition_root.parent VALUES(1); CREATE TABLE pgdonly_partition_root.child() INHERITS(pgdonly_partition_root.parent); INSERT INTO pgdonly_partition_root.child VALUES(2); CREATE TABLE pgdonly_partition_root.neighbor(id int); CREATE SEQUENCE pgdonly_partition_root.guard START 7; CREATE TABLE pgdonly_partition_root.root(id int CONSTRAINT target_check CHECK (id > 0), CONSTRAINT root_pk PRIMARY KEY(id)) PARTITION BY RANGE(id); CREATE TABLE pgdonly_partition_root.part PARTITION OF pgdonly_partition_root.root DEFAULT; INSERT INTO pgdonly_partition_root.root VALUES(4); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdonly_partition_root.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_partition_root'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown","PartitionCheckHasChildren","PGTableOnly"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","metadata": {"reason_code": "constraint_partition_parent_only","target_constraint_kind": "c"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdonly_partition_root.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_partition_root'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_partition_root'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdonly_partition_root.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_partition_root.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_partition_root.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_partition_root.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE ONLY pgdonly_partition_root.root DROP CONSTRAINT target_check","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdonly_partition_root.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_partition_root'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_partition_root'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdonly_partition_root.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_partition_root.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_partition_root.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_partition_root.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_partition_root CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_partition_root'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-check-only-guarded",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-check-only",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdonly_guarded"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_guarded CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_guarded'","expect": "0"}}]},
+   "sql": "ALTER TABLE ONLY pgdonly_guarded.root DROP CONSTRAINT IF EXISTS target_check",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_guarded'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdonly_guarded","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdonly_guarded.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdonly_guarded.parent VALUES(1); CREATE TABLE pgdonly_guarded.child() INHERITS(pgdonly_guarded.parent); INSERT INTO pgdonly_guarded.child VALUES(2); CREATE TABLE pgdonly_guarded.neighbor(id int); CREATE SEQUENCE pgdonly_guarded.guard START 7; CREATE TABLE pgdonly_guarded.root(id int CONSTRAINT target_check CHECK (id > 0), CONSTRAINT root_pk PRIMARY KEY(id)) PARTITION BY RANGE(id); CREATE TABLE pgdonly_guarded.part PARTITION OF pgdonly_guarded.root DEFAULT; INSERT INTO pgdonly_guarded.root VALUES(4); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdonly_guarded.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_guarded'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown","PartitionCheckHasChildren","PGTableOnly"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","metadata": {"reason_code": "constraint_partition_parent_only","target_constraint_kind": "c"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdonly_guarded.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_guarded'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_guarded'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdonly_guarded.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_guarded.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_guarded.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_guarded.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE ONLY pgdonly_guarded.root DROP CONSTRAINT IF EXISTS target_check","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdonly_guarded.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_guarded'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_guarded'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdonly_guarded.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_guarded.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_guarded.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_guarded.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_guarded CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_guarded'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-check-only-cascade",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-check-only",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdonly_cascade"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_cascade CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_cascade'","expect": "0"}}]},
+   "sql": "ALTER TABLE ONLY pgdonly_cascade.root DROP CONSTRAINT target_check CASCADE",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_cascade'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdonly_cascade","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdonly_cascade.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdonly_cascade.parent VALUES(1); CREATE TABLE pgdonly_cascade.child() INHERITS(pgdonly_cascade.parent); INSERT INTO pgdonly_cascade.child VALUES(2); CREATE TABLE pgdonly_cascade.neighbor(id int); CREATE SEQUENCE pgdonly_cascade.guard START 7; CREATE TABLE pgdonly_cascade.root(id int CONSTRAINT target_check CHECK (id > 0), CONSTRAINT root_pk PRIMARY KEY(id)) PARTITION BY RANGE(id); CREATE TABLE pgdonly_cascade.part PARTITION OF pgdonly_cascade.root DEFAULT; INSERT INTO pgdonly_cascade.root VALUES(4); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdonly_cascade.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_cascade'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown","PartitionCheckHasChildren","PGTableOnly"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","metadata": {"reason_code": "constraint_partition_parent_only","target_constraint_kind": "c"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdonly_cascade.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_cascade'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_cascade'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdonly_cascade.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_cascade.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_cascade.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_cascade.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE ONLY pgdonly_cascade.root DROP CONSTRAINT target_check CASCADE","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdonly_cascade.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_cascade'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_cascade'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdonly_cascade.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_cascade.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_cascade.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_cascade.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_cascade CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_cascade'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-check-only-empty-root",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-check-only",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdonly_empty_root"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_empty_root CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_empty_root'","expect": "0"}}]},
+   "sql": "ALTER TABLE ONLY pgdonly_empty_root.root DROP CONSTRAINT target_check",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_empty_root'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdonly_empty_root","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdonly_empty_root.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdonly_empty_root.parent VALUES(1); CREATE TABLE pgdonly_empty_root.child() INHERITS(pgdonly_empty_root.parent); INSERT INTO pgdonly_empty_root.child VALUES(2); CREATE TABLE pgdonly_empty_root.neighbor(id int); CREATE SEQUENCE pgdonly_empty_root.guard START 7; CREATE TABLE pgdonly_empty_root.root(id int CONSTRAINT target_check CHECK (id > 0), CONSTRAINT root_pk PRIMARY KEY(id)) PARTITION BY RANGE(id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdonly_empty_root.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_empty_root'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown","PartitionCheckHasChildren","PGTableOnly"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdonly_empty_root.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_empty_root'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_empty_root'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdonly_empty_root.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_empty_root.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_empty_root.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_empty_root.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE ONLY pgdonly_empty_root.root DROP CONSTRAINT target_check","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "removes the root check","sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE conrelid='pgdonly_empty_root.root'::regclass AND conname='target_check'","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_empty_root.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_empty_root.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_empty_root.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_empty_root CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_empty_root'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-check-only-recursive",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-check-only",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdonly_recursive"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_recursive CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_recursive'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdonly_recursive.root DROP CONSTRAINT target_check",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_recursive'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdonly_recursive","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdonly_recursive.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdonly_recursive.parent VALUES(1); CREATE TABLE pgdonly_recursive.child() INHERITS(pgdonly_recursive.parent); INSERT INTO pgdonly_recursive.child VALUES(2); CREATE TABLE pgdonly_recursive.neighbor(id int); CREATE SEQUENCE pgdonly_recursive.guard START 7; CREATE TABLE pgdonly_recursive.root(id int CONSTRAINT target_check CHECK (id > 0), CONSTRAINT root_pk PRIMARY KEY(id)) PARTITION BY RANGE(id); CREATE TABLE pgdonly_recursive.part PARTITION OF pgdonly_recursive.root DEFAULT; INSERT INTO pgdonly_recursive.root VALUES(4); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdonly_recursive.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_recursive'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown","PartitionCheckHasChildren","PGTableOnly"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdonly_recursive.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_recursive'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_recursive'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdonly_recursive.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_recursive.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_recursive.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_recursive.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgdonly_recursive.root DROP CONSTRAINT target_check","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "drops the check on parent and child","sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE conrelid IN ('pgdonly_recursive.root'::regclass,'pgdonly_recursive.part'::regclass) AND conname='target_check'","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_recursive.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_recursive.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_recursive.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_recursive CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_recursive'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-check-only-inheritance-parent",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-check-only",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdonly_inheritance_parent"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_inheritance_parent CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_inheritance_parent'","expect": "0"}}]},
+   "sql": "ALTER TABLE ONLY pgdonly_inheritance_parent.parent DROP CONSTRAINT inherited_check",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_inheritance_parent'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdonly_inheritance_parent","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdonly_inheritance_parent.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdonly_inheritance_parent.parent VALUES(1); CREATE TABLE pgdonly_inheritance_parent.child() INHERITS(pgdonly_inheritance_parent.parent); INSERT INTO pgdonly_inheritance_parent.child VALUES(2); CREATE TABLE pgdonly_inheritance_parent.neighbor(id int); CREATE SEQUENCE pgdonly_inheritance_parent.guard START 7; ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdonly_inheritance_parent.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_inheritance_parent'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown","PartitionCheckHasChildren","PGTableOnly"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdonly_inheritance_parent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_inheritance_parent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_inheritance_parent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdonly_inheritance_parent.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_inheritance_parent.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_inheritance_parent.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_inheritance_parent.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE ONLY pgdonly_inheritance_parent.parent DROP CONSTRAINT inherited_check","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "keeps a local check on the ordinary child","sql": "SELECT coninhcount=0 AND conislocal FROM pg_catalog.pg_constraint WHERE conrelid='pgdonly_inheritance_parent.child'::regclass AND conname='inherited_check'","expect": "t"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_inheritance_parent.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_inheritance_parent.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_inheritance_parent.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_inheritance_parent CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_inheritance_parent'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-check-only-missing-guarded",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-check-only",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdonly_missing_guarded"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_missing_guarded CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_missing_guarded'","expect": "0"}}]},
+   "sql": "ALTER TABLE ONLY pgdonly_missing_guarded.root DROP CONSTRAINT IF EXISTS absent",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_missing_guarded'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdonly_missing_guarded","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdonly_missing_guarded.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdonly_missing_guarded.parent VALUES(1); CREATE TABLE pgdonly_missing_guarded.child() INHERITS(pgdonly_missing_guarded.parent); INSERT INTO pgdonly_missing_guarded.child VALUES(2); CREATE TABLE pgdonly_missing_guarded.neighbor(id int); CREATE SEQUENCE pgdonly_missing_guarded.guard START 7; CREATE TABLE pgdonly_missing_guarded.root(id int CONSTRAINT target_check CHECK (id > 0), CONSTRAINT root_pk PRIMARY KEY(id)) PARTITION BY RANGE(id); CREATE TABLE pgdonly_missing_guarded.part PARTITION OF pgdonly_missing_guarded.root DEFAULT; INSERT INTO pgdonly_missing_guarded.root VALUES(4); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdonly_missing_guarded.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_missing_guarded'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown","PartitionCheckHasChildren","PGTableOnly"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdonly_missing_guarded.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_missing_guarded'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_missing_guarded'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdonly_missing_guarded.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_missing_guarded.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_missing_guarded.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_missing_guarded.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE ONLY pgdonly_missing_guarded.root DROP CONSTRAINT IF EXISTS absent","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdonly_missing_guarded.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_missing_guarded'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_missing_guarded'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdonly_missing_guarded.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_missing_guarded.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_missing_guarded.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_missing_guarded.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_missing_guarded CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_missing_guarded'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-check-only-primary-control",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-check-only",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdonly_primary_control"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_primary_control CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_primary_control'","expect": "0"}}]},
+   "sql": "ALTER TABLE ONLY pgdonly_primary_control.root DROP CONSTRAINT root_pk CASCADE",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_primary_control'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdonly_primary_control","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdonly_primary_control.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdonly_primary_control.parent VALUES(1); CREATE TABLE pgdonly_primary_control.child() INHERITS(pgdonly_primary_control.parent); INSERT INTO pgdonly_primary_control.child VALUES(2); CREATE TABLE pgdonly_primary_control.neighbor(id int); CREATE SEQUENCE pgdonly_primary_control.guard START 7; CREATE TABLE pgdonly_primary_control.root(id int CONSTRAINT target_check CHECK (id > 0), CONSTRAINT root_pk PRIMARY KEY(id)) PARTITION BY RANGE(id); CREATE TABLE pgdonly_primary_control.part PARTITION OF pgdonly_primary_control.root DEFAULT; INSERT INTO pgdonly_primary_control.root VALUES(4); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdonly_primary_control.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_primary_control'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown","PartitionCheckHasChildren","PGTableOnly"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdonly_primary_control.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_primary_control'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdonly_primary_control'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdonly_primary_control.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_primary_control.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_primary_control.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_primary_control.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE ONLY pgdonly_primary_control.root DROP CONSTRAINT root_pk CASCADE","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "keeps the parent check","sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE conrelid='pgdonly_primary_control.root'::regclass AND conname='target_check'","expect": "1"},
+    {"assert": "drops the parent primary key","sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE conrelid='pgdonly_primary_control.root'::regclass AND contype='p'","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdonly_primary_control.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdonly_primary_control.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdonly_primary_control.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdonly_primary_control CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdonly_primary_control'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-inherited-check-child",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-inherited-check",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdinh_child"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_child CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_child'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdinh_child.child DROP CONSTRAINT inherited_check",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_child'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdinh_child","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdinh_child.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdinh_child.parent VALUES(1); CREATE TABLE pgdinh_child.child() INHERITS(pgdinh_child.parent); INSERT INTO pgdinh_child.child VALUES(2); CREATE TABLE pgdinh_child.neighbor(id int); CREATE SEQUENCE pgdinh_child.guard START 7; ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdinh_child.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_child'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","metadata": {"reason_code": "constraint_inherited","target_constraint_kind": "c"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdinh_child.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_child'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_child'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdinh_child.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_child.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_child.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_child.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgdinh_child.child DROP CONSTRAINT inherited_check","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdinh_child.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_child'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_child'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdinh_child.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_child.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_child.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_child.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_child CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_child'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-inherited-check-guarded",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-inherited-check",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdinh_guarded"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_guarded CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_guarded'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdinh_guarded.child DROP CONSTRAINT IF EXISTS inherited_check",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_guarded'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdinh_guarded","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdinh_guarded.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdinh_guarded.parent VALUES(1); CREATE TABLE pgdinh_guarded.child() INHERITS(pgdinh_guarded.parent); INSERT INTO pgdinh_guarded.child VALUES(2); CREATE TABLE pgdinh_guarded.neighbor(id int); CREATE SEQUENCE pgdinh_guarded.guard START 7; ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdinh_guarded.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_guarded'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","metadata": {"reason_code": "constraint_inherited","target_constraint_kind": "c"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdinh_guarded.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_guarded'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_guarded'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdinh_guarded.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_guarded.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_guarded.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_guarded.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgdinh_guarded.child DROP CONSTRAINT IF EXISTS inherited_check","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdinh_guarded.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_guarded'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_guarded'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdinh_guarded.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_guarded.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_guarded.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_guarded.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_guarded CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_guarded'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-inherited-check-cascade",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-inherited-check",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdinh_cascade"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_cascade CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_cascade'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdinh_cascade.child DROP CONSTRAINT inherited_check CASCADE",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_cascade'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdinh_cascade","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdinh_cascade.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdinh_cascade.parent VALUES(1); CREATE TABLE pgdinh_cascade.child() INHERITS(pgdinh_cascade.parent); INSERT INTO pgdinh_cascade.child VALUES(2); CREATE TABLE pgdinh_cascade.neighbor(id int); CREATE SEQUENCE pgdinh_cascade.guard START 7; ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdinh_cascade.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_cascade'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","metadata": {"reason_code": "constraint_inherited","target_constraint_kind": "c"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdinh_cascade.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_cascade'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_cascade'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdinh_cascade.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_cascade.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_cascade.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_cascade.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgdinh_cascade.child DROP CONSTRAINT inherited_check CASCADE","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdinh_cascade.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_cascade'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_cascade'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdinh_cascade.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_cascade.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_cascade.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_cascade.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_cascade CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_cascade'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-inherited-check-merged",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-inherited-check",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdinh_merged"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_merged CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_merged'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdinh_merged.merged DROP CONSTRAINT inherited_check",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_merged'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdinh_merged","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdinh_merged.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdinh_merged.parent VALUES(1); CREATE TABLE pgdinh_merged.child() INHERITS(pgdinh_merged.parent); INSERT INTO pgdinh_merged.child VALUES(2); CREATE TABLE pgdinh_merged.neighbor(id int); CREATE SEQUENCE pgdinh_merged.guard START 7; CREATE TABLE pgdinh_merged.merged(id int CONSTRAINT inherited_check CHECK (id > 0)) INHERITS(pgdinh_merged.parent); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdinh_merged.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_merged'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","metadata": {"reason_code": "constraint_inherited","target_constraint_kind": "c"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdinh_merged.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_merged'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_merged'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdinh_merged.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_merged.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_merged.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_merged.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgdinh_merged.merged DROP CONSTRAINT inherited_check","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdinh_merged.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_merged'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_merged'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdinh_merged.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_merged.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_merged.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_merged.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_merged CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_merged'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-inherited-check-partition",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-inherited-check",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdinh_partition"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_partition CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_partition'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdinh_partition.part DROP CONSTRAINT part_check",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_partition'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdinh_partition","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdinh_partition.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdinh_partition.parent VALUES(1); CREATE TABLE pgdinh_partition.child() INHERITS(pgdinh_partition.parent); INSERT INTO pgdinh_partition.child VALUES(2); CREATE TABLE pgdinh_partition.neighbor(id int); CREATE SEQUENCE pgdinh_partition.guard START 7; CREATE TABLE pgdinh_partition.part_root(id int CONSTRAINT part_check CHECK (id > 0)) PARTITION BY RANGE(id); CREATE TABLE pgdinh_partition.part PARTITION OF pgdinh_partition.part_root DEFAULT; ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdinh_partition.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_partition'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","metadata": {"reason_code": "constraint_inherited","target_constraint_kind": "c"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdinh_partition.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_partition'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_partition'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdinh_partition.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_partition.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_partition.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_partition.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgdinh_partition.part DROP CONSTRAINT part_check","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdinh_partition.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_partition'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_partition'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdinh_partition.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_partition.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_partition.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_partition.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_partition CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_partition'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-inherited-check-local",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-inherited-check",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdinh_local"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_local CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_local'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdinh_local.child DROP CONSTRAINT local_check",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_local'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdinh_local","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdinh_local.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdinh_local.parent VALUES(1); CREATE TABLE pgdinh_local.child() INHERITS(pgdinh_local.parent); INSERT INTO pgdinh_local.child VALUES(2); CREATE TABLE pgdinh_local.neighbor(id int); CREATE SEQUENCE pgdinh_local.guard START 7; ALTER TABLE pgdinh_local.child ADD CONSTRAINT local_check CHECK (id < 10); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdinh_local.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_local'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdinh_local.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_local'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_local'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdinh_local.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_local.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_local.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_local.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgdinh_local.child DROP CONSTRAINT local_check","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "drops the local CHECK and preserves the inherited CHECK","sql": "SELECT count(*)=1 AND bool_and(conname='inherited_check' AND coninhcount=1) FROM pg_catalog.pg_constraint WHERE conrelid='pgdinh_local.child'::regclass AND contype='c'","expect": "t"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_local.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_local.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_local.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_local CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_local'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-inherited-check-parent-recursive",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-inherited-check",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdinh_parent_recursive"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_parent_recursive CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_parent_recursive'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdinh_parent_recursive.parent DROP CONSTRAINT inherited_check",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_parent_recursive'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdinh_parent_recursive","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdinh_parent_recursive.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdinh_parent_recursive.parent VALUES(1); CREATE TABLE pgdinh_parent_recursive.child() INHERITS(pgdinh_parent_recursive.parent); INSERT INTO pgdinh_parent_recursive.child VALUES(2); CREATE TABLE pgdinh_parent_recursive.neighbor(id int); CREATE SEQUENCE pgdinh_parent_recursive.guard START 7; ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdinh_parent_recursive.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_parent_recursive'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["InheritanceKnown"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdinh_parent_recursive.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_parent_recursive'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_parent_recursive'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdinh_parent_recursive.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_parent_recursive.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_parent_recursive.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_parent_recursive.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgdinh_parent_recursive.parent DROP CONSTRAINT inherited_check","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "removes both inherited CHECK entries","sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE conrelid IN ('pgdinh_parent_recursive.parent'::regclass,'pgdinh_parent_recursive.child'::regclass) AND conname='inherited_check'","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_parent_recursive.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_parent_recursive.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_parent_recursive.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_parent_recursive CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_parent_recursive'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-inherited-check-stale",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-inherited-check",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdinh_stale"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_stale CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_stale'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdinh_stale.neighbor ADD COLUMN marker int;ALTER TABLE pgdinh_stale.child DROP CONSTRAINT inherited_check",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_stale'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdinh_stale","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdinh_stale.parent(id int CONSTRAINT inherited_check CHECK (id > 0)); INSERT INTO pgdinh_stale.parent VALUES(1); CREATE TABLE pgdinh_stale.child() INHERITS(pgdinh_stale.parent); INSERT INTO pgdinh_stale.child VALUES(2); CREATE TABLE pgdinh_stale.neighbor(id int); CREATE SEQUENCE pgdinh_stale.guard START 7; ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdinh_stale.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_stale'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["complete","unverified"],
+    "statement_indices": [0,1],
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.pg.alter.drop_constraint.target.require","reason_code": "unproven_constraint_target","required_facts": ["constraint.pg_inheritance"]}],
+    "serialized_not_contains": ["InheritanceKnown"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdinh_stale.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_stale'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.coninhcount,k.conislocal FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdinh_stale'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdinh_stale.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_stale.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_stale.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_stale.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgdinh_stale.neighbor ADD COLUMN marker int","expect_rc": 0},
+    {"name": "native refuses 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgdinh_stale.child DROP CONSTRAINT inherited_check","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native predecessor adds the neighbor column","sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgdinh_stale.neighbor'::regclass AND attname='marker'","expect": "1"},
+    {"assert": "keeps original parent and child rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1) FROM ONLY pgdinh_stale.parent) AND (SELECT count(*)=1 AND bool_and(id=2) FROM ONLY pgdinh_stale.child)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdinh_stale.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdinh_stale CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdinh_stale'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
   {
    "id": "pg-drop-fk-reference-primary-restrict",
    "anchor": "postgres17",
@@ -14554,9 +15379,9 @@
     {"name": "claim prior-DDL schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgt37_prior", "expect_rc": 0},
     {"name": "create untouched catalog premises", "sql": "CREATE TABLE pgt37_prior.new_t(id int);CREATE TABLE pgt37_prior.old_t(id int CONSTRAINT ck CHECK(id>=0));CREATE SEQUENCE pgt37_prior.guard START 7", "expect_rc": 0}
    ],
-   "expect": {"exit": 0, "verdict": "review", "statements": 4, "findings": 3, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "evidence_gaps": 2,
+   "expect": {"exit": 0, "verdict": "review", "statements": 4, "findings": 3, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "evidence_gaps": 3,
     "finding_entries": [{"index": 1, "rule_id": "ddl.pg.alter.validate_constraint.advisory", "level": "notice"}, {"index": 2, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}, {"index": 3, "rule_id": "ddl.pg.alter.validate_constraint.advisory", "level": "notice"}],
-    "evidence_gap_entries": [{"index": 1, "rule_id": "ddl.pg.alter.validate_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["target_table.pg_constraints"]}, {"index": 3, "rule_id": "ddl.pg.alter.validate_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["target_table.pg_constraints"]}]},
+    "evidence_gap_entries": [{"index": 2, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["constraint.pg_inheritance"]},{"index": 1, "rule_id": "ddl.pg.alter.validate_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["target_table.pg_constraints"]}, {"index": 3, "rule_id": "ddl.pg.alter.validate_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["target_table.pg_constraints"]}]},
    "post_verify": [
     {"assert": "audit creates no fresh constraint", "sql": "SELECT count(*) FROM pg_constraint WHERE conrelid='pgt37_prior.new_t'::regclass", "expect": "0"},
     {"assert": "audit keeps pre-existing CHECK", "sql": "SELECT contype::text || ':' || convalidated::text FROM pg_constraint WHERE conrelid='pgt37_prior.old_t'::regclass AND conname='ck'", "expect": "c:true"},
@@ -14719,7 +15544,7 @@
     {"name": "claim drop schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgt37_drop", "expect_rc": 0},
     {"name": "create guarded and real targets", "sql": "CREATE TABLE pgt37_drop.unguarded(id int);CREATE TABLE pgt37_drop.guarded(id int);CREATE TABLE pgt37_drop.existing(id int CONSTRAINT ck CHECK(id>=0));CREATE TABLE pgt37_drop.case_t(id int CONSTRAINT ck PRIMARY KEY,code int CONSTRAINT \"CK\" UNIQUE);CREATE TABLE pgt37_drop.real_pk_t(id int CONSTRAINT real_pk_key PRIMARY KEY);CREATE TABLE pgt37_drop.cascade_absent(id int);CREATE SEQUENCE pgt37_drop.guard START 7", "expect_rc": 0}
    ],
-   "expect": {"exit": 0, "verdict": "reject", "statements": 6, "findings": 8, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "statement_coverage": ["complete", "complete", "complete", "unverified", "unverified", "complete"], "evidence_gaps": 2, "evidence_gap_entries": [{"index": 3, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["constraint.pg_foreign_key_references"]}, {"index": 4, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["constraint.pg_foreign_key_references"]}],
+   "expect": {"exit": 0, "verdict": "reject", "statements": 6, "findings": 8, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "statement_coverage": ["complete", "complete", "unverified", "unverified", "unverified", "complete"], "evidence_gaps": 3, "evidence_gap_entries": [{"index": 2, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["constraint.pg_inheritance"]},{"index": 3, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["constraint.pg_foreign_key_references"]}, {"index": 4, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["constraint.pg_foreign_key_references"]}],
     "finding_entries": [{"index": 0, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "level": "blocker"}, {"index": 0, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}, {"index": 2, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}, {"index": 3, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}, {"index": 4, "rule_id": "ddl.alter.drop_primary_key.forbid", "level": "blocker"}, {"index": 4, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}, {"index": 5, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "level": "blocker"}, {"index": 5, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}],
     "finding_metadata": [{"index": 0, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "metadata": {"schema": "pgt37_drop", "table": "unguarded", "constraint": "missing", "target_exists": false, "reason_code": "constraint_absent"}}]},
    "post_verify": [
@@ -14881,6 +15706,24 @@
   }
  ],
  "required_case_ids": [
+  "T37.meta.pg-drop-check-only-partition-root",
+  "T37.meta.pg-drop-check-only-guarded",
+  "T37.meta.pg-drop-check-only-cascade",
+  "T37.meta.pg-drop-check-only-empty-root",
+  "T37.meta.pg-drop-check-only-recursive",
+  "T37.meta.pg-drop-check-only-inheritance-parent",
+  "T37.meta.pg-drop-check-only-missing-guarded",
+  "T37.meta.pg-drop-check-only-primary-control",
+  "T37.cli.drop-inherited-check-offline",
+  "T37.cli.drop-inherited-check-disabled",
+  "T37.meta.pg-drop-inherited-check-child",
+  "T37.meta.pg-drop-inherited-check-guarded",
+  "T37.meta.pg-drop-inherited-check-cascade",
+  "T37.meta.pg-drop-inherited-check-merged",
+  "T37.meta.pg-drop-inherited-check-partition",
+  "T37.meta.pg-drop-inherited-check-local",
+  "T37.meta.pg-drop-inherited-check-parent-recursive",
+  "T37.meta.pg-drop-inherited-check-stale",
   "T37.cli.drop-fk-reference-offline",
   "T37.cli.drop-fk-reference-disabled",
   "T37.meta.pg-drop-fk-reference-primary-restrict",

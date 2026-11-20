@@ -8301,7 +8301,24 @@
                 "file:testdata/ddl-golden/T37.json#pg-drop-fk-reference-other-index",
                 "file:testdata/ddl-golden/T37.json#pg-drop-fk-reference-guarded-absence",
                 "file:testdata/ddl-golden/T37.json#pg-drop-fk-reference-stale",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_constraint_foreign_key.expected.yaml#ddl.pg.alter.drop_constraint.target.require"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_constraint_foreign_key.expected.yaml#ddl.pg.alter.drop_constraint.target.require",
+                "file:testdata/ddl-golden/T37.json#drop-inherited-check-offline",
+                "file:testdata/ddl-golden/T37.json#drop-inherited-check-disabled",
+                "file:testdata/ddl-golden/T37.json#pg-drop-check-only-partition-root",
+                "file:testdata/ddl-golden/T37.json#pg-drop-check-only-guarded",
+                "file:testdata/ddl-golden/T37.json#pg-drop-check-only-empty-root",
+                "file:testdata/ddl-golden/T37.json#pg-drop-check-only-recursive",
+                "file:testdata/ddl-golden/T37.json#pg-drop-check-only-inheritance-parent",
+                "file:testdata/ddl-golden/T37.json#pg-drop-check-only-missing-guarded",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-check-child",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-check-guarded",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-check-merged",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-check-partition",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-check-local",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-check-parent-recursive",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-check-stale",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_constraint_inherited_check.expected.yaml#ddl.pg.alter.drop_constraint.target.require",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_constraint_partition_only.expected.yaml#ddl.pg.alter.drop_constraint.target.require"
               ]
             }
           ]
@@ -8324,7 +8341,10 @@
                 "file:testdata/ddl-golden/T37.json#DROP CONSTRAINT CASCADE",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-target-drop",
                 "file:internal/infrastructure/parser/postgresql/parser_constraint_target_postgresql_tag_test.go",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_target_invalid.expected.yaml#ddl.pg.alter.drop_constraint.target.require"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_target_invalid.expected.yaml#ddl.pg.alter.drop_constraint.target.require",
+                "file:testdata/ddl-golden/T37.json#pg-drop-check-only-cascade",
+                "file:testdata/ddl-golden/T37.json#pg-drop-check-only-primary-control",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-check-cascade"
               ]
             }
           ]
