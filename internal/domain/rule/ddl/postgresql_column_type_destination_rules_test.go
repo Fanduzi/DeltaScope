@@ -11,10 +11,13 @@ import (
 
 func TestPGColumnTypeOnlyParentPrecedence(t *testing.T) {
 	for _, tc := range []struct {
-		name, reason, gap                   string
-		missing, incompatible, using, stale bool
+		name, reason, gap                                        string
+		missing, incompatible, using, stale, recursive, conflict bool
 	}{
 		{name: "compatible", reason: "column_type_requires_child_traversal"},
+		{name: "recursive outside inheritance", recursive: true, conflict: true, reason: "column_type_descendant_inheritance_conflict"},
+		{name: "recursive destination fails first", recursive: true, conflict: true, missing: true, reason: "destination_type_absent"},
+		{name: "recursive child facts still required", recursive: true, gap: "target_table.pg_columns"},
 		{name: "missing type", missing: true, reason: "destination_type_absent"},
 		{name: "incompatible type", incompatible: true, reason: "destination_type_assignment_unavailable"},
 		{name: "USING", using: true, gap: "target_table.pg_columns"},
@@ -24,12 +27,12 @@ func TestPGColumnTypeOnlyParentPrecedence(t *testing.T) {
 			table := spec.Table{Schema: "app", Name: "t"}
 			target := spec.PGColumnTypeTarget{Schema: "pg_catalog", Name: "int8"}
 			s := spec.Statement{Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL,
-				DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &table, PGTableOnly: true,
+				DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &table, PGTableOnly: !tc.recursive,
 					Alter: []spec.Alter{{Action: "set_data_type", Name: "Id", PGColumnType: target, Options: map[string]string{}}}},
 				Metadata: &spec.Metadata{Schema: table.Schema, Instance: &spec.InstanceFacts{Version: "PostgreSQL 17.7"},
 					TargetTable: &spec.TableSnapshot{Schema: table.Schema, Exists: true, Table: &table,
 						PGRelation: spec.PGRelationState{Name: table.Name, Kind: "r"}, PGColumns: &spec.PGColumnCatalog{}},
-					PGColumnTraversal: &spec.PGColumnTraversal{Schema: table.Schema, Table: table.Name, Column: "Id", ColumnExists: true, AttachedChildren: true},
+					PGColumnTraversal: &spec.PGColumnTraversal{Schema: table.Schema, Table: table.Name, Column: "Id", ColumnExists: true, AttachedChildren: true, TypeDescendantConflict: tc.conflict},
 					PGColumnType: &spec.PGColumnTypeState{Target: target, SchemaExists: true, BaseExists: !tc.missing, Resolved: true, Defined: true,
 						AssignmentKnown: true, Assignable: !tc.incompatible, SourceSchema: table.Schema, SourceTable: table.Name, SourceColumn: "Id"}}}
 			if tc.using {

@@ -62,7 +62,7 @@ func PGColumnTypeSource(s Statement) (reason string, known bool) {
 				return "column_type_inherited", true
 			case facts.DirectPartitionKey:
 				return "column_type_partition_key", true
-			case PGColumnTypeOnlyParent(s):
+			case PGColumnTypeParent(s):
 				return "", true
 			}
 		}
@@ -82,12 +82,13 @@ func PGColumnTypeSource(s Statement) (reason string, known bool) {
 	return "", true
 }
 
-// PGColumnTypeOnlyParent reports an exact ONLY parent whose type assignment can be checked before traversal.
-func PGColumnTypeOnlyParent(s Statement) bool {
+// PGColumnTypeParent reports an eligible parent with an observed traversal refusal.
+func PGColumnTypeParent(s Statement) bool {
 	facts := BoundPGColumnTraversal(s)
-	return facts != nil && s.DDL.PGTableOnly && s.DDL.Alter[0].Action == "set_data_type" &&
+	return facts != nil && s.DDL.Alter[0].Action == "set_data_type" &&
 		s.DDL.Alter[0].Options["has_using"] != "true" && !s.DDL.Alter[0].PGColumnType.Array &&
-		facts.ColumnExists && !facts.System && !facts.Inherited && !facts.DirectPartitionKey && facts.AttachedChildren
+		facts.ColumnExists && !facts.System && !facts.Inherited && !facts.DirectPartitionKey &&
+		(s.DDL.PGTableOnly && facts.AttachedChildren || !s.DDL.PGTableOnly && facts.TypeDescendantConflict)
 }
 
 // PGColumnTypeDestinationPremises checks the destination after source eligibility.

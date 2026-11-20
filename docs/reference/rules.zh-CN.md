@@ -765,7 +765,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 | `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | 添加带有 volatile 默认值的 `NOT NULL` 列可能触发全表重写。发现包含：`not_null`、`has_default`、`default_kind`（`literal`、`null`、`function_call`、`expression`、`unknown`）。元数据不输出默认表达式文本或函数名。 | warning | 否 |
 | `ddl.pg.alter.constraint_using_index.valid` | 检查 PostgreSQL 17 普通表上 `PRIMARY KEY` 或 `UNIQUE USING INDEX` 的精确目录前提。根据精确类型和二进制兼容类型核对键列的默认操作符类，涵盖 PostgreSQL 17 多态默认类。缺少适用事实时报告 `unproven_constraint_using_index`。 | blocker | 否 |
 | `ddl.pg.alter.add_foreign_key.targets.valid` | 在 PostgreSQL 17 普通持久表上检查两侧身份、被引用键资格和列数。省略引用列时使用目录中实际观测到的主键。规则还按实际选中的引用键检查已建模的标量、域、枚举及数组相等比较和隐式转换。`ON DELETE SET NULL` 或 `SET DEFAULT` 中的列清单必须属于声明的外键。 | blocker | 否 |
-| `ddl.pg.alter.add_check.name.available` | 对 PostgreSQL 17 上目录新鲜、精确绑定的普通持久表，检查单动作显式命名的 `ADD CHECK` 或 `ADD CHECK NOT VALID` 是否占用同表约束名。证据不足或过期时报告 `unproven_check_constraint_name`。 | blocker | 否 |
+| `ddl.pg.alter.add_check.name.available` | 对 PostgreSQL 17 上目录新鲜、精确绑定的普通持久表，检查单动作 `ADD CHECK` 的条件中是否包含子查询，并检查显式命名的约束是否占用同表约束名。子查询检查也适用于未命名约束和 `NOT VALID`。证据不足或过期时报告 `unproven_check_constraint_name`。 | blocker | 否 |
 | `ddl.pg.alter.add_check.not_valid.require` | `ADD CHECK` 约束应使用 `NOT VALID` 以避免持 `ACCESS EXCLUSIVE` 锁的全表扫描 | warning | 否 |
 | `ddl.pg.alter.set_data_type.rewrite.warn` | 更改列类型可能需要全表重写（取决于类型转换）。发现包含：`has_using`（是否存在 USING 子句）。元数据不输出 USING 表达式 SQL 文本。 | warning | 否 |
 | `ddl.pg.alter.not_valid_constraint.validate.require` | 命名 CHECK/FK `NOT VALID` 约束在同一次审计 SQL 批次中缺少后续匹配的 `VALIDATE CONSTRAINT` | warning | 否 |
@@ -1277,7 +1277,9 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 ### PostgreSQL 列类型目标
 
-`ddl.pg.alter.column_type.destination.valid` 默认级别为 blocker。它在已观测的 PostgreSQL 17 上先核对普通表和用户源列，再检查 `TYPE` 或 `TYPE USING` 的精确两段限定目标。缺失 schema、类型、关联数组、未定义 shell type 或不适用的伪类型可以触发拒绝。规则还检查 varchar、bpchar 和 numeric 已建模的字面参数、精确限定的排序规则，以及普通 TYPE 在已观测标量类型之间的赋值转换。缺少适用证据时报告 `unproven_column_type_destination`。直接视图、物化视图和存储生成列依赖也可能阻止类型变更。已有值的转换、USING 或默认表达式的求值、权限及实际重写需要其他证据。
+递归 `RENAME COLUMN` 核对附着后代中的精确目标列名及来自树外父表的继承定义。递归 `ALTER COLUMN TYPE` 在核对目标类型和标量赋值后，也会检查树外继承。子表身份保留在内部目录证据中。
+
+`ddl.pg.alter.column_type.destination.valid` 默认级别为 blocker。它在已观测的 PostgreSQL 17 上先核对普通表和用户源列，再检查 `TYPE` 或 `TYPE USING` 的精确两段限定目标。缺失 schema、类型、关联数组、未定义 shell type 或不适用的伪类型可以触发拒绝。规则还检查 varchar、bpchar 和 numeric 已建模的字面参数、精确限定的排序规则，以及普通 TYPE 在已观测标量类型之间的赋值转换。缺少适用证据时报告 `unproven_column_type_destination`。直接视图、物化视图和存储生成列依赖也可能阻止类型变更。已有值的转换、USING 或默认表达式的求值、权限及实际重写需要其他证据。 对于满足类型转换前提的请求，规则还检查列与例程、重写规则、触发器、策略及 publication 过滤条件之间的直接目录依赖。
 
 ### PostgreSQL 批量表空间目标
 

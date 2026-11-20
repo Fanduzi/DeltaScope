@@ -37,8 +37,11 @@ func assessPGColumnTypeDestination(s spec.Statement) (reason, fact string) {
 	if reason, fact := spec.PGColumnTypeDestinationPremises(s); reason != "" || fact != "" {
 		return reason, fact
 	}
-	if spec.PGColumnTypeOnlyParent(s) {
-		return "column_type_requires_child_traversal", ""
+	if spec.PGColumnTypeParent(s) {
+		if s.DDL.PGTableOnly {
+			return "column_type_requires_child_traversal", ""
+		}
+		return "column_type_descendant_inheritance_conflict", ""
 	}
 	return assessPGColumnTypeDependency(s)
 }
@@ -52,6 +55,14 @@ func assessPGColumnTypeDependency(s spec.Statement) (reason, missing string) {
 	switch facts.Kind {
 	case "view", "generated_column":
 		return "column_type_has_direct_dependency", ""
+	case "type_change":
+		if s.DDL.Alter[0].Options["has_using"] == "true" {
+			return "", "column.type_using_assignment"
+		}
+		if s.DDL.Alter[0].PGColumnType.Array {
+			return "", "column.type_assignment"
+		}
+		return "column_type_has_other_direct_dependency", ""
 	case "", "foreign_key":
 		return "", ""
 	}
@@ -86,6 +97,10 @@ func (r pgColumnTypeDestinationRule) Evaluate(ctx context.Context, s spec.Statem
 		message = "PostgreSQL has no assignment cast from the selected column type to the destination type"
 	case "column_type_has_direct_dependency":
 		message = "A PostgreSQL view, materialized view or generated column prevents changing the selected column type"
+	case "column_type_descendant_inheritance_conflict":
+		message = "A PostgreSQL descendant inherits the column from a table outside the selected type change"
+	case "column_type_has_other_direct_dependency":
+		message = "A PostgreSQL routine, rewrite rule, trigger, policy or publication filter prevents changing the selected column type"
 	case "column_type_requires_child_traversal":
 		message = "PostgreSQL requires changing the column type in the child tables too"
 	case "destination_collation_absent":

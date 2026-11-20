@@ -15,11 +15,14 @@ func TestPGAddCheckName(t *testing.T) {
 		change    func(*spec.Statement)
 		occupied  bool
 		unmatched bool
+		subquery  bool
 	}{
 		{name: "exact check", entries: []spec.PGConstraintState{{Name: " Exact Check ", Type: "c"}}, occupied: true},
 		{name: "different kind", entries: []spec.PGConstraintState{{Name: " Exact Check ", Type: "p"}}, occupied: true},
 		{name: "exact spaces and case", entries: []spec.PGConstraintState{{Name: "Exact Check", Type: "c"}, {Name: " exact check ", Type: "c"}}},
 		{name: "known empty", entries: []spec.PGConstraintState{}},
+		{name: "subquery precedes exact collision", entries: []spec.PGConstraintState{{Name: " Exact Check ", Type: "c"}}, subquery: true, occupied: true},
+		{name: "unnamed subquery", subquery: true, occupied: true, change: func(s *spec.Statement) { s.DDL.Alter[0].Name = "" }},
 		{name: "missing directory", gap: "target_table.pg_constraints"},
 		{name: "ambiguous names", gap: "target_table.pg_constraints", entries: []spec.PGConstraintState{{Name: " Exact Check ", Type: "c"}, {Name: " Exact Check ", Type: "p"}}},
 		{name: "stale binding", gap: "target_table.pg_constraint_scope", change: func(s *spec.Statement) { s.Metadata.TargetTable.PGRelation = spec.PGRelationState{} }},
@@ -45,6 +48,7 @@ func TestPGAddCheckName(t *testing.T) {
 					TargetTable: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: tc.entries,
 						PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}},
 			}
+			s.DDL.Alter[0].PGCheckHasSubquery = tc.subquery
 			if tc.change != nil {
 				tc.change(&s)
 			}
@@ -56,7 +60,11 @@ func TestPGAddCheckName(t *testing.T) {
 			if err != nil || (len(findings) == 1) != tc.occupied {
 				t.Fatalf("findings=%+v, err=%v", findings, err)
 			}
-			if len(findings) == 1 && (findings[0].Metadata["constraint"] != " Exact Check " || findings[0].Metadata["reason_code"] != "constraint_name_occupied" || len(findings[0].Metadata) != 5) {
+			reason := "constraint_name_occupied"
+			if tc.subquery {
+				reason = "check_predicate_subquery_inapplicable"
+			}
+			if len(findings) == 1 && (findings[0].Metadata["constraint"] != s.DDL.Alter[0].Name || findings[0].Metadata["reason_code"] != reason || len(findings[0].Metadata) != 5) {
 				t.Fatalf("unexpected finding: %+v", findings[0])
 			}
 			gaps := r.EvidenceGaps(s)

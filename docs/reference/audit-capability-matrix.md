@@ -159,7 +159,7 @@ separate. OWNER TO findings omit role names.
 
 ### PostgreSQL inherited and partitioned columns
 
-Target checks use exact inherited attribute, direct partition-key and attached-child observations to identify refusals for single ADD, DROP, RENAME, TYPE or DROP EXPRESSION actions. Partition NOT NULL checks cover parent-required child nullability and ONLY when attached descendants require traversal. Row validity, locks and permissions require other facts.
+Target checks use exact inherited attribute, direct partition-key and attached-child observations to identify refusals for single ADD, DROP, RENAME, TYPE or DROP EXPRESSION actions. Partition NOT NULL checks cover parent-required child nullability and ONLY when attached descendants require traversal. Recursive RENAME checks the exact destination and inherited definitions across the attached tree. A bounded recursive TYPE checks outside inheritance after the destination and scalar assignment checks. TYPE also checks direct catalog edges to routines, rules, triggers, policies and publication filters, subject to the conversion premises. Row validity, locks and permissions require other facts.
 
 ### PostgreSQL SET WITHOUT OIDS
 

@@ -524,3 +524,22 @@ func TestAuditColumnTypeOnlyParentThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing ONLY traversal finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditColumnTypeRecursiveParentThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: false, Columns: []PGColumnState{{Name: "id"}}}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGColumnType: &spec.PGColumnTypeState{Target: spec.PGColumnTypeTarget{Schema: "pg_catalog", Name: "int4"}, SchemaExists: true, BaseExists: true, Resolved: true, Defined: true, AssignmentKnown: true, Assignable: true, SourceSchema: "app", SourceTable: "t", SourceColumn: "id"}, PGColumnTraversal: &spec.PGColumnTraversal{Schema: "app", Table: "t", Column: "id", ColumnExists: true, AttachedChildren: true, TypeDescendantConflict: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t ALTER COLUMN id TYPE pg_catalog.int4`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 2 || provider.objectCalls[0].Type != "column_traversal" || provider.objectCalls[1].Qualifiers["recursive_parent"] != "true" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.column_type.destination.valid" && f.Metadata["reason_code"] == "column_type_descendant_inheritance_conflict" {
+			return
+		}
+	}
+	t.Fatalf("missing recursive traversal finding: %+v", result.Statements[0].Findings)
+}

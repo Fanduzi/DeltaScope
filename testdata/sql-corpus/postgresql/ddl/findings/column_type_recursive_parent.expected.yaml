@@ -1,0 +1,30 @@
+name: column_type_recursive_parent
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    t:
+      exists: true
+      pg_relation: {name: t, kind: r}
+      pg_columns: {ordinary: false, columns: []}
+  pg_column_traversals:
+    - {schema: app, table: t, column: v, column_exists: true, attached_children: true, type_descendant_conflict: true}
+  pg_column_types:
+    - schema: pg_catalog
+      name: int8
+      schema_exists: true
+      base_exists: true
+      resolved: true
+      defined: true
+      assignment: true
+      source_schema: app
+      source_table: t
+      source_column: v
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.column_type.destination.valid]

@@ -32,7 +32,7 @@ comparisons for the member and scope binding.
 | constraint_using_index.go | Observes one exact PostgreSQL index for PRIMARY KEY or UNIQUE attachment, including internal constraint ownership, key sort, collation, options and operator-class defaults selected by exact or binary-compatible type |
 | replica_identity.go | Resolves one real PostgreSQL replica-identity index candidate in its owning table schema, with uniqueness, predicate/expression presence and actual key nullability |
 | relation_state_test.go | Verifies exact relation reads, absent and non-table kinds, unbound scopes, error propagation and JSON privacy |
-| column_traversal.go | Reads inherited attributes, direct partition keys, partition membership, attached children and exact column presence, generation and partition nullability facts |
+| column_traversal.go | Reads inherited attributes, direct partition keys, partition membership, attached children, recursive rename conflicts and exact column presence, generation and partition nullability facts |
 | drop_column_dependency.go | Observes direct view, generated-column and foreign-key dependencies on the exact ordinary-table column |
 | drop_constraint_reference.go | Checks the exact supporting index ownership and normal foreign-key dependency for one PostgreSQL 17 primary or unique constraint |
 | constraint_state.go | Loads target-bound `pg_constraint` names, kinds, validated flags and private CHECK inheritance, partition-child and validation traversal observations using exact parameterized schema and table comparisons bound to `pg_catalog`. Read errors prevent publication of the directory, and duplicate rows stay visible |

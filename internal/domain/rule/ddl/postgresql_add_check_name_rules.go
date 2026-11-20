@@ -17,33 +17,43 @@ func newPGAddCheckNameRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 func (r pgAddCheckNameRule) ID() string { return ruleIDPGAlterAddCheckNameAvailable }
 
 func (r pgAddCheckNameRule) AppliesTo(s spec.Statement) bool {
-	return pgNamedAddCheck(s)
+	return pgNamedAddCheck(s) || pgAddCheck(s) && s.DDL.Alter[0].PGCheckHasSubquery
 }
 
 func pgNamedAddCheck(s spec.Statement) bool {
+	return pgAddCheck(s) && s.DDL.Alter[0].Name != ""
+}
+
+func pgAddCheck(s spec.Statement) bool {
 	if s.Dialect != spec.DialectPostgreSQL || s.Kind != spec.KindDDL || s.Unsupported != nil || s.DDL == nil ||
 		s.DDL.Operation != spec.DDLOperationAlterTable || s.DDL.Table == nil || len(s.DDL.Alter) != 1 {
 		return false
 	}
 	a := s.DDL.Alter[0]
-	return a.Action == "add_constraint" && a.Options["constraint_type"] == "check" && a.Name != ""
+	return a.Action == "add_constraint" && a.Options["constraint_type"] == "check"
 }
 
-func assessPGAddCheckName(s spec.Statement) (occupied bool, missing string) {
+func assessPGAddCheckName(s spec.Statement) (reason, missing string) {
 	if !pgConstraintTargetVersionKnown(s) {
-		return false, "instance.version"
+		return "", "instance.version"
 	}
 	if exists, known := pgAlterRelation(s); s.DDL.PGTableIfExists && known && !exists {
-		return false, ""
+		return "", ""
 	}
 	if !spec.PGOrdinaryTableBound(s) {
-		return false, "target_table.pg_constraint_scope"
+		return "", "target_table.pg_constraint_scope"
+	}
+	if s.DDL.Alter[0].PGCheckHasSubquery {
+		return "check_predicate_subquery_inapplicable", ""
 	}
 	member, known := pgConstraintTargetState(s, 0)
 	if !known {
-		return false, "target_table.pg_constraints"
+		return "", "target_table.pg_constraints"
 	}
-	return member != nil, ""
+	if member != nil {
+		return "constraint_name_occupied", ""
+	}
+	return "", ""
 }
 
 func (r pgAddCheckNameRule) Evaluate(ctx context.Context, s spec.Statement) ([]rule.Finding, error) {
@@ -53,13 +63,18 @@ func (r pgAddCheckNameRule) Evaluate(ctx context.Context, s spec.Statement) ([]r
 	if !r.AppliesTo(s) {
 		return nil, nil
 	}
-	if occupied, _ := assessPGAddCheckName(s); !occupied {
+	reason, _ := assessPGAddCheckName(s)
+	if reason == "" {
 		return nil, nil
 	}
-	return []rule.Finding{{Level: r.level, Message: "The PostgreSQL table already has a constraint with the requested CHECK name",
+	message := "The PostgreSQL table already has a constraint with the requested CHECK name"
+	if reason == "check_predicate_subquery_inapplicable" {
+		message = "PostgreSQL CHECK predicates cannot contain a subquery"
+	}
+	return []rule.Finding{{Level: r.level, Message: message,
 		Metadata: map[string]any{
 			"action": "add_constraint", "schema": s.DDL.Table.Schema, "table": s.DDL.Table.Name,
-			"constraint": s.DDL.Alter[0].Name, "reason_code": "constraint_name_occupied",
+			"constraint": s.DDL.Alter[0].Name, "reason_code": reason,
 		},
 	}}, nil
 }

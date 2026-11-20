@@ -27,8 +27,12 @@ func enrichPGColumnTypes(ctx context.Context, request *MetadataRequest, statemen
 			lookup.Qualifiers["collation_name"] = collation.Name
 		}
 		if !target.Array && s.DDL.Alter[0].Options["has_using"] != "true" {
-			if spec.PGColumnTypeOnlyParent(s) {
-				lookup.Qualifiers["only_parent"] = "true"
+			if spec.PGColumnTypeParent(s) {
+				if s.DDL.PGTableOnly {
+					lookup.Qualifiers["only_parent"] = "true"
+				} else {
+					lookup.Qualifiers["recursive_parent"] = "true"
+				}
 			}
 			lookup.Qualifiers["source_schema"] = s.DDL.Table.Schema
 			lookup.Qualifiers["source_table"] = s.DDL.Table.Name

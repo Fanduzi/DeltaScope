@@ -105,8 +105,8 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | postgresql_table_persistence_metadata.go | Binds private PG17 persistence transition evidence after exact target freshness checks |
 | postgresql_table_access_method_metadata.go | Binds private PostgreSQL 17 access-method kind and same-method facts after the target freshness check |
 | postgresql_table_tablespace_metadata.go | Binds private PostgreSQL 17 single-table destination and same-space facts after the target freshness check |
-| postgresql_column_traversal_metadata.go | Binds private PostgreSQL column traversal facts for fresh qualified ADD, DROP, RENAME, TYPE, DROP EXPRESSION and partition NOT NULL actions |
-| postgresql_drop_column_dependency_metadata.go | Binds private column dependency evidence for fresh PostgreSQL DROP COLUMN RESTRICT and eligible TYPE changes |
+| postgresql_column_traversal_metadata.go | Binds private PostgreSQL column traversal facts, including the exact destination of a recursive column rename |
+| postgresql_drop_column_dependency_metadata.go | Binds private column dependency evidence for fresh PostgreSQL DROP COLUMN RESTRICT and eligible TYPE changes, with action-specific catalog classes |
 | postgresql_drop_constraint_reference_metadata.go | Binds private direct foreign-key dependency evidence for a fresh ordinary-table DROP CONSTRAINT RESTRICT |
 | postgresql_foreign_key_metadata.go | Binds exact quoted referenced relations from fresh PG17 snapshots and keeps private column and candidate-key observations request-local |
 | postgresql_constraint_using_index_metadata.go | Binds an exact existing index selection to a fresh PostgreSQL 17 table and checks the returned catalog identity |

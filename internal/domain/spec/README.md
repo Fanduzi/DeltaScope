@@ -98,7 +98,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGTablePersistence` carries the observed persistence and bounded dependency facts privately. `PGExactTableBound` checks exact fresh relation identity before scope-specific checks.
 - `PGTableAccessMethod` retains exact named or bare DEFAULT selection, observed kind and comparison with the current method. The private observation stays out of JSON.
 - `PGTableTablespace` retains the exact destination, presence, scope and comparison with the effective current location. The private observation stays out of JSON.
-- `PGColumnTraversal` carries private inheritance, direct partition-key, attached-child and partition nullability observations for exact column actions.
+- `PGColumnTraversal` carries private inheritance, direct partition-key, attached-child and partition nullability observations for exact column actions. It binds recursive rename conflicts to the source and destination and records outside inheritance for a recursive type change.
 - `PGDropColumnDependency` binds a private direct dependency observation to an exact column for DROP and TYPE.
 - `PGDropConstraintReference` binds a private direct foreign-key dependency observation to an exact primary or unique constraint.
 - `PGConstraintState` carries private observations for CHECK inheritance, partition children and validation traversal. `DDL.PGTableOnly` records the PostgreSQL ALTER target traversal flag.
@@ -112,6 +112,7 @@ Normalized statement specifications used as the stable input for rule evaluation
   A zero name means unobserved and an empty kind with a known name means absent.
   `TableSnapshot.PGRelation`, `DDL.PGTableIfExists`, `DDL.PGTableCatalogQualified`
   and `Alter.PGAddColumnIfNotExists` are internal evidence excluded from JSON.
+- `Alter.PGCheckHasSubquery` records a private AST fact for PostgreSQL ADD CHECK predicates.
 - `PGColumnTransition` (including a private SET DEFAULT reference flag), `PGColumnCatalog`, `PGColumnState`, `PGIdentitySequenceState`
   The private catalog carries an observed `Typed` marker for D8 ADD/RENAME scope.
   Internal authored/cached evidence; `PGColumnCatalog.FindColumn` proves exact-name

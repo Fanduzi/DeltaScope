@@ -76,7 +76,8 @@ func (p *Provider) resolveColumnType(ctx context.Context, req spec.ObjectLookupR
 		left join pg_catalog.pg_type source_type on source_type.oid OPERATOR(pg_catalog.=) a.atttypid
 		left join pg_catalog.pg_cast cast_entry on cast_entry.castsource OPERATOR(pg_catalog.=) source_type.oid
 		 and cast_entry.casttarget OPERATOR(pg_catalog.=) resolved.oid
-	`, target.Schema, target.Name, target.Array, collation.Schema, collation.Name, collation.Qualified(), schema, table, column, req.Qualifiers["only_parent"] == "true")
+	`, target.Schema, target.Name, target.Array, collation.Schema, collation.Name, collation.Qualified(), schema, table, column,
+		req.Qualifiers["only_parent"] == "true" || req.Qualifiers["recursive_parent"] == "true")
 	facts := spec.PGColumnTypeState{Target: target, Collation: collation, SourceSchema: schema, SourceTable: table, SourceColumn: column}
 	var exists, assignment sql.NullBool
 	if err := row.Scan(&facts.SchemaExists, &facts.BaseExists, &facts.Resolved, &facts.Defined, &facts.Pseudo, &assignment, &facts.Collatable, &exists); err != nil {

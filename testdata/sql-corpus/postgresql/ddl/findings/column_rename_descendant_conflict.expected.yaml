@@ -1,0 +1,19 @@
+name: column_rename_descendant_conflict
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    t:
+      exists: true
+      pg_relation: {name: t, kind: r}
+      pg_columns: {ordinary: false, columns: []}
+  pg_column_traversals:
+    - {schema: app, table: t, column: id, column_exists: true, attached_children: true, rename_destination: " Exact Destination ", rename_descendants_known: true, rename_descendant_conflict: true}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.alter.rename_column.exists.require]

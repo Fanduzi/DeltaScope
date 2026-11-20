@@ -106,14 +106,18 @@ type corpusFacts struct {
 
 // corpusMetadata carries optional metadata-aware audit fixtures.
 type corpusPGColumnTraversal struct {
-	Schema           string `yaml:"schema"`
-	Table            string `yaml:"table"`
-	Column           string `yaml:"column"`
-	Inherited        bool   `yaml:"inherited"`
-	Partition        bool   `yaml:"partition,omitempty"`
-	ColumnExists     bool   `yaml:"column_exists,omitempty"`
-	AttachedChildren bool   `yaml:"attached_children,omitempty"`
-	ParentNotNull    bool   `yaml:"parent_not_null,omitempty"`
+	Schema                   string `yaml:"schema"`
+	Table                    string `yaml:"table"`
+	Column                   string `yaml:"column"`
+	Inherited                bool   `yaml:"inherited"`
+	Partition                bool   `yaml:"partition,omitempty"`
+	ColumnExists             bool   `yaml:"column_exists,omitempty"`
+	AttachedChildren         bool   `yaml:"attached_children,omitempty"`
+	ParentNotNull            bool   `yaml:"parent_not_null,omitempty"`
+	RenameDestination        string `yaml:"rename_destination,omitempty"`
+	RenameDescendantsKnown   bool   `yaml:"rename_descendants_known,omitempty"`
+	RenameDescendantConflict bool   `yaml:"rename_descendant_conflict,omitempty"`
+	TypeDescendantConflict   bool   `yaml:"type_descendant_conflict,omitempty"`
 }
 
 type corpusMetadata struct {

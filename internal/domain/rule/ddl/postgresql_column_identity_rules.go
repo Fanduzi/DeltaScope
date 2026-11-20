@@ -81,20 +81,40 @@ func pgColumnIdentityTarget(s spec.Statement, index int, ruleID string) (reason,
 			return "", "target_table.pg_columns"
 		}
 	}
-	if a.Action == "rename_column" && spec.PGColumnTraversalTarget(s) != "" {
-		facts, table := s.Metadata.PGColumnTraversal, s.DDL.Table
-		if facts != nil && facts.Schema == table.Schema && facts.Table == table.Name && facts.Column == a.Name {
-			reason := ""
+	if a.Action == "rename_column" {
+		if facts := spec.BoundPGColumnTraversal(s); facts != nil {
+			sourceRule := ruleID == ruleIDAlterRenameColumnExistsRequire
 			if s.DDL.PGTableOnly && facts.AttachedChildren {
-				reason = "column_rename_requires_child_traversal"
-			} else if facts.Inherited {
-				reason = "column_rename_inherited"
-			}
-			if reason != "" {
-				if ruleID == ruleIDAlterRenameColumnExistsRequire {
-					return reason, ""
+				if sourceRule {
+					return "column_rename_requires_child_traversal", ""
 				}
 				return "", ""
+			}
+			destination := spec.PGColumnRenameDestination(a)
+			descendantsKnown := destination != "" && facts.RenameDestination == destination && facts.RenameDescendantsKnown
+			switch {
+			case descendantsKnown && facts.RenameDescendantConflict:
+				if sourceRule {
+					return "column_rename_descendant_conflict", ""
+				}
+				return "", ""
+			case facts.Inherited:
+				if sourceRule {
+					return "column_rename_inherited", ""
+				}
+				return "", ""
+			case descendantsKnown && facts.ColumnExists && !facts.System:
+				if sourceRule {
+					return "", ""
+				}
+				switch facts.RenameDestinationKind {
+				case -1:
+					return "system_column_name_conflict", ""
+				case 0:
+					return "", ""
+				case 1:
+					return "column_already_exists", ""
+				}
 			}
 		}
 	}
@@ -199,6 +219,11 @@ func evaluatePGColumnIdentity(ctx context.Context, s spec.Statement, action, rul
 		if facts := boundPGAddColumnTraversal(s); facts != nil {
 			metadata["exists"] = facts.ColumnExists
 		}
+		if reason == "column_rename_requires_child_traversal" {
+			if facts := spec.BoundPGColumnTraversal(s); facts != nil && facts.RenameDestination != "" {
+				metadata["exists"] = facts.ColumnExists
+			}
+		}
 		if ruleID == ruleIDAlterRenameColumnTargetExistsForbid {
 			name = a.Column.Definition.Name
 			metadata["source_column"], metadata["target_column"] = a.Name, name
@@ -223,6 +248,8 @@ func evaluatePGColumnIdentity(ctx context.Context, s spec.Statement, action, rul
 			message = "PostgreSQL cannot rename an inherited column directly"
 		case "column_rename_requires_child_traversal":
 			message = "PostgreSQL requires the column rename to include the child tables"
+		case "column_rename_descendant_conflict":
+			message = "A PostgreSQL descendant blocks the recursive column rename"
 		}
 		findings = append(findings, rule.Finding{
 			Level: level, Message: message,

@@ -6,6 +6,40 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
+func TestPGRecursiveColumnRenameDestinationBinding(t *testing.T) {
+	for _, tc := range []struct {
+		name, observed, sourceReason, destinationReason string
+		kind                                            int
+		conflict, gap                                   bool
+	}{
+		{name: "descendant blocks rename", observed: " Exact Destination ", conflict: true, sourceReason: "column_rename_descendant_conflict"},
+		{name: "case mismatch withholds the observation", observed: " exact Destination ", conflict: true, gap: true},
+		{name: "root has user name collision", observed: " Exact Destination ", kind: 1, destinationReason: "column_already_exists"},
+		{name: "root has system name collision", observed: " Exact Destination ", kind: -1, destinationReason: "system_column_name_conflict"},
+		{name: "no conflict in tree or root", observed: " Exact Destination "},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := pgGenerationTransitionStatement("rename_column", &spec.PGColumnState{})
+			s.DDL.Alter[0].Column = &spec.AlterColumn{Definition: &spec.Column{Name: " Exact Destination "}}
+			s.Metadata.TargetTable.PGColumns.Ordinary = false
+			s.Metadata.PGColumnTraversal = &spec.PGColumnTraversal{
+				Schema: "app", Table: "t", Column: "id", ColumnExists: true, AttachedChildren: true,
+				RenameDestination: tc.observed, RenameDescendantsKnown: true, RenameDescendantConflict: tc.conflict,
+				RenameDestinationKind: tc.kind,
+			}
+			source, sourceGap := pgColumnIdentityTarget(s, 0, ruleIDAlterRenameColumnExistsRequire)
+			destination, destinationGap := pgColumnIdentityTarget(s, 0, ruleIDAlterRenameColumnTargetExistsForbid)
+			wantGap := ""
+			if tc.gap {
+				wantGap = "target_table.pg_columns"
+			}
+			if source != tc.sourceReason || destination != tc.destinationReason || sourceGap != wantGap || destinationGap != wantGap {
+				t.Fatalf("source=%q/%q destination=%q/%q", source, sourceGap, destination, destinationGap)
+			}
+		})
+	}
+}
+
 func TestPGColumnTraversalPremises(t *testing.T) {
 	for _, tc := range []struct {
 		label, action, kind, want                       string

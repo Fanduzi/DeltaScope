@@ -247,7 +247,7 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	case "ddl.pg.alter.constraint_using_index.valid":
 		return "Checks catalog preconditions for using an exact existing index in a PostgreSQL 17 PRIMARY KEY or UNIQUE constraint. Checks index ownership, shape, key sort, collation, options and default operator classes resolved from exact and binary-compatible types."
 	case "ddl.pg.alter.add_check.name.available":
-		return "Checks a single explicitly named CHECK or CHECK NOT VALID against the exact constraint directory of a fresh ordinary PG17 table."
+		return "Checks single ADD CHECK predicates for subqueries and checks explicitly named CHECK constraints against the exact constraint directory of a fresh ordinary PostgreSQL 17 table."
 	case "ddl.pg.alter.column_type.destination.valid":
 		return "Checks PostgreSQL 17 TYPE and TYPE USING destinations on a fresh exact ordinary table. Checks type identity, supported built-in modifiers, qualified collations and direct view or generated-column dependencies. TYPE without USING checks scalar assignment and whether an ONLY target requires child traversal."
 	case "ddl.pg.alter.column_type.source.valid":

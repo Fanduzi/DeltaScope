@@ -1,0 +1,1 @@
+ALTER TABLE app.t ADD CHECK (id > (SELECT 0)) NOT VALID;
