@@ -43,6 +43,7 @@ func TestPGColumnTypeCatalogAndModifiers(t *testing.T) {
 			if tc.misbound {
 				facts.SourceColumn = "ID"
 			}
+			s.Metadata.PGDropColumnDependency = &spec.PGDropColumnDependency{Schema: "app", Table: "t", Column: a.Name}
 			s.Metadata.PGColumnType = facts
 			reason, gap := assessPGColumnTypeDestination(s)
 			if reason != tc.reason || gap != tc.gap {

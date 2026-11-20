@@ -1277,7 +1277,7 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 ### PostgreSQL 列类型目标
 
-`ddl.pg.alter.column_type.destination.valid` 默认级别为 blocker。它在已观测的 PostgreSQL 17 上先核对普通表和用户源列，再检查 `TYPE` 或 `TYPE USING` 的精确两段限定目标。缺失 schema、类型、关联数组、未定义 shell type 或不适用的伪类型可以触发拒绝。规则还检查 varchar、bpchar 和 numeric 已建模的字面参数、精确限定的排序规则，以及普通 TYPE 在已观测标量类型之间的赋值转换。缺少适用证据时报告 `unproven_column_type_destination`。已有值的转换、USING 或默认表达式的求值、权限及实际重写需要其他证据。
+`ddl.pg.alter.column_type.destination.valid` 默认级别为 blocker。它在已观测的 PostgreSQL 17 上先核对普通表和用户源列，再检查 `TYPE` 或 `TYPE USING` 的精确两段限定目标。缺失 schema、类型、关联数组、未定义 shell type 或不适用的伪类型可以触发拒绝。规则还检查 varchar、bpchar 和 numeric 已建模的字面参数、精确限定的排序规则，以及普通 TYPE 在已观测标量类型之间的赋值转换。缺少适用证据时报告 `unproven_column_type_destination`。直接视图、物化视图和存储生成列依赖也可能阻止类型变更。已有值的转换、USING 或默认表达式的求值、权限及实际重写需要其他证据。
 
 ### PostgreSQL 批量表空间目标
 
@@ -1289,7 +1289,7 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 ### PostgreSQL 继承列和分区列
 
-既有 DROP 和 RENAME 源列规则使用 PostgreSQL 17 的继承和分区目录。对精确目标执行单个动作时，DROP 拒绝继承列、直接分区键，以及仅删除仍有附着子分区的父表列。RENAME 拒绝继承源列，以及需要遍历子表时使用的 ONLY。递归后代与依赖结果仍需各自的证据。
+既有 DROP 和 RENAME 源列规则使用 PostgreSQL 17 的继承和分区目录。对精确目标执行单个动作时，DROP 拒绝继承列、直接分区键，以及仅删除仍有附着子分区的父表列。RENAME 拒绝继承源列，以及需要遍历子表时使用的 ONLY。ADD COLUMN 检查直接分区目标和子表遍历前提。已证存在的普通用户列可由 IF NOT EXISTS 跳过。对普通继承父表递归增加 identity 列会被拒绝。后代合并和依赖结果仍需各自的证据。
 
 ### PostgreSQL SET WITHOUT OIDS
 
@@ -1301,7 +1301,7 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 ### PostgreSQL ALTER COLUMN TYPE 源列检查
 
-`ddl.pg.alter.column_type.source.valid` 默认级别为 blocker，适用于已观测 PostgreSQL 17 上精确限定名、目录新鲜的普通持久非类型表。源列已证缺失、为实际系统列，或为指定 `USING` 的存储生成列时报告拒绝。证据不足时报告 `unproven_column_type_source`。目标类型、依赖、转换表达式和行数据仍是独立维度。既有迁移提示继续说明可能的重写与锁影响。
+`ddl.pg.alter.column_type.source.valid` 默认级别为 blocker，适用于已观测 PostgreSQL 17 上精确限定名、目录新鲜的普通持久非类型表。源列已证缺失、为实际系统列，或为指定 `USING` 的存储生成列时报告拒绝。已证继承源列和直接分区键也会被拒绝。证据不足时报告 `unproven_column_type_source`。目标类型、依赖、转换表达式和行数据仍是独立维度。既有迁移提示继续说明可能的重写与锁影响。
 
 ### PostgreSQL 普通表持久性转换
 

@@ -159,7 +159,7 @@ separate. OWNER TO findings omit role names.
 
 ### PostgreSQL inherited and partitioned columns
 
-Target checks use exact inherited attribute, direct partition-key and attached-child observations to identify refusals for single DROP COLUMN or RENAME COLUMN statements. Descendant, lock and permission checks require other facts.
+Target checks use exact inherited attribute, direct partition-key and attached-child observations to identify refusals for single ADD, DROP, RENAME, TYPE or DROP EXPRESSION actions. Descendant, lock and permission checks require other facts.
 
 ### PostgreSQL SET WITHOUT OIDS
 
@@ -181,8 +181,8 @@ The default `ddl.pg.alter.column_type.source.valid` blocker covers exact PG17
 source identity for ordinary persistent non-typed tables and preserves gaps
 on missing evidence. Actual system columns and generated columns with USING
 are refused. The separate destination rule checks type identity, bounded
-built-in modifiers, qualified collations and ordinary scalar assignment
-casts. Existing values and USING expressions retain separate prerequisites.
+built-in modifiers, qualified collations, ordinary scalar assignment casts
+and direct view or stored generated-column dependencies. Existing values and USING expressions retain separate prerequisites.
 
 ### PostgreSQL ordinary-table persistence transitions
 

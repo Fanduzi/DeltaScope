@@ -51,6 +51,10 @@ func (r pgColumnTypeSourceRule) Evaluate(ctx context.Context, s spec.Statement) 
 		message = "PostgreSQL cannot change the type of a system column"
 	case "generated_column_using_inapplicable":
 		message = "PostgreSQL does not accept USING when changing a generated column's type"
+	case "column_type_inherited":
+		message = "PostgreSQL cannot change the type of an inherited column directly"
+	case "column_type_partition_key":
+		message = "PostgreSQL cannot change the type of a column in the table's partition key"
 	}
 	return []rule.Finding{{Level: r.level, Message: message,
 		Suggestion: "Verify the exact user column and whether the type change accepts a USING clause",

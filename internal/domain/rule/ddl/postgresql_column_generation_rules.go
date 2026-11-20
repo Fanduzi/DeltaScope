@@ -94,6 +94,16 @@ func pgColumnTransitionTarget(s spec.Statement, index int) (*spec.PGColumnState,
 	if !pgConstraintTargetVersionKnown(s) {
 		return nil, "", "instance.version"
 	}
+	if index == 0 && len(s.DDL.Alter) == 1 && s.DDL.Alter[0].Action == "drop_expression" {
+		if facts := spec.BoundPGColumnTraversal(s); facts != nil {
+			if s.DDL.PGTableOnly && facts.AttachedChildren {
+				return nil, "drop_expression_requires_child_traversal", ""
+			}
+			if facts.Inherited {
+				return nil, "drop_expression_inherited_column", ""
+			}
+		}
+	}
 	c, known := pgColumnTargetState(s, index)
 	if !known {
 		return nil, "", "target_table.pg_columns"
@@ -233,6 +243,12 @@ func (r pgColumnGenerationRule) Evaluate(ctx context.Context, s spec.Statement) 
 		}
 		message := "PostgreSQL column generation transition has a proven invalid target or precondition"
 		suggestion := "verify the exact column identity, generation kind, integer type, NOT NULL and DEFAULT premises; target checks do not certify data, expressions or permissions"
+		switch reason {
+		case "drop_expression_requires_child_traversal":
+			message = "PostgreSQL requires DROP EXPRESSION to include the child tables"
+		case "drop_expression_inherited_column":
+			message = "PostgreSQL cannot drop a generation expression from an inherited column directly"
+		}
 		switch r.id {
 		case ruleIDPGAlterIdentityOptionsValid:
 			message = "PostgreSQL identity sequence options have a proven conflict or invalid value"

@@ -249,9 +249,9 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	case "ddl.pg.alter.add_check.name.available":
 		return "Checks a single explicitly named CHECK or CHECK NOT VALID against the exact constraint directory of a fresh ordinary PG17 table."
 	case "ddl.pg.alter.column_type.destination.valid":
-		return "Checks PostgreSQL 17 TYPE and TYPE USING destinations on a fresh exact ordinary table. Checks type identity, supported built-in modifiers and qualified collations. TYPE without USING also checks assignment for observed scalar types."
+		return "Checks PostgreSQL 17 TYPE and TYPE USING destinations on a fresh exact ordinary table. Checks type identity, supported built-in modifiers, qualified collations and direct view or generated-column dependencies. TYPE without USING also checks assignment for observed scalar types."
 	case "ddl.pg.alter.column_type.source.valid":
-		return "Checks the exact PG17 TYPE or TYPE USING source on a fresh ordinary persistent table. Missing sources, system columns and USING on a generated column block."
+		return "Checks exact PostgreSQL 17 TYPE or TYPE USING sources. Missing ordinary user columns, system columns, generated columns with USING, inherited source columns and direct partition keys can block."
 	case "ddl.pg.alter.persistence.transition.valid":
 		return "Checks PG17 ordinary-table LOGGED and UNLOGGED transitions for direct publication membership and direction-specific foreign keys. A proven same-persistence request leaves the files in place."
 	case "ddl.pg.alter.access_method.target.valid":
@@ -265,7 +265,7 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	case "ddl.table.exists.alter.require":
 		return "Checks ALTER TABLE target existence. On PostgreSQL 17, IF EXISTS guards observed qualified absence. SET WITHOUT OIDS also checks the exact relation kind. Unknown applicable facts remain evidence gaps."
 	case "ddl.alter.add_column.exists.forbid":
-		return "Checks ADD COLUMN for existing names. On observed PG17, a fresh exact user-name duplicate permits IF NOT EXISTS, while an observed system-name conflict blocks even with the guard."
+		return "Checks ADD COLUMN for exact collisions and observed PostgreSQL 17 parent or partition traversal requirements. IF NOT EXISTS skips an existing eligible user column. An observed system-name conflict or direct addition to a partition child blocks."
 	case "ddl.alter.rename_column.exists.require":
 		return "Requires an existing RENAME COLUMN source. On observed PG17, fresh names are case- and space-exact, and an observed system column is inapplicable."
 	case "ddl.alter.rename_column.target.exists.forbid":

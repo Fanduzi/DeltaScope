@@ -60,6 +60,27 @@ func pgColumnIdentityTarget(s spec.Statement, index int, ruleID string) (reason,
 		return "", "target_table.pg_columns" // PostgreSQL can reorder subcommands by execution phase.
 	}
 	a := s.DDL.Alter[index]
+	if a.Action == "add_column" {
+		if f := boundPGAddColumnTraversal(s); f != nil {
+			switch {
+			case f.Partition:
+				return "add_column_partition_inapplicable", ""
+			case f.System:
+				return "system_column_name_conflict", ""
+			case f.ColumnExists && a.PGAddColumnIfNotExists:
+				return "", ""
+			case f.ColumnExists:
+				return "column_already_exists", ""
+			case s.DDL.PGTableOnly && f.AttachedChildren:
+				return "add_column_requires_child_traversal", ""
+			case !s.DDL.PGTableOnly && f.AttachedChildren && s.Metadata.TargetTable.PGRelation.Kind == "r":
+				if col, ok := alterColumnDefinition(a); ok && col.PGGeneration != nil && col.PGGeneration.IdentityCount == 1 && !col.PGGeneration.Unmodeled {
+					return "add_identity_column_inheritance_inapplicable", ""
+				}
+			}
+			return "", "target_table.pg_columns"
+		}
+	}
 	if a.Action == "rename_column" && spec.PGColumnTraversalTarget(s) != "" {
 		facts, table := s.Metadata.PGColumnTraversal, s.DDL.Table
 		if facts != nil && facts.Schema == table.Schema && facts.Table == table.Name && facts.Column == a.Name {
@@ -127,6 +148,18 @@ func pgColumnIdentityTarget(s spec.Statement, index int, ruleID string) (reason,
 	}
 }
 
+func boundPGAddColumnTraversal(s spec.Statement) *spec.PGColumnTraversal {
+	name := spec.PGColumnTraversalTarget(s)
+	if name == "" || s.DDL.Alter[0].Action != "add_column" {
+		return nil
+	}
+	f, table := s.Metadata.PGColumnTraversal, s.DDL.Table
+	if f == nil || f.Schema != table.Schema || f.Table != table.Name || f.Column != name {
+		return nil
+	}
+	return f
+}
+
 func pgAddColumnNoop(s spec.Statement, index int) bool {
 	if s.DDL.PGTableCatalogQualified || !pgConstraintTargetVersionKnown(s) {
 		return false
@@ -136,6 +169,9 @@ func pgAddColumnNoop(s spec.Statement, index int) bool {
 	}
 	if len(s.DDL.Alter) != 1 || !s.DDL.Alter[index].PGAddColumnIfNotExists {
 		return false
+	}
+	if f := boundPGAddColumnTraversal(s); f != nil {
+		return !f.Partition && f.ColumnExists && !f.System
 	}
 	catalog := pgColumnTargetCatalog(s, index)
 	if catalog != nil && catalog.Typed {
@@ -160,6 +196,9 @@ func evaluatePGColumnIdentity(ctx context.Context, s spec.Statement, action, rul
 		}
 		name := a.Name
 		metadata := map[string]any{"table": s.DDL.Table.Name, "action": a.Action, "exists": reason != "column_absent", "reason_code": reason}
+		if facts := boundPGAddColumnTraversal(s); facts != nil {
+			metadata["exists"] = facts.ColumnExists
+		}
 		if ruleID == ruleIDAlterRenameColumnTargetExistsForbid {
 			name = a.Column.Definition.Name
 			metadata["source_column"], metadata["target_column"] = a.Name, name
@@ -174,6 +213,12 @@ func evaluatePGColumnIdentity(ctx context.Context, s spec.Statement, action, rul
 			message = fmt.Sprintf("PostgreSQL does not allow renaming system column %q", name)
 		case "system_column_name_conflict":
 			message = fmt.Sprintf("column name %q conflicts with a PostgreSQL system column", name)
+		case "add_column_partition_inapplicable":
+			message = "PostgreSQL requires adding the column through the partitioned parent"
+		case "add_column_requires_child_traversal":
+			message = "PostgreSQL requires adding the column to the child tables"
+		case "add_identity_column_inheritance_inapplicable":
+			message = "PostgreSQL cannot recursively add an identity column to this inheritance parent"
 		case "column_rename_inherited":
 			message = "PostgreSQL cannot rename an inherited column directly"
 		case "column_rename_requires_child_traversal":

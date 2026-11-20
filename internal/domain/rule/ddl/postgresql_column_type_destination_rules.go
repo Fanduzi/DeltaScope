@@ -34,78 +34,25 @@ func assessPGColumnTypeDestination(s spec.Statement) (reason, fact string) {
 	if sourceFailure != "" {
 		return "", ""
 	}
-	target := s.DDL.Alter[0].PGColumnType
-	if !target.Qualified() {
-		return "", "column.type_destination_identity"
-	}
-	observed := s.Metadata.PGColumnType
-	if observed == nil || observed.Target != target {
-		return "", "column.pg_type_destination"
-	}
-	switch {
-	case !observed.SchemaExists:
-		return "destination_type_schema_absent", ""
-	case !observed.BaseExists:
-		return "destination_type_absent", ""
-	case target.Array && !observed.Resolved:
-		return "destination_array_type_absent", ""
-	case !observed.Resolved:
-		return "", "column.pg_type_destination"
-	case !observed.Defined:
-		return "destination_type_undefined", ""
-	case observed.Pseudo:
-		return "destination_pseudo_type_inapplicable", ""
-	}
-	if reason, fact := assessPGColumnTypeModifiers(target, s.DDL.Alter[0].PGColumnTypeModifiers); reason != "" || fact != "" {
+	if reason, fact := spec.PGColumnTypeDestinationPremises(s); reason != "" || fact != "" {
 		return reason, fact
 	}
-	if collation := s.DDL.Alter[0].PGColumnCollation; collation != nil {
-		if !collation.Qualified() {
-			return "", "column.collation_identity"
-		}
-		if !observed.CollationKnown || observed.Collation != *collation {
-			return "", "column.pg_collation"
-		}
-		if !observed.CollationExists {
-			return "destination_collation_absent", ""
-		}
-		if !observed.Collatable {
-			return "destination_type_not_collatable", ""
-		}
-	}
-	action, table := s.DDL.Alter[0], s.DDL.Table
-	if !target.Array && action.Options["has_using"] != "true" {
-		if !observed.AssignmentKnown || observed.SourceSchema != table.Schema || observed.SourceTable != table.Name || observed.SourceColumn != action.Name {
-			return "", "column.type_assignment"
-		}
-		if !observed.Assignable {
-			return "destination_type_assignment_unavailable", ""
-		}
-	}
-	return "", ""
+	return assessPGColumnTypeDependency(s)
 }
 
-func assessPGColumnTypeModifiers(target spec.PGColumnTypeTarget, mods *spec.PGColumnTypeModifiers) (string, string) {
-	if mods == nil {
+func assessPGColumnTypeDependency(s spec.Statement) (reason, missing string) {
+	column := spec.PGColumnDependencyTarget(s)
+	facts, table := s.Metadata.PGDropColumnDependency, s.DDL.Table
+	if column == "" || facts == nil || facts.Schema != table.Schema || facts.Table != table.Name || facts.Column != column {
+		return "", "column.pg_type_dependencies"
+	}
+	switch facts.Kind {
+	case "view", "generated_column":
+		return "column_type_has_direct_dependency", ""
+	case "", "foreign_key":
 		return "", ""
 	}
-	if target.Schema != "pg_catalog" || target.Array || !mods.Known || mods.Count == 0 {
-		return "", "column.type_modifiers"
-	}
-	first, second := mods.Values[0], mods.Values[1]
-	switch target.Name {
-	case "varchar", "bpchar":
-		if mods.Count != 1 || first < 1 || first > 10*1024*1024 {
-			return "destination_character_type_modifier_invalid", ""
-		}
-	case "numeric":
-		if mods.Count > 2 || first < 1 || first > 1000 || (mods.Count == 2 && (second < -1000 || second > 1000)) {
-			return "destination_numeric_type_modifier_invalid", ""
-		}
-	default:
-		return "", "column.type_modifiers"
-	}
-	return "", ""
+	return "", "column.pg_type_dependencies"
 }
 
 func (r pgColumnTypeDestinationRule) Evaluate(ctx context.Context, s spec.Statement) ([]rule.Finding, error) {
@@ -134,6 +81,8 @@ func (r pgColumnTypeDestinationRule) Evaluate(ctx context.Context, s spec.Statem
 		message = "The PostgreSQL numeric destination requires precision from 1 to 1000 and optional scale from -1000 to 1000"
 	case "destination_type_assignment_unavailable":
 		message = "PostgreSQL has no assignment cast from the selected column type to the destination type"
+	case "column_type_has_direct_dependency":
+		message = "A PostgreSQL view, materialized view or generated column prevents changing the selected column type"
 	case "destination_collation_absent":
 		message = "The qualified PostgreSQL collation is unavailable for this database encoding"
 	case "destination_type_not_collatable":

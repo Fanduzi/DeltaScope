@@ -473,7 +473,7 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 	if request.Type == "column_traversal" {
 		for _, seed := range p.pgColumnTraversals {
 			if seed.Schema == request.Schema && seed.Table == request.Qualifiers["table"] && seed.Column == request.Name {
-				return &spec.ObjectSnapshot{PGColumnTraversal: &spec.PGColumnTraversal{Schema: seed.Schema, Table: seed.Table, Column: seed.Column, Inherited: seed.Inherited}}, nil
+				return &spec.ObjectSnapshot{PGColumnTraversal: &spec.PGColumnTraversal{Schema: seed.Schema, Table: seed.Table, Column: seed.Column, Inherited: seed.Inherited, Partition: seed.Partition, ColumnExists: seed.ColumnExists, AttachedChildren: seed.AttachedChildren}}, nil
 			}
 		}
 		return nil, nil

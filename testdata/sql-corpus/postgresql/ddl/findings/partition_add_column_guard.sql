@@ -1,0 +1,1 @@
+ALTER TABLE app.t ADD COLUMN IF NOT EXISTS id int;

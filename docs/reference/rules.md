@@ -1356,8 +1356,7 @@ and associated arrays, shell types and direct pseudo-types can block.
 The rule also checks bounded literal modifiers for varchar, bpchar and numeric,
 exact qualified collations and assignment casts between the observed scalar
 types for plain TYPE. Missing applicable facts yield
-`unproven_column_type_destination`. Converting existing values, evaluating
-USING or defaults, permissions and rewrite outcomes require other evidence.
+`unproven_column_type_destination`. Direct view, materialized-view and stored generated-column dependencies can independently block an otherwise eligible type change. Converting existing values, evaluating USING or defaults, permissions and rewrite outcomes require other evidence.
 
 ### PostgreSQL bulk table tablespace targets
 
@@ -1383,7 +1382,7 @@ not assess ownership privileges or namespace grants.
 
 ### PostgreSQL inherited and partitioned columns
 
-The existing DROP and RENAME source checks also use the observed PostgreSQL 17 inheritance and partition catalog. For one exact target, DROP refuses inherited columns, direct partition keys and ONLY on a partitioned parent with attached children. RENAME refuses an inherited source or ONLY when child tables must be included. The same facts distinguish a childless partitioned parent from one with attached partitions. Broader descendant and dependency outcomes require additional evidence.
+The existing DROP and RENAME source checks also use the observed PostgreSQL 17 inheritance and partition catalog. For one exact target, DROP refuses inherited columns, direct partition keys and ONLY on a partitioned parent with attached children. RENAME refuses an inherited source or ONLY when child tables must be included. The same facts distinguish a childless partitioned parent from one with attached partitions. ADD COLUMN checks direct partition targets and attached-child traversal. A proved existing ordinary user column can satisfy IF NOT EXISTS. Recursive ADD of an identity column to an ordinary inheritance parent refuses. Broader descendant and dependency outcomes require additional evidence.
 
 ### PostgreSQL SET WITHOUT OIDS
 
@@ -1407,7 +1406,7 @@ locks require separate evidence.
 `ddl.pg.alter.column_type.source.valid` defaults to blocker for a fresh,
 exact, schema-qualified ordinary persistent non-typed PostgreSQL 17 table.
 It rejects a proven missing source column, system source column or `USING`
-on a stored generated source. Unknown evidence yields
+on a stored generated source. Inherited source columns and direct partition keys also refuse within the exact traversal scope. Unknown evidence yields
 `unproven_column_type_source`. Destination types, dependencies, conversion
 expressions and row data are outside this check. Existing migration advice
 continues to report possible rewrite and lock impact.

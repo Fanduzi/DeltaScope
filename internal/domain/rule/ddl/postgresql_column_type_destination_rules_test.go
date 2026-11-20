@@ -44,6 +44,7 @@ func TestPGColumnTypeDestinationAssessment(t *testing.T) {
 				Metadata: &spec.Metadata{Schema: "app", Instance: &spec.InstanceFacts{Version: "PostgreSQL 17.7"}, PGColumnType: &facts,
 					TargetTable: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"},
 						PGColumns: &spec.PGColumnCatalog{Ordinary: true, Columns: []spec.PGColumnState{{Name: "Id"}}}}}}
+			s.Metadata.PGDropColumnDependency = &spec.PGDropColumnDependency{Schema: "app", Table: "t", Column: "Id"}
 			if tc.change != nil {
 				tc.change(&s, &facts)
 			}
