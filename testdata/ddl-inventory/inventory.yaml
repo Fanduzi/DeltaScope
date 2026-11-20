@@ -7733,10 +7733,10 @@ rows:
       - IF EXISTS / multi-target
     sql_shape: DROP TABLE users
     prerequisites: existing table
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
-    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 3 shapes -> 3 notice_only; golden manifests and native execution evidence land with the owner task"
+    audit_status: mixed
+    status_evidence: "T38 combines the historical offline notice baseline with bounded metadata-aware PostgreSQL 17 qualified target and direct RESTRICT dependency checks. Wider effects retain gaps."
     targets: all dropped tables, cascade effects
     applicability:
       - anchor: postgresql17
@@ -7744,31 +7744,31 @@ rows:
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: [file:testdata/ddl-inventory/evidence/postgresql.drop-table.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
     subaction_status:
       - subaction_id: DROP TABLE
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.drop-table.drop-table.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.drop-table.drop-table.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T38.json#pg-destructive-drop-catalog-qualified, file:testdata/ddl-golden/T38.json#pg-destructive-drop-stale, file:testdata/ddl-golden/T38.json#pg-destructive-drop-direct-reference-fk, file:testdata/ddl-golden/T38.json#pg-destructive-drop-direct-reference-cascade, file:testdata/ddl-golden/T38.json#pg-destructive-drop-direct-reference-self, file:testdata/sql-corpus/postgresql/ddl/findings/drop_table_direct_references.expected.yaml#ddl.table.drop.exists.require]
       - subaction_id: IF EXISTS / multi-target
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.drop-table.if-exists-multi-target.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.drop-table.if-exists-multi-target.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T38.json#pg-destructive-drop-guarded, file:testdata/ddl-golden/T38.json#pg-destructive-drop-wrong-kind, file:testdata/ddl-golden/T38.json#pg-destructive-drop-later-missing, file:testdata/ddl-golden/T38.json#pg-destructive-drop-repeat, file:testdata/ddl-golden/T38.json#pg-destructive-drop-repeat-wrong-kind, file:testdata/ddl-golden/T38.json#drop-table-exact-target-offline, file:testdata/ddl-golden/T38.json#pg-destructive-drop-direct-reference-unvalidated-fk, file:testdata/ddl-golden/T38.json#pg-destructive-drop-direct-reference-all-members, file:testdata/ddl-golden/T38.json#pg-destructive-drop-direct-reference-view-with-guard, file:testdata/ddl-golden/T38.json#pg-destructive-drop-direct-reference-missing]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.drop-table.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
@@ -7784,10 +7784,10 @@ rows:
       - ONLY / CASCADE
     sql_shape: TRUNCATE TABLE users RESTART IDENTITY
     prerequisites: existing table
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
-    status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 4 shapes -> 4 notice_only; golden manifests and native execution evidence land with the owner task"
+    audit_status: mixed
+    status_evidence: "T38 combines the historical offline notice baseline with bounded metadata-aware PostgreSQL 17 qualified target, ordered ONLY eligibility and RESTRICT foreign-key set checks. Wider effects retain gaps."
     targets: all truncated relations, identity restart, cascade
     applicability:
       - anchor: postgresql17
@@ -7795,42 +7795,42 @@ rows:
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: [file:testdata/ddl-inventory/evidence/postgresql.truncate-table.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
     subaction_status:
       - subaction_id: TRUNCATE basic
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.truncate-table.truncate-basic.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.truncate-table.truncate-basic.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-later-missing, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-wrong-kind, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-fdw, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-reference-external, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-reference-unvalidated-empty, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-reference-all-members, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-reference-duplicate-reversed, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-reference-self, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-reference-target-missing, file:testdata/sql-corpus/postgresql/ddl/findings/truncate_table_direct_references.expected.yaml#ddl.table.truncate.inbound_fk, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-recursive-fk, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-recursive-partial, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-partition-root, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-partition-leaf, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-partition-leaf-with-referencer]
       - subaction_id: RESTART/CONTINUE IDENTITY
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.truncate-table.restart-continue-identity.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.truncate-table.restart-continue-identity.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-restart, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-continue, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-recursive-restart]
       - subaction_id: ONLY / CASCADE
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.truncate-table.only-cascade.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.truncate-table.only-cascade.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-only-root, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-only-leaf-cascade, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-reference-cascade, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-only-parent, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-recursive-cascade, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-partition-leaf-cascade, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-only-root, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-duplicate-first-only, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-duplicate-first-recursive, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-partition-repeated-covered, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-partition-repeated-only-first, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-partition-unrelated-first, file:testdata/ddl-golden/T38.json#pg-destructive-truncate-tree-partition-repeated-cascade]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.truncate-table.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]

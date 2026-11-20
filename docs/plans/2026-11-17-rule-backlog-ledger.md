@@ -1190,6 +1190,27 @@ These five F09 rows have 40 authored labels and 40 normalized records at `d8ccee
 | OWNER TO | D16 exact literal roles, PUBLIC and observed current/session alias semantics | Actual permissions, role membership/grants, partition or other object kinds and dependent ownership remain distinct. |
 
 
+## F10 exact dimension review
+
+| Row and authored dimension | PostgreSQL 17 evidence | Remaining premise |
+| --- | --- | --- |
+| `postgresql.drop-table` / DROP TABLE | T38 `pg-destructive-drop-direct-reference-fk`, `-self` and `-cascade` verify exact persistent ordinary-table RESTRICT dependencies and the independent native CASCADE effect. | The rule checks live direct foreign-key and rewrite edges. Other dependency classes, inheritance/partition closure and permissions require separate facts. |
+| `postgresql.drop-table` / IF EXISTS / multi-target | T38 `pg-destructive-drop-guarded`, `-drop-repeat`, `-drop-later-missing` and `-drop-direct-reference-all-members` verify guard, duplicate, exact target order and references inside the selected set. | Fresh schema-local binding is required. Search-path, session temporary names, catalog-qualified selection and earlier DDL require their own evidence. |
+| `postgresql.truncate-table` / TRUNCATE basic | T38 `pg-destructive-truncate-tree-recursive-fk`, `-partition-root` and `-partition-leaf` verify attached descendant expansion and inherited FK parent traversal. | Foreign tables need FDW eligibility, and temporary or unknown members need session evidence. |
+| `postgresql.truncate-table` / RESTART/CONTINUE IDENTITY | T38 `pg-destructive-truncate-restart`, `-truncate-continue` and `-truncate-tree-recursive-restart` verify decoded intent and the actual native owned-sequence outcomes. | Sequence-owner permissions and runtime issuance state are independent. The catalog audit does not predict the next value or change it. |
+| `postgresql.truncate-table` / ONLY / CASCADE | T38 `pg-destructive-truncate-tree-only-parent`, `-only-root`, `-partition-repeated-covered` and `-partition-repeated-cascade` verify ordered ONLY membership and bounded native CASCADE outcomes. | Wider CASCADE effects, locks and trigger outcomes require their own evidence. |
+
+The rebased preview at `df33755e` passed 62 cases with 1,761 assertions. The base's 17 case IDs and native controls remain. Forty-seven selectors bind the five PostgreSQL 17 subactions. Both parent rows move from generic notice to mixed coverage. The preview uses existing blocker IDs and treats observed PostgreSQL guarded absence as a no-op. A DROP/TRUNCATE forbid policy remains independently configurable.
+
+The implementation uses three decision records for the exact target binding,
+direct DROP RESTRICT dependencies, and extended TRUNCATE target order and
+inherited references. The canonical all-task receipt and CI for the fixed
+candidate are pending.
+
+- [Destructive table targets](../decisions/2026-11-21-postgresql-destructive-table-targets.md)
+- [DROP TABLE RESTRICT dependencies](../decisions/2026-11-21-postgresql-drop-table-restrict-dependencies.md)
+- [TRUNCATE inherited references](../decisions/2026-11-21-postgresql-truncate-inherited-references.md)
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
