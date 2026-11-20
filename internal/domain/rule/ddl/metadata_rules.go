@@ -57,6 +57,23 @@ func (r tableExistenceRule) Evaluate(ctx context.Context, statement spec.Stateme
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
+	if r.requireExist && pgSetWithoutOIDs(statement) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		reason, _ := assessPGSetWithoutOIDs(statement)
+		if reason == "" {
+			return nil, nil
+		}
+		message := "PostgreSQL SET WITHOUT OIDS requires an existing table"
+		if reason == "relation_wrong_kind" {
+			message = "PostgreSQL SET WITHOUT OIDS requires a table or foreign table target"
+		}
+		return []rule.Finding{{Level: r.level, Message: message,
+			Metadata: map[string]any{"table": statement.DDL.Table.Name, "schema": statement.DDL.Table.Schema,
+				"action": "set_without_oids", "exists": reason != "relation_absent", "reason_code": reason},
+		}}, nil
+	}
 	if r.requireExist && statement.Dialect == spec.DialectPostgreSQL && statement.DDL.PGTableIfExists {
 		return nil, ctx.Err()
 	}
@@ -102,6 +119,12 @@ func (r tableExistenceRule) EvidenceGaps(statement spec.Statement) []rule.Eviden
 	if !r.AppliesTo(statement) {
 		return nil
 	}
+	if r.requireExist && pgSetWithoutOIDs(statement) {
+		if _, missing := assessPGSetWithoutOIDs(statement); missing != "" {
+			return []rule.EvidenceGap{{ReasonCode: "unproven_alter_table_relation", RequiredFacts: []string{missing}}}
+		}
+		return nil
+	}
 	if r.requireExist && statement.Dialect == spec.DialectPostgreSQL && statement.DDL.PGTableIfExists {
 		if missing := pgGuardedAlterTableMissingFact(statement); missing != "" {
 			return []rule.EvidenceGap{{ReasonCode: "unproven_alter_table_relation", RequiredFacts: []string{missing}}}
@@ -119,6 +142,39 @@ func (r tableExistenceRule) EvidenceGaps(statement spec.Statement) []rule.Eviden
 		ReasonCode:    gapReasonUnknownTableState,
 		RequiredFacts: []string{"target_table.existence"},
 	}}
+}
+
+func pgSetWithoutOIDs(statement spec.Statement) bool {
+	return statement.Dialect == spec.DialectPostgreSQL && statement.DDL != nil && len(statement.DDL.Alter) == 1 &&
+		statement.DDL.Alter[0].Action == "set_without_oids"
+}
+
+func assessPGSetWithoutOIDs(statement spec.Statement) (reason, missing string) {
+	if !pgConstraintTargetVersionKnown(statement) {
+		return "", "instance.version"
+	}
+	if statement.DDL.PGTableCatalogQualified {
+		return "", "target_table.pg_database"
+	}
+	if statement.DDL.Table == nil || statement.DDL.Table.Schema == "" {
+		return "", "target_table.pg_relation"
+	}
+	exists, known := pgAlterRelation(statement)
+	if !known {
+		return "", "target_table.pg_relation"
+	}
+	if !exists {
+		if statement.DDL.PGTableIfExists {
+			return "", ""
+		}
+		return "relation_absent", ""
+	}
+	switch statement.Metadata.TargetTable.PGRelation.Kind {
+	case "r", "p", "f":
+		return "", ""
+	default:
+		return "relation_wrong_kind", ""
+	}
 }
 
 type alterObjectExistenceRule struct {

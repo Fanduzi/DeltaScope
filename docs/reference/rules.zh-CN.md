@@ -1277,7 +1277,7 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 ### PostgreSQL 列类型目标
 
-`ddl.pg.alter.column_type.destination.valid` 默认级别为 blocker。它在已观测的 PostgreSQL 17 上先核对普通表和用户源列，再检查 `TYPE` 或 `TYPE USING` 的精确两段限定目标。缺失 schema、类型、关联数组、未定义 shell type 或不适用的伪类型可以触发拒绝。未限定名、三段名、临时 schema 或过期观察报告 `unproven_column_type_destination`。类型转换、参数、排序规则、权限、依赖和实际重写分别判断。
+`ddl.pg.alter.column_type.destination.valid` 默认级别为 blocker。它在已观测的 PostgreSQL 17 上先核对普通表和用户源列，再检查 `TYPE` 或 `TYPE USING` 的精确两段限定目标。缺失 schema、类型、关联数组、未定义 shell type 或不适用的伪类型可以触发拒绝。规则还检查 varchar、bpchar 和 numeric 已建模的字面参数、精确限定的排序规则，以及普通 TYPE 在已观测标量类型之间的赋值转换。缺少适用证据时报告 `unproven_column_type_destination`。已有值的转换、USING 或默认表达式的求值、权限及实际重写需要其他证据。
 
 ### PostgreSQL 批量表空间目标
 
@@ -1287,9 +1287,13 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 `ddl.pg.alter.owner.target.valid` 默认级别为 blocker，适用于已观测 PostgreSQL 17 上限定名精确、目录新鲜的普通持久非类型表。已证明字面角色缺失或目标为 `PUBLIC` 时报告拒绝。引号角色名按原样匹配。裸 `CURRENT_USER`、`CURRENT_ROLE`、`SESSION_USER` 以实际观测的审计会话为准。缺少观察时报告 `unproven_table_owner_target`。既有 notice 描述请求或本会话中已证明的同所有者选择。发现不输出角色名，也不判断变更权限或 schema 授权。
 
+### PostgreSQL SET WITHOUT OIDS
+
+对于观测到的 PostgreSQL 17 上的单个 SET WITHOUT OIDS 动作，`ddl.table.exists.alter.require` 检查精确目标的关系种类。IF EXISTS 保护已证缺失的目标。普通表、分区表和外部表满足种类要求，视图和序列会被拒绝。PostgreSQL 保留这一兼容语法，执行时不改变列数据。
+
 ### PostgreSQL 普通表改名与目标 schema
 
-`ddl.pg.alter.rename_table.target.valid` 和 `ddl.pg.alter.set_schema.target.valid` 默认级别为 blocker，适用于已观测 PostgreSQL 17 上精确限定名、目录新鲜的普通持久非类型表。RENAME 检查目标关系名与行类型名，识别已观测到可让位的自动生成数组类型。既有改名禁止规则独立生效。SET SCHEMA 检查目标 schema 存在性及主表、行类型的命名冲突，既有 notice 会识别同 schema 请求。证据不足时报告 `unproven_table_namespace_destination`。从属索引、序列、类型及权限另行判断。
+`ddl.pg.alter.rename_table.target.valid` 和 `ddl.pg.alter.set_schema.target.valid` 默认级别为 blocker，适用于已观测 PostgreSQL 17 上精确限定名、目录新鲜的普通持久非类型表。RENAME 检查目标关系名与行类型名，识别已观测到可让位的自动生成数组类型。既有改名禁止规则独立生效。SET SCHEMA 检查目标 schema，以及主表、行类型、关联数组类型、附属索引和列自有序列的精确名称。既有 notice 会识别同 schema 请求。缺少适用的目录事实时报告 `unproven_table_namespace_destination`。权限和锁另需证据。
 
 ### PostgreSQL ALTER COLUMN TYPE 源列检查
 

@@ -71,11 +71,11 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_object_lifecycle_rules.go | Implements PostgreSQL-only object lifecycle rules: create-schema notice, drop-schema advisory/cascade, create-sequence cycle, alter-sequence restart/cycle, drop-sequence advisory/cascade, drop-materialized-view advisory/cascade |
 | postgresql_bulk_tablespace_rules.go | Checks named PG17 bulk endpoints and ordered owner filters and reports observed same-space selections |
 | postgresql_table_owner_rules.go | Checks PG17 ordinary-table OWNER TO targets without exposing role names or inspecting permissions |
-| postgresql_table_namespace_rules.go | Checks exact PG17 RENAME TO and SET SCHEMA primary relation and row-type destinations |
+| postgresql_table_namespace_rules.go | Checks exact PostgreSQL 17 RENAME and SET SCHEMA destinations, including collision checks for arrays, indexes and owned sequences during schema moves |
 | postgresql_foreign_key_target_rules.go | Checks exact relation and column identities, referenced key eligibility, and arity for ADD FOREIGN KEY |
 | postgresql_constraint_using_index_rules.go | Checks exact existing index prerequisites for PostgreSQL 17 PRIMARY KEY and UNIQUE attachment, preserving gaps for unavailable observations |
 | postgresql_add_check_name_rules.go | Checks exact names of single named PostgreSQL 17 ADD CHECK declarations against the fresh table constraint directory |
-| postgresql_column_type_destination_rules.go | Checks exact PG17 column type destinations and bounds unobserved identities |
+| postgresql_column_type_destination_rules.go | Checks PostgreSQL 17 type identity, bounded built-in modifiers, qualified collations and scalar assignment cast prerequisites |
 | postgresql_column_type_source_rules.go | Checks exact PG17 source-column preconditions for TYPE and TYPE USING |
 | postgresql_table_persistence_rules.go | Checks PG17 ordinary-table persistence transitions and corrects same-persistence advice |
 | postgresql_table_access_method_rules.go | Checks one PG17 ordinary-table access method destination and supplies same-method evidence for the existing warning |

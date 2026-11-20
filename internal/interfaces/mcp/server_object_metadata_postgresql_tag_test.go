@@ -545,3 +545,93 @@ func TestMCPDropColumnDependency(t *testing.T) {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }
+
+type tableNamespaceCompanionAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (tableNamespaceCompanionAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	return &spec.ObjectSnapshot{PGTableNamespace: &spec.PGTableNamespace{Schema: req.Schema, Table: req.Qualifiers["table"], Action: "set_schema", Destination: req.Name, SchemaExists: true, RowTypeConflictKnown: true, ArrayTypeConflictKnown: true, OwnedSequenceConflict: true}}, nil
+}
+
+func TestMCPTableNamespaceCompanion(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := tableNamespaceCompanionAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER TABLE app.t SET SCHEMA dst", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"destination_owned_sequence_conflict"`) || !strings.Contains(string(body), `"ddl.pg.alter.set_schema.target.valid"`) || strings.Contains(string(body), "PGTableNamespace") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+func TestMCPSetWithoutOIDs(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := &mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "v"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER TABLE IF EXISTS app.t SET WITHOUT OIDS", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"relation_wrong_kind"`) || !strings.Contains(string(body), `"ddl.table.exists.alter.require"`) || strings.Contains(string(body), "PGTableNamespace") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type columnTypeAssignmentAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (columnTypeAssignmentAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	return &spec.ObjectSnapshot{PGColumnType: &spec.PGColumnTypeState{Target: spec.PGColumnTypeTarget{Schema: req.Schema, Name: req.Name, Array: req.Qualifiers["array"] == "true"}, SchemaExists: true, BaseExists: true, Resolved: true, Defined: true, AssignmentKnown: true, SourceSchema: req.Qualifiers["source_schema"], SourceTable: req.Qualifiers["source_table"], SourceColumn: req.Qualifiers["source_column"]}}, nil
+}
+
+func TestMCPColumnTypeAssignment(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := columnTypeAssignmentAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true, Columns: []spec.PGColumnState{{Name: "id"}}}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER TABLE app.t ALTER COLUMN id TYPE pg_catalog.int4", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"destination_type_assignment_unavailable"`) || !strings.Contains(string(body), `"ddl.pg.alter.column_type.destination.valid"`) || strings.Contains(string(body), "PGColumnType") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}

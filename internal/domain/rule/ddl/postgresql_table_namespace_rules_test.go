@@ -26,6 +26,14 @@ func TestPGTableNamespaceDestination(t *testing.T) {
 			f.RelationConflict, f.RowTypeConflictKnown = true, false
 		}},
 		{name: "available schema", action: "set_schema"},
+		{name: "companions unknown", action: "set_schema", gap: "target_table.pg_namespace_companions", change: func(_ *spec.Statement, f *spec.PGTableNamespace) { f.ArrayTypeConflictKnown = false }},
+		{name: "array conflict precedes index and owned sequence", action: "set_schema", reason: "destination_array_type_conflict", change: func(_ *spec.Statement, f *spec.PGTableNamespace) {
+			f.ArrayTypeConflict, f.IndexConflict, f.OwnedSequenceConflict = true, true, true
+		}},
+		{name: "index conflict precedes owned sequence", action: "set_schema", reason: "destination_index_conflict", change: func(_ *spec.Statement, f *spec.PGTableNamespace) {
+			f.IndexConflict, f.OwnedSequenceConflict = true, true
+		}},
+		{name: "owned sequence conflict", action: "set_schema", reason: "destination_owned_sequence_conflict", change: func(_ *spec.Statement, f *spec.PGTableNamespace) { f.OwnedSequenceConflict = true }},
 		{name: "missing schema", action: "set_schema", reason: "destination_schema_absent", change: func(_ *spec.Statement, f *spec.PGTableNamespace) { f.SchemaExists = false }},
 		{name: "same schema", action: "set_schema", same: true, change: func(s *spec.Statement, f *spec.PGTableNamespace) {
 			s.DDL.Alter[0].Options["new_schema"] = "app"
@@ -56,7 +64,7 @@ func TestPGTableNamespaceDestination(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			f := &spec.PGTableNamespace{Schema: "app", Table: "t", Action: action, Destination: " Exact Destination ", SchemaExists: true, RowTypeConflictKnown: true}
+			f := &spec.PGTableNamespace{Schema: "app", Table: "t", Action: action, Destination: " Exact Destination ", SchemaExists: true, RowTypeConflictKnown: true, ArrayTypeConflictKnown: true}
 			s := spec.Statement{Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL, DDL: &spec.DDL{
 				Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Schema: "app", Name: "t"},
 				Alter: []spec.Alter{{Action: action, Options: map[string]string{key: f.Destination}}},

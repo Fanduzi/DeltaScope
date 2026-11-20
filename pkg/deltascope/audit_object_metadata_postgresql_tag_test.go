@@ -335,3 +335,59 @@ func TestAuditDropColumnDependencyThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing direct column dependency finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditTableNamespaceCompanionThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGTableNamespace: &spec.PGTableNamespace{Schema: "app", Table: "t", Action: "set_schema", Destination: "Destination", SchemaExists: true, RowTypeConflictKnown: true, ArrayTypeConflictKnown: true, ArrayTypeConflict: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t SET SCHEMA "Destination"`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "Destination" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.set_schema.target.valid" && f.Metadata["reason_code"] == "destination_array_type_conflict" {
+			return
+		}
+	}
+	t.Fatalf("missing destination finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditSetWithoutOIDsThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProvider{
+		instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+		snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+			PGRelation: PGRelationState{Name: "t", Kind: "v"}, PGColumns: &PGColumnCatalog{Ordinary: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE IF EXISTS app.t SET WITHOUT OIDS`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.table.exists.alter.require" && f.Metadata["reason_code"] == "relation_wrong_kind" {
+			return
+		}
+	}
+	t.Fatalf("missing destination finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditColumnTypeAssignmentThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true, Columns: []PGColumnState{{Name: "id"}}}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGColumnType: &spec.PGColumnTypeState{Target: spec.PGColumnTypeTarget{Schema: "pg_catalog", Name: "int4"}, SchemaExists: true, BaseExists: true, Resolved: true, Defined: true, AssignmentKnown: true, SourceSchema: "app", SourceTable: "t", SourceColumn: "id"}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t ALTER COLUMN id TYPE pg_catalog.int4`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "int4" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.column_type.destination.valid" && f.Metadata["reason_code"] == "destination_type_assignment_unavailable" {
+			return
+		}
+	}
+	t.Fatalf("missing type destination finding: %+v", result.Statements[0].Findings)
+}

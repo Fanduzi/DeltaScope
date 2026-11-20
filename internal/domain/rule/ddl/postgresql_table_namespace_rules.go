@@ -67,6 +67,18 @@ func assessPGTableNamespace(s spec.Statement) (reason, fact string) {
 	if facts.RowTypeConflict {
 		return "destination_row_type_conflict", ""
 	}
+	if facts.Action == "set_schema" {
+		switch {
+		case !facts.ArrayTypeConflictKnown:
+			return "", "target_table.pg_namespace_companions"
+		case facts.ArrayTypeConflict:
+			return "destination_array_type_conflict", ""
+		case facts.IndexConflict:
+			return "destination_index_conflict", ""
+		case facts.OwnedSequenceConflict:
+			return "destination_owned_sequence_conflict", ""
+		}
+	}
 	return "", ""
 }
 
@@ -82,14 +94,24 @@ func (r pgTableNamespaceRule) Evaluate(ctx context.Context, s spec.Statement) ([
 		return nil, nil
 	}
 	message := "The PostgreSQL table's destination relation name is already in use"
+	suggestion := "Choose an existing schema and an available relation and row-type name"
 	switch reason {
 	case "destination_schema_absent":
 		message = "The requested PostgreSQL destination schema does not exist"
 	case "destination_row_type_conflict":
 		message = "The PostgreSQL table's destination row-type name is already in use"
+	case "destination_array_type_conflict":
+		message = "The PostgreSQL table's associated array-type name is already in use in the destination schema"
+		suggestion = "Review the conflicting type in the destination schema"
+	case "destination_index_conflict":
+		message = "An index on the PostgreSQL table has a name already in use in the destination schema"
+		suggestion = "Review the index names and the destination schema"
+	case "destination_owned_sequence_conflict":
+		message = "A sequence owned by a PostgreSQL table column has a name already in use in the destination schema"
+		suggestion = "Review the owned sequence names and the destination schema"
 	}
 	return []rule.Finding{{Level: r.level, Message: message,
-		Suggestion: "Choose an existing schema and an available relation and row-type name",
+		Suggestion: suggestion,
 		Metadata:   map[string]any{"action": r.action, "schema": s.DDL.Table.Schema, "table": s.DDL.Table.Name, "reason_code": reason},
 	}}, nil
 }
