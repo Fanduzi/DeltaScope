@@ -2,7 +2,24 @@
 
 package postgresql
 
-import "testing"
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+)
+
+func TestConstraintUsingIndexExactName(t *testing.T) {
+	s := extractPostgreSQLStatement(t, `ALTER TABLE app.t ADD CONSTRAINT checked UNIQUE USING INDEX " Exact.Index "`)
+	if got := spec.PGConstraintUsingIndexTarget(s); got != " Exact.Index " {
+		t.Fatalf("index selection = %q", got)
+	}
+	b, err := json.Marshal(s.DDL)
+	if err != nil || strings.Contains(string(b), "Exact.Index") || strings.Contains(string(b), "PGUsingIndexName") {
+		t.Fatalf("private selection leaked: %s %v", b, err)
+	}
+}
 
 func TestAlterConstraintBuildSeam(t *testing.T) {
 	for _, tc := range []struct {

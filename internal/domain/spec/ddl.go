@@ -995,6 +995,8 @@ type Alter struct {
 	PGCompressionMethod *string `json:"-"`
 	// PGColumnType preserves the exact modeled TYPE destination privately.
 	PGColumnType PGColumnTypeTarget `json:"-"`
+	// PGUsingIndexName preserves the exact PostgreSQL constraint index selection.
+	PGUsingIndexName string `json:"-"`
 	// PGAddColumnIfNotExists is the authored ADD COLUMN guard, separate from the table guard.
 	PGAddColumnIfNotExists bool `json:"-"`
 	// PGTableOwner carries the authored RoleSpec without serializing it.

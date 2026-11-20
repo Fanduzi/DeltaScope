@@ -27,6 +27,7 @@ comparisons for the member and scope binding.
 | table_persistence.go | Reads observed PG17 persistence, direct publication and directional foreign-key preconditions for ordinary tables without reading dependency names |
 | table_access_method.go | Reads the named or effective-default PG17 access method and compares it to the bound ordinary table’s actual method without invoking handlers |
 | table_tablespace.go | Reads one exact PostgreSQL destination and compares it with the bound ordinary table’s current or database-default space. Excludes shared and mapped relations, with no location paths or privilege reads |
+| constraint_using_index.go | Observes one exact PostgreSQL index for PRIMARY KEY or UNIQUE attachment, including internal constraint ownership and key sort, collation and options facts |
 | replica_identity.go | Resolves one real PostgreSQL replica-identity index candidate in its owning table schema, with uniqueness, predicate/expression presence and actual key nullability |
 | relation_state_test.go | Verifies exact relation reads, absent and non-table kinds, unbound scopes, error propagation and JSON privacy |
 | constraint_state.go | Loads target-bound `pg_constraint` names, kinds and validated flags using exact parameterized schema and table comparisons bound to `pg_catalog`. Read errors prevent publication of the directory, and duplicate rows stay visible |

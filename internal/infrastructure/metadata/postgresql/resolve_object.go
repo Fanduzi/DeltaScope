@@ -16,6 +16,8 @@ var _ appaudit.ObjectResolver = (*Provider)(nil)
 func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
 	if dialect == spec.DialectPostgreSQL {
 		switch req.Type {
+		case "constraint_using_index":
+			return p.resolveConstraintUsingIndex(ctx, req)
 		case "replica_identity_index":
 			return p.resolveReplicaIdentityIndex(ctx, req)
 		case "column_type_destination":
