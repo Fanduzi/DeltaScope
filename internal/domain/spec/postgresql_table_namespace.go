@@ -1,12 +1,16 @@
 package spec
 
 // PGTableNamespace records the bounded destination observation for RENAME TO
-// or SET SCHEMA. Associated index, sequence and array moves are separate.
+// or SET SCHEMA, including named companions moved with SET SCHEMA.
 type PGTableNamespace struct {
 	Schema, Table, Action, Destination string
 	SchemaExists, SameSchema           bool
 	RelationConflict, RowTypeConflict  bool
 	RowTypeConflictKnown               bool
+	ArrayTypeConflictKnown             bool
+	ArrayTypeConflict                  bool
+	IndexConflict                      bool
+	OwnedSequenceConflict              bool
 }
 
 // PGTableNamespaceTarget reports the exact destination of one table action.

@@ -93,8 +93,8 @@ Normalized statement specifications used as the stable input for rule evaluation
   facts; numeric means proven finite AST literal, never parsed expression text.
 - `PGTableOwnerTarget` preserves exact role syntax privately and `PGTableOwnerState` carries the scoped role observation.
 - `PGBulkTablespaceTarget` carries the two exact endpoints, ordered roles and NOWAIT from the parser. `PGBulkTablespaceState` privately binds their catalog observations.
-- `PGColumnTypeTarget` preserves a decoded two-part TYPE destination and array intent. `PGColumnTypeState` carries private catalog observations, and `PGColumnTypeSource` shares the source precondition.
-- `PGTableNamespace` carries the private, exact primary relation and row-type destination observation for rename or schema movement.
+- `PGColumnTypeTarget` preserves a decoded two-part TYPE destination and array intent. `PGColumnTypeModifiers` and `PGColumnCollation` retain private authored facts. `PGColumnTypeState` carries the resolved type, collation applicability and exact scalar assignment observation. `PGColumnTypeSource` shares the source precondition.
+- `PGTableNamespace` carries exact private relation and row-type destination facts for RENAME and SET SCHEMA, including array, index and owned-sequence conflicts for a schema move.
 - `PGTablePersistence` carries the observed persistence and bounded dependency facts privately. `PGExactTableBound` checks exact fresh relation identity before scope-specific checks.
 - `PGTableAccessMethod` retains exact named or bare DEFAULT selection, observed kind and comparison with the current method. The private observation stays out of JSON.
 - `PGTableTablespace` retains the exact destination, presence, scope and comparison with the effective current location. The private observation stays out of JSON.

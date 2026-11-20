@@ -996,7 +996,9 @@ type Alter struct {
 	// PGCompressionMethod retains the exact authored AST name; nil is unobserved.
 	PGCompressionMethod *string `json:"-"`
 	// PGColumnType preserves the exact modeled TYPE destination privately.
-	PGColumnType PGColumnTypeTarget `json:"-"`
+	PGColumnType          PGColumnTypeTarget     `json:"-"`
+	PGColumnTypeModifiers *PGColumnTypeModifiers `json:"-"`
+	PGColumnCollation     *PGColumnCollation     `json:"-"`
 	// PGUsingIndexName preserves the exact PostgreSQL constraint index selection.
 	PGUsingIndexName string `json:"-"`
 	// PGForeignKey preserves both ordered foreign-key column lists privately.

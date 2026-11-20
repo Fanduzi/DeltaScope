@@ -23,7 +23,7 @@ func TestResolvePGColumnType(t *testing.T) {
 		{name: "pseudo array", result: []driver.Value{true, true, true, true, true}, want: spec.PGColumnTypeState{SchemaExists: true, BaseExists: true, Resolved: true, Defined: true, Pseudo: true}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			db, log := openTestDB(t, map[string]testQueryResult{"resolved.typsubscript": {columns: []string{"schema", "base", "resolved", "defined", "pseudo"}, rows: [][]driver.Value{tc.result}}})
+			db, log := openTestDB(t, map[string]testQueryResult{"resolved.typsubscript": {columns: []string{"schema", "base", "resolved", "defined", "pseudo", "assignment", "collatable", "collation_exists"}, rows: [][]driver.Value{append(tc.result, nil, false, nil)}}})
 			defer db.Close()
 			target := spec.PGColumnTypeTarget{Schema: " Exact.Schema ", Name: " Exact Type ", Array: true}
 			request := spec.ObjectLookupRequest{Type: "column_type_destination", Schema: target.Schema, Name: target.Name, Qualifiers: map[string]string{"array": "true"}}

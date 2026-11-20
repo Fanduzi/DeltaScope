@@ -349,6 +349,10 @@ type corpusPGColumnType struct {
 	Resolved     bool   `yaml:"resolved"`
 	Defined      bool   `yaml:"defined"`
 	Pseudo       bool   `yaml:"pseudo"`
+	Assignment   *bool  `yaml:"assignment,omitempty"`
+	SourceSchema string `yaml:"source_schema,omitempty"`
+	SourceTable  string `yaml:"source_table,omitempty"`
+	SourceColumn string `yaml:"source_column,omitempty"`
 }
 
 type corpusPGBulkTablespace struct {
@@ -368,15 +372,19 @@ type corpusPGTableOwner struct {
 }
 
 type corpusPGTableNamespace struct {
-	Schema               string `yaml:"schema"`
-	Table                string `yaml:"table"`
-	Action               string `yaml:"action"`
-	Destination          string `yaml:"destination"`
-	SchemaExists         bool   `yaml:"schema_exists,omitempty"`
-	SameSchema           bool   `yaml:"same_schema,omitempty"`
-	RelationConflict     bool   `yaml:"relation_conflict,omitempty"`
-	RowTypeConflict      bool   `yaml:"row_type_conflict,omitempty"`
-	RowTypeConflictKnown bool   `yaml:"row_type_conflict_known,omitempty"`
+	Schema                 string `yaml:"schema"`
+	Table                  string `yaml:"table"`
+	Action                 string `yaml:"action"`
+	Destination            string `yaml:"destination"`
+	SchemaExists           bool   `yaml:"schema_exists,omitempty"`
+	SameSchema             bool   `yaml:"same_schema,omitempty"`
+	RelationConflict       bool   `yaml:"relation_conflict,omitempty"`
+	RowTypeConflict        bool   `yaml:"row_type_conflict,omitempty"`
+	RowTypeConflictKnown   bool   `yaml:"row_type_conflict_known,omitempty"`
+	ArrayTypeConflictKnown bool   `yaml:"array_type_conflict_known,omitempty"`
+	ArrayTypeConflict      bool   `yaml:"array_type_conflict,omitempty"`
+	IndexConflict          bool   `yaml:"index_conflict,omitempty"`
+	OwnedSequenceConflict  bool   `yaml:"owned_sequence_conflict,omitempty"`
 }
 
 type corpusPGTablePersistence struct {

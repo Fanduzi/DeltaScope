@@ -999,8 +999,16 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		}
 		alter := spec.Alter{Action: "set_data_type", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Definition: &spec.Column{Name: cmd.GetName(), Type: typeNameString(column.GetTypeName())}}}
 		target := column.GetTypeName()
+		alter.PGColumnTypeModifiers = pgColumnTypeModifiers(target.GetTypmods())
 		if names := target.GetNames(); len(names) == 2 && !target.GetPctType() {
 			alter.PGColumnType = spec.PGColumnTypeTarget{Schema: stringNodeValue(names[0]), Name: stringNodeValue(names[1]), Array: len(target.GetArrayBounds()) > 0}
+		}
+		if clause := column.GetCollClause(); clause != nil {
+			alter.PGColumnCollation = &spec.PGColumnCollation{}
+			if names := clause.GetCollname(); len(names) == 2 {
+				alter.PGColumnCollation.Schema = stringNodeValue(names[0])
+				alter.PGColumnCollation.Name = stringNodeValue(names[1])
+			}
 		}
 		if column.GetRawDefault() != nil {
 			alter.Options = map[string]string{"has_using": "true"}

@@ -36,3 +36,18 @@ func TestPGColumnTypeExactDestination(t *testing.T) {
 		})
 	}
 }
+
+func TestPGColumnTypeModifiersAndCollation(t *testing.T) {
+	s := extractStmt(t, `ALTER TABLE app.t ALTER COLUMN v TYPE pg_catalog.numeric(8,-2) COLLATE " Exact Schema "." Exact Collation " USING v`)
+	a := s.DDL.Alter[0]
+	if a.PGColumnTypeModifiers == nil || *a.PGColumnTypeModifiers != (spec.PGColumnTypeModifiers{Count: 2, Values: [2]int32{8, -2}, Known: true}) {
+		t.Fatalf("type modifier facts=%+v", a.PGColumnTypeModifiers)
+	}
+	if a.PGColumnCollation == nil || *a.PGColumnCollation != (spec.PGColumnCollation{Schema: " Exact Schema ", Name: " Exact Collation "}) || a.Options["has_using"] != "true" {
+		t.Fatalf("collation facts=%+v", a.PGColumnCollation)
+	}
+	payload, err := json.Marshal(s.DDL)
+	if err != nil || strings.Contains(string(payload), "PGColumnTypeModifiers") || strings.Contains(string(payload), "Exact Collation") {
+		t.Fatalf("private declaration appeared in output: %s (%v)", payload, err)
+	}
+}

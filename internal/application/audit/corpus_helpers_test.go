@@ -511,7 +511,12 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 		target := spec.PGColumnTypeTarget{Schema: request.Schema, Name: request.Name, Array: request.Qualifiers["array"] == "true"}
 		for _, seed := range p.pgColumnTypes {
 			if seed.Schema == target.Schema && seed.Name == target.Name && seed.Array == target.Array {
-				return &spec.ObjectSnapshot{PGColumnType: &spec.PGColumnTypeState{Target: target, SchemaExists: seed.SchemaExists, BaseExists: seed.BaseExists, Resolved: seed.Resolved, Defined: seed.Defined, Pseudo: seed.Pseudo}}, nil
+				facts := &spec.PGColumnTypeState{Target: target, SchemaExists: seed.SchemaExists, BaseExists: seed.BaseExists, Resolved: seed.Resolved, Defined: seed.Defined, Pseudo: seed.Pseudo}
+				if seed.Assignment != nil {
+					facts.SourceSchema, facts.SourceTable, facts.SourceColumn = seed.SourceSchema, seed.SourceTable, seed.SourceColumn
+					facts.AssignmentKnown, facts.Assignable = true, *seed.Assignment
+				}
+				return &spec.ObjectSnapshot{PGColumnType: facts}, nil
 			}
 		}
 		return nil, nil

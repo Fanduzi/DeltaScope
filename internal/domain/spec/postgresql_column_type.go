@@ -14,12 +14,32 @@ func (t PGColumnTypeTarget) Qualified() bool {
 		!strings.HasPrefix(t.Schema, "pg_temp_") && !strings.HasPrefix(t.Schema, "pg_toast_temp_")
 }
 
+// PGColumnCollation retains an authored collation clause and its exact two-part identity.
+// Empty components describe an unmodeled qualification.
+type PGColumnCollation struct{ Schema, Name string }
+
+func (c PGColumnCollation) Qualified() bool {
+	return (PGColumnTypeTarget{Schema: c.Schema, Name: c.Name}).Qualified()
+}
+
+// PGColumnTypeModifiers retains bounded literal facts for built-in modifiers.
+// Count records every authored item. Values holds the first two when Known.
+type PGColumnTypeModifiers struct {
+	Count  int
+	Values [2]int32
+	Known  bool
+}
+
 // PGColumnTypeState records the catalog premises for a declared type.
 type PGColumnTypeState struct {
-	Target                   PGColumnTypeTarget
-	SchemaExists, BaseExists bool
-	Resolved, Defined        bool
-	Pseudo                   bool
+	Target                                      PGColumnTypeTarget
+	SchemaExists, BaseExists                    bool
+	Resolved, Defined                           bool
+	Pseudo                                      bool
+	Collation                                   PGColumnCollation
+	CollationKnown, CollationExists, Collatable bool
+	AssignmentKnown, Assignable                 bool
+	SourceSchema, SourceTable, SourceColumn     string
 }
 
 // PGColumnTypeSource checks the source precondition of one PG17 TYPE action.

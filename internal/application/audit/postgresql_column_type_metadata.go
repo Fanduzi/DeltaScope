@@ -22,6 +22,15 @@ func enrichPGColumnTypes(ctx context.Context, request *MetadataRequest, statemen
 		lookup := spec.ObjectLookupRequest{Type: "column_type_destination", Schema: target.Schema, Name: target.Name,
 			Qualifiers: map[string]string{"array": strconv.FormatBool(target.Array)},
 		}
+		if collation := s.DDL.Alter[0].PGColumnCollation; collation != nil && collation.Qualified() {
+			lookup.Qualifiers["collation_schema"] = collation.Schema
+			lookup.Qualifiers["collation_name"] = collation.Name
+		}
+		if !target.Array && s.DDL.Alter[0].Options["has_using"] != "true" {
+			lookup.Qualifiers["source_schema"] = s.DDL.Table.Schema
+			lookup.Qualifiers["source_table"] = s.DDL.Table.Name
+			lookup.Qualifiers["source_column"] = s.DDL.Alter[0].Name
+		}
 		object, err := resolveObjectSnapshot(ctx, request, spec.DialectPostgreSQL, &lookup)
 		if err != nil {
 			return err

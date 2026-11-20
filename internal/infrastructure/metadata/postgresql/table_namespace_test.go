@@ -26,11 +26,15 @@ func TestResolveTableNamespace(t *testing.T) {
 		{name: "unobserved array element", action: "rename_table", row: []driver.Value{true, true, false, nil}, want: spec.PGTableNamespace{SchemaExists: true, SameSchema: true}},
 		{name: "missing schema", action: "set_schema", row: []driver.Value{false, false, false, false}, want: spec.PGTableNamespace{RowTypeConflictKnown: true}},
 		{name: "same schema", action: "set_schema", row: []driver.Value{true, true, true, true}, want: spec.PGTableNamespace{SchemaExists: true, SameSchema: true, RelationConflict: true, RowTypeConflict: true, RowTypeConflictKnown: true}},
+		{name: "companion conflicts", action: "set_schema", row: []driver.Value{true, false, false, false, true, true, true}, want: spec.PGTableNamespace{SchemaExists: true, RowTypeConflictKnown: true, IndexConflict: true, OwnedSequenceConflict: true, ArrayTypeConflict: true, ArrayTypeConflictKnown: true}},
 		{name: "query error", action: "set_schema", err: failure},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			result := testQueryResult{columns: []string{"schema_exists", "same_schema", "relation_conflict", "row_type_conflict"}, err: tc.err}
+			result := testQueryResult{columns: []string{"schema_exists", "same_schema", "relation_conflict", "row_type_conflict", "index_conflict", "sequence_conflict", "array_type_conflict"}, err: tc.err}
 			if tc.row != nil {
+				if len(tc.row) == 4 {
+					tc.row = append(tc.row, false, false, nil)
+				}
 				result.rows = [][]driver.Value{tc.row}
 			}
 			db, log := openTestDB(t, map[string]testQueryResult{"elem.typarray": result})
