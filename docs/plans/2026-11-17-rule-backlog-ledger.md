@@ -762,7 +762,7 @@ Two earlier batches keep their original SQL and native controls and now
 assert the precise stale-inheritance gap. Evidence adds 17 selectors to
 DROP CONSTRAINT and three to DROP CONSTRAINT CASCADE at PostgreSQL 17.
 Foreign-table and non-CHECK inheritance, recursive dependency closure,
-permissions and locks remain separate premises. The final commit is in
+permissions and locks remain separate premises. The final commit passed
 verification.
 The first fixed run at `6c351ff3` was interrupted to update the SDK
 metadata-provider contract for the new `PGConstraintState` fields. The
@@ -770,10 +770,17 @@ next candidate, `71552bf3`, was interrupted after native PostgreSQL 17.7
 confirmed that a detach-pending child is skipped by the ONLY traversal.
 The provider excludes these catalog entries. The attached-child blocker
 still matched the native refusal in a paired CLI comparison. Both stopped
-runs have owned Compose cleanup receipts. The corrected candidate starts
-a new full verification run.
+runs have owned Compose cleanup receipts. The corrected candidate ran
+a new full verification from an exact bundled checkout in the guest.
 [D25](../decisions/2026-11-20-postgresql-drop-inherited-check.md)
 [D26](../decisions/2026-11-20-postgresql-drop-check-only.md)
+
+Delivered at `7af6f84ace0fcd97c44f6fd4bbe9f3676a501415` with 50 canonical tasks, 3,727/3,727 cases and 69,694 assertions. All tasks used the same CLI hash. The artifact validator, independent read-only review, owned cleanup and merged-root gates passed. T24 generated its deployment evidence in the guest checkout and passed its 24 cases without a rerun. The PostgreSQL 17 T37 run passed 395/395 with 10,655 assertions. The detach-pending comparison adds independent native evidence to the D26 decision record.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44782282469/job/136447838317),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44782282469/job/136447837864),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44782282469/job/136447838373),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44782282463/job/136447837391),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136448028882).
 
 ## Family index
 
@@ -847,7 +854,7 @@ insufficient.
 | F08 | `postgresql.create-table-like` | LIKE basic; INCLUDING options | unreviewed |
 | F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 bounded system/ordering evidence delivered; D8 exact ADD/RENAME target and guard evidence delivered; D14 TYPE/USING source checks delivered; D18 exact destination checks delivered; broader eligibility/order remain open |
 | F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 generation and D6 statistics/options delivered with accepted gaps; D7 bounded storage/compression/system delivered; D20 replica identity key check delivered; broader data/expression/current/kind scopes open |
-| F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; D19 exact CHECK name checks delivered; D21 USING INDEX prerequisites delivered; D22 FK target checks delivered; D23 referenced key checks delivered; D24 direct FK dependencies delivered; remaining dimensions open |
+| F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; D19 exact CHECK name checks delivered; D21 USING INDEX prerequisites delivered; D22 FK target checks delivered; D23 referenced key checks delivered; D24 direct FK dependencies and D25–D26 CHECK inheritance and partition-parent checks delivered; remaining dimensions open |
 | F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | partial:D9 bounded attachment delivered; D10 bounded heap declarations delivered; D11 single-table tablespace delivered; D12 ordinary-table methods delivered; D13 persistence delivered; D17 bulk tablespace prerequisites delivered; other dimensions open |
 | F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | partial:D15 primary destination checks delivered; D16 owner checks delivered; dependent moves and permissions remain open |
 | F10 | `postgresql.drop-table` | DROP TABLE; IF EXISTS / multi-target | unreviewed |
