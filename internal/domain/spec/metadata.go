@@ -5,22 +5,23 @@ import "strings"
 
 // Metadata carries optional non-SQL facts for one statement evaluation.
 type Metadata struct {
-	Schema                 string                  `json:"schema,omitempty"`
-	Instance               *InstanceFacts          `json:"instance,omitempty"`
-	Version                *VersionIdentity        `json:"version,omitempty"`
-	TargetTable            *TableSnapshot          `json:"target_table,omitempty"`
-	PGForeignKeyReference  *TableSnapshot          `json:"-"`
-	PGForeignKeyKeys       *PGForeignKeyKeys       `json:"-"`
-	PGReplicaIdentity      *PGReplicaIdentityIndex `json:"-"`
-	PGConstraintUsingIndex *PGConstraintUsingIndex `json:"-"`
-	PGTableTablespace      *PGTableTablespace      `json:"-"`
-	PGTableAccessMethod    *PGTableAccessMethod    `json:"-"`
-	PGTablePersistence     *PGTablePersistence     `json:"-"`
-	PGTableNamespace       *PGTableNamespace       `json:"-"`
-	PGTableOwner           *PGTableOwnerState      `json:"-"`
-	PGColumnType           *PGColumnTypeState      `json:"-"`
-	PGBulkTablespace       *PGBulkTablespaceState  `json:"-"`
-	View                   *ViewMetadata           `json:"-"`
+	Schema                    string                     `json:"schema,omitempty"`
+	Instance                  *InstanceFacts             `json:"instance,omitempty"`
+	Version                   *VersionIdentity           `json:"version,omitempty"`
+	TargetTable               *TableSnapshot             `json:"target_table,omitempty"`
+	PGForeignKeyReference     *TableSnapshot             `json:"-"`
+	PGForeignKeyKeys          *PGForeignKeyKeys          `json:"-"`
+	PGDropConstraintReference *PGDropConstraintReference `json:"-"`
+	PGReplicaIdentity         *PGReplicaIdentityIndex    `json:"-"`
+	PGConstraintUsingIndex    *PGConstraintUsingIndex    `json:"-"`
+	PGTableTablespace         *PGTableTablespace         `json:"-"`
+	PGTableAccessMethod       *PGTableAccessMethod       `json:"-"`
+	PGTablePersistence        *PGTablePersistence        `json:"-"`
+	PGTableNamespace          *PGTableNamespace          `json:"-"`
+	PGTableOwner              *PGTableOwnerState         `json:"-"`
+	PGColumnType              *PGColumnTypeState         `json:"-"`
+	PGBulkTablespace          *PGBulkTablespaceState     `json:"-"`
+	View                      *ViewMetadata              `json:"-"`
 	// ExchangeTable is the ordered pre-state projection of the
 	// EXCHANGE PARTITION counterpart table — the second object identity
 	// the action touches, resolved through the same once-per-key seam as
@@ -804,17 +805,18 @@ type ObjectSnapshot struct {
 	// Sequence carries the provider-proven sequence definition parameters
 	// when the resolved object is a sequence. Internal evidence only —
 	// definition parameters are never runtime issuance progress (T21/#100).
-	Sequence               *SequenceDefinition     `json:"-"`
-	PGReplicaIdentity      *PGReplicaIdentityIndex `json:"-"`
-	PGConstraintUsingIndex *PGConstraintUsingIndex `json:"-"`
-	PGTableTablespace      *PGTableTablespace      `json:"-"`
-	PGTableAccessMethod    *PGTableAccessMethod    `json:"-"`
-	PGTablePersistence     *PGTablePersistence     `json:"-"`
-	PGTableNamespace       *PGTableNamespace       `json:"-"`
-	PGTableOwner           *PGTableOwnerState      `json:"-"`
-	PGColumnType           *PGColumnTypeState      `json:"-"`
-	PGBulkTablespace       *PGBulkTablespaceState  `json:"-"`
-	PGForeignKeyKeys       *PGForeignKeyKeys       `json:"-"`
+	Sequence                  *SequenceDefinition        `json:"-"`
+	PGReplicaIdentity         *PGReplicaIdentityIndex    `json:"-"`
+	PGConstraintUsingIndex    *PGConstraintUsingIndex    `json:"-"`
+	PGTableTablespace         *PGTableTablespace         `json:"-"`
+	PGTableAccessMethod       *PGTableAccessMethod       `json:"-"`
+	PGTablePersistence        *PGTablePersistence        `json:"-"`
+	PGTableNamespace          *PGTableNamespace          `json:"-"`
+	PGTableOwner              *PGTableOwnerState         `json:"-"`
+	PGColumnType              *PGColumnTypeState         `json:"-"`
+	PGBulkTablespace          *PGBulkTablespaceState     `json:"-"`
+	PGForeignKeyKeys          *PGForeignKeyKeys          `json:"-"`
+	PGDropConstraintReference *PGDropConstraintReference `json:"-"`
 	// SequenceReferences is the bounded inbound-reference read for a proven
 	// sequence identity — the catalog's owner-slot/target edge list. A nil
 	// slice means the read never happened — never a proven-empty set;

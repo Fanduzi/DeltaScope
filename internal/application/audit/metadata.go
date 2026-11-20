@@ -228,6 +228,9 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 		if err := enrichPGBulkTablespaces(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}
+		if err := enrichPGDropConstraintReferences(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
 		if err := enrichPGForeignKeyReferences(ctx, request, enriched[:freshPrefix], snapshots); err != nil {
 			return nil, err
 		}

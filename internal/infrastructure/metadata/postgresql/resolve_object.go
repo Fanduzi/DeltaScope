@@ -16,6 +16,8 @@ var _ appaudit.ObjectResolver = (*Provider)(nil)
 func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
 	if dialect == spec.DialectPostgreSQL {
 		switch req.Type {
+		case "drop_constraint_reference":
+			return p.resolveDropConstraintReference(ctx, req)
 		case "foreign_key_reference_keys":
 			return p.resolveForeignKeyKeys(ctx, req)
 		case "constraint_using_index":
