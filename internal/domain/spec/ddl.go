@@ -11,7 +11,8 @@ type DDL struct {
 	// PGTableCatalogQualified records a three-part PostgreSQL ALTER TABLE identity.
 	PGTableCatalogQualified bool `json:"-"`
 	// PGTableOnly records an ALTER TABLE target whose traversal is disabled.
-	PGTableOnly bool `json:"-"`
+	PGTableOnly        bool                `json:"-"`
+	PGDestructiveTable *PGDestructiveTable `json:"-"`
 	// Targets lists every table-level object identity the statement names, in
 	// source order: each DROP TABLE/VIEW name, each TRUNCATE relation, each
 	// RENAME TABLE source and destination pair-wise, and ALTER TABLE

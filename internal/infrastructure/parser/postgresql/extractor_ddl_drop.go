@@ -18,9 +18,10 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 	switch stmt.GetRemoveType() {
 	case pg_query.ObjectType_OBJECT_TABLE:
 		statement.DDL = &spec.DDL{
-			Operation: spec.DDLOperationDropTable,
-			Table:     tableFromObjectName(stmt.GetObjects()),
-			Targets:   tablesFromObjectNames(stmt.GetObjects()),
+			Operation:          spec.DDLOperationDropTable,
+			Table:              tableFromObjectName(stmt.GetObjects()),
+			Targets:            tablesFromObjectNames(stmt.GetObjects()),
+			PGDestructiveTable: pgDropTableFacts(stmt),
 		}
 	case pg_query.ObjectType_OBJECT_VIEW:
 		if len(stmt.GetObjects()) != 1 {
@@ -371,11 +372,48 @@ func extractTruncateStmt(statement spec.Statement, stmt *pg_query.TruncateStmt) 
 		return unsupportedStatement(statement, "truncate", "postgresql truncate statement payload is missing")
 	}
 	statement.DDL = &spec.DDL{
-		Operation: spec.DDLOperationTruncateTable,
-		Table:     tableFromRelationNodeList(stmt.GetRelations()),
-		Targets:   tablesFromRelationNodeList(stmt.GetRelations()),
+		Operation:          spec.DDLOperationTruncateTable,
+		Table:              tableFromRelationNodeList(stmt.GetRelations()),
+		Targets:            tablesFromRelationNodeList(stmt.GetRelations()),
+		PGDestructiveTable: pgTruncateTableFacts(stmt),
 	}
 	return statement
+}
+
+func pgDropTableFacts(stmt *pg_query.DropStmt) *spec.PGDestructiveTable {
+	facts := &spec.PGDestructiveTable{
+		IfExists: stmt.GetMissingOk(),
+		Cascade:  stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE,
+		Targets:  make([]spec.PGDestructiveTableTarget, 0, len(stmt.GetObjects())),
+	}
+	for _, object := range stmt.GetObjects() {
+		parts := objectNameParts([]*pg_query.Node{object})
+		table := tableFromNameParts(parts)
+		if table == nil || len(parts) > 3 {
+			return nil
+		}
+		facts.Targets = append(facts.Targets, spec.PGDestructiveTableTarget{Table: *table, CatalogQualified: len(parts) == 3})
+	}
+	return facts
+}
+
+func pgTruncateTableFacts(stmt *pg_query.TruncateStmt) *spec.PGDestructiveTable {
+	facts := &spec.PGDestructiveTable{
+		Cascade:         stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE,
+		RestartIdentity: stmt.GetRestartSeqs(),
+		Targets:         make([]spec.PGDestructiveTableTarget, 0, len(stmt.GetRelations())),
+	}
+	for _, relation := range stmt.GetRelations() {
+		rangeVar := relation.GetRangeVar()
+		table := tableFromRangeVar(rangeVar)
+		if table == nil {
+			return nil
+		}
+		facts.Targets = append(facts.Targets, spec.PGDestructiveTableTarget{
+			Table: *table, CatalogQualified: rangeVar.GetCatalogname() != "", Only: !rangeVar.GetInh(),
+		})
+	}
+	return facts
 }
 
 func dropObjectFirstName(stmt *pg_query.DropStmt) string {

@@ -40,7 +40,7 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
 		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
-		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 {
+		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
@@ -54,6 +54,7 @@ type corpusFixtureMetadataProvider struct {
 	pgDropColumnDependencies   []corpusPGDropColumnDependency
 	pgColumnTraversals         []corpusPGColumnTraversal
 	pgDropConstraintReferences []corpusPGDropConstraintReference
+	pgDestructiveReferences    []corpusPGDestructiveReference
 	pgForeignKeyDirectories    []corpusPGForeignKeyKeys
 	pgConstraintIndexes        []corpusPGConstraintIndex
 	pgColumnTypes              []corpusPGColumnType
@@ -102,6 +103,7 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 		pgDropColumnDependencies:   metadata.PGDropColumnDependencies,
 		pgColumnTraversals:         metadata.PGColumnTraversals,
 		pgDropConstraintReferences: metadata.PGDropConstraintReferences,
+		pgDestructiveReferences:    metadata.PGDestructiveReferences,
 		pgForeignKeyDirectories:    metadata.PGForeignKeyDirectories,
 		pgConstraintIndexes:        metadata.PGConstraintIndexes,
 		pgColumnTypes:              metadata.PGColumnTypes,
@@ -470,6 +472,17 @@ func parseCorpusUint(text string) (uint64, bool) {
 // `schema.name`. An unkeyed identity or a nil sequence map is unvouched,
 // never a silent absent; non-sequence lookups stay unavailable.
 func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if request.Type == "drop_references" || request.Type == "truncate_references" {
+		if len(request.PGDestructiveTargets) == 1 {
+			target := request.PGDestructiveTargets[0].Table
+			for _, seed := range p.pgDestructiveReferences {
+				if seed.Operation == request.Type && seed.Schema == target.Schema && seed.Table == target.Name {
+					return &spec.ObjectSnapshot{PGDestructiveReferences: &spec.PGDestructiveReferences{Targets: request.PGDestructiveTargets, BlockedPosition: seed.BlockedPosition}}, nil
+				}
+			}
+		}
+		return nil, nil
+	}
 	if request.Type == "column_traversal" {
 		for _, seed := range p.pgColumnTraversals {
 			if seed.Schema == request.Schema && seed.Table == request.Qualifiers["table"] && seed.Column == request.Name {

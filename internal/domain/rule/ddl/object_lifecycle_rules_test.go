@@ -3,6 +3,7 @@ package ddl
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -210,8 +211,9 @@ func TestDropTableExistenceRuleEvidenceGaps(t *testing.T) {
 	if gaps := reporter.EvidenceGaps(dropStatement(spec.DialectMySQL, &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Table: &spec.Table{Name: "t"}})); len(gaps) != 0 {
 		t.Fatalf("known-absent drop target keeps its blocker instead of a gap, got %+v", gaps)
 	}
-	if gaps := reporter.EvidenceGaps(dropStatement(spec.DialectPostgreSQL, nil)); len(gaps) != 0 {
-		t.Fatalf("the drop gap must never leak to PostgreSQL, got %+v", gaps)
+	if gaps := reporter.EvidenceGaps(dropStatement(spec.DialectPostgreSQL, nil)); len(gaps) != 1 ||
+		gaps[0].ReasonCode != "unproven_pg_destructive_table_target" || !slices.Equal(gaps[0].RequiredFacts, []string{"instance.version"}) {
+		t.Fatalf("PostgreSQL DROP reports its own version gap: %+v", gaps)
 	}
 	if gaps := reporter.EvidenceGaps(spec.Statement{
 		Dialect: spec.DialectMySQL,

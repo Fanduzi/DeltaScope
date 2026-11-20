@@ -4,6 +4,8 @@
 package postgresql
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -54,5 +56,30 @@ func TestPostgreSQLTruncatePreservesEveryTarget(t *testing.T) {
 		if targets[i].Schema != want[i].Schema || targets[i].Name != want[i].Name {
 			t.Fatalf("target %d = %#v, want %#v", i, targets[i], want[i])
 		}
+	}
+}
+
+func TestPostgreSQLDestructiveTableModifiers(t *testing.T) {
+	s := extractPostgreSQLStatement(t, `DROP TABLE IF EXISTS "App"." T ", db.audit.log, "App"." T " CASCADE`)
+	d := s.DDL.PGDestructiveTable
+	if d == nil || !d.IfExists || !d.Cascade || d.RestartIdentity || len(d.Targets) != 3 ||
+		d.Targets[0].Table.Name != " T " || d.Targets[0].Table.Schema != "App" || d.Targets[0].CatalogQualified ||
+		!d.Targets[1].CatalogQualified || d.Targets[1].Table.Schema != "audit" || d.Targets[2].Table.Name != d.Targets[0].Table.Name {
+		t.Fatalf("DROP facts=%+v", d)
+	}
+	s = extractPostgreSQLStatement(t, `TRUNCATE TABLE ONLY "App"." T ", db.audit.log *, unqualified RESTART IDENTITY CASCADE`)
+	d = s.DDL.PGDestructiveTable
+	if d == nil || d.IfExists || !d.Cascade || !d.RestartIdentity || len(d.Targets) != 3 || !d.Targets[0].Only ||
+		d.Targets[1].Only || !d.Targets[1].CatalogQualified || d.Targets[2].Only || d.Targets[2].Table.Schema != "" {
+		t.Fatalf("TRUNCATE facts=%+v", d)
+	}
+	encoded, err := json.Marshal(s.DDL)
+	if err != nil || strings.Contains(string(encoded), "PGDestructiveTable") || strings.Contains(string(encoded), "RestartIdentity") {
+		t.Fatalf("private facts=%s err=%v", encoded, err)
+	}
+	s = extractPostgreSQLStatement(t, `TRUNCATE "App"." T " CONTINUE IDENTITY RESTRICT`)
+	d = s.DDL.PGDestructiveTable
+	if d == nil || d.IfExists || d.Cascade || d.RestartIdentity || len(d.Targets) != 1 || d.Targets[0].Only {
+		t.Fatalf("explicit defaults=%+v", d)
 	}
 }

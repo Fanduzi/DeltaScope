@@ -1,7 +1,5 @@
 //go:build postgresql
 
-// Package audit verifies that the T05-A3 drop-existence evidence gap stays
-// scoped to the MySQL/TiDB ordered-state machine.
 package audit
 
 import (
@@ -13,74 +11,48 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
-func TestBatchStateA3PostgreSQLDropKeepsLegacyContract(t *testing.T) {
+func TestBatchStateA3PostgreSQLDropUsesCatalogEvidence(t *testing.T) {
 	t.Parallel()
-	policy := t05PolicyPath(t, map[string]string{
-		t05RuleDropExistsRequire: "",
-	})
-	snapshots := map[string]*spec.TableSnapshot{
-		"public.gone": {
-			Exists:  false,
-			Table:   &spec.Table{Schema: "public", Name: "gone"},
-			Columns: []spec.Column{},
-		},
-	}
-
-	t.Run("no request metadata emits no new gaps", func(t *testing.T) {
-		t.Parallel()
-		result, err := AuditSQL(context.Background(), Request{
-			SQL:        "DROP TABLE t;",
-			Dialect:    spec.DialectPostgreSQL,
-			ConfigPath: policy,
-		})
-		if err != nil {
-			t.Fatalf("audit: %v", err)
-		}
-		if len(result.Statements[0].Findings) != 0 || len(result.Statements[0].EvidenceGaps) != 0 {
-			t.Fatalf("providerless PostgreSQL drop must stay silent, got findings=%+v gaps=%+v", result.Statements[0].Findings, result.Statements[0].EvidenceGaps)
-		}
-	})
-
-	t.Run("schema-only request emits no new gaps", func(t *testing.T) {
-		t.Parallel()
-		result, err := AuditSQL(context.Background(), Request{
-			SQL:        "DROP TABLE IF EXISTS t;",
-			Dialect:    spec.DialectPostgreSQL,
-			Schema:     "public",
-			ConfigPath: policy,
-		})
-		if err != nil {
-			t.Fatalf("audit: %v", err)
-		}
-		if len(result.Statements[0].Findings) != 0 || len(result.Statements[0].EvidenceGaps) != 0 {
-			t.Fatalf("schema-only PostgreSQL drop must stay silent, got findings=%+v gaps=%+v", result.Statements[0].Findings, result.Statements[0].EvidenceGaps)
-		}
-	})
-
-	for _, dropSQL := range []string{"DROP TABLE gone;", "DROP TABLE IF EXISTS gone;"} {
-		dropSQL := dropSQL
-		t.Run("provider-absent strict blocker "+dropSQL, func(t *testing.T) {
+	policy := t05PolicyPath(t, map[string]string{t05RuleDropExistsRequire: ""})
+	for _, tc := range []struct {
+		name, sql, schema, missingFact string
+		provider                       bool
+		want                           report.Verdict
+	}{
+		{name: "offline", sql: "DROP TABLE t", missingFact: "instance.version", want: report.VerdictReview},
+		{name: "schema only", sql: "DROP TABLE IF EXISTS t", schema: "public", missingFact: "instance.version", want: report.VerdictReview},
+		{name: "provider and unqualified", sql: "DROP TABLE gone", schema: "public", provider: true, missingFact: "target_table.pg_identity", want: report.VerdictReview},
+		{name: "qualified absence", sql: "DROP TABLE public.gone", provider: true, want: report.VerdictReject},
+		{name: "guarded qualified absence", sql: "DROP TABLE IF EXISTS public.gone", provider: true, want: report.VerdictPass},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			provider := &dmlTableMetadataProvider{snapshots: snapshots}
-			result, err := AuditSQL(context.Background(), Request{
-				SQL:              dropSQL,
-				Dialect:          spec.DialectPostgreSQL,
-				Schema:           "public",
-				ConfigPath:       policy,
-				MetadataProvider: provider,
-			})
-			if err != nil {
-				t.Fatalf("audit: %v", err)
+			r := Request{SQL: tc.sql, Dialect: spec.DialectPostgreSQL, Schema: tc.schema, ConfigPath: policy}
+			if tc.provider {
+				r.MetadataProvider = &fakeMetadataProvider{instance: &spec.InstanceFacts{Version: "PostgreSQL 17.7"}, snapshot: &spec.TableSnapshot{
+					Schema: "public", PGRelation: spec.PGRelationState{Name: "gone"},
+				}}
+			}
+			result, err := AuditSQL(context.Background(), r)
+			if err != nil || result.Verdict != tc.want || len(result.Statements) != 1 {
+				t.Fatalf("result=%+v err=%v", result, err)
 			}
 			findings := t05FindingsByRule(result, 0, t05RuleDropExistsRequire)
-			if len(findings) != 1 || findings[0].Level != rule.LevelBlocker {
-				t.Fatalf("provider-confirmed absence must keep the strict blocker, got %+v", result.Statements[0].Findings)
+			if tc.want == report.VerdictReject {
+				if len(findings) != 1 || findings[0].Level != rule.LevelBlocker || findings[0].Metadata["reason_code"] != "relation_absent" {
+					t.Fatalf("missing exact absence blocker: %+v", findings)
+				}
+			} else if len(findings) != 0 {
+				t.Fatalf("unexpected findings: %+v", findings)
 			}
-			if len(result.Statements[0].EvidenceGaps) != 0 {
-				t.Fatalf("PostgreSQL must not emit the new drop gap, got %+v", result.Statements[0].EvidenceGaps)
-			}
-			if result.Verdict != report.VerdictReject {
-				t.Fatalf("verdict = %s, want reject", result.Verdict)
+			gaps := result.Statements[0].EvidenceGaps
+			if tc.missingFact == "" {
+				if len(gaps) != 0 {
+					t.Fatal(gaps)
+				}
+			} else if len(gaps) != 1 || gaps[0].RuleID != t05RuleDropExistsRequire || gaps[0].ReasonCode != "unproven_pg_destructive_table_target" ||
+				len(gaps[0].RequiredFacts) != 1 || gaps[0].RequiredFacts[0] != tc.missingFact {
+				t.Fatalf("unexpected evidence gaps: %+v", gaps)
 			}
 		})
 	}

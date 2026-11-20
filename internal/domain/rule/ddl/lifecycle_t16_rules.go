@@ -515,6 +515,20 @@ func (r truncateInboundFKRule) Evaluate(ctx context.Context, statement spec.Stat
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
+	if statement.Dialect == spec.DialectPostgreSQL {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		position, _ := pgTruncateReferenceResult(statement)
+		if position == 0 {
+			return nil, nil
+		}
+		target := statement.DDL.PGDestructiveTable.Targets[position-1].Table
+		return []rule.Finding{{Level: r.level, Message: "A PostgreSQL foreign key references a TRUNCATE target from outside the target set",
+			Suggestion: "Review the referencing tables and the intended TRUNCATE scope",
+			Metadata:   map[string]any{"schema": target.Schema, "table": target.Name, "reason_code": "truncate_referenced_by_external_foreign_key"},
+		}}, nil
+	}
 	snapshot, ok := targetTableSnapshot(statement)
 	if !ok || snapshot == nil || !snapshot.Exists || len(snapshot.ReferencedBy) == 0 {
 		return nil, nil
@@ -532,6 +546,12 @@ func (r truncateInboundFKRule) Evaluate(ctx context.Context, statement spec.Stat
 }
 
 func (r truncateInboundFKRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if statement.Dialect == spec.DialectPostgreSQL && r.AppliesTo(statement) {
+		if _, missing := pgTruncateReferenceResult(statement); missing != "" {
+			return []rule.EvidenceGap{{ReasonCode: "unproven_pg_truncate_references", RequiredFacts: []string{missing}}}
+		}
+		return nil
+	}
 	if !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) {
 		return nil
 	}
@@ -546,6 +566,24 @@ func (r truncateInboundFKRule) EvidenceGaps(statement spec.Statement) []rule.Evi
 		ReasonCode:    gapReasonUnknownTableState,
 		RequiredFacts: []string{"target_table.inbound_fk"},
 	}}
+}
+
+func pgTruncateReferenceResult(s spec.Statement) (position int, missing string) {
+	declaration := s.DDL.PGDestructiveTable
+	if s.Unsupported != nil || declaration == nil || declaration.Cascade {
+		return 0, ""
+	}
+	for i := range declaration.Targets {
+		reason, fact := pgDestructiveTableTargetResult(s, i)
+		if reason != "" || fact != "" {
+			return 0, "" // The target rule owns these prerequisites.
+		}
+	}
+	targets := spec.PGTruncateReferenceTargets(s)
+	if len(targets) == 0 || s.Metadata.PGDestructiveReferences == nil || !s.Metadata.PGDestructiveReferences.Matches(targets) {
+		return 0, "target_table.pg_truncate_references"
+	}
+	return s.Metadata.PGDestructiveReferences.BlockedPosition, ""
 }
 
 // tidbLocalTemporaryRule covers TiDB's proven local-temporary refusals:

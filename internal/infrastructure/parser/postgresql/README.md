@@ -19,7 +19,7 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 | extractor_ddl_alter.go | Normalizes PostgreSQL ALTER actions; retains the target ONLY flag privately and preserves the exact compression-method AST and existing storage_kind without claiming applicability; ADD PRIMARY KEY/UNIQUE preserve explicit `using_index=true\|false`, never inferred eligibility; DROP CONSTRAINT preserves `if_exists`/`cascade` (omission/RESTRICT false) |
 | parser_constraint_target_postgresql_tag_test.go | Pins DROP constraint guard/CASCADE/RESTRICT/omission and exact quoted names without widening parser support |
 | parser_constraint_build_postgresql_tag_test.go | Pins plain/reused-index PK and UNIQUE declarations, unnamed/quoted controls, and absence of the index-reuse marker on FK/CHECK |
-| extractor_ddl_drop.go | Extracts PostgreSQL DROP/TRUNCATE DDL preserving every named relation in `DDL.Targets` |
+| extractor_ddl_drop.go | Extracts PostgreSQL DROP/TRUNCATE DDL, retaining exact target order and private guard, traversal and identity options |
 | extractor_column_tuning.go | Preserves STATISTICS DEFAULT versus literal and ordered SET/RESET column-option keys/value kinds; finite non-underflowing AST values only (true zero distinguished from rounding; subnormal/minimum-normal boundary stays unmodeled), never SQL-text fallback or quoted payload |
 | parser_column_identity_postgresql_tag_test.go | Verifies separate private ALTER TABLE and ADD COLUMN guard bits, three-part table identities and exact decoded identifiers |
 | parser_column_format_postgresql_tag_test.go | Pins exact authored compression method (including case/default), missing/unmodeled AST knownness, existing storage case retention and JSON privacy without SQL-text recovery |

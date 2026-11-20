@@ -1,0 +1,19 @@
+name: drop_table_exact_targets
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    absent:
+      exists: false
+      pg_relation: {name: absent, kind: ""}
+    " Exact Target ":
+      exists: true
+      pg_relation: {name: " Exact Target ", kind: v}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.table.drop.exists.require]

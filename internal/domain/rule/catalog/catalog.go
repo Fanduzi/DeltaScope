@@ -234,6 +234,12 @@ func summaryForRule(ruleID string) string {
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	switch ruleID {
+	case "ddl.table.drop.exists.require":
+		return "Checks DROP TABLE target existence. PostgreSQL 17 checks each exact member's relation kind, honors IF EXISTS for observed absence and checks direct dependencies for an eligible RESTRICT set."
+	case "ddl.table.truncate.exists.require":
+		return "Checks TRUNCATE target existence. PostgreSQL 17 checks exact members, relation kind and whether an earlier target already selected a partitioned ONLY member. Foreign-table eligibility needs FDW evidence."
+	case "ddl.table.truncate.inbound_fk":
+		return "Checks whether a foreign key references a selected TRUNCATE table from outside the target set. PostgreSQL 17 RESTRICT accounts for attached descendants and inherited partition foreign-key references."
 	case "ddl.pg.alter.move_all_tablespace.target.valid":
 		return "Checks observed PostgreSQL 17 bulk move tablespaces and ordered owner-filter role existence. Missing endpoints, pg_global, missing literal roles and PUBLIC block."
 	case "ddl.pg.alter.owner.target.valid":

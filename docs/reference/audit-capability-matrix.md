@@ -497,6 +497,8 @@ declarations.
 
 ## DDL: Object Lifecycle
 
+For PostgreSQL 17, the DROP and TRUNCATE target rules check exact qualified targets, relation kinds, and the applicable guards. The DROP target rule checks direct RESTRICT foreign-key and rewrite dependencies. `ddl.table.truncate.inbound_fk` checks foreign keys from outside the exact RESTRICT set, including attached descendants and partition foreign-key ancestry. Catalog-dependent findings keep dependent identities private.
+
 ### Drop Table
 
 | Rule ID | Check Description | Offline | Metadata | Default Level |

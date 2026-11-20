@@ -105,6 +105,13 @@ type corpusFacts struct {
 }
 
 // corpusMetadata carries optional metadata-aware audit fixtures.
+type corpusPGDestructiveReference struct {
+	Operation       string `yaml:"operation"`
+	Schema          string `yaml:"schema"`
+	Table           string `yaml:"table"`
+	BlockedPosition int    `yaml:"blocked_position"`
+}
+
 type corpusPGColumnTraversal struct {
 	Schema                   string `yaml:"schema"`
 	Table                    string `yaml:"table"`
@@ -122,6 +129,7 @@ type corpusPGColumnTraversal struct {
 
 type corpusMetadata struct {
 	PGColumnTraversals         []corpusPGColumnTraversal         `yaml:"pg_column_traversals,omitempty"`
+	PGDestructiveReferences    []corpusPGDestructiveReference    `yaml:"pg_destructive_references,omitempty"`
 	Schema                     string                            `yaml:"schema,omitempty"`
 	Instance                   *corpusInstanceFacts              `yaml:"instance,omitempty"`
 	Tables                     map[string]corpusTableSnapshot    `yaml:"tables,omitempty"`

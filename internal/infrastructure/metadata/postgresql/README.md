@@ -39,6 +39,7 @@ comparisons for the member and scope binding.
 | constraint_state_test.go | Pins complete/empty/quoted/duplicate catalog reads and query/scan/iteration errors without a live database |
 | provider.go | Loads normalized dialect, schema, instance-fact (including private known/support lz4 facts from the existing pg_catalog.pg_settings enum read with system-qualified version and comparison operators), table snapshot, and plain-`EXPLAIN` plan-estimate data from PostgreSQL catalogs and planner stats |
 | provider_test.go | Verifies catalog-backed schema discovery, reltuples/statistics loading, PK constraint truth, and plain-`EXPLAIN` estimation without a live database |
+| destructive_references.go | Observes external foreign keys for the expanded TRUNCATE RESTRICT set and checks ordered partitioned ONLY eligibility and direct foreign-key and rewrite dependencies for DROP RESTRICT over exact target lists. |
 | resolve_object.go | Resolves non-table database object metadata from PostgreSQL catalogs with schema-qualified ambiguity detection and privacy-safe attribute projection |
 | resolve_object_test.go | Verifies object resolver behavior for all supported lookup types, statuses, sensitive attribute exclusion, and annotation target verification |
 | query_access_conn_resolver.go | Thin caller-owned `*sql.Conn`-backed SchemaResolver adapter for same-session metadata resolution; no pool fallback |

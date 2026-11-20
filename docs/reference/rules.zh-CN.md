@@ -502,11 +502,11 @@ PostgreSQL `ALTER TABLE IF EXISTS` 的既有存在性规则在已证明限定名
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
 | `ddl.table.drop.forbid` | 禁止 DROP TABLE | blocker | 否 |
-| `ddl.table.drop.exists.require` | DROP TABLE 目标表必须存在 | blocker | **是** |
+| `ddl.table.drop.exists.require` | 检查 DROP TABLE 目标是否存在及 PostgreSQL 关系种类。PostgreSQL IF EXISTS 保护缺失目标。对 PostgreSQL 17 的精确普通表集合，RESTRICT 检查直接外键及视图依赖。 | blocker | **是** |
 | `ddl.table.drop.adaptive_hash.warn` | 当自适应哈希索引激活时，DROP TABLE 给出警告 | warning | **是** |
 | `ddl.table.drop.rows.max_count` | 当表行数过多时，DROP TABLE 给出警告 | warning | **是** |
 | `ddl.table.truncate.forbid` | 禁止 TRUNCATE TABLE | blocker | 否 |
-| `ddl.table.truncate.exists.require` | TRUNCATE TABLE 目标表必须存在 | blocker | **是** |
+| `ddl.table.truncate.exists.require` | 检查 TRUNCATE 目标是否存在及 PostgreSQL 关系资格。分区表使用 ONLY 时，检查它是否已被前面的目标纳入。 | blocker | **是** |
 | `ddl.table.truncate.adaptive_hash.warn` | 当自适应哈希索引激活时，TRUNCATE 给出警告 | warning | **是** |
 | `ddl.table.truncate.rows.max_count` | 当表行数过多时，TRUNCATE 给出警告 | warning | **是** |
 

@@ -524,16 +524,18 @@ These rules cover the MySQL/TiDB CHECK constraint lifecycle — declarations on 
 
 These rules govern `DROP TABLE` and `TRUNCATE TABLE` operations.
 
+The PostgreSQL branch of `ddl.table.truncate.inbound_fk` checks for foreign keys from outside the exact RESTRICT set, including attached descendants and inherited partition foreign-key references. It treats an unvalidated inbound foreign key as a dependency. CASCADE traversal, sequence effects, foreign data wrappers, permissions and locks require further evidence.
+
 On MySQL/TiDB, the enabled DROP existence rule emits one `unknown_table_state` gap requiring `target_table.existence` when the target state is unknown. A confirmed-absent target still produces the original blocker, including with `IF EXISTS`: this is strict policy, not a prediction of database execution failure. Conditional single-table DROP preserves absence for a following CREATE; multi-target forms remain conservative. PostgreSQL and TRUNCATE gap behavior is unchanged.
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
 | `ddl.table.drop.forbid` | DROP TABLE is forbidden | blocker | No |
-| `ddl.table.drop.exists.require` | DROP TABLE target must exist | blocker | **Yes** |
+| `ddl.table.drop.exists.require` | Checks DROP TABLE target existence and PostgreSQL relation kind. PostgreSQL IF EXISTS guards an absent member. An exact PostgreSQL 17 ordinary-table set under RESTRICT checks direct foreign-key and view dependencies. | blocker | **Yes** |
 | `ddl.table.drop.adaptive_hash.warn` | DROP TABLE warns when adaptive hash index is active | warning | **Yes** |
 | `ddl.table.drop.rows.max_count` | DROP TABLE warns when table has too many rows | warning | **Yes** |
 | `ddl.table.truncate.forbid` | TRUNCATE TABLE is forbidden | blocker | No |
-| `ddl.table.truncate.exists.require` | TRUNCATE TABLE target must exist | blocker | **Yes** |
+| `ddl.table.truncate.exists.require` | Checks TRUNCATE target existence and PostgreSQL relation eligibility, including a partitioned ONLY target that no earlier member selected. | blocker | **Yes** |
 | `ddl.table.truncate.adaptive_hash.warn` | TRUNCATE warns when adaptive hash index is active | warning | **Yes** |
 | `ddl.table.truncate.rows.max_count` | TRUNCATE warns when table has too many rows | warning | **Yes** |
 

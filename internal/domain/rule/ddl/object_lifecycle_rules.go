@@ -91,6 +91,9 @@ func (r tableOperationExistenceRule) Evaluate(ctx context.Context, statement spe
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
+	if statement.Dialect == spec.DialectPostgreSQL {
+		return r.evaluatePGDestructiveTable(ctx, statement)
+	}
 	// DROP ... IF EXISTS arms the conditional form: a proven-absent member
 	// becomes a native no-op note, never an existence violation. Members
 	// the batch cannot vouch stay a gap, not a fabricated refusal.
@@ -129,6 +132,9 @@ func (r tableOperationExistenceRule) Evaluate(ctx context.Context, statement spe
 }
 
 func (r tableOperationExistenceRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if statement.Dialect == spec.DialectPostgreSQL && r.AppliesTo(statement) {
+		return pgDestructiveTableEvidenceGaps(statement)
+	}
 	if r.ruleID != ruleIDTableDropExistsRequire || r.operation != spec.DDLOperationDropTable || !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) {
 		return nil
 	}

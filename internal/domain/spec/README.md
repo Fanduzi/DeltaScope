@@ -106,6 +106,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGForeignKeyKeys` binds ordered key slots and primary/immediate flags to an exact observed reference table. The key directory stays private.
 - `PGForeignKeySelection` keeps exact, ordered source, referenced and ON DELETE SET column names and the reference qualification privately.
 - `PGConstraintUsingIndex` binds private exact index observations, including key operator-class defaults, to the selected table for PRIMARY KEY and UNIQUE attachment.
+- `PGDestructiveTable` preserves ordered DROP and TRUNCATE targets and private modifiers. `PGDestructiveReferences` binds dependency and ONLY membership observations to those exact targets.
 - `PGReplicaIdentityIndex` carries private exact table/index attachment facts and nullable observations. `PG17Observed` checks the actual PostgreSQL 17 server banner. `PGOrdinaryTableBound` verifies fresh, exact schema-qualified ordinary persistent non-typed scope.
 - `PGTableReloption` preserves ordered SET/RESET members, argument presence and bounded value facts. `Alter.PGTableReloptions` is excluded from JSON.
 - `PGRelationState` carries the exact name and catalog kind within the snapshot schema, including the observed built-in heap marker.
