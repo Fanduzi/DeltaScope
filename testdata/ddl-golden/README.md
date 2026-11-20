@@ -3,6 +3,13 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D22 PostgreSQL foreign key targets
+
+Focused T37 passed 354/354 cases and 9,344 assertions. Eighteen new cases retain
+all 336 earlier cases and profiles. Native controls distinguish exact table
+and column identity, omitted lists, guards and stale facts.
+[Decision](../../docs/decisions/2026-11-20-postgresql-foreign-key-targets.md)
+
 ## T37 D21 PostgreSQL constraint attachment using an index
 
 Delivered `53cc0592` passed all 50 tasks with 3,668/3,668 cases and 67,790

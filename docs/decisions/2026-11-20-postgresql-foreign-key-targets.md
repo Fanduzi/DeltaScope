@@ -19,9 +19,41 @@ The baseline at `1bc8709c` paired 15 native statements with 30 real CLI audits. 
 - `/tmp/ds-pg-f09-add-fk-targets-1bc8709c/evidence.json`
 - `/tmp/ds-pg-d22-fk-identity-edges-53cc0592/evidence.json`
 
-## Evidence plan
+## Evidence bindings
 
 Preserve all previous T37 cases and policy profiles. Add dedicated cases for offline and disabled policy, exact names (including a comma), missing and wrong-kind references, exact source and reference misses, system targets, omitted reference list, source guard, stale catalog, catalog-qualified, unqualified and partitioned reference gaps. Bind only the original ADD FOREIGN KEY cell at the PG17 anchor.
+
+- `T37.cli.fk-targets-offline`
+- `T37.cli.fk-targets-disabled`
+- `T37.meta.pg-fk-targets-exact`
+- `T37.meta.pg-fk-targets-reference-absent`
+- `T37.meta.pg-fk-targets-reference-kind`
+- `T37.meta.pg-fk-targets-source-column`
+- `T37.meta.pg-fk-targets-reference-column`
+- `T37.meta.pg-fk-targets-source-system`
+- `T37.meta.pg-fk-targets-reference-system`
+- `T37.meta.pg-fk-targets-omitted`
+- `T37.meta.pg-fk-targets-omitted-source-missing`
+- `T37.meta.pg-fk-targets-unqualified`
+- `T37.meta.pg-fk-targets-catalog-qualified`
+- `T37.meta.pg-fk-targets-partitioned-reference`
+- `T37.meta.pg-fk-targets-unlogged-reference`
+- `T37.meta.pg-fk-targets-stale`
+- `T37.meta.pg-fk-targets-guarded-absent`
+- `T37.meta.pg-fk-targets-validating`
+
+`d4ccb0c0` retains the exact AST identities and binds private catalog facts.
+`d0501883` adds the default blocker. The candidate real CLI comparison at
+`d4ccb0c0` with the rule in the worktree reproduced 11 native outcomes and
+checked all 22 audits before the native leg. Five cases exercised the new
+blocker and five exercised the specific live scope gaps. The successful
+comma-containing reference kept both identifiers intact.
+
+Focused T37 passed 354/354 cases and 9,344 assertions, retaining the 336
+existing cases and all prior profiles. Eighteen new cases include seventeen
+native commands, with nine successes and eight exact refusals. The validator
+passed. Nineteen selectors were added to ADD FOREIGN KEY at the PG17 anchor.
+The inventory classifications and denominators were retained.
 
 ## Sources
 
