@@ -11,6 +11,7 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 | extractor_table_reloptions.go | Retains private ordered table-option keys, namespaces, argument presence and bounded fillfactor/Boolean facts |
 | parser_table_owner_postgresql_tag_test.go | Verifies exact private role names, session aliases and PUBLIC in ALTER TABLE OWNER TO |
 | parser_bulk_tablespace_postgresql_tag_test.go | Verifies precise endpoints, ordered private role selections and NOWAIT in bulk ALTER TABLE |
+| parser_foreign_key_targets_postgresql_tag_test.go | Verifies ordered exact foreign-key column lists, quoted identity, omission and catalog qualification |
 | parser_constraint_build_postgresql_tag_test.go | Pins the authored USING INDEX flag and private exact index selection for constraint attachment |
 | parser_column_type_destination_postgresql_tag_test.go | Verifies private exact TYPE destination components and array intent while preserving the existing type display |
 | extractor_ddl_alter.go | Normalizes PostgreSQL ALTER actions; retains private exact compression-method AST and existing storage_kind without claiming applicability; ADD PRIMARY KEY/UNIQUE preserve explicit `using_index=true\|false`, never inferred eligibility; DROP CONSTRAINT preserves `if_exists`/`cascade` (omission/RESTRICT false) |

@@ -1,0 +1,29 @@
+# PostgreSQL 17 ADD FOREIGN KEY relation and column identity
+
+Status Accepted
+
+F09 D22 on `milestone/pg-alter-semantics`, following `53cc0592`.
+
+## Decision
+
+`ddl.pg.alter.add_foreign_key.targets.valid` defaults to blocker without parameters. It checks one table-level ADD FOREIGN KEY or ADD FOREIGN KEY NOT VALID action on observed PostgreSQL 17 and a fresh exact schema-qualified ordinary persistent non-typed source table. The parser preserves the decoded referencing column list, referenced table identity, database qualification, and explicit referenced column list in authored order. These facts remain private.
+
+Use fresh exact schema-qualified relation and column evidence. Resolve the referenced relation before assessing column names. Known missing targets and ineligible relation kinds produce bounded findings. An ordinary or partitioned table kind establishes the relation premise. This slice uses only the ordinary persistent target column directory and reports a gap for other table shapes or persistence. An exact miss or observed system column on either side blocks. An omitted reference column list keeps the source check and requires separate referenced primary-key evidence. Missing or stale observations, unmapped or unqualified names, and three-part names remain gaps. Proven qualified guarded source absence skips this check.
+
+Finding fields identify the action, source table, reason and affected column where needed. Existing FK forbid, NOT VALID and VALIDATE policies retain their scope. Scope excludes candidate-key eligibility, arity, casts or equality operators, grants, inheritance effects, validation of existing rows and execution simulation.
+
+## Evidence
+
+The baseline at `1bc8709c` paired 15 native statements with 30 real CLI audits. The follow-up at `53cc0592` paired 11 native statements with 22 real CLI audits. The second run verified exact comma-containing identifiers, system columns, relation lookup precedence, omitted lists, and unqualified, cross-database, partitioned and persistence boundaries. Each case used independent catalog, file, row and sequence oracles around audit and native rollback.
+
+- `/tmp/ds-pg-f09-add-fk-targets-1bc8709c/evidence.json`
+- `/tmp/ds-pg-d22-fk-identity-edges-53cc0592/evidence.json`
+
+## Evidence plan
+
+Preserve all previous T37 cases and policy profiles. Add dedicated cases for offline and disabled policy, exact names (including a comma), missing and wrong-kind references, exact source and reference misses, system targets, omitted reference list, source guard, stale catalog, catalog-qualified, unqualified and partitioned reference gaps. Bind only the original ADD FOREIGN KEY cell at the PG17 anchor.
+
+## Sources
+
+- [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
+- [PostgreSQL 17.7 foreign-key identity resolution](https://github.com/postgres/postgres/blob/REL_17_7/src/backend/commands/tablecmds.c)

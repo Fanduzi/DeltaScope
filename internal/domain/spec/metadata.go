@@ -9,6 +9,7 @@ type Metadata struct {
 	Instance               *InstanceFacts          `json:"instance,omitempty"`
 	Version                *VersionIdentity        `json:"version,omitempty"`
 	TargetTable            *TableSnapshot          `json:"target_table,omitempty"`
+	PGForeignKeyReference  *TableSnapshot          `json:"-"`
 	PGReplicaIdentity      *PGReplicaIdentityIndex `json:"-"`
 	PGConstraintUsingIndex *PGConstraintUsingIndex `json:"-"`
 	PGTableTablespace      *PGTableTablespace      `json:"-"`

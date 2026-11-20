@@ -997,6 +997,8 @@ type Alter struct {
 	PGColumnType PGColumnTypeTarget `json:"-"`
 	// PGUsingIndexName preserves the exact PostgreSQL constraint index selection.
 	PGUsingIndexName string `json:"-"`
+	// PGForeignKey preserves both ordered foreign-key column lists privately.
+	PGForeignKey *PGForeignKeySelection `json:"-"`
 	// PGAddColumnIfNotExists is the authored ADD COLUMN guard, separate from the table guard.
 	PGAddColumnIfNotExists bool `json:"-"`
 	// PGTableOwner carries the authored RoleSpec without serializing it.

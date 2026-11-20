@@ -956,15 +956,22 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		if constraintType == "primary_key" || constraintType == "unique" {
 			options["using_index"] = strconv.FormatBool(constraint.GetIndexname() != "")
 		}
+		var foreignKey *spec.PGForeignKeySelection
 		if constraint.GetContype() == pg_query.ConstrType_CONSTR_FOREIGN {
-			if cols := stringValuesFromNodes(constraint.GetFkAttrs()); len(cols) > 0 {
-				options["columns"] = strings.Join(cols, ",")
+			reference := constraint.GetPktable()
+			columns := stringValuesFromNodes(constraint.GetFkAttrs())
+			referencedColumns := stringValuesFromNodes(constraint.GetPkAttrs())
+			if table := tableFromRangeVar(reference); table != nil {
+				foreignKey = &spec.PGForeignKeySelection{Reference: *table, ReferenceCatalogQualified: reference.GetCatalogname() != "", Columns: columns, ReferencedColumns: referencedColumns}
+			}
+			if len(columns) > 0 {
+				options["columns"] = strings.Join(columns, ",")
 			}
 			if refTable := rangeVarName(constraint.GetPktable()); refTable != "" {
 				options["referenced_table"] = refTable
 			}
-			if refCols := stringValuesFromNodes(constraint.GetPkAttrs()); len(refCols) > 0 {
-				options["referenced_columns"] = strings.Join(refCols, ",")
+			if len(referencedColumns) > 0 {
+				options["referenced_columns"] = strings.Join(referencedColumns, ",")
 			}
 			if refSchema := rangeVarSchema(constraint.GetPktable()); refSchema != "" {
 				options["referenced_schema"] = refSchema
@@ -976,7 +983,7 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		} else if cols := stringValuesFromNodes(constraint.GetKeys()); len(cols) > 0 {
 			options["columns"] = strings.Join(cols, ",")
 		}
-		return spec.Alter{Action: "add_constraint", Name: constraint.GetConname(), Options: options, PGUsingIndexName: constraint.GetIndexname()}, true, nil
+		return spec.Alter{Action: "add_constraint", Name: constraint.GetConname(), Options: options, PGUsingIndexName: constraint.GetIndexname(), PGForeignKey: foreignKey}, true, nil
 	case pg_query.AlterTableType_AT_DropConstraint:
 		return spec.Alter{Action: "drop_constraint", Name: cmd.GetName(), Options: map[string]string{
 			"if_exists": strconv.FormatBool(cmd.GetMissingOk()),
