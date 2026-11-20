@@ -765,9 +765,13 @@ Foreign-table and non-CHECK inheritance, recursive dependency closure,
 permissions and locks remain separate premises. The final commit is in
 verification.
 The first fixed run at `6c351ff3` was interrupted to update the SDK
-metadata-provider contract for the new `PGConstraintState` fields. Its
-own Compose resources were cleaned. Verification restarts at the new
-commit with the SDK documentation included.
+metadata-provider contract for the new `PGConstraintState` fields. The
+next candidate, `71552bf3`, was interrupted after native PostgreSQL 17.7
+confirmed that a detach-pending child is skipped by the ONLY traversal.
+The provider excludes these catalog entries. The attached-child blocker
+still matched the native refusal in a paired CLI comparison. Both stopped
+runs have owned Compose cleanup receipts. The corrected candidate starts
+a new full verification run.
 [D25](../decisions/2026-11-20-postgresql-drop-inherited-check.md)
 [D26](../decisions/2026-11-20-postgresql-drop-check-only.md)
 

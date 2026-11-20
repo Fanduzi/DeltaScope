@@ -45,6 +45,7 @@ func TestLoadPGConstraintStates(t *testing.T) {
 			for _, predicate := range []string{
 				"tbl.oid OPERATOR(pg_catalog.=) pc.conrelid",
 				"pc.coninhcount OPERATOR(pg_catalog.>) 0",
+				"h.inhparent OPERATOR(pg_catalog.=) tbl.oid and not h.inhdetachpending",
 				"n.oid OPERATOR(pg_catalog.=) tbl.relnamespace",
 				"n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text",
 				"tbl.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text",

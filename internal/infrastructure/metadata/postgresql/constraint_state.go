@@ -22,7 +22,7 @@ func (p *Provider) loadPGConstraintStates(ctx context.Context, snapshot *spec.Ta
 		                  and tbl.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
 		             then not pc.connoinherit and exists (
 		                 select 1 from pg_catalog.pg_inherits h
-		                 where h.inhparent OPERATOR(pg_catalog.=) tbl.oid)
+		                 where h.inhparent OPERATOR(pg_catalog.=) tbl.oid and not h.inhdetachpending)
 		             end
 		from pg_catalog.pg_constraint pc
 		join pg_catalog.pg_class tbl on tbl.oid OPERATOR(pg_catalog.=) pc.conrelid
