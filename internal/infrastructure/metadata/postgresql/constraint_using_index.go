@@ -46,8 +46,7 @@ func (p *Provider) resolveConstraintUsingIndex(ctx context.Context, req spec.Obj
 		               end
 		        from (
 		          select case when not installed.opcdefault then false
-		                      when defaults.n OPERATOR(pg_catalog.=) 1
-		                      then defaults.oid OPERATOR(pg_catalog.=) installed.oid
+		                      when defaults.oid is not null then defaults.oid OPERATOR(pg_catalog.=) installed.oid
 		                 end as allowed
 		          from ROWS FROM (pg_catalog.unnest(i.indkey), pg_catalog.unnest(i.indclass))
 		               with ordinality as keys(attnum, opclass, slot)
@@ -55,13 +54,55 @@ func (p *Provider) resolveConstraintUsingIndex(ctx context.Context, req spec.Obj
 		           and installed.opcmethod OPERATOR(pg_catalog.=) idx.relam
 		          left join pg_catalog.pg_attribute a on a.attrelid OPERATOR(pg_catalog.=) i.indrelid
 		           and a.attnum OPERATOR(pg_catalog.=) keys.attnum and not a.attisdropped
-		          left join pg_catalog.pg_type t on t.oid OPERATOR(pg_catalog.=) a.atttypid
 		          left join lateral (
-		            select pg_catalog.count(*) as n, (pg_catalog.array_agg(opc.oid))[1] as oid
-		            from pg_catalog.pg_opclass opc
-		            where opc.opcmethod OPERATOR(pg_catalog.=) idx.relam and opc.opcdefault
-		              and opc.opcintype OPERATOR(pg_catalog.=) t.oid
-		              and t.typbasetype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
+		            with recursive column_types as (
+		                select t.* from pg_catalog.pg_type t where t.oid OPERATOR(pg_catalog.=) a.atttypid
+		                union
+		                select t.* from column_types parent
+		                join pg_catalog.pg_type t on t.oid OPERATOR(pg_catalog.=) parent.typbasetype
+		            ), base as (
+		                select t.*, t.typelem OPERATOR(pg_catalog.<>) 0::pg_catalog.oid and
+		                    t.typsubscript OPERATOR(pg_catalog.=) 'pg_catalog.array_subscript_handler(internal)'::pg_catalog.regprocedure as is_array
+		                from column_types t where t.typbasetype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
+		            ), element_types as (
+		                select t.* from base b join pg_catalog.pg_type t on t.oid OPERATOR(pg_catalog.=) b.typelem
+		                where b.is_array
+		                union
+		                select t.* from element_types parent
+		                join pg_catalog.pg_type t on t.oid OPERATOR(pg_catalog.=) parent.typbasetype
+		            ), matches as (
+		                select opc.oid,
+		                    case when target.oid OPERATOR(pg_catalog.=) b.oid then 0
+		                         when target.typispreferred and target.typcategory OPERATOR(pg_catalog.=) b.typcategory then 1
+		                         else 2 end as priority
+		                from base b cross join pg_catalog.pg_opclass opc
+		                join pg_catalog.pg_type target on target.oid OPERATOR(pg_catalog.=) opc.opcintype
+		                left join pg_catalog.pg_cast cast_rule on cast_rule.castsource OPERATOR(pg_catalog.=) b.oid
+		                    and cast_rule.casttarget OPERATOR(pg_catalog.=) target.oid
+		                    and cast_rule.castmethod OPERATOR(pg_catalog.=) 'b' and cast_rule.castcontext OPERATOR(pg_catalog.=) 'i'
+		                where opc.opcmethod OPERATOR(pg_catalog.=) idx.relam and opc.opcdefault
+		                  and (target.oid OPERATOR(pg_catalog.=) b.oid or cast_rule.oid is not null or case
+		                    when target.oid OPERATOR(pg_catalog.=) 'pg_catalog."any"'::pg_catalog.regtype then true
+		                    when target.oid OPERATOR(pg_catalog.=) 'pg_catalog.anyelement'::pg_catalog.regtype then true
+		                    when target.oid OPERATOR(pg_catalog.=) 'pg_catalog.anycompatible'::pg_catalog.regtype then true
+		                    when target.oid OPERATOR(pg_catalog.=) 'pg_catalog.anyarray'::pg_catalog.regtype then b.is_array
+		                    when target.oid OPERATOR(pg_catalog.=) 'pg_catalog.anycompatiblearray'::pg_catalog.regtype then b.is_array
+		                    when target.oid OPERATOR(pg_catalog.=) 'pg_catalog.anynonarray'::pg_catalog.regtype then not b.is_array
+		                    when target.oid OPERATOR(pg_catalog.=) 'pg_catalog.anycompatiblenonarray'::pg_catalog.regtype then not b.is_array
+		                    when target.oid OPERATOR(pg_catalog.=) 'pg_catalog.anyenum'::pg_catalog.regtype then b.typtype OPERATOR(pg_catalog.=) 'e'
+		                    when target.oid OPERATOR(pg_catalog.=) 'pg_catalog.anyrange'::pg_catalog.regtype then b.typtype OPERATOR(pg_catalog.=) 'r'
+		                    when target.oid OPERATOR(pg_catalog.=) 'pg_catalog.anycompatiblerange'::pg_catalog.regtype then b.typtype OPERATOR(pg_catalog.=) 'r'
+		                    when target.oid OPERATOR(pg_catalog.=) 'pg_catalog.anymultirange'::pg_catalog.regtype then b.typtype OPERATOR(pg_catalog.=) 'm'
+		                    when target.oid OPERATOR(pg_catalog.=) 'pg_catalog.anycompatiblemultirange'::pg_catalog.regtype then b.typtype OPERATOR(pg_catalog.=) 'm'
+		                    when target.oid OPERATOR(pg_catalog.=) 'pg_catalog.record'::pg_catalog.regtype then b.typrelid OPERATOR(pg_catalog.<>) 0::pg_catalog.oid
+		                    when target.oid OPERATOR(pg_catalog.=) 'pg_catalog.record[]'::pg_catalog.regtype then exists (
+		                        select 1 from element_types e
+		                        where e.typbasetype OPERATOR(pg_catalog.=) 0::pg_catalog.oid and e.typrelid OPERATOR(pg_catalog.<>) 0::pg_catalog.oid)
+		                    else false end)
+		                order by priority fetch first 1 row with ties
+		            )
+		            select case when pg_catalog.count(*) OPERATOR(pg_catalog.=) 1 then (pg_catalog.array_agg(oid))[1] end as oid
+		            from matches
 		          ) defaults on true
 		          where keys.slot OPERATOR(pg_catalog.<=) i.indnkeyatts
 		        ) key_matches)

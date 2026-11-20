@@ -24,7 +24,7 @@ func (p *Provider) resolveForeignKeyEquality(ctx context.Context, target *spec.P
 	}
 	var position sql.NullInt64
 	err = p.db.QueryRowContext(ctx, `
-		with request as (
+		with recursive request as (
 		    select $1::pg_catalog.text as source_schema, $2::pg_catalog.text as source_table,
 		           $3::pg_catalog.text as referenced_schema, $4::pg_catalog.text as referenced_table,
 		           $5::pg_catalog.jsonb as source_columns, $6::pg_catalog.jsonb as referenced_columns
@@ -68,28 +68,50 @@ func (p *Provider) resolveForeignKeyEquality(ctx context.Context, target *spec.P
 		                  and pg_catalog.jsonb_agg(k.column_name) OPERATOR(pg_catalog.@>) k.referenced_columns
 		                  and k.referenced_columns OPERATOR(pg_catalog.@>) pg_catalog.jsonb_agg(k.column_name) end)
 		    order by k.indexrelid limit 1
-		), comparison as (
-		    select pos.position,
-		        case when opc.opcmethod OPERATOR(pg_catalog.=) 403::pg_catalog.oid
-		                  and ft.typtype OPERATOR(pg_catalog.=) any(array['b','e']::pg_catalog."char"[])
-		                  and pt.typtype OPERATOR(pg_catalog.=) any(array['b','e']::pg_catalog."char"[])
-		                  and ot.typtype OPERATOR(pg_catalog.=) 'b'
-		                  and ft.typelem OPERATOR(pg_catalog.=) 0::pg_catalog.oid
-		                  and pt.typelem OPERATOR(pg_catalog.=) 0::pg_catalog.oid
-		                  and ot.typelem OPERATOR(pg_catalog.=) 0::pg_catalog.oid
-		                  and ppeq.oid is not null
-		             then (pfeq.oid is not null and ffeq.oid is not null)
-		               or ((pt.oid OPERATOR(pg_catalog.=) ot.oid or pk_cast.oid is not null)
-		                and (ft.oid OPERATOR(pg_catalog.=) ot.oid or fk_cast.oid is not null))
-		        end as allowed
+		), slots_with_types as (
+		    select pos.position, k.pk_type, a.atttypid as fk_type, k.opclass
 		    from selected i
 		    join key_slots k on k.indexrelid OPERATOR(pg_catalog.=) i.indexrelid
 		    cross join lateral pg_catalog.jsonb_array_elements_text(k.source_columns) with ordinality as pos(name, position)
 		    join pg_catalog.pg_attribute a on a.attrelid OPERATOR(pg_catalog.=) k.source_oid
 		     and a.attname OPERATOR(pg_catalog.=) pos.name and a.attnum OPERATOR(pg_catalog.>) 0 and not a.attisdropped
-		    left join pg_catalog.pg_opclass opc on opc.oid OPERATOR(pg_catalog.=) k.opclass
-		    left join pg_catalog.pg_type ft on ft.oid OPERATOR(pg_catalog.=) a.atttypid
-		    left join pg_catalog.pg_type pt on pt.oid OPERATOR(pg_catalog.=) k.pk_type
+		    where case when pg_catalog.jsonb_array_length(k.referenced_columns) OPERATOR(pg_catalog.=) 0
+		              then k.position OPERATOR(pg_catalog.=) pos.position
+		              else k.column_name OPERATOR(pg_catalog.=) (k.referenced_columns OPERATOR(pg_catalog.->>) cast(pos.position OPERATOR(pg_catalog.-) 1 as pg_catalog.int4)) end
+		), types(original, oid, base) as (
+		    select t.oid, t.oid, t.typbasetype
+		    from pg_catalog.pg_type t join (select pk_type as oid from slots_with_types union select fk_type from slots_with_types) s
+		      on s.oid OPERATOR(pg_catalog.=) t.oid
+		    union
+		    select c.original, t.oid, t.typbasetype
+		    from types c join pg_catalog.pg_type t on t.oid OPERATOR(pg_catalog.=) c.base
+		), comparison as (
+		    select s.position,
+		        case when opc.opcmethod OPERATOR(pg_catalog.=) 403::pg_catalog.oid and ppeq.oid is not null
+		             then case when pfeq.oid is not null and ffeq.oid is not null then true
+		                  when ot.oid OPERATOR(pg_catalog.=) 'pg_catalog.anyenum'::pg_catalog.regtype
+		                    and ft.typtype OPERATOR(pg_catalog.=) 'e' and pt.typtype OPERATOR(pg_catalog.=) 'e'
+		                  then s.fk_type OPERATOR(pg_catalog.=) s.pk_type and s.fk_type OPERATOR(pg_catalog.=) ft.oid
+		                  when ot.oid OPERATOR(pg_catalog.=) 'pg_catalog.anyarray'::pg_catalog.regtype
+		                    and ft.typelem OPERATOR(pg_catalog.<>) 0::pg_catalog.oid and pt.typelem OPERATOR(pg_catalog.<>) 0::pg_catalog.oid
+		                    and ft.typsubscript OPERATOR(pg_catalog.=) 6179::pg_catalog.oid and pt.typsubscript OPERATOR(pg_catalog.=) 6179::pg_catalog.oid
+		                  then ft.oid OPERATOR(pg_catalog.=) pt.oid
+		                  when ft.typtype OPERATOR(pg_catalog.=) any(array['b','e']::pg_catalog."char"[])
+		                    and pt.typtype OPERATOR(pg_catalog.=) any(array['b','e']::pg_catalog."char"[])
+		                    and ot.typtype OPERATOR(pg_catalog.=) 'b'
+		                    and ft.typelem OPERATOR(pg_catalog.=) 0::pg_catalog.oid
+		                    and pt.typelem OPERATOR(pg_catalog.=) 0::pg_catalog.oid
+		                    and ot.typelem OPERATOR(pg_catalog.=) 0::pg_catalog.oid
+		                  then (pt.oid OPERATOR(pg_catalog.=) ot.oid or pk_cast.oid is not null)
+		                   and (ft.oid OPERATOR(pg_catalog.=) ot.oid or fk_cast.oid is not null)
+		                  end
+		        end as allowed
+		    from slots_with_types s
+		    left join pg_catalog.pg_opclass opc on opc.oid OPERATOR(pg_catalog.=) s.opclass
+		    left join types fb on fb.original OPERATOR(pg_catalog.=) s.fk_type and fb.base OPERATOR(pg_catalog.=) 0::pg_catalog.oid
+		    left join types pb on pb.original OPERATOR(pg_catalog.=) s.pk_type and pb.base OPERATOR(pg_catalog.=) 0::pg_catalog.oid
+		    left join pg_catalog.pg_type ft on ft.oid OPERATOR(pg_catalog.=) fb.oid
+		    left join pg_catalog.pg_type pt on pt.oid OPERATOR(pg_catalog.=) pb.oid
 		    left join pg_catalog.pg_type ot on ot.oid OPERATOR(pg_catalog.=) opc.opcintype
 		    left join pg_catalog.pg_amop ppeq on ppeq.amopfamily OPERATOR(pg_catalog.=) opc.opcfamily
 		     and ppeq.amopstrategy OPERATOR(pg_catalog.=) 3 and ppeq.amoplefttype OPERATOR(pg_catalog.=) ot.oid and ppeq.amoprighttype OPERATOR(pg_catalog.=) ot.oid
@@ -101,9 +123,6 @@ func (p *Provider) resolveForeignKeyEquality(ctx context.Context, target *spec.P
 		     and pk_cast.casttarget OPERATOR(pg_catalog.=) ot.oid and pk_cast.castcontext OPERATOR(pg_catalog.=) 'i'
 		    left join pg_catalog.pg_cast fk_cast on fk_cast.castsource OPERATOR(pg_catalog.=) ft.oid
 		     and fk_cast.casttarget OPERATOR(pg_catalog.=) ot.oid and fk_cast.castcontext OPERATOR(pg_catalog.=) 'i'
-		    where case when pg_catalog.jsonb_array_length(k.referenced_columns) OPERATOR(pg_catalog.=) 0
-		              then k.position OPERATOR(pg_catalog.=) pos.position
-		              else k.column_name OPERATOR(pg_catalog.=) (k.referenced_columns OPERATOR(pg_catalog.->>) cast(pos.position OPERATOR(pg_catalog.-) 1 as pg_catalog.int4)) end
 		)
 		select case when pg_catalog.count(*) OPERATOR(pg_catalog.=) pg_catalog.jsonb_array_length($5::pg_catalog.jsonb)
 		             and pg_catalog.count(allowed) OPERATOR(pg_catalog.=) pg_catalog.count(*)
