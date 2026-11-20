@@ -11,6 +11,14 @@ with the column. Additional cases pin stale and offline facts, exact names,
 policy disablement and the privacy of catalog evidence.
 [Decision](../../docs/decisions/2026-11-21-postgresql-drop-column-dependencies.md)
 
+## T37 PostgreSQL TYPE dependencies and inherited column actions
+
+The cases pin direct TYPE dependencies, inherited TYPE and DROP EXPRESSION
+refusals, and ADD COLUMN behavior on inheritance parents and partition children.
+[TYPE dependencies](../../docs/decisions/2026-11-21-postgresql-column-type-dependencies.md)
+[Inherited TYPE and DROP EXPRESSION](../../docs/decisions/2026-11-21-postgresql-inherited-type-and-drop-expression.md)
+[ADD COLUMN traversal](../../docs/decisions/2026-11-21-postgresql-add-column-traversal.md)
+
 ## T37 PostgreSQL constraint operator classes and action columns
 
 Ten new cases verify default operator-class evidence for PRIMARY KEY or

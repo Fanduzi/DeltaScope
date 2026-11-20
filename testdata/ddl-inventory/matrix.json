@@ -7551,7 +7551,9 @@
                 "file:testdata/ddl-golden/T37.json#add-column-generation-invalid",
                 "file:testdata/ddl-golden/T37.json#pg-add-column-generation",
                 "file:testdata/sql-corpus/postgresql/ddl/findings/generation_declaration_invalid.expected.yaml#ddl.pg.column.generation.declaration.valid",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/identity_cycle.expected.yaml#ddl.pg.column.identity.cycle.warn"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/identity_cycle.expected.yaml#ddl.pg.column.identity.cycle.warn",
+                "file:testdata/ddl-golden/T37.json#pg-add-column-traversal-ordinary-parent-identity",
+                "file:testdata/ddl-golden/T37.json#pg-add-column-traversal-partitioned-root-identity"
               ]
             }
           ]
@@ -7575,7 +7577,10 @@
                 "file:testdata/ddl-golden/T37.json#pg-column-identity-add-system",
                 "file:testdata/ddl-golden/T37.json#pg-column-identity-table-guard-absent",
                 "file:testdata/ddl-golden/T37.json#pg-column-identity-table-guard-other-kind",
-                "file:testdata/ddl-golden/T37.json#pg-column-identity-scope"
+                "file:testdata/ddl-golden/T37.json#pg-column-identity-scope",
+                "file:testdata/ddl-golden/T37.json#pg-add-column-traversal-only-parent",
+                "file:testdata/ddl-golden/T37.json#pg-add-column-traversal-partition-child-new",
+                "file:testdata/ddl-golden/T37.json#pg-add-column-traversal-existing-parent"
               ]
             }
           ]
@@ -7597,7 +7602,11 @@
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json#pg-column-identity-add-guard",
                 "file:testdata/ddl-golden/T37.json#pg-column-identity-add-system",
-                "file:testdata/ddl-golden/T37.json#column-identity-add-offline"
+                "file:testdata/ddl-golden/T37.json#column-identity-add-offline",
+                "file:testdata/ddl-golden/T37.json#pg-add-column-traversal-if-not-exists-only-parent",
+                "file:testdata/ddl-golden/T37.json#pg-add-column-traversal-partition-child-guard",
+                "file:testdata/ddl-golden/T37.json#pg-add-column-traversal-parent-system",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/partition_add_column_guard.expected.yaml#ddl.alter.add_column.exists.forbid"
               ]
             }
           ]
@@ -7761,7 +7770,16 @@
                 "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-collation-exact-case",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-collation-noncollatable",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-collation-searchpath",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_assignment.expected.yaml#ddl.pg.alter.column_type.destination.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_assignment.expected.yaml#ddl.pg.alter.column_type.destination.valid",
+                "file:testdata/ddl-golden/T37.json#pg-column-inherited-action-type-child",
+                "file:testdata/ddl-golden/T37.json#pg-column-inherited-action-type-partition-key",
+                "file:testdata/ddl-golden/T37.json#pg-column-inherited-action-type-only-parent",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-dependency-view",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-dependency-materialized-view",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-dependency-generated",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-dependency-fk-neutral",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-dependency-index-neutral",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_dependency.expected.yaml#ddl.pg.alter.column_type.destination.valid"
               ]
             }
           ]
@@ -7788,7 +7806,9 @@
                 "file:testdata/ddl-golden/T37.json#pg-column-type-destination-using",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-destination-using-missing",
                 "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_destination.expected.yaml#ddl.pg.alter.column_type.destination.valid",
-                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-using-explicit"
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-using-explicit",
+                "file:testdata/ddl-golden/T37.json#pg-column-inherited-action-type-using-inherited",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-dependency-using"
               ]
             }
           ]
@@ -7929,7 +7949,12 @@
                 "file:testdata/ddl-golden/T37.json#pg-column-generation-prior-ddl",
                 "file:testdata/ddl-golden/T37.json#pg-column-generation-prior-parser",
                 "file:testdata/ddl-golden/T37.json#column-generation-mode-duplicates",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.column.generation.transition.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.column.generation.transition.valid",
+                "file:testdata/ddl-golden/T37.json#pg-column-inherited-action-expression-child",
+                "file:testdata/ddl-golden/T37.json#pg-column-inherited-action-expression-guarded",
+                "file:testdata/ddl-golden/T37.json#pg-column-inherited-action-expression-only",
+                "file:testdata/ddl-golden/T37.json#pg-column-inherited-action-expression-recursive",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/inherited_drop_expression.expected.yaml#ddl.pg.alter.column.generation.transition.valid"
               ]
             }
           ]

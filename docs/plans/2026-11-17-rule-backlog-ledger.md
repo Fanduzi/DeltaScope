@@ -883,6 +883,32 @@ zero containers, Golden networks and Golden volumes.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44806793432/job/136532797997),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136532937032) succeeded at the delivered SHA.
 
+### D34–D36 PostgreSQL TYPE dependencies and inherited column actions
+
+`226e8b73` binds applicable column dependencies and traversal facts.
+`208ec31b` extends the existing blockers for three independent premises.
+
+- D34 checks direct view, materialized-view and stored generated-column
+  dependencies after the exact TYPE destination prerequisites pass.
+  Missing applicable facts produce `column.pg_type_dependencies`.
+  [Decision](../decisions/2026-11-21-postgresql-column-type-dependencies.md)
+- D35 checks inherited sources and direct partition keys for TYPE and TYPE
+  USING. It checks direct inherited DROP EXPRESSION and an ONLY request
+  that needs attached-child traversal.
+  [Decision](../decisions/2026-11-21-postgresql-inherited-type-and-drop-expression.md)
+- D36 checks direct partition ADD, ordinary-parent traversal and identity
+  ADD on ordinary inheritance parents. Eligible IF NOT EXISTS duplicates
+  retain the no-op. The finding uses the observed column presence.
+  [Decision](../decisions/2026-11-21-postgresql-add-column-traversal.md)
+
+The corrected preview passed 481/481 with 13,697 assertions. Twenty-two
+added native commands returned five successes and seventeen refusals.
+The existing TYPE scope case retains its SQL and native refusal and now
+expects the direct partition-key finding. Inventory adds 25 references
+on six exact PostgreSQL 17 cells. The parent classifications and original
+19-family and 63-row denominator stay in place. The fixed candidate is in
+verification.
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.

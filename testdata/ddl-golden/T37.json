@@ -6,6 +6,9 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-add-column-traversal": {"enable": {"ddl.alter.add_column.exists.forbid": {"level": "blocker"}}},
+   "pg-inherited-type-expression": {"enable": {"ddl.pg.alter.column_type.source.valid": {"level": "blocker"}, "ddl.pg.alter.column.generation.transition.valid": {"level": "blocker"}}},
+   "pg-column-type-dependencies": {"enable": {"ddl.pg.alter.column_type.destination.valid": {"level": "blocker"}}},
    "pg-column-traversal": {"enable": {"ddl.alter.drop_column.exists.require": {"level": "blocker"}, "ddl.alter.rename_column.exists.require": {"level": "blocker"}}},
    "pg-fk-delete-set-columns": {"enable": {"ddl.pg.alter.add_foreign_key.targets.valid": {"level": "blocker"}}},
    "pg-constraint-index-opclasses": {"enable": {"ddl.pg.alter.constraint_using_index.valid": {"level": "blocker"}}},
@@ -4805,6 +4808,2811 @@
   }
  ],
  "metadata_cases": [
+   {
+     "id": "pg-add-column-traversal-only-parent",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-add-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_add_only_parent"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_add_only_parent CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_only_parent'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE ONLY pgcol_add_only_parent.parent ADD COLUMN extra int",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_only_parent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_add_only_parent",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_add_only_parent.parent(id int,payload int);\nINSERT INTO pgcol_add_only_parent.parent VALUES (1,20);\nCREATE TABLE pgcol_add_only_parent.child() INHERITS(pgcol_add_only_parent.parent);\nINSERT INTO pgcol_add_only_parent.child VALUES (2,30);\nCREATE TABLE pgcol_add_only_parent.merged(id int) INHERITS(pgcol_add_only_parent.parent);\nCREATE TABLE pgcol_add_only_parent.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_add_only_parent.part PARTITION OF pgcol_add_only_parent.root DEFAULT;\nINSERT INTO pgcol_add_only_parent.root VALUES(3,40);\nCREATE TABLE pgcol_add_only_parent.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_add_only_parent.guard START 7;\nCREATE TABLE pgcol_add_only_parent.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_only_parent'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.add_column.exists.forbid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "ColumnExists"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.add_column.exists.forbid",
+           "metadata": {
+             "reason_code": "add_column_requires_child_traversal",
+             "exists": false
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_add_only_parent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_only_parent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_only_parent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_add_only_parent.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_add_only_parent.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_add_only_parent.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_add_only_parent.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_only_parent.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE ONLY pgcol_add_only_parent.parent ADD COLUMN extra int",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_add_only_parent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_only_parent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_only_parent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_add_only_parent.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_add_only_parent.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_add_only_parent.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_add_only_parent.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_only_parent.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_add_only_parent CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_only_parent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-add-column-traversal-if-not-exists-only-parent",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-add-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_add_if_not_exists_only_parent"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_add_if_not_exists_only_parent CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_if_not_exists_only_parent'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE ONLY pgcol_add_if_not_exists_only_parent.parent ADD COLUMN IF NOT EXISTS id int",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_if_not_exists_only_parent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_add_if_not_exists_only_parent",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_add_if_not_exists_only_parent.parent(id int,payload int);\nINSERT INTO pgcol_add_if_not_exists_only_parent.parent VALUES (1,20);\nCREATE TABLE pgcol_add_if_not_exists_only_parent.child() INHERITS(pgcol_add_if_not_exists_only_parent.parent);\nINSERT INTO pgcol_add_if_not_exists_only_parent.child VALUES (2,30);\nCREATE TABLE pgcol_add_if_not_exists_only_parent.merged(id int) INHERITS(pgcol_add_if_not_exists_only_parent.parent);\nCREATE TABLE pgcol_add_if_not_exists_only_parent.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_add_if_not_exists_only_parent.part PARTITION OF pgcol_add_if_not_exists_only_parent.root DEFAULT;\nINSERT INTO pgcol_add_if_not_exists_only_parent.root VALUES(3,40);\nCREATE TABLE pgcol_add_if_not_exists_only_parent.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_add_if_not_exists_only_parent.guard START 7;\nCREATE TABLE pgcol_add_if_not_exists_only_parent.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_if_not_exists_only_parent'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "ColumnExists"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_add_if_not_exists_only_parent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_if_not_exists_only_parent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_if_not_exists_only_parent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_add_if_not_exists_only_parent.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_add_if_not_exists_only_parent.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_add_if_not_exists_only_parent.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_add_if_not_exists_only_parent.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_if_not_exists_only_parent.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native operation",
+         "sql": "ALTER TABLE ONLY pgcol_add_if_not_exists_only_parent.parent ADD COLUMN IF NOT EXISTS id int",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_add_if_not_exists_only_parent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_if_not_exists_only_parent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_if_not_exists_only_parent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_add_if_not_exists_only_parent.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_add_if_not_exists_only_parent.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_add_if_not_exists_only_parent.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_add_if_not_exists_only_parent.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_if_not_exists_only_parent.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_add_if_not_exists_only_parent CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_if_not_exists_only_parent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-add-column-traversal-ordinary-parent-identity",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-add-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_add_ordinary_parent_identity"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_add_ordinary_parent_identity CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_ordinary_parent_identity'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_add_ordinary_parent_identity.parent ADD COLUMN seq int GENERATED BY DEFAULT AS IDENTITY",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_ordinary_parent_identity'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_add_ordinary_parent_identity",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_add_ordinary_parent_identity.parent(id int,payload int);\nINSERT INTO pgcol_add_ordinary_parent_identity.parent VALUES (1,20);\nCREATE TABLE pgcol_add_ordinary_parent_identity.child() INHERITS(pgcol_add_ordinary_parent_identity.parent);\nINSERT INTO pgcol_add_ordinary_parent_identity.child VALUES (2,30);\nCREATE TABLE pgcol_add_ordinary_parent_identity.merged(id int) INHERITS(pgcol_add_ordinary_parent_identity.parent);\nCREATE TABLE pgcol_add_ordinary_parent_identity.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_add_ordinary_parent_identity.part PARTITION OF pgcol_add_ordinary_parent_identity.root DEFAULT;\nINSERT INTO pgcol_add_ordinary_parent_identity.root VALUES(3,40);\nCREATE TABLE pgcol_add_ordinary_parent_identity.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_add_ordinary_parent_identity.guard START 7;\nCREATE TABLE pgcol_add_ordinary_parent_identity.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_ordinary_parent_identity'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.add_column.exists.forbid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "ColumnExists"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.add_column.exists.forbid",
+           "metadata": {
+             "reason_code": "add_identity_column_inheritance_inapplicable",
+             "exists": false
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_add_ordinary_parent_identity.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_ordinary_parent_identity'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_ordinary_parent_identity'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_add_ordinary_parent_identity.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_add_ordinary_parent_identity.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_add_ordinary_parent_identity.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_add_ordinary_parent_identity.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_ordinary_parent_identity.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol_add_ordinary_parent_identity.parent ADD COLUMN seq int GENERATED BY DEFAULT AS IDENTITY",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_add_ordinary_parent_identity.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_ordinary_parent_identity'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_ordinary_parent_identity'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_add_ordinary_parent_identity.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_add_ordinary_parent_identity.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_add_ordinary_parent_identity.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_add_ordinary_parent_identity.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_ordinary_parent_identity.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_add_ordinary_parent_identity CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_ordinary_parent_identity'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-add-column-traversal-partitioned-root-identity",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-add-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_add_partitioned_root_identity"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_add_partitioned_root_identity CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_partitioned_root_identity'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_add_partitioned_root_identity.root ADD COLUMN seq int GENERATED BY DEFAULT AS IDENTITY",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_partitioned_root_identity'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_add_partitioned_root_identity",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_add_partitioned_root_identity.parent(id int,payload int);\nINSERT INTO pgcol_add_partitioned_root_identity.parent VALUES (1,20);\nCREATE TABLE pgcol_add_partitioned_root_identity.child() INHERITS(pgcol_add_partitioned_root_identity.parent);\nINSERT INTO pgcol_add_partitioned_root_identity.child VALUES (2,30);\nCREATE TABLE pgcol_add_partitioned_root_identity.merged(id int) INHERITS(pgcol_add_partitioned_root_identity.parent);\nCREATE TABLE pgcol_add_partitioned_root_identity.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_add_partitioned_root_identity.part PARTITION OF pgcol_add_partitioned_root_identity.root DEFAULT;\nINSERT INTO pgcol_add_partitioned_root_identity.root VALUES(3,40);\nCREATE TABLE pgcol_add_partitioned_root_identity.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_add_partitioned_root_identity.guard START 7;\nCREATE TABLE pgcol_add_partitioned_root_identity.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_partitioned_root_identity'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "evidence_gaps": 1,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "ColumnExists"
+       ],
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.add_column.exists.forbid",
+           "reason_code": "unproven_column_identity",
+           "required_facts": [
+             "target_table.pg_columns"
+           ]
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_add_partitioned_root_identity.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_partitioned_root_identity'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_partitioned_root_identity'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_add_partitioned_root_identity.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_add_partitioned_root_identity.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_add_partitioned_root_identity.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_add_partitioned_root_identity.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_partitioned_root_identity.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native operation",
+         "sql": "ALTER TABLE pgcol_add_partitioned_root_identity.root ADD COLUMN seq int GENERATED BY DEFAULT AS IDENTITY",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native installs parent and child identity",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid IN ('pgcol_add_partitioned_root_identity.root'::regclass,'pgcol_add_partitioned_root_identity.part'::regclass) AND attname='seq' AND attidentity='d'",
+         "expect": "2"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_partitioned_root_identity.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_add_partitioned_root_identity CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_partitioned_root_identity'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-add-column-traversal-partition-child-guard",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-add-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_add_partition_child_guard"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_add_partition_child_guard CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_partition_child_guard'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_add_partition_child_guard.part ADD COLUMN IF NOT EXISTS id int",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_partition_child_guard'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_add_partition_child_guard",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_add_partition_child_guard.parent(id int,payload int);\nINSERT INTO pgcol_add_partition_child_guard.parent VALUES (1,20);\nCREATE TABLE pgcol_add_partition_child_guard.child() INHERITS(pgcol_add_partition_child_guard.parent);\nINSERT INTO pgcol_add_partition_child_guard.child VALUES (2,30);\nCREATE TABLE pgcol_add_partition_child_guard.merged(id int) INHERITS(pgcol_add_partition_child_guard.parent);\nCREATE TABLE pgcol_add_partition_child_guard.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_add_partition_child_guard.part PARTITION OF pgcol_add_partition_child_guard.root DEFAULT;\nINSERT INTO pgcol_add_partition_child_guard.root VALUES(3,40);\nCREATE TABLE pgcol_add_partition_child_guard.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_add_partition_child_guard.guard START 7;\nCREATE TABLE pgcol_add_partition_child_guard.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_partition_child_guard'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.add_column.exists.forbid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "ColumnExists"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.add_column.exists.forbid",
+           "metadata": {
+             "reason_code": "add_column_partition_inapplicable",
+             "exists": true
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_add_partition_child_guard.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_partition_child_guard'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_partition_child_guard'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_add_partition_child_guard.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_add_partition_child_guard.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_add_partition_child_guard.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_add_partition_child_guard.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_partition_child_guard.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42809",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol_add_partition_child_guard.part ADD COLUMN IF NOT EXISTS id int",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42809:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_add_partition_child_guard.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_partition_child_guard'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_partition_child_guard'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_add_partition_child_guard.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_add_partition_child_guard.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_add_partition_child_guard.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_add_partition_child_guard.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_partition_child_guard.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_add_partition_child_guard CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_partition_child_guard'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-add-column-traversal-partition-child-new",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-add-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_add_partition_child_new"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_add_partition_child_new CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_partition_child_new'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_add_partition_child_new.part ADD COLUMN extra int",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_partition_child_new'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_add_partition_child_new",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_add_partition_child_new.parent(id int,payload int);\nINSERT INTO pgcol_add_partition_child_new.parent VALUES (1,20);\nCREATE TABLE pgcol_add_partition_child_new.child() INHERITS(pgcol_add_partition_child_new.parent);\nINSERT INTO pgcol_add_partition_child_new.child VALUES (2,30);\nCREATE TABLE pgcol_add_partition_child_new.merged(id int) INHERITS(pgcol_add_partition_child_new.parent);\nCREATE TABLE pgcol_add_partition_child_new.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_add_partition_child_new.part PARTITION OF pgcol_add_partition_child_new.root DEFAULT;\nINSERT INTO pgcol_add_partition_child_new.root VALUES(3,40);\nCREATE TABLE pgcol_add_partition_child_new.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_add_partition_child_new.guard START 7;\nCREATE TABLE pgcol_add_partition_child_new.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_partition_child_new'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.add_column.exists.forbid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "ColumnExists"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.add_column.exists.forbid",
+           "metadata": {
+             "reason_code": "add_column_partition_inapplicable",
+             "exists": false
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_add_partition_child_new.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_partition_child_new'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_partition_child_new'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_add_partition_child_new.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_add_partition_child_new.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_add_partition_child_new.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_add_partition_child_new.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_partition_child_new.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42809",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol_add_partition_child_new.part ADD COLUMN extra int",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42809:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_add_partition_child_new.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_partition_child_new'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_partition_child_new'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_add_partition_child_new.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_add_partition_child_new.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_add_partition_child_new.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_add_partition_child_new.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_partition_child_new.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_add_partition_child_new CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_partition_child_new'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-add-column-traversal-existing-parent",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-add-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_add_existing_parent"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_add_existing_parent CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_existing_parent'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE ONLY pgcol_add_existing_parent.parent ADD COLUMN id int",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_existing_parent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_add_existing_parent",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_add_existing_parent.parent(id int,payload int);\nINSERT INTO pgcol_add_existing_parent.parent VALUES (1,20);\nCREATE TABLE pgcol_add_existing_parent.child() INHERITS(pgcol_add_existing_parent.parent);\nINSERT INTO pgcol_add_existing_parent.child VALUES (2,30);\nCREATE TABLE pgcol_add_existing_parent.merged(id int) INHERITS(pgcol_add_existing_parent.parent);\nCREATE TABLE pgcol_add_existing_parent.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_add_existing_parent.part PARTITION OF pgcol_add_existing_parent.root DEFAULT;\nINSERT INTO pgcol_add_existing_parent.root VALUES(3,40);\nCREATE TABLE pgcol_add_existing_parent.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_add_existing_parent.guard START 7;\nCREATE TABLE pgcol_add_existing_parent.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_existing_parent'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.add_column.exists.forbid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "ColumnExists"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.add_column.exists.forbid",
+           "metadata": {
+             "reason_code": "column_already_exists",
+             "exists": true
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_add_existing_parent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_existing_parent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_existing_parent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_add_existing_parent.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_add_existing_parent.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_add_existing_parent.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_add_existing_parent.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_existing_parent.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42701",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE ONLY pgcol_add_existing_parent.parent ADD COLUMN id int",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42701:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_add_existing_parent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_existing_parent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_existing_parent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_add_existing_parent.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_add_existing_parent.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_add_existing_parent.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_add_existing_parent.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_existing_parent.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_add_existing_parent CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_existing_parent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-add-column-traversal-parent-system",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-add-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_add_parent_system"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_add_parent_system CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_parent_system'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE ONLY pgcol_add_parent_system.parent ADD COLUMN IF NOT EXISTS ctid int",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_parent_system'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_add_parent_system",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_add_parent_system.parent(id int,payload int);\nINSERT INTO pgcol_add_parent_system.parent VALUES (1,20);\nCREATE TABLE pgcol_add_parent_system.child() INHERITS(pgcol_add_parent_system.parent);\nINSERT INTO pgcol_add_parent_system.child VALUES (2,30);\nCREATE TABLE pgcol_add_parent_system.merged(id int) INHERITS(pgcol_add_parent_system.parent);\nCREATE TABLE pgcol_add_parent_system.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_add_parent_system.part PARTITION OF pgcol_add_parent_system.root DEFAULT;\nINSERT INTO pgcol_add_parent_system.root VALUES(3,40);\nCREATE TABLE pgcol_add_parent_system.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_add_parent_system.guard START 7;\nCREATE TABLE pgcol_add_parent_system.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_parent_system'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.add_column.exists.forbid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "ColumnExists"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.add_column.exists.forbid",
+           "metadata": {
+             "reason_code": "system_column_name_conflict",
+             "exists": true
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_add_parent_system.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_parent_system'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_parent_system'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_add_parent_system.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_add_parent_system.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_add_parent_system.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_add_parent_system.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_parent_system.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42701",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE ONLY pgcol_add_parent_system.parent ADD COLUMN IF NOT EXISTS ctid int",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42701:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_add_parent_system.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_parent_system'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_add_parent_system'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_add_parent_system.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_add_parent_system.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_add_parent_system.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_add_parent_system.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_add_parent_system.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_add_parent_system CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_add_parent_system'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-inherited-action-type-child",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-inherited-type-expression",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_attrs_type_child"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_attrs_type_child CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_type_child'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_attrs_type_child.child ALTER COLUMN id TYPE bigint",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_type_child'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_attrs_type_child",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_attrs_type_child.parent(id int,payload int,g int GENERATED ALWAYS AS (payload+1) STORED);\nINSERT INTO pgcol_attrs_type_child.parent(id,payload) VALUES (1,20);\nCREATE TABLE pgcol_attrs_type_child.child() INHERITS(pgcol_attrs_type_child.parent);\nINSERT INTO pgcol_attrs_type_child.child(id,payload) VALUES (2,30);\nCREATE TABLE pgcol_attrs_type_child.merged(id int) INHERITS(pgcol_attrs_type_child.parent);\nCREATE TABLE pgcol_attrs_type_child.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_attrs_type_child.part PARTITION OF pgcol_attrs_type_child.root DEFAULT;\nINSERT INTO pgcol_attrs_type_child.root VALUES(3,40);\nCREATE TABLE pgcol_attrs_type_child.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_attrs_type_child.guard START 7;\nCREATE TABLE pgcol_attrs_type_child.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_child'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.column_type.source.valid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "StoredGenerated"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.column_type.source.valid",
+           "metadata": {
+             "reason_code": "column_type_inherited"
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_attrs_type_child.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_child'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_child'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_attrs_type_child.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_child.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_child.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_attrs_type_child.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_type_child.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol_attrs_type_child.child ALTER COLUMN id TYPE bigint",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_attrs_type_child.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_child'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_child'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_attrs_type_child.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_child.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_child.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_attrs_type_child.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_type_child.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_attrs_type_child CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_type_child'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-inherited-action-type-partition-key",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-inherited-type-expression",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_attrs_type_partition_key"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_attrs_type_partition_key CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_type_partition_key'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_attrs_type_partition_key.empty_root ALTER COLUMN id TYPE bigint",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_type_partition_key'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_attrs_type_partition_key",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_attrs_type_partition_key.parent(id int,payload int,g int GENERATED ALWAYS AS (payload+1) STORED);\nINSERT INTO pgcol_attrs_type_partition_key.parent(id,payload) VALUES (1,20);\nCREATE TABLE pgcol_attrs_type_partition_key.child() INHERITS(pgcol_attrs_type_partition_key.parent);\nINSERT INTO pgcol_attrs_type_partition_key.child(id,payload) VALUES (2,30);\nCREATE TABLE pgcol_attrs_type_partition_key.merged(id int) INHERITS(pgcol_attrs_type_partition_key.parent);\nCREATE TABLE pgcol_attrs_type_partition_key.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_attrs_type_partition_key.part PARTITION OF pgcol_attrs_type_partition_key.root DEFAULT;\nINSERT INTO pgcol_attrs_type_partition_key.root VALUES(3,40);\nCREATE TABLE pgcol_attrs_type_partition_key.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_attrs_type_partition_key.guard START 7;\nCREATE TABLE pgcol_attrs_type_partition_key.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_partition_key'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.column_type.source.valid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "StoredGenerated"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.column_type.source.valid",
+           "metadata": {
+             "reason_code": "column_type_partition_key"
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_attrs_type_partition_key.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_partition_key'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_partition_key'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_attrs_type_partition_key.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_partition_key.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_partition_key.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_attrs_type_partition_key.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_type_partition_key.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol_attrs_type_partition_key.empty_root ALTER COLUMN id TYPE bigint",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_attrs_type_partition_key.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_partition_key'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_partition_key'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_attrs_type_partition_key.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_partition_key.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_partition_key.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_attrs_type_partition_key.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_type_partition_key.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_attrs_type_partition_key CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_type_partition_key'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-inherited-action-type-using-inherited",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-inherited-type-expression",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_attrs_type_using_inherited"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_attrs_type_using_inherited CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_type_using_inherited'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_attrs_type_using_inherited.child ALTER COLUMN id TYPE bigint USING id::bigint",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_type_using_inherited'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_attrs_type_using_inherited",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_attrs_type_using_inherited.parent(id int,payload int,g int GENERATED ALWAYS AS (payload+1) STORED);\nINSERT INTO pgcol_attrs_type_using_inherited.parent(id,payload) VALUES (1,20);\nCREATE TABLE pgcol_attrs_type_using_inherited.child() INHERITS(pgcol_attrs_type_using_inherited.parent);\nINSERT INTO pgcol_attrs_type_using_inherited.child(id,payload) VALUES (2,30);\nCREATE TABLE pgcol_attrs_type_using_inherited.merged(id int) INHERITS(pgcol_attrs_type_using_inherited.parent);\nCREATE TABLE pgcol_attrs_type_using_inherited.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_attrs_type_using_inherited.part PARTITION OF pgcol_attrs_type_using_inherited.root DEFAULT;\nINSERT INTO pgcol_attrs_type_using_inherited.root VALUES(3,40);\nCREATE TABLE pgcol_attrs_type_using_inherited.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_attrs_type_using_inherited.guard START 7;\nCREATE TABLE pgcol_attrs_type_using_inherited.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_using_inherited'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.column_type.source.valid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "StoredGenerated"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.column_type.source.valid",
+           "metadata": {
+             "reason_code": "column_type_inherited"
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_attrs_type_using_inherited.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_using_inherited'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_using_inherited'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_attrs_type_using_inherited.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_using_inherited.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_using_inherited.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_attrs_type_using_inherited.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_type_using_inherited.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol_attrs_type_using_inherited.child ALTER COLUMN id TYPE bigint USING id::bigint",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_attrs_type_using_inherited.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_using_inherited'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_using_inherited'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_attrs_type_using_inherited.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_using_inherited.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_using_inherited.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_attrs_type_using_inherited.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_type_using_inherited.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_attrs_type_using_inherited CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_type_using_inherited'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-inherited-action-type-only-parent",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-inherited-type-expression",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_attrs_type_only_parent"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_attrs_type_only_parent CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_type_only_parent'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE ONLY pgcol_attrs_type_only_parent.parent ALTER COLUMN id TYPE bigint",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_type_only_parent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_attrs_type_only_parent",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_attrs_type_only_parent.parent(id int,payload int,g int GENERATED ALWAYS AS (payload+1) STORED);\nINSERT INTO pgcol_attrs_type_only_parent.parent(id,payload) VALUES (1,20);\nCREATE TABLE pgcol_attrs_type_only_parent.child() INHERITS(pgcol_attrs_type_only_parent.parent);\nINSERT INTO pgcol_attrs_type_only_parent.child(id,payload) VALUES (2,30);\nCREATE TABLE pgcol_attrs_type_only_parent.merged(id int) INHERITS(pgcol_attrs_type_only_parent.parent);\nCREATE TABLE pgcol_attrs_type_only_parent.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_attrs_type_only_parent.part PARTITION OF pgcol_attrs_type_only_parent.root DEFAULT;\nINSERT INTO pgcol_attrs_type_only_parent.root VALUES(3,40);\nCREATE TABLE pgcol_attrs_type_only_parent.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_attrs_type_only_parent.guard START 7;\nCREATE TABLE pgcol_attrs_type_only_parent.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_only_parent'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [],
+       "evidence_gaps": 1,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "StoredGenerated"
+       ],
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.column_type.source.valid",
+           "reason_code": "unproven_column_type_source",
+           "required_facts": [
+             "target_table.pg_columns"
+           ]
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_attrs_type_only_parent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_only_parent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_only_parent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_attrs_type_only_parent.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_only_parent.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_only_parent.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_attrs_type_only_parent.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_type_only_parent.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE ONLY pgcol_attrs_type_only_parent.parent ALTER COLUMN id TYPE bigint",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_attrs_type_only_parent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_only_parent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_type_only_parent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_attrs_type_only_parent.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_only_parent.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_type_only_parent.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_attrs_type_only_parent.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_type_only_parent.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_attrs_type_only_parent CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_type_only_parent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-inherited-action-expression-child",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-inherited-type-expression",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_attrs_expression_child"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_attrs_expression_child CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_expression_child'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_attrs_expression_child.child ALTER COLUMN g DROP EXPRESSION",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_expression_child'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_attrs_expression_child",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_attrs_expression_child.parent(id int,payload int,g int GENERATED ALWAYS AS (payload+1) STORED);\nINSERT INTO pgcol_attrs_expression_child.parent(id,payload) VALUES (1,20);\nCREATE TABLE pgcol_attrs_expression_child.child() INHERITS(pgcol_attrs_expression_child.parent);\nINSERT INTO pgcol_attrs_expression_child.child(id,payload) VALUES (2,30);\nCREATE TABLE pgcol_attrs_expression_child.merged(id int) INHERITS(pgcol_attrs_expression_child.parent);\nCREATE TABLE pgcol_attrs_expression_child.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_attrs_expression_child.part PARTITION OF pgcol_attrs_expression_child.root DEFAULT;\nINSERT INTO pgcol_attrs_expression_child.root VALUES(3,40);\nCREATE TABLE pgcol_attrs_expression_child.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_attrs_expression_child.guard START 7;\nCREATE TABLE pgcol_attrs_expression_child.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_child'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.column.generation.transition.valid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "StoredGenerated"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.column.generation.transition.valid",
+           "metadata": {
+             "reason_code": "drop_expression_inherited_column"
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_attrs_expression_child.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_child'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_child'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_attrs_expression_child.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_expression_child.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_expression_child.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_attrs_expression_child.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_expression_child.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol_attrs_expression_child.child ALTER COLUMN g DROP EXPRESSION",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_attrs_expression_child.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_child'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_child'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_attrs_expression_child.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_expression_child.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_expression_child.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_attrs_expression_child.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_expression_child.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_attrs_expression_child CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_expression_child'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-inherited-action-expression-guarded",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-inherited-type-expression",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_attrs_expression_guarded"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_attrs_expression_guarded CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_expression_guarded'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_attrs_expression_guarded.child ALTER COLUMN g DROP EXPRESSION IF EXISTS",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_expression_guarded'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_attrs_expression_guarded",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_attrs_expression_guarded.parent(id int,payload int,g int GENERATED ALWAYS AS (payload+1) STORED);\nINSERT INTO pgcol_attrs_expression_guarded.parent(id,payload) VALUES (1,20);\nCREATE TABLE pgcol_attrs_expression_guarded.child() INHERITS(pgcol_attrs_expression_guarded.parent);\nINSERT INTO pgcol_attrs_expression_guarded.child(id,payload) VALUES (2,30);\nCREATE TABLE pgcol_attrs_expression_guarded.merged(id int) INHERITS(pgcol_attrs_expression_guarded.parent);\nCREATE TABLE pgcol_attrs_expression_guarded.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_attrs_expression_guarded.part PARTITION OF pgcol_attrs_expression_guarded.root DEFAULT;\nINSERT INTO pgcol_attrs_expression_guarded.root VALUES(3,40);\nCREATE TABLE pgcol_attrs_expression_guarded.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_attrs_expression_guarded.guard START 7;\nCREATE TABLE pgcol_attrs_expression_guarded.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_guarded'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.column.generation.transition.valid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "StoredGenerated"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.column.generation.transition.valid",
+           "metadata": {
+             "reason_code": "drop_expression_inherited_column"
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_attrs_expression_guarded.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_guarded'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_guarded'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_attrs_expression_guarded.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_expression_guarded.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_expression_guarded.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_attrs_expression_guarded.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_expression_guarded.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol_attrs_expression_guarded.child ALTER COLUMN g DROP EXPRESSION IF EXISTS",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_attrs_expression_guarded.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_guarded'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_guarded'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_attrs_expression_guarded.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_expression_guarded.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_expression_guarded.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_attrs_expression_guarded.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_expression_guarded.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_attrs_expression_guarded CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_expression_guarded'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-inherited-action-expression-only",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-inherited-type-expression",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_attrs_expression_only"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_attrs_expression_only CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_expression_only'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE ONLY pgcol_attrs_expression_only.parent ALTER COLUMN g DROP EXPRESSION",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_expression_only'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_attrs_expression_only",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_attrs_expression_only.parent(id int,payload int,g int GENERATED ALWAYS AS (payload+1) STORED);\nINSERT INTO pgcol_attrs_expression_only.parent(id,payload) VALUES (1,20);\nCREATE TABLE pgcol_attrs_expression_only.child() INHERITS(pgcol_attrs_expression_only.parent);\nINSERT INTO pgcol_attrs_expression_only.child(id,payload) VALUES (2,30);\nCREATE TABLE pgcol_attrs_expression_only.merged(id int) INHERITS(pgcol_attrs_expression_only.parent);\nCREATE TABLE pgcol_attrs_expression_only.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_attrs_expression_only.part PARTITION OF pgcol_attrs_expression_only.root DEFAULT;\nINSERT INTO pgcol_attrs_expression_only.root VALUES(3,40);\nCREATE TABLE pgcol_attrs_expression_only.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_attrs_expression_only.guard START 7;\nCREATE TABLE pgcol_attrs_expression_only.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_only'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.column.generation.transition.valid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "StoredGenerated"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.column.generation.transition.valid",
+           "metadata": {
+             "reason_code": "drop_expression_requires_child_traversal"
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_attrs_expression_only.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_only'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_only'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_attrs_expression_only.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_expression_only.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_expression_only.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_attrs_expression_only.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_expression_only.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 0A000",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE ONLY pgcol_attrs_expression_only.parent ALTER COLUMN g DROP EXPRESSION",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  0A000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_attrs_expression_only.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_only'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_only'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_attrs_expression_only.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_expression_only.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_expression_only.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_attrs_expression_only.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_expression_only.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_attrs_expression_only CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_expression_only'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-inherited-action-expression-recursive",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-inherited-type-expression",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_attrs_expression_recursive"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_attrs_expression_recursive CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_expression_recursive'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_attrs_expression_recursive.parent ALTER COLUMN g DROP EXPRESSION",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_expression_recursive'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_attrs_expression_recursive",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_attrs_expression_recursive.parent(id int,payload int,g int GENERATED ALWAYS AS (payload+1) STORED);\nINSERT INTO pgcol_attrs_expression_recursive.parent(id,payload) VALUES (1,20);\nCREATE TABLE pgcol_attrs_expression_recursive.child() INHERITS(pgcol_attrs_expression_recursive.parent);\nINSERT INTO pgcol_attrs_expression_recursive.child(id,payload) VALUES (2,30);\nCREATE TABLE pgcol_attrs_expression_recursive.merged(id int) INHERITS(pgcol_attrs_expression_recursive.parent);\nCREATE TABLE pgcol_attrs_expression_recursive.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_attrs_expression_recursive.part PARTITION OF pgcol_attrs_expression_recursive.root DEFAULT;\nINSERT INTO pgcol_attrs_expression_recursive.root VALUES(3,40);\nCREATE TABLE pgcol_attrs_expression_recursive.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_attrs_expression_recursive.guard START 7;\nCREATE TABLE pgcol_attrs_expression_recursive.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_recursive'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [],
+       "evidence_gaps": 1,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey",
+         "StoredGenerated"
+       ],
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.column.generation.transition.valid",
+           "reason_code": "unproven_column_generation_target",
+           "required_facts": [
+             "target_table.pg_columns"
+           ]
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_attrs_expression_recursive.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_recursive'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped,a.atttypid,a.attgenerated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_attrs_expression_recursive'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_attrs_expression_recursive.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_expression_recursive.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_attrs_expression_recursive.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_attrs_expression_recursive.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_expression_recursive.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native operation",
+         "sql": "ALTER TABLE pgcol_attrs_expression_recursive.parent ALTER COLUMN g DROP EXPRESSION",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native clears both generation flags",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid IN ('pgcol_attrs_expression_recursive.parent'::regclass,'pgcol_attrs_expression_recursive.child'::regclass) AND attname='g' AND attgenerated=''",
+         "expect": "2"
+       },
+       {
+         "assert": "native retains generated values",
+         "sql": "SELECT (SELECT g FROM ONLY pgcol_attrs_expression_recursive.parent)+(SELECT g FROM ONLY pgcol_attrs_expression_recursive.child)",
+         "expect": "52"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_attrs_expression_recursive.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_attrs_expression_recursive CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_attrs_expression_recursive'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+  {
+   "id": "pg-column-type-dependency-view",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-dependencies",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_dependency_view"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_dependency_view CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_view'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_dependency_view.t ALTER COLUMN v TYPE pg_catalog.int4",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_view'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_dependency_view","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE TABLE pgtype_coerce_dependency_view.t(id int, v int); INSERT INTO pgtype_coerce_dependency_view.t VALUES (1,4); CREATE VIEW pgtype_coerce_dependency_view.v_private AS SELECT v FROM pgtype_coerce_dependency_view.t; CREATE SEQUENCE pgtype_coerce_dependency_view.guard START 7; CREATE TABLE pgtype_coerce_dependency_view.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_view.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable","PGDropColumnDependency","v_private","mv_private","g_private","r_private","i_private"],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "column_type_has_direct_dependency","column": "v"}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_dependency_view.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_view.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_view.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_dependency_view.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_dependency_view.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_dependency_view.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 0A000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_coerce_dependency_view.t ALTER COLUMN v TYPE pg_catalog.int4","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  0A000:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_dependency_view.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_view.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_view.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_dependency_view.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_dependency_view.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_dependency_view.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_dependency_view CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_view'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-dependency-using",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-dependencies",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_dependency_using"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_dependency_using CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_using'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_dependency_using.t ALTER COLUMN v TYPE pg_catalog.int8 USING v::int8",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_using'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_dependency_using","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE TABLE pgtype_coerce_dependency_using.t(id int, v int); INSERT INTO pgtype_coerce_dependency_using.t VALUES (1,4); CREATE VIEW pgtype_coerce_dependency_using.v_private AS SELECT v FROM pgtype_coerce_dependency_using.t; CREATE SEQUENCE pgtype_coerce_dependency_using.guard START 7; CREATE TABLE pgtype_coerce_dependency_using.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_using.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable","PGDropColumnDependency","v_private","mv_private","g_private","r_private","i_private"],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "column_type_has_direct_dependency","column": "v"}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_dependency_using.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_using.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_using.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_dependency_using.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_dependency_using.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_dependency_using.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 0A000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_coerce_dependency_using.t ALTER COLUMN v TYPE pg_catalog.int8 USING v::int8","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  0A000:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_dependency_using.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_using.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_using.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_dependency_using.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_dependency_using.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_dependency_using.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_dependency_using CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_using'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-dependency-materialized-view",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-dependencies",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_dependency_materialized_view"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_dependency_materialized_view CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_materialized_view'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_dependency_materialized_view.t ALTER COLUMN v TYPE pg_catalog.int8",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_materialized_view'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_dependency_materialized_view","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE TABLE pgtype_coerce_dependency_materialized_view.t(id int, v int); INSERT INTO pgtype_coerce_dependency_materialized_view.t VALUES (1,4); CREATE MATERIALIZED VIEW pgtype_coerce_dependency_materialized_view.mv_private AS SELECT v FROM pgtype_coerce_dependency_materialized_view.t; CREATE SEQUENCE pgtype_coerce_dependency_materialized_view.guard START 7; CREATE TABLE pgtype_coerce_dependency_materialized_view.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_materialized_view.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable","PGDropColumnDependency","v_private","mv_private","g_private","r_private","i_private"],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "column_type_has_direct_dependency","column": "v"}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_dependency_materialized_view.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_materialized_view.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_materialized_view.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_dependency_materialized_view.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_dependency_materialized_view.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_dependency_materialized_view.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 0A000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_coerce_dependency_materialized_view.t ALTER COLUMN v TYPE pg_catalog.int8","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  0A000:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_dependency_materialized_view.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_materialized_view.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_materialized_view.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_dependency_materialized_view.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_dependency_materialized_view.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_dependency_materialized_view.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_dependency_materialized_view CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_materialized_view'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-dependency-generated",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-dependencies",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_dependency_generated"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_dependency_generated CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_generated'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_dependency_generated.t ALTER COLUMN v TYPE pg_catalog.int8",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_generated'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_dependency_generated","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE TABLE pgtype_coerce_dependency_generated.t(id int, v int); INSERT INTO pgtype_coerce_dependency_generated.t VALUES (1,4); ALTER TABLE pgtype_coerce_dependency_generated.t ADD COLUMN g_private int GENERATED ALWAYS AS (v+1) STORED; CREATE SEQUENCE pgtype_coerce_dependency_generated.guard START 7; CREATE TABLE pgtype_coerce_dependency_generated.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_generated.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable","PGDropColumnDependency","v_private","mv_private","g_private","r_private","i_private"],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.destination.valid","metadata": {"reason_code": "column_type_has_direct_dependency","column": "v"}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_dependency_generated.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_generated.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_generated.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_dependency_generated.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_dependency_generated.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_dependency_generated.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refusal 0A000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgtype_coerce_dependency_generated.t ALTER COLUMN v TYPE pg_catalog.int8","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  0A000:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_dependency_generated.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_generated.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_generated.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_dependency_generated.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_dependency_generated.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_dependency_generated.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_dependency_generated CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_generated'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-dependency-fk-neutral",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-dependencies",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_dependency_fk_neutral"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_dependency_fk_neutral CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_fk_neutral'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_dependency_fk_neutral.t ALTER COLUMN v TYPE pg_catalog.int8",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_fk_neutral'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_dependency_fk_neutral","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE TABLE pgtype_coerce_dependency_fk_neutral.t(id int, v int); INSERT INTO pgtype_coerce_dependency_fk_neutral.t VALUES (1,4); ALTER TABLE pgtype_coerce_dependency_fk_neutral.t ADD UNIQUE(v); CREATE TABLE pgtype_coerce_dependency_fk_neutral.r_private(v int REFERENCES pgtype_coerce_dependency_fk_neutral.t(v)); INSERT INTO pgtype_coerce_dependency_fk_neutral.r_private VALUES(4); CREATE SEQUENCE pgtype_coerce_dependency_fk_neutral.guard START 7; CREATE TABLE pgtype_coerce_dependency_fk_neutral.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_fk_neutral.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable","PGDropColumnDependency","v_private","mv_private","g_private","r_private","i_private"]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_dependency_fk_neutral.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_fk_neutral.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_fk_neutral.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_dependency_fk_neutral.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_dependency_fk_neutral.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_dependency_fk_neutral.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native conversion","sql": "ALTER TABLE pgtype_coerce_dependency_fk_neutral.t ALTER COLUMN v TYPE pg_catalog.int8","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native destination type","sql": "SELECT pg_catalog.format_type(atttypid,atttypmod) FROM pg_catalog.pg_attribute WHERE attrelid='pgtype_coerce_dependency_fk_neutral.t'::regclass AND attname='v'","expect": "bigint"},
+    {"assert": "row identity retained","sql": "SELECT id FROM pgtype_coerce_dependency_fk_neutral.t","expect": "1"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_dependency_fk_neutral.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_dependency_fk_neutral CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_fk_neutral'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-column-type-dependency-index-neutral",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-column-type-dependencies",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgtype_coerce_dependency_index_neutral"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_dependency_index_neutral CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_index_neutral'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgtype_coerce_dependency_index_neutral.t ALTER COLUMN v TYPE pg_catalog.int8",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_index_neutral'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtype_coerce_dependency_index_neutral","expect_rc": 0},
+    {"name": "seed exact type, value and file identity","sql": "CREATE TABLE pgtype_coerce_dependency_index_neutral.t(id int, v int); INSERT INTO pgtype_coerce_dependency_index_neutral.t VALUES (1,4); CREATE INDEX i_private ON pgtype_coerce_dependency_index_neutral.t(v); CREATE SEQUENCE pgtype_coerce_dependency_index_neutral.guard START 7; CREATE TABLE pgtype_coerce_dependency_index_neutral.receipt AS SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_index_neutral.t'::regclass AND a.attnum>0","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "rule_summary_loaded": 1,
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGColumnCollation","PGColumnTypeModifiers","AssignmentKnown","Assignable","Collatable","PGDropColumnDependency","v_private","mv_private","g_private","r_private","i_private"]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgtype_coerce_dependency_index_neutral.receipt EXCEPT (SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_index_neutral.t'::regclass AND a.attnum>0)) UNION ALL ((SELECT c.oid,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid WHERE c.oid='pgtype_coerce_dependency_index_neutral.t'::regclass AND a.attnum>0) EXCEPT TABLE pgtype_coerce_dependency_index_neutral.receipt)) delta","expect": "0"},
+    {"assert": "row and input value survive audit","sql": "SELECT count(*)=1 AND bool_and(id=1 AND v::text=(4)::text) FROM pgtype_coerce_dependency_index_neutral.t","expect": "t"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_dependency_index_neutral.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native conversion","sql": "ALTER TABLE pgtype_coerce_dependency_index_neutral.t ALTER COLUMN v TYPE pg_catalog.int8","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native destination type","sql": "SELECT pg_catalog.format_type(atttypid,atttypmod) FROM pg_catalog.pg_attribute WHERE attrelid='pgtype_coerce_dependency_index_neutral.t'::regclass AND attname='v'","expect": "bigint"},
+    {"assert": "row identity retained","sql": "SELECT id FROM pgtype_coerce_dependency_index_neutral.t","expect": "1"},
+    {"assert": "independent sequence unchanged","sql": "SELECT last_value::text||':'||is_called::text FROM pgtype_coerce_dependency_index_neutral.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgtype_coerce_dependency_index_neutral CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtype_coerce_dependency_index_neutral'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
    {
      "id": "pg-column-traversal-drop-inherited",
      "anchor": "postgres17",
@@ -15553,17 +18361,18 @@
    ],
    "expect": {
     "exit": 0,
-    "verdict": "review",
+    "verdict": "reject",
     "statements": 3,
-    "findings": 3,
+    "findings": 4,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "unverified",
-    "statement_coverage": ["unverified","unverified","unverified"],
+    "statement_coverage": ["complete","unverified","unverified"],
     "statement_indices": [0,1,2],
-    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 1,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 2,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
-    "evidence_gaps": 3,
-    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column_type.source.valid","reason_code": "unproven_column_type_source","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.pg.alter.column_type.source.valid","reason_code": "unproven_column_type_source","required_facts": ["target_table.pg_columns"]},{"index": 2,"rule_id": "ddl.pg.alter.column_type.source.valid","reason_code": "unproven_column_type_source","required_facts": ["target_table.pg_columns"]}],
+    "finding_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column_type.source.valid", "level": "blocker"},{"index": 0,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 1,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"},{"index": 2,"rule_id": "ddl.pg.alter.set_data_type.rewrite.warn","level": "warning"}],
+    "finding_metadata": [{"index": 0, "rule_id": "ddl.pg.alter.column_type.source.valid", "metadata": {"reason_code": "column_type_partition_key"}}],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.pg.alter.column_type.source.valid","reason_code": "unproven_column_type_source","required_facts": ["target_table.pg_columns"]},{"index": 2,"rule_id": "ddl.pg.alter.column_type.source.valid","reason_code": "unproven_column_type_source","required_facts": ["target_table.pg_columns"]}],
     "serialized_not_contains": ["PGColumnCatalog","SystemColumns"],
     "rule_summary_loaded": 2
    },
@@ -20013,6 +22822,28 @@
   }
  ],
  "required_case_ids": [
+  "T37.meta.pg-add-column-traversal-only-parent",
+  "T37.meta.pg-add-column-traversal-if-not-exists-only-parent",
+  "T37.meta.pg-add-column-traversal-ordinary-parent-identity",
+  "T37.meta.pg-add-column-traversal-partitioned-root-identity",
+  "T37.meta.pg-add-column-traversal-partition-child-guard",
+  "T37.meta.pg-add-column-traversal-partition-child-new",
+  "T37.meta.pg-add-column-traversal-existing-parent",
+  "T37.meta.pg-add-column-traversal-parent-system",
+  "T37.meta.pg-column-inherited-action-type-child",
+  "T37.meta.pg-column-inherited-action-type-partition-key",
+  "T37.meta.pg-column-inherited-action-type-using-inherited",
+  "T37.meta.pg-column-inherited-action-type-only-parent",
+  "T37.meta.pg-column-inherited-action-expression-child",
+  "T37.meta.pg-column-inherited-action-expression-guarded",
+  "T37.meta.pg-column-inherited-action-expression-only",
+  "T37.meta.pg-column-inherited-action-expression-recursive",
+  "T37.meta.pg-column-type-dependency-view",
+  "T37.meta.pg-column-type-dependency-using",
+  "T37.meta.pg-column-type-dependency-materialized-view",
+  "T37.meta.pg-column-type-dependency-generated",
+  "T37.meta.pg-column-type-dependency-fk-neutral",
+  "T37.meta.pg-column-type-dependency-index-neutral",
   "T37.meta.pg-column-traversal-drop-inherited",
   "T37.meta.pg-column-traversal-drop-merged",
   "T37.meta.pg-column-traversal-drop-partition",
