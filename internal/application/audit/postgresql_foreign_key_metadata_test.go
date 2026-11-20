@@ -13,6 +13,14 @@ import (
 type fkReferenceTestProvider struct {
 	*fakeMetadataProvider
 	lookup func(schema, table string) (*spec.TableSnapshot, error)
+	keys   func(spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
+}
+
+func (p fkReferenceTestProvider) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if p.keys == nil {
+		return nil, nil
+	}
+	return p.keys(req)
 }
 
 func (p fkReferenceTestProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema, table string) (*spec.TableSnapshot, error) {
@@ -70,6 +78,15 @@ func TestPGForeignKeyReferenceBinding(t *testing.T) {
 				}
 				return snapshot, tc.failure
 			}}
+			keyCalls := 0
+			keyFacts := &spec.PGForeignKeyKeys{Schema: ref.Schema, Table: ref.Name, Keys: []spec.PGForeignKeyKey{{Columns: []string{"private_key"}, Immediate: true}}}
+			provider.keys = func(req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+				keyCalls++
+				if req.Type != "foreign_key_reference_keys" || req.Schema != ref.Schema || req.Name != ref.Name {
+					t.Fatalf("unbound key lookup: %+v", req)
+				}
+				return &spec.ObjectSnapshot{PGForeignKeyKeys: keyFacts}, nil
+			}
 			err := enrichPGForeignKeyReferences(context.Background(), &MetadataRequest{Provider: provider}, statements[:prefix], snapshots)
 			if !errors.Is(err, tc.failure) || err != nil && strings.Contains(err.Error(), readErr.Error()) {
 				t.Fatalf("lookup error = %v", err)
@@ -84,8 +101,18 @@ func TestPGForeignKeyReferenceBinding(t *testing.T) {
 					t.Fatal("bound reference aliases provider memory")
 				}
 			}
+			keys := statements[len(statements)-1].Metadata.PGForeignKeyKeys
+			if (keyCalls == 1) != tc.bound || (keys != nil) != tc.bound {
+				t.Fatalf("key lookups=%d keys=%+v", keyCalls, keys)
+			}
+			if keys != nil {
+				keys.Keys[0].Columns[0] = "changed"
+				if keyFacts.Keys[0].Columns[0] != "private_key" {
+					t.Fatal("bound keys alias provider memory")
+				}
+			}
 			b, err := json.Marshal(statements[len(statements)-1].Metadata)
-			if err != nil || strings.Contains(string(b), "PGForeignKeyReference") || strings.Contains(string(b), " Ref ") {
+			if err != nil || strings.Contains(string(b), "PGForeignKeyReference") || strings.Contains(string(b), "PGForeignKeyKeys") || strings.Contains(string(b), " Ref ") {
 				t.Fatalf("private reference leaked: %s (%v)", b, err)
 			}
 		})

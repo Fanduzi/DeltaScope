@@ -2,6 +2,7 @@ package audit
 
 import (
 	"context"
+	"slices"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
@@ -23,11 +24,32 @@ func enrichPGForeignKeyReferences(ctx context.Context, request *MetadataRequest,
 			}
 			snapshots[key] = snapshot
 		}
-		if snapshot != nil && snapshot.Schema == schema && snapshot.PGRelation.Name == name &&
-			(snapshot.Table == nil || snapshot.Table.Name == name) {
-			s.Metadata.PGForeignKeyReference = &spec.TableSnapshot{Schema: snapshot.Schema, Exists: snapshot.Exists,
-				PGRelation: snapshot.PGRelation, PGColumns: snapshot.PGColumns.Clone()}
+		if snapshot == nil || snapshot.Schema != schema || snapshot.PGRelation.Name != name ||
+			(snapshot.Table != nil && snapshot.Table.Name != name) {
+			continue
 		}
+		s.Metadata.PGForeignKeyReference = &spec.TableSnapshot{Schema: snapshot.Schema, Exists: snapshot.Exists,
+			PGRelation: snapshot.PGRelation, PGColumns: snapshot.PGColumns.Clone()}
+		if snapshot.PGRelation.Kind != "r" || !snapshot.Exists || snapshot.PGColumns == nil || !snapshot.PGColumns.Ordinary || snapshot.PGColumns.Typed {
+			continue
+		}
+		lookup := spec.ObjectLookupRequest{Type: "foreign_key_reference_keys", Schema: schema, Name: name}
+		object, err := resolveObjectSnapshot(ctx, request, spec.DialectPostgreSQL, &lookup)
+		if err != nil {
+			return err
+		}
+		if object == nil || object.PGForeignKeyKeys == nil {
+			continue
+		}
+		keys := *object.PGForeignKeyKeys
+		if keys.Schema != schema || keys.Table != name {
+			continue
+		}
+		keys.Keys = slices.Clone(keys.Keys)
+		for i := range keys.Keys {
+			keys.Keys[i].Columns = slices.Clone(keys.Keys[i].Columns)
+		}
+		s.Metadata.PGForeignKeyKeys = &keys
 	}
 	return nil
 }
