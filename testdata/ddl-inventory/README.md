@@ -22,6 +22,11 @@ D27 binds evidence to the PostgreSQL 17 DROP COLUMN subaction. The cases
 cover direct dependencies under RESTRICT and confirm the separate behavior
 of CASCADE and automatic local index or CHECK deletion.
 
+## PostgreSQL constraint operator classes and action columns
+
+Twelve PostgreSQL 17 selectors attach the operator-class and ON DELETE SET
+controls to ADD PRIMARY KEY, ADD UNIQUE and ADD FOREIGN KEY.
+
 ## PostgreSQL SET WITHOUT OIDS
 
 Three PostgreSQL 17 native selectors cover the compatibility operation,

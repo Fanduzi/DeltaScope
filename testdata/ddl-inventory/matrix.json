@@ -7640,7 +7640,14 @@
                 "file:testdata/ddl-golden/T37.json#pg-drop-column-dependency-case-guard",
                 "file:testdata/ddl-golden/T37.json#pg-drop-column-dependency-cascade",
                 "file:testdata/ddl-golden/T37.json#pg-drop-column-dependency-stale",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_column_direct_dependency.expected.yaml#ddl.alter.drop_column.exists.require"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_column_direct_dependency.expected.yaml#ddl.alter.drop_column.exists.require",
+                "file:testdata/ddl-golden/T37.json#pg-column-traversal-drop-inherited",
+                "file:testdata/ddl-golden/T37.json#pg-column-traversal-drop-partition",
+                "file:testdata/ddl-golden/T37.json#pg-column-traversal-drop-partition-key",
+                "file:testdata/ddl-golden/T37.json#pg-column-traversal-drop-only-root",
+                "file:testdata/ddl-golden/T37.json#pg-column-traversal-drop-empty-root",
+                "file:testdata/ddl-golden/T37.json#pg-column-traversal-drop-only-ordinary",
+                "file:testdata/ddl-golden/T37.json#pg-column-traversal-drop-recursive"
               ]
             }
           ]
@@ -7668,7 +7675,9 @@
                 "file:testdata/ddl-golden/T37.json#pg-column-tuning-drop-guards",
                 "file:testdata/ddl-golden/T37.json#pg-column-tuning-no-rewrite-advice",
                 "file:testdata/ddl-golden/T37.json#column-tuning-drop-cascade-offline",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_controls.expected.yaml#ddl.alter.drop_column.exists.require"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_controls.expected.yaml#ddl.alter.drop_column.exists.require",
+                "file:testdata/ddl-golden/T37.json#pg-column-traversal-drop-merged",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_traversal_drop.expected.yaml#ddl.alter.drop_column.exists.require"
               ]
             }
           ]
@@ -7692,7 +7701,12 @@
                 "file:testdata/ddl-golden/T37.json#pg-column-identity-rename-destination",
                 "file:testdata/ddl-golden/T37.json#pg-column-identity-rename-quoted-spaces",
                 "file:testdata/ddl-golden/T37.json#pg-column-identity-scope",
-                "file:testdata/ddl-golden/T37.json#column-identity-rename-column-guard-parser"
+                "file:testdata/ddl-golden/T37.json#column-identity-rename-column-guard-parser",
+                "file:testdata/ddl-golden/T37.json#pg-column-traversal-rename-inherited",
+                "file:testdata/ddl-golden/T37.json#pg-column-traversal-rename-only-ordinary",
+                "file:testdata/ddl-golden/T37.json#pg-column-traversal-rename-only-root",
+                "file:testdata/ddl-golden/T37.json#pg-column-traversal-rename-recursive",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_traversal_rename.expected.yaml#ddl.alter.rename_column.exists.require"
               ]
             }
           ]
@@ -8148,7 +8162,8 @@
                 "file:testdata/ddl-golden/T37.json#constraint-index-disabled",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-pk-eligible",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-absent",
-                "file:testdata/ddl-golden/T37.json#pg-constraint-index-null-distinct"
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-null-distinct",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-primary-nondefault"
               ]
             }
           ]
@@ -8185,7 +8200,11 @@
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-null-distinct-unique",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-freshness",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-guarded-absent",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_using_index.expected.yaml#ddl.pg.alter.constraint_using_index.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_using_index.expected.yaml#ddl.pg.alter.constraint_using_index.valid",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-explicit-nondefault",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-explicit-default",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-binary-compatibility",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_default_opclass.expected.yaml#ddl.pg.alter.constraint_using_index.valid"
               ]
             }
           ]
@@ -8245,7 +8264,14 @@
                 "file:testdata/ddl-golden/T37.json#pg-fk-keys-duplicate-reference",
                 "file:testdata/ddl-golden/T37.json#pg-fk-keys-reordered-repeated-source",
                 "file:testdata/ddl-golden/T37.json#pg-fk-keys-arity",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/foreign_key_referenced_keys.expected.yaml#ddl.pg.alter.add_foreign_key.targets.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/foreign_key_referenced_keys.expected.yaml#ddl.pg.alter.add_foreign_key.targets.valid",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-delete-set-null-subset",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-delete-set-default-repeated",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-delete-set-outside-key",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-delete-set-missing-exact",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-delete-set-system",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-delete-set-not-valid",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/foreign_key_delete_set_columns.expected.yaml#ddl.pg.alter.add_foreign_key.targets.valid"
               ]
             }
           ]

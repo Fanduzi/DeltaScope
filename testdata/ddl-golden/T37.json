@@ -6,6 +6,9 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-column-traversal": {"enable": {"ddl.alter.drop_column.exists.require": {"level": "blocker"}, "ddl.alter.rename_column.exists.require": {"level": "blocker"}}},
+   "pg-fk-delete-set-columns": {"enable": {"ddl.pg.alter.add_foreign_key.targets.valid": {"level": "blocker"}}},
+   "pg-constraint-index-opclasses": {"enable": {"ddl.pg.alter.constraint_using_index.valid": {"level": "blocker"}}},
    "pg-column-type-coercion": {"enable": {"ddl.pg.alter.column_type.destination.valid": {"level": "blocker"}}},
    "pg-set-schema-companions": {"enable": {"ddl.pg.alter.set_schema.target.valid": {"level": "blocker"}}},
    "pg-drop-column-dependency": {"enable": {"ddl.alter.drop_column.exists.require": {"level": "blocker"}}},
@@ -4802,6 +4805,2367 @@
   }
  ],
  "metadata_cases": [
+   {
+     "id": "pg-column-traversal-drop-inherited",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_traversal_drop_inherited"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_traversal_drop_inherited CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_inherited'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_traversal_drop_inherited.child DROP COLUMN id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_inherited'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_traversal_drop_inherited",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_traversal_drop_inherited.parent(id int,payload int);\nINSERT INTO pgcol_traversal_drop_inherited.parent VALUES (1,20);\nCREATE TABLE pgcol_traversal_drop_inherited.child() INHERITS(pgcol_traversal_drop_inherited.parent);\nINSERT INTO pgcol_traversal_drop_inherited.child VALUES (2,30);\nCREATE TABLE pgcol_traversal_drop_inherited.merged(id int) INHERITS(pgcol_traversal_drop_inherited.parent);\nCREATE TABLE pgcol_traversal_drop_inherited.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_traversal_drop_inherited.part PARTITION OF pgcol_traversal_drop_inherited.root DEFAULT;\nINSERT INTO pgcol_traversal_drop_inherited.root VALUES(3,40);\nCREATE TABLE pgcol_traversal_drop_inherited.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_traversal_drop_inherited.guard START 7;\nCREATE TABLE pgcol_traversal_drop_inherited.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_inherited'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.drop_column.exists.require",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.drop_column.exists.require",
+           "metadata": {
+             "reason_code": "column_inherited",
+             "exists": true
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_drop_inherited.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_inherited'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_inherited'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_drop_inherited.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_inherited.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_inherited.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_drop_inherited.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_inherited.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol_traversal_drop_inherited.child DROP COLUMN id",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_drop_inherited.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_inherited'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_inherited'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_drop_inherited.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_inherited.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_inherited.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_drop_inherited.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_inherited.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_traversal_drop_inherited CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_inherited'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-traversal-drop-merged",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_traversal_drop_merged"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_traversal_drop_merged CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_merged'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_traversal_drop_merged.merged DROP COLUMN IF EXISTS id CASCADE",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_merged'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_traversal_drop_merged",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_traversal_drop_merged.parent(id int,payload int);\nINSERT INTO pgcol_traversal_drop_merged.parent VALUES (1,20);\nCREATE TABLE pgcol_traversal_drop_merged.child() INHERITS(pgcol_traversal_drop_merged.parent);\nINSERT INTO pgcol_traversal_drop_merged.child VALUES (2,30);\nCREATE TABLE pgcol_traversal_drop_merged.merged(id int) INHERITS(pgcol_traversal_drop_merged.parent);\nCREATE TABLE pgcol_traversal_drop_merged.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_traversal_drop_merged.part PARTITION OF pgcol_traversal_drop_merged.root DEFAULT;\nINSERT INTO pgcol_traversal_drop_merged.root VALUES(3,40);\nCREATE TABLE pgcol_traversal_drop_merged.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_traversal_drop_merged.guard START 7;\nCREATE TABLE pgcol_traversal_drop_merged.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_merged'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.drop_column.exists.require",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.drop_column.exists.require",
+           "metadata": {
+             "reason_code": "column_inherited",
+             "exists": true
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_drop_merged.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_merged'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_merged'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_drop_merged.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_merged.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_merged.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_drop_merged.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_merged.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol_traversal_drop_merged.merged DROP COLUMN IF EXISTS id CASCADE",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_drop_merged.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_merged'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_merged'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_drop_merged.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_merged.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_merged.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_drop_merged.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_merged.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_traversal_drop_merged CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_merged'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-traversal-drop-partition",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_traversal_drop_partition"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_traversal_drop_partition CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_partition'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_traversal_drop_partition.part DROP COLUMN id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_partition'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_traversal_drop_partition",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_traversal_drop_partition.parent(id int,payload int);\nINSERT INTO pgcol_traversal_drop_partition.parent VALUES (1,20);\nCREATE TABLE pgcol_traversal_drop_partition.child() INHERITS(pgcol_traversal_drop_partition.parent);\nINSERT INTO pgcol_traversal_drop_partition.child VALUES (2,30);\nCREATE TABLE pgcol_traversal_drop_partition.merged(id int) INHERITS(pgcol_traversal_drop_partition.parent);\nCREATE TABLE pgcol_traversal_drop_partition.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_traversal_drop_partition.part PARTITION OF pgcol_traversal_drop_partition.root DEFAULT;\nINSERT INTO pgcol_traversal_drop_partition.root VALUES(3,40);\nCREATE TABLE pgcol_traversal_drop_partition.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_traversal_drop_partition.guard START 7;\nCREATE TABLE pgcol_traversal_drop_partition.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_partition'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.drop_column.exists.require",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.drop_column.exists.require",
+           "metadata": {
+             "reason_code": "column_inherited",
+             "exists": true
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_drop_partition.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_partition'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_partition'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_drop_partition.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_partition.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_partition.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_drop_partition.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_partition.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol_traversal_drop_partition.part DROP COLUMN id",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_drop_partition.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_partition'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_partition'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_drop_partition.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_partition.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_partition.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_drop_partition.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_partition.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_traversal_drop_partition CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_partition'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-traversal-drop-partition-key",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_traversal_drop_partition_key"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_traversal_drop_partition_key CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_partition_key'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_traversal_drop_partition_key.empty_root DROP COLUMN id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_partition_key'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_traversal_drop_partition_key",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_traversal_drop_partition_key.parent(id int,payload int);\nINSERT INTO pgcol_traversal_drop_partition_key.parent VALUES (1,20);\nCREATE TABLE pgcol_traversal_drop_partition_key.child() INHERITS(pgcol_traversal_drop_partition_key.parent);\nINSERT INTO pgcol_traversal_drop_partition_key.child VALUES (2,30);\nCREATE TABLE pgcol_traversal_drop_partition_key.merged(id int) INHERITS(pgcol_traversal_drop_partition_key.parent);\nCREATE TABLE pgcol_traversal_drop_partition_key.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_traversal_drop_partition_key.part PARTITION OF pgcol_traversal_drop_partition_key.root DEFAULT;\nINSERT INTO pgcol_traversal_drop_partition_key.root VALUES(3,40);\nCREATE TABLE pgcol_traversal_drop_partition_key.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_traversal_drop_partition_key.guard START 7;\nCREATE TABLE pgcol_traversal_drop_partition_key.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_partition_key'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.drop_column.exists.require",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.drop_column.exists.require",
+           "metadata": {
+             "reason_code": "column_in_partition_key",
+             "exists": true
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_drop_partition_key.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_partition_key'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_partition_key'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_drop_partition_key.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_partition_key.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_partition_key.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_drop_partition_key.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_partition_key.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol_traversal_drop_partition_key.empty_root DROP COLUMN id",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_drop_partition_key.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_partition_key'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_partition_key'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_drop_partition_key.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_partition_key.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_partition_key.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_drop_partition_key.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_partition_key.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_traversal_drop_partition_key CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_partition_key'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-traversal-drop-only-root",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_traversal_drop_only_root"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_traversal_drop_only_root CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_only_root'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE ONLY pgcol_traversal_drop_only_root.root DROP COLUMN payload",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_only_root'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_traversal_drop_only_root",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_traversal_drop_only_root.parent(id int,payload int);\nINSERT INTO pgcol_traversal_drop_only_root.parent VALUES (1,20);\nCREATE TABLE pgcol_traversal_drop_only_root.child() INHERITS(pgcol_traversal_drop_only_root.parent);\nINSERT INTO pgcol_traversal_drop_only_root.child VALUES (2,30);\nCREATE TABLE pgcol_traversal_drop_only_root.merged(id int) INHERITS(pgcol_traversal_drop_only_root.parent);\nCREATE TABLE pgcol_traversal_drop_only_root.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_traversal_drop_only_root.part PARTITION OF pgcol_traversal_drop_only_root.root DEFAULT;\nINSERT INTO pgcol_traversal_drop_only_root.root VALUES(3,40);\nCREATE TABLE pgcol_traversal_drop_only_root.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_traversal_drop_only_root.guard START 7;\nCREATE TABLE pgcol_traversal_drop_only_root.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_only_root'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.drop_column.exists.require",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.drop_column.exists.require",
+           "metadata": {
+             "reason_code": "column_partition_parent_only",
+             "exists": true
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_drop_only_root.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_only_root'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_only_root'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_drop_only_root.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_only_root.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_only_root.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_drop_only_root.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_only_root.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE ONLY pgcol_traversal_drop_only_root.root DROP COLUMN payload",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_drop_only_root.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_only_root'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_only_root'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_drop_only_root.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_only_root.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_only_root.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_drop_only_root.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_only_root.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_traversal_drop_only_root CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_only_root'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-traversal-drop-empty-root",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_traversal_drop_empty_root"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_traversal_drop_empty_root CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_empty_root'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE ONLY pgcol_traversal_drop_empty_root.empty_root DROP COLUMN payload",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_empty_root'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_traversal_drop_empty_root",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_traversal_drop_empty_root.parent(id int,payload int);\nINSERT INTO pgcol_traversal_drop_empty_root.parent VALUES (1,20);\nCREATE TABLE pgcol_traversal_drop_empty_root.child() INHERITS(pgcol_traversal_drop_empty_root.parent);\nINSERT INTO pgcol_traversal_drop_empty_root.child VALUES (2,30);\nCREATE TABLE pgcol_traversal_drop_empty_root.merged(id int) INHERITS(pgcol_traversal_drop_empty_root.parent);\nCREATE TABLE pgcol_traversal_drop_empty_root.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_traversal_drop_empty_root.part PARTITION OF pgcol_traversal_drop_empty_root.root DEFAULT;\nINSERT INTO pgcol_traversal_drop_empty_root.root VALUES(3,40);\nCREATE TABLE pgcol_traversal_drop_empty_root.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_traversal_drop_empty_root.guard START 7;\nCREATE TABLE pgcol_traversal_drop_empty_root.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_empty_root'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [],
+       "evidence_gaps": 1,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey"
+       ],
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.drop_column.exists.require",
+           "reason_code": "unproven_column_target",
+           "required_facts": [
+             "target_table.pg_columns"
+           ]
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_drop_empty_root.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_empty_root'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_empty_root'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_drop_empty_root.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_empty_root.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_empty_root.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_drop_empty_root.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_empty_root.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native operation",
+         "sql": "ALTER TABLE ONLY pgcol_traversal_drop_empty_root.empty_root DROP COLUMN payload",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native removes the selected attribute",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgcol_traversal_drop_empty_root.empty_root'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_empty_root.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_traversal_drop_empty_root CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_empty_root'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-traversal-drop-only-ordinary",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_traversal_drop_only_ordinary"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_traversal_drop_only_ordinary CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_only_ordinary'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE ONLY pgcol_traversal_drop_only_ordinary.parent DROP COLUMN id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_only_ordinary'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_traversal_drop_only_ordinary",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_traversal_drop_only_ordinary.parent(id int,payload int);\nINSERT INTO pgcol_traversal_drop_only_ordinary.parent VALUES (1,20);\nCREATE TABLE pgcol_traversal_drop_only_ordinary.child() INHERITS(pgcol_traversal_drop_only_ordinary.parent);\nINSERT INTO pgcol_traversal_drop_only_ordinary.child VALUES (2,30);\nCREATE TABLE pgcol_traversal_drop_only_ordinary.merged(id int) INHERITS(pgcol_traversal_drop_only_ordinary.parent);\nCREATE TABLE pgcol_traversal_drop_only_ordinary.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_traversal_drop_only_ordinary.part PARTITION OF pgcol_traversal_drop_only_ordinary.root DEFAULT;\nINSERT INTO pgcol_traversal_drop_only_ordinary.root VALUES(3,40);\nCREATE TABLE pgcol_traversal_drop_only_ordinary.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_traversal_drop_only_ordinary.guard START 7;\nCREATE TABLE pgcol_traversal_drop_only_ordinary.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_only_ordinary'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [],
+       "evidence_gaps": 1,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey"
+       ],
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.drop_column.exists.require",
+           "reason_code": "unproven_column_target",
+           "required_facts": [
+             "target_table.pg_columns"
+           ]
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_drop_only_ordinary.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_only_ordinary'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_only_ordinary'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_drop_only_ordinary.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_only_ordinary.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_only_ordinary.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_drop_only_ordinary.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_only_ordinary.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native operation",
+         "sql": "ALTER TABLE ONLY pgcol_traversal_drop_only_ordinary.parent DROP COLUMN id",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native removes the selected attribute",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgcol_traversal_drop_only_ordinary.parent'::regclass AND attname='id' AND NOT attisdropped",
+         "expect": "0"
+       },
+       {
+         "assert": "retains local child column",
+         "sql": "SELECT id FROM ONLY pgcol_traversal_drop_only_ordinary.child",
+         "expect": "2"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_only_ordinary.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_traversal_drop_only_ordinary CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_only_ordinary'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-traversal-drop-recursive",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_traversal_drop_recursive"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_traversal_drop_recursive CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_recursive'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_traversal_drop_recursive.root DROP COLUMN payload",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_recursive'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_traversal_drop_recursive",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_traversal_drop_recursive.parent(id int,payload int);\nINSERT INTO pgcol_traversal_drop_recursive.parent VALUES (1,20);\nCREATE TABLE pgcol_traversal_drop_recursive.child() INHERITS(pgcol_traversal_drop_recursive.parent);\nINSERT INTO pgcol_traversal_drop_recursive.child VALUES (2,30);\nCREATE TABLE pgcol_traversal_drop_recursive.merged(id int) INHERITS(pgcol_traversal_drop_recursive.parent);\nCREATE TABLE pgcol_traversal_drop_recursive.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_traversal_drop_recursive.part PARTITION OF pgcol_traversal_drop_recursive.root DEFAULT;\nINSERT INTO pgcol_traversal_drop_recursive.root VALUES(3,40);\nCREATE TABLE pgcol_traversal_drop_recursive.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_traversal_drop_recursive.guard START 7;\nCREATE TABLE pgcol_traversal_drop_recursive.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_recursive'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [],
+       "evidence_gaps": 1,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey"
+       ],
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.drop_column.exists.require",
+           "reason_code": "unproven_column_target",
+           "required_facts": [
+             "target_table.pg_columns"
+           ]
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_drop_recursive.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_recursive'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_drop_recursive'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_drop_recursive.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_recursive.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_drop_recursive.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_drop_recursive.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_recursive.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native operation",
+         "sql": "ALTER TABLE pgcol_traversal_drop_recursive.root DROP COLUMN payload",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native removes the selected attribute",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgcol_traversal_drop_recursive.root'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "0"
+       },
+       {
+         "assert": "native removes the selected attribute",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgcol_traversal_drop_recursive.part'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_drop_recursive.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_traversal_drop_recursive CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_drop_recursive'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-traversal-rename-inherited",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_traversal_rename_inherited"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_traversal_rename_inherited CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_rename_inherited'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_traversal_rename_inherited.child RENAME COLUMN id TO new_id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_rename_inherited'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_traversal_rename_inherited",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_traversal_rename_inherited.parent(id int,payload int);\nINSERT INTO pgcol_traversal_rename_inherited.parent VALUES (1,20);\nCREATE TABLE pgcol_traversal_rename_inherited.child() INHERITS(pgcol_traversal_rename_inherited.parent);\nINSERT INTO pgcol_traversal_rename_inherited.child VALUES (2,30);\nCREATE TABLE pgcol_traversal_rename_inherited.merged(id int) INHERITS(pgcol_traversal_rename_inherited.parent);\nCREATE TABLE pgcol_traversal_rename_inherited.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_traversal_rename_inherited.part PARTITION OF pgcol_traversal_rename_inherited.root DEFAULT;\nINSERT INTO pgcol_traversal_rename_inherited.root VALUES(3,40);\nCREATE TABLE pgcol_traversal_rename_inherited.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_traversal_rename_inherited.guard START 7;\nCREATE TABLE pgcol_traversal_rename_inherited.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_inherited'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.rename_column.exists.require",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.rename_column.exists.require",
+           "metadata": {
+             "reason_code": "column_rename_inherited",
+             "exists": true
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_rename_inherited.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_inherited'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_inherited'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_rename_inherited.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_rename_inherited.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_rename_inherited.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_rename_inherited.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_rename_inherited.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcol_traversal_rename_inherited.child RENAME COLUMN id TO new_id",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_rename_inherited.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_inherited'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_inherited'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_rename_inherited.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_rename_inherited.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_rename_inherited.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_rename_inherited.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_rename_inherited.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_traversal_rename_inherited CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_rename_inherited'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-traversal-rename-only-ordinary",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_traversal_rename_only_ordinary"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_traversal_rename_only_ordinary CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_rename_only_ordinary'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE ONLY pgcol_traversal_rename_only_ordinary.parent RENAME COLUMN id TO new_id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_rename_only_ordinary'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_traversal_rename_only_ordinary",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_traversal_rename_only_ordinary.parent(id int,payload int);\nINSERT INTO pgcol_traversal_rename_only_ordinary.parent VALUES (1,20);\nCREATE TABLE pgcol_traversal_rename_only_ordinary.child() INHERITS(pgcol_traversal_rename_only_ordinary.parent);\nINSERT INTO pgcol_traversal_rename_only_ordinary.child VALUES (2,30);\nCREATE TABLE pgcol_traversal_rename_only_ordinary.merged(id int) INHERITS(pgcol_traversal_rename_only_ordinary.parent);\nCREATE TABLE pgcol_traversal_rename_only_ordinary.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_traversal_rename_only_ordinary.part PARTITION OF pgcol_traversal_rename_only_ordinary.root DEFAULT;\nINSERT INTO pgcol_traversal_rename_only_ordinary.root VALUES(3,40);\nCREATE TABLE pgcol_traversal_rename_only_ordinary.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_traversal_rename_only_ordinary.guard START 7;\nCREATE TABLE pgcol_traversal_rename_only_ordinary.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_only_ordinary'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.rename_column.exists.require",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.rename_column.exists.require",
+           "metadata": {
+             "reason_code": "column_rename_requires_child_traversal",
+             "exists": true
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_rename_only_ordinary.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_only_ordinary'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_only_ordinary'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_rename_only_ordinary.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_rename_only_ordinary.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_rename_only_ordinary.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_rename_only_ordinary.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_rename_only_ordinary.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE ONLY pgcol_traversal_rename_only_ordinary.parent RENAME COLUMN id TO new_id",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_rename_only_ordinary.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_only_ordinary'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_only_ordinary'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_rename_only_ordinary.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_rename_only_ordinary.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_rename_only_ordinary.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_rename_only_ordinary.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_rename_only_ordinary.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_traversal_rename_only_ordinary CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_rename_only_ordinary'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-traversal-rename-only-root",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_traversal_rename_only_root"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_traversal_rename_only_root CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_rename_only_root'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE ONLY pgcol_traversal_rename_only_root.root RENAME COLUMN id TO new_id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_rename_only_root'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_traversal_rename_only_root",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_traversal_rename_only_root.parent(id int,payload int);\nINSERT INTO pgcol_traversal_rename_only_root.parent VALUES (1,20);\nCREATE TABLE pgcol_traversal_rename_only_root.child() INHERITS(pgcol_traversal_rename_only_root.parent);\nINSERT INTO pgcol_traversal_rename_only_root.child VALUES (2,30);\nCREATE TABLE pgcol_traversal_rename_only_root.merged(id int) INHERITS(pgcol_traversal_rename_only_root.parent);\nCREATE TABLE pgcol_traversal_rename_only_root.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_traversal_rename_only_root.part PARTITION OF pgcol_traversal_rename_only_root.root DEFAULT;\nINSERT INTO pgcol_traversal_rename_only_root.root VALUES(3,40);\nCREATE TABLE pgcol_traversal_rename_only_root.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_traversal_rename_only_root.guard START 7;\nCREATE TABLE pgcol_traversal_rename_only_root.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_only_root'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.rename_column.exists.require",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.rename_column.exists.require",
+           "metadata": {
+             "reason_code": "column_rename_requires_child_traversal",
+             "exists": true
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_rename_only_root.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_only_root'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_only_root'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_rename_only_root.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_rename_only_root.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_rename_only_root.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_rename_only_root.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_rename_only_root.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P16",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE ONLY pgcol_traversal_rename_only_root.root RENAME COLUMN id TO new_id",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_rename_only_root.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_only_root'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_only_root'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_rename_only_root.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_rename_only_root.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_rename_only_root.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_rename_only_root.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_rename_only_root.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_traversal_rename_only_root CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_rename_only_root'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-column-traversal-rename-recursive",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-column-traversal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcol_traversal_rename_recursive"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcol_traversal_rename_recursive CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_rename_recursive'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcol_traversal_rename_recursive.parent RENAME COLUMN id TO new_id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_rename_recursive'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcol_traversal_rename_recursive",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed and capture exact attributes and file identity",
+         "sql": "CREATE TABLE pgcol_traversal_rename_recursive.parent(id int,payload int);\nINSERT INTO pgcol_traversal_rename_recursive.parent VALUES (1,20);\nCREATE TABLE pgcol_traversal_rename_recursive.child() INHERITS(pgcol_traversal_rename_recursive.parent);\nINSERT INTO pgcol_traversal_rename_recursive.child VALUES (2,30);\nCREATE TABLE pgcol_traversal_rename_recursive.merged(id int) INHERITS(pgcol_traversal_rename_recursive.parent);\nCREATE TABLE pgcol_traversal_rename_recursive.root(id int,payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgcol_traversal_rename_recursive.part PARTITION OF pgcol_traversal_rename_recursive.root DEFAULT;\nINSERT INTO pgcol_traversal_rename_recursive.root VALUES(3,40);\nCREATE TABLE pgcol_traversal_rename_recursive.empty_root(id int, payload int) PARTITION BY RANGE(id);\nCREATE SEQUENCE pgcol_traversal_rename_recursive.guard START 7;\nCREATE TABLE pgcol_traversal_rename_recursive.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_recursive'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 2,
+       "finding_entries": [],
+       "evidence_gaps": 1,
+       "serialized_not_contains": [
+         "PGColumnTraversal",
+         "AttachedChildren",
+         "DirectPartitionKey"
+       ],
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.alter.rename_column.exists.require",
+           "reason_code": "unproven_column_identity",
+           "required_facts": [
+             "target_table.pg_columns"
+           ]
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog identities and attributes match",
+         "sql": "SELECT count(*) FROM ((TABLE pgcol_traversal_rename_recursive.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_recursive'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attislocal,a.attinhcount,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcol_traversal_rename_recursive'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcol_traversal_rename_recursive.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps local parent, child and partition data",
+         "sql": "SELECT (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_rename_recursive.parent)=120 AND (SELECT sum(id*100+payload) FROM ONLY pgcol_traversal_rename_recursive.child)=230 AND (SELECT sum(id*100+payload) FROM pgcol_traversal_rename_recursive.root)=340",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_rename_recursive.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native operation",
+         "sql": "ALTER TABLE pgcol_traversal_rename_recursive.parent RENAME COLUMN id TO new_id",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "renames the parent column",
+         "sql": "SELECT new_id FROM ONLY pgcol_traversal_rename_recursive.parent",
+         "expect": "1"
+       },
+       {
+         "assert": "renames the child column",
+         "sql": "SELECT new_id FROM ONLY pgcol_traversal_rename_recursive.child",
+         "expect": "2"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcol_traversal_rename_recursive.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcol_traversal_rename_recursive CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcol_traversal_rename_recursive'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+  {
+   "id": "pg-fk-keys-delete-set-null-subset",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-fk-delete-set-columns",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_delete_set_null_subset"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_delete_set_null_subset CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_null_subset'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_delete_set_null_subset.child ADD CONSTRAINT action_fk FOREIGN KEY (\"A,B\", id) REFERENCES pgfkk_delete_set_null_subset.parent(\"C,D\",id) ON DELETE SET NULL (id)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_null_subset'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_delete_set_null_subset","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_delete_set_null_subset.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_delete_set_null_subset.child VALUES(1,'keep'); CREATE TABLE pgfkk_delete_set_null_subset.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_delete_set_null_subset.parent VALUES(1); CREATE TABLE pgfkk_delete_set_null_subset.neighbor(id int); CREATE SEQUENCE pgfkk_delete_set_null_subset.guard START 7; ALTER TABLE pgfkk_delete_set_null_subset.child ADD COLUMN \" Extra, Column \" int; ALTER TABLE pgfkk_delete_set_null_subset.child ADD COLUMN id int; ALTER TABLE pgfkk_delete_set_null_subset.parent ADD COLUMN id int; ALTER TABLE pgfkk_delete_set_null_subset.parent ADD CONSTRAINT pair_key UNIQUE(\"C,D\",id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_delete_set_null_subset.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_null_subset'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys","DeleteSetColumns"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_delete_set_null_subset.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_null_subset'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_null_subset'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_delete_set_null_subset.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_delete_set_null_subset.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_delete_set_null_subset.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_delete_set_null_subset.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgfkk_delete_set_null_subset.child ADD CONSTRAINT action_fk FOREIGN KEY (\"A,B\", id) REFERENCES pgfkk_delete_set_null_subset.parent(\"C,D\",id) ON DELETE SET NULL (id)","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "one exact set-column slot","sql": "SELECT confdelsetcols=ARRAY[4]::smallint[] FROM pg_catalog.pg_constraint WHERE conrelid='pgfkk_delete_set_null_subset.child'::regclass AND conname='action_fk'","expect": "t"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_delete_set_null_subset.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_delete_set_null_subset.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_delete_set_null_subset.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_delete_set_null_subset CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_null_subset'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-delete-set-default-repeated",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-fk-delete-set-columns",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_delete_set_default_repeated"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_delete_set_default_repeated CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_default_repeated'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_delete_set_default_repeated.child ADD CONSTRAINT action_fk FOREIGN KEY (\"A,B\", id) REFERENCES pgfkk_delete_set_default_repeated.parent(\"C,D\",id) ON DELETE SET DEFAULT (id,id,\"A,B\")",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_default_repeated'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_delete_set_default_repeated","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_delete_set_default_repeated.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_delete_set_default_repeated.child VALUES(1,'keep'); CREATE TABLE pgfkk_delete_set_default_repeated.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_delete_set_default_repeated.parent VALUES(1); CREATE TABLE pgfkk_delete_set_default_repeated.neighbor(id int); CREATE SEQUENCE pgfkk_delete_set_default_repeated.guard START 7; ALTER TABLE pgfkk_delete_set_default_repeated.child ADD COLUMN \" Extra, Column \" int; ALTER TABLE pgfkk_delete_set_default_repeated.child ADD COLUMN id int; ALTER TABLE pgfkk_delete_set_default_repeated.parent ADD COLUMN id int; ALTER TABLE pgfkk_delete_set_default_repeated.parent ADD CONSTRAINT pair_key UNIQUE(\"C,D\",id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_delete_set_default_repeated.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_default_repeated'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys","DeleteSetColumns"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_delete_set_default_repeated.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_default_repeated'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_default_repeated'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_delete_set_default_repeated.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_delete_set_default_repeated.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_delete_set_default_repeated.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_delete_set_default_repeated.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgfkk_delete_set_default_repeated.child ADD CONSTRAINT action_fk FOREIGN KEY (\"A,B\", id) REFERENCES pgfkk_delete_set_default_repeated.parent(\"C,D\",id) ON DELETE SET DEFAULT (id,id,\"A,B\")","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native keeps the first occurrence in each exact slot","sql": "SELECT confdelsetcols=ARRAY[4,1]::smallint[] FROM pg_catalog.pg_constraint WHERE conrelid='pgfkk_delete_set_default_repeated.child'::regclass AND conname='action_fk'","expect": "t"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_delete_set_default_repeated.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_delete_set_default_repeated.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_delete_set_default_repeated.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_delete_set_default_repeated CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_default_repeated'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-delete-set-outside-key",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-fk-delete-set-columns",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_delete_set_outside_key"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_delete_set_outside_key CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_outside_key'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_delete_set_outside_key.child ADD CONSTRAINT action_fk FOREIGN KEY (\"A,B\", id) REFERENCES pgfkk_delete_set_outside_key.parent(\"C,D\",id) ON DELETE SET NULL (\" Extra, Column \")",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_outside_key'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_delete_set_outside_key","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_delete_set_outside_key.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_delete_set_outside_key.child VALUES(1,'keep'); CREATE TABLE pgfkk_delete_set_outside_key.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_delete_set_outside_key.parent VALUES(1); CREATE TABLE pgfkk_delete_set_outside_key.neighbor(id int); CREATE SEQUENCE pgfkk_delete_set_outside_key.guard START 7; ALTER TABLE pgfkk_delete_set_outside_key.child ADD COLUMN \" Extra, Column \" int; ALTER TABLE pgfkk_delete_set_outside_key.child ADD COLUMN id int; ALTER TABLE pgfkk_delete_set_outside_key.parent ADD COLUMN id int; ALTER TABLE pgfkk_delete_set_outside_key.parent ADD CONSTRAINT pair_key UNIQUE(\"C,D\",id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_delete_set_outside_key.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_outside_key'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys","DeleteSetColumns"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","metadata": {"reason_code": "foreign_key_delete_set_column_outside_key","column": " Extra, Column "}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_delete_set_outside_key.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_outside_key'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_outside_key'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_delete_set_outside_key.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_delete_set_outside_key.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_delete_set_outside_key.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_delete_set_outside_key.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42P10","sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkk_delete_set_outside_key.child ADD CONSTRAINT action_fk FOREIGN KEY (\"A,B\", id) REFERENCES pgfkk_delete_set_outside_key.parent(\"C,D\",id) ON DELETE SET NULL (\" Extra, Column \")","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P10:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_delete_set_outside_key.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_outside_key'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_outside_key'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_delete_set_outside_key.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_delete_set_outside_key.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_delete_set_outside_key.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_delete_set_outside_key.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_delete_set_outside_key CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_outside_key'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-delete-set-missing-exact",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-fk-delete-set-columns",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_delete_set_missing_exact"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_delete_set_missing_exact CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_missing_exact'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_delete_set_missing_exact.child ADD CONSTRAINT action_fk FOREIGN KEY (\"A,B\", id) REFERENCES pgfkk_delete_set_missing_exact.parent(\"C,D\",id) ON DELETE SET NULL (\" Extra, column \")",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_missing_exact'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_delete_set_missing_exact","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_delete_set_missing_exact.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_delete_set_missing_exact.child VALUES(1,'keep'); CREATE TABLE pgfkk_delete_set_missing_exact.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_delete_set_missing_exact.parent VALUES(1); CREATE TABLE pgfkk_delete_set_missing_exact.neighbor(id int); CREATE SEQUENCE pgfkk_delete_set_missing_exact.guard START 7; ALTER TABLE pgfkk_delete_set_missing_exact.child ADD COLUMN \" Extra, Column \" int; ALTER TABLE pgfkk_delete_set_missing_exact.child ADD COLUMN id int; ALTER TABLE pgfkk_delete_set_missing_exact.parent ADD COLUMN id int; ALTER TABLE pgfkk_delete_set_missing_exact.parent ADD CONSTRAINT pair_key UNIQUE(\"C,D\",id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_delete_set_missing_exact.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_missing_exact'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys","DeleteSetColumns"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","metadata": {"reason_code": "foreign_key_delete_set_column_absent","column": " Extra, column "}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_delete_set_missing_exact.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_missing_exact'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_missing_exact'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_delete_set_missing_exact.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_delete_set_missing_exact.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_delete_set_missing_exact.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_delete_set_missing_exact.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42703","sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkk_delete_set_missing_exact.child ADD CONSTRAINT action_fk FOREIGN KEY (\"A,B\", id) REFERENCES pgfkk_delete_set_missing_exact.parent(\"C,D\",id) ON DELETE SET NULL (\" Extra, column \")","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42703:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_delete_set_missing_exact.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_missing_exact'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_missing_exact'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_delete_set_missing_exact.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_delete_set_missing_exact.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_delete_set_missing_exact.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_delete_set_missing_exact.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_delete_set_missing_exact CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_missing_exact'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-delete-set-system",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-fk-delete-set-columns",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_delete_set_system"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_delete_set_system CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_system'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_delete_set_system.child ADD CONSTRAINT action_fk FOREIGN KEY (\"A,B\", id) REFERENCES pgfkk_delete_set_system.parent(\"C,D\",id) ON DELETE SET NULL (tableoid)",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_system'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_delete_set_system","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_delete_set_system.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_delete_set_system.child VALUES(1,'keep'); CREATE TABLE pgfkk_delete_set_system.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_delete_set_system.parent VALUES(1); CREATE TABLE pgfkk_delete_set_system.neighbor(id int); CREATE SEQUENCE pgfkk_delete_set_system.guard START 7; ALTER TABLE pgfkk_delete_set_system.child ADD COLUMN \" Extra, Column \" int; ALTER TABLE pgfkk_delete_set_system.child ADD COLUMN id int; ALTER TABLE pgfkk_delete_set_system.parent ADD COLUMN id int; ALTER TABLE pgfkk_delete_set_system.parent ADD CONSTRAINT pair_key UNIQUE(\"C,D\",id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_delete_set_system.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_system'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys","DeleteSetColumns"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","metadata": {"reason_code": "foreign_key_delete_set_system_column","column": "tableoid"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_delete_set_system.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_system'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_system'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_delete_set_system.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_delete_set_system.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_delete_set_system.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_delete_set_system.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 0A000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkk_delete_set_system.child ADD CONSTRAINT action_fk FOREIGN KEY (\"A,B\", id) REFERENCES pgfkk_delete_set_system.parent(\"C,D\",id) ON DELETE SET NULL (tableoid)","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  0A000:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_delete_set_system.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_system'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_system'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_delete_set_system.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_delete_set_system.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_delete_set_system.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_delete_set_system.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_delete_set_system CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_system'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-fk-keys-delete-set-not-valid",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-fk-delete-set-columns",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgfkk_delete_set_not_valid"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_delete_set_not_valid CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_not_valid'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgfkk_delete_set_not_valid.child ADD CONSTRAINT action_fk FOREIGN KEY (\"A,B\", id) REFERENCES pgfkk_delete_set_not_valid.parent(\"C,D\",id) ON DELETE SET DEFAULT (\" Extra, Column \") NOT VALID",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_not_valid'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgfkk_delete_set_not_valid","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgfkk_delete_set_not_valid.child(\"A,B\" int NOT NULL, payload text); INSERT INTO pgfkk_delete_set_not_valid.child VALUES(1,'keep'); CREATE TABLE pgfkk_delete_set_not_valid.parent(\"C,D\" int PRIMARY KEY); INSERT INTO pgfkk_delete_set_not_valid.parent VALUES(1); CREATE TABLE pgfkk_delete_set_not_valid.neighbor(id int); CREATE SEQUENCE pgfkk_delete_set_not_valid.guard START 7; ALTER TABLE pgfkk_delete_set_not_valid.child ADD COLUMN \" Extra, Column \" int; ALTER TABLE pgfkk_delete_set_not_valid.child ADD COLUMN id int; ALTER TABLE pgfkk_delete_set_not_valid.parent ADD COLUMN id int; ALTER TABLE pgfkk_delete_set_not_valid.parent ADD CONSTRAINT pair_key UNIQUE(\"C,D\",id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgfkk_delete_set_not_valid.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_not_valid'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGForeignKeyReference","PGForeignKeySelection","ReferenceCatalogQualified","PGForeignKeyKeys","DeleteSetColumns"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.add_foreign_key.targets.valid","metadata": {"reason_code": "foreign_key_delete_set_column_outside_key","column": " Extra, Column "}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_delete_set_not_valid.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_not_valid'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_not_valid'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_delete_set_not_valid.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_delete_set_not_valid.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_delete_set_not_valid.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_delete_set_not_valid.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42P10","sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkk_delete_set_not_valid.child ADD CONSTRAINT action_fk FOREIGN KEY (\"A,B\", id) REFERENCES pgfkk_delete_set_not_valid.parent(\"C,D\",id) ON DELETE SET DEFAULT (\" Extra, Column \") NOT VALID","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P10:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgfkk_delete_set_not_valid.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_not_valid'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgfkk_delete_set_not_valid'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgfkk_delete_set_not_valid.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original child and parent rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(\"A,B\"=1 AND payload='keep') FROM pgfkk_delete_set_not_valid.child) AND (SELECT count(*)=1 AND bool_and(\"C,D\"=1) FROM pgfkk_delete_set_not_valid.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgfkk_delete_set_not_valid.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgfkk_delete_set_not_valid CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgfkk_delete_set_not_valid'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-opclass-explicit-nondefault",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index-opclasses",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_opclass_explicit_nondefault"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_opclass_explicit_nondefault CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_opclass_explicit_nondefault'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_opclass_explicit_nondefault.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_opclass_explicit_nondefault'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_opclass_explicit_nondefault","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_opclass_explicit_nondefault.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_opclass_explicit_nondefault.t VALUES(1,'keep',7); CREATE TABLE pgcix_opclass_explicit_nondefault.neighbor(id int); CREATE SEQUENCE pgcix_opclass_explicit_nondefault.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgcix_opclass_explicit_nondefault.t(label pg_catalog.text_pattern_ops); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_opclass_explicit_nondefault.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_explicit_nondefault'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned","OpclassesDefault","OpclassesDefaultKnown"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","metadata": {"reason_code": "constraint_index_nondefault_opclass","constraint_type": "unique"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_opclass_explicit_nondefault.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_explicit_nondefault'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_explicit_nondefault'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_opclass_explicit_nondefault.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_opclass_explicit_nondefault.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_opclass_explicit_nondefault.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcix_opclass_explicit_nondefault.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_opclass_explicit_nondefault.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_explicit_nondefault'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_explicit_nondefault'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_opclass_explicit_nondefault.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_opclass_explicit_nondefault.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_opclass_explicit_nondefault.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_opclass_explicit_nondefault CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_opclass_explicit_nondefault'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-opclass-primary-nondefault",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index-opclasses",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_opclass_primary_nondefault"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_opclass_primary_nondefault CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_opclass_primary_nondefault'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_opclass_primary_nondefault.t ADD CONSTRAINT attached PRIMARY KEY USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_opclass_primary_nondefault'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_opclass_primary_nondefault","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_opclass_primary_nondefault.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_opclass_primary_nondefault.t VALUES(1,'keep',7); CREATE TABLE pgcix_opclass_primary_nondefault.neighbor(id int); CREATE SEQUENCE pgcix_opclass_primary_nondefault.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgcix_opclass_primary_nondefault.t(label pg_catalog.text_pattern_ops); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_opclass_primary_nondefault.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_primary_nondefault'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned","OpclassesDefault","OpclassesDefaultKnown"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","metadata": {"reason_code": "constraint_index_nondefault_opclass","constraint_type": "primary_key"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_opclass_primary_nondefault.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_primary_nondefault'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_primary_nondefault'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_opclass_primary_nondefault.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_opclass_primary_nondefault.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_opclass_primary_nondefault.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcix_opclass_primary_nondefault.t ADD CONSTRAINT attached PRIMARY KEY USING INDEX fixture_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_opclass_primary_nondefault.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_primary_nondefault'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_primary_nondefault'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_opclass_primary_nondefault.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_opclass_primary_nondefault.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_opclass_primary_nondefault.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_opclass_primary_nondefault CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_opclass_primary_nondefault'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-opclass-explicit-default",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index-opclasses",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_opclass_explicit_default"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_opclass_explicit_default CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_opclass_explicit_default'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_opclass_explicit_default.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_opclass_explicit_default'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_opclass_explicit_default","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_opclass_explicit_default.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_opclass_explicit_default.t VALUES(1,'keep',7); CREATE TABLE pgcix_opclass_explicit_default.neighbor(id int); CREATE SEQUENCE pgcix_opclass_explicit_default.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgcix_opclass_explicit_default.t(label pg_catalog.text_ops) INCLUDE (included); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_opclass_explicit_default.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_explicit_default'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned","OpclassesDefault","OpclassesDefaultKnown"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_opclass_explicit_default.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_explicit_default'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_explicit_default'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_opclass_explicit_default.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_opclass_explicit_default.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_opclass_explicit_default.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgcix_opclass_explicit_default.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native attaches the same index OID and file","sql": "SELECT k.contype='u' AND idx.relfilenode=r.relfilenode FROM pg_catalog.pg_constraint k JOIN pg_catalog.pg_class idx ON idx.oid=k.conindid JOIN pgcix_opclass_explicit_default.receipt r ON r.oid=idx.oid WHERE k.conrelid='pgcix_opclass_explicit_default.t'::regclass AND k.conname='attached' AND r.relname='fixture_ix'","expect": "t"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_opclass_explicit_default.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_opclass_explicit_default.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_opclass_explicit_default CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_opclass_explicit_default'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-opclass-binary-compatibility",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index-opclasses",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_opclass_binary_compatibility"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_opclass_binary_compatibility CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_opclass_binary_compatibility'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_opclass_binary_compatibility.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_opclass_binary_compatibility'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_opclass_binary_compatibility","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_opclass_binary_compatibility.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_opclass_binary_compatibility.t VALUES(1,'keep',7); CREATE TABLE pgcix_opclass_binary_compatibility.neighbor(id int); CREATE SEQUENCE pgcix_opclass_binary_compatibility.guard START 7; ALTER TABLE pgcix_opclass_binary_compatibility.t ALTER COLUMN label TYPE varchar(8); CREATE UNIQUE INDEX fixture_ix ON pgcix_opclass_binary_compatibility.t(label); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_opclass_binary_compatibility.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_binary_compatibility'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","reason_code": "unproven_constraint_using_index","required_facts": ["index.constraint_default_opclasses"]}],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned","OpclassesDefault","OpclassesDefaultKnown"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_opclass_binary_compatibility.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_binary_compatibility'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_opclass_binary_compatibility'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_opclass_binary_compatibility.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_opclass_binary_compatibility.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_opclass_binary_compatibility.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgcix_opclass_binary_compatibility.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native attaches the same index OID and file","sql": "SELECT k.contype='u' AND idx.relfilenode=r.relfilenode FROM pg_catalog.pg_constraint k JOIN pg_catalog.pg_class idx ON idx.oid=k.conindid JOIN pgcix_opclass_binary_compatibility.receipt r ON r.oid=idx.oid WHERE k.conrelid='pgcix_opclass_binary_compatibility.t'::regclass AND k.conname='attached' AND r.relname='fixture_ix'","expect": "t"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_opclass_binary_compatibility.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_opclass_binary_compatibility.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_opclass_binary_compatibility CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_opclass_binary_compatibility'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
   {
    "id": "pg-column-type-coercion-assignment-missing",
    "anchor": "postgres17",
@@ -16319,17 +18683,18 @@
    ],
    "expect": {
     "exit": 0,
-    "verdict": "review",
+    "verdict": "reject",
     "statements": 6,
-    "findings": 3,
+    "findings": 4,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "unverified",
-    "statement_coverage": ["unverified","unverified","unverified","unverified","unverified","unverified"],
+    "statement_coverage": ["complete","unverified","unverified","unverified","unverified","unverified"],
     "statement_indices": [0,1,2,3,4,5],
-    "finding_entries": [{"index": 2,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"},{"index": 3,"rule_id": "ddl.pg.alter.add_column.non_null_no_default.warn","level": "warning"},{"index": 4,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
-    "evidence_gaps": 9,
-    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 0,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 2,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 3,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 4,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 5,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 5,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]}],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.rename_column.exists.require","level": "blocker"},{"index": 2,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"},{"index": 3,"rule_id": "ddl.pg.alter.add_column.non_null_no_default.warn","level": "warning"},{"index": 4,"rule_id": "ddl.pg.alter.add_column.nullable.notice","level": "notice"}],
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.alter.rename_column.exists.require","metadata": {"reason_code": "column_rename_inherited"}}],
+    "evidence_gaps": 7,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 1,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 2,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 3,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 4,"rule_id": "ddl.alter.add_column.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 5,"rule_id": "ddl.alter.rename_column.exists.require","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]},{"index": 5,"rule_id": "ddl.alter.rename_column.target.exists.forbid","reason_code": "unproven_column_identity","required_facts": ["target_table.pg_columns"]}],
     "serialized_not_contains": ["PGRelation","PGTableIfExists","PGAddColumnIfNotExists","PGColumns","SystemColumns"],
     "rule_summary_loaded": 7
    },
@@ -17648,6 +20013,28 @@
   }
  ],
  "required_case_ids": [
+  "T37.meta.pg-column-traversal-drop-inherited",
+  "T37.meta.pg-column-traversal-drop-merged",
+  "T37.meta.pg-column-traversal-drop-partition",
+  "T37.meta.pg-column-traversal-drop-partition-key",
+  "T37.meta.pg-column-traversal-drop-only-root",
+  "T37.meta.pg-column-traversal-drop-empty-root",
+  "T37.meta.pg-column-traversal-drop-only-ordinary",
+  "T37.meta.pg-column-traversal-drop-recursive",
+  "T37.meta.pg-column-traversal-rename-inherited",
+  "T37.meta.pg-column-traversal-rename-only-ordinary",
+  "T37.meta.pg-column-traversal-rename-only-root",
+  "T37.meta.pg-column-traversal-rename-recursive",
+  "T37.meta.pg-fk-keys-delete-set-null-subset",
+  "T37.meta.pg-fk-keys-delete-set-default-repeated",
+  "T37.meta.pg-fk-keys-delete-set-outside-key",
+  "T37.meta.pg-fk-keys-delete-set-missing-exact",
+  "T37.meta.pg-fk-keys-delete-set-system",
+  "T37.meta.pg-fk-keys-delete-set-not-valid",
+  "T37.meta.pg-constraint-index-opclass-explicit-nondefault",
+  "T37.meta.pg-constraint-index-opclass-primary-nondefault",
+  "T37.meta.pg-constraint-index-opclass-explicit-default",
+  "T37.meta.pg-constraint-index-opclass-binary-compatibility",
   "T37.cli.column-type-coercion-offline",
   "T37.meta.pg-column-type-coercion-assignment-missing",
   "T37.meta.pg-column-type-coercion-assignment-numeric",

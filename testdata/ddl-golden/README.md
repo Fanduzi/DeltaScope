@@ -11,6 +11,14 @@ with the column. Additional cases pin stale and offline facts, exact names,
 policy disablement and the privacy of catalog evidence.
 [Decision](../../docs/decisions/2026-11-21-postgresql-drop-column-dependencies.md)
 
+## T37 PostgreSQL constraint operator classes and action columns
+
+Ten new cases verify default operator-class evidence for PRIMARY KEY or
+UNIQUE USING INDEX and exact ON DELETE SET column lists. Native controls
+cover the binary-compatible default and repeated action columns.
+[Operator classes](../../docs/decisions/2026-11-21-postgresql-constraint-default-opclass.md)
+[Action columns](../../docs/decisions/2026-11-21-postgresql-foreign-key-delete-set-columns.md)
+
 ## T37 PostgreSQL SET WITHOUT OIDS
 
 The compatibility form completes without changing catalog identities or

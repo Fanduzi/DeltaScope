@@ -837,6 +837,39 @@ Delivered at `36ef07e478a6883ea0214b48819be72c231abf99` with 50 canonical tasks,
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44797329708/job/136500155747),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136500314759).
 
+### D31–D33 PostgreSQL constraint declarations and column traversal
+
+`acd669f7` adds exact PostgreSQL 17 catalog facts and retains authored
+ON DELETE SET columns and RENAME traversal. `f2e0aeb5` extends the existing
+blockers with three bounded checks.
+
+- D31 checks the selected index key's operator classes for PRIMARY KEY
+  or UNIQUE USING INDEX attachment. A nondefault installed class or a
+  proved mismatch with the unique exact-type default blocks. Binary
+  compatibility and polymorphic default selection retain their evidence
+  gap. Five references bind the two constraint cells.
+  [Decision](../decisions/2026-11-21-postgresql-constraint-default-opclass.md)
+- D32 checks the exact ON DELETE SET NULL or SET DEFAULT column subset,
+  including NOT VALID declarations. Native duplicates are accepted.
+  Missing, system and out-of-key columns have separate reasons. Seven
+  references bind ADD FOREIGN KEY.
+  [Decision](../decisions/2026-11-21-postgresql-foreign-key-delete-set-columns.md)
+- D33 checks direct inherited DROP and RENAME, direct partition keys for
+  DROP and attached-child traversal for ONLY. Pending detach entries are
+  excluded. Fourteen references bind DROP COLUMN, guarded DROP COLUMN
+  CASCADE and RENAME COLUMN.
+  [Decision](../decisions/2026-11-21-postgresql-column-traversal.md)
+
+T37 combined preview passed 459/459 with 12,904 assertions. Twenty-two
+added native commands yielded eight successes and fourteen refusals. The
+legacy scope case preserves its SQL and native checks and expects the
+proved inherited RENAME refusal at index zero. The first combined preview
+stopped before case execution when PostgreSQL's published port was occupied.
+After owned cleanup and port release, the full focused preview passed.
+Inventory adds 26 selectors with the same parent classifications and the
+original 19-family and 63-row denominator. The fixed candidate is in
+verification.
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.
