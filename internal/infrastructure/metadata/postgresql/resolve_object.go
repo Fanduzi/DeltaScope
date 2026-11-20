@@ -16,6 +16,8 @@ var _ appaudit.ObjectResolver = (*Provider)(nil)
 func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
 	if dialect == spec.DialectPostgreSQL {
 		switch req.Type {
+		case "column_traversal":
+			return p.resolveColumnTraversal(ctx, req)
 		case "drop_column_dependency":
 			return p.resolveDropColumnDependency(ctx, req)
 		case "drop_constraint_reference":

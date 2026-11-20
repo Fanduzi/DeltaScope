@@ -246,6 +246,7 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 			Operation:               spec.DDLOperationAlterTable,
 			PGTableIfExists:         stmt.GetRelationType() == pg_query.ObjectType_OBJECT_TABLE && stmt.GetMissingOk(),
 			PGTableCatalogQualified: stmt.GetRelation().GetCatalogname() != "",
+			PGTableOnly:             !stmt.GetRelation().GetInh(),
 			Table:                   table,
 			Alter: []spec.Alter{{
 				Action: "rename_column",
@@ -963,7 +964,7 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			columns := stringValuesFromNodes(constraint.GetFkAttrs())
 			referencedColumns := stringValuesFromNodes(constraint.GetPkAttrs())
 			if table := tableFromRangeVar(reference); table != nil {
-				foreignKey = &spec.PGForeignKeySelection{Reference: *table, ReferenceCatalogQualified: reference.GetCatalogname() != "", Columns: columns, ReferencedColumns: referencedColumns}
+				foreignKey = &spec.PGForeignKeySelection{Reference: *table, ReferenceCatalogQualified: reference.GetCatalogname() != "", Columns: columns, ReferencedColumns: referencedColumns, DeleteSetColumns: stringValuesFromNodes(constraint.GetFkDelSetCols())}
 			}
 			if len(columns) > 0 {
 				options["columns"] = strings.Join(columns, ",")

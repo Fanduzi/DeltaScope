@@ -39,7 +39,32 @@ func (p *Provider) resolveConstraintUsingIndex(ctx context.Context, req spec.Obj
 		         and a.attnum OPERATOR(pg_catalog.=) slots.attnum and not a.attisdropped
 		        left join pg_catalog.pg_attribute ia on ia.attrelid OPERATOR(pg_catalog.=) i.indexrelid
 		         and ia.attnum OPERATOR(pg_catalog.=) slots.slot and not ia.attisdropped
-		        where slots.slot OPERATOR(pg_catalog.<=) i.indnkeyatts)
+		        where slots.slot OPERATOR(pg_catalog.<=) i.indnkeyatts),
+		       (select case when pg_catalog.bool_or(not key_matches.allowed) then false
+		                    when i.indnkeyatts OPERATOR(pg_catalog.>) 0
+		                      and pg_catalog.count(key_matches.allowed) OPERATOR(pg_catalog.=) i.indnkeyatts then true
+		               end
+		        from (
+		          select case when not installed.opcdefault then false
+		                      when defaults.n OPERATOR(pg_catalog.=) 1
+		                      then defaults.oid OPERATOR(pg_catalog.=) installed.oid
+		                 end as allowed
+		          from ROWS FROM (pg_catalog.unnest(i.indkey), pg_catalog.unnest(i.indclass))
+		               with ordinality as keys(attnum, opclass, slot)
+		          left join pg_catalog.pg_opclass installed on installed.oid OPERATOR(pg_catalog.=) keys.opclass
+		           and installed.opcmethod OPERATOR(pg_catalog.=) idx.relam
+		          left join pg_catalog.pg_attribute a on a.attrelid OPERATOR(pg_catalog.=) i.indrelid
+		           and a.attnum OPERATOR(pg_catalog.=) keys.attnum and not a.attisdropped
+		          left join pg_catalog.pg_type t on t.oid OPERATOR(pg_catalog.=) a.atttypid
+		          left join lateral (
+		            select pg_catalog.count(*) as n, (pg_catalog.array_agg(opc.oid))[1] as oid
+		            from pg_catalog.pg_opclass opc
+		            where opc.opcmethod OPERATOR(pg_catalog.=) idx.relam and opc.opcdefault
+		              and opc.opcintype OPERATOR(pg_catalog.=) t.oid
+		              and t.typbasetype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
+		          ) defaults on true
+		          where keys.slot OPERATOR(pg_catalog.<=) i.indnkeyatts
+		        ) key_matches)
 		from pg_catalog.pg_namespace n
 		join pg_catalog.pg_class tbl on tbl.relnamespace OPERATOR(pg_catalog.=) n.oid
 		left join pg_catalog.pg_class idx on idx.relnamespace OPERATOR(pg_catalog.=) n.oid
@@ -54,9 +79,9 @@ func (p *Provider) resolveConstraintUsingIndex(ctx context.Context, req spec.Obj
 		                  where h.inhrelid OPERATOR(pg_catalog.=) tbl.oid or h.inhparent OPERATOR(pg_catalog.=) tbl.oid)
 	`, req.Schema, table, req.Name)
 	facts := spec.PGConstraintUsingIndex{Schema: req.Schema, Table: table, Name: req.Name}
-	var keys sql.NullBool
+	var keys, opclasses sql.NullBool
 	err := row.Scan(&facts.Kind, &facts.IndexKnown, &facts.OnTable, &facts.Valid, &facts.Unique,
-		&facts.Expression, &facts.Partial, &facts.BTree, &facts.NullsNotDistinct, &facts.ConstraintOwned, &keys)
+		&facts.Expression, &facts.Partial, &facts.BTree, &facts.NullsNotDistinct, &facts.ConstraintOwned, &keys, &opclasses)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
@@ -64,5 +89,6 @@ func (p *Provider) resolveConstraintUsingIndex(ctx context.Context, req spec.Obj
 		return nil, fmt.Errorf("read constraint index attachment: %w", err)
 	}
 	facts.KeyDefaults, facts.KeyDefaultsKnown = keys.Bool, keys.Valid
+	facts.OpclassesDefault, facts.OpclassesDefaultKnown = opclasses.Bool, opclasses.Valid
 	return &spec.ObjectSnapshot{PGConstraintUsingIndex: &facts}, nil
 }

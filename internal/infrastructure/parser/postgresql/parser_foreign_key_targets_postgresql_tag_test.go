@@ -21,6 +21,16 @@ func TestPGForeignKeySelection(t *testing.T) {
 	if err != nil || strings.Contains(string(b), "PGForeignKey") || strings.Contains(string(b), "ReferenceCatalogQualified") {
 		t.Fatalf("private facts in JSON: %s (%v)", b, err)
 	}
+
+	declaration := extractPostgreSQLStatement(t, `ALTER TABLE app.t ADD FOREIGN KEY ("A,B", " X ") REFERENCES app.parent(a,b) ON DELETE SET DEFAULT (" X ", "A,B", " X ")`)
+	selection := spec.PGForeignKeyTarget(declaration)
+	if selection == nil || !slices.Equal(selection.DeleteSetColumns, []string{" X ", "A,B", " X "}) {
+		t.Fatalf("action column selection = %+v", selection)
+	}
+	b, err = json.Marshal(declaration.DDL)
+	if err != nil || strings.Contains(string(b), "DeleteSetColumns") {
+		t.Fatalf("action column facts leaked: %s (%v)", b, err)
+	}
 	omitted := spec.PGForeignKeyTarget(extractPostgreSQLStatement(t, `ALTER TABLE app.t ADD FOREIGN KEY (id) REFERENCES app.parent`))
 	if omitted == nil || !omitted.ReferenceQualified() || len(omitted.ReferencedColumns) != 0 {
 		t.Fatalf("omitted reference list = %+v", omitted)

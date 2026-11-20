@@ -4,6 +4,7 @@ package spec
 // names on commas. An empty referenced list means REFERENCES omitted its columns.
 type PGForeignKeySelection struct {
 	Columns, ReferencedColumns []string
+	DeleteSetColumns           []string
 	Reference                  Table
 	ReferenceCatalogQualified  bool
 }

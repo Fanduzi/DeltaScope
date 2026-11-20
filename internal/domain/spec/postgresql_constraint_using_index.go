@@ -3,14 +3,15 @@ package spec
 // PGConstraintUsingIndex observes one exact ALTER TABLE index selection.
 // An empty Kind on a bound observation means no relation has that name.
 type PGConstraintUsingIndex struct {
-	Schema, Table, Name           string
-	Kind                          string
-	IndexKnown, OnTable           bool
-	Valid, Unique                 bool
-	Expression, Partial, BTree    bool
-	NullsNotDistinct              bool
-	ConstraintOwned               bool
-	KeyDefaults, KeyDefaultsKnown bool
+	Schema, Table, Name                     string
+	Kind                                    string
+	IndexKnown, OnTable                     bool
+	Valid, Unique                           bool
+	Expression, Partial, BTree              bool
+	NullsNotDistinct                        bool
+	ConstraintOwned                         bool
+	KeyDefaults, KeyDefaultsKnown           bool
+	OpclassesDefault, OpclassesDefaultKnown bool
 }
 
 // PGConstraintUsingIndexTarget returns the index name of one authored attachment.

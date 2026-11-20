@@ -17,11 +17,12 @@ func TestResolveConstraintUsingIndex(t *testing.T) {
 		want *spec.PGConstraintUsingIndex
 	}{
 		{name: "unobserved table"},
-		{name: "missing index", rows: [][]driver.Value{{"", false, false, false, false, false, false, false, false, false, nil}}, want: &spec.PGConstraintUsingIndex{}},
-		{name: "eligible shape", rows: [][]driver.Value{{"i", true, true, true, true, false, false, true, true, false, true}}, want: &spec.PGConstraintUsingIndex{Kind: "i", IndexKnown: true, OnTable: true, Valid: true, Unique: true, BTree: true, NullsNotDistinct: true, KeyDefaults: true, KeyDefaultsKnown: true}},
+		{name: "missing index", rows: [][]driver.Value{{"", false, false, false, false, false, false, false, false, false, nil, nil}}, want: &spec.PGConstraintUsingIndex{}},
+		{name: "eligible shape", rows: [][]driver.Value{{"i", true, true, true, true, false, false, true, true, false, true, true}}, want: &spec.PGConstraintUsingIndex{Kind: "i", IndexKnown: true, OnTable: true, Valid: true, Unique: true, BTree: true, NullsNotDistinct: true, KeyDefaults: true, KeyDefaultsKnown: true, OpclassesDefault: true, OpclassesDefaultKnown: true}},
+		{name: "nondefault operator class", rows: [][]driver.Value{{"i", true, true, true, true, false, false, true, false, false, true, false}}, want: &spec.PGConstraintUsingIndex{Kind: "i", IndexKnown: true, OnTable: true, Valid: true, Unique: true, BTree: true, KeyDefaults: true, KeyDefaultsKnown: true, OpclassesDefaultKnown: true}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			db, log := openTestDB(t, map[string]testQueryResult{"pg_catalog.bool_and(slots.flags": {columns: []string{"kind", "index", "on_table", "valid", "unique", "expr", "partial", "btree", "nnd", "owned", "key_defaults"}, rows: tc.rows}})
+			db, log := openTestDB(t, map[string]testQueryResult{"pg_catalog.bool_and(slots.flags": {columns: []string{"kind", "index", "on_table", "valid", "unique", "expr", "partial", "btree", "nnd", "owned", "key_defaults", "opclasses_default"}, rows: tc.rows}})
 			defer db.Close()
 			req := spec.ObjectLookupRequest{Schema: "app", Name: " Exact.Index ", Type: "constraint_using_index", Qualifiers: map[string]string{"table": "t"}}
 			got, err := NewProvider(db).ResolveObject(context.Background(), spec.DialectPostgreSQL, req)
