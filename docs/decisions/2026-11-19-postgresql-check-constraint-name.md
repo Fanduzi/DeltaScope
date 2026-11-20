@@ -81,6 +81,22 @@ and four exact `42710` refusals. The validator passed. Six selectors attach
 to ADD CHECK and six to ADD CHECK NOT VALID. Inventory classifications and
 the original denominator are preserved.
 
+## Delivered evidence
+
+`64a1fd4e77556f54dce08f6f84ce57ba73ab92cd` passed 50 canonical tasks with 3,641/3,641 cases and 66,909
+assertions. T37 passed 309/309 with 7,870 assertions. The validator,
+independent review and merged-root gates passed. The milestone advanced to
+`main` by fast-forward and normal push. [Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44652137227),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44652137340) and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/136009522204) passed for that SHA.
+The aggregate is `/tmp/ddl-golden-pg-check-constraint-name-final-64a1fd4e/all/artifact.json`.
+
+The full worktree status and protected release worktree matched. Golden's
+cleanup receipts were scoped to its own Compose project. Docker destroy
+events put the removal of eleven `binlog-h1run21` containers more than two
+hours after Golden finished. The five other baseline container identities
+matched. The event record is `/tmp/ds-pg-d19-external-container-events.json`.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

@@ -5,7 +5,8 @@ Per-task manifests for the milestone DDL golden-path runner
 
 ## T37 D19 PostgreSQL named CHECK constraints
 
-Focused T37 passed 309/309 cases and 7,870 assertions. The ten new cases
+Delivered `64a1fd4e` passed 50 tasks, 3,641/3,641 cases and 66,909
+assertions. T37 passed 309/309 cases and 7,870 assertions. The ten new cases
 preserve all 299 earlier cases and their policy profiles. Native controls
 separate exact constraint collisions from distinct case, standalone index
 names, inherited merges and guarded absence.

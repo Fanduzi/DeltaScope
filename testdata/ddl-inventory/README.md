@@ -18,7 +18,7 @@ honestly — not a count of implemented rules.
 
 ## PostgreSQL named CHECK constraints
 
-D19 adds six evidence selectors each to ADD CHECK and ADD CHECK NOT VALID at
+D19 at `64a1fd4e` adds six evidence selectors each to ADD CHECK and ADD CHECK NOT VALID at
 the PostgreSQL 17 anchor. These cases cover exact names and relevant scope
 boundaries. Predicate validity, existing rows and inheritance are tracked
 separately.
