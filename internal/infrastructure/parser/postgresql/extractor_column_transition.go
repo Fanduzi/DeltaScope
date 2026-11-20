@@ -31,7 +31,7 @@ func pgColumnTransitionFromCmd(cmd *pg_query.AlterTableCmd) *spec.PGColumnTransi
 		options = list.GetItems()
 	case pg_query.AlterTableType_AT_ColumnDefault:
 		if expression := cmd.GetDef(); expression != nil {
-			facts.DefaultHasDisallowedReference = defaultHasDisallowedReference(expression)
+			facts.DefaultHasDisallowedReference = pgExpressionHasReference(expression, true)
 		}
 	}
 	for _, node := range options {
@@ -55,7 +55,10 @@ func pgColumnTransitionFromCmd(cmd *pg_query.AlterTableCmd) *spec.PGColumnTransi
 	return facts
 }
 
-func defaultHasDisallowedReference(expression *pg_query.Node) bool {
+func pgExpressionHasReference(expression *pg_query.Node, includeColumn bool) bool {
+	if expression == nil {
+		return false
+	}
 	found := false
 	_ = protorange.Range(expression.ProtoReflect(), func(path protopath.Values) error {
 		field := path.Index(-1)
@@ -64,7 +67,12 @@ func defaultHasDisallowedReference(expression *pg_query.Node) bool {
 			case *pg_query.TypeName:
 				// PostgreSQL accepts simple identifiers as type modifiers.
 				return protorange.Break
-			case *pg_query.ColumnRef, *pg_query.SubLink:
+			case *pg_query.ColumnRef:
+				if includeColumn {
+					found = true
+					return protorange.Terminate
+				}
+			case *pg_query.SubLink:
 				found = true
 				return protorange.Terminate
 			}

@@ -14,7 +14,8 @@ func (p *Provider) resolveColumnTraversal(ctx context.Context, req spec.ObjectLo
 	if req.Schema == "" || req.Schema == "pg_temp" || req.Name == "" || table == "" {
 		return nil, nil
 	}
-	facts := spec.PGColumnTraversal{Schema: req.Schema, Table: table, Column: req.Name}
+	facts := spec.PGColumnTraversal{Schema: req.Schema, Table: table, Column: req.Name, RenameDestination: req.Qualifiers["destination"]}
+	var descendantConflict sql.NullBool
 	err := p.db.QueryRowContext(ctx, `
         select coalesce(a.attinhcount OPERATOR(pg_catalog.>) 0, false),
                coalesce(a.attnum OPERATOR(pg_catalog.=) any(pt.partattrs), false),
@@ -42,26 +43,64 @@ func (p *Provider) resolveColumnTraversal(ctx context.Context, req spec.ObjectLo
                    select 1 from descendants d join pg_catalog.pg_attribute child on child.attrelid OPERATOR(pg_catalog.=) d.oid
                     and child.attname OPERATOR(pg_catalog.=) a.attname and child.attnum OPERATOR(pg_catalog.>) 0 and not child.attisdropped
                    where d.oid OPERATOR(pg_catalog.<>) c.oid and not child.attnotnull
-               ) else false end
+               ) else false end,
+               case when $5::pg_catalog.text OPERATOR(pg_catalog.=) 'rename_column' then
+                   coalesce(pg_catalog.sign(destination.attnum)::pg_catalog.int4, 0) else 0 end,
+               case when $5::pg_catalog.text OPERATOR(pg_catalog.=) any(array['rename_column', 'set_data_type']::pg_catalog.text[])
+                      and not $6::pg_catalog.bool and a.attnum OPERATOR(pg_catalog.>) 0
+                      and ($5::pg_catalog.text OPERATOR(pg_catalog.=) 'set_data_type' or $7::pg_catalog.text OPERATOR(pg_catalog.<>) '') then (
+                   with recursive tree(oid) as (
+                       select c.oid
+                       union
+                       select h.inhrelid from tree parent
+                       join pg_catalog.pg_inherits h on h.inhparent OPERATOR(pg_catalog.=) parent.oid
+                       where not h.inhdetachpending
+                   )
+                   select case when pg_catalog.count(*) OPERATOR(pg_catalog.=) 0 then false
+                               when pg_catalog.bool_and(child.relkind OPERATOR(pg_catalog.=) any(array['r','p']::pg_catalog."char"[])
+                                    and child.relpersistence OPERATOR(pg_catalog.=) 'p' and not child.relisshared)
+                               then pg_catalog.bool_or(
+                                    ($5::pg_catalog.text OPERATOR(pg_catalog.=) 'rename_column'
+                                     and (source.attnum is null or target.attnum is not null)) or
+                                    source.attinhcount OPERATOR(pg_catalog.>) (
+                                        select pg_catalog.count(*) from pg_catalog.pg_inherits h
+                                        join tree parent on parent.oid OPERATOR(pg_catalog.=) h.inhparent
+                                        where h.inhrelid OPERATOR(pg_catalog.=) d.oid and not h.inhdetachpending)) end
+                   from tree d join pg_catalog.pg_class child on child.oid OPERATOR(pg_catalog.=) d.oid
+                   left join pg_catalog.pg_attribute source on source.attrelid OPERATOR(pg_catalog.=) d.oid
+                    and source.attname OPERATOR(pg_catalog.=) a.attname and source.attnum OPERATOR(pg_catalog.>) 0 and not source.attisdropped
+                   left join pg_catalog.pg_attribute target on target.attrelid OPERATOR(pg_catalog.=) d.oid
+                    and target.attname OPERATOR(pg_catalog.=) $7::pg_catalog.text and target.attnum OPERATOR(pg_catalog.<>) 0 and not target.attisdropped
+                   where d.oid OPERATOR(pg_catalog.<>) c.oid
+               ) end
         from pg_catalog.pg_namespace n
         join pg_catalog.pg_class c on c.relnamespace OPERATOR(pg_catalog.=) n.oid
         left join pg_catalog.pg_attribute a on a.attrelid OPERATOR(pg_catalog.=) c.oid
          and a.attname OPERATOR(pg_catalog.=) $3::pg_catalog.text
          and a.attnum OPERATOR(pg_catalog.<>) 0 and not a.attisdropped
         left join pg_catalog.pg_partitioned_table pt on pt.partrelid OPERATOR(pg_catalog.=) c.oid
+        left join pg_catalog.pg_attribute destination on destination.attrelid OPERATOR(pg_catalog.=) c.oid
+         and destination.attname OPERATOR(pg_catalog.=) $7::pg_catalog.text
+         and destination.attnum OPERATOR(pg_catalog.<>) 0 and not destination.attisdropped
         where n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text
           and c.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text
-          and ($4::pg_catalog.bool or a.attnum OPERATOR(pg_catalog.>) 0)
+          and ($4::pg_catalog.bool or a.attnum OPERATOR(pg_catalog.>) 0
+               or ($5::pg_catalog.text OPERATOR(pg_catalog.=) 'rename_column' and $6::pg_catalog.bool))
           and c.relkind OPERATOR(pg_catalog.=) any(array['r','p']::pg_catalog."char"[])
           and c.relpersistence OPERATOR(pg_catalog.=) 'p'
           and c.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
-    `, req.Schema, table, req.Name, req.Qualifiers["action"] == "add_column", req.Qualifiers["action"], req.Qualifiers["only"] == "true").Scan(
-		&facts.Inherited, &facts.DirectPartitionKey, &facts.AttachedChildren, &facts.Partition, &facts.ColumnExists, &facts.System, &facts.StoredGenerated, &facts.ParentNotNull, &facts.NullableDescendant)
+    `, req.Schema, table, req.Name, req.Qualifiers["action"] == "add_column", req.Qualifiers["action"], req.Qualifiers["only"] == "true", facts.RenameDestination).Scan(
+		&facts.Inherited, &facts.DirectPartitionKey, &facts.AttachedChildren, &facts.Partition, &facts.ColumnExists, &facts.System, &facts.StoredGenerated, &facts.ParentNotNull, &facts.NullableDescendant, &facts.RenameDestinationKind, &descendantConflict)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("read PostgreSQL column traversal: %w", err)
+	}
+	if req.Qualifiers["action"] == "set_data_type" {
+		facts.TypeDescendantConflict = descendantConflict.Valid && descendantConflict.Bool
+	} else {
+		facts.RenameDescendantsKnown, facts.RenameDescendantConflict = descendantConflict.Valid, descendantConflict.Bool
 	}
 	return &spec.ObjectSnapshot{PGColumnTraversal: &facts}, nil
 }

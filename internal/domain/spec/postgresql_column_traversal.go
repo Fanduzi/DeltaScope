@@ -2,10 +2,21 @@ package spec
 
 // PGColumnTraversal binds observed column traversal blockers to one target.
 type PGColumnTraversal struct {
-	Schema, Table, Column                                            string
-	Inherited, DirectPartitionKey, AttachedChildren, StoredGenerated bool
-	Partition, ColumnExists, System                                  bool
-	ParentNotNull, NullableDescendant                                bool
+	Schema, Table, Column                                                    string
+	Inherited, DirectPartitionKey, AttachedChildren, StoredGenerated         bool
+	Partition, ColumnExists, System                                          bool
+	ParentNotNull, NullableDescendant                                        bool
+	RenameDestination                                                        string
+	RenameDescendantsKnown, RenameDescendantConflict, TypeDescendantConflict bool
+	RenameDestinationKind                                                    int // -1 system column, 0 absent, 1 user column.
+}
+
+// PGColumnRenameDestination returns the exact decoded destination for a rename action.
+func PGColumnRenameDestination(a Alter) string {
+	if a.Action == "rename_column" && a.Column != nil && a.Column.Definition != nil {
+		return a.Column.Definition.Name
+	}
+	return ""
 }
 
 // PGColumnTraversalTarget bounds lookups to the nonordinary shapes for this check.

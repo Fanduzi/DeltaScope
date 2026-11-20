@@ -13,8 +13,12 @@ func enrichPGDropColumnDependencies(ctx context.Context, request *MetadataReques
 			continue
 		}
 		table := statement.DDL.Table
+		action := statement.DDL.Alter[0]
 		lookup := spec.ObjectLookupRequest{Type: "drop_column_dependency", Schema: table.Schema, Name: name,
 			Qualifiers: map[string]string{"table": table.Name}}
+		if action.Action == "set_data_type" {
+			lookup.Qualifiers["type_change"] = "true"
+		}
 		object, err := resolveObjectSnapshot(ctx, request, spec.DialectPostgreSQL, &lookup)
 		if err != nil {
 			return err

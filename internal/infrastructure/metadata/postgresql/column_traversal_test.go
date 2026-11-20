@@ -18,16 +18,21 @@ func TestResolvePGColumnTraversal(t *testing.T) {
 		want         *spec.PGColumnTraversal
 	}{
 		{name: "unobserved attribute"},
-		{name: "known local", rows: [][]driver.Value{{false, false, false, false, true, false, false, false, false}}, want: &spec.PGColumnTraversal{ColumnExists: true}},
-		{name: "inherited attribute", rows: [][]driver.Value{{true, false, false, false, true, false, true, false, false}}, want: &spec.PGColumnTraversal{Inherited: true, ColumnExists: true, StoredGenerated: true}},
-		{name: "attached partitioned key", rows: [][]driver.Value{{false, true, true, false, true, false, false, false, false}}, want: &spec.PGColumnTraversal{DirectPartitionKey: true, AttachedChildren: true, ColumnExists: true}},
-		{name: "attached partition inherits nullability", action: "drop_not_null", rows: [][]driver.Value{{true, false, false, true, true, false, false, true, false}}, want: &spec.PGColumnTraversal{Inherited: true, Partition: true, ColumnExists: true, ParentNotNull: true}},
-		{name: "partitioned table has nullable descendant", action: "set_not_null", only: true, rows: [][]driver.Value{{false, false, true, false, true, false, false, false, true}}, want: &spec.PGColumnTraversal{AttachedChildren: true, ColumnExists: true, NullableDescendant: true}},
+		{name: "recursive rename collision", action: "rename_column", rows: [][]driver.Value{{false, false, true, false, true, false, false, false, false, int64(0), true}}, want: &spec.PGColumnTraversal{AttachedChildren: true, ColumnExists: true, RenameDestination: " Exact Destination ", RenameDescendantsKnown: true, RenameDescendantConflict: true}},
+		{name: "recursive rename catalog is clear", action: "rename_column", rows: [][]driver.Value{{false, false, true, false, true, false, false, false, false, int64(0), false}}, want: &spec.PGColumnTraversal{AttachedChildren: true, ColumnExists: true, RenameDestination: " Exact Destination ", RenameDescendantsKnown: true}},
+		{name: "known local", rows: [][]driver.Value{{false, false, false, false, true, false, false, false, false, int64(0), nil}}, want: &spec.PGColumnTraversal{ColumnExists: true}},
+		{name: "inherited attribute", rows: [][]driver.Value{{true, false, false, false, true, false, true, false, false, int64(0), nil}}, want: &spec.PGColumnTraversal{Inherited: true, ColumnExists: true, StoredGenerated: true}},
+		{name: "attached partitioned key", rows: [][]driver.Value{{false, true, true, false, true, false, false, false, false, int64(0), nil}}, want: &spec.PGColumnTraversal{DirectPartitionKey: true, AttachedChildren: true, ColumnExists: true}},
+		{name: "attached partition inherits nullability", action: "drop_not_null", rows: [][]driver.Value{{true, false, false, true, true, false, false, true, false, int64(0), nil}}, want: &spec.PGColumnTraversal{Inherited: true, Partition: true, ColumnExists: true, ParentNotNull: true}},
+		{name: "partitioned table has nullable descendant", action: "set_not_null", only: true, rows: [][]driver.Value{{false, false, true, false, true, false, false, false, true, int64(0), nil}}, want: &spec.PGColumnTraversal{AttachedChildren: true, ColumnExists: true, NullableDescendant: true}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			db, log := openTestDB(t, map[string]testQueryResult{"a.attinhcount": {columns: []string{"inherited", "partition_key", "children", "partition", "present", "system", "generated", "parent_not_null", "nullable_descendant"}, rows: tc.rows}})
+			db, log := openTestDB(t, map[string]testQueryResult{"a.attinhcount": {columns: []string{"inherited", "partition_key", "children", "partition", "present", "system", "generated", "parent_not_null", "nullable_descendant", "rename_destination_kind", "rename_conflict"}, rows: tc.rows}})
 			defer db.Close()
 			req := spec.ObjectLookupRequest{Type: "column_traversal", Schema: " Exact Schema ", Name: " Exact Column ", Qualifiers: map[string]string{"table": " Exact Table ", "action": tc.action}}
+			if tc.action == "rename_column" {
+				req.Qualifiers["destination"] = " Exact Destination "
+			}
 			if tc.only {
 				req.Qualifiers["only"] = "true"
 			}

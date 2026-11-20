@@ -1001,6 +1001,8 @@ type Alter struct {
 	PGColumnCollation     *PGColumnCollation     `json:"-"`
 	// PGUsingIndexName preserves the exact PostgreSQL constraint index selection.
 	PGUsingIndexName string `json:"-"`
+	// PGCheckHasSubquery records a raw subquery in an ALTER TABLE CHECK predicate.
+	PGCheckHasSubquery bool `json:"-"`
 	// PGForeignKey preserves both ordered foreign-key column lists privately.
 	PGForeignKey *PGForeignKeySelection `json:"-"`
 	// PGAddColumnIfNotExists is the authored ADD COLUMN guard, separate from the table guard.

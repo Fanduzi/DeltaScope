@@ -18,6 +18,7 @@ func TestResolveDropColumnDependency(t *testing.T) {
 	}{
 		{name: "view", rows: [][]driver.Value{{"view"}}, kind: "view"},
 		{name: "foreign key", rows: [][]driver.Value{{"foreign_key"}}, kind: "foreign_key"},
+		{name: "type-only dependency", rows: [][]driver.Value{{"type_change"}}, kind: "type_change"},
 		{name: "observed empty", rows: [][]driver.Value{{""}}},
 		{name: "unobserved"},
 	} {
@@ -25,6 +26,9 @@ func TestResolveDropColumnDependency(t *testing.T) {
 			db, log := openTestDB(t, map[string]testQueryResult{"join pg_catalog.pg_rewrite": {columns: []string{"kind"}, rows: tc.rows}})
 			defer db.Close()
 			req := spec.ObjectLookupRequest{Type: "drop_column_dependency", Schema: " Exact.Schema ", Name: " Exact Column ", Qualifiers: map[string]string{"table": " Exact Table "}}
+			if tc.kind == "type_change" {
+				req.Qualifiers["type_change"] = "true"
+			}
 			result, err := NewProvider(db).ResolveObject(context.Background(), spec.DialectPostgreSQL, req)
 			if err != nil || (result != nil) != (tc.rows != nil) {
 				t.Fatalf("result=%+v err=%v", result, err)

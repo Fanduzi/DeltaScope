@@ -45,6 +45,19 @@ func (p *Provider) resolveDropColumnDependency(ctx context.Context, req spec.Obj
 		      and g.attgenerated OPERATOR(pg_catalog.=) 's'
 		      and not g.attisdropped
 		  ) then 'generated_column'
+		  when $4::pg_catalog.bool and exists (
+		    select 1 from pg_catalog.pg_depend d
+		    where d.refclassid OPERATOR(pg_catalog.=) 'pg_catalog.pg_class'::pg_catalog.regclass
+		      and d.refobjid OPERATOR(pg_catalog.=) c.oid
+		      and d.refobjsubid OPERATOR(pg_catalog.=) a.attnum
+		      and d.classid OPERATOR(pg_catalog.=) any(array[
+		          'pg_catalog.pg_proc'::pg_catalog.regclass,
+		          'pg_catalog.pg_rewrite'::pg_catalog.regclass,
+		          'pg_catalog.pg_trigger'::pg_catalog.regclass,
+		          'pg_catalog.pg_policy'::pg_catalog.regclass,
+		          'pg_catalog.pg_publication_rel'::pg_catalog.regclass
+		      ])
+		  ) then 'type_change'
 		  when exists (
 		    select 1 from pg_catalog.pg_depend d
 		    join pg_catalog.pg_constraint fk on fk.oid OPERATOR(pg_catalog.=) d.objid
@@ -70,7 +83,7 @@ func (p *Provider) resolveDropColumnDependency(ctx context.Context, req spec.Obj
 		  and c.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid and not c.relispartition
 		  and not exists (select 1 from pg_catalog.pg_inherits h
 		                  where h.inhrelid OPERATOR(pg_catalog.=) c.oid or h.inhparent OPERATOR(pg_catalog.=) c.oid)
-	`, req.Schema, table, req.Name).Scan(&facts.Kind)
+	`, req.Schema, table, req.Name, req.Qualifiers["type_change"] == "true").Scan(&facts.Kind)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
