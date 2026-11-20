@@ -706,6 +706,10 @@ func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusT
 					break
 				}
 				state := spec.PGColumnState{Name: member.Name, Identity: *member.Identity, Generated: *member.Generated, TypeWidth: *member.TypeWidth, TypeStorage: member.TypeStorage, System: member.System, NotNull: *member.NotNull, HasDefault: *member.HasDefault, PrimaryKey: *member.PrimaryKey}
+				if member.ReplicaIdentityKey != nil {
+					state.ReplicaIdentityKeyKnown = true
+					state.ReplicaIdentityKey = *member.ReplicaIdentityKey
+				}
 				if seq := member.IdentitySequence; seq != nil {
 					state.IdentitySequence = &spec.PGIdentitySequenceState{TypeWidth: seq.TypeWidth, Definition: spec.SequenceDefinition{Start: seq.Start, Increment: seq.Increment, MinValue: seq.MinValue, MaxValue: seq.MaxValue, CacheValue: seq.CacheValue, Cycle: seq.Cycle}}
 				}

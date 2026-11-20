@@ -163,7 +163,7 @@ func TestLoadTableSnapshotUsesCatalogsAndPlannerStats(t *testing.T) {
 				{"users_pk_constraint", "users_primary_idx", "id", float64(321)},
 			},
 		},
-		"from pg_catalog.pg_index": {
+		"from pg_catalog.pg_index ind": {
 			columns: []string{"index_name", "is_unique", "is_primary", "indexdef", "index_reltuples"},
 			rows: [][]driver.Value{
 				{"users_primary_idx", true, true, "CREATE UNIQUE INDEX users_primary_idx ON public.users USING btree (id)", float64(321)},

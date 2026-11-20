@@ -712,7 +712,7 @@ All four are enabled by default, parameterless, and PG17 metadata-aware.
 
 | Rule | Bounded check | Default level |
 | --- | --- | --- |
-| `ddl.pg.alter.column.generation.transition.valid` | ADD/SET/DROP IDENTITY, DROP EXPRESSION and DEFAULT/NOT NULL generation/PK target preconditions | blocker |
+| `ddl.pg.alter.column.generation.transition.valid` | ADD/SET/DROP IDENTITY, DROP EXPRESSION and DEFAULT/NOT NULL generation/PK target preconditions, including live replica identity key slots for DROP NOT NULL | blocker |
 | `ddl.pg.alter.identity.sequence_options.valid` | Duplicate modes/options and proven invalid increment/cache/type/bounds/START/RESTART | blocker |
 | `ddl.pg.alter.identity.restart.warn` | Explicit RESTART value-reuse and concurrent-issuance blocking risk | warning |
 | `ddl.pg.alter.identity.cycle.warn` | Explicit CYCLE in ADD IDENTITY or SET options | warning |

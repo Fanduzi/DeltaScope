@@ -18,6 +18,7 @@ func TestAuditPGColumnGenerationContract(t *testing.T) {
 		member           PGColumnState
 		unknown          bool
 	}{
+		{"ALTER TABLE app.t ALTER COLUMN id DROP NOT NULL", "ddl.pg.alter.column.generation.transition.valid", "reject", PGColumnState{Name: "id", TypeWidth: 32, NotNull: true, ReplicaIdentityKeyKnown: true, ReplicaIdentityKey: true}, false},
 		{"ALTER TABLE app.t ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY", "ddl.pg.alter.column.generation.transition.valid", "reject", PGColumnState{Name: "id", Identity: "d", TypeWidth: 64, NotNull: true}, false},
 		{"ALTER TABLE app.t ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY(CACHE 0)", "ddl.pg.alter.identity.sequence_options.valid", "reject", PGColumnState{Name: "id", TypeWidth: 64, NotNull: true}, false},
 		{"ALTER TABLE app.t ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY(CYCLE)", "ddl.pg.alter.identity.cycle.warn", "review", PGColumnState{Name: "id", TypeWidth: 64, NotNull: true}, false},
@@ -28,7 +29,7 @@ func TestAuditPGColumnGenerationContract(t *testing.T) {
 		if tc.unknown {
 			catalog = nil
 		}
-		p := &fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"}, snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"}, PGColumns: catalog}}
+		p := &fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"}, snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"}, PGColumns: catalog, PGRelation: PGRelationState{Name: "t", Kind: "r"}}}
 		r, err := Audit(context.Background(), Request{SQL: tc.sql, Dialect: DialectPostgreSQL, Schema: "app", MetadataProvider: p})
 		if err != nil || string(r.Verdict) != tc.verdict {
 			t.Fatalf("result=%+v %v", r, err)

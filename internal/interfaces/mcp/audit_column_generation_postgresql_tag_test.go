@@ -22,6 +22,7 @@ func TestAuditSQLPGColumnGeneration(t *testing.T) {
 		member              spec.PGColumnState
 		unknown             bool
 	}{
+		{"DROP NOT NULL", "ddl.pg.alter.column.generation.transition.valid", "reject", spec.PGColumnState{Name: "id", TypeWidth: 32, NotNull: true, ReplicaIdentityKeyKnown: true, ReplicaIdentityKey: true}, false},
 		{"ADD GENERATED ALWAYS AS IDENTITY", "ddl.pg.alter.column.generation.transition.valid", "reject", identity, false},
 		{"ADD GENERATED ALWAYS AS IDENTITY(CACHE 0)", "ddl.pg.alter.identity.sequence_options.valid", "reject", spec.PGColumnState{Name: "id", TypeWidth: 64, NotNull: true}, false},
 		{"ADD GENERATED ALWAYS AS IDENTITY(CYCLE)", "ddl.pg.alter.identity.cycle.warn", "review", spec.PGColumnState{Name: "id", TypeWidth: 64, NotNull: true}, false},
@@ -32,7 +33,7 @@ func TestAuditSQLPGColumnGeneration(t *testing.T) {
 		if tc.unknown {
 			catalog = nil
 		}
-		client := &mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL, snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGColumns: catalog}}
+		client := &mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL, snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGColumns: catalog, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}}}
 		prepareMetadataAudit = func(context.Context, auditmeta.Request) (*auditmeta.PreparedAudit, error) {
 			return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app", DialectSource: "request", SchemaSource: "request"}, nil
 		}

@@ -31,11 +31,11 @@ func pgGenerationTransitionStatement(action string, c *spec.PGColumnState) spec.
 	}
 	return spec.Statement{Dialect: spec.DialectPostgreSQL, Kind: spec.KindDDL,
 		DDL:      &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Schema: "app", Name: "t"}, Alter: []spec.Alter{{Action: action, Name: "id", PGColumnTransition: f, Options: map[string]string{"expression": "private_expression_marker"}}}},
-		Metadata: &spec.Metadata{Schema: "app", Instance: &spec.InstanceFacts{Version: "PostgreSQL 17.7"}, TargetTable: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true, Columns: members}}}}
+		Metadata: &spec.Metadata{Schema: "app", Instance: &spec.InstanceFacts{Version: "PostgreSQL 17.7"}, TargetTable: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true, Columns: members}}}}
 }
 
 func TestPGColumnGenerationTargetArms(t *testing.T) {
-	plain := spec.PGColumnState{TypeWidth: 64, NotNull: true}
+	plain := spec.PGColumnState{TypeWidth: 64, NotNull: true, ReplicaIdentityKeyKnown: true}
 	identity := plain
 	identity.Identity = "d"
 	identity.IdentitySequence = pgIdentityTestSequence()
@@ -88,6 +88,40 @@ func TestPGColumnGenerationTargetArms(t *testing.T) {
 			b, _ := json.Marshal(f)
 			if strings.Contains(string(b), "private_expression_marker") {
 				t.Fatal("expression leaked")
+			}
+		})
+	}
+}
+
+func TestPGDropNotNullReplicaIdentityKey(t *testing.T) {
+	r := pgColumnGenerationRule{id: ruleIDPGColumnGenerationTransitionValid, level: rule.LevelBlocker}
+	for _, tc := range []struct {
+		name, reason, gap                       string
+		key, known, stale, primary, unqualified bool
+	}{
+		{name: "attached key", key: true, known: true, reason: "not_null_required_by_replica_identity"},
+		{name: "known nonmember", known: true},
+		{name: "unobserved membership", key: true, gap: "column.replica_identity_key"},
+		{name: "stale relation", key: true, known: true, stale: true, gap: "column.replica_identity_key"},
+		{name: "primary precedence", primary: true, reason: "not_null_required_by_identity_or_primary_key"},
+		{name: "unqualified retains prior behavior", key: true, known: true, unqualified: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := pgGenerationTransitionStatement("drop_not_null", &spec.PGColumnState{TypeWidth: 32, NotNull: true, PrimaryKey: tc.primary,
+				ReplicaIdentityKey: tc.key, ReplicaIdentityKeyKnown: tc.known})
+			if tc.stale {
+				s.Metadata.TargetTable.PGRelation = spec.PGRelationState{}
+			}
+			if tc.unqualified {
+				s.DDL.Table.Schema = ""
+			}
+			findings, err := r.Evaluate(context.Background(), s)
+			if err != nil || (len(findings) == 1) != (tc.reason != "") || len(findings) == 1 && findings[0].Metadata["reason_code"] != tc.reason {
+				t.Fatalf("findings=%+v error=%v", findings, err)
+			}
+			gaps := r.EvidenceGaps(s)
+			if (len(gaps) == 1) != (tc.gap != "") || len(gaps) == 1 && (gaps[0].ReasonCode != "unproven_column_generation_target" || !reflect.DeepEqual(gaps[0].RequiredFacts, []string{tc.gap})) {
+				t.Fatalf("gaps=%+v", gaps)
 			}
 		})
 	}

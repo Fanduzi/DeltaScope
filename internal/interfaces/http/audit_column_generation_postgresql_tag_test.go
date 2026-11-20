@@ -19,7 +19,7 @@ func (p pgColumnGenerationHTTPProvider) LoadInstanceFacts(context.Context, delta
 	return &deltascope.InstanceFacts{Version: "PostgreSQL 17.7"}, nil
 }
 func (p pgColumnGenerationHTTPProvider) LoadTableSnapshot(_ context.Context, _ deltascope.Dialect, schema, table string) (*deltascope.TableSnapshot, error) {
-	return &deltascope.TableSnapshot{Schema: schema, Exists: true, Table: &deltascope.Table{Name: table}, PGColumns: p.catalog}, nil
+	return &deltascope.TableSnapshot{Schema: schema, Exists: true, Table: &deltascope.Table{Name: table}, PGColumns: p.catalog, PGRelation: deltascope.PGRelationState{Name: table, Kind: "r"}}, nil
 }
 
 func TestHandlerPGColumnGeneration(t *testing.T) {
@@ -31,6 +31,7 @@ func TestHandlerPGColumnGeneration(t *testing.T) {
 		member              deltascope.PGColumnState
 		unknown             bool
 	}{
+		{"DROP NOT NULL", "ddl.pg.alter.column.generation.transition.valid", "reject", deltascope.PGColumnState{Name: "id", TypeWidth: 32, NotNull: true, ReplicaIdentityKeyKnown: true, ReplicaIdentityKey: true}, false},
 		{"ADD GENERATED ALWAYS AS IDENTITY", "ddl.pg.alter.column.generation.transition.valid", "reject", identity, false},
 		{"ADD GENERATED ALWAYS AS IDENTITY(CACHE 0)", "ddl.pg.alter.identity.sequence_options.valid", "reject", deltascope.PGColumnState{Name: "id", TypeWidth: 64, NotNull: true}, false},
 		{"ADD GENERATED ALWAYS AS IDENTITY(CYCLE)", "ddl.pg.alter.identity.cycle.warn", "review", deltascope.PGColumnState{Name: "id", TypeWidth: 64, NotNull: true}, false},

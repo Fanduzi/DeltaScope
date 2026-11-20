@@ -277,7 +277,7 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	case "ddl.pg.alter.column.options.valid":
 		return "Checks known builtin PG17 column SET options n_distinct/n_distinct_inherited for range [-1, DBL_MAX] and duplicate keys, plus exact SET/RESET target existence and system inapplicability. Unknown SET keys/opaque values remain gaps; unknown RESET names are not inherently errors."
 	case "ddl.pg.alter.column.generation.transition.valid":
-		return "PG17 existing-column generation preconditions: exact fresh ordinary-table identity/generated/type/NOT NULL/DEFAULT/PK facts. Proven conflicts block; guards preserve known no-ops. Data, expression, permission and stale/ambiguous facts are not guessed."
+		return "PG17 existing-column generation preconditions: exact fresh ordinary-table identity, generated, type, NOT NULL, DEFAULT and primary-key facts. DROP NOT NULL also checks live attached replica identity key slots. Proven conflicts block; guards preserve known no-ops. Data, expression, permission and stale/ambiguous facts are not guessed."
 	case "ddl.pg.alter.identity.sequence_options.valid":
 		return "PG17 existing-column identity sequence options: rejects proven duplicate modes/options, invalid increment/cache/type/bounds/start/restart. ADD uses a new declaration; SET uses actual dependency-bound stable parameters. Missing facts or narrowed bounds needing unread current state remain gaps."
 	case "ddl.pg.alter.identity.restart.warn":

@@ -477,16 +477,17 @@ type corpusPGColumnCatalog struct {
 }
 
 type corpusPGColumnState struct {
-	Name             string                         `yaml:"name"`
-	Identity         *string                        `yaml:"identity"`
-	Generated        *string                        `yaml:"generated"`
-	TypeWidth        *int                           `yaml:"type_width"`
-	TypeStorage      string                         `yaml:"type_storage,omitempty"`
-	System           bool                           `yaml:"system,omitempty"`
-	NotNull          *bool                          `yaml:"not_null"`
-	HasDefault       *bool                          `yaml:"has_default"`
-	PrimaryKey       *bool                          `yaml:"primary_key"`
-	IdentitySequence *corpusPGIdentitySequenceState `yaml:"identity_sequence,omitempty"`
+	Name               string                         `yaml:"name"`
+	Identity           *string                        `yaml:"identity"`
+	Generated          *string                        `yaml:"generated"`
+	TypeWidth          *int                           `yaml:"type_width"`
+	TypeStorage        string                         `yaml:"type_storage,omitempty"`
+	System             bool                           `yaml:"system,omitempty"`
+	NotNull            *bool                          `yaml:"not_null"`
+	HasDefault         *bool                          `yaml:"has_default"`
+	PrimaryKey         *bool                          `yaml:"primary_key"`
+	ReplicaIdentityKey *bool                          `yaml:"replica_identity_key,omitempty"`
+	IdentitySequence   *corpusPGIdentitySequenceState `yaml:"identity_sequence,omitempty"`
 }
 
 type corpusPGIdentitySequenceState struct {

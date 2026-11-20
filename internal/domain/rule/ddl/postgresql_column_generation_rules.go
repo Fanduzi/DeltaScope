@@ -143,6 +143,16 @@ func pgColumnTransitionTarget(s spec.Statement, index int) (*spec.PGColumnState,
 		if c.Identity != "" || c.PrimaryKey {
 			return c, "not_null_required_by_identity_or_primary_key", ""
 		}
+		// A prior DDL can invalidate the relation while leaving its column list.
+		schema := s.DDL.Table.Schema
+		if len(s.DDL.Alter) == 1 && schema != "" && schema != "pg_temp" && !s.DDL.PGTableCatalogQualified && !s.Metadata.TargetTable.PGColumns.Typed {
+			if !spec.PGOrdinaryTableBound(s) || !c.ReplicaIdentityKeyKnown {
+				return c, "", "column.replica_identity_key"
+			}
+			if c.ReplicaIdentityKey {
+				return c, "not_null_required_by_replica_identity", ""
+			}
+		}
 	case "set_not_null":
 		if !c.NotNull {
 			return c, "", "column.nullability_data"
@@ -233,6 +243,10 @@ func (r pgColumnGenerationRule) Evaluate(ctx context.Context, s spec.Statement) 
 		case ruleIDPGAlterIdentityCycleWarn:
 			message = "identity sequence CYCLE can reuse values after reaching its limit"
 			suggestion = "review value-reuse requirements; use NO CYCLE when wraparound is not intended"
+		}
+		if reason == "not_null_required_by_replica_identity" {
+			message = "PostgreSQL requires NOT NULL on a replica identity index key column"
+			suggestion = "Review the replica identity index before changing this column's nullability"
 		}
 		metadata := map[string]any{"action": a.Action, "table": s.DDL.Table.Name, "column": a.Name, "reason_code": reason}
 		if s.DDL.Table.Schema != "" {
