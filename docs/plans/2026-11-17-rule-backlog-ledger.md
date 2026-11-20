@@ -969,7 +969,18 @@ The isolated preview passed 535/535 T37 cases and 15,589 assertions. It added
 30 native controls, with 14 successes and 16 refusals. Three earlier cases
 now consume known facts in place of their former gaps. Their SQL and native
 controls are identical. Thirty-two selectors bind six PostgreSQL 17 cells.
-The fixed candidate is in verification.
+The fixed candidate passed verification.
+
+Delivered at `243894152ccb4bc10f77448133d2d9e2f27c3d44` with 50 canonical tasks, 3,867/3,867 cases and
+74,628 assertions. T37 passed 535/535 with 15,589 assertions. T24 passed
+24/24 with 292 assertions. The validator, read-only review and merged-root
+gates passed. The isolated guest ended with zero containers, Golden
+networks and Golden volumes.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44830434298/job/136613697694),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44830434298/job/136613697942),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44830434298/job/136613697877),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44830434310/job/136613698161),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136613827571) succeeded at the delivered SHA.
 
 ## Family index
 
@@ -987,7 +998,7 @@ new default behavior is approved per family before implementation.
 | F06 | TiDB recovery/flashback | 1 | T16 | unreviewed |
 | F07 | PostgreSQL schema/collation | 2 | T35 | unreviewed |
 | F08 | PostgreSQL CREATE TABLE | 6 | T36 | D2 delivered; remaining dimensions unreviewed |
-| F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2–D39 bounded ALTER checks delivered; authored and normalized dimensions remain open where catalog or expression facts are incomplete |
+| F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2–D43 bounded ALTER checks delivered; authored and normalized dimensions remain open where catalog or expression facts are incomplete |
 | F10 | PostgreSQL DROP/TRUNCATE | 2 | T38 | unreviewed |
 | F11 | PostgreSQL indexes/operator families | 4 | T39 | unreviewed |
 | F12 | PostgreSQL views/materialized views | 5 | T40 | unreviewed |
@@ -1041,9 +1052,9 @@ insufficient.
 | F08 | `postgresql.create-table-partitioning` | PARTITION BY RANGE; PARTITION BY LIST; PARTITION BY HASH; PARTITION OF; PARTITION OF DEFAULT; INHERITS | unreviewed |
 | F08 | `postgresql.create-table-temporary` | TEMP/TEMPORARY; GLOBAL TEMPORARY compat noise; UNLOGGED; ON COMMIT actions | unreviewed |
 | F08 | `postgresql.create-table-like` | LIKE basic; INCLUDING options | unreviewed |
-| F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 bounded system/ordering evidence delivered; D8 exact ADD/RENAME target and guard evidence delivered; D14 TYPE/USING source checks delivered; D18 exact destination, D27 direct DROP dependency and D30 bounded TYPE destination prerequisites and D33 direct column traversal checks delivered. D34 direct TYPE dependencies, D35 inherited TYPE eligibility and D36 ADD traversal delivered; wider descendant, conversion and ordered outcomes remain open |
-| F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 generation and D6 statistics/options delivered with accepted gaps; D7 bounded storage/compression/system delivered; D20 replica identity key check and D35 inherited/ONLY DROP EXPRESSION and D39 partition NOT NULL traversal delivered; broader data/expression/current/kind scopes open |
-| F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; D19 exact CHECK name checks delivered; D21 USING INDEX prerequisites delivered; D22 FK target checks delivered; D23 referenced key checks delivered; D24 direct FK dependencies and D25–D26 CHECK inheritance, D31 bounded default operator classes and D32 ON DELETE SET column checks, D37 scalar FK equality and D38 CHECK validation traversal delivered; remaining dimensions open |
+| F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 bounded system/ordering evidence delivered; D8 exact ADD/RENAME target and guard evidence delivered; D14 TYPE/USING source checks delivered; D18 exact destination, D27 direct DROP dependency and D30 bounded TYPE destination prerequisites and D33 direct column traversal checks delivered. D34 direct TYPE dependencies, D35 inherited TYPE eligibility and D36 ADD traversal and D43 TYPE ONLY checks delivered; wider descendant, conversion and ordered outcomes remain open |
+| F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 generation and D6 statistics/options delivered with accepted gaps; D7 bounded storage/compression/system delivered; D20 replica identity key check and D35 inherited/ONLY DROP EXPRESSION and D39 partition NOT NULL traversal and D40 SET DEFAULT reference checks delivered; broader data, expression and relation scopes remain open |
+| F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; D19 exact CHECK name checks delivered; D21 USING INDEX prerequisites delivered; D22 FK target checks delivered; D23 referenced key checks delivered; D24 direct FK dependencies and D25–D26 CHECK inheritance, D31 bounded default operator classes and D32 ON DELETE SET column checks, D37 scalar FK equality and D38 CHECK validation traversal, D41 default operator class resolution and D42 bounded FK domain/enum/array comparisons delivered; remaining dimensions open |
 | F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | partial:D9 bounded attachment delivered; D10 bounded heap declarations delivered; D11 single-table tablespace delivered; D12 ordinary-table methods delivered; D13 persistence delivered; D17 bulk tablespace prerequisites and D29 SET WITHOUT OIDS target evidence delivered; other dimensions open |
 | F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | partial:D15 primary destination checks delivered; D16 owner checks and D28 attached SET SCHEMA names delivered; wider dependent moves and permissions remain open |
 | F10 | `postgresql.drop-table` | DROP TABLE; IF EXISTS / multi-target | unreviewed |
