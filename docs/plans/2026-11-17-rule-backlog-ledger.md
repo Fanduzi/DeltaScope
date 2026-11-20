@@ -796,9 +796,15 @@ commands returned six successes and seven `2BP01` refusals. Fifteen evidence
 selectors attach to the PostgreSQL 17 DROP COLUMN subaction. The earlier
 tuning batch retains its SQL and native controls and now asserts the stale
 dependency gap at statement index 11. CASCADE effects, wider relation kinds
-and indirect dependencies remain separate. The fixed candidate is in
-verification.
+and indirect dependencies remain separate. The fixed candidate passed verification.
 [Decision](../decisions/2026-11-21-postgresql-drop-column-dependencies.md)
+
+Delivered at `b6d73f0407958d6bc6747a5f5b406e0b501dc9fd` with 50 canonical tasks, 3,741/3,741 cases and 70,176 assertions. The validator, independent read-only review, owned cleanup and merged-root gates passed. T37 passed 409/409 with 11,137 assertions. All five CI checks succeeded at the delivered SHA.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44790017575/job/136474898816),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44790017575/job/136474899214),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44790017575/job/136474899143),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44790017587/job/136474898518),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136475059050).
 
 ## Family index
 
@@ -870,7 +876,7 @@ insufficient.
 | F08 | `postgresql.create-table-partitioning` | PARTITION BY RANGE; PARTITION BY LIST; PARTITION BY HASH; PARTITION OF; PARTITION OF DEFAULT; INHERITS | unreviewed |
 | F08 | `postgresql.create-table-temporary` | TEMP/TEMPORARY; GLOBAL TEMPORARY compat noise; UNLOGGED; ON COMMIT actions | unreviewed |
 | F08 | `postgresql.create-table-like` | LIKE basic; INCLUDING options | unreviewed |
-| F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 bounded system/ordering evidence delivered; D8 exact ADD/RENAME target and guard evidence delivered; D14 TYPE/USING source checks delivered; D18 exact destination checks delivered; broader eligibility/order remain open |
+| F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 bounded system/ordering evidence delivered; D8 exact ADD/RENAME target and guard evidence delivered; D14 TYPE/USING source checks delivered; D18 exact destination checks and D27 direct DROP dependencies delivered; broader eligibility/order remain open |
 | F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 generation and D6 statistics/options delivered with accepted gaps; D7 bounded storage/compression/system delivered; D20 replica identity key check delivered; broader data/expression/current/kind scopes open |
 | F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; D19 exact CHECK name checks delivered; D21 USING INDEX prerequisites delivered; D22 FK target checks delivered; D23 referenced key checks delivered; D24 direct FK dependencies and D25–D26 CHECK inheritance and partition-parent checks delivered; remaining dimensions open |
 | F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | partial:D9 bounded attachment delivered; D10 bounded heap declarations delivered; D11 single-table tablespace delivered; D12 ordinary-table methods delivered; D13 persistence delivered; D17 bulk tablespace prerequisites delivered; other dimensions open |
