@@ -701,6 +701,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGTableForeignKeyCrossSchemaAdvisory, construct: newTableForeignKeyCrossSchemaAdvisoryRule},
 		{ruleID: ruleIDPGDropIndexAdvisory, construct: newDropIndexAdvisoryRule},
 		{ruleID: ruleIDPGAlterAddColumnNonNullNoDefaultWarn, construct: newAddColumnNonNullNoDefaultWarnRule},
+		{ruleID: ruleIDPGForeignKeyTargetsValid, construct: newPGForeignKeyTargetRule},
 		{ruleID: ruleIDPGAlterAddForeignKeyNotValidRequire, construct: newPGForeignKeyNotValidRule},
 		{ruleID: ruleIDPGConstraintUsingIndexValid, construct: newPGConstraintUsingIndexRule},
 		{ruleID: ruleIDPGAlterAddPrimaryKeyConcurrentIndexWarn, construct: newPGPrimaryKeyConcurrentIndexRule},

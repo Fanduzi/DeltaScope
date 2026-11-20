@@ -19,13 +19,14 @@ func TestAuditSQLPGConstraintTarget(t *testing.T) {
 		members          []spec.PGConstraintState
 	}{
 		{`ALTER TABLE app.t ADD CONSTRAINT " Exact Check " CHECK (1 > 0) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", []spec.PGConstraintState{{Name: " Exact Check ", Type: "c", Validated: true}}},
+		{`ALTER TABLE app.t ADD FOREIGN KEY (id) REFERENCES app.t ("Missing") NOT VALID`, "ddl.pg.alter.add_foreign_key.targets.valid", "reject", []spec.PGConstraintState{}},
 		{"ALTER TABLE app.t VALIDATE CONSTRAINT c", "ddl.pg.alter.validate_constraint.target.require", "reject", []spec.PGConstraintState{}},
 		{"ALTER TABLE app.t ALTER CONSTRAINT c DEFERRABLE", "ddl.pg.alter.constraint_deferrability.target.require", "reject", []spec.PGConstraintState{}},
 		{"ALTER TABLE app.t DROP CONSTRAINT c", "ddl.pg.alter.drop_constraint.target.require", "reject", []spec.PGConstraintState{}},
 		{"ALTER TABLE app.t DROP CONSTRAINT IF EXISTS c", "", "pass", []spec.PGConstraintState{}},
 		{"ALTER TABLE app.t VALIDATE CONSTRAINT c", "", "review", nil},
 	} {
-		client := &mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL, snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: tc.members, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}
+		client := &mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL, snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: tc.members, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true, Columns: []spec.PGColumnState{{Name: "id"}}}}}
 		prepareMetadataAudit = func(context.Context, auditmeta.Request) (*auditmeta.PreparedAudit, error) {
 			return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app", DialectSource: "request", SchemaSource: "request"}, nil
 		}

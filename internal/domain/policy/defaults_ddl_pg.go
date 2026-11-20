@@ -74,6 +74,11 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelWarning,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.alter.add_foreign_key.targets.valid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
 		"ddl.pg.alter.add_foreign_key.not_valid.require": {
 			Enabled: true,
 			Level:   rule.LevelWarning,

@@ -21,6 +21,8 @@ The PostgreSQL TYPE source entry advertises the default blocker and exact column
 
 The PostgreSQL rename and SET SCHEMA target entries expose default blockers based on exact catalog evidence.
 
+The PostgreSQL ADD FOREIGN KEY targets entry describes the default blocker and its live relation and column premises.
+
 The PostgreSQL constraint attachment entry advertises the default blocker and the private index facts it requires.
 
 The PostgreSQL CHECK name entry describes the exact live constraint-directory prerequisite for the default blocker.

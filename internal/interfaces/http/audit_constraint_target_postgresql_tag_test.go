@@ -21,7 +21,7 @@ func (p pgConstraintTargetHTTPProvider) LoadInstanceFacts(context.Context, delta
 	return &deltascope.InstanceFacts{Version: "PostgreSQL 17.7"}, nil
 }
 func (p pgConstraintTargetHTTPProvider) LoadTableSnapshot(_ context.Context, _ deltascope.Dialect, schema, table string) (*deltascope.TableSnapshot, error) {
-	return &deltascope.TableSnapshot{Schema: schema, Exists: true, Table: &deltascope.Table{Name: table}, PGConstraints: p.members, PGRelation: deltascope.PGRelationState{Name: table, Kind: "r"}, PGColumns: &deltascope.PGColumnCatalog{Ordinary: true}}, nil
+	return &deltascope.TableSnapshot{Schema: schema, Exists: true, Table: &deltascope.Table{Name: table}, PGConstraints: p.members, PGRelation: deltascope.PGRelationState{Name: table, Kind: "r"}, PGColumns: &deltascope.PGColumnCatalog{Ordinary: true, Columns: []deltascope.PGColumnState{{Name: "id"}}}}, nil
 }
 
 func TestHandlerPGConstraintTarget(t *testing.T) {
@@ -30,6 +30,7 @@ func TestHandlerPGConstraintTarget(t *testing.T) {
 		members          []deltascope.PGConstraintState
 	}{
 		{`ALTER TABLE app.t ADD CONSTRAINT " Exact Check " CHECK (1 > 0) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", []deltascope.PGConstraintState{{Name: " Exact Check ", Type: "c", Validated: true}}},
+		{`ALTER TABLE app.t ADD FOREIGN KEY (id) REFERENCES app.t ("Missing") NOT VALID`, "ddl.pg.alter.add_foreign_key.targets.valid", "reject", []deltascope.PGConstraintState{}},
 		{"ALTER TABLE app.t VALIDATE CONSTRAINT c", "ddl.pg.alter.validate_constraint.target.require", "reject", []deltascope.PGConstraintState{}},
 		{"ALTER TABLE app.t ALTER CONSTRAINT c DEFERRABLE", "ddl.pg.alter.constraint_deferrability.target.require", "reject", []deltascope.PGConstraintState{}},
 		{"ALTER TABLE app.t DROP CONSTRAINT c", "ddl.pg.alter.drop_constraint.target.require", "reject", []deltascope.PGConstraintState{}},

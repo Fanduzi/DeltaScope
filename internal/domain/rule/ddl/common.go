@@ -282,6 +282,7 @@ const (
 	ruleIDPGAlterNotValidConstraintValidateRequire          = "ddl.pg.alter.not_valid_constraint.validate.require"
 	ruleIDPGDropIndexAdvisory                               = "ddl.pg.drop_index.advisory"
 	ruleIDPGAlterAddColumnNonNullNoDefaultWarn              = "ddl.pg.alter.add_column.non_null_no_default.warn"
+	ruleIDPGForeignKeyTargetsValid                          = "ddl.pg.alter.add_foreign_key.targets.valid"
 	ruleIDPGAlterAddForeignKeyNotValidRequire               = "ddl.pg.alter.add_foreign_key.not_valid.require"
 	ruleIDPGConstraintUsingIndexValid                       = "ddl.pg.alter.constraint_using_index.valid"
 	ruleIDPGAlterAddPrimaryKeyConcurrentIndexWarn           = "ddl.pg.alter.add_primary_key.concurrent_index.warn"

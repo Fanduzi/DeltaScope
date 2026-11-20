@@ -1010,6 +1010,11 @@ rules:
     params:
 
   # PostgreSQL authored constraint validation/index-build risk; not execution proof.
+  ddl.pg.alter.add_foreign_key.targets.valid:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.pg.alter.add_foreign_key.not_valid.require:
     enabled: true
     level: warning

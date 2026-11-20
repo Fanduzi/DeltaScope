@@ -2,6 +2,8 @@
 
 Policy model for rule configuration and future audit settings.
 
+The default PostgreSQL ADD FOREIGN KEY targets blocker checks the exact referenced relation and the declared columns.
+
 The default PostgreSQL `USING INDEX` blocker checks the catalog prerequisites for PRIMARY KEY and UNIQUE attachment.
 
 The default PostgreSQL CHECK name rule blocks proven exact name collisions for a single explicitly named CHECK.
