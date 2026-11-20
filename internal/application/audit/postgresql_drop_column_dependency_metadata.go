@@ -8,7 +8,7 @@ import (
 
 func enrichPGDropColumnDependencies(ctx context.Context, request *MetadataRequest, statements []spec.Statement) error {
 	for _, statement := range statements {
-		name := spec.PGDropColumnDependencyTarget(statement)
+		name := spec.PGColumnDependencyTarget(statement)
 		if name == "" {
 			continue
 		}

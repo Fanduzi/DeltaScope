@@ -17,12 +17,12 @@ func TestResolvePGColumnTraversal(t *testing.T) {
 		want *spec.PGColumnTraversal
 	}{
 		{name: "unobserved attribute"},
-		{name: "known local", rows: [][]driver.Value{{false, false, false}}, want: &spec.PGColumnTraversal{}},
-		{name: "inherited attribute", rows: [][]driver.Value{{true, false, false}}, want: &spec.PGColumnTraversal{Inherited: true}},
-		{name: "attached partitioned key", rows: [][]driver.Value{{false, true, true}}, want: &spec.PGColumnTraversal{DirectPartitionKey: true, AttachedChildren: true}},
+		{name: "known local", rows: [][]driver.Value{{false, false, false, false, true, false, false}}, want: &spec.PGColumnTraversal{ColumnExists: true}},
+		{name: "inherited attribute", rows: [][]driver.Value{{true, false, false, false, true, false, true}}, want: &spec.PGColumnTraversal{Inherited: true, ColumnExists: true, StoredGenerated: true}},
+		{name: "attached partitioned key", rows: [][]driver.Value{{false, true, true, false, true, false, false}}, want: &spec.PGColumnTraversal{DirectPartitionKey: true, AttachedChildren: true, ColumnExists: true}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			db, log := openTestDB(t, map[string]testQueryResult{"a.attinhcount": {columns: []string{"inherited", "partition_key", "children"}, rows: tc.rows}})
+			db, log := openTestDB(t, map[string]testQueryResult{"a.attinhcount": {columns: []string{"inherited", "partition_key", "children", "partition", "present", "system", "generated"}, rows: tc.rows}})
 			defer db.Close()
 			req := spec.ObjectLookupRequest{Type: "column_traversal", Schema: " Exact Schema ", Name: " Exact Column ", Qualifiers: map[string]string{"table": " Exact Table "}}
 			result, err := NewProvider(db).ResolveObject(context.Background(), spec.DialectPostgreSQL, req)

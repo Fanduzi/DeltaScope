@@ -13,7 +13,7 @@ func enrichPGColumnTraversal(ctx context.Context, request *MetadataRequest, stat
 			continue
 		}
 		table := s.DDL.Table
-		lookup := spec.ObjectLookupRequest{Type: "column_traversal", Schema: table.Schema, Name: name, Qualifiers: map[string]string{"table": table.Name}}
+		lookup := spec.ObjectLookupRequest{Type: "column_traversal", Schema: table.Schema, Name: name, Qualifiers: map[string]string{"table": table.Name, "action": s.DDL.Alter[0].Action}}
 		object, err := resolveObjectSnapshot(ctx, request, spec.DialectPostgreSQL, &lookup)
 		if err != nil {
 			return err

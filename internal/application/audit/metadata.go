@@ -231,9 +231,6 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 		if err := enrichPGColumnTraversal(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}
-		if err := enrichPGDropColumnDependencies(ctx, request, enriched[:freshPrefix]); err != nil {
-			return nil, err
-		}
 		if err := enrichPGDropConstraintReferences(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}
@@ -262,6 +259,9 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 			return nil, err
 		}
 		if err := enrichPGColumnTypes(ctx, request, enriched); err != nil {
+			return nil, err
+		}
+		if err := enrichPGDropColumnDependencies(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}
 	}

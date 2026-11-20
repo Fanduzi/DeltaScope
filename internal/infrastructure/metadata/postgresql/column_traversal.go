@@ -16,23 +16,28 @@ func (p *Provider) resolveColumnTraversal(ctx context.Context, req spec.ObjectLo
 	}
 	facts := spec.PGColumnTraversal{Schema: req.Schema, Table: table, Column: req.Name}
 	err := p.db.QueryRowContext(ctx, `
-        select a.attinhcount OPERATOR(pg_catalog.>) 0,
+        select coalesce(a.attinhcount OPERATOR(pg_catalog.>) 0, false),
                coalesce(a.attnum OPERATOR(pg_catalog.=) any(pt.partattrs), false),
                exists (
                    select 1 from pg_catalog.pg_inherits h
-                   where h.inhparent OPERATOR(pg_catalog.=) c.oid and not h.inhdetachpending)
+                   where h.inhparent OPERATOR(pg_catalog.=) c.oid and not h.inhdetachpending),
+               c.relispartition, a.attnum is not null,
+               coalesce(a.attnum OPERATOR(pg_catalog.<) 0, false),
+               coalesce(a.attgenerated OPERATOR(pg_catalog.=) 's', false)
         from pg_catalog.pg_namespace n
         join pg_catalog.pg_class c on c.relnamespace OPERATOR(pg_catalog.=) n.oid
-        join pg_catalog.pg_attribute a on a.attrelid OPERATOR(pg_catalog.=) c.oid
+        left join pg_catalog.pg_attribute a on a.attrelid OPERATOR(pg_catalog.=) c.oid
+         and a.attname OPERATOR(pg_catalog.=) $3::pg_catalog.text
+         and a.attnum OPERATOR(pg_catalog.<>) 0 and not a.attisdropped
         left join pg_catalog.pg_partitioned_table pt on pt.partrelid OPERATOR(pg_catalog.=) c.oid
         where n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text
           and c.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text
-          and a.attname OPERATOR(pg_catalog.=) $3::pg_catalog.text
-          and a.attnum OPERATOR(pg_catalog.>) 0 and not a.attisdropped
+          and ($4::pg_catalog.bool or a.attnum OPERATOR(pg_catalog.>) 0)
           and c.relkind OPERATOR(pg_catalog.=) any(array['r','p']::pg_catalog."char"[])
           and c.relpersistence OPERATOR(pg_catalog.=) 'p'
           and c.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
-    `, req.Schema, table, req.Name).Scan(&facts.Inherited, &facts.DirectPartitionKey, &facts.AttachedChildren)
+    `, req.Schema, table, req.Name, req.Qualifiers["action"] == "add_column").Scan(
+		&facts.Inherited, &facts.DirectPartitionKey, &facts.AttachedChildren, &facts.Partition, &facts.ColumnExists, &facts.System, &facts.StoredGenerated)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}

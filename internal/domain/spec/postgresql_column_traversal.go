@@ -2,8 +2,9 @@ package spec
 
 // PGColumnTraversal binds observed column traversal blockers to one target.
 type PGColumnTraversal struct {
-	Schema, Table, Column                           string
-	Inherited, DirectPartitionKey, AttachedChildren bool
+	Schema, Table, Column                                            string
+	Inherited, DirectPartitionKey, AttachedChildren, StoredGenerated bool
+	Partition, ColumnExists, System                                  bool
 }
 
 // PGColumnTraversalTarget bounds lookups to the nonordinary shapes for this check.
@@ -20,8 +21,23 @@ func PGColumnTraversalTarget(s Statement) string {
 		return ""
 	}
 	a := s.DDL.Alter[0]
-	if a.Action != "drop_column" && a.Action != "rename_column" {
+	switch a.Action {
+	case "drop_column", "rename_column", "set_data_type", "drop_expression", "add_column":
+		return a.Name
+	default:
 		return ""
 	}
-	return a.Name
+}
+
+// BoundPGColumnTraversal returns the observation for the exact current target.
+func BoundPGColumnTraversal(s Statement) *PGColumnTraversal {
+	name := PGColumnTraversalTarget(s)
+	if name == "" {
+		return nil
+	}
+	facts, table := s.Metadata.PGColumnTraversal, s.DDL.Table
+	if facts == nil || facts.Schema != table.Schema || facts.Table != table.Name || facts.Column != name {
+		return nil
+	}
+	return facts
 }
