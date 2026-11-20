@@ -98,6 +98,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGTablePersistence` carries the observed persistence and bounded dependency facts privately. `PGExactTableBound` checks exact fresh relation identity before scope-specific checks.
 - `PGTableAccessMethod` retains exact named or bare DEFAULT selection, observed kind and comparison with the current method. The private observation stays out of JSON.
 - `PGTableTablespace` retains the exact destination, presence, scope and comparison with the effective current location. The private observation stays out of JSON.
+- `PGDropColumnDependency` binds a private direct dependency observation to an exact column.
 - `PGDropConstraintReference` binds a private direct foreign-key dependency observation to an exact primary or unique constraint.
 - `PGConstraintState` carries private observations for CHECK inheritance and partition children. `DDL.PGTableOnly` records the PostgreSQL ALTER target traversal flag.
 - `PGForeignKeyKeys` binds ordered key slots and primary/immediate flags to an exact observed reference table. The key directory stays private.

@@ -12,6 +12,7 @@ type Metadata struct {
 	PGForeignKeyReference     *TableSnapshot             `json:"-"`
 	PGForeignKeyKeys          *PGForeignKeyKeys          `json:"-"`
 	PGDropConstraintReference *PGDropConstraintReference `json:"-"`
+	PGDropColumnDependency    *PGDropColumnDependency    `json:"-"`
 	PGReplicaIdentity         *PGReplicaIdentityIndex    `json:"-"`
 	PGConstraintUsingIndex    *PGConstraintUsingIndex    `json:"-"`
 	PGTableTablespace         *PGTableTablespace         `json:"-"`
@@ -817,6 +818,7 @@ type ObjectSnapshot struct {
 	PGBulkTablespace          *PGBulkTablespaceState     `json:"-"`
 	PGForeignKeyKeys          *PGForeignKeyKeys          `json:"-"`
 	PGDropConstraintReference *PGDropConstraintReference `json:"-"`
+	PGDropColumnDependency    *PGDropColumnDependency    `json:"-"`
 	// SequenceReferences is the bounded inbound-reference read for a proven
 	// sequence identity — the catalog's owner-slot/target edge list. A nil
 	// slice means the read never happened — never a proven-empty set;
