@@ -217,3 +217,36 @@ func TestPGConstraintTargetAdvisoryNoops(t *testing.T) {
 		t.Fatalf("unknown must retain conditional notice=%v %v", f, err)
 	}
 }
+
+func TestPGDropConstraintDirectReference(t *testing.T) {
+	for _, tc := range []struct {
+		name, kind, cascade string
+		fact                *spec.PGDropConstraintReference
+		blocked, gap        bool
+	}{
+		{name: "direct primary reference", kind: "p", cascade: "false", fact: &spec.PGDropConstraintReference{Schema: "app", Table: "t", Name: "c", Kind: "p", Blocked: true}, blocked: true},
+		{name: "direct unique reference", kind: "u", cascade: "false", fact: &spec.PGDropConstraintReference{Schema: "app", Table: "t", Name: "c", Kind: "u", Blocked: true}, blocked: true},
+		{name: "no dependent", kind: "p", cascade: "false", fact: &spec.PGDropConstraintReference{Schema: "app", Table: "t", Name: "c", Kind: "p"}},
+		{name: "unobserved", kind: "p", cascade: "false", gap: true},
+		{name: "mismatched constraint", kind: "u", cascade: "false", fact: &spec.PGDropConstraintReference{Schema: "app", Table: "t", Name: "C", Kind: "u", Blocked: true}, gap: true},
+		{name: "cascade", kind: "p", cascade: "true", fact: &spec.PGDropConstraintReference{Schema: "app", Table: "t", Name: "c", Kind: "p", Blocked: true}},
+		{name: "check", kind: "c", cascade: "false"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := pgTargetStatement("drop_constraint", []spec.PGConstraintState{{Name: "c", Type: tc.kind}})
+			s.DDL.Alter[0].Options["cascade"] = tc.cascade
+			s.Metadata.TargetTable.PGColumns = &spec.PGColumnCatalog{Ordinary: true}
+			s.Metadata.TargetTable.PGRelation = spec.PGRelationState{Name: "t", Kind: "r"}
+			s.Metadata.PGDropConstraintReference = tc.fact
+			r := pgConstraintTargetRule{id: ruleIDPGAlterDropConstraintTargetRequire, level: rule.LevelBlocker}
+			f, err := r.Evaluate(context.Background(), s)
+			if err != nil || len(f) != 0 && !tc.blocked || tc.blocked && (len(f) != 1 || f[0].Metadata["reason_code"] != "constraint_referenced_by_foreign_key" || f[0].Metadata["target_constraint_kind"] != tc.kind) {
+				t.Fatalf("findings=%+v error=%v", f, err)
+			}
+			g := r.EvidenceGaps(s)
+			if len(g) != 0 && !tc.gap || tc.gap && (len(g) != 1 || g[0].ReasonCode != "unproven_constraint_target" || !reflect.DeepEqual(g[0].RequiredFacts, []string{"constraint.pg_foreign_key_references"})) {
+				t.Fatalf("gaps=%+v", g)
+			}
+		})
+	}
+}

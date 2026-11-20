@@ -481,3 +481,35 @@ func TestMCPForeignKeyReferenceKeys(t *testing.T) {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }
+
+type dropConstraintReferenceAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (dropConstraintReferenceAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, _ spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	return &spec.ObjectSnapshot{PGDropConstraintReference: &spec.PGDropConstraintReference{Schema: "app", Table: "t", Name: "pk", Kind: "p", Blocked: true}}, nil
+}
+
+func TestMCPDropConstraintReference(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := dropConstraintReferenceAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: []spec.PGConstraintState{{Name: "pk", Type: "p", Validated: true}}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true, Columns: []spec.PGColumnState{{Name: "id"}}}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": `ALTER TABLE app.t DROP CONSTRAINT pk RESTRICT`, "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"constraint_referenced_by_foreign_key"`) || !strings.Contains(string(body), `"ddl.pg.alter.drop_constraint.target.require"`) || strings.Contains(string(body), "PGDropConstraintReference") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}

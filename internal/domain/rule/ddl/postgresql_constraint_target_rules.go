@@ -99,6 +99,19 @@ func (r pgConstraintTargetRule) assess(s spec.Statement, index int) (*spec.PGCon
 	if r.id == ruleIDPGAlterValidateConstraintTargetRequire && member.Type != "c" && member.Type != "f" || r.id == ruleIDPGAlterConstraintDeferrabilityTargetRequire && member.Type != "f" {
 		return member, "constraint_kind_mismatch", ""
 	}
+	if r.id == ruleIDPGAlterDropConstraintTargetRequire && len(s.DDL.Alter) == 1 &&
+		s.DDL.Alter[0].Options["cascade"] == "false" && (member.Type == "p" || member.Type == "u") {
+		table, catalog := s.DDL.Table, s.Metadata.TargetTable.PGColumns
+		if !s.DDL.PGTableCatalogQualified && table.Schema != "" && table.Schema != "pg_temp" && catalog != nil && catalog.Ordinary && !catalog.Typed {
+			ref := s.Metadata.PGDropConstraintReference
+			if !spec.PGOrdinaryTableBound(s) || ref == nil || ref.Schema != table.Schema || ref.Table != table.Name || ref.Name != member.Name || ref.Kind != member.Type {
+				return member, "", "constraint.pg_foreign_key_references"
+			}
+			if ref.Blocked {
+				return member, "constraint_referenced_by_foreign_key", ""
+			}
+		}
+	}
 	return member, "", ""
 }
 
@@ -141,15 +154,20 @@ func (r pgConstraintTargetRule) Evaluate(ctx context.Context, s spec.Statement) 
 			continue
 		}
 		message := "PostgreSQL constraint target does not exist"
-		if reason == "constraint_kind_mismatch" {
+		suggestion := "verify the exact table/schema/constraint identity and action: VALIDATE accepts FK/CHECK, ALTER CONSTRAINT deferrability accepts FK; DROP IF EXISTS guards only absence, not dependency or data legality"
+		switch reason {
+		case "constraint_kind_mismatch":
 			message = "PostgreSQL constraint target has an unsupported kind for this action"
+		case "constraint_referenced_by_foreign_key":
+			message = "A foreign key directly depends on the selected PostgreSQL constraint's supporting index"
+			suggestion = "Review the foreign-key dependency before dropping the key with RESTRICT"
 		}
 		metadata := map[string]any{"action": a.Action, "table": s.DDL.Table.Name, "schema": s.Metadata.TargetTable.Schema, "constraint": a.Name, "target_exists": member != nil, "reason_code": reason}
 		if member != nil {
 			metadata["target_constraint_kind"] = member.Type
 		}
 		findings = append(findings, rule.Finding{Level: r.level, Message: message,
-			Suggestion: "verify the exact table/schema/constraint identity and action: VALIDATE accepts FK/CHECK, ALTER CONSTRAINT deferrability accepts FK; DROP IF EXISTS guards only absence, not dependency or data legality",
+			Suggestion: suggestion,
 			Metadata:   metadata})
 	}
 	return findings, nil

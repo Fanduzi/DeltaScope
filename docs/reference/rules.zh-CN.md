@@ -547,7 +547,7 @@ PostgreSQL `ALTER TABLE IF EXISTS` 的既有存在性规则在已证明限定名
 |---------|----------|:--------:|:----------:|
 | `ddl.pg.alter.validate_constraint.target.require` | VALIDATE 的目标存在且为 FK/CHECK | blocker | 是 |
 | `ddl.pg.alter.constraint_deferrability.target.require` | ALTER CONSTRAINT deferrability 的目标存在且为 FK | blocker | 是 |
-| `ddl.pg.alter.drop_constraint.target.require` | DROP 目标缺失且未写 IF EXISTS 时拒绝 | blocker | 是 |
+| `ddl.pg.alter.drop_constraint.target.require` | 检查精确 DROP 目标，并在 RESTRICT 下检查主键或唯一约束的直接外键依赖。IF EXISTS 只处理目标缺失。 | blocker | 是 |
 
 三条默认行为均已获明确批准。检查依赖精确绑定表/schema 的完整、新鲜约束目录，以及真实观测的稳定 PostgreSQL 17 版本。解码后的标识符区分大小写，重复或归属不明的记录不采用 last-wins。缺失、歧义、过期或超出作用域的事实保留 `unproven_constraint_target` 缺口（`target_table.pg_constraints`、`instance.version` 或 `constraint.if_exists`），不猜测目标不存在。事实缺口沿用 **unverified/review** 协议；语法和 parser 边界仍是 incomplete。调用者的 `target_version` 不能替代服务器观测，也不扩展仅面向 MySQL/TiDB 的公共版本身份协议。
 

@@ -296,7 +296,7 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 		return "Requires a proven existing PostgreSQL FK target for ALTER CONSTRAINT deferrability. Missing/wrong-kind targets block; quoted names bind exactly and unknown/stale facts remain evidence gaps."
 	}
 	if ruleID == "ddl.pg.alter.drop_constraint.target.require" {
-		return "Blocks a proven missing PostgreSQL DROP CONSTRAINT target unless IF EXISTS is authored. Unknown catalog/guard facts remain gaps; a target check does not establish dependency or permission legality."
+		return "Checks exact PostgreSQL 17 DROP CONSTRAINT targets and direct foreign-key blockers for RESTRICT on ordinary tables. IF EXISTS guards absence; missing dependency evidence remains a gap."
 	}
 	if ruleID == "ddl.pg.alter.add_foreign_key.not_valid.require" {
 		return "PostgreSQL ALTER ADD FOREIGN KEY without NOT VALID warns about initial validation and locks. NOT VALID is silent for this rule, not legality proof; PostgreSQL 17 partitioned-table foreign keys cannot use that option. Existing FK forbids and validation follow-up remain independent."
