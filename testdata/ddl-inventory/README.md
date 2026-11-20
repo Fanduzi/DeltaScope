@@ -18,7 +18,7 @@ honestly — not a count of implemented rules.
 
 ## PostgreSQL constraint attachment using an index
 
-D21 appends five selectors to ADD PRIMARY KEY and fifteen to ADD UNIQUE at the
+D21 at `53cc0592` appends five selectors to ADD PRIMARY KEY and fifteen to ADD UNIQUE at the
 PostgreSQL 17 anchor. The cases cover specific catalog and naming premises of
 USING INDEX. Default operator classes and execution prerequisites remain
 separately tracked. Inventory classifications are preserved.

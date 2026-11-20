@@ -5,7 +5,8 @@ Per-task manifests for the milestone DDL golden-path runner
 
 ## T37 D21 PostgreSQL constraint attachment using an index
 
-Focused T37 passed 336/336 cases and 8,751 assertions. Nineteen new cases retain
+Delivered `53cc0592` passed all 50 tasks with 3,668/3,668 cases and 67,790
+assertions. T37 passed 336/336 cases and 8,751 assertions. Nineteen new cases retain
 all 317 earlier cases and their policy profiles. Native checks cover exact
 index identity, valid and invalid attachments, same-name reuse and occupied
 rename destinations. [Decision](../../docs/decisions/2026-11-20-postgresql-constraint-using-index.md)

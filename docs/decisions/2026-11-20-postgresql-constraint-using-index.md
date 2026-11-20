@@ -63,6 +63,21 @@ proves a failed build left a live invalid index. Five selectors attach to
 ADD PRIMARY KEY and fifteen to ADD UNIQUE. All 317 earlier cases and policy
 profiles, and the inventory classifications and denominators, were preserved.
 
+## Delivered evidence
+
+`53cc0592051ceca225b1463d69b1d8b0ce1ebf3c` passed all 50 canonical tasks with 3,668/3,668 cases and
+67,790 assertions. T37 passed 336/336 cases and 8,751 assertions. The validator,
+independent review and merged-root gates passed. The milestone advanced to
+`main` by fast-forward and normal push. [Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44685529669),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44685529712) and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/136118934239) passed for this SHA.
+The aggregate is `/tmp/ddl-golden-pg-constraint-using-index-final-53cc0592/all/artifact.json`.
+
+The original worktree status, protected release worktree and sixteen protected
+Docker identities matched. One additional container in the starting snapshot
+was absent at review. Its lifecycle could not be established. All fifty
+cleanup receipts refer to the dedicated Golden project.
+
 ## Sources
 
 - [PG17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
