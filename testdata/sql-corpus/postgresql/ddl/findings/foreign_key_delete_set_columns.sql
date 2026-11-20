@@ -1,0 +1,1 @@
+ALTER TABLE app.child ADD CONSTRAINT c FOREIGN KEY ("A,B") REFERENCES app.parent ("C,D") ON DELETE SET NULL (" extra, col ") NOT VALID;

@@ -763,8 +763,8 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 |---------|------|:--------:|:--------------:|
 | `ddl.pg.create_index.concurrently.require` | `CREATE INDEX` 必须使用 `CONCURRENTLY` 以避免阻塞读写。发现包含有界索引形态元数据：`index_kind`、`access_method`、`column_count`、`included_column_count`、`has_predicate`、`has_expression_keys`、`expression_count`。元数据为增量添加，不输出谓词或表达式 SQL 文本。 | warning | 否 |
 | `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | 添加带有 volatile 默认值的 `NOT NULL` 列可能触发全表重写。发现包含：`not_null`、`has_default`、`default_kind`（`literal`、`null`、`function_call`、`expression`、`unknown`）。元数据不输出默认表达式文本或函数名。 | warning | 否 |
-| `ddl.pg.alter.constraint_using_index.valid` | 检查 PostgreSQL 17 普通表上 `PRIMARY KEY` 或 `UNIQUE USING INDEX` 的精确目录前提。绑定或键事实不足时报告 `unproven_constraint_using_index`。 | blocker | 否 |
-| `ddl.pg.alter.add_foreign_key.targets.valid` | 在 PostgreSQL 17 普通持久表上检查两侧身份、被引用键资格和列数。省略引用列时使用目录中实际观测到的主键。 | blocker | 否 |
+| `ddl.pg.alter.constraint_using_index.valid` | 检查 PostgreSQL 17 普通表上 `PRIMARY KEY` 或 `UNIQUE USING INDEX` 的精确目录前提。目录证据足够时核对键列的默认操作符类。缺少适用事实时报告 `unproven_constraint_using_index`。 | blocker | 否 |
+| `ddl.pg.alter.add_foreign_key.targets.valid` | 在 PostgreSQL 17 普通持久表上检查两侧身份、被引用键资格和列数。省略引用列时使用目录中实际观测到的主键。`ON DELETE SET NULL` 或 `SET DEFAULT` 中的列清单必须属于声明的外键。 | blocker | 否 |
 | `ddl.pg.alter.add_check.name.available` | 对 PostgreSQL 17 上目录新鲜、精确绑定的普通持久表，检查单动作显式命名的 `ADD CHECK` 或 `ADD CHECK NOT VALID` 是否占用同表约束名。证据不足或过期时报告 `unproven_check_constraint_name`。 | blocker | 否 |
 | `ddl.pg.alter.add_check.not_valid.require` | `ADD CHECK` 约束应使用 `NOT VALID` 以避免持 `ACCESS EXCLUSIVE` 锁的全表扫描 | warning | 否 |
 | `ddl.pg.alter.set_data_type.rewrite.warn` | 更改列类型可能需要全表重写（取决于类型转换）。发现包含：`has_using`（是否存在 USING 子句）。元数据不输出 USING 表达式 SQL 文本。 | warning | 否 |
@@ -1286,6 +1286,10 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 ### PostgreSQL 普通表所有者目标
 
 `ddl.pg.alter.owner.target.valid` 默认级别为 blocker，适用于已观测 PostgreSQL 17 上限定名精确、目录新鲜的普通持久非类型表。已证明字面角色缺失或目标为 `PUBLIC` 时报告拒绝。引号角色名按原样匹配。裸 `CURRENT_USER`、`CURRENT_ROLE`、`SESSION_USER` 以实际观测的审计会话为准。缺少观察时报告 `unproven_table_owner_target`。既有 notice 描述请求或本会话中已证明的同所有者选择。发现不输出角色名，也不判断变更权限或 schema 授权。
+
+### PostgreSQL 继承列和分区列
+
+既有 DROP 和 RENAME 源列规则使用 PostgreSQL 17 的继承和分区目录。对精确目标执行单个动作时，DROP 拒绝继承列、直接分区键，以及仅删除仍有附着子分区的父表列。RENAME 拒绝继承源列，以及需要遍历子表时使用的 ONLY。递归后代与依赖结果仍需各自的证据。
 
 ### PostgreSQL SET WITHOUT OIDS
 

@@ -40,7 +40,7 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
 		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
-		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 {
+		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
@@ -52,6 +52,7 @@ type corpusFixtureMetadataProvider struct {
 	indexOwners                map[string]string
 	pgTableOwners              []corpusPGTableOwner
 	pgDropColumnDependencies   []corpusPGDropColumnDependency
+	pgColumnTraversals         []corpusPGColumnTraversal
 	pgDropConstraintReferences []corpusPGDropConstraintReference
 	pgForeignKeyDirectories    []corpusPGForeignKeyKeys
 	pgConstraintIndexes        []corpusPGConstraintIndex
@@ -99,6 +100,7 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 		indexOwners:                make(map[string]string, len(metadata.IndexOwners)),
 		pgTableOwners:              metadata.PGTableOwners,
 		pgDropColumnDependencies:   metadata.PGDropColumnDependencies,
+		pgColumnTraversals:         metadata.PGColumnTraversals,
 		pgDropConstraintReferences: metadata.PGDropConstraintReferences,
 		pgForeignKeyDirectories:    metadata.PGForeignKeyDirectories,
 		pgConstraintIndexes:        metadata.PGConstraintIndexes,
@@ -468,6 +470,14 @@ func parseCorpusUint(text string) (uint64, bool) {
 // `schema.name`. An unkeyed identity or a nil sequence map is unvouched,
 // never a silent absent; non-sequence lookups stay unavailable.
 func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if request.Type == "column_traversal" {
+		for _, seed := range p.pgColumnTraversals {
+			if seed.Schema == request.Schema && seed.Table == request.Qualifiers["table"] && seed.Column == request.Name {
+				return &spec.ObjectSnapshot{PGColumnTraversal: &spec.PGColumnTraversal{Schema: seed.Schema, Table: seed.Table, Column: seed.Column, Inherited: seed.Inherited}}, nil
+			}
+		}
+		return nil, nil
+	}
 	if request.Type == "drop_column_dependency" {
 		for _, seed := range p.pgDropColumnDependencies {
 			if seed.Schema == request.Schema && seed.Table == request.Qualifiers["table"] && seed.Column == request.Name {
@@ -501,7 +511,11 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 	if request.Type == "constraint_using_index" {
 		for _, seed := range p.pgConstraintIndexes {
 			if seed.Schema == request.Schema && seed.Table == request.Qualifiers["table"] && seed.Name == request.Name {
-				return &spec.ObjectSnapshot{PGConstraintUsingIndex: &spec.PGConstraintUsingIndex{Schema: seed.Schema, Table: seed.Table, Name: seed.Name, Kind: seed.Kind, IndexKnown: true, OnTable: true, Valid: seed.Valid, Unique: true, BTree: true, KeyDefaults: true, KeyDefaultsKnown: true}}, nil
+				facts := &spec.PGConstraintUsingIndex{Schema: seed.Schema, Table: seed.Table, Name: seed.Name, Kind: seed.Kind, IndexKnown: true, OnTable: true, Valid: seed.Valid, Unique: true, BTree: true, KeyDefaults: true, KeyDefaultsKnown: true}
+				if seed.OpclassesDefault != nil {
+					facts.OpclassesDefaultKnown, facts.OpclassesDefault = true, *seed.OpclassesDefault
+				}
+				return &spec.ObjectSnapshot{PGConstraintUsingIndex: facts}, nil
 			}
 		}
 		return nil, nil

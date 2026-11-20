@@ -15,6 +15,16 @@ func TestPGForeignKeyTargets(t *testing.T) {
 		change                     func(*spec.Statement, *spec.PGForeignKeySelection)
 	}{
 		{name: "exact identifiers"},
+		{name: "action duplicate accepted", change: func(_ *spec.Statement, fk *spec.PGForeignKeySelection) { fk.DeleteSetColumns = []string{"A,B", "A,B"} }},
+		{name: "action present outside key", reason: "foreign_key_delete_set_column_outside_key", column: " extra ", change: func(s *spec.Statement, fk *spec.PGForeignKeySelection) {
+			fk.DeleteSetColumns = []string{" extra "}
+			s.Metadata.TargetTable.PGColumns.Columns = append(s.Metadata.TargetTable.PGColumns.Columns, spec.PGColumnState{Name: " extra "})
+		}},
+		{name: "action missing before nonmember", reason: "foreign_key_delete_set_column_absent", column: "Missing", change: func(s *spec.Statement, fk *spec.PGForeignKeySelection) {
+			fk.DeleteSetColumns = []string{" extra ", "Missing"}
+			s.Metadata.TargetTable.PGColumns.Columns = append(s.Metadata.TargetTable.PGColumns.Columns, spec.PGColumnState{Name: " extra "})
+		}},
+		{name: "action system member", reason: "foreign_key_delete_set_system_column", column: "ctid", change: func(_ *spec.Statement, fk *spec.PGForeignKeySelection) { fk.DeleteSetColumns = []string{"ctid"} }},
 		{name: "unobserved unique key", fact: "referenced_table.unique_key", change: func(s *spec.Statement, _ *spec.PGForeignKeySelection) { s.Metadata.PGForeignKeyKeys = nil }},
 		{name: "empty directory", reason: "foreign_key_reference_unique_key_absent", change: func(s *spec.Statement, _ *spec.PGForeignKeySelection) { s.Metadata.PGForeignKeyKeys.Keys = nil }},
 		{name: "case-distinct key", reason: "foreign_key_reference_unique_key_absent", change: func(s *spec.Statement, _ *spec.PGForeignKeySelection) {

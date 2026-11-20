@@ -40,6 +40,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_column_format_rules.go | Approved default-on PG17 STORAGE/COMPRESSION blockers over exact fresh user/system targets, actual typstorage and observed lz4 enum; method case/default controls, attributable gaps, no rewrite/execution simulation |
 | postgresql_column_format_rules_test.go | Pins declaration/type/default/case/Unicode-lookalike, lz4 known/false/unknown, missing/system/quoted/stale/scope/privacy/cancellation arms |
 | postgresql_system_column_rules_test.go | Red-to-green shared D5/D6 system applicability, unknown directory gaps, guard non-no-op and suppression of inapplicable deletion/clamp advice |
+| postgresql_column_traversal_test.go | Pins inherited, partition-key and parent-only refusals and stale evidence for DROP and RENAME |
 | postgresql_column_tuning_rules.go | Three approved PG17 statistics/options rules; shared exact user/system target and guard checks drive the existing DROP COLUMN rule and conditional advice. The blocker also checks observed direct PostgreSQL dependencies under RESTRICT |
 | postgresql_column_tuning_rules_test.go | Pins statistics bounds/DEFAULT/clamp, finite options/duplicates/RESET/unknown/privacy, exact DROP guards/catalog/version/freshness and independent forbid behavior |
 | postgresql_column_generation_rules.go | Approved PG17 existing-column generation target/identity options blockers, replica identity key protection for DROP NOT NULL and RESTART/CYCLE warnings; one shared assessment drives findings/gaps, exact fresh ordinary-table binding and no post-state simulation |
@@ -72,8 +73,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_bulk_tablespace_rules.go | Checks named PG17 bulk endpoints and ordered owner filters and reports observed same-space selections |
 | postgresql_table_owner_rules.go | Checks PG17 ordinary-table OWNER TO targets without exposing role names or inspecting permissions |
 | postgresql_table_namespace_rules.go | Checks exact PostgreSQL 17 RENAME and SET SCHEMA destinations, including collision checks for arrays, indexes and owned sequences during schema moves |
-| postgresql_foreign_key_target_rules.go | Checks exact relation and column identities, referenced key eligibility, and arity for ADD FOREIGN KEY |
-| postgresql_constraint_using_index_rules.go | Checks exact existing index prerequisites for PostgreSQL 17 PRIMARY KEY and UNIQUE attachment, preserving gaps for unavailable observations |
+| postgresql_foreign_key_target_rules.go | Checks exact relation and column identities, referenced key eligibility, arity and ON DELETE SET membership for ADD FOREIGN KEY |
+| postgresql_constraint_using_index_rules.go | Checks exact existing index prerequisites for PostgreSQL 17 PRIMARY KEY and UNIQUE attachment, including the observed default operator class for each key column |
 | postgresql_add_check_name_rules.go | Checks exact names of single named PostgreSQL 17 ADD CHECK declarations against the fresh table constraint directory |
 | postgresql_column_type_destination_rules.go | Checks PostgreSQL 17 type identity, bounded built-in modifiers, qualified collations and scalar assignment cast prerequisites |
 | postgresql_column_type_source_rules.go | Checks exact PG17 source-column preconditions for TYPE and TYPE USING |

@@ -105,7 +105,15 @@ type corpusFacts struct {
 }
 
 // corpusMetadata carries optional metadata-aware audit fixtures.
+type corpusPGColumnTraversal struct {
+	Schema    string `yaml:"schema"`
+	Table     string `yaml:"table"`
+	Column    string `yaml:"column"`
+	Inherited bool   `yaml:"inherited"`
+}
+
 type corpusMetadata struct {
+	PGColumnTraversals         []corpusPGColumnTraversal         `yaml:"pg_column_traversals,omitempty"`
 	Schema                     string                            `yaml:"schema,omitempty"`
 	Instance                   *corpusInstanceFacts              `yaml:"instance,omitempty"`
 	Tables                     map[string]corpusTableSnapshot    `yaml:"tables,omitempty"`
@@ -333,11 +341,12 @@ type corpusPGForeignKeyKeys struct {
 }
 
 type corpusPGConstraintIndex struct {
-	Schema string `yaml:"schema"`
-	Table  string `yaml:"table"`
-	Name   string `yaml:"name"`
-	Kind   string `yaml:"kind"`
-	Valid  bool   `yaml:"valid"`
+	Schema           string `yaml:"schema"`
+	Table            string `yaml:"table"`
+	Name             string `yaml:"name"`
+	Kind             string `yaml:"kind"`
+	Valid            bool   `yaml:"valid"`
+	OpclassesDefault *bool  `yaml:"opclasses_default,omitempty"`
 }
 
 type corpusPGColumnType struct {

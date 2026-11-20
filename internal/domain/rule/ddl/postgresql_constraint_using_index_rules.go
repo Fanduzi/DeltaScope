@@ -64,10 +64,14 @@ func assessPGConstraintUsingIndex(s spec.Statement) (reason, fact string) {
 		return "constraint_index_not_btree", ""
 	case f.KeyDefaultsKnown && !f.KeyDefaults:
 		return "constraint_index_nondefault_key", ""
+	case f.OpclassesDefaultKnown && !f.OpclassesDefault:
+		return "constraint_index_nondefault_opclass", ""
 	case f.NullsNotDistinct && s.DDL.Alter[0].Options["constraint_type"] == "primary_key":
 		return "constraint_index_nulls_not_distinct_primary", ""
 	case !f.KeyDefaultsKnown:
 		return "", "index.constraint_key_defaults"
+	case !f.OpclassesDefaultKnown:
+		return "", "index.constraint_default_opclasses"
 	}
 	return "", ""
 }
@@ -114,6 +118,8 @@ func (r pgConstraintUsingIndexRule) Evaluate(ctx context.Context, s spec.Stateme
 		message = "PostgreSQL requires a btree index for this attachment"
 	case "constraint_index_nondefault_key":
 		message = "PostgreSQL requires default sorting, collation and options for the index key columns"
+	case "constraint_index_nondefault_opclass":
+		message = "PostgreSQL requires default operator classes on the selected index key columns"
 	case "constraint_index_nulls_not_distinct_primary":
 		message = "PostgreSQL cannot attach a NULLS NOT DISTINCT index as a primary key"
 	default:

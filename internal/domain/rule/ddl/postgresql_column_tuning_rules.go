@@ -207,6 +207,9 @@ func pgDropColumnTarget(s spec.Statement, index int) (bool, string, string) {
 	if !pgConstraintTargetVersionKnown(s) {
 		return false, "", "instance.version"
 	}
+	if reason := pgDropColumnInheritanceReason(s, index); reason != "" {
+		return false, reason, ""
+	}
 	member, known := pgColumnTargetState(s, index)
 	if !known {
 		return false, "", "target_table.pg_columns"
@@ -226,6 +229,25 @@ func pgDropColumnTarget(s spec.Statement, index int) (bool, string, string) {
 		return true, "", ""
 	}
 	return false, "column_absent", ""
+}
+
+func pgDropColumnInheritanceReason(s spec.Statement, index int) string {
+	if index != 0 || spec.PGColumnTraversalTarget(s) == "" {
+		return ""
+	}
+	facts, table := s.Metadata.PGColumnTraversal, s.DDL.Table
+	if facts == nil || facts.Schema != table.Schema || facts.Table != table.Name || facts.Column != s.DDL.Alter[index].Name {
+		return ""
+	}
+	switch {
+	case facts.Inherited:
+		return "column_inherited"
+	case facts.DirectPartitionKey:
+		return "column_in_partition_key"
+	case facts.AttachedChildren && s.DDL.PGTableOnly && s.Metadata.TargetTable.PGRelation.Kind == "p":
+		return "column_partition_parent_only"
+	}
+	return ""
 }
 
 func pgDropColumnDependencyResult(s spec.Statement, index int) (reason, missing string) {
@@ -274,6 +296,15 @@ func (r alterObjectExistenceRule) evaluatePGDropColumn(ctx context.Context, s sp
 		suggestion := "Verify the exact column identity. IF EXISTS protects an absent column."
 		metadata := map[string]any{"table": s.DDL.Table.Name, "action": a.Action, "name": a.Name, "exists": reason != "column_absent"}
 		switch reason {
+		case "column_inherited":
+			message = "PostgreSQL cannot drop an inherited column directly"
+			suggestion = "Review the inherited column on the parent table"
+		case "column_in_partition_key":
+			message = "PostgreSQL cannot drop a column in the table's partition key"
+			suggestion = "Review the partition key before dropping this column"
+		case "column_partition_parent_only":
+			message = "PostgreSQL cannot drop the column from only the partitioned parent while partitions exist"
+			suggestion = "Review the column on the partitions before changing the parent"
 		case "column_has_direct_dependency":
 			message = "A PostgreSQL view, materialized view or generated column depends on the selected column"
 			suggestion = "Review the direct dependency before dropping the column with RESTRICT"

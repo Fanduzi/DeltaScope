@@ -243,9 +243,9 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	case "ddl.pg.alter.set_schema.target.valid":
 		return "Checks the PostgreSQL 17 destination schema and exact collisions for an ordinary table, its row and array types, attached indexes and column-owned sequences."
 	case "ddl.pg.alter.add_foreign_key.targets.valid":
-		return "Checks PostgreSQL 17 ADD FOREIGN KEY relation and column identities, referenced key eligibility, and column counts on fresh ordinary tables, including NOT VALID declarations."
+		return "Checks PostgreSQL 17 ADD FOREIGN KEY relation and column identities, referenced key eligibility, column counts and ON DELETE SET column lists on fresh ordinary tables, including NOT VALID declarations."
 	case "ddl.pg.alter.constraint_using_index.valid":
-		return "Checks catalog preconditions for using an exact existing index in a PostgreSQL 17 PRIMARY KEY or UNIQUE constraint. Checks index ownership, shape and key sort, collation and options."
+		return "Checks catalog preconditions for using an exact existing index in a PostgreSQL 17 PRIMARY KEY or UNIQUE constraint. Checks index ownership, shape, key sort, collation, options and observed default operator classes."
 	case "ddl.pg.alter.add_check.name.available":
 		return "Checks a single explicitly named CHECK or CHECK NOT VALID against the exact constraint directory of a fresh ordinary PG17 table."
 	case "ddl.pg.alter.column_type.destination.valid":

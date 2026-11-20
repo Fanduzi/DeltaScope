@@ -30,6 +30,8 @@ func TestPGConstraintUsingIndex(t *testing.T) {
 			s.DDL.Alter[0].Options["constraint_type"] = "unique"
 			f.NullsNotDistinct = true
 		}},
+		{name: "nondefault opclass", reason: "constraint_index_nondefault_opclass", change: func(_ *spec.Statement, f *spec.PGConstraintUsingIndex) { f.OpclassesDefault = false }},
+		{name: "unobserved default opclass", gap: "index.constraint_default_opclasses", change: func(_ *spec.Statement, f *spec.PGConstraintUsingIndex) { f.OpclassesDefaultKnown = false }},
 		{name: "unobserved key", gap: "index.constraint_key_defaults", change: func(_ *spec.Statement, f *spec.PGConstraintUsingIndex) { f.KeyDefaultsKnown = false }},
 		{name: "misbound", gap: "target_table.pg_constraint_index", change: func(_ *spec.Statement, f *spec.PGConstraintUsingIndex) { f.Name = "EXACT INDEX" }},
 		{name: "prior DDL", gap: "target_table.pg_constraint_index", change: func(s *spec.Statement, _ *spec.PGConstraintUsingIndex) {
@@ -46,7 +48,7 @@ func TestPGConstraintUsingIndex(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			const name = " Exact Index "
-			facts := spec.PGConstraintUsingIndex{Schema: "app", Table: "t", Name: name, Kind: "i", IndexKnown: true, OnTable: true, Valid: true, Unique: true, BTree: true, KeyDefaults: true, KeyDefaultsKnown: true}
+			facts := spec.PGConstraintUsingIndex{Schema: "app", Table: "t", Name: name, Kind: "i", IndexKnown: true, OnTable: true, Valid: true, Unique: true, BTree: true, KeyDefaults: true, KeyDefaultsKnown: true, OpclassesDefault: true, OpclassesDefaultKnown: true}
 			s := spec.Statement{Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL,
 				DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Schema: "app", Name: "t"},
 					Alter: []spec.Alter{{Action: "add_constraint", PGUsingIndexName: name, Options: map[string]string{"constraint_type": "primary_key", "using_index": "true"}}}},

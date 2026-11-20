@@ -2,6 +2,7 @@ package ddl
 
 import (
 	"context"
+	"slices"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -62,6 +63,23 @@ func assessPGForeignKeyTargets(s spec.Statement) (reason, fact, column string) {
 		}
 		if member.System {
 			return "foreign_key_source_system_column", "", name
+		}
+	}
+	// PostgreSQL resolves every action-column identity before checking the subset.
+	for _, name := range target.DeleteSetColumns {
+		member, known := s.Metadata.TargetTable.PGColumns.FindColumn(name)
+		switch {
+		case !known:
+			return "", "target_table.pg_columns", ""
+		case member == nil:
+			return "foreign_key_delete_set_column_absent", "", name
+		case member.System:
+			return "foreign_key_delete_set_system_column", "", name
+		}
+	}
+	for _, name := range target.DeleteSetColumns {
+		if !slices.Contains(target.Columns, name) {
+			return "foreign_key_delete_set_column_outside_key", "", name
 		}
 	}
 	referenced := make(map[string]struct{}, len(target.ReferencedColumns))
@@ -169,6 +187,12 @@ func (r pgForeignKeyTargetRule) Evaluate(ctx context.Context, s spec.Statement) 
 		message = "A declared PostgreSQL foreign-key reference column does not exist"
 	case "foreign_key_source_system_column", "foreign_key_reference_system_column":
 		message = "PostgreSQL cannot use system columns in foreign keys"
+	case "foreign_key_delete_set_column_absent":
+		message = "A declared ON DELETE SET column does not exist on the PostgreSQL source table"
+	case "foreign_key_delete_set_system_column":
+		message = "PostgreSQL cannot use a system column in an ON DELETE SET column list"
+	case "foreign_key_delete_set_column_outside_key":
+		message = "PostgreSQL requires each ON DELETE SET column to be part of the foreign key"
 	case "foreign_key_reference_column_duplicate":
 		message = "PostgreSQL foreign keys cannot repeat a referenced column"
 	case "foreign_key_reference_primary_key_absent":

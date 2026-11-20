@@ -60,6 +60,23 @@ func pgColumnIdentityTarget(s spec.Statement, index int, ruleID string) (reason,
 		return "", "target_table.pg_columns" // PostgreSQL can reorder subcommands by execution phase.
 	}
 	a := s.DDL.Alter[index]
+	if a.Action == "rename_column" && spec.PGColumnTraversalTarget(s) != "" {
+		facts, table := s.Metadata.PGColumnTraversal, s.DDL.Table
+		if facts != nil && facts.Schema == table.Schema && facts.Table == table.Name && facts.Column == a.Name {
+			reason := ""
+			if s.DDL.PGTableOnly && facts.AttachedChildren {
+				reason = "column_rename_requires_child_traversal"
+			} else if facts.Inherited {
+				reason = "column_rename_inherited"
+			}
+			if reason != "" {
+				if ruleID == ruleIDAlterRenameColumnExistsRequire {
+					return reason, ""
+				}
+				return "", ""
+			}
+		}
+	}
 	catalog := pgColumnTargetCatalog(s, index)
 	if catalog != nil && catalog.Typed {
 		return "", "target_table.pg_columns"
@@ -157,6 +174,10 @@ func evaluatePGColumnIdentity(ctx context.Context, s spec.Statement, action, rul
 			message = fmt.Sprintf("PostgreSQL does not allow renaming system column %q", name)
 		case "system_column_name_conflict":
 			message = fmt.Sprintf("column name %q conflicts with a PostgreSQL system column", name)
+		case "column_rename_inherited":
+			message = "PostgreSQL cannot rename an inherited column directly"
+		case "column_rename_requires_child_traversal":
+			message = "PostgreSQL requires the column rename to include the child tables"
 		}
 		findings = append(findings, rule.Finding{
 			Level: level, Message: message,
