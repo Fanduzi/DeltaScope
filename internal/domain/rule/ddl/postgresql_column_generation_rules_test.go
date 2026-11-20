@@ -93,6 +93,33 @@ func TestPGColumnGenerationTargetArms(t *testing.T) {
 	}
 }
 
+func TestPGSetDefaultReferenceTargetPrecedence(t *testing.T) {
+	for _, tc := range []struct {
+		name, action, reason, missing string
+		column                        *spec.PGColumnState
+		stale                         bool
+	}{
+		{name: "ordinary column", action: "set_default", column: &spec.PGColumnState{}, reason: "default_expression_reference_inapplicable"},
+		{name: "identity column", action: "set_default", column: &spec.PGColumnState{Identity: "a"}, reason: "generation_default_conflict"},
+		{name: "generated column", action: "set_default", column: &spec.PGColumnState{Generated: "s"}, reason: "generation_default_conflict"},
+		{name: "absent column", action: "set_default", reason: "column_absent"},
+		{name: "stale column", action: "set_default", column: &spec.PGColumnState{}, stale: true, missing: "target_table.pg_columns"},
+		{name: "drop default", action: "drop_default", column: &spec.PGColumnState{}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := pgGenerationTransitionStatement(tc.action, tc.column)
+			s.DDL.Alter[0].PGColumnTransition.DefaultHasDisallowedReference = true
+			if tc.stale {
+				s.Metadata.TargetTable.PGColumns = nil
+			}
+			r := pgColumnGenerationRule{id: ruleIDPGColumnGenerationTransitionValid, level: rule.LevelBlocker}
+			if reason, missing := r.assess(s, 0); reason != tc.reason || missing != tc.missing {
+				t.Fatalf("got reason %q and missing %q, want %q and %q", reason, missing, tc.reason, tc.missing)
+			}
+		})
+	}
+}
+
 func TestPGDropNotNullReplicaIdentityKey(t *testing.T) {
 	r := pgColumnGenerationRule{id: ruleIDPGColumnGenerationTransitionValid, level: rule.LevelBlocker}
 	for _, tc := range []struct {

@@ -50,6 +50,34 @@ func TestPGColumnTransitionSeam(t *testing.T) {
 	}
 }
 
+func TestPGSetDefaultReferenceFacts(t *testing.T) {
+	for _, tc := range []struct {
+		expression string
+		invalid    bool
+	}{
+		{"id", true},
+		{"CASE WHEN true THEN COALESCE((id + 1)::int, 0) ELSE 0 END", true},
+		{"ARRAY[1,(SELECT 2)]", true},
+		{"(SELECT 2)", true},
+		{"COALESCE(id,(SELECT 2))", true},
+		{"pg_catalog.abs(-2)", false},
+		{`CAST(1 AS numeric("5"))`, false},
+		{"CURRENT_TIMESTAMP", false},
+		{"'id (SELECT 2)'", false},
+	} {
+		t.Run(tc.expression, func(t *testing.T) {
+			a := extractPostgreSQLStatement(t, `ALTER TABLE app.t ALTER COLUMN "ID" SET DEFAULT `+tc.expression).DDL.Alter[0]
+			if a.PGColumnTransition == nil || a.PGColumnTransition.DefaultHasDisallowedReference != tc.invalid {
+				t.Fatalf("unexpected SET DEFAULT facts: %+v", a.PGColumnTransition)
+			}
+			encoded, err := json.Marshal(a)
+			if err != nil || bytes.Contains(encoded, []byte("DefaultHasDisallowedReference")) || bytes.Contains(encoded, []byte(tc.expression)) {
+				t.Fatalf("unexpected public ALTER action: %s (%v)", encoded, err)
+			}
+		})
+	}
+}
+
 func TestPGColumnTransitionInt64AndUnknown(t *testing.T) {
 	s := extractPostgreSQLStatement(t, "ALTER TABLE t ALTER COLUMN id RESTART WITH 2147483648 SET INCREMENT -9223372036854775808 SET MAXVALUE 9223372036854775807")
 	f := s.DDL.Alter[0].PGColumnTransition

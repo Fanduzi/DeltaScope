@@ -3,11 +3,12 @@ package spec
 // PGColumnTransition preserves authored existing-column generation changes.
 // Legacy action/options projections lose guards, duplicates and 64-bit values.
 type PGColumnTransition struct {
-	IfExists  bool
-	Mode      string // first a/d member; ModeCount must prove uniqueness
-	ModeCount int
-	Options   []SequenceOption // source order, never last-wins
-	Unmodeled bool
+	IfExists                      bool
+	Mode                          string // first a/d member; ModeCount must prove uniqueness
+	ModeCount                     int
+	Options                       []SequenceOption // source order, never last-wins
+	Unmodeled                     bool
+	DefaultHasDisallowedReference bool // Raw column reference or subquery in SET DEFAULT.
 }
 
 // PGIdentitySequenceState contains only dependency-bound stable catalog facts.

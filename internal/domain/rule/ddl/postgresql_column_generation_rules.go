@@ -163,6 +163,9 @@ func pgColumnTransitionTarget(s spec.Statement, index int) (*spec.PGColumnState,
 		if c.Identity != "" || c.Generated != "" {
 			return c, "generation_default_conflict", ""
 		}
+		if a.Action == "set_default" && a.PGColumnTransition != nil && a.PGColumnTransition.DefaultHasDisallowedReference {
+			return c, "default_expression_reference_inapplicable", ""
+		}
 	case "drop_not_null":
 		if c.Identity != "" || c.PrimaryKey {
 			return c, "not_null_required_by_identity_or_primary_key", ""
@@ -268,6 +271,9 @@ func (r pgColumnGenerationRule) Evaluate(ctx context.Context, s spec.Statement) 
 			message = "A PostgreSQL descendant partition still allows NULL in this column"
 		case "drop_expression_inherited_column":
 			message = "PostgreSQL cannot drop a generation expression from an inherited column directly"
+		case "default_expression_reference_inapplicable":
+			message = "PostgreSQL column defaults cannot contain column references or subqueries"
+			suggestion = "Use a default expression that can be evaluated without a row or subquery"
 		}
 		switch r.id {
 		case ruleIDPGAlterIdentityOptionsValid:

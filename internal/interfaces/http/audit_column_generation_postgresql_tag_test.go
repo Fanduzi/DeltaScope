@@ -31,6 +31,7 @@ func TestHandlerPGColumnGeneration(t *testing.T) {
 		member              deltascope.PGColumnState
 		unknown             bool
 	}{
+		{"SET DEFAULT COALESCE(id, 2)", "ddl.pg.alter.column.generation.transition.valid", "reject", deltascope.PGColumnState{Name: "id"}, false},
 		{"DROP NOT NULL", "ddl.pg.alter.column.generation.transition.valid", "reject", deltascope.PGColumnState{Name: "id", TypeWidth: 32, NotNull: true, ReplicaIdentityKeyKnown: true, ReplicaIdentityKey: true}, false},
 		{"ADD GENERATED ALWAYS AS IDENTITY", "ddl.pg.alter.column.generation.transition.valid", "reject", identity, false},
 		{"ADD GENERATED ALWAYS AS IDENTITY(CACHE 0)", "ddl.pg.alter.identity.sequence_options.valid", "reject", deltascope.PGColumnState{Name: "id", TypeWidth: 64, NotNull: true}, false},

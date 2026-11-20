@@ -1,0 +1,19 @@
+name: column_set_default_references
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    t:
+      exists: true
+      pg_relation: {name: t, kind: r}
+      pg_columns:
+        ordinary: true
+        columns: [{name: value, identity: '', generated: '', type_width: 32, not_null: false, has_default: false, primary_key: false}]
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.column.generation.transition.valid]

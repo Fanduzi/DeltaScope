@@ -18,6 +18,7 @@ func TestAuditPGColumnGenerationContract(t *testing.T) {
 		member           PGColumnState
 		unknown          bool
 	}{
+		{"ALTER TABLE app.t ALTER COLUMN id SET DEFAULT (SELECT 2)", "ddl.pg.alter.column.generation.transition.valid", "reject", PGColumnState{Name: "id"}, false},
 		{"ALTER TABLE app.t ALTER COLUMN id DROP NOT NULL", "ddl.pg.alter.column.generation.transition.valid", "reject", PGColumnState{Name: "id", TypeWidth: 32, NotNull: true, ReplicaIdentityKeyKnown: true, ReplicaIdentityKey: true}, false},
 		{"ALTER TABLE app.t ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY", "ddl.pg.alter.column.generation.transition.valid", "reject", PGColumnState{Name: "id", Identity: "d", TypeWidth: 64, NotNull: true}, false},
 		{"ALTER TABLE app.t ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY(CACHE 0)", "ddl.pg.alter.identity.sequence_options.valid", "reject", PGColumnState{Name: "id", TypeWidth: 64, NotNull: true}, false},

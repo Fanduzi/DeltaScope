@@ -5,6 +5,8 @@ package postgresql
 import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	pg_query "github.com/pganalyze/pg_query_go/v6"
+	"google.golang.org/protobuf/reflect/protopath"
+	"google.golang.org/protobuf/reflect/protorange"
 )
 
 func pgColumnTransitionFromCmd(cmd *pg_query.AlterTableCmd) *spec.PGColumnTransition {
@@ -27,6 +29,10 @@ func pgColumnTransitionFromCmd(cmd *pg_query.AlterTableCmd) *spec.PGColumnTransi
 			return facts
 		}
 		options = list.GetItems()
+	case pg_query.AlterTableType_AT_ColumnDefault:
+		if expression := cmd.GetDef(); expression != nil {
+			facts.DefaultHasDisallowedReference = defaultHasDisallowedReference(expression)
+		}
 	}
 	for _, node := range options {
 		d := node.GetDefElem()
@@ -47,4 +53,23 @@ func pgColumnTransitionFromCmd(cmd *pg_query.AlterTableCmd) *spec.PGColumnTransi
 		facts.Unmodeled = facts.Unmodeled || !known
 	}
 	return facts
+}
+
+func defaultHasDisallowedReference(expression *pg_query.Node) bool {
+	found := false
+	_ = protorange.Range(expression.ProtoReflect(), func(path protopath.Values) error {
+		field := path.Index(-1)
+		if descriptor := field.Step.FieldDescriptor(); descriptor != nil && !descriptor.IsList() && descriptor.Message() != nil {
+			switch field.Value.Message().Interface().(type) {
+			case *pg_query.TypeName:
+				// PostgreSQL accepts simple identifiers as type modifiers.
+				return protorange.Break
+			case *pg_query.ColumnRef, *pg_query.SubLink:
+				found = true
+				return protorange.Terminate
+			}
+		}
+		return nil
+	})
+	return found
 }
