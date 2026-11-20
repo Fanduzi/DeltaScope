@@ -13,11 +13,11 @@ import (
 func TestLoadPGConstraintStates(t *testing.T) {
 	for _, empty := range []bool{false, true} {
 		t.Run(map[bool]string{false: "complete", true: "empty"}[empty], func(t *testing.T) {
-			rows := [][]driver.Value{{"ck", "c", false}, {"CK", "u", true}, {"fk", "f", false}, {"pk", "p", true}, {"ck", "c", false}}
+			rows := [][]driver.Value{{"ck", "c", false, true, nil}, {"CK", "u", true, nil, nil}, {"fk", "f", false, nil, nil}, {"pk", "p", true, nil, nil}, {"ck", "c", false, false, true}}
 			if empty {
 				rows = nil
 			}
-			db, log := openTestDB(t, map[string]testQueryResult{"from pg_catalog.pg_constraint pc": {columns: []string{"conname", "contype", "convalidated"}, rows: rows}})
+			db, log := openTestDB(t, map[string]testQueryResult{"from pg_catalog.pg_constraint pc": {columns: []string{"conname", "contype", "convalidated", "inherited", "partition_children"}, rows: rows}})
 			defer db.Close()
 			s := &spec.TableSnapshot{Schema: "app", Table: &spec.Table{Name: "t"}}
 			if err := NewProvider(db).loadPGConstraintStates(context.Background(), s); err != nil {
@@ -27,6 +27,9 @@ func TestLoadPGConstraintStates(t *testing.T) {
 				t.Fatalf("states=%+v", s.PGConstraints)
 			}
 			if !empty {
+				if first, last := s.PGConstraints[0], s.PGConstraints[4]; !first.InheritanceKnown || !first.Inherited || !last.InheritanceKnown || last.Inherited || s.PGConstraints[1].InheritanceKnown || first.PartitionCheckHasChildrenKnown || !last.PartitionCheckHasChildrenKnown || !last.PartitionCheckHasChildren {
+					t.Fatalf("incorrect inheritance observations: %+v", s.PGConstraints)
+				}
 				if _, known := s.FindPGConstraint("ck"); known {
 					t.Fatal("duplicate became last-wins")
 				}
@@ -41,6 +44,7 @@ func TestLoadPGConstraintStates(t *testing.T) {
 			}
 			for _, predicate := range []string{
 				"tbl.oid OPERATOR(pg_catalog.=) pc.conrelid",
+				"pc.coninhcount OPERATOR(pg_catalog.>) 0",
 				"n.oid OPERATOR(pg_catalog.=) tbl.relnamespace",
 				"n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text",
 				"tbl.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text",
@@ -57,8 +61,8 @@ func TestLoadPGConstraintStateErrorsStayUnknown(t *testing.T) {
 	failure := errors.New("catalog unavailable")
 	for name, result := range map[string]testQueryResult{
 		"query":   {err: failure},
-		"scan":    {columns: []string{"conname", "contype", "convalidated"}, rows: [][]driver.Value{{"ck", "c", "not-a-bool"}}},
-		"iterate": {columns: []string{"conname", "contype", "convalidated"}, rows: [][]driver.Value{{"ck", "c", true}}, rowErr: failure},
+		"scan":    {columns: []string{"conname", "contype", "convalidated", "inherited", "partition_children"}, rows: [][]driver.Value{{"ck", "c", "not-a-bool", false, nil}}},
+		"iterate": {columns: []string{"conname", "contype", "convalidated", "inherited", "partition_children"}, rows: [][]driver.Value{{"ck", "c", true, false, nil}}, rowErr: failure},
 	} {
 		t.Run(name, func(t *testing.T) {
 			db, _ := openTestDB(t, map[string]testQueryResult{"from pg_catalog.pg_constraint pc": result})

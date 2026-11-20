@@ -32,7 +32,7 @@ comparisons for the member and scope binding.
 | replica_identity.go | Resolves one real PostgreSQL replica-identity index candidate in its owning table schema, with uniqueness, predicate/expression presence and actual key nullability |
 | relation_state_test.go | Verifies exact relation reads, absent and non-table kinds, unbound scopes, error propagation and JSON privacy |
 | drop_constraint_reference.go | Checks the exact supporting index ownership and normal foreign-key dependency for one PostgreSQL 17 primary or unique constraint |
-| constraint_state.go | Loads target-bound `pg_constraint` names, kinds and validated flags using exact parameterized schema and table comparisons bound to `pg_catalog`. Read errors prevent publication of the directory, and duplicate rows stay visible |
+| constraint_state.go | Loads target-bound `pg_constraint` names, kinds, validated flags and private CHECK inheritance and partition-child observations using exact parameterized schema and table comparisons bound to `pg_catalog`. Read errors prevent publication of the directory, and duplicate rows stay visible |
 | constraint_state_test.go | Pins complete/empty/quoted/duplicate catalog reads and query/scan/iteration errors without a live database |
 | provider.go | Loads normalized dialect, schema, instance-fact (including private known/support lz4 facts from the existing pg_catalog.pg_settings enum read with system-qualified version and comparison operators), table snapshot, and plain-`EXPLAIN` plan-estimate data from PostgreSQL catalogs and planner stats |
 | provider_test.go | Verifies catalog-backed schema discovery, reltuples/statistics loading, PK constraint truth, and plain-`EXPLAIN` estimation without a live database |

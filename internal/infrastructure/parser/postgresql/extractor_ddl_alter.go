@@ -32,6 +32,7 @@ func extractAlterTableStmt(statement spec.Statement, stmt *pg_query.AlterTableSt
 		Operation:               spec.DDLOperationAlterTable,
 		PGTableIfExists:         stmt.GetMissingOk(),
 		PGTableCatalogQualified: stmt.GetRelation().GetCatalogname() != "",
+		PGTableOnly:             !stmt.GetRelation().GetInh(),
 		Table:                   tableFromRangeVar(stmt.GetRelation()),
 		Alter:                   make([]spec.Alter, 0, len(stmt.GetCmds())),
 	}

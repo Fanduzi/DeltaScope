@@ -6,6 +6,12 @@ type PGConstraintState struct {
 	Name      string
 	Type      string // pg_constraint.contype, not a declaration's assumed kind
 	Validated bool
+	// InheritanceKnown marks a persistent ordinary or partitioned CHECK observation.
+	InheritanceKnown bool `json:"-"`
+	Inherited        bool `json:"-"`
+	// PartitionCheckHasChildren records whether a partitioned CHECK propagates to direct children.
+	PartitionCheckHasChildren      bool `json:"-"`
+	PartitionCheckHasChildrenKnown bool `json:"-"`
 }
 
 // FindPGConstraint returns a uniquely proven member or proven absence. False

@@ -2,7 +2,11 @@
 
 package postgresql
 
-import "testing"
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+)
 
 func TestDropConstraintTargetDeclaration(t *testing.T) {
 	for _, tc := range []struct{ sql, guard, cascade string }{
@@ -22,6 +26,24 @@ func TestDropConstraintTargetDeclaration(t *testing.T) {
 			}
 			if tc.cascade == "true" && a.Name != "CK" {
 				t.Fatalf("quoted name=%q", a.Name)
+			}
+		})
+	}
+}
+
+func TestDropConstraintTargetTraversal(t *testing.T) {
+	for _, c := range []struct {
+		prefix string
+		only   bool
+	}{{"ALTER TABLE app.t", false}, {"ALTER TABLE ONLY app.t", true}, {"ALTER TABLE IF EXISTS ONLY app.t", true}, {"ALTER TABLE app.t *", false}} {
+		t.Run(c.prefix, func(t *testing.T) {
+			s := extractPostgreSQLStatement(t, c.prefix+" DROP CONSTRAINT ck")
+			if s.DDL == nil || s.DDL.PGTableOnly != c.only {
+				t.Fatalf("DDL=%+v", s.DDL)
+			}
+			b, err := json.Marshal(s.DDL)
+			if err != nil || strings.Contains(string(b), "PGTableOnly") {
+				t.Fatalf("private traversal flag=%s err=%v", b, err)
 			}
 		})
 	}
