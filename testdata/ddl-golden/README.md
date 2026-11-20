@@ -3,6 +3,13 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D24 PostgreSQL DROP CONSTRAINT RESTRICT
+
+Focused T37 passed 377/377 cases and 10,087 assertions. Nine added
+cases verify supporting-index dependencies, self-reference and CASCADE as
+a separate native control. The legacy DROP batch asserts both freshness gaps.
+[Decision](../../docs/decisions/2026-11-20-postgresql-drop-constraint-foreign-key.md)
+
 ## T37 D23 PostgreSQL foreign-key referenced keys
 
 Delivered `c34c6e8a` passed 50 tasks with 3,700/3,700 cases and 68,846

@@ -8291,7 +8291,17 @@
                 "file:testdata/ddl-golden/T37.json#constraint-target-drop-offline",
                 "file:testdata/ddl-golden/T37.json#constraint-target-drop-guard-offline",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-target-prior-ddl",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_target_invalid.expected.yaml#ddl.pg.alter.drop_constraint.target.require"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_target_invalid.expected.yaml#ddl.pg.alter.drop_constraint.target.require",
+                "file:testdata/ddl-golden/T37.json#drop-fk-reference-offline",
+                "file:testdata/ddl-golden/T37.json#drop-fk-reference-disabled",
+                "file:testdata/ddl-golden/T37.json#pg-drop-fk-reference-primary-restrict",
+                "file:testdata/ddl-golden/T37.json#pg-drop-fk-reference-unique-restrict",
+                "file:testdata/ddl-golden/T37.json#pg-drop-fk-reference-self-reference",
+                "file:testdata/ddl-golden/T37.json#pg-drop-fk-reference-cascade",
+                "file:testdata/ddl-golden/T37.json#pg-drop-fk-reference-other-index",
+                "file:testdata/ddl-golden/T37.json#pg-drop-fk-reference-guarded-absence",
+                "file:testdata/ddl-golden/T37.json#pg-drop-fk-reference-stale",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_constraint_foreign_key.expected.yaml#ddl.pg.alter.drop_constraint.target.require"
               ]
             }
           ]

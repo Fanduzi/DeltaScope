@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-drop-fk-reference": {"enable": {"ddl.pg.alter.drop_constraint.target.require": {"level": "blocker"}}},
    "pg-foreign-key-keys": {"enable": {"ddl.pg.alter.add_foreign_key.targets.valid": {"level": "blocker"}, "ddl.pg.alter.add_foreign_key.not_valid.require": {"level": "warning"}}},
    "pg-foreign-key-targets": {"enable": {"ddl.pg.alter.add_foreign_key.targets.valid": {"level": "blocker"}, "ddl.pg.alter.add_foreign_key.not_valid.require": {"level": "warning"}}},
    "pg-constraint-index": {"enable": {"ddl.pg.alter.constraint_using_index.valid": {"level": "blocker"}, "ddl.alter.add_index.exists.forbid": {"level": "blocker"}, "ddl.pg.alter.add_primary_key.concurrent_index.warn": {"level": "warning"}, "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory": {"level": "notice"}}},
@@ -1889,6 +1890,51 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "drop-fk-reference-offline",
+   "dialect": "postgresql",
+   "policy": "pg-drop-fk-reference",
+   "sql": "ALTER TABLE app.parent DROP CONSTRAINT \" Exact Key \"",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","reason_code": "unproven_constraint_target","required_facts": ["target_table.pg_constraints"]}],
+    "serialized_not_contains": ["PGDropConstraintReference"],
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "drop-fk-reference-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.parent DROP CONSTRAINT \" Exact Key \"",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropConstraintReference"]
+   }
+  },
   {
    "id": "fk-keys-offline",
    "dialect": "postgresql",
@@ -4613,6 +4659,347 @@
   }
  ],
  "metadata_cases": [
+  {
+   "id": "pg-drop-fk-reference-primary-restrict",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-fk-reference",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdrfk_primary_restrict"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdrfk_primary_restrict CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_primary_restrict'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdrfk_primary_restrict.parent DROP CONSTRAINT \" Exact Key \"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_primary_restrict'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdrfk_primary_restrict","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdrfk_primary_restrict.child(id int, payload text); INSERT INTO pgdrfk_primary_restrict.child VALUES(1,'keep'); CREATE TABLE pgdrfk_primary_restrict.parent(id int, ref int); INSERT INTO pgdrfk_primary_restrict.parent VALUES(1,1); CREATE TABLE pgdrfk_primary_restrict.neighbor(id int); CREATE SEQUENCE pgdrfk_primary_restrict.guard START 7; ALTER TABLE pgdrfk_primary_restrict.parent ADD CONSTRAINT \" Exact Key \" PRIMARY KEY (id); ALTER TABLE pgdrfk_primary_restrict.child ADD CONSTRAINT private_child_fk FOREIGN KEY (id) REFERENCES pgdrfk_primary_restrict.parent(id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdrfk_primary_restrict.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_primary_restrict'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropConstraintReference","private_child_fk","private_self_fk"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","metadata": {"reason_code": "constraint_referenced_by_foreign_key","target_constraint_kind": "p"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdrfk_primary_restrict.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_primary_restrict'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_primary_restrict'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdrfk_primary_restrict.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps both original rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgdrfk_primary_restrict.child) AND (SELECT count(*)=1 AND bool_and(id=1 AND ref=1) FROM pgdrfk_primary_restrict.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdrfk_primary_restrict.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 2BP01","sql": "\\set VERBOSITY verbose\nALTER TABLE pgdrfk_primary_restrict.parent DROP CONSTRAINT \" Exact Key \"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  2BP01:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdrfk_primary_restrict.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_primary_restrict'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_primary_restrict'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdrfk_primary_restrict.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps both original rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgdrfk_primary_restrict.child) AND (SELECT count(*)=1 AND bool_and(id=1 AND ref=1) FROM pgdrfk_primary_restrict.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdrfk_primary_restrict.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdrfk_primary_restrict CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_primary_restrict'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-fk-reference-unique-restrict",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-fk-reference",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdrfk_unique_restrict"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdrfk_unique_restrict CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_unique_restrict'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdrfk_unique_restrict.parent DROP CONSTRAINT \" Exact Key \" RESTRICT",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_unique_restrict'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdrfk_unique_restrict","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdrfk_unique_restrict.child(id int, payload text); INSERT INTO pgdrfk_unique_restrict.child VALUES(1,'keep'); CREATE TABLE pgdrfk_unique_restrict.parent(id int, ref int); INSERT INTO pgdrfk_unique_restrict.parent VALUES(1,1); CREATE TABLE pgdrfk_unique_restrict.neighbor(id int); CREATE SEQUENCE pgdrfk_unique_restrict.guard START 7; ALTER TABLE pgdrfk_unique_restrict.parent ADD CONSTRAINT \" Exact Key \" UNIQUE (id); ALTER TABLE pgdrfk_unique_restrict.child ADD CONSTRAINT private_child_fk FOREIGN KEY (id) REFERENCES pgdrfk_unique_restrict.parent(id) NOT VALID; ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdrfk_unique_restrict.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_unique_restrict'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropConstraintReference","private_child_fk","private_self_fk"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","metadata": {"reason_code": "constraint_referenced_by_foreign_key","target_constraint_kind": "u"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdrfk_unique_restrict.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_unique_restrict'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_unique_restrict'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdrfk_unique_restrict.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps both original rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgdrfk_unique_restrict.child) AND (SELECT count(*)=1 AND bool_and(id=1 AND ref=1) FROM pgdrfk_unique_restrict.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdrfk_unique_restrict.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 2BP01","sql": "\\set VERBOSITY verbose\nALTER TABLE pgdrfk_unique_restrict.parent DROP CONSTRAINT \" Exact Key \" RESTRICT","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  2BP01:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdrfk_unique_restrict.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_unique_restrict'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_unique_restrict'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdrfk_unique_restrict.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps both original rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgdrfk_unique_restrict.child) AND (SELECT count(*)=1 AND bool_and(id=1 AND ref=1) FROM pgdrfk_unique_restrict.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdrfk_unique_restrict.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdrfk_unique_restrict CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_unique_restrict'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-fk-reference-self-reference",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-fk-reference",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdrfk_self_reference"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdrfk_self_reference CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_self_reference'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdrfk_self_reference.parent DROP CONSTRAINT \" Exact Key \" RESTRICT",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_self_reference'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdrfk_self_reference","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdrfk_self_reference.child(id int, payload text); INSERT INTO pgdrfk_self_reference.child VALUES(1,'keep'); CREATE TABLE pgdrfk_self_reference.parent(id int, ref int); INSERT INTO pgdrfk_self_reference.parent VALUES(1,1); CREATE TABLE pgdrfk_self_reference.neighbor(id int); CREATE SEQUENCE pgdrfk_self_reference.guard START 7; ALTER TABLE pgdrfk_self_reference.parent ADD CONSTRAINT \" Exact Key \" PRIMARY KEY (id); ALTER TABLE pgdrfk_self_reference.parent ADD CONSTRAINT private_self_fk FOREIGN KEY (ref) REFERENCES pgdrfk_self_reference.parent(id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdrfk_self_reference.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_self_reference'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropConstraintReference","private_child_fk","private_self_fk"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.drop_constraint.target.require","metadata": {"reason_code": "constraint_referenced_by_foreign_key","target_constraint_kind": "p"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdrfk_self_reference.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_self_reference'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_self_reference'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdrfk_self_reference.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps both original rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgdrfk_self_reference.child) AND (SELECT count(*)=1 AND bool_and(id=1 AND ref=1) FROM pgdrfk_self_reference.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdrfk_self_reference.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 2BP01","sql": "\\set VERBOSITY verbose\nALTER TABLE pgdrfk_self_reference.parent DROP CONSTRAINT \" Exact Key \" RESTRICT","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  2BP01:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdrfk_self_reference.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_self_reference'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_self_reference'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdrfk_self_reference.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps both original rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgdrfk_self_reference.child) AND (SELECT count(*)=1 AND bool_and(id=1 AND ref=1) FROM pgdrfk_self_reference.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdrfk_self_reference.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdrfk_self_reference CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_self_reference'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-fk-reference-cascade",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-fk-reference",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdrfk_cascade"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdrfk_cascade CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_cascade'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdrfk_cascade.parent DROP CONSTRAINT \" Exact Key \" CASCADE",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_cascade'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdrfk_cascade","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdrfk_cascade.child(id int, payload text); INSERT INTO pgdrfk_cascade.child VALUES(1,'keep'); CREATE TABLE pgdrfk_cascade.parent(id int, ref int); INSERT INTO pgdrfk_cascade.parent VALUES(1,1); CREATE TABLE pgdrfk_cascade.neighbor(id int); CREATE SEQUENCE pgdrfk_cascade.guard START 7; ALTER TABLE pgdrfk_cascade.parent ADD CONSTRAINT \" Exact Key \" PRIMARY KEY (id); ALTER TABLE pgdrfk_cascade.child ADD CONSTRAINT private_child_fk FOREIGN KEY (id) REFERENCES pgdrfk_cascade.parent(id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdrfk_cascade.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_cascade'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropConstraintReference","private_child_fk","private_self_fk"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdrfk_cascade.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_cascade'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_cascade'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdrfk_cascade.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps both original rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgdrfk_cascade.child) AND (SELECT count(*)=1 AND bool_and(id=1 AND ref=1) FROM pgdrfk_cascade.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdrfk_cascade.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgdrfk_cascade.parent DROP CONSTRAINT \" Exact Key \" CASCADE","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "removes only the selected key and dependent FK","sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE conrelid IN ('pgdrfk_cascade.parent'::regclass,'pgdrfk_cascade.child'::regclass) AND conname IN (' Exact Key ','private_child_fk')","expect": "0"},
+    {"assert": "keeps both original rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgdrfk_cascade.child) AND (SELECT count(*)=1 AND bool_and(id=1 AND ref=1) FROM pgdrfk_cascade.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdrfk_cascade.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdrfk_cascade CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_cascade'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-fk-reference-other-index",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-fk-reference",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdrfk_other_index"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdrfk_other_index CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_other_index'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdrfk_other_index.parent DROP CONSTRAINT \" Alternate Key \"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_other_index'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdrfk_other_index","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdrfk_other_index.child(id int, payload text); INSERT INTO pgdrfk_other_index.child VALUES(1,'keep'); CREATE TABLE pgdrfk_other_index.parent(id int, ref int); INSERT INTO pgdrfk_other_index.parent VALUES(1,1); CREATE TABLE pgdrfk_other_index.neighbor(id int); CREATE SEQUENCE pgdrfk_other_index.guard START 7; ALTER TABLE pgdrfk_other_index.parent ADD CONSTRAINT \" Exact Key \" PRIMARY KEY (id); ALTER TABLE pgdrfk_other_index.child ADD CONSTRAINT private_child_fk FOREIGN KEY (id) REFERENCES pgdrfk_other_index.parent(id); ALTER TABLE pgdrfk_other_index.parent ADD CONSTRAINT \" Alternate Key \" UNIQUE(id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdrfk_other_index.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_other_index'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropConstraintReference","private_child_fk","private_self_fk"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdrfk_other_index.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_other_index'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_other_index'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdrfk_other_index.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps both original rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgdrfk_other_index.child) AND (SELECT count(*)=1 AND bool_and(id=1 AND ref=1) FROM pgdrfk_other_index.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdrfk_other_index.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgdrfk_other_index.parent DROP CONSTRAINT \" Alternate Key \"","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "retains the exact FK","sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE conrelid='pgdrfk_other_index.child'::regclass AND conname='private_child_fk'","expect": "1"},
+    {"assert": "alternate unique constraint removed","sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE conrelid='pgdrfk_other_index.parent'::regclass AND conname=' Alternate Key '","expect": "0"},
+    {"assert": "keeps both original rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgdrfk_other_index.child) AND (SELECT count(*)=1 AND bool_and(id=1 AND ref=1) FROM pgdrfk_other_index.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdrfk_other_index.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdrfk_other_index CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_other_index'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-fk-reference-guarded-absence",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-fk-reference",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdrfk_guarded_absence"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdrfk_guarded_absence CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_guarded_absence'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdrfk_guarded_absence.parent DROP CONSTRAINT IF EXISTS \"Exact Key\"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_guarded_absence'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdrfk_guarded_absence","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdrfk_guarded_absence.child(id int, payload text); INSERT INTO pgdrfk_guarded_absence.child VALUES(1,'keep'); CREATE TABLE pgdrfk_guarded_absence.parent(id int, ref int); INSERT INTO pgdrfk_guarded_absence.parent VALUES(1,1); CREATE TABLE pgdrfk_guarded_absence.neighbor(id int); CREATE SEQUENCE pgdrfk_guarded_absence.guard START 7; ALTER TABLE pgdrfk_guarded_absence.parent ADD CONSTRAINT \" Exact Key \" PRIMARY KEY (id); ALTER TABLE pgdrfk_guarded_absence.child ADD CONSTRAINT private_child_fk FOREIGN KEY (id) REFERENCES pgdrfk_guarded_absence.parent(id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdrfk_guarded_absence.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_guarded_absence'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropConstraintReference","private_child_fk","private_self_fk"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdrfk_guarded_absence.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_guarded_absence'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_guarded_absence'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdrfk_guarded_absence.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps both original rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgdrfk_guarded_absence.child) AND (SELECT count(*)=1 AND bool_and(id=1 AND ref=1) FROM pgdrfk_guarded_absence.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdrfk_guarded_absence.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgdrfk_guarded_absence.parent DROP CONSTRAINT IF EXISTS \"Exact Key\"","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdrfk_guarded_absence.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_guarded_absence'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_guarded_absence'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdrfk_guarded_absence.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps both original rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgdrfk_guarded_absence.child) AND (SELECT count(*)=1 AND bool_and(id=1 AND ref=1) FROM pgdrfk_guarded_absence.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdrfk_guarded_absence.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdrfk_guarded_absence CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_guarded_absence'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-fk-reference-stale",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-fk-reference",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgdrfk_stale"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdrfk_stale CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_stale'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgdrfk_stale.neighbor ADD COLUMN marker int;ALTER TABLE pgdrfk_stale.parent DROP CONSTRAINT \" Exact Key \"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_stale'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgdrfk_stale","expect_rc": 0},
+    {"name": "seed owned relations","sql": "CREATE TABLE pgdrfk_stale.child(id int, payload text); INSERT INTO pgdrfk_stale.child VALUES(1,'keep'); CREATE TABLE pgdrfk_stale.parent(id int, ref int); INSERT INTO pgdrfk_stale.parent VALUES(1,1); CREATE TABLE pgdrfk_stale.neighbor(id int); CREATE SEQUENCE pgdrfk_stale.guard START 7; ALTER TABLE pgdrfk_stale.parent ADD CONSTRAINT \" Exact Key \" PRIMARY KEY (id); ALTER TABLE pgdrfk_stale.child ADD CONSTRAINT private_child_fk FOREIGN KEY (id) REFERENCES pgdrfk_stale.parent(id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgdrfk_stale.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_stale'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["complete","unverified"],
+    "statement_indices": [0,1],
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.pg.alter.drop_constraint.target.require","reason_code": "unproven_constraint_target","required_facts": ["constraint.pg_foreign_key_references"]}],
+    "serialized_not_contains": ["PGDropConstraintReference","private_child_fk","private_self_fk"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgdrfk_stale.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_stale'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,k.conname,k.contype,k.convalidated,k.conindid,k.confrelid FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgdrfk_stale'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgdrfk_stale.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps both original rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgdrfk_stale.child) AND (SELECT count(*)=1 AND bool_and(id=1 AND ref=1) FROM pgdrfk_stale.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdrfk_stale.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgdrfk_stale.neighbor ADD COLUMN marker int","expect_rc": 0},
+    {"name": "native refuses 2BP01","sql": "\\set VERBOSITY verbose\nALTER TABLE pgdrfk_stale.parent DROP CONSTRAINT \" Exact Key \"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  2BP01:"]}
+   ],
+   "structure": [
+    {"assert": "native prior DDL applied","sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgdrfk_stale.neighbor'::regclass AND attname='marker'","expect": "1"},
+    {"assert": "keeps both original rows","sql": "SELECT (SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgdrfk_stale.child) AND (SELECT count(*)=1 AND bool_and(id=1 AND ref=1) FROM pgdrfk_stale.parent)","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgdrfk_stale.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgdrfk_stale CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgdrfk_stale'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
   {
    "id": "pg-fk-keys-include",
    "anchor": "postgres17",
@@ -8229,10 +8616,10 @@
     {"name": "prove role absent","fixture_key": "other","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned role absent","sql": "SELECT count(*) FROM pg_catalog.pg_roles WHERE rolname=' Other Bulk Owner '","expect": "0"}]},
     {"name": "claim literal role","fixture_key": "other","creates_fixture": true,"sql": "CREATE ROLE \" Other Bulk Owner \" NOLOGIN","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Source D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_missing_source_source'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_missing_source_source'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "source","creates_fixture": true,"sql": "CREATE TABLESPACE \" Source D17 \" LOCATION '/tmp/pgbulk_missing_source_source'","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "target","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Target D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_missing_source_target'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_missing_source_target'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "target","creates_fixture": true,"sql": "CREATE TABLESPACE \" Target D17 \" LOCATION '/tmp/pgbulk_missing_source_target'","expect_rc": 0},
     {"name": "capture only task-owned relations","sql": "CREATE TABLE pgbulk_missing_source.a(id integer,payload text) TABLESPACE \" Source D17 \"; CREATE TABLE pgbulk_missing_source.b(id integer,payload text) TABLESPACE \" Source D17 \"; ALTER TABLE pgbulk_missing_source.a OWNER TO \" Exact Bulk Owner \"; ALTER TABLE pgbulk_missing_source.b OWNER TO \" Other Bulk Owner \"; INSERT INTO pgbulk_missing_source.a VALUES(1,'keep a'); INSERT INTO pgbulk_missing_source.b VALUES(2,'keep b'); CREATE SEQUENCE pgbulk_missing_source.guard START 7; CREATE TABLE pgbulk_missing_source.receipt AS SELECT c.oid,c.relname,c.relowner,c.relfilenode,c.reltablespace FROM pg_catalog.pg_class c WHERE c.relnamespace='pgbulk_missing_source'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
    ],
@@ -8292,10 +8679,10 @@
     {"name": "prove role absent","fixture_key": "other","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned role absent","sql": "SELECT count(*) FROM pg_catalog.pg_roles WHERE rolname=' Other Bulk Owner '","expect": "0"}]},
     {"name": "claim literal role","fixture_key": "other","creates_fixture": true,"sql": "CREATE ROLE \" Other Bulk Owner \" NOLOGIN","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Source D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_missing_destination_source'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_missing_destination_source'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "source","creates_fixture": true,"sql": "CREATE TABLESPACE \" Source D17 \" LOCATION '/tmp/pgbulk_missing_destination_source'","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "target","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Target D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_missing_destination_target'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_missing_destination_target'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "target","creates_fixture": true,"sql": "CREATE TABLESPACE \" Target D17 \" LOCATION '/tmp/pgbulk_missing_destination_target'","expect_rc": 0},
     {"name": "capture only task-owned relations","sql": "CREATE TABLE pgbulk_missing_destination.a(id integer,payload text) TABLESPACE \" Source D17 \"; CREATE TABLE pgbulk_missing_destination.b(id integer,payload text) TABLESPACE \" Source D17 \"; ALTER TABLE pgbulk_missing_destination.a OWNER TO \" Exact Bulk Owner \"; ALTER TABLE pgbulk_missing_destination.b OWNER TO \" Other Bulk Owner \"; INSERT INTO pgbulk_missing_destination.a VALUES(1,'keep a'); INSERT INTO pgbulk_missing_destination.b VALUES(2,'keep b'); CREATE SEQUENCE pgbulk_missing_destination.guard START 7; CREATE TABLE pgbulk_missing_destination.receipt AS SELECT c.oid,c.relname,c.relowner,c.relfilenode,c.reltablespace FROM pg_catalog.pg_class c WHERE c.relnamespace='pgbulk_missing_destination'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
    ],
@@ -8354,10 +8741,10 @@
     {"name": "prove role absent","fixture_key": "other","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned role absent","sql": "SELECT count(*) FROM pg_catalog.pg_roles WHERE rolname=' Other Bulk Owner '","expect": "0"}]},
     {"name": "claim literal role","fixture_key": "other","creates_fixture": true,"sql": "CREATE ROLE \" Other Bulk Owner \" NOLOGIN","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Source D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_global_source'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_global_source'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "source","creates_fixture": true,"sql": "CREATE TABLESPACE \" Source D17 \" LOCATION '/tmp/pgbulk_global_source'","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "target","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Target D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_global_target'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_global_target'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "target","creates_fixture": true,"sql": "CREATE TABLESPACE \" Target D17 \" LOCATION '/tmp/pgbulk_global_target'","expect_rc": 0},
     {"name": "capture only task-owned relations","sql": "CREATE TABLE pgbulk_global.a(id integer,payload text) TABLESPACE \" Source D17 \"; CREATE TABLE pgbulk_global.b(id integer,payload text) TABLESPACE \" Source D17 \"; ALTER TABLE pgbulk_global.a OWNER TO \" Exact Bulk Owner \"; ALTER TABLE pgbulk_global.b OWNER TO \" Other Bulk Owner \"; INSERT INTO pgbulk_global.a VALUES(1,'keep a'); INSERT INTO pgbulk_global.b VALUES(2,'keep b'); CREATE SEQUENCE pgbulk_global.guard START 7; CREATE TABLE pgbulk_global.receipt AS SELECT c.oid,c.relname,c.relowner,c.relfilenode,c.reltablespace FROM pg_catalog.pg_class c WHERE c.relnamespace='pgbulk_global'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
    ],
@@ -8417,10 +8804,10 @@
     {"name": "prove role absent","fixture_key": "other","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned role absent","sql": "SELECT count(*) FROM pg_catalog.pg_roles WHERE rolname=' Other Bulk Owner '","expect": "0"}]},
     {"name": "claim literal role","fixture_key": "other","creates_fixture": true,"sql": "CREATE ROLE \" Other Bulk Owner \" NOLOGIN","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Source D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_global_destination_source'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_global_destination_source'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "source","creates_fixture": true,"sql": "CREATE TABLESPACE \" Source D17 \" LOCATION '/tmp/pgbulk_global_destination_source'","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "target","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Target D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_global_destination_target'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_global_destination_target'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "target","creates_fixture": true,"sql": "CREATE TABLESPACE \" Target D17 \" LOCATION '/tmp/pgbulk_global_destination_target'","expect_rc": 0},
     {"name": "capture only task-owned relations","sql": "CREATE TABLE pgbulk_global_destination.a(id integer,payload text) TABLESPACE \" Source D17 \"; CREATE TABLE pgbulk_global_destination.b(id integer,payload text) TABLESPACE \" Source D17 \"; ALTER TABLE pgbulk_global_destination.a OWNER TO \" Exact Bulk Owner \"; ALTER TABLE pgbulk_global_destination.b OWNER TO \" Other Bulk Owner \"; INSERT INTO pgbulk_global_destination.a VALUES(1,'keep a'); INSERT INTO pgbulk_global_destination.b VALUES(2,'keep b'); CREATE SEQUENCE pgbulk_global_destination.guard START 7; CREATE TABLE pgbulk_global_destination.receipt AS SELECT c.oid,c.relname,c.relowner,c.relfilenode,c.reltablespace FROM pg_catalog.pg_class c WHERE c.relnamespace='pgbulk_global_destination'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
    ],
@@ -8479,10 +8866,10 @@
     {"name": "prove role absent","fixture_key": "other","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned role absent","sql": "SELECT count(*) FROM pg_catalog.pg_roles WHERE rolname=' Other Bulk Owner '","expect": "0"}]},
     {"name": "claim literal role","fixture_key": "other","creates_fixture": true,"sql": "CREATE ROLE \" Other Bulk Owner \" NOLOGIN","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Source D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_same_source'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_same_source'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "source","creates_fixture": true,"sql": "CREATE TABLESPACE \" Source D17 \" LOCATION '/tmp/pgbulk_same_source'","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "target","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Target D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_same_target'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_same_target'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "target","creates_fixture": true,"sql": "CREATE TABLESPACE \" Target D17 \" LOCATION '/tmp/pgbulk_same_target'","expect_rc": 0},
     {"name": "capture only task-owned relations","sql": "CREATE TABLE pgbulk_same.a(id integer,payload text) TABLESPACE \" Source D17 \"; CREATE TABLE pgbulk_same.b(id integer,payload text) TABLESPACE \" Source D17 \"; ALTER TABLE pgbulk_same.a OWNER TO \" Exact Bulk Owner \"; ALTER TABLE pgbulk_same.b OWNER TO \" Other Bulk Owner \"; INSERT INTO pgbulk_same.a VALUES(1,'keep a'); INSERT INTO pgbulk_same.b VALUES(2,'keep b'); CREATE SEQUENCE pgbulk_same.guard START 7; CREATE TABLE pgbulk_same.receipt AS SELECT c.oid,c.relname,c.relowner,c.relfilenode,c.reltablespace FROM pg_catalog.pg_class c WHERE c.relnamespace='pgbulk_same'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
    ],
@@ -8540,10 +8927,10 @@
     {"name": "prove role absent","fixture_key": "other","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned role absent","sql": "SELECT count(*) FROM pg_catalog.pg_roles WHERE rolname=' Other Bulk Owner '","expect": "0"}]},
     {"name": "claim literal role","fixture_key": "other","creates_fixture": true,"sql": "CREATE ROLE \" Other Bulk Owner \" NOLOGIN","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Source D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_role_precedence_source'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_role_precedence_source'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "source","creates_fixture": true,"sql": "CREATE TABLESPACE \" Source D17 \" LOCATION '/tmp/pgbulk_role_precedence_source'","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "target","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Target D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_role_precedence_target'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_role_precedence_target'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "target","creates_fixture": true,"sql": "CREATE TABLESPACE \" Target D17 \" LOCATION '/tmp/pgbulk_role_precedence_target'","expect_rc": 0},
     {"name": "capture only task-owned relations","sql": "CREATE TABLE pgbulk_role_precedence.a(id integer,payload text) TABLESPACE \" Source D17 \"; CREATE TABLE pgbulk_role_precedence.b(id integer,payload text) TABLESPACE \" Source D17 \"; ALTER TABLE pgbulk_role_precedence.a OWNER TO \" Exact Bulk Owner \"; ALTER TABLE pgbulk_role_precedence.b OWNER TO \" Other Bulk Owner \"; INSERT INTO pgbulk_role_precedence.a VALUES(1,'keep a'); INSERT INTO pgbulk_role_precedence.b VALUES(2,'keep b'); CREATE SEQUENCE pgbulk_role_precedence.guard START 7; CREATE TABLE pgbulk_role_precedence.receipt AS SELECT c.oid,c.relname,c.relowner,c.relfilenode,c.reltablespace FROM pg_catalog.pg_class c WHERE c.relnamespace='pgbulk_role_precedence'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
    ],
@@ -8603,10 +8990,10 @@
     {"name": "prove role absent","fixture_key": "other","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned role absent","sql": "SELECT count(*) FROM pg_catalog.pg_roles WHERE rolname=' Other Bulk Owner '","expect": "0"}]},
     {"name": "claim literal role","fixture_key": "other","creates_fixture": true,"sql": "CREATE ROLE \" Other Bulk Owner \" NOLOGIN","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Source D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_public_source'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_public_source'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "source","creates_fixture": true,"sql": "CREATE TABLESPACE \" Source D17 \" LOCATION '/tmp/pgbulk_public_source'","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "target","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Target D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_public_target'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_public_target'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "target","creates_fixture": true,"sql": "CREATE TABLESPACE \" Target D17 \" LOCATION '/tmp/pgbulk_public_target'","expect_rc": 0},
     {"name": "capture only task-owned relations","sql": "CREATE TABLE pgbulk_public.a(id integer,payload text) TABLESPACE \" Source D17 \"; CREATE TABLE pgbulk_public.b(id integer,payload text) TABLESPACE \" Source D17 \"; ALTER TABLE pgbulk_public.a OWNER TO \" Exact Bulk Owner \"; ALTER TABLE pgbulk_public.b OWNER TO \" Other Bulk Owner \"; INSERT INTO pgbulk_public.a VALUES(1,'keep a'); INSERT INTO pgbulk_public.b VALUES(2,'keep b'); CREATE SEQUENCE pgbulk_public.guard START 7; CREATE TABLE pgbulk_public.receipt AS SELECT c.oid,c.relname,c.relowner,c.relfilenode,c.reltablespace FROM pg_catalog.pg_class c WHERE c.relnamespace='pgbulk_public'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
    ],
@@ -8665,10 +9052,10 @@
     {"name": "prove role absent","fixture_key": "other","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned role absent","sql": "SELECT count(*) FROM pg_catalog.pg_roles WHERE rolname=' Other Bulk Owner '","expect": "0"}]},
     {"name": "claim literal role","fixture_key": "other","creates_fixture": true,"sql": "CREATE ROLE \" Other Bulk Owner \" NOLOGIN","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Source D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_role_aliases_source'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_role_aliases_source'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "source","creates_fixture": true,"sql": "CREATE TABLESPACE \" Source D17 \" LOCATION '/tmp/pgbulk_role_aliases_source'","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "target","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Target D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_role_aliases_target'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_role_aliases_target'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "target","creates_fixture": true,"sql": "CREATE TABLESPACE \" Target D17 \" LOCATION '/tmp/pgbulk_role_aliases_target'","expect_rc": 0},
     {"name": "capture only task-owned relations","sql": "CREATE TABLE pgbulk_role_aliases.a(id integer,payload text) TABLESPACE \" Source D17 \"; CREATE TABLE pgbulk_role_aliases.b(id integer,payload text) TABLESPACE \" Source D17 \"; ALTER TABLE pgbulk_role_aliases.a OWNER TO \" Exact Bulk Owner \"; ALTER TABLE pgbulk_role_aliases.b OWNER TO \" Other Bulk Owner \"; INSERT INTO pgbulk_role_aliases.a VALUES(1,'keep a'); INSERT INTO pgbulk_role_aliases.b VALUES(2,'keep b'); CREATE SEQUENCE pgbulk_role_aliases.guard START 7; CREATE TABLE pgbulk_role_aliases.receipt AS SELECT c.oid,c.relname,c.relowner,c.relfilenode,c.reltablespace FROM pg_catalog.pg_class c WHERE c.relnamespace='pgbulk_role_aliases'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
    ],
@@ -8726,10 +9113,10 @@
     {"name": "prove role absent","fixture_key": "other","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned role absent","sql": "SELECT count(*) FROM pg_catalog.pg_roles WHERE rolname=' Other Bulk Owner '","expect": "0"}]},
     {"name": "claim literal role","fixture_key": "other","creates_fixture": true,"sql": "CREATE ROLE \" Other Bulk Owner \" NOLOGIN","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Source D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_owned_nowait_source'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_owned_nowait_source'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "source","creates_fixture": true,"sql": "CREATE TABLESPACE \" Source D17 \" LOCATION '/tmp/pgbulk_owned_nowait_source'","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "target","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Target D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_owned_nowait_target'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_owned_nowait_target'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "target","creates_fixture": true,"sql": "CREATE TABLESPACE \" Target D17 \" LOCATION '/tmp/pgbulk_owned_nowait_target'","expect_rc": 0},
     {"name": "capture only task-owned relations","sql": "CREATE TABLE pgbulk_owned_nowait.a(id integer,payload text) TABLESPACE \" Source D17 \"; CREATE TABLE pgbulk_owned_nowait.b(id integer,payload text) TABLESPACE \" Source D17 \"; ALTER TABLE pgbulk_owned_nowait.a OWNER TO \" Exact Bulk Owner \"; ALTER TABLE pgbulk_owned_nowait.b OWNER TO \" Other Bulk Owner \"; INSERT INTO pgbulk_owned_nowait.a VALUES(1,'keep a'); INSERT INTO pgbulk_owned_nowait.b VALUES(2,'keep b'); CREATE SEQUENCE pgbulk_owned_nowait.guard START 7; CREATE TABLE pgbulk_owned_nowait.receipt AS SELECT c.oid,c.relname,c.relowner,c.relfilenode,c.reltablespace FROM pg_catalog.pg_class c WHERE c.relnamespace='pgbulk_owned_nowait'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
    ],
@@ -8789,10 +9176,10 @@
     {"name": "prove role absent","fixture_key": "other","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned role absent","sql": "SELECT count(*) FROM pg_catalog.pg_roles WHERE rolname=' Other Bulk Owner '","expect": "0"}]},
     {"name": "claim literal role","fixture_key": "other","creates_fixture": true,"sql": "CREATE ROLE \" Other Bulk Owner \" NOLOGIN","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "source","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Source D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_freshness_source'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_freshness_source'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "source","creates_fixture": true,"sql": "CREATE TABLESPACE \" Source D17 \" LOCATION '/tmp/pgbulk_freshness_source'","expect_rc": 0},
     {"name": "prove tablespace absent","fixture_key": "target","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Target D17 '","expect": "0"}]},
-    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_freshness_target'","expect_rc": 0},
+    {"name": "create directory inside disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgbulk_freshness_target'","expect_rc": 0},
     {"name": "claim tablespace","fixture_key": "target","creates_fixture": true,"sql": "CREATE TABLESPACE \" Target D17 \" LOCATION '/tmp/pgbulk_freshness_target'","expect_rc": 0},
     {"name": "capture only task-owned relations","sql": "CREATE TABLE pgbulk_freshness.a(id integer,payload text) TABLESPACE \" Source D17 \"; CREATE TABLE pgbulk_freshness.b(id integer,payload text) TABLESPACE \" Source D17 \"; ALTER TABLE pgbulk_freshness.a OWNER TO \" Exact Bulk Owner \"; ALTER TABLE pgbulk_freshness.b OWNER TO \" Other Bulk Owner \"; INSERT INTO pgbulk_freshness.a VALUES(1,'keep a'); INSERT INTO pgbulk_freshness.b VALUES(2,'keep b'); CREATE SEQUENCE pgbulk_freshness.guard START 7; CREATE TABLE pgbulk_freshness.receipt AS SELECT c.oid,c.relname,c.relowner,c.relfilenode,c.reltablespace FROM pg_catalog.pg_class c WHERE c.relnamespace='pgbulk_freshness'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
    ],
@@ -11191,7 +11578,7 @@
     {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_same_named'","expect": "0"}]},
     {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtsp_same_named","expect_rc": 0},
     {"name": "prove destination name absent","fixture_key": "space","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname=' Pgtsp Same '","expect": "0"}]},
-    {"name": "create directory inside the disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgtsp_same_named_space'","expect_rc": 0},
+    {"name": "create directory inside the disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgtsp_same_named_space'","expect_rc": 0},
     {"name": "claim named tablespace","fixture_key": "space","creates_fixture": true,"sql": "CREATE TABLESPACE \" Pgtsp Same \" LOCATION '/tmp/pgtsp_same_named_space'","expect_rc": 0},
     {"name": "seed and capture fixture files and catalogs","sql": "CREATE TABLE pgtsp_same_named.t(id int,payload text) TABLESPACE \" Pgtsp Same \"; INSERT INTO pgtsp_same_named.t VALUES(1,'keep'); CREATE SEQUENCE pgtsp_same_named.guard START 7; ; CREATE TABLE pgtsp_same_named.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_same_named'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
    ],
@@ -11241,7 +11628,7 @@
     {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgtsp_move'","expect": "0"}]},
     {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgtsp_move","expect_rc": 0},
     {"name": "prove destination name absent","fixture_key": "space","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned tablespace absent","sql": "SELECT count(*) FROM pg_catalog.pg_tablespace WHERE spcname='pgtsp_move'","expect": "0"}]},
-    {"name": "create directory inside the disposable anchor","sql": "COPY (SELECT 1) TO PROGRAM 'mkdir -m 700 /tmp/pgtsp_move_space'","expect_rc": 0},
+    {"name": "create directory inside the disposable anchor","sql": "COPY (SELECT 1 WHERE false) TO PROGRAM 'mkdir -m 700 /tmp/pgtsp_move_space'","expect_rc": 0},
     {"name": "claim named tablespace","fixture_key": "space","creates_fixture": true,"sql": "CREATE TABLESPACE \"pgtsp_move\" LOCATION '/tmp/pgtsp_move_space'","expect_rc": 0},
     {"name": "seed and capture fixture files and catalogs","sql": "CREATE TABLE pgtsp_move.t(id int,payload text); INSERT INTO pgtsp_move.t VALUES(1,'keep'); CREATE SEQUENCE pgtsp_move.guard START 7; ; CREATE TABLE pgtsp_move.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,c.reltablespace FROM pg_class c WHERE c.relnamespace='pgtsp_move'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
    ],
@@ -14332,7 +14719,7 @@
     {"name": "claim drop schema", "fixture_key": "schema", "creates_fixture": true, "sql": "CREATE SCHEMA pgt37_drop", "expect_rc": 0},
     {"name": "create guarded and real targets", "sql": "CREATE TABLE pgt37_drop.unguarded(id int);CREATE TABLE pgt37_drop.guarded(id int);CREATE TABLE pgt37_drop.existing(id int CONSTRAINT ck CHECK(id>=0));CREATE TABLE pgt37_drop.case_t(id int CONSTRAINT ck PRIMARY KEY,code int CONSTRAINT \"CK\" UNIQUE);CREATE TABLE pgt37_drop.real_pk_t(id int CONSTRAINT real_pk_key PRIMARY KEY);CREATE TABLE pgt37_drop.cascade_absent(id int);CREATE SEQUENCE pgt37_drop.guard START 7", "expect_rc": 0}
    ],
-   "expect": {"exit": 0, "verdict": "reject", "statements": 6, "findings": 8, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0,
+   "expect": {"exit": 0, "verdict": "reject", "statements": 6, "findings": 8, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "statement_coverage": ["complete", "complete", "complete", "unverified", "unverified", "complete"], "evidence_gaps": 2, "evidence_gap_entries": [{"index": 3, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["constraint.pg_foreign_key_references"]}, {"index": 4, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "reason_code": "unproven_constraint_target", "required_facts": ["constraint.pg_foreign_key_references"]}],
     "finding_entries": [{"index": 0, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "level": "blocker"}, {"index": 0, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}, {"index": 2, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}, {"index": 3, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}, {"index": 4, "rule_id": "ddl.alter.drop_primary_key.forbid", "level": "blocker"}, {"index": 4, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}, {"index": 5, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "level": "blocker"}, {"index": 5, "rule_id": "ddl.pg.alter.drop_constraint.advisory", "level": "notice"}],
     "finding_metadata": [{"index": 0, "rule_id": "ddl.pg.alter.drop_constraint.target.require", "metadata": {"schema": "pgt37_drop", "table": "unguarded", "constraint": "missing", "target_exists": false, "reason_code": "constraint_absent"}}]},
    "post_verify": [
@@ -14494,6 +14881,15 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.drop-fk-reference-offline",
+  "T37.cli.drop-fk-reference-disabled",
+  "T37.meta.pg-drop-fk-reference-primary-restrict",
+  "T37.meta.pg-drop-fk-reference-unique-restrict",
+  "T37.meta.pg-drop-fk-reference-self-reference",
+  "T37.meta.pg-drop-fk-reference-cascade",
+  "T37.meta.pg-drop-fk-reference-other-index",
+  "T37.meta.pg-drop-fk-reference-guarded-absence",
+  "T37.meta.pg-drop-fk-reference-stale",
   "T37.cli.fk-keys-offline",
   "T37.cli.fk-keys-disabled",
   "T37.meta.pg-fk-keys-include",
