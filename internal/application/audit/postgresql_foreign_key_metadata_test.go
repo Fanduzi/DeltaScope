@@ -79,8 +79,17 @@ func TestPGForeignKeyReferenceBinding(t *testing.T) {
 				return snapshot, tc.failure
 			}}
 			keyCalls := 0
+			equalityCalls := 0
 			keyFacts := &spec.PGForeignKeyKeys{Schema: ref.Schema, Table: ref.Name, Keys: []spec.PGForeignKeyKey{{Columns: []string{"private_key"}, Immediate: true}}}
 			provider.keys = func(req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+				if req.Type == "foreign_key_scalar_equality" {
+					equalityCalls++
+					want := spec.PGForeignKeyEqualityTarget{Source: *statement.DDL.Table, Reference: ref, Columns: []string{"id"}}
+					if req.PGForeignKeyEqualityTarget == nil || !want.Matches(*req.PGForeignKeyEqualityTarget) {
+						t.Fatalf("unbound equality lookup: %+v", req)
+					}
+					return &spec.ObjectSnapshot{PGForeignKeyEquality: &spec.PGForeignKeyEquality{Target: want}}, nil
+				}
 				keyCalls++
 				if req.Type != "foreign_key_reference_keys" || req.Schema != ref.Schema || req.Name != ref.Name {
 					t.Fatalf("unbound key lookup: %+v", req)
@@ -111,8 +120,11 @@ func TestPGForeignKeyReferenceBinding(t *testing.T) {
 					t.Fatal("bound keys alias provider memory")
 				}
 			}
+			if (equalityCalls == 1) != tc.bound || (statement.Metadata.PGForeignKeyEquality != nil) != tc.bound {
+				t.Fatalf("equality lookups=%d facts=%+v", equalityCalls, statement.Metadata.PGForeignKeyEquality)
+			}
 			b, err := json.Marshal(statements[len(statements)-1].Metadata)
-			if err != nil || strings.Contains(string(b), "PGForeignKeyReference") || strings.Contains(string(b), "PGForeignKeyKeys") || strings.Contains(string(b), " Ref ") {
+			if err != nil || strings.Contains(string(b), "PGForeignKeyReference") || strings.Contains(string(b), "PGForeignKeyKeys") || strings.Contains(string(b), "PGForeignKeyEquality") || strings.Contains(string(b), " Ref ") {
 				t.Fatalf("private reference leaked: %s (%v)", b, err)
 			}
 		})

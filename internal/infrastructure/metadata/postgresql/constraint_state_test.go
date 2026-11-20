@@ -13,11 +13,11 @@ import (
 func TestLoadPGConstraintStates(t *testing.T) {
 	for _, empty := range []bool{false, true} {
 		t.Run(map[bool]string{false: "complete", true: "empty"}[empty], func(t *testing.T) {
-			rows := [][]driver.Value{{"ck", "c", false, true, nil}, {"CK", "u", true, nil, nil}, {"fk", "f", false, nil, nil}, {"pk", "p", true, nil, nil}, {"ck", "c", false, false, true}}
+			rows := [][]driver.Value{{"ck", "c", false, true, nil, false}, {"CK", "u", true, nil, nil, nil}, {"fk", "f", false, nil, nil, nil}, {"pk", "p", true, nil, nil, nil}, {"ck", "c", false, false, true, true}}
 			if empty {
 				rows = nil
 			}
-			db, log := openTestDB(t, map[string]testQueryResult{"from pg_catalog.pg_constraint pc": {columns: []string{"conname", "contype", "convalidated", "inherited", "partition_children"}, rows: rows}})
+			db, log := openTestDB(t, map[string]testQueryResult{"from pg_catalog.pg_constraint pc": {columns: []string{"conname", "contype", "convalidated", "inherited", "partition_children", "validate_children"}, rows: rows}})
 			defer db.Close()
 			s := &spec.TableSnapshot{Schema: "app", Table: &spec.Table{Name: "t"}}
 			if err := NewProvider(db).loadPGConstraintStates(context.Background(), s); err != nil {
@@ -27,7 +27,11 @@ func TestLoadPGConstraintStates(t *testing.T) {
 				t.Fatalf("states=%+v", s.PGConstraints)
 			}
 			if !empty {
-				if first, last := s.PGConstraints[0], s.PGConstraints[4]; !first.InheritanceKnown || !first.Inherited || !last.InheritanceKnown || last.Inherited || s.PGConstraints[1].InheritanceKnown || first.PartitionCheckHasChildrenKnown || !last.PartitionCheckHasChildrenKnown || !last.PartitionCheckHasChildren {
+				first, foreignKey, last := s.PGConstraints[0], s.PGConstraints[2], s.PGConstraints[4]
+				if !first.CheckValidationChildrenKnown || first.CheckValidationHasChildren || foreignKey.CheckValidationChildrenKnown || !last.CheckValidationChildrenKnown || !last.CheckValidationHasChildren {
+					t.Fatalf("incorrect validation traversal observations: %+v", s.PGConstraints)
+				}
+				if !first.InheritanceKnown || !first.Inherited || !last.InheritanceKnown || last.Inherited || s.PGConstraints[1].InheritanceKnown || first.PartitionCheckHasChildrenKnown || !last.PartitionCheckHasChildrenKnown || !last.PartitionCheckHasChildren {
 					t.Fatalf("incorrect inheritance observations: %+v", s.PGConstraints)
 				}
 				if _, known := s.FindPGConstraint("ck"); known {
@@ -62,8 +66,8 @@ func TestLoadPGConstraintStateErrorsStayUnknown(t *testing.T) {
 	failure := errors.New("catalog unavailable")
 	for name, result := range map[string]testQueryResult{
 		"query":   {err: failure},
-		"scan":    {columns: []string{"conname", "contype", "convalidated", "inherited", "partition_children"}, rows: [][]driver.Value{{"ck", "c", "not-a-bool", false, nil}}},
-		"iterate": {columns: []string{"conname", "contype", "convalidated", "inherited", "partition_children"}, rows: [][]driver.Value{{"ck", "c", true, false, nil}}, rowErr: failure},
+		"scan":    {columns: []string{"conname", "contype", "convalidated", "inherited", "partition_children", "validate_children"}, rows: [][]driver.Value{{"ck", "c", "not-a-bool", false, nil, nil}}},
+		"iterate": {columns: []string{"conname", "contype", "convalidated", "inherited", "partition_children", "validate_children"}, rows: [][]driver.Value{{"ck", "c", true, false, nil, nil}}, rowErr: failure},
 	} {
 		t.Run(name, func(t *testing.T) {
 			db, _ := openTestDB(t, map[string]testQueryResult{"from pg_catalog.pg_constraint pc": result})

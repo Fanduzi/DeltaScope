@@ -22,6 +22,8 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 			return p.resolveDropColumnDependency(ctx, req)
 		case "drop_constraint_reference":
 			return p.resolveDropConstraintReference(ctx, req)
+		case "foreign_key_scalar_equality":
+			return p.resolveForeignKeyEquality(ctx, req.PGForeignKeyEqualityTarget)
 		case "foreign_key_reference_keys":
 			return p.resolveForeignKeyKeys(ctx, req)
 		case "constraint_using_index":

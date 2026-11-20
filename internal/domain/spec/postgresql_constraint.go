@@ -12,6 +12,9 @@ type PGConstraintState struct {
 	// PartitionCheckHasChildren records whether a partitioned CHECK propagates to direct children.
 	PartitionCheckHasChildren      bool `json:"-"`
 	PartitionCheckHasChildrenKnown bool `json:"-"`
+	// CheckValidationHasChildren observes whether VALIDATE must traverse children.
+	CheckValidationHasChildren   bool `json:"-"`
+	CheckValidationChildrenKnown bool `json:"-"`
 }
 
 // FindPGConstraint returns a uniquely proven member or proven absence. False

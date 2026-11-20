@@ -23,6 +23,14 @@ func (p *Provider) loadPGConstraintStates(ctx context.Context, snapshot *spec.Ta
 		             then not pc.connoinherit and exists (
 		                 select 1 from pg_catalog.pg_inherits h
 		                 where h.inhparent OPERATOR(pg_catalog.=) tbl.oid and not h.inhdetachpending)
+		             end,
+		       case when pc.contype OPERATOR(pg_catalog.=) 'c' and not pc.convalidated
+		                  and tbl.relkind OPERATOR(pg_catalog.=) any(array['r','p']::pg_catalog."char"[])
+		                  and tbl.relpersistence OPERATOR(pg_catalog.=) 'p'
+		                  and tbl.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
+		             then not pc.connoinherit and exists (
+		                 select 1 from pg_catalog.pg_inherits h
+		                 where h.inhparent OPERATOR(pg_catalog.=) tbl.oid and not h.inhdetachpending)
 		             end
 		from pg_catalog.pg_constraint pc
 		join pg_catalog.pg_class tbl on tbl.oid OPERATOR(pg_catalog.=) pc.conrelid
@@ -39,12 +47,13 @@ func (p *Provider) loadPGConstraintStates(ctx context.Context, snapshot *spec.Ta
 	states := make([]spec.PGConstraintState, 0)
 	for rows.Next() {
 		var state spec.PGConstraintState
-		var inherited, children sql.NullBool
-		if err := rows.Scan(&state.Name, &state.Type, &state.Validated, &inherited, &children); err != nil {
+		var inherited, children, validationChildren sql.NullBool
+		if err := rows.Scan(&state.Name, &state.Type, &state.Validated, &inherited, &children, &validationChildren); err != nil {
 			return fmt.Errorf("scan constraint state: %w", err)
 		}
 		state.InheritanceKnown, state.Inherited = inherited.Valid, inherited.Bool
 		state.PartitionCheckHasChildrenKnown, state.PartitionCheckHasChildren = children.Valid, children.Bool
+		state.CheckValidationChildrenKnown, state.CheckValidationHasChildren = validationChildren.Valid, validationChildren.Bool
 		states = append(states, state)
 	}
 	if err := rows.Err(); err != nil {

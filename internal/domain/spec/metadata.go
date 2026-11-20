@@ -5,6 +5,7 @@ import "strings"
 
 // Metadata carries optional non-SQL facts for one statement evaluation.
 type Metadata struct {
+	PGForeignKeyEquality      *PGForeignKeyEquality      `json:"-"`
 	Schema                    string                     `json:"schema,omitempty"`
 	Instance                  *InstanceFacts             `json:"instance,omitempty"`
 	Version                   *VersionIdentity           `json:"version,omitempty"`
@@ -797,13 +798,14 @@ const (
 
 // ObjectSnapshot carries the metadata-validated state of one non-table database object.
 type ObjectSnapshot struct {
-	Schema              string            `json:"schema,omitempty"`
-	Type                string            `json:"type,omitempty"`
-	Name                string            `json:"name,omitempty"`
-	Status              MetadataStatus    `json:"status,omitempty"`
-	Exists              bool              `json:"exists"`
-	Attributes          map[string]string `json:"attributes,omitempty"`
-	AmbiguousCandidates []string          `json:"ambiguous_candidates,omitempty"`
+	PGForeignKeyEquality *PGForeignKeyEquality `json:"-"`
+	Schema               string                `json:"schema,omitempty"`
+	Type                 string                `json:"type,omitempty"`
+	Name                 string                `json:"name,omitempty"`
+	Status               MetadataStatus        `json:"status,omitempty"`
+	Exists               bool                  `json:"exists"`
+	Attributes           map[string]string     `json:"attributes,omitempty"`
+	AmbiguousCandidates  []string              `json:"ambiguous_candidates,omitempty"`
 	// Sequence carries the provider-proven sequence definition parameters
 	// when the resolved object is a sequence. Internal evidence only —
 	// definition parameters are never runtime issuance progress (T21/#100).
@@ -857,11 +859,12 @@ type ObjectSnapshot struct {
 
 // ObjectLookupRequest describes one object to resolve from live metadata.
 type ObjectLookupRequest struct {
-	Schema           string
-	Type             string
-	Name             string
-	Qualifiers       map[string]string
-	PGBulkTablespace *PGBulkTablespaceTarget `json:"-"`
+	PGForeignKeyEqualityTarget *PGForeignKeyEqualityTarget `json:"-"`
+	Schema                     string
+	Type                       string
+	Name                       string
+	Qualifiers                 map[string]string
+	PGBulkTablespace           *PGBulkTablespaceTarget `json:"-"`
 	// RequestVersion carries the request-level OBSERVED version identity
 	// the caller already adjudicated for this object's family — the SRS
 	// family binds it so the provider channel's own version query can

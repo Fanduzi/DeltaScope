@@ -5,6 +5,7 @@ type PGColumnTraversal struct {
 	Schema, Table, Column                                            string
 	Inherited, DirectPartitionKey, AttachedChildren, StoredGenerated bool
 	Partition, ColumnExists, System                                  bool
+	ParentNotNull, NullableDescendant                                bool
 }
 
 // PGColumnTraversalTarget bounds lookups to the nonordinary shapes for this check.
@@ -22,7 +23,7 @@ func PGColumnTraversalTarget(s Statement) string {
 	}
 	a := s.DDL.Alter[0]
 	switch a.Action {
-	case "drop_column", "rename_column", "set_data_type", "drop_expression", "add_column":
+	case "drop_column", "rename_column", "set_data_type", "drop_expression", "add_column", "drop_not_null", "set_not_null":
 		return a.Name
 	default:
 		return ""

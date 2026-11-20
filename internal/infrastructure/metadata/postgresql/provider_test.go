@@ -154,8 +154,8 @@ func TestLoadTableSnapshotUsesCatalogsAndPlannerStats(t *testing.T) {
 			},
 		},
 		"from pg_catalog.pg_constraint pc": {
-			columns: []string{"conname", "contype", "convalidated", "inherited", "partition_children"},
-			rows:    [][]driver.Value{{"users_pk_constraint", "p", true, nil, nil}, {"users_check", "c", false, false, nil}},
+			columns: []string{"conname", "contype", "convalidated", "inherited", "partition_children", "validate_children"},
+			rows:    [][]driver.Value{{"users_pk_constraint", "p", true, nil, nil, nil}, {"users_check", "c", false, false, nil, nil}},
 		},
 		"con.contype = 'p'": {
 			columns: []string{"constraint_name", "index_name", "column_name", "index_reltuples"},

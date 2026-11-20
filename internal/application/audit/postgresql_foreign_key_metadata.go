@@ -50,6 +50,22 @@ func enrichPGForeignKeyReferences(ctx context.Context, request *MetadataRequest,
 			keys.Keys[i].Columns = slices.Clone(keys.Keys[i].Columns)
 		}
 		s.Metadata.PGForeignKeyKeys = &keys
+		if len(keys.Keys) == 0 || len(target.ReferencedColumns) > 0 && len(target.ReferencedColumns) != len(target.Columns) {
+			continue
+		}
+		equality := spec.PGForeignKeyEqualityTarget{Source: *s.DDL.Table, Reference: target.Reference, Columns: target.Columns, ReferencedColumns: target.ReferencedColumns}
+		lookupTarget := equality
+		lookupTarget.Columns = slices.Clone(equality.Columns)
+		lookupTarget.ReferencedColumns = slices.Clone(equality.ReferencedColumns)
+		result, err := resolveObjectSnapshot(ctx, request, spec.DialectPostgreSQL, &spec.ObjectLookupRequest{Type: "foreign_key_scalar_equality", PGForeignKeyEqualityTarget: &lookupTarget})
+		if err != nil {
+			return err
+		}
+		if result != nil && result.PGForeignKeyEquality != nil && result.PGForeignKeyEquality.Target.Matches(equality) {
+			equality.Columns = slices.Clone(equality.Columns)
+			equality.ReferencedColumns = slices.Clone(equality.ReferencedColumns)
+			s.Metadata.PGForeignKeyEquality = &spec.PGForeignKeyEquality{Target: equality, IncompatiblePosition: result.PGForeignKeyEquality.IncompatiblePosition}
+		}
 	}
 	return nil
 }

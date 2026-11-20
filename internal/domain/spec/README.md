@@ -98,10 +98,11 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGTablePersistence` carries the observed persistence and bounded dependency facts privately. `PGExactTableBound` checks exact fresh relation identity before scope-specific checks.
 - `PGTableAccessMethod` retains exact named or bare DEFAULT selection, observed kind and comparison with the current method. The private observation stays out of JSON.
 - `PGTableTablespace` retains the exact destination, presence, scope and comparison with the effective current location. The private observation stays out of JSON.
-- `PGColumnTraversal` carries private exact inheritance, direct partition-key and attached-child facts for ADD, DROP, RENAME, TYPE and DROP EXPRESSION actions.
+- `PGColumnTraversal` carries private inheritance, direct partition-key, attached-child and partition nullability observations for exact column actions.
 - `PGDropColumnDependency` binds a private direct dependency observation to an exact column for DROP and TYPE.
 - `PGDropConstraintReference` binds a private direct foreign-key dependency observation to an exact primary or unique constraint.
-- `PGConstraintState` carries private observations for CHECK inheritance and partition children. `DDL.PGTableOnly` records the PostgreSQL ALTER target traversal flag.
+- `PGConstraintState` carries private observations for CHECK inheritance, partition children and validation traversal. `DDL.PGTableOnly` records the PostgreSQL ALTER target traversal flag.
+- `PGForeignKeyEquality` binds a private scalar equality observation to the exact tables and authored column lists.
 - `PGForeignKeyKeys` binds ordered key slots and primary/immediate flags to an exact observed reference table. The key directory stays private.
 - `PGForeignKeySelection` keeps exact, ordered source, referenced and ON DELETE SET column names and the reference qualification privately.
 - `PGConstraintUsingIndex` binds private exact index observations, including key operator-class defaults, to the selected table for PRIMARY KEY and UNIQUE attachment.

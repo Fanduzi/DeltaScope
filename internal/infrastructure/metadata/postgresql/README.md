@@ -27,14 +27,15 @@ comparisons for the member and scope binding.
 | table_persistence.go | Reads observed PG17 persistence, direct publication and directional foreign-key preconditions for ordinary tables without reading dependency names |
 | table_access_method.go | Reads the named or effective-default PG17 access method and compares it to the bound ordinary table’s actual method without invoking handlers |
 | table_tablespace.go | Reads one exact PostgreSQL destination and compares it with the bound ordinary table’s current or database-default space. Excludes shared and mapped relations, with no location paths or privilege reads |
+| foreign_key_equality.go | Checks the selected key and bounded scalar equality or implicit conversion facts for ordered PostgreSQL 17 foreign-key columns |
 | foreign_key_keys.go | Reads live valid plain unique keys for one exact ordinary PG17 referenced table, including primary/immediate flags and ordered key slots |
 | constraint_using_index.go | Observes one exact PostgreSQL index for PRIMARY KEY or UNIQUE attachment, including internal constraint ownership, key sort, collation, options and bounded operator-class defaults |
 | replica_identity.go | Resolves one real PostgreSQL replica-identity index candidate in its owning table schema, with uniqueness, predicate/expression presence and actual key nullability |
 | relation_state_test.go | Verifies exact relation reads, absent and non-table kinds, unbound scopes, error propagation and JSON privacy |
-| column_traversal.go | Reads inherited attributes, direct partition keys, attached children, partition membership and exact column presence or generation facts |
+| column_traversal.go | Reads inherited attributes, direct partition keys, partition membership, attached children and exact column presence, generation and partition nullability facts |
 | drop_column_dependency.go | Observes direct view, generated-column and foreign-key dependencies on the exact ordinary-table column |
 | drop_constraint_reference.go | Checks the exact supporting index ownership and normal foreign-key dependency for one PostgreSQL 17 primary or unique constraint |
-| constraint_state.go | Loads target-bound `pg_constraint` names, kinds, validated flags and private CHECK inheritance and partition-child observations using exact parameterized schema and table comparisons bound to `pg_catalog`. Read errors prevent publication of the directory, and duplicate rows stay visible |
+| constraint_state.go | Loads target-bound `pg_constraint` names, kinds, validated flags and private CHECK inheritance, partition-child and validation traversal observations using exact parameterized schema and table comparisons bound to `pg_catalog`. Read errors prevent publication of the directory, and duplicate rows stay visible |
 | constraint_state_test.go | Pins complete/empty/quoted/duplicate catalog reads and query/scan/iteration errors without a live database |
 | provider.go | Loads normalized dialect, schema, instance-fact (including private known/support lz4 facts from the existing pg_catalog.pg_settings enum read with system-qualified version and comparison operators), table snapshot, and plain-`EXPLAIN` plan-estimate data from PostgreSQL catalogs and planner stats |
 | provider_test.go | Verifies catalog-backed schema discovery, reltuples/statistics loading, PK constraint truth, and plain-`EXPLAIN` estimation without a live database |
