@@ -18,7 +18,7 @@ honestly — not a count of implemented rules.
 
 ## PostgreSQL foreign key targets
 
-D22 adds nineteen selectors to ADD FOREIGN KEY at the PostgreSQL 17 anchor.
+D22 at `529d10b1` adds nineteen selectors to ADD FOREIGN KEY at the PostgreSQL 17 anchor.
 They document the reference relation and ordered exact column identities.
 Referenced key eligibility, types and existing-row validation have separate
 premises. The inventory classifications are preserved.

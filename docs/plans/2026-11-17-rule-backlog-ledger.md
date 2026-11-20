@@ -700,6 +700,12 @@ eligibility, conversion, row validity, permissions and wider table shapes
 have separate evidence requirements.
 [Decision](../decisions/2026-11-20-postgresql-foreign-key-targets.md)
 
+Delivered at `529d10b1b548a277ca74eb1200b2b1380ae8f721` with 50 canonical tasks, 3,686/3,686 cases and 68,383
+assertions. Validator, merged-root gates and all five CI checks passed.
+[Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44694809416),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44694809506) and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/136149005473).
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.
@@ -772,7 +778,7 @@ insufficient.
 | F08 | `postgresql.create-table-like` | LIKE basic; INCLUDING options | unreviewed |
 | F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 bounded system/ordering evidence delivered; D8 exact ADD/RENAME target and guard evidence delivered; D14 TYPE/USING source checks delivered; D18 exact destination checks delivered; broader eligibility/order remain open |
 | F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 generation and D6 statistics/options delivered with accepted gaps; D7 bounded storage/compression/system delivered; D20 replica identity key check delivered; broader data/expression/current/kind scopes open |
-| F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; D19 exact CHECK name checks delivered; D21 USING INDEX prerequisites delivered; D22 FK target checks in verification; remaining dimensions open |
+| F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; D19 exact CHECK name checks delivered; D21 USING INDEX prerequisites delivered; D22 FK target checks delivered; remaining dimensions open |
 | F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | partial:D9 bounded attachment delivered; D10 bounded heap declarations delivered; D11 single-table tablespace delivered; D12 ordinary-table methods delivered; D13 persistence delivered; D17 bulk tablespace prerequisites delivered; other dimensions open |
 | F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | partial:D15 primary destination checks delivered; D16 owner checks delivered; dependent moves and permissions remain open |
 | F10 | `postgresql.drop-table` | DROP TABLE; IF EXISTS / multi-target | unreviewed |

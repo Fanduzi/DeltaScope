@@ -5,7 +5,8 @@ Per-task manifests for the milestone DDL golden-path runner
 
 ## T37 D22 PostgreSQL foreign key targets
 
-Focused T37 passed 354/354 cases and 9,344 assertions. Eighteen new cases retain
+Delivered `529d10b1` passed 50 tasks, 3,686 cases and 68,383 assertions.
+T37 passed 354/354 cases and 9,344 assertions. Eighteen new cases retain
 all 336 earlier cases and profiles. Native controls distinguish exact table
 and column identity, omitted lists, guards and stale facts.
 [Decision](../../docs/decisions/2026-11-20-postgresql-foreign-key-targets.md)

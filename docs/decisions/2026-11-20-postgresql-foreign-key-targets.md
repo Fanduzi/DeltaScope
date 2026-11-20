@@ -55,6 +55,21 @@ native commands, with nine successes and eight exact refusals. The validator
 passed. Nineteen selectors were added to ADD FOREIGN KEY at the PG17 anchor.
 The inventory classifications and denominators were retained.
 
+## Delivered evidence
+
+`529d10b1b548a277ca74eb1200b2b1380ae8f721` passed 50 canonical tasks with 3,686/3,686 cases and 68,383
+assertions. T37 passed 354/354 cases and 9,344 assertions. The validator,
+read-only review and merged-root gates passed. The milestone advanced to
+`main` by fast-forward and normal push. [Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44694809416),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44694809506) and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/136149005473) passed for this SHA.
+The aggregate is `/tmp/ddl-golden-pg-foreign-key-targets-final-529d10b1/all/artifact.json`.
+
+The original worktree status, protected release worktree and 16 previously
+protected container identities matched. An additional container from the
+starting snapshot was absent at review, and the cause remains unknown. All
+50 cleanup receipts refer to the dedicated Golden project.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
