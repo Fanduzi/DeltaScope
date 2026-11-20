@@ -151,9 +151,13 @@ func newAlterObjectExistenceRule(ruleID string, actions []string, objectLabel st
 func (r alterObjectExistenceRule) ID() string { return r.ruleID }
 
 func (r alterObjectExistenceRule) AppliesTo(statement spec.Statement) bool {
-	if r.ruleID == ruleIDAlterAddIndexExistsForbid && pgNamedAddCheck(statement) &&
-		pgConstraintTargetVersionKnown(statement) && spec.PGOrdinaryTableBound(statement) {
-		return false // A CHECK uses the table's constraint namespace.
+	if r.ruleID == ruleIDAlterAddIndexExistsForbid {
+		if pgNamedAddCheck(statement) && pgConstraintTargetVersionKnown(statement) && spec.PGOrdinaryTableBound(statement) {
+			return false // A CHECK uses the table's constraint namespace.
+		}
+		if index := boundPGConstraintUsingIndex(statement); index != nil && index.Kind == "i" && index.IndexKnown && index.OnTable && statement.DDL.Alter[0].Name == index.Name {
+			return false // Attaching under the index's existing name needs no rename.
+		}
 	}
 	if action := r.pgColumnIdentityAction(statement); action != "" {
 		return pgColumnIdentityAction(statement, action)

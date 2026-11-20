@@ -79,6 +79,11 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelWarning,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.alter.constraint_using_index.valid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
 		"ddl.pg.alter.add_primary_key.concurrent_index.warn": {
 			Enabled: true,
 			Level:   rule.LevelWarning,

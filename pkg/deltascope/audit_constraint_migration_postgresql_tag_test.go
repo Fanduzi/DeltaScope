@@ -18,8 +18,8 @@ func TestAuditPGConstraintMigration(t *testing.T) {
 	}
 	for _, tc := range []struct{ sql, id, verdict string }{
 		{"ALTER TABLE app.t ADD PRIMARY KEY(id)", "ddl.pg.alter.add_primary_key.concurrent_index.warn", "review"},
-		{"ALTER TABLE app.t ADD CONSTRAINT pk PRIMARY KEY USING INDEX private_index", "", "pass"},
-		{"ALTER TABLE app.t ADD CONSTRAINT uq UNIQUE USING INDEX private_index", "", "pass"},
+		{"ALTER TABLE app.t ADD CONSTRAINT pk PRIMARY KEY USING INDEX private_index", "", "review"},
+		{"ALTER TABLE app.t ADD CONSTRAINT uq UNIQUE USING INDEX private_index", "", "review"},
 		{"ALTER TABLE app.t ADD CONSTRAINT fk FOREIGN KEY(id) REFERENCES private_parent(private_column)", "ddl.pg.alter.add_foreign_key.not_valid.require", "review"},
 	} {
 		r, err := Audit(context.Background(), Request{SQL: tc.sql, Dialect: DialectPostgreSQL, ConfigPath: cfg})
@@ -28,6 +28,15 @@ func TestAuditPGConstraintMigration(t *testing.T) {
 		}
 		found := false
 		for _, s := range r.Statements {
+			if tc.id == "" {
+				if len(s.Findings) != 0 || len(s.EvidenceGaps) != 1 {
+					t.Fatalf("unexpected reuse result: %+v", s)
+				}
+				gap := s.EvidenceGaps[0]
+				if gap.RuleID != "ddl.pg.alter.constraint_using_index.valid" || gap.ReasonCode != "unproven_constraint_using_index" || len(gap.RequiredFacts) != 1 || gap.RequiredFacts[0] != "instance.version" {
+					t.Fatalf("unexpected attachment gap: %+v", gap)
+				}
+			}
 			for _, f := range s.Findings {
 				if f.RuleID != tc.id {
 					continue

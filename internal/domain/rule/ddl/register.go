@@ -702,6 +702,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGDropIndexAdvisory, construct: newDropIndexAdvisoryRule},
 		{ruleID: ruleIDPGAlterAddColumnNonNullNoDefaultWarn, construct: newAddColumnNonNullNoDefaultWarnRule},
 		{ruleID: ruleIDPGAlterAddForeignKeyNotValidRequire, construct: newPGForeignKeyNotValidRule},
+		{ruleID: ruleIDPGConstraintUsingIndexValid, construct: newPGConstraintUsingIndexRule},
 		{ruleID: ruleIDPGAlterAddPrimaryKeyConcurrentIndexWarn, construct: newPGPrimaryKeyConcurrentIndexRule},
 		{ruleID: ruleIDPGAlterAddUniqueConstraintConcurrentIndexAdvisory, construct: newAddUniqueConstraintAdvisoryRule},
 		{ruleID: ruleIDPGAlterDropConstraintAdvisory, construct: newDropConstraintAdvisoryRule},

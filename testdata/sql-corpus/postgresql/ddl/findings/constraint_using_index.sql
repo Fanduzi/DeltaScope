@@ -1,0 +1,1 @@
+ALTER TABLE app.t ADD CONSTRAINT pending UNIQUE USING INDEX " Exact Index ";

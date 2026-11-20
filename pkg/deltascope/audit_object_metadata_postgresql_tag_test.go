@@ -259,3 +259,22 @@ func TestAuditColumnTypeThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing type destination finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditConstraintUsingIndexThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true, Columns: []PGColumnState{{Name: "id"}}}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGConstraintUsingIndex: &spec.PGConstraintUsingIndex{Schema: "app", Table: "t", Name: " Exact Index ", Kind: "i", IndexKnown: true, OnTable: true, Unique: true, BTree: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t ADD CONSTRAINT pending UNIQUE USING INDEX " Exact Index "`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != " Exact Index " {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.constraint_using_index.valid" && f.Metadata["reason_code"] == "constraint_index_invalid" {
+			return
+		}
+	}
+	t.Fatalf("missing index attachment finding: %+v", result.Statements[0].Findings)
+}

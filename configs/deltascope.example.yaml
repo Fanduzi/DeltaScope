@@ -1013,6 +1013,11 @@ rules:
   ddl.pg.alter.add_foreign_key.not_valid.require:
     enabled: true
     level: warning
+  ddl.pg.alter.constraint_using_index.valid:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.pg.alter.add_primary_key.concurrent_index.warn:
     enabled: true
     level: warning

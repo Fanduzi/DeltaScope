@@ -15,9 +15,12 @@ func TestHandlerPGConstraintMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, tc := range []struct{ sql, verdict string }{
-		{"ALTER TABLE t ADD PRIMARY KEY(id)", "review"},
-		{"ALTER TABLE t ADD PRIMARY KEY USING INDEX idx", "pass"},
+	for _, tc := range []struct {
+		sql          string
+		buildWarning bool
+	}{
+		{"ALTER TABLE t ADD PRIMARY KEY(id)", true},
+		{"ALTER TABLE t ADD PRIMARY KEY USING INDEX idx", false},
 	} {
 		raw, err := json.Marshal(map[string]string{"sql": tc.sql, "dialect": "postgresql"})
 		if err != nil {
@@ -36,13 +39,18 @@ func TestHandlerPGConstraintMigration(t *testing.T) {
 				Findings []struct {
 					ID    string `json:"rule_id"`
 					Level string `json:"level"`
-				}
+				} `json:"findings"`
+				Gaps []struct {
+					ID     string   `json:"rule_id"`
+					Reason string   `json:"reason_code"`
+					Facts  []string `json:"required_facts"`
+				} `json:"evidence_gaps"`
 			} `json:"statements"`
 		}
 		if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 			t.Fatal(err)
 		}
-		if body.Verdict != tc.verdict {
+		if body.Verdict != "review" || len(body.Statements) != 1 {
 			t.Fatalf("verdict=%s", body.Verdict)
 		}
 		found := false
@@ -53,8 +61,12 @@ func TestHandlerPGConstraintMigration(t *testing.T) {
 				}
 			}
 		}
-		if found != (tc.verdict == "review") {
+		if found != tc.buildWarning {
 			t.Fatal("lost shared declaration-mode semantics")
+		}
+		gaps := body.Statements[0].Gaps
+		if tc.buildWarning && len(gaps) != 0 || !tc.buildWarning && (len(gaps) != 1 || gaps[0].ID != "ddl.pg.alter.constraint_using_index.valid" || gaps[0].Reason != "unproven_constraint_using_index" || len(gaps[0].Facts) != 1 || gaps[0].Facts[0] != "instance.version") {
+			t.Fatalf("unexpected attachment gaps: %+v", gaps)
 		}
 	}
 }

@@ -2,6 +2,8 @@
 
 Policy model for rule configuration and future audit settings.
 
+The default PostgreSQL `USING INDEX` blocker checks the catalog prerequisites for PRIMARY KEY and UNIQUE attachment.
+
 The default PostgreSQL CHECK name rule blocks proven exact name collisions for a single explicitly named CHECK.
 
 The default PostgreSQL column type destination rule checks observed exact destinations at blocker level.
