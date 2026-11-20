@@ -3,6 +3,14 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D27 PostgreSQL DROP COLUMN RESTRICT
+
+Native controls distinguish a direct view, materialized view, generated
+column or foreign-key reference from dependency edges PostgreSQL removes
+with the column. Additional cases pin stale and offline facts, exact names,
+policy disablement and the privacy of catalog evidence.
+[Decision](../../docs/decisions/2026-11-21-postgresql-drop-column-dependencies.md)
+
 ## T37 D25 and D26 PostgreSQL CHECK drops
 
 The native controls distinguish direct drops of inherited CHECKs, recursive

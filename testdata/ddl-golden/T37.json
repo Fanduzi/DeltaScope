@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-drop-column-dependency": {"enable": {"ddl.alter.drop_column.exists.require": {"level": "blocker"}}},
    "pg-drop-check-only": {"enable": {"ddl.pg.alter.drop_constraint.target.require": {"level": "blocker"}}},
    "pg-drop-inherited-check": {"enable": {"ddl.pg.alter.drop_constraint.target.require": {"level": "blocker"}}},
    "pg-drop-fk-reference": {"enable": {"ddl.pg.alter.drop_constraint.target.require": {"level": "blocker"}}},
@@ -1892,6 +1893,51 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "drop-column-dependency-offline",
+   "dialect": "postgresql",
+   "policy": "pg-drop-column-dependency",
+   "sql": "ALTER TABLE app.source DROP COLUMN \" Exact Column \"",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.alter.drop_column.exists.require","reason_code": "unproven_column_target","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGDropColumnDependency","dependency_view_private","dependency_mat_private","dependency_generated_private","dependency_fk_private"],
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "drop-column-dependency-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.source DROP COLUMN \" Exact Column \"",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropColumnDependency","dependency_view_private","dependency_mat_private","dependency_generated_private","dependency_fk_private"]
+   }
+  },
   {
    "id": "drop-inherited-check-offline",
    "dialect": "postgresql",
@@ -4706,6 +4752,591 @@
   }
  ],
  "metadata_cases": [
+  {
+   "id": "pg-drop-column-dependency-view",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-column-dependency",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcoldep_view"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_view CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_view'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcoldep_view.source DROP COLUMN \" Exact Column \"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_view'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcoldep_view","expect_rc": 0},
+    {"name": "seed catalog and capture file identity","sql": "CREATE TABLE pgcoldep_view.source(id int PRIMARY KEY, \" Exact Column \" int, spare int, own_check int CHECK(own_check>0), auto_idx int, generated_source int, dependency_generated_private int GENERATED ALWAYS AS (generated_source+1) STORED);\nINSERT INTO pgcoldep_view.source VALUES(1,2,3,4,5,6);\nCREATE VIEW pgcoldep_view.dependency_view_private AS SELECT \" Exact Column \" FROM pgcoldep_view.source;\nCREATE MATERIALIZED VIEW pgcoldep_view.dependency_mat_private AS SELECT spare FROM pgcoldep_view.source;\nCREATE TABLE pgcoldep_view.inbound(id int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_view.source(id));\nINSERT INTO pgcoldep_view.inbound VALUES(1);\nCREATE INDEX owned_idx ON pgcoldep_view.source(auto_idx);\nCREATE TABLE pgcoldep_view.self_distinct(id int PRIMARY KEY, other int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_view.self_distinct(id));\nCREATE TABLE pgcoldep_view.self_same(id int PRIMARY KEY CONSTRAINT dependency_fk_private REFERENCES pgcoldep_view.self_same(id));\nCREATE TABLE pgcoldep_view.neighbor(id int);\nCREATE SEQUENCE pgcoldep_view.guard START 7;\nCREATE TABLE pgcoldep_view.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_view'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.drop_column.exists.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropColumnDependency","dependency_view_private","dependency_mat_private","dependency_generated_private","dependency_fk_private"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.alter.drop_column.exists.require","metadata": {"reason_code": "column_has_direct_dependency","exists": true}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_view.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_view'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_view'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_view.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_view.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_view.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_view.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 2BP01","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcoldep_view.source DROP COLUMN \" Exact Column \"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  2BP01:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_view.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_view'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_view'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_view.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_view.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_view.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_view.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_view CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_view'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-column-dependency-guarded-restrict",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-column-dependency",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcoldep_guarded_restrict"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_guarded_restrict CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_guarded_restrict'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcoldep_guarded_restrict.source DROP COLUMN IF EXISTS \" Exact Column \" RESTRICT",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_guarded_restrict'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcoldep_guarded_restrict","expect_rc": 0},
+    {"name": "seed catalog and capture file identity","sql": "CREATE TABLE pgcoldep_guarded_restrict.source(id int PRIMARY KEY, \" Exact Column \" int, spare int, own_check int CHECK(own_check>0), auto_idx int, generated_source int, dependency_generated_private int GENERATED ALWAYS AS (generated_source+1) STORED);\nINSERT INTO pgcoldep_guarded_restrict.source VALUES(1,2,3,4,5,6);\nCREATE VIEW pgcoldep_guarded_restrict.dependency_view_private AS SELECT \" Exact Column \" FROM pgcoldep_guarded_restrict.source;\nCREATE MATERIALIZED VIEW pgcoldep_guarded_restrict.dependency_mat_private AS SELECT spare FROM pgcoldep_guarded_restrict.source;\nCREATE TABLE pgcoldep_guarded_restrict.inbound(id int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_guarded_restrict.source(id));\nINSERT INTO pgcoldep_guarded_restrict.inbound VALUES(1);\nCREATE INDEX owned_idx ON pgcoldep_guarded_restrict.source(auto_idx);\nCREATE TABLE pgcoldep_guarded_restrict.self_distinct(id int PRIMARY KEY, other int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_guarded_restrict.self_distinct(id));\nCREATE TABLE pgcoldep_guarded_restrict.self_same(id int PRIMARY KEY CONSTRAINT dependency_fk_private REFERENCES pgcoldep_guarded_restrict.self_same(id));\nCREATE TABLE pgcoldep_guarded_restrict.neighbor(id int);\nCREATE SEQUENCE pgcoldep_guarded_restrict.guard START 7;\nCREATE TABLE pgcoldep_guarded_restrict.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_guarded_restrict'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.drop_column.exists.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropColumnDependency","dependency_view_private","dependency_mat_private","dependency_generated_private","dependency_fk_private"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.alter.drop_column.exists.require","metadata": {"reason_code": "column_has_direct_dependency","exists": true}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_guarded_restrict.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_guarded_restrict'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_guarded_restrict'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_guarded_restrict.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_guarded_restrict.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_guarded_restrict.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_guarded_restrict.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 2BP01","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcoldep_guarded_restrict.source DROP COLUMN IF EXISTS \" Exact Column \" RESTRICT","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  2BP01:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_guarded_restrict.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_guarded_restrict'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_guarded_restrict'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_guarded_restrict.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_guarded_restrict.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_guarded_restrict.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_guarded_restrict.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_guarded_restrict CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_guarded_restrict'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-column-dependency-materialized-view",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-column-dependency",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcoldep_materialized_view"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_materialized_view CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_materialized_view'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcoldep_materialized_view.source DROP COLUMN spare",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_materialized_view'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcoldep_materialized_view","expect_rc": 0},
+    {"name": "seed catalog and capture file identity","sql": "CREATE TABLE pgcoldep_materialized_view.source(id int PRIMARY KEY, \" Exact Column \" int, spare int, own_check int CHECK(own_check>0), auto_idx int, generated_source int, dependency_generated_private int GENERATED ALWAYS AS (generated_source+1) STORED);\nINSERT INTO pgcoldep_materialized_view.source VALUES(1,2,3,4,5,6);\nCREATE VIEW pgcoldep_materialized_view.dependency_view_private AS SELECT \" Exact Column \" FROM pgcoldep_materialized_view.source;\nCREATE MATERIALIZED VIEW pgcoldep_materialized_view.dependency_mat_private AS SELECT spare FROM pgcoldep_materialized_view.source;\nCREATE TABLE pgcoldep_materialized_view.inbound(id int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_materialized_view.source(id));\nINSERT INTO pgcoldep_materialized_view.inbound VALUES(1);\nCREATE INDEX owned_idx ON pgcoldep_materialized_view.source(auto_idx);\nCREATE TABLE pgcoldep_materialized_view.self_distinct(id int PRIMARY KEY, other int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_materialized_view.self_distinct(id));\nCREATE TABLE pgcoldep_materialized_view.self_same(id int PRIMARY KEY CONSTRAINT dependency_fk_private REFERENCES pgcoldep_materialized_view.self_same(id));\nCREATE TABLE pgcoldep_materialized_view.neighbor(id int);\nCREATE SEQUENCE pgcoldep_materialized_view.guard START 7;\nCREATE TABLE pgcoldep_materialized_view.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_materialized_view'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.drop_column.exists.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropColumnDependency","dependency_view_private","dependency_mat_private","dependency_generated_private","dependency_fk_private"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.alter.drop_column.exists.require","metadata": {"reason_code": "column_has_direct_dependency","exists": true}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_materialized_view.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_materialized_view'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_materialized_view'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_materialized_view.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_materialized_view.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_materialized_view.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_materialized_view.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 2BP01","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcoldep_materialized_view.source DROP COLUMN spare","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  2BP01:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_materialized_view.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_materialized_view'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_materialized_view'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_materialized_view.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_materialized_view.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_materialized_view.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_materialized_view.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_materialized_view CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_materialized_view'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-column-dependency-generated",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-column-dependency",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcoldep_generated"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_generated CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_generated'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcoldep_generated.source DROP COLUMN generated_source",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_generated'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcoldep_generated","expect_rc": 0},
+    {"name": "seed catalog and capture file identity","sql": "CREATE TABLE pgcoldep_generated.source(id int PRIMARY KEY, \" Exact Column \" int, spare int, own_check int CHECK(own_check>0), auto_idx int, generated_source int, dependency_generated_private int GENERATED ALWAYS AS (generated_source+1) STORED);\nINSERT INTO pgcoldep_generated.source VALUES(1,2,3,4,5,6);\nCREATE VIEW pgcoldep_generated.dependency_view_private AS SELECT \" Exact Column \" FROM pgcoldep_generated.source;\nCREATE MATERIALIZED VIEW pgcoldep_generated.dependency_mat_private AS SELECT spare FROM pgcoldep_generated.source;\nCREATE TABLE pgcoldep_generated.inbound(id int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_generated.source(id));\nINSERT INTO pgcoldep_generated.inbound VALUES(1);\nCREATE INDEX owned_idx ON pgcoldep_generated.source(auto_idx);\nCREATE TABLE pgcoldep_generated.self_distinct(id int PRIMARY KEY, other int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_generated.self_distinct(id));\nCREATE TABLE pgcoldep_generated.self_same(id int PRIMARY KEY CONSTRAINT dependency_fk_private REFERENCES pgcoldep_generated.self_same(id));\nCREATE TABLE pgcoldep_generated.neighbor(id int);\nCREATE SEQUENCE pgcoldep_generated.guard START 7;\nCREATE TABLE pgcoldep_generated.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_generated'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.drop_column.exists.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropColumnDependency","dependency_view_private","dependency_mat_private","dependency_generated_private","dependency_fk_private"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.alter.drop_column.exists.require","metadata": {"reason_code": "column_has_direct_dependency","exists": true}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_generated.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_generated'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_generated'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_generated.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_generated.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_generated.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_generated.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 2BP01","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcoldep_generated.source DROP COLUMN generated_source","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  2BP01:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_generated.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_generated'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_generated'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_generated.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_generated.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_generated.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_generated.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_generated CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_generated'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-column-dependency-external-fk",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-column-dependency",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcoldep_external_fk"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_external_fk CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_external_fk'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcoldep_external_fk.source DROP COLUMN id",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_external_fk'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcoldep_external_fk","expect_rc": 0},
+    {"name": "seed catalog and capture file identity","sql": "CREATE TABLE pgcoldep_external_fk.source(id int PRIMARY KEY, \" Exact Column \" int, spare int, own_check int CHECK(own_check>0), auto_idx int, generated_source int, dependency_generated_private int GENERATED ALWAYS AS (generated_source+1) STORED);\nINSERT INTO pgcoldep_external_fk.source VALUES(1,2,3,4,5,6);\nCREATE VIEW pgcoldep_external_fk.dependency_view_private AS SELECT \" Exact Column \" FROM pgcoldep_external_fk.source;\nCREATE MATERIALIZED VIEW pgcoldep_external_fk.dependency_mat_private AS SELECT spare FROM pgcoldep_external_fk.source;\nCREATE TABLE pgcoldep_external_fk.inbound(id int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_external_fk.source(id));\nINSERT INTO pgcoldep_external_fk.inbound VALUES(1);\nCREATE INDEX owned_idx ON pgcoldep_external_fk.source(auto_idx);\nCREATE TABLE pgcoldep_external_fk.self_distinct(id int PRIMARY KEY, other int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_external_fk.self_distinct(id));\nCREATE TABLE pgcoldep_external_fk.self_same(id int PRIMARY KEY CONSTRAINT dependency_fk_private REFERENCES pgcoldep_external_fk.self_same(id));\nCREATE TABLE pgcoldep_external_fk.neighbor(id int);\nCREATE SEQUENCE pgcoldep_external_fk.guard START 7;\nCREATE TABLE pgcoldep_external_fk.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_external_fk'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.drop_column.exists.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropColumnDependency","dependency_view_private","dependency_mat_private","dependency_generated_private","dependency_fk_private"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.alter.drop_column.exists.require","metadata": {"reason_code": "column_referenced_by_foreign_key","exists": true}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_external_fk.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_external_fk'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_external_fk'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_external_fk.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_external_fk.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_external_fk.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_external_fk.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 2BP01","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcoldep_external_fk.source DROP COLUMN id","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  2BP01:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_external_fk.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_external_fk'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_external_fk'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_external_fk.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_external_fk.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_external_fk.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_external_fk.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_external_fk CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_external_fk'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-column-dependency-self-fk-distinct",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-column-dependency",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcoldep_self_fk_distinct"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_self_fk_distinct CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_self_fk_distinct'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcoldep_self_fk_distinct.self_distinct DROP COLUMN id",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_self_fk_distinct'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcoldep_self_fk_distinct","expect_rc": 0},
+    {"name": "seed catalog and capture file identity","sql": "CREATE TABLE pgcoldep_self_fk_distinct.source(id int PRIMARY KEY, \" Exact Column \" int, spare int, own_check int CHECK(own_check>0), auto_idx int, generated_source int, dependency_generated_private int GENERATED ALWAYS AS (generated_source+1) STORED);\nINSERT INTO pgcoldep_self_fk_distinct.source VALUES(1,2,3,4,5,6);\nCREATE VIEW pgcoldep_self_fk_distinct.dependency_view_private AS SELECT \" Exact Column \" FROM pgcoldep_self_fk_distinct.source;\nCREATE MATERIALIZED VIEW pgcoldep_self_fk_distinct.dependency_mat_private AS SELECT spare FROM pgcoldep_self_fk_distinct.source;\nCREATE TABLE pgcoldep_self_fk_distinct.inbound(id int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_self_fk_distinct.source(id));\nINSERT INTO pgcoldep_self_fk_distinct.inbound VALUES(1);\nCREATE INDEX owned_idx ON pgcoldep_self_fk_distinct.source(auto_idx);\nCREATE TABLE pgcoldep_self_fk_distinct.self_distinct(id int PRIMARY KEY, other int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_self_fk_distinct.self_distinct(id));\nCREATE TABLE pgcoldep_self_fk_distinct.self_same(id int PRIMARY KEY CONSTRAINT dependency_fk_private REFERENCES pgcoldep_self_fk_distinct.self_same(id));\nCREATE TABLE pgcoldep_self_fk_distinct.neighbor(id int);\nCREATE SEQUENCE pgcoldep_self_fk_distinct.guard START 7;\nCREATE TABLE pgcoldep_self_fk_distinct.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_self_fk_distinct'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.drop_column.exists.require","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropColumnDependency","dependency_view_private","dependency_mat_private","dependency_generated_private","dependency_fk_private"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.alter.drop_column.exists.require","metadata": {"reason_code": "column_referenced_by_foreign_key","exists": true}}]
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_self_fk_distinct.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_self_fk_distinct'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_self_fk_distinct'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_self_fk_distinct.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_self_fk_distinct.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_self_fk_distinct.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_self_fk_distinct.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 2BP01","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcoldep_self_fk_distinct.self_distinct DROP COLUMN id","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  2BP01:"]}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_self_fk_distinct.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_self_fk_distinct'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_self_fk_distinct'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_self_fk_distinct.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_self_fk_distinct.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_self_fk_distinct.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_self_fk_distinct.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_self_fk_distinct CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_self_fk_distinct'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-column-dependency-self-fk-same",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-column-dependency",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcoldep_self_fk_same"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_self_fk_same CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_self_fk_same'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcoldep_self_fk_same.self_same DROP COLUMN id",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_self_fk_same'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcoldep_self_fk_same","expect_rc": 0},
+    {"name": "seed catalog and capture file identity","sql": "CREATE TABLE pgcoldep_self_fk_same.source(id int PRIMARY KEY, \" Exact Column \" int, spare int, own_check int CHECK(own_check>0), auto_idx int, generated_source int, dependency_generated_private int GENERATED ALWAYS AS (generated_source+1) STORED);\nINSERT INTO pgcoldep_self_fk_same.source VALUES(1,2,3,4,5,6);\nCREATE VIEW pgcoldep_self_fk_same.dependency_view_private AS SELECT \" Exact Column \" FROM pgcoldep_self_fk_same.source;\nCREATE MATERIALIZED VIEW pgcoldep_self_fk_same.dependency_mat_private AS SELECT spare FROM pgcoldep_self_fk_same.source;\nCREATE TABLE pgcoldep_self_fk_same.inbound(id int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_self_fk_same.source(id));\nINSERT INTO pgcoldep_self_fk_same.inbound VALUES(1);\nCREATE INDEX owned_idx ON pgcoldep_self_fk_same.source(auto_idx);\nCREATE TABLE pgcoldep_self_fk_same.self_distinct(id int PRIMARY KEY, other int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_self_fk_same.self_distinct(id));\nCREATE TABLE pgcoldep_self_fk_same.self_same(id int PRIMARY KEY CONSTRAINT dependency_fk_private REFERENCES pgcoldep_self_fk_same.self_same(id));\nCREATE TABLE pgcoldep_self_fk_same.neighbor(id int);\nCREATE SEQUENCE pgcoldep_self_fk_same.guard START 7;\nCREATE TABLE pgcoldep_self_fk_same.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_self_fk_same'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropColumnDependency","dependency_view_private","dependency_mat_private","dependency_generated_private","dependency_fk_private"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_self_fk_same.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_self_fk_same'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_self_fk_same'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_self_fk_same.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_self_fk_same.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_self_fk_same.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_self_fk_same.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native executes or skips","sql": "ALTER TABLE pgcoldep_self_fk_same.self_same DROP COLUMN id","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "drops the self-reference and column","sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE conrelid='pgcoldep_self_fk_same.self_same'::regclass","expect": "0"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_self_fk_same.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_self_fk_same CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_self_fk_same'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-column-dependency-local-index",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-column-dependency",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcoldep_local_index"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_local_index CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_local_index'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcoldep_local_index.source DROP COLUMN auto_idx",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_local_index'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcoldep_local_index","expect_rc": 0},
+    {"name": "seed catalog and capture file identity","sql": "CREATE TABLE pgcoldep_local_index.source(id int PRIMARY KEY, \" Exact Column \" int, spare int, own_check int CHECK(own_check>0), auto_idx int, generated_source int, dependency_generated_private int GENERATED ALWAYS AS (generated_source+1) STORED);\nINSERT INTO pgcoldep_local_index.source VALUES(1,2,3,4,5,6);\nCREATE VIEW pgcoldep_local_index.dependency_view_private AS SELECT \" Exact Column \" FROM pgcoldep_local_index.source;\nCREATE MATERIALIZED VIEW pgcoldep_local_index.dependency_mat_private AS SELECT spare FROM pgcoldep_local_index.source;\nCREATE TABLE pgcoldep_local_index.inbound(id int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_local_index.source(id));\nINSERT INTO pgcoldep_local_index.inbound VALUES(1);\nCREATE INDEX owned_idx ON pgcoldep_local_index.source(auto_idx);\nCREATE TABLE pgcoldep_local_index.self_distinct(id int PRIMARY KEY, other int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_local_index.self_distinct(id));\nCREATE TABLE pgcoldep_local_index.self_same(id int PRIMARY KEY CONSTRAINT dependency_fk_private REFERENCES pgcoldep_local_index.self_same(id));\nCREATE TABLE pgcoldep_local_index.neighbor(id int);\nCREATE SEQUENCE pgcoldep_local_index.guard START 7;\nCREATE TABLE pgcoldep_local_index.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_local_index'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropColumnDependency","dependency_view_private","dependency_mat_private","dependency_generated_private","dependency_fk_private"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_local_index.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_local_index'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_local_index'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_local_index.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_local_index.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_local_index.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_local_index.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native executes or skips","sql": "ALTER TABLE pgcoldep_local_index.source DROP COLUMN auto_idx","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "drops automatically owned index","sql": "SELECT to_regclass('pgcoldep_local_index.owned_idx') IS NULL","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_local_index.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_local_index CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_local_index'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-column-dependency-local-check",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-column-dependency",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcoldep_local_check"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_local_check CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_local_check'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcoldep_local_check.source DROP COLUMN own_check",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_local_check'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcoldep_local_check","expect_rc": 0},
+    {"name": "seed catalog and capture file identity","sql": "CREATE TABLE pgcoldep_local_check.source(id int PRIMARY KEY, \" Exact Column \" int, spare int, own_check int CHECK(own_check>0), auto_idx int, generated_source int, dependency_generated_private int GENERATED ALWAYS AS (generated_source+1) STORED);\nINSERT INTO pgcoldep_local_check.source VALUES(1,2,3,4,5,6);\nCREATE VIEW pgcoldep_local_check.dependency_view_private AS SELECT \" Exact Column \" FROM pgcoldep_local_check.source;\nCREATE MATERIALIZED VIEW pgcoldep_local_check.dependency_mat_private AS SELECT spare FROM pgcoldep_local_check.source;\nCREATE TABLE pgcoldep_local_check.inbound(id int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_local_check.source(id));\nINSERT INTO pgcoldep_local_check.inbound VALUES(1);\nCREATE INDEX owned_idx ON pgcoldep_local_check.source(auto_idx);\nCREATE TABLE pgcoldep_local_check.self_distinct(id int PRIMARY KEY, other int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_local_check.self_distinct(id));\nCREATE TABLE pgcoldep_local_check.self_same(id int PRIMARY KEY CONSTRAINT dependency_fk_private REFERENCES pgcoldep_local_check.self_same(id));\nCREATE TABLE pgcoldep_local_check.neighbor(id int);\nCREATE SEQUENCE pgcoldep_local_check.guard START 7;\nCREATE TABLE pgcoldep_local_check.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_local_check'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropColumnDependency","dependency_view_private","dependency_mat_private","dependency_generated_private","dependency_fk_private"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_local_check.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_local_check'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_local_check'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_local_check.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_local_check.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_local_check.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_local_check.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native executes or skips","sql": "ALTER TABLE pgcoldep_local_check.source DROP COLUMN own_check","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "drops automatically owned CHECK","sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE conrelid='pgcoldep_local_check.source'::regclass AND contype='c'","expect": "0"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_local_check.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_local_check CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_local_check'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-column-dependency-case-guard",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-column-dependency",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcoldep_case_guard"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_case_guard CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_case_guard'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcoldep_case_guard.source DROP COLUMN IF EXISTS \" exact column \"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_case_guard'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcoldep_case_guard","expect_rc": 0},
+    {"name": "seed catalog and capture file identity","sql": "CREATE TABLE pgcoldep_case_guard.source(id int PRIMARY KEY, \" Exact Column \" int, spare int, own_check int CHECK(own_check>0), auto_idx int, generated_source int, dependency_generated_private int GENERATED ALWAYS AS (generated_source+1) STORED);\nINSERT INTO pgcoldep_case_guard.source VALUES(1,2,3,4,5,6);\nCREATE VIEW pgcoldep_case_guard.dependency_view_private AS SELECT \" Exact Column \" FROM pgcoldep_case_guard.source;\nCREATE MATERIALIZED VIEW pgcoldep_case_guard.dependency_mat_private AS SELECT spare FROM pgcoldep_case_guard.source;\nCREATE TABLE pgcoldep_case_guard.inbound(id int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_case_guard.source(id));\nINSERT INTO pgcoldep_case_guard.inbound VALUES(1);\nCREATE INDEX owned_idx ON pgcoldep_case_guard.source(auto_idx);\nCREATE TABLE pgcoldep_case_guard.self_distinct(id int PRIMARY KEY, other int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_case_guard.self_distinct(id));\nCREATE TABLE pgcoldep_case_guard.self_same(id int PRIMARY KEY CONSTRAINT dependency_fk_private REFERENCES pgcoldep_case_guard.self_same(id));\nCREATE TABLE pgcoldep_case_guard.neighbor(id int);\nCREATE SEQUENCE pgcoldep_case_guard.guard START 7;\nCREATE TABLE pgcoldep_case_guard.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_case_guard'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropColumnDependency","dependency_view_private","dependency_mat_private","dependency_generated_private","dependency_fk_private"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_case_guard.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_case_guard'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_case_guard'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_case_guard.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_case_guard.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_case_guard.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_case_guard.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native executes or skips","sql": "ALTER TABLE pgcoldep_case_guard.source DROP COLUMN IF EXISTS \" exact column \"","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_case_guard.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_case_guard'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_case_guard'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_case_guard.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_case_guard.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_case_guard.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_case_guard.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_case_guard CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_case_guard'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-column-dependency-cascade",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-column-dependency",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcoldep_cascade"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_cascade CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_cascade'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcoldep_cascade.source DROP COLUMN \" Exact Column \" CASCADE",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_cascade'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcoldep_cascade","expect_rc": 0},
+    {"name": "seed catalog and capture file identity","sql": "CREATE TABLE pgcoldep_cascade.source(id int PRIMARY KEY, \" Exact Column \" int, spare int, own_check int CHECK(own_check>0), auto_idx int, generated_source int, dependency_generated_private int GENERATED ALWAYS AS (generated_source+1) STORED);\nINSERT INTO pgcoldep_cascade.source VALUES(1,2,3,4,5,6);\nCREATE VIEW pgcoldep_cascade.dependency_view_private AS SELECT \" Exact Column \" FROM pgcoldep_cascade.source;\nCREATE MATERIALIZED VIEW pgcoldep_cascade.dependency_mat_private AS SELECT spare FROM pgcoldep_cascade.source;\nCREATE TABLE pgcoldep_cascade.inbound(id int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_cascade.source(id));\nINSERT INTO pgcoldep_cascade.inbound VALUES(1);\nCREATE INDEX owned_idx ON pgcoldep_cascade.source(auto_idx);\nCREATE TABLE pgcoldep_cascade.self_distinct(id int PRIMARY KEY, other int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_cascade.self_distinct(id));\nCREATE TABLE pgcoldep_cascade.self_same(id int PRIMARY KEY CONSTRAINT dependency_fk_private REFERENCES pgcoldep_cascade.self_same(id));\nCREATE TABLE pgcoldep_cascade.neighbor(id int);\nCREATE SEQUENCE pgcoldep_cascade.guard START 7;\nCREATE TABLE pgcoldep_cascade.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_cascade'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGDropColumnDependency","dependency_view_private","dependency_mat_private","dependency_generated_private","dependency_fk_private"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_cascade.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_cascade'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_cascade'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_cascade.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_cascade.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_cascade.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_cascade.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native executes or skips","sql": "ALTER TABLE pgcoldep_cascade.source DROP COLUMN \" Exact Column \" CASCADE","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "cascade removes direct view","sql": "SELECT to_regclass('pgcoldep_cascade.dependency_view_private') IS NULL","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_cascade.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_cascade CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_cascade'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-column-dependency-stale",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-column-dependency",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcoldep_stale"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_stale CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_stale'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcoldep_stale.neighbor ADD COLUMN marker int;ALTER TABLE pgcoldep_stale.source DROP COLUMN \" Exact Column \"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_stale'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcoldep_stale","expect_rc": 0},
+    {"name": "seed catalog and capture file identity","sql": "CREATE TABLE pgcoldep_stale.source(id int PRIMARY KEY, \" Exact Column \" int, spare int, own_check int CHECK(own_check>0), auto_idx int, generated_source int, dependency_generated_private int GENERATED ALWAYS AS (generated_source+1) STORED);\nINSERT INTO pgcoldep_stale.source VALUES(1,2,3,4,5,6);\nCREATE VIEW pgcoldep_stale.dependency_view_private AS SELECT \" Exact Column \" FROM pgcoldep_stale.source;\nCREATE MATERIALIZED VIEW pgcoldep_stale.dependency_mat_private AS SELECT spare FROM pgcoldep_stale.source;\nCREATE TABLE pgcoldep_stale.inbound(id int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_stale.source(id));\nINSERT INTO pgcoldep_stale.inbound VALUES(1);\nCREATE INDEX owned_idx ON pgcoldep_stale.source(auto_idx);\nCREATE TABLE pgcoldep_stale.self_distinct(id int PRIMARY KEY, other int CONSTRAINT dependency_fk_private REFERENCES pgcoldep_stale.self_distinct(id));\nCREATE TABLE pgcoldep_stale.self_same(id int PRIMARY KEY CONSTRAINT dependency_fk_private REFERENCES pgcoldep_stale.self_same(id));\nCREATE TABLE pgcoldep_stale.neighbor(id int);\nCREATE SEQUENCE pgcoldep_stale.guard START 7;\nCREATE TABLE pgcoldep_stale.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_stale'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["complete","unverified"],
+    "statement_indices": [0,1],
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.alter.drop_column.exists.require","reason_code": "unproven_column_target","required_facts": ["column.pg_dependencies"]}],
+    "serialized_not_contains": ["PGDropColumnDependency","dependency_view_private","dependency_mat_private","dependency_generated_private","dependency_fk_private"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "catalog and file identities match","sql": "SELECT count(*) FROM ((TABLE pgcoldep_stale.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_stale'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.attisdropped FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 WHERE c.relnamespace='pgcoldep_stale'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcoldep_stale.receipt)) AS delta","expect": "0"},
+    {"assert": "authored audit preserves payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND \" Exact Column \"=2 AND spare=3 AND own_check=4 AND auto_idx=5 AND generated_source=6 AND dependency_generated_private=7) FROM pgcoldep_stale.source","expect": "t"},
+    {"assert": "foreign-key row remains","sql": "SELECT count(*)=1 AND bool_and(id=1) FROM pgcoldep_stale.inbound","expect": "t"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_stale.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native executes or skips","sql": "ALTER TABLE pgcoldep_stale.neighbor ADD COLUMN marker int","expect_rc": 0},
+    {"name": "native refuses 2BP01","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcoldep_stale.source DROP COLUMN \" Exact Column \"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  2BP01:"]}
+   ],
+   "structure": [
+    {"assert": "native predecessor adds marker","sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgcoldep_stale.neighbor'::regclass AND attname='marker'","expect": "1"},
+    {"assert": "keeps independent sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcoldep_stale.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcoldep_stale CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcoldep_stale'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
   {
    "id": "pg-drop-check-only-partition-root",
    "anchor": "postgres17",
@@ -14965,7 +15596,8 @@
     {"name": "seed independent option targets", "sql": "CREATE TABLE pgtune37_opt.low_t(id int);CREATE TABLE pgtune37_opt.dup_t(id int);CREATE TABLE pgtune37_opt.lower_t(id int);CREATE TABLE pgtune37_opt.positive_t(id int);CREATE TABLE pgtune37_opt.negative_t(id int);CREATE TABLE pgtune37_opt.max_t(id int);CREATE TABLE pgtune37_opt.inherited_t(id int);CREATE TABLE pgtune37_opt.reset_unknown_t(id int);CREATE TABLE pgtune37_opt.reset_repeat_t(id int);CREATE TABLE pgtune37_opt.missing_set_t(id int);CREATE TABLE pgtune37_opt.missing_reset_t(id int);INSERT INTO pgtune37_opt.low_t VALUES(41);INSERT INTO pgtune37_opt.dup_t VALUES(41);INSERT INTO pgtune37_opt.lower_t VALUES(41);INSERT INTO pgtune37_opt.positive_t VALUES(41);INSERT INTO pgtune37_opt.negative_t VALUES(41);INSERT INTO pgtune37_opt.max_t VALUES(41);INSERT INTO pgtune37_opt.inherited_t VALUES(41);INSERT INTO pgtune37_opt.reset_unknown_t VALUES(41);INSERT INTO pgtune37_opt.reset_repeat_t VALUES(41);INSERT INTO pgtune37_opt.missing_set_t VALUES(41);INSERT INTO pgtune37_opt.missing_reset_t VALUES(41);ALTER TABLE pgtune37_opt.reset_unknown_t ALTER COLUMN id SET(n_distinct=0.5);ALTER TABLE pgtune37_opt.reset_repeat_t ALTER COLUMN id SET(n_distinct=0.5);CREATE TABLE pgtune37_opt.quoted_t(id int,\"ID\" int);INSERT INTO pgtune37_opt.quoted_t VALUES(41,42);CREATE SEQUENCE pgtune37_opt.guard START 7", "expect_rc": 0},
     {"name": "snapshot option attributes and file identities", "sql": "CREATE TABLE pgtune37_opt.receipt AS SELECT c.oid relid,c.relfilenode fileid,a.attnum,a.attname name,a.attstattarget target,COALESCE(a.attoptions::text,'') opts FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid WHERE c.relnamespace='pgtune37_opt'::regnamespace AND c.relkind='r' AND c.relname!='receipt' AND a.attnum>0 AND NOT a.attisdropped", "expect_rc": 0}
    ],
-   "expect": {"exit": 0, "verdict": "reject", "statements": 12, "findings": 6, "diagnostics": 0, "unsupported": 0, "coverage": "complete", "evidence_gaps": 0, "rule_summary_loaded": 5, "statement_indices": [0,1,2,3,4,5,6,7,8,9,10,11],
+   "expect": {"exit": 0, "verdict": "reject", "statements": 12, "findings": 6, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 11, "rule_id": "ddl.alter.drop_column.exists.require", "reason_code": "unproven_column_target", "required_facts": ["column.pg_dependencies"]}], "rule_summary_loaded": 5, "statement_indices": [0,1,2,3,4,5,6,7,8,9,10,11],
     "finding_entries": [{"index": 0, "rule_id": "ddl.pg.alter.column.options.valid", "level": "blocker"}, {"index": 1, "rule_id": "ddl.pg.alter.column.options.valid", "level": "blocker"}, {"index": 6, "rule_id": "ddl.pg.alter.column.options.valid", "level": "blocker"}, {"index": 9, "rule_id": "ddl.pg.alter.column.options.valid", "level": "blocker"}, {"index": 10, "rule_id": "ddl.pg.alter.column.options.valid", "level": "blocker"}, {"index": 11, "rule_id": "ddl.pg.alter.drop_column.advisory", "level": "warning"}],
     "finding_metadata": [{"index": 0, "rule_id": "ddl.pg.alter.column.options.valid", "metadata": {"reason_code": "column_option_out_of_range", "parameter": "n_distinct"}}, {"index": 1, "rule_id": "ddl.pg.alter.column.options.valid", "metadata": {"reason_code": "column_option_duplicate", "parameter": "n_distinct"}}, {"index": 6, "rule_id": "ddl.pg.alter.column.options.valid", "metadata": {"reason_code": "column_option_out_of_range", "parameter": "n_distinct_inherited"}}, {"index": 9, "rule_id": "ddl.pg.alter.column.options.valid", "metadata": {"reason_code": "column_absent", "column": "ghost"}}, {"index": 10, "rule_id": "ddl.pg.alter.column.options.valid", "metadata": {"reason_code": "column_absent", "column": "ghost"}}], "serialized_not_contains": ["PGColumnTuning", "StatisticsValue"]},
    "post_verify": [
@@ -15706,6 +16338,20 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.drop-column-dependency-offline",
+  "T37.cli.drop-column-dependency-disabled",
+  "T37.meta.pg-drop-column-dependency-view",
+  "T37.meta.pg-drop-column-dependency-guarded-restrict",
+  "T37.meta.pg-drop-column-dependency-materialized-view",
+  "T37.meta.pg-drop-column-dependency-generated",
+  "T37.meta.pg-drop-column-dependency-external-fk",
+  "T37.meta.pg-drop-column-dependency-self-fk-distinct",
+  "T37.meta.pg-drop-column-dependency-self-fk-same",
+  "T37.meta.pg-drop-column-dependency-local-index",
+  "T37.meta.pg-drop-column-dependency-local-check",
+  "T37.meta.pg-drop-column-dependency-case-guard",
+  "T37.meta.pg-drop-column-dependency-cascade",
+  "T37.meta.pg-drop-column-dependency-stale",
   "T37.meta.pg-drop-check-only-partition-root",
   "T37.meta.pg-drop-check-only-guarded",
   "T37.meta.pg-drop-check-only-cascade",

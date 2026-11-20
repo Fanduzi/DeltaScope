@@ -7625,7 +7625,22 @@
                 "file:testdata/ddl-golden/T37.json#pg-column-tuning-options",
                 "file:testdata/ddl-golden/T37.json#pg-column-tuning-statistics",
                 "file:testdata/ddl-golden/T37.json#column-tuning-drop-guard-offline",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_invalid.expected.yaml#ddl.alter.drop_column.exists.require"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_tuning_invalid.expected.yaml#ddl.alter.drop_column.exists.require",
+                "file:testdata/ddl-golden/T37.json#drop-column-dependency-offline",
+                "file:testdata/ddl-golden/T37.json#drop-column-dependency-disabled",
+                "file:testdata/ddl-golden/T37.json#pg-drop-column-dependency-view",
+                "file:testdata/ddl-golden/T37.json#pg-drop-column-dependency-guarded-restrict",
+                "file:testdata/ddl-golden/T37.json#pg-drop-column-dependency-materialized-view",
+                "file:testdata/ddl-golden/T37.json#pg-drop-column-dependency-generated",
+                "file:testdata/ddl-golden/T37.json#pg-drop-column-dependency-external-fk",
+                "file:testdata/ddl-golden/T37.json#pg-drop-column-dependency-self-fk-distinct",
+                "file:testdata/ddl-golden/T37.json#pg-drop-column-dependency-self-fk-same",
+                "file:testdata/ddl-golden/T37.json#pg-drop-column-dependency-local-index",
+                "file:testdata/ddl-golden/T37.json#pg-drop-column-dependency-local-check",
+                "file:testdata/ddl-golden/T37.json#pg-drop-column-dependency-case-guard",
+                "file:testdata/ddl-golden/T37.json#pg-drop-column-dependency-cascade",
+                "file:testdata/ddl-golden/T37.json#pg-drop-column-dependency-stale",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_column_direct_dependency.expected.yaml#ddl.alter.drop_column.exists.require"
               ]
             }
           ]

@@ -782,6 +782,24 @@ Delivered at `7af6f84ace0fcd97c44f6fd4bbe9f3676a501415` with 50 canonical tasks,
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44782282463/job/136447837391),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136448028882).
 
+### D27 PostgreSQL direct DROP COLUMN dependencies
+
+`6819eaa3` observes direct dependencies on an exact user column on a fresh
+ordinary PostgreSQL 17 table. `26e53477` extends the existing DROP COLUMN
+blocker under RESTRICT. The checks cover views, materialized views, stored
+generated columns and referencing foreign keys. A self-referential foreign
+key using the same source column follows PostgreSQL's automatic removal path.
+Missing applicable dependency proof produces `column.pg_dependencies`.
+
+The T37 preview passed 409/409 with 11,137 assertions. Thirteen new native
+commands returned six successes and seven `2BP01` refusals. Fifteen evidence
+selectors attach to the PostgreSQL 17 DROP COLUMN subaction. The earlier
+tuning batch retains its SQL and native controls and now asserts the stale
+dependency gap at statement index 11. CASCADE effects, wider relation kinds
+and indirect dependencies remain separate. The fixed candidate is in
+verification.
+[Decision](../decisions/2026-11-21-postgresql-drop-column-dependencies.md)
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.
