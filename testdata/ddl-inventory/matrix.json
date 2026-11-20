@@ -7896,7 +7896,16 @@
                 "file:testdata/ddl-golden/T37.json#pg-drop-not-null-replica-key-unattached",
                 "file:testdata/ddl-golden/T37.json#pg-drop-not-null-replica-key-precedence",
                 "file:testdata/ddl-golden/T37.json#pg-drop-not-null-replica-key-stale",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_not_null_replica_key.expected.yaml#ddl.pg.alter.column.generation.transition.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_not_null_replica_key.expected.yaml#ddl.pg.alter.column.generation.transition.valid",
+                "file:testdata/ddl-golden/T37.json#pg-partition-nullability-child-parent-required",
+                "file:testdata/ddl-golden/T37.json#pg-partition-nullability-parent-only-drop",
+                "file:testdata/ddl-golden/T37.json#pg-partition-nullability-nullable-parent-only-drop",
+                "file:testdata/ddl-golden/T37.json#pg-partition-nullability-parent-only-set",
+                "file:testdata/ddl-golden/T37.json#pg-partition-nullability-recursive-set-data-refusal",
+                "file:testdata/ddl-golden/T37.json#pg-partition-nullability-only-with-marked-child",
+                "file:testdata/ddl-golden/T37.json#pg-partition-nullability-recursive-drop",
+                "file:testdata/ddl-golden/T37.json#pg-partition-nullability-empty-root-set",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/partition_drop_not_null.expected.yaml#ddl.pg.alter.column.generation.transition.valid"
               ]
             }
           ]
@@ -8296,7 +8305,16 @@
                 "file:testdata/ddl-golden/T37.json#pg-fk-keys-delete-set-missing-exact",
                 "file:testdata/ddl-golden/T37.json#pg-fk-keys-delete-set-system",
                 "file:testdata/ddl-golden/T37.json#pg-fk-keys-delete-set-not-valid",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/foreign_key_delete_set_columns.expected.yaml#ddl.pg.alter.add_foreign_key.targets.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/foreign_key_delete_set_columns.expected.yaml#ddl.pg.alter.add_foreign_key.targets.valid",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-smallint",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-bigint-implicit-primary",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-text",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-numeric",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-varchar",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-domain",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-reordered",
+                "file:testdata/ddl-golden/T37.json#pg-fk-keys-scalar-equality-second-column",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/foreign_key_scalar_equality.expected.yaml#ddl.pg.alter.add_foreign_key.targets.valid"
               ]
             }
           ]
@@ -8452,7 +8470,16 @@
                 "file:testdata/ddl-golden/T37.json#pg-constraint-target-fk-data",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-target-prior-ddl",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-target-prior-parser",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_target_invalid.expected.yaml#ddl.pg.alter.validate_constraint.target.require"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_target_invalid.expected.yaml#ddl.pg.alter.validate_constraint.target.require",
+                "file:testdata/ddl-golden/T37.json#pg-validate-check-traversal-ordinary-parent",
+                "file:testdata/ddl-golden/T37.json#pg-validate-check-traversal-partitioned-parent",
+                "file:testdata/ddl-golden/T37.json#pg-validate-check-traversal-childless-root",
+                "file:testdata/ddl-golden/T37.json#pg-validate-check-traversal-recursive",
+                "file:testdata/ddl-golden/T37.json#pg-validate-check-traversal-already-validated",
+                "file:testdata/ddl-golden/T37.json#pg-validate-check-traversal-no-inherit",
+                "file:testdata/ddl-golden/T37.json#pg-validate-check-traversal-child-first",
+                "file:testdata/ddl-golden/T37.json#pg-validate-check-traversal-foreign-key",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/validate_check_only.expected.yaml#ddl.pg.alter.validate_constraint.target.require"
               ]
             }
           ]

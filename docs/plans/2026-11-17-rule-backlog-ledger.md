@@ -919,6 +919,29 @@ networks and Golden volumes.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44815378506/job/136562221652),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136562352876) succeeded at the delivered SHA.
 
+### D37–D39 PostgreSQL foreign-key equality and constraint traversal
+
+`90be4c87` observes bounded scalar equality, CHECK validation traversal
+and partition nullability. `a1809635` consumes those facts under the
+existing blocker IDs.
+
+- D37 checks equality operators or implicit casts for the selected
+  reference key and ordered FK columns. Domain, array and polymorphic
+  cases require additional facts.
+  [Decision](../decisions/2026-11-21-postgresql-foreign-key-scalar-equality.md)
+- D38 checks whether validating an exact unvalidated CHECK with ONLY
+  requires attached children. Existing row validity remains a separate
+  requirement.
+  [Decision](../decisions/2026-11-21-postgresql-validate-check-only.md)
+- D39 checks partition-parent NOT NULL requirements and ONLY traversal
+  for SET and DROP NOT NULL. Data-dependent SET retains its evidence gap.
+  [Decision](../decisions/2026-11-21-postgresql-partition-nullability.md)
+
+The joint T37 preview passed all 505 cases and 14,539 assertions. The 24
+added cases exercised 25 native commands. Twenty-seven selectors bind
+three exact PostgreSQL 17 subactions. The fixed candidate is in
+verification.
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.
