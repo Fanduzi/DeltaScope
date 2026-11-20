@@ -13,8 +13,12 @@ func TestPGForeignKeyTargets(t *testing.T) {
 	for _, tc := range []struct {
 		name, reason, fact, column string
 		change                     func(*spec.Statement, *spec.PGForeignKeySelection)
+		equalityPosition           int
 	}{
 		{name: "exact identifiers"},
+		{name: "mismatched scalar pair", reason: "foreign_key_column_types_incompatible", column: "A,B", equalityPosition: 1},
+		{name: "unobserved scalar pair", fact: "foreign_key.pg_equality_compatibility", equalityPosition: -1},
+		{name: "invalid scalar pair position", fact: "foreign_key.pg_equality_compatibility", equalityPosition: 2},
 		{name: "action duplicate accepted", change: func(_ *spec.Statement, fk *spec.PGForeignKeySelection) { fk.DeleteSetColumns = []string{"A,B", "A,B"} }},
 		{name: "action present outside key", reason: "foreign_key_delete_set_column_outside_key", column: " extra ", change: func(s *spec.Statement, fk *spec.PGForeignKeySelection) {
 			fk.DeleteSetColumns = []string{" extra "}
@@ -99,6 +103,11 @@ func TestPGForeignKeyTargets(t *testing.T) {
 					PGRelation: spec.PGRelationState{Name: "parent", Kind: "r"}, PGColumns: catalog("C,D")}}}
 			if tc.change != nil {
 				tc.change(&s, &fk)
+			}
+			if s.Metadata != nil && tc.equalityPosition >= 0 {
+				s.Metadata.PGForeignKeyEquality = &spec.PGForeignKeyEquality{Target: spec.PGForeignKeyEqualityTarget{
+					Source: *s.DDL.Table, Reference: fk.Reference, Columns: fk.Columns, ReferencedColumns: fk.ReferencedColumns},
+					IncompatiblePosition: tc.equalityPosition}
 			}
 			r := pgForeignKeyTargetRule{level: rule.LevelBlocker}
 			findings, err := r.Evaluate(context.Background(), s)

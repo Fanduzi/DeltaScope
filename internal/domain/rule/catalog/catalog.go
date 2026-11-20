@@ -243,7 +243,7 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	case "ddl.pg.alter.set_schema.target.valid":
 		return "Checks the PostgreSQL 17 destination schema and exact collisions for an ordinary table, its row and array types, attached indexes and column-owned sequences."
 	case "ddl.pg.alter.add_foreign_key.targets.valid":
-		return "Checks PostgreSQL 17 ADD FOREIGN KEY relation and column identities, referenced key eligibility, column counts and ON DELETE SET column lists on fresh ordinary tables, including NOT VALID declarations."
+		return "Checks PostgreSQL 17 ADD FOREIGN KEY relation and column identities, referenced key eligibility, column counts, scalar equality and ON DELETE SET column lists on fresh ordinary tables, including NOT VALID declarations."
 	case "ddl.pg.alter.constraint_using_index.valid":
 		return "Checks catalog preconditions for using an exact existing index in a PostgreSQL 17 PRIMARY KEY or UNIQUE constraint. Checks index ownership, shape, key sort, collation, options and observed default operator classes."
 	case "ddl.pg.alter.add_check.name.available":
@@ -290,7 +290,7 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 		return "PG17 ADD IDENTITY / SET options explicit CYCLE warns about value reuse; NO CYCLE and omission are silent. CREATE/ADD COLUMN remain owned by the separate declaration rule."
 	}
 	if ruleID == "ddl.pg.alter.validate_constraint.target.require" {
-		return "Requires a proven existing PostgreSQL FK/CHECK target for VALIDATE CONSTRAINT. Missing/wrong-kind targets block; unknown, ambiguous or stale catalog facts remain evidence gaps. Does not verify data or execution."
+		return "Checks PostgreSQL 17 FK and CHECK targets for VALIDATE and checks parent-only requests on an unvalidated CHECK with attached children. Missing applicable observations remain evidence gaps. Existing row validity has separate prerequisites."
 	}
 	if ruleID == "ddl.pg.alter.constraint_deferrability.target.require" {
 		return "Requires a proven existing PostgreSQL FK target for ALTER CONSTRAINT deferrability. Missing/wrong-kind targets block; quoted names bind exactly and unknown/stale facts remain evidence gaps."

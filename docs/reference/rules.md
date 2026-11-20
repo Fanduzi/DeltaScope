@@ -576,7 +576,7 @@ These rules guard against MySQL and TiDB database/schema lifecycle DDL operation
 
 | Rule ID | Bounded check | Default Level | Metadata Required |
 |---------|---------------|:-------------:|:-----------------:|
-| `ddl.pg.alter.validate_constraint.target.require` | Existing FK/CHECK target for VALIDATE | blocker | Yes |
+| `ddl.pg.alter.validate_constraint.target.require` | Existing FK/CHECK target for VALIDATE. An unvalidated CHECK with attached children can require traversal. | blocker | Yes |
 | `ddl.pg.alter.constraint_deferrability.target.require` | Existing FK target for ALTER CONSTRAINT deferrability | blocker | Yes |
 | `ddl.pg.alter.drop_constraint.target.require` | Checks exact DROP targets, direct foreign-key dependencies on primary or unique constraints under RESTRICT, inherited CHECKs, and CHECKs on partitioned parents targeted with ONLY. IF EXISTS guards absence. | blocker | Yes |
 
@@ -712,7 +712,7 @@ All four are enabled by default, parameterless, and PG17 metadata-aware.
 
 | Rule | Bounded check | Default level |
 | --- | --- | --- |
-| `ddl.pg.alter.column.generation.transition.valid` | ADD/SET/DROP IDENTITY, DROP EXPRESSION and DEFAULT/NOT NULL generation/PK target preconditions, including live replica identity key slots for DROP NOT NULL | blocker |
+| `ddl.pg.alter.column.generation.transition.valid` | ADD/SET/DROP IDENTITY, DROP EXPRESSION and DEFAULT/NOT NULL generation/PK target preconditions, including live replica identity key slots for DROP NOT NULL and PostgreSQL 17 partition NOT NULL traversal | blocker |
 | `ddl.pg.alter.identity.sequence_options.valid` | Duplicate modes/options and proven invalid increment/cache/type/bounds/START/RESTART | blocker |
 | `ddl.pg.alter.identity.restart.warn` | Explicit RESTART value-reuse and concurrent-issuance blocking risk | warning |
 | `ddl.pg.alter.identity.cycle.warn` | Explicit CYCLE in ADD IDENTITY or SET options | warning |
@@ -825,7 +825,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.create_index.concurrently.require` | `CREATE INDEX` must use `CONCURRENTLY` to avoid blocking reads/writes. Findings include bounded index shape metadata: `index_kind`, `access_method`, `column_count`, `included_column_count`, `has_predicate`, `has_expression_keys`, `expression_count`. Metadata is additive and does not emit predicate or expression SQL text. | warning | No |
 | `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | Adding a `NOT NULL` column with a volatile default may trigger a full table rewrite. Findings include: `not_null`, `has_default`, `default_kind` (`literal`, `null`, `function_call`, `expression`, `unknown`). Metadata does not emit default expression text or function names. | warning | No |
 | `ddl.pg.alter.constraint_using_index.valid` | Checks exact `PRIMARY KEY` or `UNIQUE USING INDEX` prerequisites on a fresh ordinary PostgreSQL 17 table. Checks default operator classes on key columns when the catalog establishes the selection. Unobserved applicable facts yield `unproven_constraint_using_index`. | blocker | No |
-| `ddl.pg.alter.add_foreign_key.targets.valid` | Checks exact table and column identities, referenced key eligibility, and column counts on fresh PostgreSQL 17 ordinary tables. An omitted reference column list uses the observed primary key. `ON DELETE SET NULL` and `SET DEFAULT` column lists must name members of the declared foreign key. | blocker | No |
+| `ddl.pg.alter.add_foreign_key.targets.valid` | Checks exact table and column identities, referenced key eligibility, and column counts on fresh PostgreSQL 17 ordinary tables. An omitted reference column list uses the observed primary key. The observed selected key also supplies bounded scalar equality and implicit conversion checks. `ON DELETE SET NULL` and `SET DEFAULT` column lists must name members of the declared foreign key. | blocker | No |
 | `ddl.pg.alter.add_check.name.available` | Requires an unused exact constraint name for one explicitly named `ADD CHECK` or `ADD CHECK NOT VALID` on a freshly bound ordinary PostgreSQL 17 table. Unavailable or stale proof reports `unproven_check_constraint_name`. | blocker | No |
 | `ddl.pg.alter.add_check.not_valid.require` | `ADD CHECK` constraint should use `NOT VALID` to avoid a full table scan with `ACCESS EXCLUSIVE` lock | warning | No |
 | `ddl.pg.alter.set_data_type.rewrite.warn` | Changing a column type may require a full table rewrite depending on the conversion. Findings include: `has_using` (whether a USING clause is present). Metadata does not emit USING expression SQL text. | warning | No |

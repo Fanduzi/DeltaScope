@@ -473,7 +473,7 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 	if request.Type == "column_traversal" {
 		for _, seed := range p.pgColumnTraversals {
 			if seed.Schema == request.Schema && seed.Table == request.Qualifiers["table"] && seed.Column == request.Name {
-				return &spec.ObjectSnapshot{PGColumnTraversal: &spec.PGColumnTraversal{Schema: seed.Schema, Table: seed.Table, Column: seed.Column, Inherited: seed.Inherited, Partition: seed.Partition, ColumnExists: seed.ColumnExists, AttachedChildren: seed.AttachedChildren}}, nil
+				return &spec.ObjectSnapshot{PGColumnTraversal: &spec.PGColumnTraversal{Schema: seed.Schema, Table: seed.Table, Column: seed.Column, Inherited: seed.Inherited, Partition: seed.Partition, ColumnExists: seed.ColumnExists, AttachedChildren: seed.AttachedChildren, ParentNotNull: seed.ParentNotNull}}, nil
 			}
 		}
 		return nil, nil
@@ -495,6 +495,16 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 		return nil, nil
 	}
 
+	if request.Type == "foreign_key_scalar_equality" {
+		if target := request.PGForeignKeyEqualityTarget; target != nil {
+			for _, seed := range p.pgForeignKeyDirectories {
+				if seed.Schema == target.Reference.Schema && seed.Table == target.Reference.Name && seed.IncompatiblePosition != nil {
+					return &spec.ObjectSnapshot{PGForeignKeyEquality: &spec.PGForeignKeyEquality{Target: *target, IncompatiblePosition: *seed.IncompatiblePosition}}, nil
+				}
+			}
+		}
+		return nil, nil
+	}
 	if request.Type == "foreign_key_reference_keys" {
 		for _, seed := range p.pgForeignKeyDirectories {
 			if seed.Schema == request.Schema && seed.Table == request.Name {
@@ -761,6 +771,10 @@ func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusT
 			}
 			if member.PartitionChildren != nil {
 				state.PartitionCheckHasChildrenKnown, state.PartitionCheckHasChildren = true, *member.PartitionChildren
+			}
+			if member.ValidationChildren != nil {
+				state.CheckValidationChildrenKnown = true
+				state.CheckValidationHasChildren = *member.ValidationChildren
 			}
 			out.PGConstraints = append(out.PGConstraints, state)
 		}

@@ -113,6 +113,7 @@ type corpusPGColumnTraversal struct {
 	Partition        bool   `yaml:"partition,omitempty"`
 	ColumnExists     bool   `yaml:"column_exists,omitempty"`
 	AttachedChildren bool   `yaml:"attached_children,omitempty"`
+	ParentNotNull    bool   `yaml:"parent_not_null,omitempty"`
 }
 
 type corpusMetadata struct {
@@ -334,9 +335,10 @@ type corpusPGDropConstraintReference struct {
 }
 
 type corpusPGForeignKeyKeys struct {
-	Schema string `yaml:"schema"`
-	Table  string `yaml:"table"`
-	Keys   []struct {
+	IncompatiblePosition *int   `yaml:"incompatible_position,omitempty"`
+	Schema               string `yaml:"schema"`
+	Table                string `yaml:"table"`
+	Keys                 []struct {
 		Columns   []string `yaml:"columns"`
 		Primary   bool     `yaml:"primary"`
 		Immediate bool     `yaml:"immediate"`
@@ -558,11 +560,12 @@ type corpusPGIdentitySequenceState struct {
 }
 
 type corpusPGConstraint struct {
-	Name              string `yaml:"name"`
-	Type              string `yaml:"type"`
-	Inherited         *bool  `yaml:"inherited,omitempty"`
-	PartitionChildren *bool  `yaml:"partition_children,omitempty"`
-	Validated         *bool  `yaml:"validated"`
+	Name               string `yaml:"name"`
+	Type               string `yaml:"type"`
+	Inherited          *bool  `yaml:"inherited,omitempty"`
+	PartitionChildren  *bool  `yaml:"partition_children,omitempty"`
+	ValidationChildren *bool  `yaml:"validation_children,omitempty"`
+	Validated          *bool  `yaml:"validated"`
 }
 
 type corpusConstraint struct {

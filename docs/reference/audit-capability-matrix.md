@@ -124,7 +124,7 @@ Other F09 dimensions remain open; this table is not whole-row support proof.
 
 | Rule ID | PostgreSQL 17 with observed catalog/version | MySQL / TiDB | Metadata |
 |---------|---------------------------------------------|--------------|----------|
-| `ddl.pg.alter.validate_constraint.target.require` | Missing/wrong-kind FK/CHECK target blocker | Not applicable | Required |
+| `ddl.pg.alter.validate_constraint.target.require` | Missing or wrong-kind target and parent-only CHECK validation traversal blocker | Not applicable | Required |
 | `ddl.pg.alter.constraint_deferrability.target.require` | Missing/non-FK target blocker | Not applicable | Required |
 | `ddl.pg.alter.drop_constraint.target.require` | Exact DROP target, direct foreign-key dependency under RESTRICT, CHECK inheritance, and partition-parent ONLY checks | Not applicable | Required |
 
@@ -159,7 +159,7 @@ separate. OWNER TO findings omit role names.
 
 ### PostgreSQL inherited and partitioned columns
 
-Target checks use exact inherited attribute, direct partition-key and attached-child observations to identify refusals for single ADD, DROP, RENAME, TYPE or DROP EXPRESSION actions. Descendant, lock and permission checks require other facts.
+Target checks use exact inherited attribute, direct partition-key and attached-child observations to identify refusals for single ADD, DROP, RENAME, TYPE or DROP EXPRESSION actions. Partition NOT NULL checks cover parent-required child nullability and ONLY when attached descendants require traversal. Row validity, locks and permissions require other facts.
 
 ### PostgreSQL SET WITHOUT OIDS
 
@@ -608,7 +608,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.create_index.concurrently.require` | `CREATE INDEX` without `CONCURRENTLY` holds an exclusive lock, blocking reads and writes. Finding metadata: `index_kind`, `access_method`, `column_count`, `included_column_count`, `has_predicate`, `has_expression_keys`, `expression_count` (bounded, no SQL text). | ✓ | ✗ | warning |
 | `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | Adding a `NOT NULL` column with a volatile default may trigger a full table rewrite. Finding metadata: `not_null`, `has_default`, `default_kind` (bounded classification, no expression text). | ✓ | ✗ | warning |
 | `ddl.pg.alter.constraint_using_index.valid` | Checks exact live index identity, ownership, validity, shape, key default properties including observed default operator classes and the primary-key NULLS NOT DISTINCT restriction | Gap | ✓ | blocker |
-| `ddl.pg.alter.add_foreign_key.targets.valid` | Checks exact table and column identities, referenced key eligibility, column counts and ON DELETE SET column lists, including NOT VALID declarations | Gap | ✓ | blocker |
+| `ddl.pg.alter.add_foreign_key.targets.valid` | Checks exact table and column identities, referenced key eligibility, column counts, scalar equality and ON DELETE SET column lists, including NOT VALID declarations | Gap | ✓ | blocker |
 | `ddl.pg.alter.add_check.name.available` | Checks exact name availability for a single named CHECK, including NOT VALID, in the live PostgreSQL 17 ordinary-table constraint directory | Gap | ✓ | blocker |
 | `ddl.pg.alter.add_check.not_valid.require` | `ADD CHECK` constraint without `NOT VALID` requires a full table scan with `ACCESS EXCLUSIVE` lock | ✓ | ✗ | warning |
 | `ddl.pg.alter.set_data_type.rewrite.warn` | Changing a column type may require a full table rewrite depending on the conversion. Finding metadata: `has_using` (boolean, no USING expression text). | ✓ | ✗ | warning |

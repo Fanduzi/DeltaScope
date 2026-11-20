@@ -1,0 +1,29 @@
+name: foreign_key_scalar_equality
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    child:
+      exists: true
+      pg_relation: {name: child, kind: r}
+      pg_columns:
+        ordinary: true
+        columns:
+          - {name: "A,B", identity: '', generated: '', type_width: -1, not_null: false, has_default: false, primary_key: false}
+    parent:
+      exists: true
+      pg_relation: {name: parent, kind: r}
+      pg_columns:
+        ordinary: true
+        columns:
+          - {name: "C,D", identity: '', generated: '', type_width: 32, not_null: true, has_default: false, primary_key: true}
+  pg_foreign_key_directories:
+    - {schema: app, table: parent, incompatible_position: 1, keys: [{columns: ["C,D"], primary: true, immediate: true}]}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.add_foreign_key.targets.valid]

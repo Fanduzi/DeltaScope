@@ -99,6 +99,17 @@ func (r pgConstraintTargetRule) assess(s spec.Statement, index int) (*spec.PGCon
 	if r.id == ruleIDPGAlterValidateConstraintTargetRequire && member.Type != "c" && member.Type != "f" || r.id == ruleIDPGAlterConstraintDeferrabilityTargetRequire && member.Type != "f" {
 		return member, "constraint_kind_mismatch", ""
 	}
+	if r.id == ruleIDPGAlterValidateConstraintTargetRequire && member.Type == "c" && !member.Validated &&
+		len(s.DDL.Alter) == 1 && s.DDL.PGTableOnly {
+		table, relation := s.DDL.Table, s.Metadata.TargetTable.PGRelation
+		if s.DDL.PGTableCatalogQualified || table.Schema == "" || table.Schema == "pg_temp" ||
+			relation.Name != table.Name || (relation.Kind != "r" && relation.Kind != "p") || !member.CheckValidationChildrenKnown {
+			return member, "", "constraint.pg_validation_children"
+		}
+		if member.CheckValidationHasChildren {
+			return member, "constraint_validate_requires_child_traversal", ""
+		}
+	}
 	if r.id == ruleIDPGAlterDropConstraintTargetRequire && len(s.DDL.Alter) == 1 && member.Type == "c" {
 		table, relation := s.DDL.Table, s.Metadata.TargetTable.PGRelation
 		if !s.DDL.PGTableCatalogQualified && table.Schema != "" && table.Schema != "pg_temp" &&
@@ -178,6 +189,9 @@ func (r pgConstraintTargetRule) Evaluate(ctx context.Context, s spec.Statement) 
 		switch reason {
 		case "constraint_kind_mismatch":
 			message = "PostgreSQL constraint target has an unsupported kind for this action"
+		case "constraint_validate_requires_child_traversal":
+			message = "PostgreSQL requires validating this check constraint on the child tables"
+			suggestion = "Review validation for the parent and its child tables"
 		case "constraint_inherited":
 			message = "PostgreSQL cannot drop an inherited check constraint directly"
 			suggestion = "Review the constraint on the parent table before changing it"

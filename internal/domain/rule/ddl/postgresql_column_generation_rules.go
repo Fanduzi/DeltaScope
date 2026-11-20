@@ -94,13 +94,27 @@ func pgColumnTransitionTarget(s spec.Statement, index int) (*spec.PGColumnState,
 	if !pgConstraintTargetVersionKnown(s) {
 		return nil, "", "instance.version"
 	}
-	if index == 0 && len(s.DDL.Alter) == 1 && s.DDL.Alter[0].Action == "drop_expression" {
+	if index == 0 {
 		if facts := spec.BoundPGColumnTraversal(s); facts != nil {
-			if s.DDL.PGTableOnly && facts.AttachedChildren {
-				return nil, "drop_expression_requires_child_traversal", ""
-			}
-			if facts.Inherited {
-				return nil, "drop_expression_inherited_column", ""
+			switch s.DDL.Alter[0].Action {
+			case "drop_expression":
+				if s.DDL.PGTableOnly && facts.AttachedChildren {
+					return nil, "drop_expression_requires_child_traversal", ""
+				}
+				if facts.Inherited {
+					return nil, "drop_expression_inherited_column", ""
+				}
+			case "drop_not_null":
+				if s.DDL.PGTableOnly && s.Metadata.TargetTable.PGRelation.Kind == "p" && facts.AttachedChildren {
+					return nil, "drop_not_null_requires_partition_traversal", ""
+				}
+				if facts.Partition && facts.ParentNotNull {
+					return nil, "not_null_required_by_partition_parent", ""
+				}
+			case "set_not_null":
+				if s.DDL.PGTableOnly && s.Metadata.TargetTable.PGRelation.Kind == "p" && facts.NullableDescendant {
+					return nil, "set_not_null_requires_partition_traversal", ""
+				}
 			}
 		}
 	}
@@ -246,6 +260,12 @@ func (r pgColumnGenerationRule) Evaluate(ctx context.Context, s spec.Statement) 
 		switch reason {
 		case "drop_expression_requires_child_traversal":
 			message = "PostgreSQL requires DROP EXPRESSION to include the child tables"
+		case "drop_not_null_requires_partition_traversal":
+			message = "PostgreSQL requires dropping NOT NULL on the partitioned parent and its partitions"
+		case "not_null_required_by_partition_parent":
+			message = "The PostgreSQL partition parent requires this column to remain NOT NULL"
+		case "set_not_null_requires_partition_traversal":
+			message = "A PostgreSQL descendant partition still allows NULL in this column"
 		case "drop_expression_inherited_column":
 			message = "PostgreSQL cannot drop a generation expression from an inherited column directly"
 		}

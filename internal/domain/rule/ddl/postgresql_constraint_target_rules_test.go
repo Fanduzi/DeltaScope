@@ -321,3 +321,33 @@ func TestPGDropPartitionCheckOnly(t *testing.T) {
 		})
 	}
 }
+
+func TestPGValidateCheckOnlyTraversal(t *testing.T) {
+	r := pgConstraintTargetRule{id: ruleIDPGAlterValidateConstraintTargetRequire, level: rule.LevelBlocker}
+	for _, tc := range []struct {
+		name, tableKind, constraintKind, reason, gap string
+		only, children, known, validated, stale      bool
+	}{
+		{name: "ordinary parent ONLY", tableKind: "r", constraintKind: "c", only: true, children: true, known: true, reason: "constraint_validate_requires_child_traversal"},
+		{name: "partitioned parent ONLY", tableKind: "p", constraintKind: "c", only: true, children: true, known: true, reason: "constraint_validate_requires_child_traversal"},
+		{name: "ordinary parent recursive", tableKind: "r", constraintKind: "c", children: true, known: true},
+		{name: "non-propagating CHECK", tableKind: "r", constraintKind: "c", only: true, known: true},
+		{name: "already validated", tableKind: "r", constraintKind: "c", only: true, validated: true},
+		{name: "foreign key", tableKind: "r", constraintKind: "f", only: true},
+		{name: "unknown traversal", tableKind: "r", constraintKind: "c", only: true, gap: "constraint.pg_validation_children"},
+		{name: "stale traversal", tableKind: "r", constraintKind: "c", only: true, children: true, known: true, stale: true, gap: "constraint.pg_validation_children"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := pgTargetStatement("validate_constraint", []spec.PGConstraintState{{Name: "c", Type: tc.constraintKind, Validated: tc.validated, CheckValidationChildrenKnown: tc.known, CheckValidationHasChildren: tc.children}})
+			s.DDL.PGTableOnly = tc.only
+			s.Metadata.TargetTable.PGRelation.Kind = tc.tableKind
+			if tc.stale {
+				s.Metadata.TargetTable.PGRelation = spec.PGRelationState{}
+			}
+			_, reason, gap := r.assess(s, 0)
+			if reason != tc.reason || gap != tc.gap {
+				t.Fatalf("reason=%q gap=%q", reason, gap)
+			}
+		})
+	}
+}

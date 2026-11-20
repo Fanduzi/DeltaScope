@@ -104,7 +104,18 @@ func assessPGForeignKeyTargets(s spec.Statement) (reason, fact, column string) {
 		return "foreign_key_reference_column_duplicate", "", duplicate
 	}
 	reason, fact = assessPGForeignKeyKey(target, referenced, s.Metadata.PGForeignKeyKeys)
-	return reason, fact, ""
+	if reason != "" || fact != "" {
+		return reason, fact, ""
+	}
+	wanted := spec.PGForeignKeyEqualityTarget{Source: *s.DDL.Table, Reference: target.Reference, Columns: target.Columns, ReferencedColumns: target.ReferencedColumns}
+	observed := s.Metadata.PGForeignKeyEquality
+	if observed == nil || !observed.Target.Matches(wanted) || observed.IncompatiblePosition < 0 || observed.IncompatiblePosition > len(target.Columns) {
+		return "", "foreign_key.pg_equality_compatibility", ""
+	}
+	if observed.IncompatiblePosition != 0 {
+		return "foreign_key_column_types_incompatible", "", target.Columns[observed.IncompatiblePosition-1]
+	}
+	return "", "", ""
 }
 
 func assessPGForeignKeyKey(target *spec.PGForeignKeySelection, referenced map[string]struct{}, keys *spec.PGForeignKeyKeys) (reason, fact string) {
@@ -201,6 +212,8 @@ func (r pgForeignKeyTargetRule) Evaluate(ctx context.Context, s spec.Statement) 
 		message = "No eligible PostgreSQL unique index matches the referenced columns"
 	case "foreign_key_reference_key_deferrable":
 		message = "PostgreSQL requires a nondeferrable referenced key"
+	case "foreign_key_column_types_incompatible":
+		message = "The PostgreSQL foreign key column types cannot use the selected referenced key equality operators"
 	case "foreign_key_column_count_mismatch":
 		message = "The PostgreSQL foreign key and referenced key have different numbers of columns"
 	default:
