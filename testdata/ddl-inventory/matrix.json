@@ -7823,7 +7823,16 @@
                 "file:testdata/ddl-golden/T37.json#pg-column-generation-targets",
                 "file:testdata/ddl-golden/T37.json#pg-column-generation-nullable-data",
                 "file:testdata/ddl-golden/T37.json#column-generation-default-null-offline",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.column.generation.transition.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_generation_transition_invalid.expected.yaml#ddl.pg.alter.column.generation.transition.valid",
+                "file:testdata/ddl-golden/T37.json#drop-not-null-replica-key-offline",
+                "file:testdata/ddl-golden/T37.json#drop-not-null-replica-key-disabled",
+                "file:testdata/ddl-golden/T37.json#pg-drop-not-null-replica-key-exact",
+                "file:testdata/ddl-golden/T37.json#pg-drop-not-null-replica-key-include",
+                "file:testdata/ddl-golden/T37.json#pg-drop-not-null-replica-key-full",
+                "file:testdata/ddl-golden/T37.json#pg-drop-not-null-replica-key-unattached",
+                "file:testdata/ddl-golden/T37.json#pg-drop-not-null-replica-key-precedence",
+                "file:testdata/ddl-golden/T37.json#pg-drop-not-null-replica-key-stale",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_not_null_replica_key.expected.yaml#ddl.pg.alter.column.generation.transition.valid"
               ]
             }
           ]

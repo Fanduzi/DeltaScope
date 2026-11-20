@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-drop-not-null-replica-key": {"enable": {"ddl.pg.alter.column.generation.transition.valid": {"level": "blocker"}}},
    "pg-add-check-name": {"enable": {"ddl.pg.alter.add_check.name.available": {"level": "blocker"}, "ddl.pg.alter.add_check.not_valid.require": {"level": "warning"}, "ddl.alter.add_index.exists.forbid": {"level": "blocker"}}},
    "pg-column-type-destination": {"enable": {"ddl.pg.alter.column_type.destination.valid": {"level": "blocker"}, "ddl.pg.alter.set_data_type.rewrite.warn": {"level": "warning"}}},
    "pg-bulk-tablespace-target": {"enable": {"ddl.pg.alter.move_all_tablespace.target.valid": {"level": "blocker"}, "ddl.pg.alter.move_all_tablespace.notice": {"level": "notice"}}},
@@ -1885,6 +1886,51 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "drop-not-null-replica-key-offline",
+   "dialect": "postgresql",
+   "policy": "pg-drop-not-null-replica-key",
+   "sql": "ALTER TABLE app.t ALTER COLUMN \"Id\" DROP NOT NULL",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column.generation.transition.valid","reason_code": "unproven_column_generation_target","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["ReplicaIdentityKey","ReplicaIdentityKeyKnown"],
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "drop-not-null-replica-key-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.t ALTER COLUMN \"Id\" DROP NOT NULL",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["ReplicaIdentityKey","ReplicaIdentityKeyKnown"]
+   }
+  },
   {
    "id": "add-check-name-offline",
    "dialect": "postgresql",
@@ -4429,6 +4475,296 @@
   }
  ],
  "metadata_cases": [
+  {
+   "id": "pg-drop-not-null-replica-key-exact",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-not-null-replica-key",
+   "connect": {"host": "127.0.0.1","port": 25432,"database": "postgres","user": "postgres","schema": "pgrkey_exact"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrkey_exact CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_exact'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrkey_exact.t ALTER COLUMN \"Id\" DROP NOT NULL",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_exact'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrkey_exact","expect_rc": 0},
+    {"name": "capture catalog, key slots and file identities","sql": "CREATE TABLE pgrkey_exact.t(\"Id\" int NOT NULL, included int NOT NULL, spare int NOT NULL); INSERT INTO pgrkey_exact.t VALUES(1,7,9); CREATE TABLE pgrkey_exact.neighbor(id int); CREATE SEQUENCE pgrkey_exact.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgrkey_exact.t(\"Id\") INCLUDE (included); ALTER TABLE pgrkey_exact.t REPLICA IDENTITY USING INDEX fixture_ix; CREATE TABLE pgrkey_exact.receipt AS SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_exact'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column.generation.transition.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["ReplicaIdentityKey","ReplicaIdentityKeyKnown"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column.generation.transition.valid","metadata": {"reason_code": "not_null_required_by_replica_identity","column": "Id"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog, key and file identity","sql": "SELECT count(*) FROM ((TABLE pgrkey_exact.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_exact'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_exact'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrkey_exact.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps independent payload","sql": "SELECT count(*)=1 AND bool_and(\"Id\"=1 AND included=7 AND spare=9) FROM pgrkey_exact.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrkey_exact.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrkey_exact.t ALTER COLUMN \"Id\" DROP NOT NULL","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]},
+    {"name": "native refuses 42703","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrkey_exact.t ALTER COLUMN id DROP NOT NULL","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42703:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves original catalog","sql": "SELECT count(*) FROM ((TABLE pgrkey_exact.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_exact'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_exact'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrkey_exact.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps independent payload","sql": "SELECT count(*)=1 AND bool_and(\"Id\"=1 AND included=7 AND spare=9) FROM pgrkey_exact.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrkey_exact.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrkey_exact CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_exact'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-not-null-replica-key-include",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-not-null-replica-key",
+   "connect": {"host": "127.0.0.1","port": 25432,"database": "postgres","user": "postgres","schema": "pgrkey_include"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrkey_include CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_include'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrkey_include.t ALTER COLUMN included DROP NOT NULL",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_include'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrkey_include","expect_rc": 0},
+    {"name": "capture catalog, key slots and file identities","sql": "CREATE TABLE pgrkey_include.t(\"Id\" int NOT NULL, included int NOT NULL, spare int NOT NULL); INSERT INTO pgrkey_include.t VALUES(1,7,9); CREATE TABLE pgrkey_include.neighbor(id int); CREATE SEQUENCE pgrkey_include.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgrkey_include.t(\"Id\") INCLUDE (included); ALTER TABLE pgrkey_include.t REPLICA IDENTITY USING INDEX fixture_ix; CREATE TABLE pgrkey_include.receipt AS SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_include'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["ReplicaIdentityKey","ReplicaIdentityKeyKnown"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog, key and file identity","sql": "SELECT count(*) FROM ((TABLE pgrkey_include.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_include'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_include'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrkey_include.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps independent payload","sql": "SELECT count(*)=1 AND bool_and(\"Id\"=1 AND included=7 AND spare=9) FROM pgrkey_include.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrkey_include.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native accepts","sql": "ALTER TABLE pgrkey_include.t ALTER COLUMN included DROP NOT NULL","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native clears only the checked nullability","sql": "SELECT NOT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid='pgrkey_include.t'::regclass AND attname='included'","expect": "t"},
+    {"assert": "native preserves table file","sql": "SELECT bool_and(c.relfilenode=r.relfilenode) FROM pg_catalog.pg_class c JOIN pgrkey_include.receipt r ON r.oid=c.oid WHERE c.oid='pgrkey_include.t'::regclass","expect": "t"},
+    {"assert": "keeps independent payload","sql": "SELECT count(*)=1 AND bool_and(\"Id\"=1 AND included=7 AND spare=9) FROM pgrkey_include.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrkey_include.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrkey_include CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_include'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-not-null-replica-key-full",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-not-null-replica-key",
+   "connect": {"host": "127.0.0.1","port": 25432,"database": "postgres","user": "postgres","schema": "pgrkey_full"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrkey_full CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_full'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrkey_full.t ALTER COLUMN \"Id\" DROP NOT NULL",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_full'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrkey_full","expect_rc": 0},
+    {"name": "capture catalog, key slots and file identities","sql": "CREATE TABLE pgrkey_full.t(\"Id\" int NOT NULL, included int NOT NULL, spare int NOT NULL); INSERT INTO pgrkey_full.t VALUES(1,7,9); CREATE TABLE pgrkey_full.neighbor(id int); CREATE SEQUENCE pgrkey_full.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgrkey_full.t(\"Id\") INCLUDE (included); ALTER TABLE pgrkey_full.t REPLICA IDENTITY FULL; CREATE TABLE pgrkey_full.receipt AS SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_full'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["ReplicaIdentityKey","ReplicaIdentityKeyKnown"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog, key and file identity","sql": "SELECT count(*) FROM ((TABLE pgrkey_full.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_full'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_full'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrkey_full.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps independent payload","sql": "SELECT count(*)=1 AND bool_and(\"Id\"=1 AND included=7 AND spare=9) FROM pgrkey_full.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrkey_full.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native accepts","sql": "ALTER TABLE pgrkey_full.t ALTER COLUMN \"Id\" DROP NOT NULL","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native clears only the checked nullability","sql": "SELECT NOT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid='pgrkey_full.t'::regclass AND attname='Id'","expect": "t"},
+    {"assert": "native preserves table file","sql": "SELECT bool_and(c.relfilenode=r.relfilenode) FROM pg_catalog.pg_class c JOIN pgrkey_full.receipt r ON r.oid=c.oid WHERE c.oid='pgrkey_full.t'::regclass","expect": "t"},
+    {"assert": "keeps independent payload","sql": "SELECT count(*)=1 AND bool_and(\"Id\"=1 AND included=7 AND spare=9) FROM pgrkey_full.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrkey_full.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrkey_full CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_full'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-not-null-replica-key-unattached",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-not-null-replica-key",
+   "connect": {"host": "127.0.0.1","port": 25432,"database": "postgres","user": "postgres","schema": "pgrkey_unattached"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrkey_unattached CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_unattached'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrkey_unattached.t ALTER COLUMN \"Id\" DROP NOT NULL",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_unattached'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrkey_unattached","expect_rc": 0},
+    {"name": "capture catalog, key slots and file identities","sql": "CREATE TABLE pgrkey_unattached.t(\"Id\" int NOT NULL, included int NOT NULL, spare int NOT NULL); INSERT INTO pgrkey_unattached.t VALUES(1,7,9); CREATE TABLE pgrkey_unattached.neighbor(id int); CREATE SEQUENCE pgrkey_unattached.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgrkey_unattached.t(\"Id\") INCLUDE (included); CREATE TABLE pgrkey_unattached.receipt AS SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_unattached'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["ReplicaIdentityKey","ReplicaIdentityKeyKnown"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog, key and file identity","sql": "SELECT count(*) FROM ((TABLE pgrkey_unattached.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_unattached'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_unattached'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrkey_unattached.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps independent payload","sql": "SELECT count(*)=1 AND bool_and(\"Id\"=1 AND included=7 AND spare=9) FROM pgrkey_unattached.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrkey_unattached.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native accepts","sql": "ALTER TABLE pgrkey_unattached.t ALTER COLUMN \"Id\" DROP NOT NULL","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native clears only the checked nullability","sql": "SELECT NOT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid='pgrkey_unattached.t'::regclass AND attname='Id'","expect": "t"},
+    {"assert": "native preserves table file","sql": "SELECT bool_and(c.relfilenode=r.relfilenode) FROM pg_catalog.pg_class c JOIN pgrkey_unattached.receipt r ON r.oid=c.oid WHERE c.oid='pgrkey_unattached.t'::regclass","expect": "t"},
+    {"assert": "keeps independent payload","sql": "SELECT count(*)=1 AND bool_and(\"Id\"=1 AND included=7 AND spare=9) FROM pgrkey_unattached.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrkey_unattached.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrkey_unattached CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_unattached'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-not-null-replica-key-precedence",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-not-null-replica-key",
+   "connect": {"host": "127.0.0.1","port": 25432,"database": "postgres","user": "postgres","schema": "pgrkey_precedence"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrkey_precedence CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_precedence'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrkey_precedence.t ALTER COLUMN \"Id\" DROP NOT NULL",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_precedence'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrkey_precedence","expect_rc": 0},
+    {"name": "capture catalog, key slots and file identities","sql": "CREATE TABLE pgrkey_precedence.t(\"Id\" int NOT NULL, included int NOT NULL, spare int NOT NULL); INSERT INTO pgrkey_precedence.t VALUES(1,7,9); CREATE TABLE pgrkey_precedence.neighbor(id int); CREATE SEQUENCE pgrkey_precedence.guard START 7; ALTER TABLE pgrkey_precedence.t ADD PRIMARY KEY (\"Id\") INCLUDE (included); ALTER TABLE pgrkey_precedence.t REPLICA IDENTITY USING INDEX t_pkey; CREATE TABLE pgrkey_precedence.receipt AS SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_precedence'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.column.generation.transition.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["ReplicaIdentityKey","ReplicaIdentityKeyKnown"],
+    "rule_summary_loaded": 1,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.column.generation.transition.valid","metadata": {"reason_code": "not_null_required_by_identity_or_primary_key","column": "Id"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog, key and file identity","sql": "SELECT count(*) FROM ((TABLE pgrkey_precedence.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_precedence'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_precedence'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrkey_precedence.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps independent payload","sql": "SELECT count(*)=1 AND bool_and(\"Id\"=1 AND included=7 AND spare=9) FROM pgrkey_precedence.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrkey_precedence.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrkey_precedence.t ALTER COLUMN \"Id\" DROP NOT NULL","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves original catalog","sql": "SELECT count(*) FROM ((TABLE pgrkey_precedence.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_precedence'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_precedence'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrkey_precedence.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps independent payload","sql": "SELECT count(*)=1 AND bool_and(\"Id\"=1 AND included=7 AND spare=9) FROM pgrkey_precedence.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrkey_precedence.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrkey_precedence CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_precedence'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-drop-not-null-replica-key-stale",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-drop-not-null-replica-key",
+   "connect": {"host": "127.0.0.1","port": 25432,"database": "postgres","user": "postgres","schema": "pgrkey_stale"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrkey_stale CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_stale'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgrkey_stale.neighbor ADD COLUMN freshness_marker int;ALTER TABLE pgrkey_stale.t ALTER COLUMN \"Id\" DROP NOT NULL",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_stale'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgrkey_stale","expect_rc": 0},
+    {"name": "capture catalog, key slots and file identities","sql": "CREATE TABLE pgrkey_stale.t(\"Id\" int NOT NULL, included int NOT NULL, spare int NOT NULL); INSERT INTO pgrkey_stale.t VALUES(1,7,9); CREATE TABLE pgrkey_stale.neighbor(id int); CREATE SEQUENCE pgrkey_stale.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgrkey_stale.t(\"Id\") INCLUDE (included); ALTER TABLE pgrkey_stale.t REPLICA IDENTITY USING INDEX fixture_ix; CREATE TABLE pgrkey_stale.receipt AS SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_stale'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["complete","unverified"],
+    "statement_indices": [0,1],
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.pg.alter.column.generation.transition.valid","reason_code": "unproven_column_generation_target","required_facts": ["column.replica_identity_key"]}],
+    "serialized_not_contains": ["ReplicaIdentityKey","ReplicaIdentityKeyKnown"],
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog, key and file identity","sql": "SELECT count(*) FROM ((TABLE pgrkey_stale.receipt EXCEPT (SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_stale'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relfilenode,c.relreplident,a.attnum,a.attname,a.attnotnull,i.indisreplident,i.indnkeyatts,i.indkey::text FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid WHERE c.relnamespace='pgrkey_stale'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgrkey_stale.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps independent payload","sql": "SELECT count(*)=1 AND bool_and(\"Id\"=1 AND included=7 AND spare=9) FROM pgrkey_stale.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrkey_stale.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native accepts","sql": "ALTER TABLE pgrkey_stale.neighbor ADD COLUMN freshness_marker int","expect_rc": 0},
+    {"name": "native refuses 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgrkey_stale.t ALTER COLUMN \"Id\" DROP NOT NULL","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native applies independent predecessor","sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgrkey_stale.neighbor'::regclass AND attname='freshness_marker'","expect": "1"},
+    {"assert": "refusal preserves attached key nullability","sql": "SELECT attnotnull FROM pg_catalog.pg_attribute WHERE attrelid='pgrkey_stale.t'::regclass AND attname='Id'","expect": "t"},
+    {"assert": "keeps independent payload","sql": "SELECT count(*)=1 AND bool_and(\"Id\"=1 AND included=7 AND spare=9) FROM pgrkey_stale.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgrkey_stale.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgrkey_stale CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgrkey_stale'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
   {
    "id": "pg-add-check-name-duplicate",
    "anchor": "postgres17",
@@ -11829,6 +12165,14 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.drop-not-null-replica-key-offline",
+  "T37.cli.drop-not-null-replica-key-disabled",
+  "T37.meta.pg-drop-not-null-replica-key-exact",
+  "T37.meta.pg-drop-not-null-replica-key-include",
+  "T37.meta.pg-drop-not-null-replica-key-full",
+  "T37.meta.pg-drop-not-null-replica-key-unattached",
+  "T37.meta.pg-drop-not-null-replica-key-precedence",
+  "T37.meta.pg-drop-not-null-replica-key-stale",
   "T37.cli.add-check-name-offline",
   "T37.cli.add-check-name-disabled",
   "T37.meta.pg-add-check-name-duplicate",

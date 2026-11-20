@@ -56,6 +56,21 @@ Preserve the 309 earlier cases and their profiles. Bind new selectors only
 to the PostgreSQL 17 SET/DROP NOT NULL cell. Keep audit and native
 execution separate with catalog and file, payload and sequence controls.
 
+## Evidence bindings
+
+`f8695f4d` adds the private column fact. `ef8836ab` consumes it in the existing
+blocker. A real PG17.7 provider probe verified six catalog observations. A
+separate CLI comparison at `f8695f4d` with the rule in the working tree
+reproduced all nine earlier native outcomes, including the independent
+policy findings. See `/tmp/ds-pg-d20-actual-provider.log` and
+`/tmp/ds-pg-d20-candidate-cli-f8695f4d/evidence.json`.
+
+Focused T37 at that candidate passed 317/317 cases and 8,105 assertions.
+Eight new native commands include four successes and four precise refusals.
+The new isolated profile tests known membership, known nonmembership and
+stale evidence. All 309 earlier cases and profiles were preserved. Nine
+selectors attach only to the SET/DROP NOT NULL PG17 inventory cell.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

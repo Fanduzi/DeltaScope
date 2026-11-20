@@ -3,6 +3,13 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D20 PostgreSQL DROP NOT NULL replica identity keys
+
+Focused T37 passed 317/317 cases and 8,105 assertions. Eight new cases retain
+all 309 earlier cases and their profiles. Native controls distinguish live
+attached keys from INCLUDE, FULL and unattached indexes, and check primary
+key precedence. [Decision](../../docs/decisions/2026-11-20-postgresql-drop-not-null-replica-key.md)
+
 ## T37 D19 PostgreSQL named CHECK constraints
 
 Delivered `64a1fd4e` passed 50 tasks, 3,641/3,641 cases and 66,909
