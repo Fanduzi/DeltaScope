@@ -982,6 +982,30 @@ networks and Golden volumes.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44830434310/job/136613698161),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136613827571) succeeded at the delivered SHA.
 
+### D44–D47 PostgreSQL descendant and CHECK checks
+
+- D44 checks recursive RENAME COLUMN for a destination collision or an
+  inherited definition from outside the selected descendant tree.
+  [Decision](../decisions/2026-11-21-postgresql-recursive-column-rename.md)
+- D45 checks direct catalog dependencies that block column type changes
+  after the bounded conversion prerequisites are established.
+  [Decision](../decisions/2026-11-21-postgresql-column-type-additional-dependencies.md)
+- D46 checks subqueries in single ADD CHECK predicates, including unnamed
+  constraints and NOT VALID. The target guard and existing name check apply.
+  [Decision](../decisions/2026-11-21-postgresql-check-predicate-subqueries.md)
+- D47 checks outside inheritance for a recursive scalar TYPE change after
+  destination and assignment checks.
+  [Decision](../decisions/2026-11-21-postgresql-column-type-outside-inheritance.md)
+
+The corrected joint preview passed 560/560 T37 cases with 16,507 assertions.
+Twenty-five new native controls returned nine successes and sixteen refusals.
+The first preview's privacy assertion matched a substring of the authored
+schema. The corrected fixture uses a distinct private relation name and keeps
+its SQL and native execution control. The earlier recursive rename case keeps
+its SQL and native control and now expects the observed catalog result. The
+inventory adds 29 selectors to five PostgreSQL 17 subactions. The fixed
+candidate is in verification.
+
 ## Family index
 
 Family IDs preserve the original ledger order, not implementation priority.

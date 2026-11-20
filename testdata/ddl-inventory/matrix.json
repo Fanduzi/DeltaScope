@@ -7715,7 +7715,15 @@
                 "file:testdata/ddl-golden/T37.json#pg-column-traversal-rename-only-ordinary",
                 "file:testdata/ddl-golden/T37.json#pg-column-traversal-rename-only-root",
                 "file:testdata/ddl-golden/T37.json#pg-column-traversal-rename-recursive",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/column_traversal_rename.expected.yaml#ddl.alter.rename_column.exists.require"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_traversal_rename.expected.yaml#ddl.alter.rename_column.exists.require",
+                "file:testdata/ddl-golden/T37.json#pg-rename-descendants-exact-collision",
+                "file:testdata/ddl-golden/T37.json#pg-rename-descendants-different-case",
+                "file:testdata/ddl-golden/T37.json#pg-rename-descendants-outside-parent",
+                "file:testdata/ddl-golden/T37.json#pg-rename-descendants-diamond",
+                "file:testdata/ddl-golden/T37.json#pg-rename-descendants-partition",
+                "file:testdata/ddl-golden/T37.json#pg-rename-descendants-only-missing",
+                "file:testdata/ddl-golden/T37.json#pg-rename-descendants-recursive-missing",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_rename_descendant_conflict.expected.yaml#ddl.alter.rename_column.exists.require"
               ]
             }
           ]
@@ -7785,7 +7793,19 @@
                 "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-only-assignment",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-only-missing-type",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-only-leaf",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_only_parent.expected.yaml#ddl.pg.alter.column_type.destination.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_only_parent.expected.yaml#ddl.pg.alter.column_type.destination.valid",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-other-dependency-routine",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-other-dependency-rewrite",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-other-dependency-trigger",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-other-dependency-policy",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-other-dependency-publication",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-other-dependency-own-default",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-other-dependency-unrelated-policy",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-recursive-outside-parent",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-recursive-missing-type",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-recursive-diamond",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_other_dependency.expected.yaml#ddl.pg.alter.column_type.destination.valid",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/column_type_recursive_parent.expected.yaml#ddl.pg.alter.column_type.destination.valid"
               ]
             }
           ]
@@ -7815,7 +7835,9 @@
                 "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-using-explicit",
                 "file:testdata/ddl-golden/T37.json#pg-column-inherited-action-type-using-inherited",
                 "file:testdata/ddl-golden/T37.json#pg-column-type-dependency-using",
-                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-only-using"
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-only-using",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-other-dependency-using",
+                "file:testdata/ddl-golden/T37.json#pg-column-type-coercion-recursive-using"
               ]
             }
           ]
@@ -8371,7 +8393,12 @@
                 "file:testdata/ddl-golden/T37.json#pg-add-check-name-exact-control",
                 "file:testdata/ddl-golden/T37.json#pg-add-check-name-unnamed",
                 "file:testdata/ddl-golden/T37.json#pg-add-check-name-inherited",
-                "file:testdata/ddl-golden/T37.json#pg-add-check-name-guarded-absent"
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-guarded-absent",
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-predicate-unnamed",
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-predicate-duplicate",
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-predicate-column",
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-predicate-string",
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-predicate-guard"
               ]
             }
           ]
@@ -8397,7 +8424,9 @@
                 "file:testdata/ddl-golden/T37.json#pg-add-check-name-duplicate-not-valid",
                 "file:testdata/ddl-golden/T37.json#pg-add-check-name-exact-control",
                 "file:testdata/ddl-golden/T37.json#pg-add-check-name-scope-order",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/add_check_constraint_name.expected.yaml#ddl.pg.alter.add_check.name.available"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/add_check_constraint_name.expected.yaml#ddl.pg.alter.add_check.name.available",
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-predicate-not-valid",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/check_subquery.expected.yaml#ddl.pg.alter.add_check.name.available"
               ]
             }
           ]
