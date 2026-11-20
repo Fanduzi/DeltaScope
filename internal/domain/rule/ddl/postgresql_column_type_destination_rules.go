@@ -37,6 +37,9 @@ func assessPGColumnTypeDestination(s spec.Statement) (reason, fact string) {
 	if reason, fact := spec.PGColumnTypeDestinationPremises(s); reason != "" || fact != "" {
 		return reason, fact
 	}
+	if spec.PGColumnTypeOnlyParent(s) {
+		return "column_type_requires_child_traversal", ""
+	}
 	return assessPGColumnTypeDependency(s)
 }
 
@@ -83,6 +86,8 @@ func (r pgColumnTypeDestinationRule) Evaluate(ctx context.Context, s spec.Statem
 		message = "PostgreSQL has no assignment cast from the selected column type to the destination type"
 	case "column_type_has_direct_dependency":
 		message = "A PostgreSQL view, materialized view or generated column prevents changing the selected column type"
+	case "column_type_requires_child_traversal":
+		message = "PostgreSQL requires changing the column type in the child tables too"
 	case "destination_collation_absent":
 		message = "The qualified PostgreSQL collation is unavailable for this database encoding"
 	case "destination_type_not_collatable":

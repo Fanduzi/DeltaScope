@@ -1,0 +1,1 @@
+ALTER TABLE ONLY app.t ALTER COLUMN v TYPE bigint;

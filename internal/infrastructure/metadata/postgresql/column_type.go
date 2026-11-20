@@ -61,17 +61,22 @@ func (p *Provider) resolveColumnType(ctx context.Context, req spec.ObjectLookupR
 		left join pg_catalog.pg_namespace src on src.nspname OPERATOR(pg_catalog.=) $7::pg_catalog.text
 		left join pg_catalog.pg_class tbl on tbl.relnamespace OPERATOR(pg_catalog.=) src.oid
 		 and tbl.relname OPERATOR(pg_catalog.=) $8::pg_catalog.text
-		 and tbl.relkind OPERATOR(pg_catalog.=) 'r' and tbl.relpersistence OPERATOR(pg_catalog.=) 'p'
-		 and not tbl.relispartition and tbl.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
-		 and not exists (select 1 from pg_catalog.pg_inherits h
-		                 where h.inhrelid OPERATOR(pg_catalog.=) tbl.oid or h.inhparent OPERATOR(pg_catalog.=) tbl.oid)
+		 and tbl.relkind OPERATOR(pg_catalog.=) any(array['r','p']::pg_catalog."char"[])
+		 and tbl.relpersistence OPERATOR(pg_catalog.=) 'p' and not tbl.relispartition
+		 and tbl.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
+		 and ($10::pg_catalog.bool and exists (
+		          select 1 from pg_catalog.pg_inherits h
+		          where h.inhparent OPERATOR(pg_catalog.=) tbl.oid and not h.inhdetachpending)
+		      or not $10::pg_catalog.bool and tbl.relkind OPERATOR(pg_catalog.=) 'r' and not exists (
+		          select 1 from pg_catalog.pg_inherits h
+		          where h.inhrelid OPERATOR(pg_catalog.=) tbl.oid or h.inhparent OPERATOR(pg_catalog.=) tbl.oid))
 		left join pg_catalog.pg_attribute a on a.attrelid OPERATOR(pg_catalog.=) tbl.oid
 		 and a.attname OPERATOR(pg_catalog.=) $9::pg_catalog.text
 		 and a.attnum OPERATOR(pg_catalog.>) 0 and not a.attisdropped
 		left join pg_catalog.pg_type source_type on source_type.oid OPERATOR(pg_catalog.=) a.atttypid
 		left join pg_catalog.pg_cast cast_entry on cast_entry.castsource OPERATOR(pg_catalog.=) source_type.oid
 		 and cast_entry.casttarget OPERATOR(pg_catalog.=) resolved.oid
-	`, target.Schema, target.Name, target.Array, collation.Schema, collation.Name, collation.Qualified(), schema, table, column)
+	`, target.Schema, target.Name, target.Array, collation.Schema, collation.Name, collation.Qualified(), schema, table, column, req.Qualifiers["only_parent"] == "true")
 	facts := spec.PGColumnTypeState{Target: target, Collation: collation, SourceSchema: schema, SourceTable: table, SourceColumn: column}
 	var exists, assignment sql.NullBool
 	if err := row.Scan(&facts.SchemaExists, &facts.BaseExists, &facts.Resolved, &facts.Defined, &facts.Pseudo, &assignment, &facts.Collatable, &exists); err != nil {
