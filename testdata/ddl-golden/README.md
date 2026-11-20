@@ -5,7 +5,8 @@ Per-task manifests for the milestone DDL golden-path runner
 
 ## T37 D23 PostgreSQL foreign-key referenced keys
 
-Focused T37 passed 368 cases and 9,807 assertions. Fourteen cases cover the
+Delivered `c34c6e8a` passed 50 tasks with 3,700/3,700 cases and 68,846
+assertions. T37 passed 368/368 and 9,807 assertions. Fourteen cases cover the
 referenced key predicates and arity. The existing omitted-column case now
 expects the observed primary key. All previous cases and profiles remain.
 [Decision](../../docs/decisions/2026-11-20-postgresql-foreign-key-referenced-keys.md)

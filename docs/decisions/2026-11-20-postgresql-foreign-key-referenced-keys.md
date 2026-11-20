@@ -77,6 +77,21 @@ primary key with its original SQL, ID, fixture and native oracles. All 354
 previous IDs and profiles remain. Fifteen selectors append to ADD FOREIGN KEY
 at the PG17 anchor. Inventory classifications and denominators are preserved.
 
+## Delivered evidence
+
+`c34c6e8a35121d751516c3dee228d3ed4da5e783` passed 50 canonical tasks with 3,700/3,700 cases and 68,846
+assertions. T37 passed 368/368 with 9,807 assertions. The validator, independent
+review and merged-root gates passed. The milestone advanced to `main` by
+fast-forward and normal push. [Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44737041836),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44737041754) and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/136291155785) passed for this SHA.
+The aggregate is `/tmp/ddl-golden-pg-foreign-key-referenced-keys-final-c34c6e8a/all/artifact.json`.
+
+The original worktree status, protected release worktree and 16 previously
+protected container identities matched. An additional starting-snapshot
+container was absent at review, and the cause remains unknown. All 50
+cleanup receipts refer to the dedicated Golden project.
+
 ## Sources
 
 - [PG17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

@@ -18,7 +18,7 @@ honestly — not a count of implemented rules.
 
 ## PostgreSQL foreign-key referenced keys
 
-D23 adds fifteen selectors to the existing PostgreSQL 17 ADD FOREIGN KEY
+D23 at `c34c6e8a` adds fifteen selectors to the existing PostgreSQL 17 ADD FOREIGN KEY
 cell for eligible unique and primary keys, deferred keys and arity. Existing
 data checks, type conversions and permissions have separate prerequisites.
 
