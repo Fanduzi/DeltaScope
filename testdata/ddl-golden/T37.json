@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-constraint-index": {"enable": {"ddl.pg.alter.constraint_using_index.valid": {"level": "blocker"}, "ddl.alter.add_index.exists.forbid": {"level": "blocker"}, "ddl.pg.alter.add_primary_key.concurrent_index.warn": {"level": "warning"}, "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory": {"level": "notice"}}},
    "pg-drop-not-null-replica-key": {"enable": {"ddl.pg.alter.column.generation.transition.valid": {"level": "blocker"}}},
    "pg-add-check-name": {"enable": {"ddl.pg.alter.add_check.name.available": {"level": "blocker"}, "ddl.pg.alter.add_check.not_valid.require": {"level": "warning"}, "ddl.alter.add_index.exists.forbid": {"level": "blocker"}}},
    "pg-column-type-destination": {"enable": {"ddl.pg.alter.column_type.destination.valid": {"level": "blocker"}, "ddl.pg.alter.set_data_type.rewrite.warn": {"level": "warning"}}},
@@ -1886,6 +1887,51 @@
   }
  },
  "cli_cases": [
+  {
+   "id": "constraint-index-offline",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "sql": "ALTER TABLE app.t ADD CONSTRAINT attached PRIMARY KEY USING INDEX \" Exact Index \"",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["unverified"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","reason_code": "unproven_constraint_using_index","required_facts": ["instance.version"]}],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4
+   }
+  },
+  {
+   "id": "constraint-index-disabled",
+   "dialect": "postgresql",
+   "policy": "all-rules-disabled",
+   "sql": "ALTER TABLE app.t ADD CONSTRAINT attached PRIMARY KEY USING INDEX \" Exact Index \"",
+   "args": ["--fail-on","none"],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"]
+   }
+  },
   {
    "id": "drop-not-null-replica-key-offline",
    "dialect": "postgresql",
@@ -4475,6 +4521,836 @@
   }
  ],
  "metadata_cases": [
+  {
+   "id": "pg-constraint-index-pk-eligible",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_pk_eligible"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_pk_eligible CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_pk_eligible'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_pk_eligible.t ADD CONSTRAINT attached PRIMARY KEY USING INDEX \" Exact Index \"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_pk_eligible'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_pk_eligible","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_pk_eligible.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_pk_eligible.t VALUES(1,'keep',7); CREATE TABLE pgcix_pk_eligible.neighbor(id int); CREATE SEQUENCE pgcix_pk_eligible.guard START 7; CREATE UNIQUE INDEX \" Exact Index \" ON pgcix_pk_eligible.t(id) INCLUDE (included); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_pk_eligible.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_pk_eligible'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_pk_eligible.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_pk_eligible'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_pk_eligible'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_pk_eligible.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_pk_eligible.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_pk_eligible.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgcix_pk_eligible.t ADD CONSTRAINT attached PRIMARY KEY USING INDEX \" Exact Index \"","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native attaches the same index OID and file","sql": "SELECT k.contype='p' AND idx.relfilenode=r.relfilenode FROM pg_catalog.pg_constraint k JOIN pg_catalog.pg_class idx ON idx.oid=k.conindid JOIN pgcix_pk_eligible.receipt r ON r.oid=idx.oid WHERE k.conrelid='pgcix_pk_eligible.t'::regclass AND k.conname='attached' AND r.relname=' Exact Index '","expect": "t"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_pk_eligible.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_pk_eligible.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_pk_eligible CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_pk_eligible'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-unique-referenced",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_unique_referenced"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_unique_referenced CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_unique_referenced'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_unique_referenced.t ADD CONSTRAINT fixture_ix UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_unique_referenced'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_unique_referenced","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_unique_referenced.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_unique_referenced.t VALUES(1,'keep',7); CREATE TABLE pgcix_unique_referenced.neighbor(id int); CREATE SEQUENCE pgcix_unique_referenced.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgcix_unique_referenced.t(id) INCLUDE (included); CREATE TABLE pgcix_unique_referenced.ref(id int REFERENCES pgcix_unique_referenced.t(id)); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_unique_referenced.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_unique_referenced'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_unique_referenced.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_unique_referenced'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_unique_referenced'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_unique_referenced.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_unique_referenced.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_unique_referenced.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgcix_unique_referenced.t ADD CONSTRAINT fixture_ix UNIQUE USING INDEX fixture_ix","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native attaches the same index OID and file","sql": "SELECT k.contype='u' AND idx.relfilenode=r.relfilenode FROM pg_catalog.pg_constraint k JOIN pg_catalog.pg_class idx ON idx.oid=k.conindid JOIN pgcix_unique_referenced.receipt r ON r.oid=idx.oid WHERE k.conrelid='pgcix_unique_referenced.t'::regclass AND k.conname='fixture_ix' AND r.relname='fixture_ix'","expect": "t"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_unique_referenced.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_unique_referenced.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_unique_referenced CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_unique_referenced'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-rename-conflict",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_rename_conflict"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_rename_conflict CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_rename_conflict'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_rename_conflict.t ADD CONSTRAINT occupied_ix UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_rename_conflict'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_rename_conflict","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_rename_conflict.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_rename_conflict.t VALUES(1,'keep',7); CREATE TABLE pgcix_rename_conflict.neighbor(id int); CREATE SEQUENCE pgcix_rename_conflict.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgcix_rename_conflict.t(id) INCLUDE (included); CREATE UNIQUE INDEX occupied_ix ON pgcix_rename_conflict.t(included); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_rename_conflict.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_rename_conflict'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.alter.add_index.exists.forbid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.alter.add_index.exists.forbid","metadata": {"name": "occupied_ix"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_rename_conflict.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_rename_conflict'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_rename_conflict'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_rename_conflict.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_rename_conflict.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_rename_conflict.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42P07","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcix_rename_conflict.t ADD CONSTRAINT occupied_ix UNIQUE USING INDEX fixture_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P07:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_rename_conflict.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_rename_conflict'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_rename_conflict'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_rename_conflict.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_rename_conflict.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_rename_conflict.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_rename_conflict CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_rename_conflict'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-absent",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_absent"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_absent CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_absent'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_absent.t ADD CONSTRAINT attached PRIMARY KEY USING INDEX \" exact index \"",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_absent'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_absent","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_absent.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_absent.t VALUES(1,'keep',7); CREATE TABLE pgcix_absent.neighbor(id int); CREATE SEQUENCE pgcix_absent.guard START 7; CREATE UNIQUE INDEX \" Exact Index \" ON pgcix_absent.t(id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_absent.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_absent'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","metadata": {"reason_code": "constraint_index_absent","constraint_type": "primary_key"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_absent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_absent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_absent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_absent.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_absent.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_absent.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42704","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcix_absent.t ADD CONSTRAINT attached PRIMARY KEY USING INDEX \" exact index \"","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42704:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_absent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_absent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_absent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_absent.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_absent.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_absent.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_absent CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_absent'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-wrong-kind",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_wrong_kind"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_wrong_kind CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_wrong_kind'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_wrong_kind.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_wrong_kind'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_wrong_kind","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_wrong_kind.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_wrong_kind.t VALUES(1,'keep',7); CREATE TABLE pgcix_wrong_kind.neighbor(id int); CREATE SEQUENCE pgcix_wrong_kind.guard START 7; CREATE TABLE pgcix_wrong_kind.fixture_ix(id int); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_wrong_kind.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_wrong_kind'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","metadata": {"reason_code": "constraint_index_wrong_kind","constraint_type": "unique"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_wrong_kind.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_wrong_kind'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_wrong_kind'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_wrong_kind.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_wrong_kind.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_wrong_kind.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcix_wrong_kind.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_wrong_kind.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_wrong_kind'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_wrong_kind'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_wrong_kind.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_wrong_kind.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_wrong_kind.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_wrong_kind CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_wrong_kind'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-wrong-table",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_wrong_table"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_wrong_table CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_wrong_table'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_wrong_table.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_wrong_table'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_wrong_table","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_wrong_table.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_wrong_table.t VALUES(1,'keep',7); CREATE TABLE pgcix_wrong_table.neighbor(id int); CREATE SEQUENCE pgcix_wrong_table.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgcix_wrong_table.neighbor(id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_wrong_table.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_wrong_table'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","metadata": {"reason_code": "constraint_index_wrong_table","constraint_type": "unique"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_wrong_table.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_wrong_table'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_wrong_table'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_wrong_table.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_wrong_table.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_wrong_table.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 55000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcix_wrong_table.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  55000:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_wrong_table.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_wrong_table'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_wrong_table'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_wrong_table.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_wrong_table.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_wrong_table.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_wrong_table CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_wrong_table'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-owned",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_owned"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_owned CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_owned'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_owned.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_owned'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_owned","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_owned.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_owned.t VALUES(1,'keep',7); CREATE TABLE pgcix_owned.neighbor(id int); CREATE SEQUENCE pgcix_owned.guard START 7; ALTER TABLE pgcix_owned.t ADD CONSTRAINT fixture_ix UNIQUE(id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_owned.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_owned'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","metadata": {"reason_code": "constraint_index_already_owned","constraint_type": "unique"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_owned.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_owned'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_owned'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_owned.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_owned.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_owned.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 55000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcix_owned.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  55000:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_owned.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_owned'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_owned'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_owned.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_owned.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_owned.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_owned CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_owned'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-invalid",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_invalid"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_invalid CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_invalid'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_invalid.broken ADD CONSTRAINT attached UNIQUE USING INDEX invalid_idx",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_invalid'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_invalid","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_invalid.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_invalid.t VALUES(1,'keep',7); CREATE TABLE pgcix_invalid.neighbor(id int); CREATE SEQUENCE pgcix_invalid.guard START 7; CREATE TABLE pgcix_invalid.broken(id int); INSERT INTO pgcix_invalid.broken VALUES(1),(1); ","expect_rc": 0},
+    {"name": "failed native concurrent build leaves an invalid index","sql": "CREATE UNIQUE INDEX CONCURRENTLY invalid_idx ON pgcix_invalid.broken(id)","expect_rc": 1,"verify": [{"assert": "live invalid index remains","sql": "SELECT indislive AND NOT indisvalid FROM pg_catalog.pg_index WHERE indexrelid='pgcix_invalid.invalid_idx'::regclass","expect": "t"}]},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_invalid.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_invalid'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","metadata": {"reason_code": "constraint_index_invalid","constraint_type": "unique"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_invalid.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_invalid'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_invalid'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_invalid.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_invalid.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_invalid.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 55000","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcix_invalid.broken ADD CONSTRAINT attached UNIQUE USING INDEX invalid_idx","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  55000:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_invalid.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_invalid'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_invalid'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_invalid.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_invalid.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_invalid.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_invalid CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_invalid'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-nonunique",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_nonunique"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_nonunique CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_nonunique'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_nonunique.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_nonunique'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_nonunique","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_nonunique.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_nonunique.t VALUES(1,'keep',7); CREATE TABLE pgcix_nonunique.neighbor(id int); CREATE SEQUENCE pgcix_nonunique.guard START 7; CREATE INDEX fixture_ix ON pgcix_nonunique.t(id); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_nonunique.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_nonunique'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","metadata": {"reason_code": "constraint_index_not_unique","constraint_type": "unique"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_nonunique.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_nonunique'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_nonunique'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_nonunique.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_nonunique.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_nonunique.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcix_nonunique.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_nonunique.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_nonunique'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_nonunique'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_nonunique.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_nonunique.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_nonunique.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_nonunique CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_nonunique'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-expression",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_expression"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_expression CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_expression'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_expression.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_expression'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_expression","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_expression.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_expression.t VALUES(1,'keep',7); CREATE TABLE pgcix_expression.neighbor(id int); CREATE SEQUENCE pgcix_expression.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgcix_expression.t((id+1)); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_expression.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_expression'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","metadata": {"reason_code": "constraint_index_has_expression","constraint_type": "unique"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_expression.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_expression'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_expression'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_expression.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_expression.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_expression.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcix_expression.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_expression.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_expression'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_expression'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_expression.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_expression.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_expression.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_expression CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_expression'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-partial",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_partial"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_partial CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_partial'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_partial.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_partial'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_partial","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_partial.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_partial.t VALUES(1,'keep',7); CREATE TABLE pgcix_partial.neighbor(id int); CREATE SEQUENCE pgcix_partial.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgcix_partial.t(id) WHERE id>0; ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_partial.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_partial'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","metadata": {"reason_code": "constraint_index_partial","constraint_type": "unique"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_partial.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_partial'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_partial'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_partial.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_partial.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_partial.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcix_partial.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_partial.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_partial'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_partial'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_partial.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_partial.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_partial.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_partial CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_partial'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-key-defaults",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_key_defaults"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_key_defaults CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_key_defaults'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_key_defaults.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_key_defaults'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_key_defaults","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_key_defaults.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_key_defaults.t VALUES(1,'keep',7); CREATE TABLE pgcix_key_defaults.neighbor(id int); CREATE SEQUENCE pgcix_key_defaults.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgcix_key_defaults.t(id DESC); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_key_defaults.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_key_defaults'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","metadata": {"reason_code": "constraint_index_nondefault_key","constraint_type": "unique"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_key_defaults.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_key_defaults'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_key_defaults'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_key_defaults.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_key_defaults.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_key_defaults.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcix_key_defaults.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_key_defaults.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_key_defaults'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_key_defaults'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_key_defaults.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_key_defaults.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_key_defaults.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_key_defaults CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_key_defaults'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-collation",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_collation"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_collation CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_collation'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_collation.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_collation'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_collation","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_collation.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_collation.t VALUES(1,'keep',7); CREATE TABLE pgcix_collation.neighbor(id int); CREATE SEQUENCE pgcix_collation.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgcix_collation.t(label COLLATE pg_catalog.\"POSIX\"); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_collation.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_collation'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","metadata": {"reason_code": "constraint_index_nondefault_key","constraint_type": "unique"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_collation.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_collation'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_collation'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_collation.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_collation.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_collation.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42809","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcix_collation.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42809:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_collation.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_collation'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_collation'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_collation.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_collation.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_collation.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_collation CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_collation'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-null-distinct",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_null_distinct"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_null_distinct CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_null_distinct'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_null_distinct.t ADD CONSTRAINT attached PRIMARY KEY USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_null_distinct'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_null_distinct","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_null_distinct.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_null_distinct.t VALUES(1,'keep',7); CREATE TABLE pgcix_null_distinct.neighbor(id int); CREATE SEQUENCE pgcix_null_distinct.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgcix_null_distinct.t(id) NULLS NOT DISTINCT; ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_null_distinct.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_null_distinct'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","level": "blocker"}],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4,
+    "finding_metadata": [{"index": 0,"rule_id": "ddl.pg.alter.constraint_using_index.valid","metadata": {"reason_code": "constraint_index_nulls_not_distinct_primary","constraint_type": "primary_key"}}]
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_null_distinct.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_null_distinct'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_null_distinct'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_null_distinct.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_null_distinct.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_null_distinct.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native refuses 42P16","sql": "\\set VERBOSITY verbose\nALTER TABLE pgcix_null_distinct.t ADD CONSTRAINT attached PRIMARY KEY USING INDEX fixture_ix","expect_rc": 3,"via": "stdin","stderr_contains": ["ERROR:  42P16:"]}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_null_distinct.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_null_distinct'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_null_distinct'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_null_distinct.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_null_distinct.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_null_distinct.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_null_distinct CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_null_distinct'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-null-distinct-unique",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_null_distinct_unique"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_null_distinct_unique CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_null_distinct_unique'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_null_distinct_unique.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_null_distinct_unique'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_null_distinct_unique","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_null_distinct_unique.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_null_distinct_unique.t VALUES(1,'keep',7); CREATE TABLE pgcix_null_distinct_unique.neighbor(id int); CREATE SEQUENCE pgcix_null_distinct_unique.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgcix_null_distinct_unique.t(id) NULLS NOT DISTINCT; ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_null_distinct_unique.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_null_distinct_unique'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_null_distinct_unique.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_null_distinct_unique'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_null_distinct_unique'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_null_distinct_unique.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_null_distinct_unique.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_null_distinct_unique.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgcix_null_distinct_unique.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native attaches the same index OID and file","sql": "SELECT k.contype='u' AND idx.relfilenode=r.relfilenode FROM pg_catalog.pg_constraint k JOIN pg_catalog.pg_class idx ON idx.oid=k.conindid JOIN pgcix_null_distinct_unique.receipt r ON r.oid=idx.oid WHERE k.conrelid='pgcix_null_distinct_unique.t'::regclass AND k.conname='attached' AND r.relname='fixture_ix'","expect": "t"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_null_distinct_unique.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_null_distinct_unique.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_null_distinct_unique CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_null_distinct_unique'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-freshness",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_freshness"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_freshness CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_freshness'","expect": "0"}}]},
+   "sql": "ALTER TABLE pgcix_freshness.neighbor ADD COLUMN prior_ddl integer;ALTER TABLE pgcix_freshness.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_freshness'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_freshness","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_freshness.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_freshness.t VALUES(1,'keep',7); CREATE TABLE pgcix_freshness.neighbor(id int); CREATE SEQUENCE pgcix_freshness.guard START 7; CREATE UNIQUE INDEX fixture_ix ON pgcix_freshness.t(id) INCLUDE (included); ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_freshness.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_freshness'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": ["complete","unverified"],
+    "statement_indices": [0,1],
+    "finding_entries": [],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [{"index": 1,"rule_id": "ddl.pg.alter.constraint_using_index.valid","reason_code": "unproven_constraint_using_index","required_facts": ["target_table.pg_constraint_index"]}],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_freshness.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_freshness'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_freshness'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_freshness.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_freshness.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_freshness.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgcix_freshness.neighbor ADD COLUMN prior_ddl integer","expect_rc": 0},
+    {"name": "native attaches or skips","sql": "ALTER TABLE pgcix_freshness.t ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native attaches the same index OID and file","sql": "SELECT k.contype='u' AND idx.relfilenode=r.relfilenode FROM pg_catalog.pg_constraint k JOIN pg_catalog.pg_class idx ON idx.oid=k.conindid JOIN pgcix_freshness.receipt r ON r.oid=idx.oid WHERE k.conrelid='pgcix_freshness.t'::regclass AND k.conname='attached' AND r.relname='fixture_ix'","expect": "t"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_freshness.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_freshness.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_freshness CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_freshness'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
+  {
+   "id": "pg-constraint-index-guarded-absent",
+   "anchor": "postgres17",
+   "dialect": "postgresql",
+   "policy": "pg-constraint-index",
+   "connect": {"host": "127.0.0.1","port": 25432,"user": "postgres","database": "postgres","schema": "pgcix_guarded_absent"},
+   "fixture": {"cleanup": [{"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_guarded_absent CASCADE","verify": {"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_guarded_absent'","expect": "0"}}]},
+   "sql": "ALTER TABLE IF EXISTS pgcix_guarded_absent.absent ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix",
+   "args": ["--fail-on","none"],
+   "setup": [
+    {"name": "prove schema absent","fixture_key": "schema","requires_absence": true,"sql": "SELECT 1","expect_rc": 0,"verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_guarded_absent'","expect": "0"}]},
+    {"name": "claim schema","fixture_key": "schema","creates_fixture": true,"sql": "CREATE SCHEMA pgcix_guarded_absent","expect_rc": 0},
+    {"name": "seed owned relations and indexes","sql": "CREATE TABLE pgcix_guarded_absent.t(id int NOT NULL, label text COLLATE pg_catalog.\"C\", included int); INSERT INTO pgcix_guarded_absent.t VALUES(1,'keep',7); CREATE TABLE pgcix_guarded_absent.neighbor(id int); CREATE SEQUENCE pgcix_guarded_absent.guard START 7; ","expect_rc": 0},
+    {"name": "capture exact catalog and file identities","sql": "CREATE TABLE pgcix_guarded_absent.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_guarded_absent'::regnamespace AND c.relname<>'receipt'","expect_rc": 0}
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": ["complete"],
+    "statement_indices": [0],
+    "finding_entries": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "serialized_not_contains": ["PGConstraintUsingIndex","PGUsingIndexName","KeyDefaultsKnown","ConstraintOwned"],
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {"assert": "audit preserves exact catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_guarded_absent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_guarded_absent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_guarded_absent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_guarded_absent.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_guarded_absent.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_guarded_absent.guard","expect": "7:false"}
+   ],
+   "execute": [
+    {"name": "native attaches or skips","sql": "ALTER TABLE IF EXISTS pgcix_guarded_absent.absent ADD CONSTRAINT attached UNIQUE USING INDEX fixture_ix","expect_rc": 0}
+   ],
+   "structure": [
+    {"assert": "native refusal preserves catalog and file identities","sql": "SELECT count(*) FROM ((TABLE pgcix_guarded_absent.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_guarded_absent'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,i.indrelid,i.indisvalid,i.indisunique,i.indpred IS NOT NULL AS partial,i.indexprs IS NOT NULL AS expression,i.indoption::text AS flags,i.indnullsnotdistinct,k.conname,k.contype FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_catalog.pg_constraint k ON k.conrelid=c.oid WHERE c.relnamespace='pgcix_guarded_absent'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgcix_guarded_absent.receipt)) AS delta","expect": "0"},
+    {"assert": "keeps original row and INCLUDE payload","sql": "SELECT count(*)=1 AND bool_and(id=1 AND label='keep' AND included=7) FROM pgcix_guarded_absent.t","expect": "t"},
+    {"assert": "keeps independent guard sequence","sql": "SELECT last_value::text||':'||is_called::text FROM pgcix_guarded_absent.guard","expect": "7:false"}
+   ],
+   "teardown": [
+    {"name": "remove owned schema","fixture_key": "schema","sql": "DROP SCHEMA pgcix_guarded_absent CASCADE","verify": [{"assert": "owned schema absent","sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcix_guarded_absent'","expect": "0"}],"drops_fixture": true,"expect_rc": 0}
+   ]
+  },
   {
    "id": "pg-drop-not-null-replica-key-exact",
    "anchor": "postgres17",
@@ -12165,6 +13041,25 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.constraint-index-offline",
+  "T37.cli.constraint-index-disabled",
+  "T37.meta.pg-constraint-index-pk-eligible",
+  "T37.meta.pg-constraint-index-unique-referenced",
+  "T37.meta.pg-constraint-index-rename-conflict",
+  "T37.meta.pg-constraint-index-absent",
+  "T37.meta.pg-constraint-index-wrong-kind",
+  "T37.meta.pg-constraint-index-wrong-table",
+  "T37.meta.pg-constraint-index-owned",
+  "T37.meta.pg-constraint-index-invalid",
+  "T37.meta.pg-constraint-index-nonunique",
+  "T37.meta.pg-constraint-index-expression",
+  "T37.meta.pg-constraint-index-partial",
+  "T37.meta.pg-constraint-index-key-defaults",
+  "T37.meta.pg-constraint-index-collation",
+  "T37.meta.pg-constraint-index-null-distinct",
+  "T37.meta.pg-constraint-index-null-distinct-unique",
+  "T37.meta.pg-constraint-index-freshness",
+  "T37.meta.pg-constraint-index-guarded-absent",
   "T37.cli.drop-not-null-replica-key-offline",
   "T37.cli.drop-not-null-replica-key-disabled",
   "T37.meta.pg-drop-not-null-replica-key-exact",

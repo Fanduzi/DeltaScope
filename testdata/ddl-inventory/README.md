@@ -16,6 +16,13 @@ honestly — not a count of implemented rules.
 | T06-CLOSEOUT.md | Final T06 (#85) technical closeout index (T06技术收口材料齐备): binds every accepted dimension to the traceability rows, the SHA-frozen umbrella evidence, and the owner boundary for deferred dimensions; issue #85 stays open |
 | evidence/ | Per-row offline CLI probe captures (`<row-id>.probes.txt`): recorded `deltascope audit` output for the row's `sql_shape` at every declared version (`=== version <v> (target …)` sections). Regenerate by re-running the probe commands recorded in the file header |
 
+## PostgreSQL constraint attachment using an index
+
+D21 appends five selectors to ADD PRIMARY KEY and fifteen to ADD UNIQUE at the
+PostgreSQL 17 anchor. The cases cover specific catalog and naming premises of
+USING INDEX. Default operator classes and execution prerequisites remain
+separately tracked. Inventory classifications are preserved.
+
 ## PostgreSQL DROP NOT NULL replica identity keys
 
 D20 at `5799cd4d` adds nine selectors to the existing SET/DROP NOT NULL PostgreSQL 17 cell.

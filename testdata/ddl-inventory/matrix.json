@@ -8113,7 +8113,12 @@
                 "file:testdata/ddl-golden/T37.json#constraint-risk-pk-build",
                 "file:testdata/ddl-golden/T37.json#constraint-risk-pk-reuse",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-risk-native",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_migration_risk.expected.yaml#ddl.pg.alter.add_primary_key.concurrent_index.warn"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_migration_risk.expected.yaml#ddl.pg.alter.add_primary_key.concurrent_index.warn",
+                "file:testdata/ddl-golden/T37.json#constraint-index-offline",
+                "file:testdata/ddl-golden/T37.json#constraint-index-disabled",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-pk-eligible",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-absent",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-null-distinct"
               ]
             }
           ]
@@ -8135,7 +8140,22 @@
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json#ADD UNIQUE",
                 "file:testdata/ddl-golden/T37.json#constraint-risk-unique-modes",
-                "file:testdata/ddl-golden/T37.json#pg-constraint-risk-native"
+                "file:testdata/ddl-golden/T37.json#pg-constraint-risk-native",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-unique-referenced",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-rename-conflict",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-wrong-kind",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-wrong-table",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-owned",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-invalid",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-nonunique",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-expression",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-partial",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-key-defaults",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-collation",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-null-distinct-unique",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-freshness",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-guarded-absent",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_using_index.expected.yaml#ddl.pg.alter.constraint_using_index.valid"
               ]
             }
           ]

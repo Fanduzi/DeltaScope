@@ -3,6 +3,13 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T37 D21 PostgreSQL constraint attachment using an index
+
+Focused T37 passed 336/336 cases and 8,751 assertions. Nineteen new cases retain
+all 317 earlier cases and their policy profiles. Native checks cover exact
+index identity, valid and invalid attachments, same-name reuse and occupied
+rename destinations. [Decision](../../docs/decisions/2026-11-20-postgresql-constraint-using-index.md)
+
 ## T37 D20 PostgreSQL DROP NOT NULL replica identity keys
 
 Delivered `5799cd4d` passed 50 tasks, 3,649/3,649 cases and 67,144

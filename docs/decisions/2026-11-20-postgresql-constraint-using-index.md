@@ -10,7 +10,7 @@ F09 D21 on `milestone/pg-alter-semantics`, following `5799cd4d`.
 
 The PostgreSQL provider reads a candidate relation in the table's exact namespace. It checks index kind, ownership by the target table, validity, uniqueness, built-in btree, expression and predicate presence, and sort flags, column collation and options for key slots only. An internal dependency from the index to a constraint proves the index is constraint-owned. A foreign key may reference a standalone unique index without owning it. `NULLS NOT DISTINCT` is refused for PRIMARY KEY and permitted by this premise for UNIQUE. Unknown binding, freshness or needed key attributes yields `unproven_constraint_using_index`.
 
-The output contains the table, constraint kind, action and bounded reason. The private index name and catalog fields remain excluded from JSON. Default operator-class resolution, nullable primary-key rows, permissions, locking, other relation kinds, name conflicts for the newly declared constraint, and execution remain separate premises. Existing D3 migration advice and replica identity policy keep their scope.
+The output contains the table, constraint kind, action and bounded reason. When a fresh observation binds the selected index to the table and the explicit constraint name matches the index name, the existing add-index name rule skips its collision check. PostgreSQL attaches under that name without renaming the index. A different constraint name still reaches the existing check. The private index name and catalog fields remain excluded from JSON. Default operator-class resolution, nullable primary-key rows, permissions, locking, other relation kinds, name conflicts for the newly declared constraint, and execution remain separate premises. Existing D3 migration advice and replica identity policy keep their scope.
 
 ## Evidence
 
@@ -25,6 +25,7 @@ At `1bc8709c`, 14 native PG17.7 steps and 28 real CLI audits established exact n
 - `T37.cli.constraint-index-disabled`
 - `T37.meta.pg-constraint-index-pk-eligible`
 - `T37.meta.pg-constraint-index-unique-referenced`
+- `T37.meta.pg-constraint-index-rename-conflict`
 - `T37.meta.pg-constraint-index-absent`
 - `T37.meta.pg-constraint-index-wrong-kind`
 - `T37.meta.pg-constraint-index-wrong-table`
@@ -41,6 +42,26 @@ At `1bc8709c`, 14 native PG17.7 steps and 28 real CLI audits established exact n
 - `T37.meta.pg-constraint-index-guarded-absent`
 
 Keep the prior 317 cases and policy profiles. Add evidence only to the original ADD PRIMARY KEY and ADD UNIQUE cells. Native controls require exact SQLSTATE, independent catalog readback, and no execution through audit.
+
+## Evidence bindings
+
+`4f91cc2f` captures the private selection and catalog observation. `a47025da`
+adds the default blocker and the same-name attachment correction. In a
+separate real CLI comparison at the facts commit with the rule in the
+worktree, three native same-name or unnamed attachments passed. An occupied
+rename destination returned `42P07` and retained the existing blocker.
+See `/tmp/ds-pg-d21-existing-name-fixed-4f91cc2f/evidence.json`.
+
+The first focused T37 run passed 333 of 335 cases. The invalid-index setup
+used a psql input mode unsupported by the setup runner, and the existing
+named tablespace fixture failed with a broken pipe. The second run used the
+established concurrent build setup and passed the earlier tablespace case
+with its original assertions. It passed 336/336 cases and 8,751 assertions
+with the same-name and rename controls. Eighteen new native commands produced
+six successes and twelve precise refusals. The invalid-index setup separately
+proves a failed build left a live invalid index. Five selectors attach to
+ADD PRIMARY KEY and fifteen to ADD UNIQUE. All 317 earlier cases and policy
+profiles, and the inventory classifications and denominators, were preserved.
 
 ## Sources
 
