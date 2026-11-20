@@ -21,16 +21,19 @@ type PGIdentitySequenceState struct {
 // TypeWidth is 16/32/64 for a builtin integer, -1 for another proven type,
 // and 0 for unobserved type identity. No expressions or issuance state are kept.
 type PGColumnState struct {
-	Name             string
-	Identity         string // pg_attribute.attidentity: empty, a, d
-	Generated        string // pg_attribute.attgenerated: empty, s on PG17
-	TypeWidth        int
-	TypeStorage      string // observed pg_type.typstorage: p/e/m/x; empty is unknown
-	System           bool   // observed negative pg_attribute.attnum, not a name inference
-	NotNull          bool
-	HasDefault       bool
-	PrimaryKey       bool
-	IdentitySequence *PGIdentitySequenceState
+	Name        string
+	Identity    string // pg_attribute.attidentity: empty, a, d
+	Generated   string // pg_attribute.attgenerated: empty, s on PG17
+	TypeWidth   int
+	TypeStorage string // observed pg_type.typstorage: p/e/m/x; empty is unknown
+	System      bool   // observed negative pg_attribute.attnum, not a name inference
+	NotNull     bool
+	HasDefault  bool
+	PrimaryKey  bool
+	// ReplicaIdentityKey records membership in the key slots of a live attached index.
+	ReplicaIdentityKey      bool `json:"-"`
+	ReplicaIdentityKeyKnown bool `json:"-"`
+	IdentitySequence        *PGIdentitySequenceState
 }
 
 // PGColumnCatalog keeps user and observed system directories separate.

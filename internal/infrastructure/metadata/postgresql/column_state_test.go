@@ -11,10 +11,10 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
-var pgColumnCatalogTestColumns = []string{"ordinary", "name", "identity", "generated", "type", "notnull", "hasdef", "pk", "seqtype", "start", "increment", "min", "max", "cache", "cycle", "attnum", "typstorage", "typed"}
+var pgColumnCatalogTestColumns = []string{"ordinary", "name", "identity", "generated", "type", "notnull", "hasdef", "pk", "seqtype", "start", "increment", "min", "max", "cache", "cycle", "attnum", "typstorage", "typed", "replica_key"}
 
 func pgColumnCatalogTestRow(name, identity, generated string, typeOID int64, notNull, hasDefault, pk, sequence bool) []driver.Value {
-	row := []driver.Value{true, name, identity, generated, typeOID, notNull, hasDefault, pk, nil, nil, nil, nil, nil, nil, nil, int64(1), "p", false}
+	row := []driver.Value{true, name, identity, generated, typeOID, notNull, hasDefault, pk, nil, nil, nil, nil, nil, nil, nil, int64(1), "p", false, false}
 	if sequence {
 		copy(row[8:15], []driver.Value{int64(20), int64(2147483648), int64(1), int64(1), int64(math.MaxInt64), int64(1), false})
 	}
@@ -29,6 +29,8 @@ func TestLoadPGColumnCatalog(t *testing.T) {
 		pgColumnCatalogTestRow("serial", "", "", 23, true, true, false, false),
 		pgColumnCatalogTestRow("domain", "", "", 123456, true, false, false, false),
 	}
+	rows[1][18] = true
+	rows[2][18] = nil
 	db, log := openTestDB(t, map[string]testQueryResult{"as generation_ordinary": {columns: pgColumnCatalogTestColumns, rows: rows}})
 	defer db.Close()
 	s := &spec.TableSnapshot{Schema: `quoted'schema`, Table: &spec.Table{Name: `t'quoted`}}
@@ -46,12 +48,16 @@ func TestLoadPGColumnCatalog(t *testing.T) {
 		t.Fatalf("sequence=%+v", id.IdentitySequence)
 	}
 	upper, ok := s.PGColumns.FindColumn("ID")
-	if !ok || upper == nil || upper.TypeWidth != 16 || upper.Identity != "a" {
+	if !ok || upper == nil || upper.TypeWidth != 16 || upper.Identity != "a" || !upper.ReplicaIdentityKeyKnown || !upper.ReplicaIdentityKey {
 		t.Fatalf("quoted=%+v", upper)
 	}
 	serial, _ := s.PGColumns.FindColumn("serial")
-	if serial.Identity != "" || serial.IdentitySequence != nil || !serial.HasDefault {
+	if serial.Identity != "" || serial.IdentitySequence != nil || !serial.HasDefault || !serial.ReplicaIdentityKeyKnown || serial.ReplicaIdentityKey {
 		t.Fatal("serial became guessed identity")
+	}
+	stored, _ := s.PGColumns.FindColumn("stored")
+	if stored.ReplicaIdentityKeyKnown {
+		t.Fatal("unknown replica identity became a known answer")
 	}
 	domain, _ := s.PGColumns.FindColumn("domain")
 	if domain.TypeWidth != -1 {
@@ -66,7 +72,7 @@ func TestLoadPGColumnCatalog(t *testing.T) {
 			t.Fatalf("forbidden query member %q", bad)
 		}
 	}
-	for _, good := range []string{"pg_catalog.pg_depend", "dep.deptype = 'i'", "pg_catalog.pg_sequence", "$1", "$2", "pg_catalog.pg_inherits", "c.relpersistence OPERATOR(pg_catalog.=) 'p'", "n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text", "c.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text", "a.attnum = any(pk.conkey)", "c.reloftype OPERATOR(pg_catalog.<>) 0::pg_catalog.oid"} {
+	for _, good := range []string{"pg_catalog.pg_depend", "dep.deptype = 'i'", "pg_catalog.pg_sequence", "$1", "$2", "pg_catalog.pg_inherits", "c.relpersistence OPERATOR(pg_catalog.=) 'p'", "n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text", "c.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text", "a.attnum = any(pk.conkey)", "i.indrelid OPERATOR(pg_catalog.=) c.oid and i.indislive and i.indisreplident", "k.position OPERATOR(pg_catalog.<=) i.indnkeyatts", "k.attnum OPERATOR(pg_catalog.=) a.attnum", "c.reloftype OPERATOR(pg_catalog.<>) 0::pg_catalog.oid"} {
 		if !strings.Contains(q[0], good) {
 			t.Fatalf("missing query premise %q", good)
 		}
@@ -74,7 +80,7 @@ func TestLoadPGColumnCatalog(t *testing.T) {
 }
 
 func TestPGColumnCatalogEmptyUnknownAndAmbiguous(t *testing.T) {
-	empty := []driver.Value{true, nil, nil, nil, nil, nil, nil, false, nil, nil, nil, nil, nil, nil, nil, nil, nil, false}
+	empty := []driver.Value{true, nil, nil, nil, nil, nil, nil, false, nil, nil, nil, nil, nil, nil, nil, nil, nil, false, false}
 	duplicate := pgColumnCatalogTestRow("id", "d", "", 20, true, false, false, true)
 	unsupported := pgColumnCatalogTestRow("id", "d", "", 20, true, false, false, true)
 	unsupported[0] = false
@@ -108,7 +114,7 @@ func TestPGColumnCatalogEmptyUnknownAndAmbiguous(t *testing.T) {
 
 func TestPGColumnCatalogObservesTypedTable(t *testing.T) {
 	row := pgColumnCatalogTestRow("id", "", "", 23, true, false, false, false)
-	row[len(row)-1] = true
+	row[len(row)-2] = true
 	db, _ := openTestDB(t, map[string]testQueryResult{"as generation_ordinary": {columns: pgColumnCatalogTestColumns, rows: [][]driver.Value{row}}})
 	defer db.Close()
 	snapshot := &spec.TableSnapshot{Schema: "app", Table: &spec.Table{Name: "t"}}

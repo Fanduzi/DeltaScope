@@ -16,7 +16,13 @@ func (p *Provider) loadPGColumnCatalog(ctx context.Context, snapshot *spec.Table
 		       a.atttypid, a.attnotnull, a.atthasdef,
 		       exists (select 1 from pg_catalog.pg_constraint pk where pk.conrelid = c.oid and pk.contype = 'p' and a.attnum = any(pk.conkey)),
 		       seq.seqtypid, seq.seqstart, seq.seqincrement, seq.seqmin, seq.seqmax, seq.seqcache, seq.seqcycle,
-		       a.attnum, typ.typstorage::text, c.reloftype OPERATOR(pg_catalog.<>) 0::pg_catalog.oid
+		       a.attnum, typ.typstorage::text, c.reloftype OPERATOR(pg_catalog.<>) 0::pg_catalog.oid,
+		       exists (select 1
+		               from pg_catalog.pg_index i
+		               cross join lateral pg_catalog.unnest(i.indkey) with ordinality as k(attnum, position)
+		               where i.indrelid OPERATOR(pg_catalog.=) c.oid and i.indislive and i.indisreplident
+		                 and k.position OPERATOR(pg_catalog.<=) i.indnkeyatts
+		                 and k.attnum OPERATOR(pg_catalog.=) a.attnum)
 		from pg_catalog.pg_class c
 		join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) c.relnamespace
 		left join pg_catalog.pg_attribute a on a.attrelid OPERATOR(pg_catalog.=) c.oid and a.attnum OPERATOR(pg_catalog.<>) 0 and not a.attisdropped
@@ -38,9 +44,9 @@ func (p *Provider) loadPGColumnCatalog(ctx context.Context, snapshot *spec.Table
 		var ordinary, pk, typed bool
 		var name, identity, generated, typeStorage sql.NullString
 		var typeOID, seqType, start, increment, min, max, cache, attributeNumber sql.NullInt64
-		var notNull, hasDefault, cycle sql.NullBool
+		var notNull, hasDefault, cycle, replicaKey sql.NullBool
 		if err := rows.Scan(&ordinary, &name, &identity, &generated, &typeOID, &notNull, &hasDefault, &pk,
-			&seqType, &start, &increment, &min, &max, &cache, &cycle, &attributeNumber, &typeStorage, &typed); err != nil {
+			&seqType, &start, &increment, &min, &max, &cache, &cycle, &attributeNumber, &typeStorage, &typed, &replicaKey); err != nil {
 			return fmt.Errorf("scan column generation catalog: %w", err)
 		}
 		if catalog == nil {
@@ -56,7 +62,8 @@ func (p *Provider) loadPGColumnCatalog(ctx context.Context, snapshot *spec.Table
 		}
 		state := spec.PGColumnState{Name: name.String, Identity: identity.String, Generated: generated.String,
 			TypeWidth: pgCatalogIntegerWidth(typeOID.Int64), TypeStorage: typeStorage.String, System: attributeNumber.Int64 < 0,
-			NotNull: notNull.Bool, HasDefault: hasDefault.Bool, PrimaryKey: pk}
+			NotNull: notNull.Bool, HasDefault: hasDefault.Bool, PrimaryKey: pk,
+			ReplicaIdentityKey: replicaKey.Bool, ReplicaIdentityKeyKnown: replicaKey.Valid}
 		if seqType.Valid && start.Valid && increment.Valid && min.Valid && max.Valid && cache.Valid && cycle.Valid {
 			state.IdentitySequence = &spec.PGIdentitySequenceState{TypeWidth: pgCatalogIntegerWidth(seqType.Int64), Definition: spec.SequenceDefinition{
 				Start: &start.Int64, Increment: &increment.Int64, MinValue: &min.Int64, MaxValue: &max.Int64, CacheValue: &cache.Int64, Cycle: &cycle.Bool,

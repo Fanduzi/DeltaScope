@@ -100,7 +100,9 @@ Stable public package surface for library consumers.
 - `PGColumnCatalog`, `PGColumnState`, `PGIdentitySequenceState`, `SequenceDefinition`
   Bounded custom-provider column facts. `TableSnapshot.PGColumns` is private
   JSON evidence; user `Columns` nil is unobserved, non-nil empty means no user
-  columns. `SystemColumns` separately carries real negative-attnum members with
+  columns. `PGColumnState.ReplicaIdentityKeyKnown` marks a live key-slot
+  observation. `ReplicaIdentityKey` then records membership. Both fields are
+  excluded from JSON. `SystemColumns` separately carries real negative-attnum members with
   `System` true; missing system facts never establish absence or guarded no-op.
   `TypeStorage` is actual `pg_type.typstorage`, not the current column strategy.
   Exact names and `Ordinary` scope are required. Set `Typed` for tables created
