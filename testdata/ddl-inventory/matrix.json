@@ -17769,7 +17769,7 @@
         {
           "subaction_id": "ON TABLE",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -17777,29 +17777,38 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "audited",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.grant.on-table.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#pg-grant-offline",
+                "file:testdata/ddl-golden/T47.json#pg-grant-qualified-table",
+                "file:testdata/ddl-golden/T47.json#pg-grant-second-target-absent",
+                "file:testdata/ddl-golden/T47.json#pg-grant-usage-on-table",
+                "file:testdata/ddl-golden/T47.json#pg-grant-unknown-object-privilege",
+                "file:testdata/ddl-golden/T47.json#pg-grant-unknown-grantee",
+                "file:testdata/ddl-golden/T47.json#pg-grant-public-plain-grant"
               ]
             }
           ]
         },
         {
           "subaction_id": "ALL TABLES IN SCHEMA",
-          "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
               "version_range": "17",
               "official_presence": "documented",
               "product_scope": "registered",
-              "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.grant.all-tables-in-schema.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#pg-grant-schema-set",
+                "file:testdata/ddl-golden/T47.json#pg-grant-unknown-schema"
               ]
             }
           ]
@@ -17807,7 +17816,7 @@
         {
           "subaction_id": "columns",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -17815,10 +17824,18 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "audited",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.grant.columns.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#pg-grant-missing-column",
+                "file:testdata/ddl-golden/T47.json#pg-grant-quoted-exact-column",
+                "file:testdata/ddl-golden/T47.json#pg-grant-second-target-missing-column",
+                "file:testdata/ddl-golden/T47.json#pg-grant-duplicate-column",
+                "file:testdata/ddl-golden/T47.json#pg-grant-system-column",
+                "file:testdata/ddl-golden/T47.json#pg-grant-unavailable-tuple-column",
+                "file:testdata/ddl-golden/T47.json#pg-grant-column-truncate",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/grant_missing_column.expected.yaml#ddl.pg.grant.declaration.valid"
               ]
             }
           ]
@@ -17826,7 +17843,7 @@
         {
           "subaction_id": "WITH GRANT OPTION",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -17834,10 +17851,12 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "audited",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.grant.with-grant-option.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#grant-with-grant-option",
+                "file:testdata/ddl-golden/T47.json#pg-grant-public-grant-option"
               ]
             }
           ]
@@ -17845,7 +17864,7 @@
         {
           "subaction_id": "sequences/functions/database/schema/types",
           "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -17853,10 +17872,17 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.grant.sequences-functions-database-schema-types.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#pg-grant-mixed-object-sequence",
+                "file:testdata/ddl-golden/T47.json#pg-grant-sequence-update-under-table-spelling",
+                "file:testdata/ddl-golden/T47.json#pg-grant-sequence-usage-under-table-spelling",
+                "file:testdata/ddl-golden/T47.json#pg-grant-scoped-sequence-usage",
+                "file:testdata/ddl-golden/T47.json#pg-grant-wrong-direct-sequence-kind",
+                "file:testdata/ddl-golden/T47.json#pg-grant-wrong-privilege-for-schema",
+                "file:testdata/ddl-golden/T47.json#pg-grant-grant-schema-create"
               ]
             }
           ]
@@ -17875,7 +17901,9 @@
               "audit_status": "explicit_unsupported",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.grant.role-membership.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#pg-grant-named-role-membership",
+                "file:testdata/ddl-golden/T47.json#pg-grant-missing-role-membership-source"
               ]
             }
           ]
@@ -17883,7 +17911,7 @@
         {
           "subaction_id": "tablespace/large objects",
           "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -17891,10 +17919,12 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.grant.tablespace-large-objects.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#grant-tablespace-large-objects",
+                "file:testdata/ddl-golden/T47.json#pg-grant-missing-oid-object"
               ]
             }
           ]
@@ -17902,7 +17932,7 @@
         {
           "subaction_id": "GRANTED BY",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -17910,10 +17940,12 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "audited",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.grant.granted-by.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#pg-grant-unknown-grantor",
+                "file:testdata/ddl-golden/T47.json#pg-grant-other-grantor"
               ]
             }
           ]
@@ -17945,7 +17977,7 @@
         {
           "subaction_id": "REVOKE privileges",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -17953,10 +17985,11 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "audited",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.revoke.revoke-privileges.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#pg-grant-revoke-missing-column"
               ]
             }
           ]
@@ -17964,7 +17997,7 @@
         {
           "subaction_id": "GRANT OPTION FOR",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -17972,10 +18005,11 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "audited",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.revoke.grant-option-for.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#pg-grant-revoke-column-grant-option"
               ]
             }
           ]
@@ -17983,7 +18017,7 @@
         {
           "subaction_id": "CASCADE/RESTRICT",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -17991,10 +18025,12 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "audited",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.revoke.cascade-restrict.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#revoke-cascade-restrict",
+                "file:testdata/ddl-golden/T47.json#pg-grant-revoke-column-grant-option"
               ]
             }
           ]
@@ -18013,7 +18049,8 @@
               "audit_status": "explicit_unsupported",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.revoke.role-membership.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#pg-grant-revoke-membership-option"
               ]
             }
           ]
@@ -18021,7 +18058,7 @@
         {
           "subaction_id": "object kinds",
           "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -18029,10 +18066,11 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.revoke.object-kinds.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#revoke-object-kinds"
               ]
             }
           ]
@@ -18628,7 +18666,10 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-language.create-language.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#pg-language-extension-installed",
+                "file:testdata/ddl-golden/T47.json#pg-language-extension-absent",
+                "file:testdata/ddl-golden/T47.json#pg-language-known-language-extension-availability"
               ]
             }
           ]
@@ -18647,26 +18688,43 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-language.or-replace-trusted.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#pg-language-replacement-extension-installed"
               ]
             }
           ]
         },
         {
           "subaction_id": "HANDLER form",
-          "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
               "version_range": "17",
               "official_presence": "documented",
               "product_scope": "registered",
-              "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-language.handler-form.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T47.json#pg-language-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/create_language_missing_handler.expected.yaml#ddl.pg.create_language.handler.valid",
+                "file:testdata/ddl-golden/T47.json#pg-language-built-in-valid-declarations",
+                "file:testdata/ddl-golden/T47.json#pg-language-only-handler-valid",
+                "file:testdata/ddl-golden/T47.json#pg-language-handler-missing",
+                "file:testdata/ddl-golden/T47.json#pg-language-handler-wrong-return",
+                "file:testdata/ddl-golden/T47.json#pg-language-handler-wrong-argument-count",
+                "file:testdata/ddl-golden/T47.json#pg-language-inline-wrong-signature",
+                "file:testdata/ddl-golden/T47.json#pg-language-validator-wrong-signature",
+                "file:testdata/ddl-golden/T47.json#pg-language-missing-handler-before-existing-name",
+                "file:testdata/ddl-golden/T47.json#pg-language-duplicate-language-after-valid-handler",
+                "file:testdata/ddl-golden/T47.json#pg-language-replacement-keeps-identity-and-owner",
+                "file:testdata/ddl-golden/T47.json#pg-language-unqualified-handler-control",
+                "file:testdata/ddl-golden/T47.json#pg-language-catalog-qualified-handler",
+                "file:testdata/ddl-golden/T47.json#pg-language-cross-database-callback",
+                "file:testdata/ddl-golden/T47.json#pg-language-exact-language-name-is-case-sensitive"
               ]
             }
           ]

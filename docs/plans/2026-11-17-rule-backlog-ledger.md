@@ -1708,6 +1708,33 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44946815677/job/136975824000),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136975898675) passed at the delivered SHA.
 
+## F19 exact dimension review
+
+| Row and authored cell | Verified PostgreSQL 17 premise | Remaining evidence |
+| --- | --- | --- |
+| `postgresql.grant` / `ON TABLE` | Ordered exact qualified targets, target kind, allowed privileges and grantee existence. T47 contrasts missing second targets and valid ordinary tables, views and sequence privileges. | Unqualified names and effective grant authority require executing-session evidence. |
+| `postgresql.grant` / `ALL TABLES IN SCHEMA` | The AST and exact schema existence are checked. T47 shows the original table and view receiving the privilege in the native transaction. | The catalog rule reports a gap for member expansion and effective grants. |
+| `postgresql.grant` / `columns` | Exact ordered column names, duplicates, and per-target availability. T47 verifies quoted comma names, system columns and a column missing from the second target. | Per-column grant chains require ACL and actor facts. |
+| `postgresql.grant` / `WITH GRANT OPTION` | The parser preserves the modifier. T47 contrasts an ordinary role grant and the native PUBLIC refusal. | PUBLIC option effects retain an evidence gap for the privileges surviving the grantor check. |
+| `postgresql.grant` / `sequences/functions/database/schema/types` | Sequence identity and kind, schema identity and privilege classes, and database identity in the provider. T47 retains the function and database native steps. | Routine and type object lookup remain unsupported, and live database-specific prerequisites need their own control. |
+| `postgresql.grant` / `role membership` | Canonical T47 records a native ADMIN OPTION change and a missing role refusal. | Membership audit remains explicitly unsupported and needs a dedicated role declaration and identity model. |
+| `postgresql.grant` / `tablespace/large objects` | Exact named tablespace identity is normalized. T47 retains native tablespace steps and compares an unknown large-object OID. | Large-object identity remains unsupported, and actor ACL facts remain open. |
+| `postgresql.grant` / `GRANTED BY` | Exact grantor existence and the native current-user requirement. T47 distinguishes missing role and a different existing grantor. | The effective executing role still comes from the connected session. |
+| `postgresql.revoke` / `REVOKE privileges` | Exact targets, role identities, column availability and authored privilege compatibility share the grant checks. | Existing privilege provenance and effective effects require ACL facts. |
+| `postgresql.revoke` / `GRANT OPTION FOR` | The modifier is preserved. The bounded column declaration and a native CASCADE control are retained. | Effective grant-option changes depend on ACL provenance. |
+| `postgresql.revoke` / `CASCADE/RESTRICT` | The parser preserves behavior and the existing warning remains. T47 retains the native test and scoped column control. | Transitive grant effects need complete grant-chain evidence. |
+| `postgresql.revoke` / `role membership` | Native `REVOKE ADMIN OPTION FOR ... RESTRICT` changes the owned membership tuple. | Audit retains the explicit unsupported marker. |
+| `postgresql.revoke` / `object kinds` | Named schema and supported relation classes share exact identity and privilege checks. | Unsupported kinds and effective privileges retain their own boundary. |
+| `postgresql.create-language` / `CREATE LANGUAGE` | PostgreSQL and the parser lower the parameterless form to extension creation. T47 contrasts installed and unavailable extensions. | Extension installation, availability and scripts belong to the extension path. |
+| `postgresql.create-language` / `OR REPLACE TRUSTED` | Parameterless form becomes `CREATE EXTENSION IF NOT EXISTS`. Explicit HANDLER replacement preserves the language OID and owner. | The parameterless TRUSTED keyword carries no execution premise. |
+| `postgresql.create-language` / `HANDLER form` | Qualified handler, INLINE and VALIDATOR signatures, return type, callback order, local database and language-name conflict. | Unqualified callback lookup, actor privileges and callback execution require separate evidence. |
+
+The three rows retain `mixed_coverage`. See [T47](../../testdata/ddl-golden/T47.json),
+[privilege declarations](../decisions/2026-11-21-postgresql-object-privilege-declarations.md)
+and [language declarations](../decisions/2026-11-21-postgresql-language-declarations.md).
+
+The joint T47 preview passed 125 cases and 3,324 assertions. Verification on the fixed F19 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
