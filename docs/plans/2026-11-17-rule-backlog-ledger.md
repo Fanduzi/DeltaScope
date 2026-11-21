@@ -1456,6 +1456,20 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136788853581) passed at t
 
 - [CHECK literal predicates](../decisions/2026-11-21-postgresql-check-literal.md)
 
+### F09 CHECK null-test column binding (D51)
+
+The ADD CHECK rule binds exact one- and two-part column identifiers in
+simple null tests against a fresh PostgreSQL 17 table. A proved absent
+column or unsupported system attribute blocks. The target's whole-row
+name and `tableoid` remain valid. Wider expression resolution remains
+separate.
+
+T37 preview passed 613 cases and 18,182 assertions. Fourteen selectors
+bind ADD CHECK and ADD CHECK NOT VALID. Verification on the fixed D51
+candidate is pending.
+
+- [CHECK column null tests](../decisions/2026-11-21-postgresql-check-null-test.md)
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

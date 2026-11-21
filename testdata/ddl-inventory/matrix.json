@@ -8473,7 +8473,17 @@
                 "file:testdata/ddl-golden/T37.json#pg-check-literal-uncastable-unknown-literal",
                 "file:testdata/ddl-golden/T37.json#pg-check-literal-null-literal",
                 "file:testdata/ddl-golden/T37.json#pg-check-literal-valid-qualified-boolean-column",
-                "file:testdata/ddl-golden/T37.json#pg-check-literal-guarded-absence-before-predicate"
+                "file:testdata/ddl-golden/T37.json#pg-check-literal-guarded-absence-before-predicate",
+                "file:testdata/ddl-golden/T37.json#check-null-test-offline",
+                "file:testdata/ddl-golden/T37.json#pg-check-null-test-missing-column-in-null-test",
+                "file:testdata/ddl-golden/T37.json#pg-check-null-test-matched-exact-quoted-column",
+                "file:testdata/ddl-golden/T37.json#pg-check-null-test-whole-row-name-resolves",
+                "file:testdata/ddl-golden/T37.json#pg-check-null-test-whole-row-star-resolves",
+                "file:testdata/ddl-golden/T37.json#pg-check-null-test-same-table-qualified-name-resolves",
+                "file:testdata/ddl-golden/T37.json#pg-check-null-test-wrong-table-qualifier",
+                "file:testdata/ddl-golden/T37.json#pg-check-null-test-same-table-missing-column",
+                "file:testdata/ddl-golden/T37.json#pg-check-null-test-tableoid-is-allowed",
+                "file:testdata/ddl-golden/T37.json#pg-check-null-test-guarded-absent-target"
               ]
             }
           ]
@@ -8504,7 +8514,11 @@
                 "file:testdata/sql-corpus/postgresql/ddl/findings/check_subquery.expected.yaml#ddl.pg.alter.add_check.name.available",
                 "file:testdata/sql-corpus/postgresql/ddl/findings/check_literal_invalid_boolean.expected.yaml#ddl.pg.alter.add_check.name.available",
                 "file:testdata/ddl-golden/T37.json#pg-check-literal-integer-literal-before-occupied-name",
-                "file:testdata/ddl-golden/T37.json#pg-check-literal-whitespace-around-unknown-boolean"
+                "file:testdata/ddl-golden/T37.json#pg-check-literal-whitespace-around-unknown-boolean",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/check_null_test_missing_column.expected.yaml#ddl.pg.alter.add_check.name.available",
+                "file:testdata/ddl-golden/T37.json#pg-check-null-test-missing-exact-quoted-column-in-null-test",
+                "file:testdata/ddl-golden/T37.json#pg-check-null-test-ctid-is-refused",
+                "file:testdata/ddl-golden/T37.json#pg-check-null-test-refusal-before-named-collision"
               ]
             }
           ]

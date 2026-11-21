@@ -5,7 +5,8 @@
  "policy_profile": "pg-acceptance",
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
-  "profiles": {"pg-check-literal": {"enable": {"ddl.pg.alter.add_check.name.available": {"level": "blocker"}}},
+  "profiles": {
+   "pg-check-null-test": {"enable": {"ddl.pg.alter.add_check.name.available": {"level": "blocker"}}},"pg-check-literal": {"enable": {"ddl.pg.alter.add_check.name.available": {"level": "blocker"}}},
    "pg-constraint-columns": {"enable": {"ddl.pg.alter.constraint_columns.valid": {"level": "blocker"}}},
    "pg-column-type-descendants": {"enable": {"ddl.pg.alter.column_type.destination.valid": {"level": "blocker"}}},
    "pg-add-check-predicate": {"enable": {"ddl.pg.alter.add_check.name.available": {"level": "blocker"}}},
@@ -1913,6 +1914,49 @@
   }
  },
  "cli_cases": [
+   {
+     "id": "check-null-test-offline",
+     "dialect": "postgresql",
+     "policy": "pg-check-null-test",
+     "sql": "ALTER TABLE app.t ADD CHECK (missing IS NULL)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "reason_code": "unproven_check_constraint_name",
+           "required_facts": [
+             "instance.version"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGCheckNullTest",
+         "PGColumnCatalog"
+       ]
+     }
+   },
    {
      "id": "check-literal-offline",
      "dialect": "postgresql",
@@ -4906,6 +4950,1806 @@
   }
  ],
  "metadata_cases": [
+   {
+     "id": "pg-check-null-test-missing-column-in-null-test",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-null-test",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_null_1"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_null_1 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_1'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_null_1.t ADD CHECK (absent IS NULL)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_1'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_null_1",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_null_1.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_null_1.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_null_1.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "metadata": {
+             "reason_code": "check_predicate_column_absent"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckNullTest",
+         "PGColumnCatalog"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_1'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_1.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_1.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcheck_null_1.t ADD CHECK (absent IS NULL)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42703:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_1'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_1.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_1.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_null_1 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_1'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-null-test-missing-exact-quoted-column-in-null-test",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-null-test",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_null_2"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_null_2 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_2'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_null_2.t ADD CHECK (\" exact Flag \" IS NULL) NOT VALID",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_2'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_null_2",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_null_2.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_null_2.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_null_2.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "metadata": {
+             "reason_code": "check_predicate_column_absent"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckNullTest",
+         "PGColumnCatalog"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_2'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_2.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_2.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcheck_null_2.t ADD CHECK (\" exact Flag \" IS NULL) NOT VALID",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42703:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_2'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_2.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_2.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_null_2 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_2'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-null-test-matched-exact-quoted-column",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-null-test",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_null_3"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_null_3 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_3'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_null_3.t ADD CHECK (\" Exact Flag \" IS NOT NULL)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_3'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_null_3",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_null_3.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_null_3.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_null_3.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckNullTest",
+         "PGColumnCatalog"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_3'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_3.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_3.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "ALTER TABLE pgcheck_null_3.t ADD CHECK (\" Exact Flag \" IS NOT NULL)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_3'::regnamespace AND contype='c'",
+         "expect": "2"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_3.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_3.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_null_3 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_3'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-null-test-whole-row-name-resolves",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-null-test",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_null_4"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_null_4 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_4'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_null_4.t ADD CHECK (t IS NOT NULL)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_4'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_null_4",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_null_4.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_null_4.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_null_4.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckNullTest",
+         "PGColumnCatalog"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_4'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_4.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_4.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "ALTER TABLE pgcheck_null_4.t ADD CHECK (t IS NOT NULL)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_4'::regnamespace AND contype='c'",
+         "expect": "2"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_4.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_4.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_null_4 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_4'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-null-test-whole-row-star-resolves",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-null-test",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_null_5"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_null_5 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_5'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_null_5.t ADD CHECK (t.* IS NOT NULL)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_5'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_null_5",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_null_5.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_null_5.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_null_5.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckNullTest",
+         "PGColumnCatalog"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_5'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_5.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_5.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "ALTER TABLE pgcheck_null_5.t ADD CHECK (t.* IS NOT NULL)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_5'::regnamespace AND contype='c'",
+         "expect": "2"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_5.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_5.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_null_5 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_5'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-null-test-same-table-qualified-name-resolves",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-null-test",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_null_6"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_null_6 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_6'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_null_6.t ADD CHECK (t.truth IS NOT NULL)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_6'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_null_6",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_null_6.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_null_6.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_null_6.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckNullTest",
+         "PGColumnCatalog"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_6'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_6.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_6.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "ALTER TABLE pgcheck_null_6.t ADD CHECK (t.truth IS NOT NULL)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_6'::regnamespace AND contype='c'",
+         "expect": "2"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_6.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_6.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_null_6 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_6'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-null-test-wrong-table-qualifier",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-null-test",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_null_7"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_null_7 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_7'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_null_7.t ADD CHECK (other.truth IS NOT NULL)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_7'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_null_7",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_null_7.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_null_7.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_null_7.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "metadata": {
+             "reason_code": "check_predicate_qualifier_absent"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckNullTest",
+         "PGColumnCatalog"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_7'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_7.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_7.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcheck_null_7.t ADD CHECK (other.truth IS NOT NULL)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_7'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_7.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_7.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_null_7 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_7'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-null-test-same-table-missing-column",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-null-test",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_null_8"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_null_8 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_8'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_null_8.t ADD CHECK (t.absent IS NULL)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_8'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_null_8",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_null_8.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_null_8.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_null_8.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "metadata": {
+             "reason_code": "check_predicate_column_absent"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckNullTest",
+         "PGColumnCatalog"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_8'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_8.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_8.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcheck_null_8.t ADD CHECK (t.absent IS NULL)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42703:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_8'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_8.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_8.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_null_8 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_8'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-null-test-tableoid-is-allowed",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-null-test",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_null_9"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_null_9 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_9'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_null_9.t ADD CHECK (tableoid IS NOT NULL)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_9'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_null_9",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_null_9.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_null_9.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_null_9.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckNullTest",
+         "PGColumnCatalog"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_9'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_9.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_9.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "ALTER TABLE pgcheck_null_9.t ADD CHECK (tableoid IS NOT NULL)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_9'::regnamespace AND contype='c'",
+         "expect": "2"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_9.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_9.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_null_9 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_9'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-null-test-ctid-is-refused",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-null-test",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_null_10"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_null_10 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_10'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_null_10.t ADD CHECK (ctid IS NOT NULL) NOT VALID",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_10'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_null_10",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_null_10.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_null_10.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_null_10.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "metadata": {
+             "reason_code": "check_predicate_system_column"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckNullTest",
+         "PGColumnCatalog"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_10'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_10.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_10.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcheck_null_10.t ADD CHECK (ctid IS NOT NULL) NOT VALID",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P10:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_10'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_10.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_10.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_null_10 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_10'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-null-test-refusal-before-named-collision",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-null-test",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_null_11"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_null_11 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_11'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_null_11.t ADD CONSTRAINT used CHECK (absent IS NULL) NOT VALID",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_11'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_null_11",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_null_11.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_null_11.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_null_11.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "metadata": {
+             "reason_code": "check_predicate_column_absent"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckNullTest",
+         "PGColumnCatalog"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_11'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_11.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_11.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcheck_null_11.t ADD CONSTRAINT used CHECK (absent IS NULL) NOT VALID",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42703:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_11'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_11.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_11.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_null_11 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_11'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-null-test-guarded-absent-target",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-null-test",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_null_12"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_null_12 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_12'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE IF EXISTS pgcheck_null_12.absent ADD CHECK (missing IS NULL)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_12'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_null_12",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_null_12.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_null_12.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_null_12.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckNullTest",
+         "PGColumnCatalog"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_12'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_12.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_12.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "ALTER TABLE IF EXISTS pgcheck_null_12.absent ADD CHECK (missing IS NULL)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_null_12'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_null_12.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_null_12.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_null_12 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_null_12'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
    {
      "id": "pg-check-literal-integer-literal",
      "anchor": "postgres17",
@@ -35678,6 +37522,19 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.check-null-test-offline",
+  "T37.meta.pg-check-null-test-missing-column-in-null-test",
+  "T37.meta.pg-check-null-test-missing-exact-quoted-column-in-null-test",
+  "T37.meta.pg-check-null-test-matched-exact-quoted-column",
+  "T37.meta.pg-check-null-test-whole-row-name-resolves",
+  "T37.meta.pg-check-null-test-whole-row-star-resolves",
+  "T37.meta.pg-check-null-test-same-table-qualified-name-resolves",
+  "T37.meta.pg-check-null-test-wrong-table-qualifier",
+  "T37.meta.pg-check-null-test-same-table-missing-column",
+  "T37.meta.pg-check-null-test-tableoid-is-allowed",
+  "T37.meta.pg-check-null-test-ctid-is-refused",
+  "T37.meta.pg-check-null-test-refusal-before-named-collision",
+  "T37.meta.pg-check-null-test-guarded-absent-target",
   "T37.cli.check-literal-offline",
   "T37.meta.pg-check-literal-integer-literal",
   "T37.meta.pg-check-literal-integer-literal-before-occupied-name",
