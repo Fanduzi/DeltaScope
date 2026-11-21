@@ -272,6 +272,8 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 		return "Checks PostgreSQL 17 ADD FOREIGN KEY relation and column identities, referenced key eligibility, column counts, bounded equality for scalar, domain, enum and array types and ON DELETE SET column lists on fresh ordinary tables, including NOT VALID declarations."
 	case "ddl.pg.alter.constraint_using_index.valid":
 		return "Checks catalog preconditions for using an exact existing index in a PostgreSQL 17 PRIMARY KEY or UNIQUE constraint. Checks index ownership, shape, key sort, collation, options and default operator classes resolved from exact and binary-compatible types."
+	case "ddl.pg.alter.constraint_columns.valid":
+		return "Checks exact PostgreSQL 17 PRIMARY KEY and UNIQUE key and INCLUDE columns on ordinary tables."
 	case "ddl.pg.alter.add_check.name.available":
 		return "Checks single ADD CHECK predicates for subqueries and checks explicitly named CHECK constraints against the exact constraint directory of a fresh ordinary PostgreSQL 17 table."
 	case "ddl.pg.alter.column_type.destination.valid":
@@ -640,7 +642,10 @@ func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 	switch ruleID {
 	case "ddl.pg.create_view.options.valid":
 		return []MetadataKind{MetadataKindInstance}, true
-	case "ddl.pg.refresh_materialized_view.target.valid", "ddl.pg.drop_view.target.valid", "ddl.pg.alter_view.namespace.valid", "ddl.pg.alter_view.owner.valid", "ddl.pg.alter_view.options.valid", "ddl.pg.alter_view.column_default.valid", "ddl.pg.alter_materialized_view.options.valid", "ddl.pg.alter_materialized_view.extension.valid", "ddl.pg.create_view.output.valid":
+	case "ddl.pg.alter.constraint_columns.valid", "ddl.pg.create_view.output.valid",
+		"ddl.pg.refresh_materialized_view.target.valid", "ddl.pg.drop_view.target.valid", "ddl.pg.alter_view.namespace.valid",
+		"ddl.pg.alter_view.owner.valid", "ddl.pg.alter_view.options.valid", "ddl.pg.alter_view.column_default.valid",
+		"ddl.pg.alter_materialized_view.options.valid", "ddl.pg.alter_materialized_view.extension.valid":
 		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true
 	case "ddl.pg.alter.column.storage.valid", "ddl.pg.alter.column.compression.valid", "ddl.pg.alter.column.statistics.target.valid", "ddl.pg.alter.column.statistics.clamp.warn", "ddl.pg.alter.column.options.valid", "ddl.alter.drop_column.exists.require", "ddl.pg.alter.drop_column.advisory":
 		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true

@@ -65,8 +65,12 @@ func TestHandlerPGConstraintMigration(t *testing.T) {
 			t.Fatal("lost shared declaration-mode semantics")
 		}
 		gaps := body.Statements[0].Gaps
-		if tc.buildWarning && len(gaps) != 0 || !tc.buildWarning && (len(gaps) != 1 || gaps[0].ID != "ddl.pg.alter.constraint_using_index.valid" || gaps[0].Reason != "unproven_constraint_using_index" || len(gaps[0].Facts) != 1 || gaps[0].Facts[0] != "instance.version") {
-			t.Fatalf("unexpected attachment gaps: %+v", gaps)
+		wantRule, wantReason := "ddl.pg.alter.constraint_using_index.valid", "unproven_constraint_using_index"
+		if tc.buildWarning {
+			wantRule, wantReason = "ddl.pg.alter.constraint_columns.valid", "unproven_pg_constraint_columns"
+		}
+		if len(gaps) != 1 || gaps[0].ID != wantRule || gaps[0].Reason != wantReason || len(gaps[0].Facts) != 1 || gaps[0].Facts[0] != "instance.version" {
+			t.Fatalf("unexpected constraint gaps: %+v", gaps)
 		}
 	}
 }

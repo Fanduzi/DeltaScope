@@ -48,15 +48,17 @@ func TestAuditSQLPGConstraintMigration(t *testing.T) {
 			t.Fatalf("unexpected statements: %v", statements)
 		}
 		gaps, _ := statements[0].(map[string]any)["evidence_gaps"].([]any)
-		if tc.buildWarning && len(gaps) != 0 || !tc.buildWarning && len(gaps) != 1 {
-			t.Fatalf("unexpected attachment gaps: %v", gaps)
+		wantRule, wantReason := "ddl.pg.alter.constraint_using_index.valid", "unproven_constraint_using_index"
+		if tc.buildWarning {
+			wantRule, wantReason = "ddl.pg.alter.constraint_columns.valid", "unproven_pg_constraint_columns"
 		}
-		if !tc.buildWarning {
-			gap := gaps[0].(map[string]any)
-			facts, _ := gap["required_facts"].([]any)
-			if gap["rule_id"] != "ddl.pg.alter.constraint_using_index.valid" || gap["reason_code"] != "unproven_constraint_using_index" || len(facts) != 1 || facts[0] != "instance.version" {
-				t.Fatalf("unexpected attachment gap: %v", gap)
-			}
+		if len(gaps) != 1 {
+			t.Fatalf("unexpected constraint gaps: %v", gaps)
+		}
+		gap := gaps[0].(map[string]any)
+		facts, _ := gap["required_facts"].([]any)
+		if gap["rule_id"] != wantRule || gap["reason_code"] != wantReason || len(facts) != 1 || facts[0] != "instance.version" {
+			t.Fatalf("unexpected constraint gap: %v", gap)
 		}
 	}
 }

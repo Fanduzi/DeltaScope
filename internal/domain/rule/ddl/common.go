@@ -273,6 +273,7 @@ const (
 	ruleIDTableDenylistForbid                               = "ddl.table.denylist.forbid"
 	ruleIDPGCreateIndexConcurrentlyRequire                  = "ddl.pg.create_index.concurrently.require"
 	ruleIDPGAlterAddColumnNonNullDefaultRewriteWarn         = "ddl.pg.alter.add_column.non_null_default.rewrite.warn"
+	ruleIDPGConstraintColumnsValid                          = "ddl.pg.alter.constraint_columns.valid"
 	ruleIDPGAlterAddCheckNameAvailable                      = "ddl.pg.alter.add_check.name.available"
 	ruleIDPGAlterAddCheckNotValidRequire                    = "ddl.pg.alter.add_check.not_valid.require"
 	ruleIDPGAlterColumnTypeDestinationValid                 = "ddl.pg.alter.column_type.destination.valid"

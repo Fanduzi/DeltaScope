@@ -101,6 +101,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGColumnTraversal` carries private inheritance, direct partition-key, attached-child and partition nullability observations for exact column actions. It binds recursive rename conflicts to the source and destination and records outside inheritance for a recursive type change.
 - `PGDropColumnDependency` binds a private direct dependency observation to an exact column for DROP and TYPE.
 - `PGDropConstraintReference` binds a private direct foreign-key dependency observation to an exact primary or unique constraint.
+- `Alter.PGKeyColumns` and `Alter.PGIncludeColumns` carry the exact ordered members of a PostgreSQL primary or unique constraint.
 - `PGConstraintState` carries private observations for CHECK inheritance, partition children and validation traversal. `DDL.PGTableOnly` records the PostgreSQL ALTER target traversal flag.
 - `PGForeignKeyEquality` binds a private scalar equality observation to the exact tables and authored column lists.
 - `PGForeignKeyKeys` binds ordered key slots and primary/immediate flags to an exact observed reference table. The key directory stays private.

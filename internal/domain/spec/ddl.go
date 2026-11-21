@@ -1010,6 +1010,9 @@ type Alter struct {
 	PGColumnCollation     *PGColumnCollation     `json:"-"`
 	// PGUsingIndexName preserves the exact PostgreSQL constraint index selection.
 	PGUsingIndexName string `json:"-"`
+	// PGKeyColumns and PGIncludeColumns retain exact ordered primary or unique index members.
+	PGKeyColumns     []string `json:"-"`
+	PGIncludeColumns []string `json:"-"`
 	// PGCheckHasSubquery records a raw subquery in an ALTER TABLE CHECK predicate.
 	PGCheckHasSubquery bool `json:"-"`
 	// PGForeignKey preserves both ordered foreign-key column lists privately.

@@ -33,6 +33,17 @@ func stringNodeValue(node *pg_query.Node) string {
 	return ""
 }
 
+func pgExactConstraintColumns(nodes []*pg_query.Node) []string {
+	if len(nodes) == 0 {
+		return nil
+	}
+	names := make([]string, len(nodes))
+	for i, node := range nodes {
+		names[i] = stringNodeValue(node)
+	}
+	return names
+}
+
 func stringValuesFromNodes(nodes []*pg_query.Node) []string {
 	values := make([]string, 0, len(nodes))
 	for _, node := range nodes {

@@ -27,6 +27,7 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelWarning,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.alter.constraint_columns.valid": {Enabled: true, Level: rule.LevelBlocker},
 		"ddl.pg.alter.add_check.name.available": {
 			Enabled: true,
 			Level:   rule.LevelBlocker,

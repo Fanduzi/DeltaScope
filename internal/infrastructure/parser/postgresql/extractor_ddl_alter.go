@@ -1017,8 +1017,11 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			"constraint_type": constraintType,
 			"not_valid":       strconv.FormatBool(constraint.GetSkipValidation()),
 		}
+		var keyColumns, includeColumns []string
 		if constraintType == "primary_key" || constraintType == "unique" {
 			options["using_index"] = strconv.FormatBool(constraint.GetIndexname() != "")
+			keyColumns = pgExactConstraintColumns(constraint.GetKeys())
+			includeColumns = pgExactConstraintColumns(constraint.GetIncluding())
 		}
 		var foreignKey *spec.PGForeignKeySelection
 		if constraint.GetContype() == pg_query.ConstrType_CONSTR_FOREIGN {
@@ -1048,6 +1051,7 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			options["columns"] = strings.Join(cols, ",")
 		}
 		return spec.Alter{Action: "add_constraint", Name: constraint.GetConname(), Options: options, PGUsingIndexName: constraint.GetIndexname(), PGForeignKey: foreignKey,
+			PGKeyColumns: keyColumns, PGIncludeColumns: includeColumns,
 			PGCheckHasSubquery: constraint.GetContype() == pg_query.ConstrType_CONSTR_CHECK && pgExpressionHasReference(constraint.GetRawExpr(), false)}, true, nil
 	case pg_query.AlterTableType_AT_DropConstraint:
 		return spec.Alter{Action: "drop_constraint", Name: cmd.GetName(), Options: map[string]string{

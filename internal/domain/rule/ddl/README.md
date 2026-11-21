@@ -54,6 +54,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_destructive_table_rules.go | Checks exact DROP/TRUNCATE targets and guarded absence, and observes known direct DROP RESTRICT refusals. |
 | postgresql_create_view_options_rules.go | Checks declarations for PostgreSQL 17 CREATE VIEW options, including CHECK OPTION conflicts. |
 | postgresql_materialized_view_refresh_target_rule.go | Checks PostgreSQL 17 refresh identity and concurrent refresh prerequisites. |
+| postgresql_constraint_columns_rules.go | Checks exact columns and duplicate key membership for PostgreSQL 17 direct primary and unique constraints. |
 | postgresql_column_generation_rules.go | Approved PG17 existing-column generation target/identity options blockers, replica identity key protection for DROP NOT NULL, partition NOT NULL traversal checks and RESTART/CYCLE warnings; one shared assessment drives findings/gaps, exact fresh ordinary-table binding and no post-state simulation |
 | postgresql_identity_options.go | Shared duplicate-preserving identity option adjudication; ADD reuses D2 declaration validation, SET consumes actual stable sequence type/parameters; narrowing/current-value and unknown facts remain gaps |
 | postgresql_column_generation_rules_test.go | Pins target/guard/type/default/nullability/PK, version/scope/unknown, ordered option duplicates, START versus RESTART, actual sequence type, bounds/current-value, risk silent arms and configuration |

@@ -111,6 +111,10 @@ func (r primaryKeyColumnCountRule) Evaluate(ctx context.Context, statement spec.
 				continue
 			}
 			if alter.Options["constraint_type"] == "primary_key" {
+				if statement.Dialect == spec.DialectPostgreSQL && alter.PGKeyColumns != nil {
+					actual = len(alter.PGKeyColumns)
+					continue
+				}
 				if cols := splitAlterConstraintColumns(alter.Options["columns"]); len(cols) > 0 {
 					actual = len(cols)
 				}
