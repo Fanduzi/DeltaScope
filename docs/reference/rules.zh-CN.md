@@ -787,6 +787,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 | `ddl.pg.create_schema.notice` | `CREATE SCHEMA` 创建新的命名空间——信息性通知 | notice | 否 |
 | `ddl.pg.drop_schema.advisory` | `DROP SCHEMA` 移除 schema，建议审查依赖对象 | notice | 否 |
 | `ddl.pg.drop_schema.cascade.warn` | `DROP SCHEMA ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
+| `ddl.pg.sequence.declaration.valid` | 检查 PostgreSQL 17 限定序列目标、选项、重启范围、OWNED BY、RENAME 和 SET SCHEMA。 | blocker | 是 |
 | `ddl.pg.create_sequence.cycle.warn` | `CREATE SEQUENCE ... CYCLE` 可能导致序列值回绕 | warning | 否 |
 | `ddl.pg.alter_sequence.restart.warn` | `ALTER SEQUENCE ... RESTART` 重置序列计数器，可能与已有行冲突 | warning | 否 |
 | `ddl.pg.alter_sequence.cycle.warn` | `ALTER SEQUENCE ... CYCLE` 在已有序列上启用值回绕 | warning | 否 |

@@ -291,6 +291,7 @@ const (
 	ruleIDPGAlterDropConstraintAdvisory                     = "ddl.pg.alter.drop_constraint.advisory"
 	ruleIDPGDropSchemaAdvisory                              = "ddl.pg.drop_schema.advisory"
 	ruleIDPGDropSchemaCascadeWarn                           = "ddl.pg.drop_schema.cascade.warn"
+	ruleIDPGSequenceChangeValid                             = "ddl.pg.sequence.declaration.valid"
 	ruleIDPGCreateSequenceCycleWarn                         = "ddl.pg.create_sequence.cycle.warn"
 	ruleIDPGAlterSequenceRestartWarn                        = "ddl.pg.alter_sequence.restart.warn"
 	ruleIDPGAlterSequenceCycleWarn                          = "ddl.pg.alter_sequence.cycle.warn"

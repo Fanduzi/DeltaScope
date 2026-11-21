@@ -2153,3 +2153,38 @@ func TestMCPPGPolicyChangeTarget(t *testing.T) {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }
+
+type sequenceChangeAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (sequenceChangeAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_sequence_change" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGSequenceChange: &spec.PGSequenceChangeState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "s"}}, SchemaExists: true}}, nil
+}
+
+func TestMCPPGSequenceChangeTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := sequenceChangeAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "CREATE SEQUENCE app.s INCREMENT 0", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"sequence_increment_zero"`) || !strings.Contains(string(body), `"ddl.pg.sequence.declaration.valid"`) || strings.Contains(string(body), "PGSequenceChangeState") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}

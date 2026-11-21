@@ -337,6 +337,7 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelWarning,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.sequence.declaration.valid": {Enabled: true, Level: rule.LevelBlocker},
 		"ddl.pg.create_sequence.cycle.warn": {
 			Enabled: true,
 			Level:   rule.LevelWarning,

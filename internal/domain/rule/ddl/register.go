@@ -755,6 +755,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterReplicaIdentityUsingIndexNotice, construct: newReplicaIdentityUsingIndexNoticeRule},
 		{ruleID: ruleIDPGDropSchemaAdvisory, construct: newDropSchemaAdvisoryRule},
 		{ruleID: ruleIDPGDropSchemaCascadeWarn, construct: newDropSchemaCascadeWarnRule},
+		{ruleID: ruleIDPGSequenceChangeValid, construct: newPGSequenceChangeRule},
 		{ruleID: ruleIDPGCreateSequenceCycleWarn, construct: newCreateSequenceCycleWarnRule},
 		{ruleID: ruleIDPGAlterSequenceRestartWarn, construct: newAlterSequenceRestartWarnRule},
 		{ruleID: ruleIDPGAlterSequenceCycleWarn, construct: newAlterSequenceCycleWarnRule},

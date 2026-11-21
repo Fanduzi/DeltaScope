@@ -57,6 +57,7 @@ comparisons for the member and scope binding.
 | create_schema.go | Observes the requested PostgreSQL schema and optional owner without returning resolved role identities. |
 | collation_change.go | Resolves the exact source in the database encoding and observes the requested namespace or owner. |
 | policy_change.go | Reads exact PostgreSQL policy, relation, role and column evidence. |
+| sequence_change.go | Reads PostgreSQL sequence definitions, ownership and destination catalog facts. |
 | collation_refresh.go | Observes the exact qualified collation for the database encoding and keeps provider versions private. |
 | index_include.go | Observes the qualified relation kind, column directories and bounded access-method identity. |
 | index_destination.go | Observes PostgreSQL index rename occupancy and tablespace destinations. |

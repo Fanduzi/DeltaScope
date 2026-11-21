@@ -850,6 +850,7 @@ These rules guard against risky PostgreSQL object lifecycle DDL operations — s
 | `ddl.pg.create_schema.notice` | `CREATE SCHEMA` creates a new namespace — informational notice | notice | No |
 | `ddl.pg.drop_schema.advisory` | `DROP SCHEMA` removes a schema — advises review of dependent objects | notice | No |
 | `ddl.pg.drop_schema.cascade.warn` | `DROP SCHEMA ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
+| `ddl.pg.sequence.declaration.valid` | Checks PostgreSQL 17 qualified CREATE and ALTER SEQUENCE targets, options, restart bounds, OWNED BY, RENAME and SET SCHEMA. | blocker | Yes |
 | `ddl.pg.create_sequence.cycle.warn` | `CREATE SEQUENCE ... CYCLE` may cause sequence value wraparound | warning | No |
 | `ddl.pg.alter_sequence.restart.warn` | `ALTER SEQUENCE ... RESTART` resets the sequence counter — may conflict with existing rows | warning | No |
 | `ddl.pg.alter_sequence.cycle.warn` | `ALTER SEQUENCE ... CYCLE` enables value wraparound on an existing sequence | warning | No |

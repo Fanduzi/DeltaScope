@@ -648,6 +648,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.create_schema.notice` | `CREATE SCHEMA` creates a new namespace — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.drop_schema.advisory` | `DROP SCHEMA` removes a schema — advises review of dependent objects | ✓ | ✗ | notice |
 | `ddl.pg.drop_schema.cascade.warn` | `DROP SCHEMA ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
+| `ddl.pg.sequence.declaration.valid` | Checks exact sequence identities, stable bounds, ownership and namespace changes | Gap | ✓ | blocker |
 | `ddl.pg.create_sequence.cycle.warn` | `CREATE SEQUENCE ... CYCLE` may cause sequence value wraparound | ✓ | ✗ | warning |
 | `ddl.pg.alter_sequence.restart.warn` | `ALTER SEQUENCE ... RESTART` resets the sequence counter — may conflict with existing rows | ✓ | ✗ | warning |
 | `ddl.pg.alter_sequence.cycle.warn` | `ALTER SEQUENCE ... CYCLE` enables value wraparound on an existing sequence | ✓ | ✗ | warning |

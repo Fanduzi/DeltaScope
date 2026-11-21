@@ -228,10 +228,11 @@ func extractCreateSeqStmt(statement spec.Statement, stmt *pg_query.CreateSeqStmt
 		}
 	}
 	statement.DDL = &spec.DDL{
-		Operation:  spec.DDLOperationCreateSequence,
-		ObjectName: rangeVarName(stmt.GetSequence()),
-		ObjectType: "sequence",
-		Options:    options,
+		PGSequenceChange: pgSequenceChange(stmt.GetSequence(), stmt.GetOptions(), false, stmt.GetIfNotExists()),
+		Operation:        spec.DDLOperationCreateSequence,
+		ObjectName:       rangeVarName(stmt.GetSequence()),
+		ObjectType:       "sequence",
+		Options:          options,
 	}
 	return statement
 }

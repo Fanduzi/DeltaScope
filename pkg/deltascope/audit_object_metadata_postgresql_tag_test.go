@@ -1246,3 +1246,22 @@ func TestAuditPGPolicyChangeThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing ALTER POLICY clause finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditPGSequenceChangeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGSequenceChange: &spec.PGSequenceChangeState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "s"}}, SchemaExists: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE SEQUENCE app.s INCREMENT 0`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "s" || provider.objectCalls[len(provider.objectCalls)-1].Type != "pg_sequence_change" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.sequence.declaration.valid" && f.Metadata["reason_code"] == "sequence_increment_zero" {
+			return
+		}
+	}
+	t.Fatalf("missing sequence declaration finding: %+v", result.Statements[0].Findings)
+}

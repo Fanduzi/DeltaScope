@@ -69,6 +69,11 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 	}
 
 	switch stmt.GetRenameType() {
+	case pg_query.ObjectType_OBJECT_SEQUENCE:
+		decl := pgSequenceChange(stmt.GetRelation(), nil, stmt.GetMissingOk(), false)
+		decl.RenameTo = stmt.GetNewname()
+		statement.DDL = &spec.DDL{Operation: spec.DDLOperationAlterSequence, ObjectName: rangeVarName(stmt.GetRelation()), ObjectType: "sequence", PGSequenceChange: decl}
+		return statement
 	case pg_query.ObjectType_OBJECT_POLICY:
 		statement.DDL = &spec.DDL{Operation: spec.DDLOperationAlterPolicy, ObjectType: "policy", ObjectName: stmt.GetSubname(), Table: tableFromRangeVar(stmt.GetRelation()),
 			PGPolicyChange: pgPolicyChangeDeclaration(stmt.GetRelation(), stmt.GetSubname(), stmt.GetNewname())}
@@ -326,6 +331,12 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 	if stmt == nil {
 		return unsupportedStatement(statement, "alter_table", "postgresql alter object schema statement payload is missing")
 	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_SEQUENCE {
+		decl := pgSequenceChange(stmt.GetRelation(), nil, stmt.GetMissingOk(), false)
+		decl.MoveTo = stmt.GetNewschema()
+		statement.DDL = &spec.DDL{Operation: spec.DDLOperationAlterSequence, ObjectName: rangeVarName(stmt.GetRelation()), ObjectType: "sequence", PGSequenceChange: decl}
+		return statement
+	}
 	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_TYPE {
 		return extractAlterTypeSetSchema(statement, stmt)
 	}
@@ -570,10 +581,11 @@ func extractAlterSeqStmt(statement spec.Statement, stmt *pg_query.AlterSeqStmt) 
 		}
 	}
 	statement.DDL = &spec.DDL{
-		Operation:  spec.DDLOperationAlterSequence,
-		ObjectName: rangeVarName(stmt.GetSequence()),
-		ObjectType: "sequence",
-		Options:    options,
+		PGSequenceChange: pgSequenceChange(stmt.GetSequence(), stmt.GetOptions(), stmt.GetMissingOk(), false),
+		Operation:        spec.DDLOperationAlterSequence,
+		ObjectName:       rangeVarName(stmt.GetSequence()),
+		ObjectType:       "sequence",
+		Options:          options,
 	}
 	return statement
 }

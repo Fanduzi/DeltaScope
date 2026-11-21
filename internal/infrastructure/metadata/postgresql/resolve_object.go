@@ -30,6 +30,8 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 			return p.resolveCheckIntegerCoercion(ctx)
 		case "pg_policy_change":
 			return p.resolvePolicyChange(ctx, req)
+		case "pg_sequence_change":
+			return p.resolveSequenceChange(ctx, req)
 		case "pg_collation_change":
 			return p.resolveCollationChange(ctx, req)
 		case "pg_collation_refresh":

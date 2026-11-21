@@ -15,6 +15,7 @@ type Metadata struct {
 	PGCreateForeignKeys         []PGCreateForeignKeyReference     `json:"-"`
 	PGCollationChange           *PGCollationChangeState           `json:"-"`
 	PGPolicyChange              *PGPolicyChangeState              `json:"-"`
+	PGSequenceChange            *PGSequenceChangeState            `json:"-"`
 	PGCollationRefresh          *PGCollationRefreshState          `json:"-"`
 	PGCreateSchema              *PGCreateSchemaState              `json:"-"`
 	PGPartitionConstraint       *PGPartitionConstraintState       `json:"-"`
@@ -838,6 +839,7 @@ type ObjectSnapshot struct {
 	PGCheckIntegerCoercion      *PGCheckIntegerCoercion           `json:"-"`
 	PGCollationChange           *PGCollationChangeState           `json:"-"`
 	PGPolicyChange              *PGPolicyChangeState              `json:"-"`
+	PGSequenceChange            *PGSequenceChangeState            `json:"-"`
 	PGCollationRefresh          *PGCollationRefreshState          `json:"-"`
 	PGCreateSchema              *PGCreateSchemaState              `json:"-"`
 	PGPartitionConstraint       *PGPartitionConstraintState       `json:"-"`

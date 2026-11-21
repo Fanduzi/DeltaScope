@@ -234,6 +234,8 @@ func summaryForRule(ruleID string) string {
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	switch ruleID {
+	case "ddl.pg.sequence.declaration.valid":
+		return "Checks qualified PostgreSQL 17 sequence declarations, guards, stable bounds, ownership and namespace changes."
 	case "ddl.pg.alter_policy.target.valid":
 		return "Checks exact PostgreSQL 17 policy targets, roles, rename occupancy and bounded USING or WITH CHECK clauses."
 	case "ddl.pg.alter_type.enum.valid":
@@ -700,6 +702,7 @@ func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 		"ddl.pg.refresh_materialized_view.target.valid", "ddl.pg.drop_view.target.valid", "ddl.pg.alter_view.namespace.valid",
 		"ddl.pg.alter_view.owner.valid", "ddl.pg.alter_view.options.valid", "ddl.pg.alter_view.column_default.valid",
 		"ddl.pg.alter_materialized_view.options.valid", "ddl.pg.alter_materialized_view.extension.valid",
+		"ddl.pg.sequence.declaration.valid",
 		"ddl.pg.alter_policy.target.valid",
 		"ddl.pg.alter_operator.change.target.valid", "ddl.pg.alter_type.change.target.valid", "ddl.pg.type.base.valid", "ddl.pg.type.composite.valid",
 		"ddl.pg.alter_type.enum.valid", "ddl.pg.create_type.range.valid", "ddl.pg.create_type.enum.valid",
@@ -918,6 +921,7 @@ func categoryForPGRule(ruleID string) string {
 		{"drop_schema", "schema"},
 		{"create_schema", "schema"},
 		{"alter_schema", "schema"},
+		{"sequence.", "sequence"},
 		{"create_sequence", "sequence"},
 		{"alter_sequence", "sequence"},
 		{"drop_sequence", "sequence"},
