@@ -1041,7 +1041,7 @@ new default behavior is approved per family before implementation.
 | F15 | PostgreSQL sequences | 2 | T43 | Qualified sequence declarations, options and ownership delivered at `d11b4881`. Session names and runtime issuance remain open. |
 | F16 | PostgreSQL foreign objects | 2 | T44 | Qualified wrapper and foreign table checks delivered at `d6cb07d2`. Validator behavior and remote effects remain open. |
 | F17 | PostgreSQL text search | 2 | T45 | Qualified configuration and dictionary checks delivered at `fad0c7f4`. Session and custom template facts remain open. |
-| F18 | PostgreSQL replication | 3 | T46 | unreviewed |
+| F18 | PostgreSQL replication | 3 | T46 | Local publication and subscription premises delivered at `3ca2c47b`. Remote execution effects remain open. |
 | F19 | PostgreSQL grants/languages | 3 | T47 | unreviewed |
 
 ## Exact row/dimension queue
@@ -1112,9 +1112,9 @@ insufficient.
 | F16 | `postgresql.alter-foreign-table` | OPTIONS; ADD/DROP COLUMN; RENAME/OWNER/SET SCHEMA | Exact targets, columns, options and namespace actions verified. Wider dependencies and validator behavior remain open. |
 | F17 | `postgresql.alter-text-search-configuration` | ADD/DROP/ALTER MAPPING; RENAME/OWNER/SET SCHEMA | Built-in token mappings, exact dictionary references and namespace/owner actions verified. |
 | F17 | `postgresql.alter-text-search-dictionary` | option changes; RENAME/OWNER/SET SCHEMA | Simple template options and namespace/owner actions verified. Other templates and file validation remain open. |
-| F18 | `postgresql.alter-publication` | ADD/DROP/SET TABLE; SET TABLES IN SCHEMA; SET publish options; OWNER/RENAME | unreviewed |
-| F18 | `postgresql.alter-subscription` | ENABLE/DISABLE; CONNECTION/PUBLICATION/SET; REFRESH PUBLICATION; SKIP; OWNER/RENAME | unreviewed |
-| F18 | `postgresql.drop-subscription` | DROP SUBSCRIPTION; IF EXISTS; WITH drop_slot | unreviewed |
+| F18 | `postgresql.alter-publication` | ADD/DROP/SET TABLE; SET TABLES IN SCHEMA; SET publish options; OWNER/RENAME | Exact local selectors, bounded options and owner/rename verified. Recursive targets and row expressions retain gaps. |
+| F18 | `postgresql.alter-subscription` | ENABLE/DISABLE; CONNECTION/PUBLICATION/SET; REFRESH PUBLICATION; SKIP; OWNER/RENAME | AST ENABLE/DISABLE, exact local catalog checks and SKIP syntax verified. Publisher and origin progress facts remain open. |
+| F18 | `postgresql.drop-subscription` | DROP SUBSCRIPTION; IF EXISTS; WITH drop_slot | Exact slotless DROP and absence guard verified. WITH drop_slot retains parser error and remote slot effects remain unverified. |
 | F19 | `postgresql.grant` | ON TABLE; ALL TABLES IN SCHEMA; columns; WITH GRANT OPTION; sequences/functions/database/schema/types; role membership; tablespace/large objects; GRANTED BY | unreviewed |
 | F19 | `postgresql.revoke` | REVOKE privileges; GRANT OPTION FOR; CASCADE/RESTRICT; role membership; object kinds | unreviewed |
 | F19 | `postgresql.create-language` | CREATE LANGUAGE; OR REPLACE TRUSTED; HANDLER form | unreviewed |
@@ -1699,7 +1699,14 @@ PostgreSQL 17 cells. Findings and gaps exclude notification contents, unreported
 catalog publication names and slot identifiers. See [decision record](../decisions/2026-11-21-postgresql-replication-changes.md)
 and [T46](../../testdata/ddl-golden/T46.json).
 
-The joint T46 preview passed 96 cases and 3,981 assertions. Verification on the fixed F18 candidate is pending.
+The joint T46 preview passed 96 cases and 3,981 assertions. Delivered at `3ca2c47b448883c268266e9a530c3c8897a6a060`. All 50 canonical tasks passed with 4,775 cases and
+109,484 assertions. T46 passed 96 cases and 3,981 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44946815679/job/136975824213),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44946815679/job/136975824269),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44946815679/job/136975824020),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44946815677/job/136975824000),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136975898675) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
