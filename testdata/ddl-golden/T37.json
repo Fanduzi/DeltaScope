@@ -4864,6 +4864,1996 @@
  ],
  "metadata_cases": [
    {
+     "id": "pg-partition-constraint-primary-key-includes-partition-column",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpartition_key_1"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpartition_key_1 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_1'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgpartition_key_1.parent ADD PRIMARY KEY (v,p)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_1'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpartition_key_1",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgpartition_key_1.parent(p int, v int) PARTITION BY RANGE(p);\nCREATE TABLE pgpartition_key_1.child PARTITION OF pgpartition_key_1.parent FOR VALUES FROM (0) TO (10);\nINSERT INTO pgpartition_key_1.parent VALUES (1,7);\nCREATE TABLE pgpartition_key_1.expression(p int, v int) PARTITION BY RANGE((p+1));\nCREATE TABLE pgpartition_key_1.multi(p int, q int, v int) PARTITION BY RANGE(p,q);\nCREATE TABLE pgpartition_key_1.collated(p text,v int) PARTITION BY LIST(p COLLATE pg_catalog.\"C\");\nCREATE TABLE pgpartition_key_1.collated_default(p text COLLATE pg_catalog.\"C\",v int) PARTITION BY LIST(p);\nCREATE TABLE pgpartition_key_1.hashed(p int,v int) PARTITION BY HASH(p);\nCREATE SEQUENCE pgpartition_key_1.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns",
+         "PGPartitionConstraint"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_1'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_1.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_1.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "ALTER TABLE pgpartition_key_1.parent ADD PRIMARY KEY (v,p)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_1'::regnamespace AND contype IN ('p','u')",
+         "expect": "2"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_1.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_1.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpartition_key_1 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_1'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-partition-constraint-unique-key-excludes-partition-column",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpartition_key_2"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpartition_key_2 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_2'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgpartition_key_2.parent ADD UNIQUE (v)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_2'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpartition_key_2",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgpartition_key_2.parent(p int, v int) PARTITION BY RANGE(p);\nCREATE TABLE pgpartition_key_2.child PARTITION OF pgpartition_key_2.parent FOR VALUES FROM (0) TO (10);\nINSERT INTO pgpartition_key_2.parent VALUES (1,7);\nCREATE TABLE pgpartition_key_2.expression(p int, v int) PARTITION BY RANGE((p+1));\nCREATE TABLE pgpartition_key_2.multi(p int, q int, v int) PARTITION BY RANGE(p,q);\nCREATE TABLE pgpartition_key_2.collated(p text,v int) PARTITION BY LIST(p COLLATE pg_catalog.\"C\");\nCREATE TABLE pgpartition_key_2.collated_default(p text COLLATE pg_catalog.\"C\",v int) PARTITION BY LIST(p);\nCREATE TABLE pgpartition_key_2.hashed(p int,v int) PARTITION BY HASH(p);\nCREATE SEQUENCE pgpartition_key_2.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_partition_column_missing"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns",
+         "PGPartitionConstraint"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_2'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_2.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_2.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgpartition_key_2.parent ADD UNIQUE (v)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  0A000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_2'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_2.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_2.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpartition_key_2 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_2'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-partition-constraint-included-partition-column-is-not-a-key",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpartition_key_3"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpartition_key_3 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_3'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgpartition_key_3.parent ADD PRIMARY KEY (v) INCLUDE (p)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_3'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpartition_key_3",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgpartition_key_3.parent(p int, v int) PARTITION BY RANGE(p);\nCREATE TABLE pgpartition_key_3.child PARTITION OF pgpartition_key_3.parent FOR VALUES FROM (0) TO (10);\nINSERT INTO pgpartition_key_3.parent VALUES (1,7);\nCREATE TABLE pgpartition_key_3.expression(p int, v int) PARTITION BY RANGE((p+1));\nCREATE TABLE pgpartition_key_3.multi(p int, q int, v int) PARTITION BY RANGE(p,q);\nCREATE TABLE pgpartition_key_3.collated(p text,v int) PARTITION BY LIST(p COLLATE pg_catalog.\"C\");\nCREATE TABLE pgpartition_key_3.collated_default(p text COLLATE pg_catalog.\"C\",v int) PARTITION BY LIST(p);\nCREATE TABLE pgpartition_key_3.hashed(p int,v int) PARTITION BY HASH(p);\nCREATE SEQUENCE pgpartition_key_3.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_partition_column_missing"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns",
+         "PGPartitionConstraint"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_3'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_3.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_3.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgpartition_key_3.parent ADD PRIMARY KEY (v) INCLUDE (p)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  0A000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_3'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_3.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_3.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpartition_key_3 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_3'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-partition-constraint-missing-column-precedes-partition-check",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpartition_key_4"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpartition_key_4 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_4'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgpartition_key_4.parent ADD UNIQUE (missing)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_4'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpartition_key_4",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgpartition_key_4.parent(p int, v int) PARTITION BY RANGE(p);\nCREATE TABLE pgpartition_key_4.child PARTITION OF pgpartition_key_4.parent FOR VALUES FROM (0) TO (10);\nINSERT INTO pgpartition_key_4.parent VALUES (1,7);\nCREATE TABLE pgpartition_key_4.expression(p int, v int) PARTITION BY RANGE((p+1));\nCREATE TABLE pgpartition_key_4.multi(p int, q int, v int) PARTITION BY RANGE(p,q);\nCREATE TABLE pgpartition_key_4.collated(p text,v int) PARTITION BY LIST(p COLLATE pg_catalog.\"C\");\nCREATE TABLE pgpartition_key_4.collated_default(p text COLLATE pg_catalog.\"C\",v int) PARTITION BY LIST(p);\nCREATE TABLE pgpartition_key_4.hashed(p int,v int) PARTITION BY HASH(p);\nCREATE SEQUENCE pgpartition_key_4.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_column_absent"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns",
+         "PGPartitionConstraint"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_4'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_4.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_4.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgpartition_key_4.parent ADD UNIQUE (missing)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42703:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_4'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_4.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_4.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpartition_key_4 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_4'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-partition-constraint-duplicate-column-precedes-partition-check",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpartition_key_5"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpartition_key_5 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_5'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgpartition_key_5.parent ADD PRIMARY KEY (v,v)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_5'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpartition_key_5",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgpartition_key_5.parent(p int, v int) PARTITION BY RANGE(p);\nCREATE TABLE pgpartition_key_5.child PARTITION OF pgpartition_key_5.parent FOR VALUES FROM (0) TO (10);\nINSERT INTO pgpartition_key_5.parent VALUES (1,7);\nCREATE TABLE pgpartition_key_5.expression(p int, v int) PARTITION BY RANGE((p+1));\nCREATE TABLE pgpartition_key_5.multi(p int, q int, v int) PARTITION BY RANGE(p,q);\nCREATE TABLE pgpartition_key_5.collated(p text,v int) PARTITION BY LIST(p COLLATE pg_catalog.\"C\");\nCREATE TABLE pgpartition_key_5.collated_default(p text COLLATE pg_catalog.\"C\",v int) PARTITION BY LIST(p);\nCREATE TABLE pgpartition_key_5.hashed(p int,v int) PARTITION BY HASH(p);\nCREATE SEQUENCE pgpartition_key_5.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_key_column_duplicate"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns",
+         "PGPartitionConstraint"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_5'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_5.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_5.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgpartition_key_5.parent ADD PRIMARY KEY (v,v)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42701:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_5'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_5.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_5.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpartition_key_5 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_5'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-partition-constraint-partition-expression",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpartition_key_6"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpartition_key_6 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_6'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgpartition_key_6.expression ADD UNIQUE (p,v)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_6'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpartition_key_6",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgpartition_key_6.parent(p int, v int) PARTITION BY RANGE(p);\nCREATE TABLE pgpartition_key_6.child PARTITION OF pgpartition_key_6.parent FOR VALUES FROM (0) TO (10);\nINSERT INTO pgpartition_key_6.parent VALUES (1,7);\nCREATE TABLE pgpartition_key_6.expression(p int, v int) PARTITION BY RANGE((p+1));\nCREATE TABLE pgpartition_key_6.multi(p int, q int, v int) PARTITION BY RANGE(p,q);\nCREATE TABLE pgpartition_key_6.collated(p text,v int) PARTITION BY LIST(p COLLATE pg_catalog.\"C\");\nCREATE TABLE pgpartition_key_6.collated_default(p text COLLATE pg_catalog.\"C\",v int) PARTITION BY LIST(p);\nCREATE TABLE pgpartition_key_6.hashed(p int,v int) PARTITION BY HASH(p);\nCREATE SEQUENCE pgpartition_key_6.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_partition_expression"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns",
+         "PGPartitionConstraint"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_6'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_6.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_6.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgpartition_key_6.expression ADD UNIQUE (p,v)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  0A000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_6'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_6.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_6.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpartition_key_6 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_6'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-partition-constraint-missing-one-of-two-partition-keys",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpartition_key_7"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpartition_key_7 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_7'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgpartition_key_7.multi ADD UNIQUE (p,v) INCLUDE(q)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_7'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpartition_key_7",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgpartition_key_7.parent(p int, v int) PARTITION BY RANGE(p);\nCREATE TABLE pgpartition_key_7.child PARTITION OF pgpartition_key_7.parent FOR VALUES FROM (0) TO (10);\nINSERT INTO pgpartition_key_7.parent VALUES (1,7);\nCREATE TABLE pgpartition_key_7.expression(p int, v int) PARTITION BY RANGE((p+1));\nCREATE TABLE pgpartition_key_7.multi(p int, q int, v int) PARTITION BY RANGE(p,q);\nCREATE TABLE pgpartition_key_7.collated(p text,v int) PARTITION BY LIST(p COLLATE pg_catalog.\"C\");\nCREATE TABLE pgpartition_key_7.collated_default(p text COLLATE pg_catalog.\"C\",v int) PARTITION BY LIST(p);\nCREATE TABLE pgpartition_key_7.hashed(p int,v int) PARTITION BY HASH(p);\nCREATE SEQUENCE pgpartition_key_7.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_partition_column_missing"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns",
+         "PGPartitionConstraint"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_7'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_7.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_7.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgpartition_key_7.multi ADD UNIQUE (p,v) INCLUDE(q)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  0A000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_7'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_7.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_7.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpartition_key_7 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_7'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-partition-constraint-all-keys-in-differing-order",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpartition_key_8"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpartition_key_8 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_8'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgpartition_key_8.multi ADD UNIQUE (q,p,v)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_8'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpartition_key_8",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgpartition_key_8.parent(p int, v int) PARTITION BY RANGE(p);\nCREATE TABLE pgpartition_key_8.child PARTITION OF pgpartition_key_8.parent FOR VALUES FROM (0) TO (10);\nINSERT INTO pgpartition_key_8.parent VALUES (1,7);\nCREATE TABLE pgpartition_key_8.expression(p int, v int) PARTITION BY RANGE((p+1));\nCREATE TABLE pgpartition_key_8.multi(p int, q int, v int) PARTITION BY RANGE(p,q);\nCREATE TABLE pgpartition_key_8.collated(p text,v int) PARTITION BY LIST(p COLLATE pg_catalog.\"C\");\nCREATE TABLE pgpartition_key_8.collated_default(p text COLLATE pg_catalog.\"C\",v int) PARTITION BY LIST(p);\nCREATE TABLE pgpartition_key_8.hashed(p int,v int) PARTITION BY HASH(p);\nCREATE SEQUENCE pgpartition_key_8.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns",
+         "PGPartitionConstraint"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_8'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_8.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_8.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "ALTER TABLE pgpartition_key_8.multi ADD UNIQUE (q,p,v)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_8'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_8.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_8.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpartition_key_8 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_8'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-partition-constraint-collation-mismatch",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpartition_key_9"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpartition_key_9 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_9'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgpartition_key_9.collated ADD UNIQUE (p)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_9'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpartition_key_9",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgpartition_key_9.parent(p int, v int) PARTITION BY RANGE(p);\nCREATE TABLE pgpartition_key_9.child PARTITION OF pgpartition_key_9.parent FOR VALUES FROM (0) TO (10);\nINSERT INTO pgpartition_key_9.parent VALUES (1,7);\nCREATE TABLE pgpartition_key_9.expression(p int, v int) PARTITION BY RANGE((p+1));\nCREATE TABLE pgpartition_key_9.multi(p int, q int, v int) PARTITION BY RANGE(p,q);\nCREATE TABLE pgpartition_key_9.collated(p text,v int) PARTITION BY LIST(p COLLATE pg_catalog.\"C\");\nCREATE TABLE pgpartition_key_9.collated_default(p text COLLATE pg_catalog.\"C\",v int) PARTITION BY LIST(p);\nCREATE TABLE pgpartition_key_9.hashed(p int,v int) PARTITION BY HASH(p);\nCREATE SEQUENCE pgpartition_key_9.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_partition_comparison_mismatch"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns",
+         "PGPartitionConstraint"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_9'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_9.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_9.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgpartition_key_9.collated ADD UNIQUE (p)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  0A000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_9'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_9.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_9.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpartition_key_9 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_9'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-partition-constraint-collation-match",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpartition_key_10"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpartition_key_10 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_10'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgpartition_key_10.collated_default ADD UNIQUE (p)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_10'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpartition_key_10",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgpartition_key_10.parent(p int, v int) PARTITION BY RANGE(p);\nCREATE TABLE pgpartition_key_10.child PARTITION OF pgpartition_key_10.parent FOR VALUES FROM (0) TO (10);\nINSERT INTO pgpartition_key_10.parent VALUES (1,7);\nCREATE TABLE pgpartition_key_10.expression(p int, v int) PARTITION BY RANGE((p+1));\nCREATE TABLE pgpartition_key_10.multi(p int, q int, v int) PARTITION BY RANGE(p,q);\nCREATE TABLE pgpartition_key_10.collated(p text,v int) PARTITION BY LIST(p COLLATE pg_catalog.\"C\");\nCREATE TABLE pgpartition_key_10.collated_default(p text COLLATE pg_catalog.\"C\",v int) PARTITION BY LIST(p);\nCREATE TABLE pgpartition_key_10.hashed(p int,v int) PARTITION BY HASH(p);\nCREATE SEQUENCE pgpartition_key_10.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns",
+         "PGPartitionConstraint"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_10'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_10.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_10.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "ALTER TABLE pgpartition_key_10.collated_default ADD UNIQUE (p)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_10'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_10.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_10.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpartition_key_10 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_10'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-partition-constraint-hash-equality-matches",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpartition_key_11"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpartition_key_11 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_11'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgpartition_key_11.hashed ADD UNIQUE (p)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_11'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpartition_key_11",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgpartition_key_11.parent(p int, v int) PARTITION BY RANGE(p);\nCREATE TABLE pgpartition_key_11.child PARTITION OF pgpartition_key_11.parent FOR VALUES FROM (0) TO (10);\nINSERT INTO pgpartition_key_11.parent VALUES (1,7);\nCREATE TABLE pgpartition_key_11.expression(p int, v int) PARTITION BY RANGE((p+1));\nCREATE TABLE pgpartition_key_11.multi(p int, q int, v int) PARTITION BY RANGE(p,q);\nCREATE TABLE pgpartition_key_11.collated(p text,v int) PARTITION BY LIST(p COLLATE pg_catalog.\"C\");\nCREATE TABLE pgpartition_key_11.collated_default(p text COLLATE pg_catalog.\"C\",v int) PARTITION BY LIST(p);\nCREATE TABLE pgpartition_key_11.hashed(p int,v int) PARTITION BY HASH(p);\nCREATE SEQUENCE pgpartition_key_11.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns",
+         "PGPartitionConstraint"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_11'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_11.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_11.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "ALTER TABLE pgpartition_key_11.hashed ADD UNIQUE (p)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_11'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_11.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_11.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpartition_key_11 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_11'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-partition-constraint-only-parent",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpartition_key_12"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpartition_key_12 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_12'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE ONLY pgpartition_key_12.parent ADD UNIQUE (p)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_12'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpartition_key_12",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgpartition_key_12.parent(p int, v int) PARTITION BY RANGE(p);\nCREATE TABLE pgpartition_key_12.child PARTITION OF pgpartition_key_12.parent FOR VALUES FROM (0) TO (10);\nINSERT INTO pgpartition_key_12.parent VALUES (1,7);\nCREATE TABLE pgpartition_key_12.expression(p int, v int) PARTITION BY RANGE((p+1));\nCREATE TABLE pgpartition_key_12.multi(p int, q int, v int) PARTITION BY RANGE(p,q);\nCREATE TABLE pgpartition_key_12.collated(p text,v int) PARTITION BY LIST(p COLLATE pg_catalog.\"C\");\nCREATE TABLE pgpartition_key_12.collated_default(p text COLLATE pg_catalog.\"C\",v int) PARTITION BY LIST(p);\nCREATE TABLE pgpartition_key_12.hashed(p int,v int) PARTITION BY HASH(p);\nCREATE SEQUENCE pgpartition_key_12.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns",
+         "PGPartitionConstraint"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_12'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_12.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_12.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "ALTER TABLE ONLY pgpartition_key_12.parent ADD UNIQUE (p)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_12'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_12.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_12.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpartition_key_12 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_12'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-partition-constraint-equality-operator-mismatch",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpartition_key_13"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpartition_key_13 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_13'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgpartition_key_13.opclass_key ADD UNIQUE (p)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_13'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpartition_key_13",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgpartition_key_13.parent(p int, v int) PARTITION BY RANGE(p);\nCREATE TABLE pgpartition_key_13.child PARTITION OF pgpartition_key_13.parent FOR VALUES FROM (0) TO (10);\nINSERT INTO pgpartition_key_13.parent VALUES (1,7);\nCREATE TABLE pgpartition_key_13.expression(p int, v int) PARTITION BY RANGE((p+1));\nCREATE TABLE pgpartition_key_13.multi(p int, q int, v int) PARTITION BY RANGE(p,q);\nCREATE TABLE pgpartition_key_13.collated(p text,v int) PARTITION BY LIST(p COLLATE pg_catalog.\"C\");\nCREATE TABLE pgpartition_key_13.collated_default(p text COLLATE pg_catalog.\"C\",v int) PARTITION BY LIST(p);\nCREATE TABLE pgpartition_key_13.hashed(p int,v int) PARTITION BY HASH(p);\nCREATE OPERATOR CLASS pgpartition_key_13.different_equality FOR TYPE integer USING btree AS OPERATOR 3 pg_catalog.<> (integer,integer), FUNCTION 1 pg_catalog.btint4cmp(integer,integer);\nCREATE TABLE pgpartition_key_13.opclass_key(p int,v int) PARTITION BY RANGE(p pgpartition_key_13.different_equality);\nCREATE SEQUENCE pgpartition_key_13.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_partition_comparison_mismatch"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns",
+         "PGPartitionConstraint"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_13'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_13.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_13.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgpartition_key_13.opclass_key ADD UNIQUE (p)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  0A000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgpartition_key_13'::regnamespace AND contype IN ('p','u')",
+         "expect": "0"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT p*10+v FROM pgpartition_key_13.parent",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpartition_key_13.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpartition_key_13 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgpartition_key_13'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
      "id": "pg-constraint-columns-quoted-exact-keys-and-include",
      "anchor": "postgres17",
      "dialect": "postgresql",
@@ -6775,14 +8765,14 @@
      ],
      "expect": {
        "exit": 0,
-       "verdict": "review",
+       "verdict": "pass",
        "statements": 1,
        "findings": 0,
        "diagnostics": 0,
        "unsupported": 0,
-       "coverage": "unverified",
+       "coverage": "complete",
        "statement_coverage": [
-         "unverified"
+         "complete"
        ],
        "statement_indices": [
          0
@@ -6790,17 +8780,8 @@
        "rule_summary_loaded": 1,
        "finding_entries": [],
        "finding_metadata": [],
-       "evidence_gaps": 1,
-       "evidence_gap_entries": [
-         {
-           "index": 0,
-           "rule_id": "ddl.pg.alter.constraint_columns.valid",
-           "reason_code": "unproven_pg_constraint_columns",
-           "required_facts": [
-             "target_table.pg_columns"
-           ]
-         }
-       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
        "serialized_not_contains": [
          "PGKeyColumns",
          "PGIncludeColumns"
@@ -6925,32 +8906,37 @@
      ],
      "expect": {
        "exit": 0,
-       "verdict": "review",
+       "verdict": "reject",
        "statements": 1,
-       "findings": 0,
+       "findings": 1,
        "diagnostics": 0,
        "unsupported": 0,
-       "coverage": "unverified",
+       "coverage": "complete",
        "statement_coverage": [
-         "unverified"
+         "complete"
        ],
        "statement_indices": [
          0
        ],
        "rule_summary_loaded": 1,
-       "finding_entries": [],
-       "finding_metadata": [],
-       "evidence_gaps": 1,
-       "evidence_gap_entries": [
+       "finding_entries": [
          {
            "index": 0,
            "rule_id": "ddl.pg.alter.constraint_columns.valid",
-           "reason_code": "unproven_pg_constraint_columns",
-           "required_facts": [
-             "target_table.pg_columns"
-           ]
+           "level": "blocker"
          }
        ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_partition_column_missing"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
        "serialized_not_contains": [
          "PGKeyColumns",
          "PGIncludeColumns"
@@ -32185,6 +34171,19 @@
   }
  ],
  "required_case_ids": [
+  "T37.meta.pg-partition-constraint-primary-key-includes-partition-column",
+  "T37.meta.pg-partition-constraint-unique-key-excludes-partition-column",
+  "T37.meta.pg-partition-constraint-included-partition-column-is-not-a-key",
+  "T37.meta.pg-partition-constraint-missing-column-precedes-partition-check",
+  "T37.meta.pg-partition-constraint-duplicate-column-precedes-partition-check",
+  "T37.meta.pg-partition-constraint-partition-expression",
+  "T37.meta.pg-partition-constraint-missing-one-of-two-partition-keys",
+  "T37.meta.pg-partition-constraint-all-keys-in-differing-order",
+  "T37.meta.pg-partition-constraint-collation-mismatch",
+  "T37.meta.pg-partition-constraint-collation-match",
+  "T37.meta.pg-partition-constraint-hash-equality-matches",
+  "T37.meta.pg-partition-constraint-only-parent",
+  "T37.meta.pg-partition-constraint-equality-operator-mismatch",
   "T37.cli.constraint-columns-offline",
   "T37.meta.pg-constraint-columns-quoted-exact-keys-and-include",
   "T37.meta.pg-constraint-columns-missing-quoted-primary-key",

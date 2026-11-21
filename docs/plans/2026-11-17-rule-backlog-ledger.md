@@ -1384,6 +1384,21 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136742168384) passed at t
 
 - [Constraint column checks](../decisions/2026-11-21-postgresql-primary-unique-constraint-columns.md)
 
+### F09 partition keys for primary and unique constraints (D49)
+
+The constraint-column rule now uses exact catalog facts on a qualified
+PostgreSQL 17 partitioned root. It checks authored key and INCLUDE members
+first. Partition columns must be in the key section, with matching collation
+and proved equality semantics. An expression partition key blocks. Fallback
+operator classes, subtrees and row validation require separate evidence.
+
+T37 preview passed 589 cases and 17,444 assertions. Fourteen D49
+selectors bind ADD PRIMARY KEY and ADD UNIQUE. Two existing D48 expectations
+now verify the observed partition-key outcomes. Verification on the fixed
+candidate is pending.
+
+- [Partition constraint keys](../decisions/2026-11-21-postgresql-partition-constraint-keys.md)
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

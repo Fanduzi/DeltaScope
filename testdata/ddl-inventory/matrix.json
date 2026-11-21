@@ -8240,7 +8240,10 @@
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-fallback-compatible-not-selected",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-columns-missing-quoted-primary-key",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-columns-duplicate-primary-key-member",
-                "file:testdata/ddl-golden/T37.json#pg-constraint-columns-second-primary-key"
+                "file:testdata/ddl-golden/T37.json#pg-constraint-columns-second-primary-key",
+                "file:testdata/ddl-golden/T37.json#pg-partition-constraint-primary-key-includes-partition-column",
+                "file:testdata/ddl-golden/T37.json#pg-partition-constraint-included-partition-column-is-not-a-key",
+                "file:testdata/ddl-golden/T37.json#pg-partition-constraint-duplicate-column-precedes-partition-check"
               ]
             }
           ]
@@ -8299,7 +8302,18 @@
                 "file:testdata/ddl-golden/T37.json#pg-constraint-columns-unique-beside-primary-key",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-columns-guard-absent-skips-declaration",
                 "file:testdata/ddl-golden/T37.json#constraint-columns-offline",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_columns_duplicate.expected.yaml#ddl.pg.alter.constraint_columns.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_columns_duplicate.expected.yaml#ddl.pg.alter.constraint_columns.valid",
+                "file:testdata/ddl-golden/T37.json#pg-partition-constraint-unique-key-excludes-partition-column",
+                "file:testdata/ddl-golden/T37.json#pg-partition-constraint-missing-column-precedes-partition-check",
+                "file:testdata/ddl-golden/T37.json#pg-partition-constraint-partition-expression",
+                "file:testdata/ddl-golden/T37.json#pg-partition-constraint-missing-one-of-two-partition-keys",
+                "file:testdata/ddl-golden/T37.json#pg-partition-constraint-all-keys-in-differing-order",
+                "file:testdata/ddl-golden/T37.json#pg-partition-constraint-collation-mismatch",
+                "file:testdata/ddl-golden/T37.json#pg-partition-constraint-collation-match",
+                "file:testdata/ddl-golden/T37.json#pg-partition-constraint-hash-equality-matches",
+                "file:testdata/ddl-golden/T37.json#pg-partition-constraint-only-parent",
+                "file:testdata/ddl-golden/T37.json#pg-partition-constraint-equality-operator-mismatch",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_partition_key_include_only.expected.yaml#ddl.pg.alter.constraint_columns.valid"
               ]
             }
           ]
