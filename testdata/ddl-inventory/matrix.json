@@ -11914,7 +11914,18 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-type.enum.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/create_enum_duplicate_label.expected.yaml#ddl.pg.create_type.enum.valid",
+                "file:testdata/ddl-golden/T41.json#pg-enum-exact-enum-creation",
+                "file:testdata/ddl-golden/T41.json#pg-enum-empty-enum",
+                "file:testdata/ddl-golden/T41.json#pg-enum-duplicate-enum-labels",
+                "file:testdata/ddl-golden/T41.json#pg-enum-overlong-enum-label",
+                "file:testdata/ddl-golden/T41.json#pg-enum-creation-schema-missing-before-duplicate",
+                "file:testdata/ddl-golden/T41.json#pg-enum-existing-type-name-before-duplicate",
+                "file:testdata/ddl-golden/T41.json#pg-enum-shell-before-enum-creation",
+                "file:testdata/ddl-golden/T41.json#pg-enum-generated-array-name-can-be-moved",
+                "file:testdata/ddl-golden/T41.json#pg-enum-duplicate-empty-labels",
+                "file:testdata/ddl-golden/T41.json#pg-enum-maximum-utf8-byte-length"
               ]
             }
           ]
@@ -11933,7 +11944,16 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-type.composite.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T41.json#pg-composite-exact-composite-creation",
+                "file:testdata/ddl-golden/T41.json#pg-composite-empty-composite-creation",
+                "file:testdata/ddl-golden/T41.json#pg-composite-duplicate-attributes",
+                "file:testdata/ddl-golden/T41.json#pg-composite-system-spelling-is-valid-in-composite",
+                "file:testdata/ddl-golden/T41.json#pg-composite-existing-relation-before-duplicate",
+                "file:testdata/ddl-golden/T41.json#pg-composite-defined-type-already-present",
+                "file:testdata/ddl-golden/T41.json#pg-composite-fill-shell-with-composite",
+                "file:testdata/ddl-golden/T41.json#pg-composite-automatic-array-moves-for-composite",
+                "file:testdata/ddl-golden/T41.json#pg-composite-absent-destination-namespace"
               ]
             }
           ]
@@ -11941,7 +11961,7 @@
         {
           "subaction_id": "RANGE",
           "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -11949,10 +11969,29 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-type.range.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T41.json#pg-range-integer-range",
+                "file:testdata/ddl-golden/T41.json#pg-range-range-fills-existing-shell",
+                "file:testdata/ddl-golden/T41.json#pg-range-array-name-can-be-moved",
+                "file:testdata/ddl-golden/T41.json#pg-range-occupied-name-precedes-unknown-option",
+                "file:testdata/ddl-golden/T41.json#pg-range-missing-schema-precedes-unknown-option",
+                "file:testdata/ddl-golden/T41.json#pg-range-missing-subtype",
+                "file:testdata/ddl-golden/T41.json#pg-range-duplicate-exact-subtype",
+                "file:testdata/ddl-golden/T41.json#pg-range-unset-subtype-type",
+                "file:testdata/ddl-golden/T41.json#pg-range-missing-subtype-type",
+                "file:testdata/ddl-golden/T41.json#pg-range-pseudo-subtype-rejected",
+                "file:testdata/ddl-golden/T41.json#pg-range-range-collation-on-integer",
+                "file:testdata/ddl-golden/T41.json#pg-range-range-collation-on-text",
+                "file:testdata/ddl-golden/T41.json#pg-range-explicit-multirange-target",
+                "file:testdata/ddl-golden/T41.json#pg-range-occupied-multirange-target",
+                "file:testdata/ddl-golden/T41.json#pg-range-canonical-needs-shell-type",
+                "file:testdata/ddl-golden/T41.json#pg-range-unknown-range-option",
+                "file:testdata/ddl-golden/T41.json#pg-range-empty-parameters-parser-boundary",
+                "file:testdata/ddl-golden/T41.json#range-create-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/create_range_no_subtype.expected.yaml#ddl.pg.create_type.range.valid"
               ]
             }
           ]
@@ -11960,7 +11999,7 @@
         {
           "subaction_id": "base type",
           "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -11968,10 +12007,15 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-type.base-type.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/create_base_type_missing_io.expected.yaml#ddl.pg.type.base.valid",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-full-base-type-without-shell",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-full-base-type-missing-input",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-full-base-type-input-signature-mismatch",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-duplicate-recognized-declaration"
               ]
             }
           ]
@@ -11979,7 +12023,7 @@
         {
           "subaction_id": "shell type",
           "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -11987,10 +12031,14 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-type.shell-type.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T41.json#base-type-offline",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-new-shell-type",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-repeated-shell-type",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-shell-name-can-move-automatic-array"
               ]
             }
           ]
@@ -12033,7 +12081,17 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-type.add-value.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T41.json#pg-enum-add-value-before-existing",
+                "file:testdata/ddl-golden/T41.json#pg-enum-add-value-with-missing-neighbor",
+                "file:testdata/ddl-golden/T41.json#pg-enum-duplicate-guarded-value-before-missing-neighbor",
+                "file:testdata/ddl-golden/T41.json#pg-enum-duplicate-before-missing-neighbor",
+                "file:testdata/ddl-golden/T41.json#pg-enum-missing-enum-type",
+                "file:testdata/ddl-golden/T41.json#pg-enum-composite-type",
+                "file:testdata/ddl-golden/T41.json#pg-enum-domain-over-enum",
+                "file:testdata/ddl-golden/T41.json#pg-enum-append-empty-label",
+                "file:testdata/ddl-golden/T41.json#pg-enum-after-missing-empty-neighbor",
+                "file:testdata/ddl-golden/T41.json#pg-enum-alter-shell-enum-target"
               ]
             }
           ]
@@ -12052,7 +12110,15 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-type.rename-value.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T41.json#enum-catalog-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/alter_enum_missing_label.expected.yaml#ddl.pg.alter_type.enum.valid",
+                "file:testdata/ddl-golden/T41.json#pg-enum-rename-value-before-exact-collision",
+                "file:testdata/ddl-golden/T41.json#pg-enum-rename-equal-name",
+                "file:testdata/ddl-golden/T41.json#pg-enum-rename-exact-spacing",
+                "file:testdata/ddl-golden/T41.json#pg-enum-rename-missing-empty-label",
+                "file:testdata/ddl-golden/T41.json#pg-enum-rename-to-empty-label",
+                "file:testdata/ddl-golden/T41.json#pg-enum-rename-length-before-missing-old"
               ]
             }
           ]
@@ -12071,7 +12137,40 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-type.rename-owner-set-schema.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T41.json#type-namespace-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/alter_type_rename_occupied.expected.yaml#ddl.pg.alter_type.change.target.valid",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-rename-enum",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-rename-composite",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-rename-to-same-name",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-rename-composite-to-same-name",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-rename-to-defined-type",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-rename-composite-to-sequence-name",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-rename-enum-to-shell",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-rename-to-automatic-array",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-rename-shell-source",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-rename-row-type",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-rename-automatic-array",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-move-enum",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-move-enum-to-same-namespace",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-move-composite-to-same-namespace",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-move-composite-to-occupied-destination",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-move-enum-to-absent-namespace",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-source-absence-before-destination-absence",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-set-literal-owner",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-set-shell-owner",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-missing-role-before-missing-type",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-set-row-type-owner",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-set-array-owner",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-array-name-blocks-schema-move",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-relation-slot-blocks-composite-move",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-move-into-toast-namespace-refused",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-missing-namespace-before-array-eligibility",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-resolved-role-before-missing-type",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-current-role-owner",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-current-user-owner",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-session-user-owner",
+                "file:testdata/ddl-golden/T41.json#pg-type-namespace-public-owner"
               ]
             }
           ]
@@ -12090,7 +12189,20 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-type.composite-attributes.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T41.json#composite-catalog-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/alter_composite_missing_attribute.expected.yaml#ddl.pg.type.composite.valid",
+                "file:testdata/ddl-golden/T41.json#pg-composite-qualified-alter-add-attribute",
+                "file:testdata/ddl-golden/T41.json#pg-composite-add-duplicate-exact-attribute",
+                "file:testdata/ddl-golden/T41.json#pg-composite-drop-absent-guarded-attribute",
+                "file:testdata/ddl-golden/T41.json#pg-composite-drop-absent-attribute",
+                "file:testdata/ddl-golden/T41.json#pg-composite-alter-absent-attribute",
+                "file:testdata/ddl-golden/T41.json#pg-composite-rename-absent-attribute",
+                "file:testdata/ddl-golden/T41.json#pg-composite-rename-target-attribute-exists",
+                "file:testdata/ddl-golden/T41.json#pg-composite-rename-attribute-to-itself",
+                "file:testdata/ddl-golden/T41.json#pg-composite-rename-to-quoted-exact-name",
+                "file:testdata/ddl-golden/T41.json#pg-composite-table-row-type-not-standalone",
+                "file:testdata/ddl-golden/T41.json#pg-composite-enum-cannot-be-used-as-composite-target"
               ]
             }
           ]
@@ -12098,7 +12210,7 @@
         {
           "subaction_id": "SET properties",
           "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -12106,10 +12218,19 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-type.set-properties.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-base-only-property-on-enum",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-cannot-change-delimiter",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-fixed-length-plain-storage",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-fixed-length-nonplain-storage",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-nonplain-cannot-return-to-plain",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-change-nonplain-storage",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-invalid-storage-option",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-array-storage-target",
+                "file:testdata/ddl-golden/T41.json#pg-base-type-undefined-storage-target"
               ]
             }
           ]
@@ -12724,26 +12845,53 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-operator.owner-set-schema.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T41.json#operator-change-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/alter_operator_destination_occupied.expected.yaml#ddl.pg.alter_operator.change.target.valid",
+                "file:testdata/ddl-golden/T41.json#pg-operator-change-move-binary-operator",
+                "file:testdata/ddl-golden/T41.json#pg-operator-change-move-to-same-schema",
+                "file:testdata/ddl-golden/T41.json#pg-operator-change-move-to-absent-schema",
+                "file:testdata/ddl-golden/T41.json#pg-operator-change-move-to-occupied-slot",
+                "file:testdata/ddl-golden/T41.json#pg-operator-change-move-unary-operator",
+                "file:testdata/ddl-golden/T41.json#pg-operator-change-distinct-binary-signature-absent",
+                "file:testdata/ddl-golden/T41.json#pg-operator-change-missing-operand-type-before-operator",
+                "file:testdata/ddl-golden/T41.json#pg-operator-change-missing-operator-before-schema",
+                "file:testdata/ddl-golden/T41.json#pg-operator-change-operator-owner",
+                "file:testdata/ddl-golden/T41.json#pg-operator-change-missing-role-before-operator",
+                "file:testdata/ddl-golden/T41.json#pg-operator-change-public-owner"
               ]
             }
           ]
         },
         {
           "subaction_id": "SET RESTRICT/JOIN",
-          "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
               "version_range": "17",
               "official_presence": "documented",
               "product_scope": "registered",
-              "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-operator.set-restrict-join.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T41.json#pg-operator-change-clear-estimators",
+                "file:testdata/ddl-golden/T41.json#pg-operator-change-valid-built-in-estimator",
+                "file:testdata/ddl-golden/T41.json#pg-operator-change-missing-estimator",
+                "file:testdata/ddl-golden/T41.json#pg-operator-estimator-clear-both-estimators",
+                "file:testdata/ddl-golden/T41.json#pg-operator-estimator-qualified-restriction-estimator",
+                "file:testdata/ddl-golden/T41.json#pg-operator-estimator-qualified-join-estimator",
+                "file:testdata/ddl-golden/T41.json#pg-operator-estimator-absent-restriction-estimator",
+                "file:testdata/ddl-golden/T41.json#pg-operator-estimator-absent-join-estimator",
+                "file:testdata/ddl-golden/T41.json#pg-operator-estimator-wrong-estimator-signature",
+                "file:testdata/ddl-golden/T41.json#pg-operator-estimator-last-restriction-occurrence-wins",
+                "file:testdata/ddl-golden/T41.json#pg-operator-estimator-last-restriction-is-absent",
+                "file:testdata/ddl-golden/T41.json#pg-operator-estimator-unary-operator-rejects-restrict",
+                "file:testdata/ddl-golden/T41.json#pg-operator-estimator-unqualified-estimator-native-succeeds",
+                "file:testdata/ddl-golden/T41.json#pg-operator-estimator-missing-operator-before-estimator"
               ]
             }
           ]

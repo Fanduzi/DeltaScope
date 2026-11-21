@@ -1567,6 +1567,28 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44897967497/job/136827571236),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136827630993) passed at the delivered SHA.
 
+## F13 exact dimension review
+
+All twelve original dimensions retain their own evidence. Qualified catalog
+checks in T41 cover the premises below. The parent rows remain mixed.
+
+| Inventory dimension | Evidence and present scope | Remaining premise |
+| --- | --- | --- |
+| `postgresql.create-type` / ENUM | `pg-enum-duplicate-enum-labels`, `pg-enum-duplicate-empty-labels`, the UTF-8 length boundary and shell and automatic-array fixtures check exact creation and every label. | Other encodings, implicit namespace selection and execution authorization. |
+| `postgresql.create-type` / composite | `pg-composite-exact-composite-creation`, `pg-composite-duplicate-attributes`, and the shell, array and occupancy controls check exact target and attribute names. | Attribute types, collation and dependent objects. |
+| `postgresql.create-type` / RANGE | `pg-range-integer-range`, subtype refusal, repeated option and collation controls check the exact destination and qualified subtype. `pg-range-empty-parameters-parser-boundary` verifies native `42601`. | Operator-class selection, collation identity, multirange name conflicts, support functions and execution privileges. |
+| `postgresql.create-type` / base type | `pg-base-type-full-base-type-without-shell` and `pg-base-type-full-base-type-missing-input` verify the shell and required I/O declarations. The signature-mismatch case is a native refusal and an audit gap. | I/O function resolution, representation semantics and privileges. |
+| `postgresql.create-type` / shell type | `pg-base-type-new-shell-type`, `pg-base-type-repeated-shell-type` and the automatic-array witness verify name eligibility. | Session namespaces and the privilege to create a shell. |
+| `postgresql.alter-type` / ADD VALUE | T41 enum cases cover exact target kind, empty labels, duplicate guards before neighbor lookup and qualified placement. | Visibility and use of new labels during a transaction, implicit namespace selection and other encodings. |
+| `postgresql.alter-type` / RENAME VALUE | T41 enum cases verify exact source and destination labels, equality, length and old-label lookup. Existing ADD VALUE advice applies only to ADD. | Other encodings, earlier unproved catalog mutations and permissions. |
+| `postgresql.alter-type` / RENAME/OWNER/SET SCHEMA | T41 type-namespace cases cover type and relation names, the associated array, same-name versus same-schema behavior, owner precedence and shell ownership. | Broader dependency moves, ownership and namespace privileges and session namespaces. |
+| `postgresql.alter-type` / composite attributes | T41 composite cases cover exact single ADD, DROP, ALTER and RENAME names, guarded absence and standalone relation kind. | Multi-action state, dropped attribute placeholders, dependent objects and type coercion. |
+| `postgresql.alter-type` / SET properties | T41 base type cases verify fixed versus variable length, current storage, forbidden properties and kind. | Function resolution, type representation safety and effects on dependent types. |
+| `postgresql.alter-operator` / OWNER/SET SCHEMA | T41 operator-change cases cover exact unary and binary signatures, role precedence and occupied destination. | Implicit operand naming, session namespaces and permissions. |
+| `postgresql.alter-operator` / SET RESTRICT/JOIN | T41 estimator cases cover `NONE`, repeated option order, qualified signatures, result eligibility, valid built-ins and missing-function refusal. | Other SET options, unqualified function selection and execution privileges. |
+
+The joint T41 preview passed 221 cases and 6,241 assertions. Verification on the fixed F13 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
