@@ -1042,7 +1042,7 @@ new default behavior is approved per family before implementation.
 | F16 | PostgreSQL foreign objects | 2 | T44 | Qualified wrapper and foreign table checks delivered at `d6cb07d2`. Validator behavior and remote effects remain open. |
 | F17 | PostgreSQL text search | 2 | T45 | Qualified configuration and dictionary checks delivered at `fad0c7f4`. Session and custom template facts remain open. |
 | F18 | PostgreSQL replication | 3 | T46 | Local publication and subscription premises delivered at `3ca2c47b`. Remote execution effects remain open. |
-| F19 | PostgreSQL grants/languages | 3 | T47 | unreviewed |
+| F19 | PostgreSQL grants/languages | 3 | T47 | Local privilege and explicit callback checks delivered at `eacc45d4`. Effective authorization remains open. |
 
 ## Exact row/dimension queue
 
@@ -1115,9 +1115,9 @@ insufficient.
 | F18 | `postgresql.alter-publication` | ADD/DROP/SET TABLE; SET TABLES IN SCHEMA; SET publish options; OWNER/RENAME | Exact local selectors, bounded options and owner/rename verified. Recursive targets and row expressions retain gaps. |
 | F18 | `postgresql.alter-subscription` | ENABLE/DISABLE; CONNECTION/PUBLICATION/SET; REFRESH PUBLICATION; SKIP; OWNER/RENAME | AST ENABLE/DISABLE, exact local catalog checks and SKIP syntax verified. Publisher and origin progress facts remain open. |
 | F18 | `postgresql.drop-subscription` | DROP SUBSCRIPTION; IF EXISTS; WITH drop_slot | Exact slotless DROP and absence guard verified. WITH drop_slot retains parser error and remote slot effects remain unverified. |
-| F19 | `postgresql.grant` | ON TABLE; ALL TABLES IN SCHEMA; columns; WITH GRANT OPTION; sequences/functions/database/schema/types; role membership; tablespace/large objects; GRANTED BY | unreviewed |
-| F19 | `postgresql.revoke` | REVOKE privileges; GRANT OPTION FOR; CASCADE/RESTRICT; role membership; object kinds | unreviewed |
-| F19 | `postgresql.create-language` | CREATE LANGUAGE; OR REPLACE TRUSTED; HANDLER form | unreviewed |
+| F19 | `postgresql.grant` | ON TABLE; ALL TABLES IN SCHEMA; columns; WITH GRANT OPTION; sequences/functions/database/schema/types; role membership; tablespace/large objects; GRANTED BY | Exact local object, grantee, grantor and column premises verified. Untested kinds, membership and ACL chains remain open. |
+| F19 | `postgresql.revoke` | REVOKE privileges; GRANT OPTION FOR; CASCADE/RESTRICT; role membership; object kinds | Exact local targets, columns and behavior declarations verified. Role membership and transitive effects retain boundaries. |
+| F19 | `postgresql.create-language` | CREATE LANGUAGE; OR REPLACE TRUSTED; HANDLER form | Handler signatures and replacement premises verified. Parameterless forms retain extension semantics. |
 <!-- END ORIGINAL 63 ROWS -->
 
 ## F09 exact dimension review
@@ -1733,7 +1733,14 @@ The three rows retain `mixed_coverage`. See [T47](../../testdata/ddl-golden/T47.
 [privilege declarations](../decisions/2026-11-21-postgresql-object-privilege-declarations.md)
 and [language declarations](../decisions/2026-11-21-postgresql-language-declarations.md).
 
-The joint T47 preview passed 125 cases and 3,324 assertions. Verification on the fixed F19 candidate is pending.
+The joint T47 preview passed 125 cases and 3,324 assertions. Delivered at `eacc45d46940f6080c045fe0a4ba0e64b19d0195`. All 50 canonical tasks passed with 4,826 cases and
+111,990 assertions. T47 passed 125 cases and 3,324 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44954200488/job/136998584812),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44954200488/job/136998584674),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44954200488/job/136998584830),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44954200431/job/136998584537),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136998660126) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
