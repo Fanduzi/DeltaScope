@@ -23,6 +23,8 @@ type Metadata struct {
 	PGCreateSchema              *PGCreateSchemaState              `json:"-"`
 	PGPartitionConstraint       *PGPartitionConstraintState       `json:"-"`
 	PGOperatorFamilyChange      *PGOperatorFamilyChangeState      `json:"-"`
+	PGPublicationChange         *PGPublicationChangeState         `json:"-"`
+	PGSubscriptionChange        *PGSubscriptionChangeState        `json:"-"`
 	PGIndexDestination          *PGIndexDestinationState          `json:"-"`
 	PGOperatorFamilyMember      *PGOperatorFamilyMemberState      `json:"-"`
 	PGOperatorFamily            *PGOperatorFamilyState            `json:"-"`
@@ -850,6 +852,8 @@ type ObjectSnapshot struct {
 	PGCreateSchema              *PGCreateSchemaState              `json:"-"`
 	PGPartitionConstraint       *PGPartitionConstraintState       `json:"-"`
 	PGOperatorFamilyChange      *PGOperatorFamilyChangeState      `json:"-"`
+	PGPublicationChange         *PGPublicationChangeState         `json:"-"`
+	PGSubscriptionChange        *PGSubscriptionChangeState        `json:"-"`
 	PGIndexDestination          *PGIndexDestinationState          `json:"-"`
 	PGOperatorFamilyMember      *PGOperatorFamilyMemberState      `json:"-"`
 	PGOperatorFamily            *PGOperatorFamilyState            `json:"-"`
@@ -930,6 +934,7 @@ type ObjectSnapshot struct {
 // ObjectLookupRequest describes one object to resolve from live metadata.
 type ObjectLookupRequest struct {
 	PGTextSearchDictionaries   []Table                     `json:"-"`
+	PGPublicationMembers       []PGPublicationMember       `json:"-"`
 	PGOperatorFamilyMember     *PGOperatorFamilyMember     `json:"-"`
 	PGPolicyRoles              []string                    `json:"-"`
 	PGWrapperFunctions         []PGWrapperFunction         `json:"-"`

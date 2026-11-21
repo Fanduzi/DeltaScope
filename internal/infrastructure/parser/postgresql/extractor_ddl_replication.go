@@ -4,7 +4,6 @@ package postgresql
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	pg_query "github.com/pganalyze/pg_query_go/v6"
@@ -43,10 +42,11 @@ func extractAlterPublicationStmt(statement spec.Statement, stmt *pg_query.AlterP
 		options["action"] = fmt.Sprintf("action_%d", stmt.GetAction())
 	}
 	statement.DDL = &spec.DDL{
-		Operation:  spec.DDLOperationAlterPublication,
-		ObjectName: stmt.GetPubname(),
-		ObjectType: "publication",
-		Options:    options,
+		PGPublicationChange: pgPublicationChange(stmt, options["action"]),
+		Operation:           spec.DDLOperationAlterPublication,
+		ObjectName:          stmt.GetPubname(),
+		ObjectType:          "publication",
+		Options:             options,
 	}
 	return statement
 }
@@ -75,14 +75,20 @@ func extractAlterSubscriptionStmt(statement spec.Statement, stmt *pg_query.Alter
 	}
 	options := map[string]string{}
 	kind := stmt.GetKind()
-	// pg_query maps both ENABLE and DISABLE to ALTER_SUBSCRIPTION_ENABLED (7).
-	// Detect DISABLE via raw SQL since the AST does not distinguish them.
 	if kind == pg_query.AlterSubscriptionType_ALTER_SUBSCRIPTION_ENABLED {
-		upper := strings.ToUpper(statement.NormalizedSQL)
-		if strings.Contains(upper, " DISABLE") {
-			options["action"] = "disable"
-		} else {
-			options["action"] = "enable"
+		for _, node := range stmt.GetOptions() {
+			option := node.GetDefElem()
+			enabled := option.GetArg().GetBoolean()
+			if option.GetDefname() == "enabled" && enabled != nil {
+				options["action"] = "disable"
+				if enabled.GetBoolval() {
+					options["action"] = "enable"
+				}
+				break
+			}
+		}
+		if options["action"] == "" {
+			return unsupportedStatement(statement, "alter_subscription", "postgresql subscription enabled flag is missing")
 		}
 	} else {
 		switch kind {
@@ -109,10 +115,11 @@ func extractAlterSubscriptionStmt(statement spec.Statement, stmt *pg_query.Alter
 		}
 	}
 	statement.DDL = &spec.DDL{
-		Operation:  spec.DDLOperationAlterSubscription,
-		ObjectName: stmt.GetSubname(),
-		ObjectType: "subscription",
-		Options:    options,
+		PGSubscriptionChange: pgSubscriptionChange(stmt, options["action"]),
+		Operation:            spec.DDLOperationAlterSubscription,
+		ObjectName:           stmt.GetSubname(),
+		ObjectType:           "subscription",
+		Options:              options,
 	}
 	return statement
 }
@@ -123,10 +130,11 @@ func extractDropSubscriptionStmt(statement spec.Statement, stmt *pg_query.DropSu
 	}
 	options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
 	statement.DDL = &spec.DDL{
-		Operation:  spec.DDLOperationDropSubscription,
-		ObjectName: stmt.GetSubname(),
-		ObjectType: "subscription",
-		Options:    options,
+		PGSubscriptionChange: &spec.PGSubscriptionChange{Name: stmt.GetSubname(), Action: "drop", IfExists: stmt.GetMissingOk()},
+		Operation:            spec.DDLOperationDropSubscription,
+		ObjectName:           stmt.GetSubname(),
+		ObjectType:           "subscription",
+		Options:              options,
 	}
 	return statement
 }

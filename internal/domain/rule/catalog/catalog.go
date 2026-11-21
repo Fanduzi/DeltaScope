@@ -258,6 +258,10 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 		return "Checks a PostgreSQL 17 enum creation target, repeated labels and the UTF8 label size limit."
 	case "ddl.pg.text_search.change.target.valid":
 		return "Checks qualified PostgreSQL 17 text search configuration and dictionary targets, mappings, owners and namespace changes."
+	case "ddl.pg.alter_publication.target.valid":
+		return "Checks local PostgreSQL 17 publication membership, named targets and supported options."
+	case "ddl.pg.alter_subscription.target.valid":
+		return "Checks PostgreSQL 17 local subscription identity, options, publication names and slot prerequisites."
 	case "ddl.pg.create_schema.target.valid":
 		return "Checks PostgreSQL 17 schema creation identity, authored owner and guarded destination premises."
 	case "ddl.pg.alter_collation.refresh.target.valid":
@@ -708,6 +712,7 @@ func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 		"ddl.pg.refresh_materialized_view.target.valid", "ddl.pg.drop_view.target.valid", "ddl.pg.alter_view.namespace.valid",
 		"ddl.pg.alter_view.owner.valid", "ddl.pg.alter_view.options.valid", "ddl.pg.alter_view.column_default.valid",
 		"ddl.pg.alter_materialized_view.options.valid", "ddl.pg.alter_materialized_view.extension.valid",
+		"ddl.pg.alter_publication.target.valid", "ddl.pg.alter_subscription.target.valid",
 		"ddl.pg.alter_foreign_table.target.valid", "ddl.pg.alter_foreign_data_wrapper.target.valid",
 		"ddl.pg.sequence.declaration.valid",
 		"ddl.pg.alter_policy.target.valid",

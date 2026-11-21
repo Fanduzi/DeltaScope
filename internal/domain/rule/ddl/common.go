@@ -466,9 +466,11 @@ const (
 	ruleIDPGAlterMaterializedViewSetSchemaNotice = "ddl.pg.alter_materialized_view.set_schema.notice"
 
 	ruleIDPGCreatePublicationNotice      = "ddl.pg.create_publication.notice"
+	ruleIDPGPublicationChangeValid       = "ddl.pg.alter_publication.target.valid"
 	ruleIDPGAlterPublicationNotice       = "ddl.pg.alter_publication.notice"
 	ruleIDPGDropPublicationWarn          = "ddl.pg.drop_publication.warn"
 	ruleIDPGCreateSubscriptionNotice     = "ddl.pg.create_subscription.notice"
+	ruleIDPGSubscriptionChangeValid      = "ddl.pg.alter_subscription.target.valid"
 	ruleIDPGAlterSubscriptionNotice      = "ddl.pg.alter_subscription.notice"
 	ruleIDPGAlterSubscriptionDisableWarn = "ddl.pg.alter_subscription.disable.warn"
 	ruleIDPGDropSubscriptionWarn         = "ddl.pg.drop_subscription.warn"

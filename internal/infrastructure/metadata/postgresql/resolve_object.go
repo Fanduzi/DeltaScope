@@ -62,6 +62,10 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 			return p.resolveOperatorFamily(ctx, req)
 		case "pg_index_include":
 			return p.resolveIndexInclude(ctx, req)
+		case "pg_publication_change":
+			return p.resolvePublicationChange(ctx, req)
+		case "pg_subscription_change":
+			return p.resolveSubscriptionChange(ctx, req)
 		case "pg_index_destination":
 			return p.resolveIndexDestination(ctx, req)
 		case "pg_index_options":
@@ -385,7 +389,9 @@ func (p *Provider) resolvePublication(ctx context.Context, req spec.ObjectLookup
 func (p *Provider) resolveSubscription(ctx context.Context, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
 	var enabled bool
 	err := p.db.QueryRowContext(ctx,
-		`select subenabled from pg_catalog.pg_subscription where subname = $1`,
+		`select s.subenabled from pg_catalog.pg_subscription s
+		 join pg_catalog.pg_database d on d.oid = s.subdbid
+		 where s.subname = $1 and d.datname = pg_catalog.current_database()`,
 		req.Name).Scan(&enabled)
 	if err == sql.ErrNoRows {
 		return &spec.ObjectSnapshot{

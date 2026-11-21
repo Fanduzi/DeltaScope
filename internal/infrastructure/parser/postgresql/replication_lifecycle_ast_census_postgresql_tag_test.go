@@ -341,6 +341,7 @@ func TestAlterSubscriptionDisableEnableEdgeCases(t *testing.T) {
 		{Name: "multi_whitespace_disable", SQL: "ALTER  SUBSCRIPTION  sub  DISABLE", WantAction: "disable"},
 		{Name: "lowercase_enable", SQL: "alter subscription sub enable", WantAction: "enable"},
 		{Name: "multi_whitespace_enable", SQL: "ALTER  SUBSCRIPTION  sub  ENABLE", WantAction: "enable"},
+		{Name: "disable_text_in_quoted_name", SQL: `ALTER SUBSCRIPTION "A DISABLE" ENABLE`, WantAction: "enable"},
 		{Name: "set_publication_not_disable", SQL: "ALTER SUBSCRIPTION sub SET PUBLICATION pub_all", WantAction: "set_publication"},
 	}
 

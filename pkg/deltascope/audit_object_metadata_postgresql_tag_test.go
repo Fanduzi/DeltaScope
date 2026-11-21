@@ -1322,3 +1322,22 @@ func TestAuditPGTextSearchChangeThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing dictionary option finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditPGSubscriptionChangeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGSubscriptionChange: &spec.PGSubscriptionChangeState{Name: "app_sub", Exists: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER SUBSCRIPTION app_sub ENABLE`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "app_sub" || provider.objectCalls[len(provider.objectCalls)-1].Type != "pg_subscription_change" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_subscription.target.valid" && f.Metadata["reason_code"] == "subscription_slot_required" {
+			return
+		}
+	}
+	t.Fatalf("missing subscription slot finding: %+v", result.Statements[0].Findings)
+}

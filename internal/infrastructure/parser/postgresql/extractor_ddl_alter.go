@@ -87,6 +87,22 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 		statement.DDL = &spec.DDL{Operation: spec.DDLOperationAlterPolicy, ObjectType: "policy", ObjectName: stmt.GetSubname(), Table: tableFromRangeVar(stmt.GetRelation()),
 			PGPolicyChange: pgPolicyChangeDeclaration(stmt.GetRelation(), stmt.GetSubname(), stmt.GetNewname())}
 		return statement
+	case pg_query.ObjectType_OBJECT_PUBLICATION:
+		name := stringNodeValue(stmt.GetObject())
+		statement.DDL = &spec.DDL{
+			Operation: spec.DDLOperationAlterPublication, ObjectName: name, ObjectType: "publication",
+			Options:             map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+			PGPublicationChange: &spec.PGPublicationChange{Name: name, Action: "rename", RenameTo: stmt.GetNewname()},
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_SUBSCRIPTION:
+		name := stringNodeValue(stmt.GetObject())
+		statement.DDL = &spec.DDL{
+			Operation: spec.DDLOperationAlterSubscription, ObjectName: name, ObjectType: "subscription",
+			Options:              map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+			PGSubscriptionChange: &spec.PGSubscriptionChange{Name: name, Action: "rename", RenameTo: stmt.GetNewname()},
+		}
+		return statement
 	case pg_query.ObjectType_OBJECT_TYPE:
 		objectName := ""
 		if stmt.GetRelation() != nil {
@@ -1766,6 +1782,22 @@ func extractAlterOwnerStmt(statement spec.Statement, stmt *pg_query.AlterOwnerSt
 		statement.DDL = &spec.DDL{
 			Operation: spec.DDLOperationAlterType, ObjectName: lastStringFromNodes(names), ObjectType: "type",
 			Options: map[string]string{"action": "set_owner", "owner": owner}, PGTypeChange: target,
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_PUBLICATION:
+		name := stringNodeValue(stmt.GetObject())
+		statement.DDL = &spec.DDL{
+			Operation: spec.DDLOperationAlterPublication, ObjectName: name, ObjectType: "publication",
+			Options:             map[string]string{"action": "set_owner", "owner": owner},
+			PGPublicationChange: &spec.PGPublicationChange{Name: name, Action: "set_owner", Owner: pgRoleSelection(stmt.GetNewowner())},
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_SUBSCRIPTION:
+		name := stringNodeValue(stmt.GetObject())
+		statement.DDL = &spec.DDL{
+			Operation: spec.DDLOperationAlterSubscription, ObjectName: name, ObjectType: "subscription",
+			Options:              map[string]string{"action": "set_owner", "owner": owner},
+			PGSubscriptionChange: &spec.PGSubscriptionChange{Name: name, Action: "set_owner", Owner: pgRoleSelection(stmt.GetNewowner())},
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_SCHEMA:

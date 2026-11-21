@@ -894,9 +894,11 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterMaterializedViewSetSchemaNotice, construct: newAlterMaterializedViewSetSchemaNoticeRule},
 
 		{ruleID: ruleIDPGCreatePublicationNotice, construct: newCreatePublicationNoticeRule},
+		{ruleID: ruleIDPGPublicationChangeValid, construct: newPGPublicationChangeRule},
 		{ruleID: ruleIDPGAlterPublicationNotice, construct: newAlterPublicationNoticeRule},
 		{ruleID: ruleIDPGDropPublicationWarn, construct: newDropPublicationWarnRule},
 		{ruleID: ruleIDPGCreateSubscriptionNotice, construct: newCreateSubscriptionNoticeRule},
+		{ruleID: ruleIDPGSubscriptionChangeValid, construct: newPGSubscriptionChangeRule},
 		{ruleID: ruleIDPGAlterSubscriptionNotice, construct: newAlterSubscriptionNoticeRule},
 		{ruleID: ruleIDPGAlterSubscriptionDisableWarn, construct: newAlterSubscriptionDisableWarnRule},
 		{ruleID: ruleIDPGDropSubscriptionWarn, construct: newDropSubscriptionWarnRule},

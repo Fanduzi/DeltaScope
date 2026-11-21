@@ -1200,9 +1200,11 @@ These rules guard selected PostgreSQL ALTER object operations for schema, index,
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
 | `ddl.pg.create_publication.notice` | `CREATE PUBLICATION` introduces a new publication for logical replication — informational notice | notice | No |
+| `ddl.pg.alter_publication.target.valid` | Checks PostgreSQL 17 publication identity, local membership and publish options. | blocker | Yes |
 | `ddl.pg.alter_publication.notice` | `ALTER PUBLICATION` modifies an existing publication — informational notice | notice | No |
 | `ddl.pg.drop_publication.warn` | `DROP PUBLICATION` removes a publication — warns that subscribers will stop receiving changes | warning | No |
 | `ddl.pg.create_subscription.notice` | `CREATE SUBSCRIPTION` establishes a new subscription connection — informational notice | notice | No |
+| `ddl.pg.alter_subscription.target.valid` | Checks PostgreSQL 17 subscription identity, local options and slot prerequisites. | blocker | Yes |
 | `ddl.pg.alter_subscription.notice` | `ALTER SUBSCRIPTION` modifies an existing subscription — informational notice | notice | No |
 | `ddl.pg.alter_subscription.disable.warn` | `ALTER SUBSCRIPTION ... DISABLE` disables the subscription — warns that replication will stop | warning | No |
 | `ddl.pg.drop_subscription.warn` | `DROP SUBSCRIPTION` removes a subscription — warns about replication slot cleanup | warning | No |

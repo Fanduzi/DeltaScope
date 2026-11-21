@@ -1137,9 +1137,11 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
 | `ddl.pg.create_publication.notice` | `CREATE PUBLICATION` 引入新的逻辑复制发布——信息性提示 | notice | 否 |
+| `ddl.pg.alter_publication.target.valid` | 检查 PostgreSQL 17 发布的身份、本地成员和发布选项。 | blocker | 是 |
 | `ddl.pg.alter_publication.notice` | `ALTER PUBLICATION` 修改已有发布——信息性提示 | notice | 否 |
 | `ddl.pg.drop_publication.warn` | `DROP PUBLICATION` 移除发布——警告订阅者将停止接收变更 | warning | 否 |
 | `ddl.pg.create_subscription.notice` | `CREATE SUBSCRIPTION` 建立新的订阅连接——信息性提示 | notice | 否 |
+| `ddl.pg.alter_subscription.target.valid` | 检查 PostgreSQL 17 订阅的身份、本地选项和复制槽前提。 | blocker | 是 |
 | `ddl.pg.alter_subscription.notice` | `ALTER SUBSCRIPTION` 修改已有订阅——信息性提示 | notice | 否 |
 | `ddl.pg.alter_subscription.disable.warn` | `ALTER SUBSCRIPTION ... DISABLE` 禁用订阅——警告复制将停止 | warning | 否 |
 | `ddl.pg.drop_subscription.warn` | `DROP SUBSCRIPTION` 移除订阅——警告关于复制槽清理 | warning | 否 |

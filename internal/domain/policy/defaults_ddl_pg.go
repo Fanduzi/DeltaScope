@@ -735,6 +735,7 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.alter_publication.target.valid": {Enabled: true, Level: "blocker"},
 		"ddl.pg.alter_publication.notice": {
 			Enabled: true,
 			Level:   rule.LevelNotice,
@@ -750,6 +751,7 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.alter_subscription.target.valid": {Enabled: true, Level: "blocker"},
 		"ddl.pg.alter_subscription.notice": {
 			Enabled: true,
 			Level:   rule.LevelNotice,

@@ -2045,6 +2045,9 @@ rules:
     level: notice
     params:
 
+  ddl.pg.alter_publication.target.valid:
+    enabled: true
+    level: blocker
   ddl.pg.alter_publication.notice:
     enabled: true
     level: notice
@@ -2085,6 +2088,9 @@ rules:
     level: warning
     params:
 
+  ddl.pg.alter_subscription.target.valid:
+    enabled: true
+    level: blocker
   ddl.pg.alter_subscription.notice:
     enabled: true
     level: notice

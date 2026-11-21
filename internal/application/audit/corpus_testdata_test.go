@@ -223,6 +223,12 @@ type corpusPGTextSearch struct {
 	Name   string `yaml:"name"`
 }
 
+type corpusPGReplicationTarget struct {
+	Kind   string `yaml:"kind"`
+	Name   string `yaml:"name"`
+	Exists bool   `yaml:"exists"`
+}
+
 type corpusPGCreateSchema struct {
 	Name        string `yaml:"name"`
 	Owner       string `yaml:"owner"`
@@ -310,6 +316,7 @@ type corpusMetadata struct {
 	PGCreateLikes                []corpusPGCreateLike                     `yaml:"pg_create_likes,omitempty"`
 	PGOperatorFamilies           []corpusPGOperatorFamily                 `yaml:"pg_operator_families,omitempty"`
 	PGIndexIncludes              []corpusPGIndexInclude                   `yaml:"pg_index_includes,omitempty"`
+	PGReplicationTargets         []corpusPGReplicationTarget              `yaml:"pg_replication_targets,omitempty"`
 	PGIndexDestinations          []corpusPGIndexDestination               `yaml:"pg_index_destinations,omitempty"`
 	PGIndexOptions               []corpusPGIndexOptions                   `yaml:"pg_index_options,omitempty"`
 	PGIndexAttachments           []corpusPGIndexAttachment                `yaml:"pg_index_attachments,omitempty"`
