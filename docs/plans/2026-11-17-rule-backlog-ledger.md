@@ -1764,6 +1764,26 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44960903245/job/137019256707),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137019318257) passed at the delivered SHA.
 
+## F05 exact dimension review
+
+| Row and authored cell | Verified scope and remaining evidence |
+| --- | --- |
+| `mysql.alter-table.online-ddl` / `ALGORITHM=INSTANT/INPLACE/COPY/DEFAULT` | T15 contrasts MySQL 5.7's unavailable INSTANT with supported 8.x additions and the observed MyISAM, InnoDB COMPRESSED and FULLTEXT refusals. INPLACE and COPY/DEFAULT controls preserve existing warning behavior. Record-size and row-version limits need additional facts. |
+| `mysql.alter-table.online-ddl` / `LOCK=NONE/SHARED/EXCLUSIVE/DEFAULT` | T15 verifies bounded legal pairs and COPY+NONE and INSTANT+explicit lock refusals. Actual lock acquisition and duration depend on concurrent activity. |
+| `mysql.alter-table.options` / `ORDER BY` and `FORCE` | T15 pins the MySQL 8.0 warning. MySQL 5.7.44 and 8.4.10 native controls and CLI observations preserve the fixture schema and row. Storage engine and operation details determine physical work. |
+| `mysql.alter-table.options` / `CONVERT TO CHARACTER SET` | T15 pins the MySQL 8.0 warning. Native 5.7.44 and 8.4.10 controls verify the character column’s recorded `utf8mb4` and `utf8mb4_bin` and preserve the row. Conversion success for business values remains data-dependent. |
+| `mysql.alter-table.options` / `DEFAULT CHARACTER SET` | Native T15 checks the changed table default and unchanged character set of existing columns across three MySQL versions. |
+| `mysql.alter-table.options` / `ROW_FORMAT` | Existing catalog comparison raises a warning for a changed format. Native T15 checks DYNAMIC to COMPACT. |
+| `mysql.alter-table.options` / `AUTO_INCREMENT=` | Existing comparison warns on a shrink request. Native T15 observes the requested 4 clamped to 8 with a fixture row of 7. MySQL 8.x state verification reads uncached statistics. |
+| `mysql.alter-table.options` / `ENABLE/DISABLE KEYS` | T15 retains the lifecycle notice and observes InnoDB’s 1031 note with unchanged index state. MySQL 5.7.44, 8.0.46 and 8.4.10 MyISAM controls verify the nonunique index’s disabled and enabled states, with the primary key, unique key and rows preserved. Lock duration and physical work depend on execution conditions. |
+| `mysql.alter-table.options` / `COMMENT` and `ENGINE` | Existing metadata comparisons report a changed option. Native T15 observes the changed comment and the MyISAM engine. |
+| `tidb.alter-table.online-options` / ALGORITHM and LOCK | T15 compares accepted COPY, INPLACE, DEFAULT and LOCK requests with the INSTANT index refusal. These clauses do not select a MySQL algorithm. |
+| `tidb.alter-table.online-options` / multiple actions | T15 verifies successful supported combinations, refusal without partial updates for the tested INSTANT index combination, and the last authored algorithm. Other action combinations require their own checks. |
+
+The MySQL and TiDB modifier parent rows move to `mixed_coverage`. The MySQL table-option row remains `mixed_coverage`. [T15](../../testdata/ddl-golden/T15.json) · [Decision record](../decisions/2026-11-21-mysql-instant-add-table-prerequisites.md)
+
+The joint T15 preview passed 94 cases and 1,778 assertions. Verification on the fixed F05 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

@@ -1854,84 +1854,84 @@ rows:
     subactions: ["ALGORITHM=INSTANT/INPLACE/COPY/DEFAULT", "LOCK=NONE/SHARED/EXCLUSIVE/DEFAULT"]
     sql_shape: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE"
     prerequisites: "operation+engine+version decide actual support; ALGORITHM=INPLACE is not itself a safety claim"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
     subaction_status:
       - subaction_id: "ALGORITHM=INSTANT/INPLACE/COPY/DEFAULT"
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: mysql57
             version_range: 5.7
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.algorithm-instant-inplace-copy-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
+            audit_status: mixed
+            evidence: ["file:testdata/ddl-golden/T15.json#f05-mysql57-instant-dynamic", "file:testdata/ddl-golden/T15.json#f05-mysql57-instant-compressed", "file:testdata/ddl-golden/T15.json#f05-mysql57-instant-fulltext", "file:testdata/ddl-golden/T15.json#f05-mysql57-instant-myisam", "file:testdata/ddl-golden/T15.json#f05-mysql57-inplace-shared", "file:testdata/ddl-golden/T15.json#f05-mysql57-copy-default", "file:testdata/ddl-golden/T15.json#f05-mysql57-default-none", "file:testdata/ddl-golden/T15.json#f05-mysql57-instant-multi", "file:testdata/ddl-golden/T15.json#t15-mysql57-instant-refused", "file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.algorithm-instant-inplace-copy-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.algorithm-instant-inplace-copy-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
+            audit_status: mixed
+            evidence: ["file:testdata/ddl-golden/T15.json#f05-mysql80-instant-dynamic", "file:testdata/ddl-golden/T15.json#f05-mysql80-instant-compressed", "file:testdata/ddl-golden/T15.json#f05-mysql80-instant-fulltext", "file:testdata/ddl-golden/T15.json#f05-mysql80-instant-myisam", "file:testdata/ddl-golden/T15.json#f05-mysql80-inplace-shared", "file:testdata/ddl-golden/T15.json#f05-mysql80-copy-default", "file:testdata/ddl-golden/T15.json#f05-mysql80-default-none", "file:testdata/ddl-golden/T15.json#f05-mysql80-instant-multi", "file:testdata/ddl-golden/T15.json#t15-mysql80-seed-golden", "file:testdata/ddl-golden/T15.json#t15-mysql80-copy-lock-none-refused", "file:testdata/ddl-golden/T15.json#t15-mysql80-instant-add", "file:testdata/ddl-golden/T15.json#t15-mysql80-instant-index-refused", "file:testdata/ddl-golden/T15.json#t15-mysql80-instant-lock-refused", "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_instant_compressed.expected.yaml#ddl.alter.online_ddl.applicability", "file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.algorithm-instant-inplace-copy-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.algorithm-instant-inplace-copy-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
+            audit_status: mixed
+            evidence: ["file:testdata/ddl-golden/T15.json#f05-mysql84-instant-dynamic", "file:testdata/ddl-golden/T15.json#f05-mysql84-instant-compressed", "file:testdata/ddl-golden/T15.json#f05-mysql84-instant-fulltext", "file:testdata/ddl-golden/T15.json#f05-mysql84-instant-myisam", "file:testdata/ddl-golden/T15.json#f05-mysql84-inplace-shared", "file:testdata/ddl-golden/T15.json#f05-mysql84-copy-default", "file:testdata/ddl-golden/T15.json#f05-mysql84-default-none", "file:testdata/ddl-golden/T15.json#f05-mysql84-instant-multi", "file:testdata/ddl-golden/T15.json#t15-mysql84-instant-add", "file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.algorithm-instant-inplace-copy-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
       - subaction_id: "LOCK=NONE/SHARED/EXCLUSIVE/DEFAULT"
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: mysql57
             version_range: 5.7
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.lock-none-shared-exclusive-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
+            audit_status: mixed
+            evidence: ["file:testdata/ddl-golden/T15.json#f05-mysql57-inplace-shared", "file:testdata/ddl-golden/T15.json#f05-mysql57-copy-default", "file:testdata/ddl-golden/T15.json#f05-mysql57-default-none", "file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.lock-none-shared-exclusive-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.lock-none-shared-exclusive-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
+            audit_status: mixed
+            evidence: ["file:testdata/ddl-golden/T15.json#f05-mysql80-inplace-shared", "file:testdata/ddl-golden/T15.json#f05-mysql80-copy-default", "file:testdata/ddl-golden/T15.json#f05-mysql80-default-none", "file:testdata/ddl-golden/T15.json#t15-mysql80-seed-golden", "file:testdata/ddl-golden/T15.json#t15-mysql80-copy-lock-none-refused", "file:testdata/ddl-golden/T15.json#t15-mysql80-instant-lock-refused", "file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.lock-none-shared-exclusive-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: ["file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.lock-none-shared-exclusive-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
+            audit_status: mixed
+            evidence: ["file:testdata/ddl-golden/T15.json#f05-mysql84-inplace-shared", "file:testdata/ddl-golden/T15.json#f05-mysql84-copy-default", "file:testdata/ddl-golden/T15.json#f05-mysql84-default-none", "file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.lock-none-shared-exclusive-default.probes.txt", "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
 
-    status_evidence: "2026-11-13 R3 probe: ALGORITHM/LOCK clauses parse; action-level notices fire (ddl.alter.add_column.notice); no dedicated ALGORITHM/LOCK governance rule (T03 bounded evidence). Earlier: 2026-09-22/24 probes"
+    status_evidence: "MySQL T15 compares versioned ALGORITHM and LOCK declarations and observed table restrictions."
     targets: "action list plus declared algorithm/lock, versioned applicability"
     acceptance:
       dimensions: "clause-aware risk, availability-by-version evidence, gap when prerequisites missing"
@@ -1998,7 +1998,7 @@ rows:
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.order-by.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
+              - "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#ORDER BY"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
@@ -2006,10 +2006,10 @@ rows:
             parser_status: recognized
             audit_status: audited
             evidence:
+              - "file:testdata/ddl-golden/T15.json#t15-mysql80-order-by-warn"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.order-by.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
@@ -2020,7 +2020,7 @@ rows:
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.order-by.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
+              - "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#ORDER BY"
       - subaction_id: CONVERT TO CHARACTER SET
         parser_status: recognized
         audit_status: audited
@@ -2035,7 +2035,7 @@ rows:
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.convert-to-character-set.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
+              - "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#CONVERT TO CHARACTER SET"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
@@ -2043,10 +2043,10 @@ rows:
             parser_status: recognized
             audit_status: audited
             evidence:
+              - "file:testdata/ddl-golden/T15.json#t15-mysql80-convert-warn"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.convert-to-character-set.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
@@ -2057,112 +2057,112 @@ rows:
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.convert-to-character-set.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
+              - "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#CONVERT TO CHARACTER SET"
       - subaction_id: DEFAULT CHARACTER SET
         parser_status: recognized
-        audit_status: silent
+        audit_status: mixed
         applicability:
           - anchor: mysql57
             version_range: 5.7
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-mysql57-default-charset"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.default-character-set.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-mysql80-default-charset"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.default-character-set.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-mysql84-default-charset"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.default-character-set.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
       - subaction_id: ROW_FORMAT
         parser_status: recognized
-        audit_status: silent
+        audit_status: mixed
         applicability:
           - anchor: mysql57
             version_range: 5.7
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-mysql57-row-format"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.row-format.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-mysql80-row-format"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.row-format.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-mysql84-row-format"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.row-format.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
       - subaction_id: "AUTO_INCREMENT="
         parser_status: recognized
-        audit_status: silent
+        audit_status: mixed
         applicability:
           - anchor: mysql57
             version_range: 5.7
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-mysql57-auto-increment-lower"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.auto-increment.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-mysql80-auto-increment-lower"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.auto-increment.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-mysql84-auto-increment-lower"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.auto-increment.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
       - subaction_id: FORCE
         parser_status: recognized
         audit_status: audited
@@ -2177,7 +2177,7 @@ rows:
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.force.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
+              - "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#FORCE"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
@@ -2185,10 +2185,10 @@ rows:
             parser_status: recognized
             audit_status: audited
             evidence:
+              - "file:testdata/ddl-golden/T15.json#t15-mysql80-force-warn"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.force.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
@@ -2199,117 +2199,120 @@ rows:
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.force.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
+              - "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#FORCE"
       - subaction_id: ENABLE/DISABLE KEYS
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: mysql57
             version_range: 5.7
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
+            audit_status: mixed
             evidence:
+              - "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#ENABLE/DISABLE KEYS"
+              - "file:testdata/ddl-golden/T15.json#f05-mysql57-disable-keys"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.enable-disable-keys.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
+            audit_status: mixed
             evidence:
+              - "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#ENABLE/DISABLE KEYS"
+              - "file:testdata/ddl-golden/T15.json#f05-mysql80-disable-keys"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.enable-disable-keys.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
+            audit_status: mixed
             evidence:
+              - "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#ENABLE/DISABLE KEYS"
+              - "file:testdata/ddl-golden/T15.json#f05-mysql84-disable-keys"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.enable-disable-keys.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
       - subaction_id: COMMENT
         parser_status: recognized
-        audit_status: silent
+        audit_status: mixed
         applicability:
           - anchor: mysql57
             version_range: 5.7
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-mysql57-comment"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.comment.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-mysql80-comment"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.comment.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-mysql84-comment"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.comment.probes.txt
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
       - subaction_id: ENGINE
         parser_status: recognized
-        audit_status: silent
+        audit_status: mixed
         applicability:
           - anchor: mysql57
             version_range: 5.7
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-mysql57-engine"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.engine.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
           - anchor: mysql80
             version_range: 8.0
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-mysql80-engine"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.engine.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
           - anchor: mysql84
             version_range: 8.4
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-mysql84-engine"
               - file:testdata/ddl-inventory/evidence/mysql.alter-table.options.engine.probes.txt
               - file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds option fixtures"
 
-    status_evidence: "2026-11-13 R3 probe (8.0): ORDER BY/FORCE fire ddl.alter.rebuild.warn; CONVERT TO CHARACTER SET fires ddl.alter.charset_conversion.warn; DISABLE KEYS fires ddl.alter.keys_toggle.notice; ENGINE covered by T06 engine semantics; ROW_FORMAT/AUTO_INCREMENT=/COMMENT parse with coverage.unverified and zero findings (silent). Earlier: 2026-09-22 all silent; 2026-09-23 T03 bounded unsupported evidence"
+    status_evidence: "T15 verifies bounded MySQL table option observations and engine-specific effects. Existing maintenance notices and warn rules remain part of this row."
     targets: "table, per-option semantics, charset conversion scope, rebuild implications"
     acceptance:
       dimensions: "per-option checks, charset-conversion risk, engine boundaries"
@@ -4779,73 +4782,90 @@ rows:
     subactions: ["ALGORITHM= (capability assertion, not selection)", "LOCK=", "multiple actions per ALTER"]
     sql_shape: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=INSTANT"
     prerequisites: "TiDB ALGORITHM asserts capability rather than choosing algorithm"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: tidb85
         version_range: 8.5
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.probes.txt
           - file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-          - "missing: owner adds fixtures"
+          - "missing: action combinations beyond the tested TiDB 8.5 cells require native evidence"
     subaction_status:
       - subaction_id: "ALGORITHM= (capability assertion, not selection)"
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: tidb85
             version_range: 8.5
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-add-instant"
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-index-instant"
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-multi-instant"
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-multi-with-index-instant"
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-multi-with-index-inplace"
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-copy-with-exclusive"
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-copy-with-none"
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-default-with-shared"
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-last-algorithm-instant"
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-last-algorithm-inplace"
               - file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.algorithm-capability-assertion-not-selection.probes.txt
               - file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds fixtures"
+              - "missing: action combinations beyond the tested TiDB 8.5 cells require native evidence"
       - subaction_id: "LOCK="
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: tidb85
             version_range: 8.5
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-multi-with-index-inplace"
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-copy-with-exclusive"
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-copy-with-none"
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-default-with-shared"
               - file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.lock.probes.txt
               - file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds fixtures"
+              - "missing: action combinations beyond the tested TiDB 8.5 cells require native evidence"
       - subaction_id: multiple actions per ALTER
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: tidb85
             version_range: 8.5
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
+            audit_status: mixed
             evidence:
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-multi-instant"
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-multi-with-index-instant"
+              - "file:testdata/ddl-golden/T15.json#f05-tidb85-multi-with-index-inplace"
               - file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.multiple-actions-per-alter.probes.txt
               - file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml
               - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
-              - "missing: owner adds fixtures"
+              - "missing: action combinations beyond the tested TiDB 8.5 cells require native evidence"
 
-    status_evidence: "2026-11-13 R3 probe (8.5): ddl.tidb.alter.compat_options.notice + action-level notices fire. Earlier: 2026-09-22/23 probes"
+    status_evidence: "TiDB T15 compares accepted modifier requests, refusal for INSTANT index work, and atomic multi-action behavior."
     targets: "declared clauses, multi-action integrity, TiDB algorithm semantics"
     acceptance:
       dimensions: "clause classification distinct from MySQL"
-      refs: ["missing: owner adds fixtures"]
+      refs: ["missing: action combinations beyond the tested TiDB 8.5 cells require native evidence"]
     owner: T15
 
   # ================= TiDB: index lifecycle =================

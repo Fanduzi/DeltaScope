@@ -11,8 +11,8 @@
   ],
   "status_counts": {
     "semantically_checked": 163,
-    "generic_notice": 14,
-    "mixed_coverage": 49,
+    "generic_notice": 12,
+    "mixed_coverage": 51,
     "explicit_unsupported": 41,
     "vendor_not_supported": 11,
     "parser_unsupported": 8,
@@ -1718,9 +1718,9 @@
       "id": "mysql.alter-table.online-ddl",
       "product": "mysql",
       "owner": "T15",
-      "status": "generic_notice",
+      "status": "mixed_coverage",
       "parser_status": "recognized",
-      "audit_status": "notice_only",
+      "audit_status": "mixed",
       "applicability": [
         {
           "anchor": "mysql57",
@@ -1728,7 +1728,7 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
           ]
@@ -1739,7 +1739,7 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
           ]
@@ -1750,7 +1750,7 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
           ]
@@ -1760,7 +1760,7 @@
         {
           "subaction_id": "ALGORITHM=INSTANT/INPLACE/COPY/DEFAULT",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "mysql57",
@@ -1768,8 +1768,17 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-instant-dynamic",
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-instant-compressed",
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-instant-fulltext",
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-instant-myisam",
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-inplace-shared",
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-copy-default",
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-default-none",
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-instant-multi",
+                "file:testdata/ddl-golden/T15.json#t15-mysql57-instant-refused",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.algorithm-instant-inplace-copy-default.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
               ]
@@ -1780,8 +1789,22 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-instant-dynamic",
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-instant-compressed",
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-instant-fulltext",
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-instant-myisam",
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-inplace-shared",
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-copy-default",
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-default-none",
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-instant-multi",
+                "file:testdata/ddl-golden/T15.json#t15-mysql80-seed-golden",
+                "file:testdata/ddl-golden/T15.json#t15-mysql80-copy-lock-none-refused",
+                "file:testdata/ddl-golden/T15.json#t15-mysql80-instant-add",
+                "file:testdata/ddl-golden/T15.json#t15-mysql80-instant-index-refused",
+                "file:testdata/ddl-golden/T15.json#t15-mysql80-instant-lock-refused",
+                "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_instant_compressed.expected.yaml#ddl.alter.online_ddl.applicability",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.algorithm-instant-inplace-copy-default.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
               ]
@@ -1792,8 +1815,17 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-instant-dynamic",
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-instant-compressed",
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-instant-fulltext",
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-instant-myisam",
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-inplace-shared",
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-copy-default",
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-default-none",
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-instant-multi",
+                "file:testdata/ddl-golden/T15.json#t15-mysql84-instant-add",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.algorithm-instant-inplace-copy-default.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
               ]
@@ -1803,7 +1835,7 @@
         {
           "subaction_id": "LOCK=NONE/SHARED/EXCLUSIVE/DEFAULT",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "mysql57",
@@ -1811,8 +1843,11 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-inplace-shared",
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-copy-default",
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-default-none",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.lock-none-shared-exclusive-default.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
               ]
@@ -1823,8 +1858,14 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-inplace-shared",
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-copy-default",
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-default-none",
+                "file:testdata/ddl-golden/T15.json#t15-mysql80-seed-golden",
+                "file:testdata/ddl-golden/T15.json#t15-mysql80-copy-lock-none-refused",
+                "file:testdata/ddl-golden/T15.json#t15-mysql80-instant-lock-refused",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.lock-none-shared-exclusive-default.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
               ]
@@ -1835,8 +1876,11 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-inplace-shared",
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-copy-default",
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-default-none",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.online-ddl.lock-none-shared-exclusive-default.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"
               ]
@@ -1913,7 +1957,7 @@
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.order-by.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#ORDER BY"
               ]
             },
             {
@@ -1924,10 +1968,10 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#t15-mysql80-order-by-warn",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.order-by.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             },
             {
@@ -1941,7 +1985,7 @@
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.order-by.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#ORDER BY"
               ]
             }
           ]
@@ -1962,7 +2006,7 @@
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.convert-to-character-set.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#CONVERT TO CHARACTER SET"
               ]
             },
             {
@@ -1973,10 +2017,10 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#t15-mysql80-convert-warn",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.convert-to-character-set.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             },
             {
@@ -1990,7 +2034,7 @@
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.convert-to-character-set.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#CONVERT TO CHARACTER SET"
               ]
             }
           ]
@@ -1998,7 +2042,7 @@
         {
           "subaction_id": "DEFAULT CHARACTER SET",
           "parser_status": "recognized",
-          "audit_status": "silent",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "mysql57",
@@ -2006,12 +2050,12 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-default-charset",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.default-character-set.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             },
             {
@@ -2020,12 +2064,12 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-default-charset",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.default-character-set.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             },
             {
@@ -2034,12 +2078,12 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-default-charset",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.default-character-set.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             }
           ]
@@ -2047,7 +2091,7 @@
         {
           "subaction_id": "ROW_FORMAT",
           "parser_status": "recognized",
-          "audit_status": "silent",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "mysql57",
@@ -2055,11 +2099,11 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-row-format",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.row-format.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             },
             {
@@ -2068,11 +2112,11 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-row-format",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.row-format.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             },
             {
@@ -2081,11 +2125,11 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-row-format",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.row-format.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             }
           ]
@@ -2093,7 +2137,7 @@
         {
           "subaction_id": "AUTO_INCREMENT=",
           "parser_status": "recognized",
-          "audit_status": "silent",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "mysql57",
@@ -2101,11 +2145,11 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-auto-increment-lower",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.auto-increment.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             },
             {
@@ -2114,11 +2158,11 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-auto-increment-lower",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.auto-increment.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             },
             {
@@ -2127,11 +2171,11 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-auto-increment-lower",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.auto-increment.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             }
           ]
@@ -2152,7 +2196,7 @@
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.force.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#FORCE"
               ]
             },
             {
@@ -2163,10 +2207,10 @@
               "parser_status": "recognized",
               "audit_status": "audited",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#t15-mysql80-force-warn",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.force.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             },
             {
@@ -2180,7 +2224,7 @@
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.force.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#FORCE"
               ]
             }
           ]
@@ -2188,7 +2232,7 @@
         {
           "subaction_id": "ENABLE/DISABLE KEYS",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "mysql57",
@@ -2196,12 +2240,13 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#ENABLE/DISABLE KEYS",
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-disable-keys",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.enable-disable-keys.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             },
             {
@@ -2210,12 +2255,13 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#ENABLE/DISABLE KEYS",
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-disable-keys",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.enable-disable-keys.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             },
             {
@@ -2224,12 +2270,13 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-instant-add-table-prerequisites.md#ENABLE/DISABLE KEYS",
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-disable-keys",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.enable-disable-keys.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             }
           ]
@@ -2237,7 +2284,7 @@
         {
           "subaction_id": "COMMENT",
           "parser_status": "recognized",
-          "audit_status": "silent",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "mysql57",
@@ -2245,11 +2292,11 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-comment",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.comment.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             },
             {
@@ -2258,11 +2305,11 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-comment",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.comment.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             },
             {
@@ -2271,11 +2318,11 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-comment",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.comment.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             }
           ]
@@ -2283,7 +2330,7 @@
         {
           "subaction_id": "ENGINE",
           "parser_status": "recognized",
-          "audit_status": "silent",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "mysql57",
@@ -2291,12 +2338,12 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql57-engine",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.engine.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             },
             {
@@ -2305,12 +2352,12 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql80-engine",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.engine.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             },
             {
@@ -2319,12 +2366,12 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-mysql84-engine",
                 "file:testdata/ddl-inventory/evidence/mysql.alter-table.options.engine.probes.txt",
                 "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_online_ddl_options.expected.yaml",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds option fixtures"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
               ]
             }
           ]
@@ -5021,9 +5068,9 @@
       "id": "tidb.alter-table.online-options",
       "product": "tidb",
       "owner": "T15",
-      "status": "generic_notice",
+      "status": "mixed_coverage",
       "parser_status": "recognized",
-      "audit_status": "notice_only",
+      "audit_status": "mixed",
       "applicability": [
         {
           "anchor": "tidb85",
@@ -5031,12 +5078,12 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.probes.txt",
             "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-            "missing: owner adds fixtures"
+            "missing: action combinations beyond the tested TiDB 8.5 cells require native evidence"
           ]
         }
       ],
@@ -5044,7 +5091,7 @@
         {
           "subaction_id": "ALGORITHM= (capability assertion, not selection)",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "tidb85",
@@ -5052,12 +5099,22 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-add-instant",
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-index-instant",
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-multi-instant",
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-multi-with-index-instant",
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-multi-with-index-inplace",
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-copy-with-exclusive",
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-copy-with-none",
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-default-with-shared",
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-last-algorithm-instant",
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-last-algorithm-inplace",
                 "file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.algorithm-capability-assertion-not-selection.probes.txt",
                 "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds fixtures"
+                "missing: action combinations beyond the tested TiDB 8.5 cells require native evidence"
               ]
             }
           ]
@@ -5065,7 +5122,7 @@
         {
           "subaction_id": "LOCK=",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "tidb85",
@@ -5073,12 +5130,16 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-multi-with-index-inplace",
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-copy-with-exclusive",
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-copy-with-none",
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-default-with-shared",
                 "file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.lock.probes.txt",
                 "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds fixtures"
+                "missing: action combinations beyond the tested TiDB 8.5 cells require native evidence"
               ]
             }
           ]
@@ -5086,7 +5147,7 @@
         {
           "subaction_id": "multiple actions per ALTER",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "tidb85",
@@ -5094,12 +5155,15 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-multi-instant",
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-multi-with-index-instant",
+                "file:testdata/ddl-golden/T15.json#f05-tidb85-multi-with-index-inplace",
                 "file:testdata/ddl-inventory/evidence/tidb.alter-table.online-options.multiple-actions-per-alter.probes.txt",
                 "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_online_compat_options.expected.yaml",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "missing: owner adds fixtures"
+                "missing: action combinations beyond the tested TiDB 8.5 cells require native evidence"
               ]
             }
           ]
