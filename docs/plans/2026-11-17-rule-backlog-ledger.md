@@ -1040,7 +1040,7 @@ new default behavior is approved per family before implementation.
 | F14 | PostgreSQL row-security policy | 1 | T42 | Qualified policy target, role and clause checks delivered at `9308fb4c`. General predicate and effective access facts remain open. |
 | F15 | PostgreSQL sequences | 2 | T43 | Qualified sequence declarations, options and ownership delivered at `d11b4881`. Session names and runtime issuance remain open. |
 | F16 | PostgreSQL foreign objects | 2 | T44 | Qualified wrapper and foreign table checks delivered at `d6cb07d2`. Validator behavior and remote effects remain open. |
-| F17 | PostgreSQL text search | 2 | T45 | unreviewed |
+| F17 | PostgreSQL text search | 2 | T45 | Qualified configuration and dictionary checks delivered at `fad0c7f4`. Session and custom template facts remain open. |
 | F18 | PostgreSQL replication | 3 | T46 | unreviewed |
 | F19 | PostgreSQL grants/languages | 3 | T47 | unreviewed |
 
@@ -1110,8 +1110,8 @@ insufficient.
 | F15 | `postgresql.alter-sequence` | RESTART; options; OWNED BY / RENAME / SET SCHEMA; IF EXISTS | Exact definition options, restart bounds, ownership, rename and schema changes verified. Narrowed bounds can still require current value evidence. |
 | F16 | `postgresql.alter-foreign-data-wrapper` | HANDLER/VALIDATOR changes; OPTIONS; OWNER/RENAME | Exact routines, option order, target roles and rename occupancy verified. |
 | F16 | `postgresql.alter-foreign-table` | OPTIONS; ADD/DROP COLUMN; RENAME/OWNER/SET SCHEMA | Exact targets, columns, options and namespace actions verified. Wider dependencies and validator behavior remain open. |
-| F17 | `postgresql.alter-text-search-configuration` | ADD/DROP/ALTER MAPPING; RENAME/OWNER/SET SCHEMA | unreviewed |
-| F17 | `postgresql.alter-text-search-dictionary` | option changes; RENAME/OWNER/SET SCHEMA | unreviewed |
+| F17 | `postgresql.alter-text-search-configuration` | ADD/DROP/ALTER MAPPING; RENAME/OWNER/SET SCHEMA | Built-in token mappings, exact dictionary references and namespace/owner actions verified. |
+| F17 | `postgresql.alter-text-search-dictionary` | option changes; RENAME/OWNER/SET SCHEMA | Simple template options and namespace/owner actions verified. Other templates and file validation remain open. |
 | F18 | `postgresql.alter-publication` | ADD/DROP/SET TABLE; SET TABLES IN SCHEMA; SET publish options; OWNER/RENAME | unreviewed |
 | F18 | `postgresql.alter-subscription` | ENABLE/DISABLE; CONNECTION/PUBLICATION/SET; REFRESH PUBLICATION; SKIP; OWNER/RENAME | unreviewed |
 | F18 | `postgresql.drop-subscription` | DROP SUBSCRIPTION; IF EXISTS; WITH drop_slot | unreviewed |
@@ -1668,7 +1668,14 @@ option values, opaque identities and unauthored dictionary names stay private.
 See [decision record](../decisions/2026-11-21-postgresql-text-search-changes.md)
 and [T45](../../testdata/ddl-golden/T45.json).
 
-The joint T45 preview passed 59 cases and 1,435 assertions. Verification on the fixed F17 candidate is pending.
+The joint T45 preview passed 59 cases and 1,435 assertions. Delivered at `fad0c7f4da39de4eed392b7f0cd8da332b9467e1`. All 50 canonical tasks passed with 4,708 cases and
+105,801 assertions. T45 passed 59 cases and 1,435 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44937661085/job/136947737758),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44937661085/job/136947737609),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44937661085/job/136947738008),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44937661276/job/136947738124),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136947815184) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
