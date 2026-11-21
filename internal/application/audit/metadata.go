@@ -249,6 +249,12 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 		if err := enrichPGCollationChange(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}
+		if err := enrichPGForeignTableChanges(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
+		if err := enrichPGWrapperChanges(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
 		if err := enrichPGSequenceChanges(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}

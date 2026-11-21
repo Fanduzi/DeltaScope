@@ -1,0 +1,1 @@
+ALTER FOREIGN DATA WRAPPER wrapper OPTIONS (DROP missing);

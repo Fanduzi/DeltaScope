@@ -1265,3 +1265,41 @@ func TestAuditPGSequenceChangeThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing sequence declaration finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditPGWrapperChangeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGWrapperChange: &spec.PGWrapperChangeState{Name: "wrapper", Exists: true, Options: []string{"present", "private_wrapper_option"}}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER FOREIGN DATA WRAPPER wrapper OPTIONS (DROP missing)`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "wrapper" || provider.objectCalls[len(provider.objectCalls)-1].Type != "pg_wrapper_change" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_foreign_data_wrapper.target.valid" && f.Metadata["reason_code"] == "foreign_option_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing wrapper option finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGForeignTableChangeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGForeignTableChange: &spec.PGForeignTableChangeState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "ft"}}, Action: "drop_column", Column: "missing", RelationKind: "f"}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER FOREIGN TABLE app.ft DROP COLUMN missing`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "ft" || provider.objectCalls[len(provider.objectCalls)-1].Type != "pg_foreign_table_change" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_foreign_table.target.valid" && f.Metadata["reason_code"] == "foreign_table_column_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing foreign table column finding: %+v", result.Statements[0].Findings)
+}

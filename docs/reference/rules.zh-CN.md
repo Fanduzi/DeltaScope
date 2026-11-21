@@ -1155,6 +1155,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
 | `ddl.pg.create_foreign_data_wrapper.notice` | `CREATE FOREIGN DATA WRAPPER` 引入新的 FDW——信息性提示 | notice | 否 |
+| `ddl.pg.alter_foreign_data_wrapper.target.valid` | 检查 PostgreSQL 17 外部数据包装器的目标、函数、所有者及有序选项。 | blocker | 是 |
 | `ddl.pg.alter_foreign_data_wrapper.notice` | `ALTER FOREIGN DATA WRAPPER` 修改已有 FDW——信息性提示 | notice | 否 |
 | `ddl.pg.drop_foreign_data_wrapper.warn` | `DROP FOREIGN DATA WRAPPER` 移除 FDW——警告依赖的外部服务器和外部表 | warning | 否 |
 | `ddl.pg.create_foreign_server.notice` | `CREATE SERVER` 注册新的外部服务器——信息性提示 | notice | 否 |
@@ -1164,6 +1165,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 | `ddl.pg.alter_user_mapping.notice` | `ALTER USER MAPPING` 修改已有用户映射——信息性提示 | notice | 否 |
 | `ddl.pg.drop_user_mapping.warn` | `DROP USER MAPPING` 移除用户映射——警告依赖的外部表连接 | warning | 否 |
 | `ddl.pg.create_foreign_table.notice` | `CREATE FOREIGN TABLE` 引入新的外部表——信息性提示 | notice | 否 |
+| `ddl.pg.alter_foreign_table.target.valid` | 检查 PostgreSQL 17 外部表目标、列、选项、所有者和目标命名空间。 | blocker | 是 |
 | `ddl.pg.alter_foreign_table.notice` | `ALTER FOREIGN TABLE` 修改已有外部表——信息性提示 | notice | 否 |
 | `ddl.pg.drop_foreign_table.warn` | `DROP FOREIGN TABLE` 移除外部表——警告依赖查询 | warning | 否 |
 

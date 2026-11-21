@@ -1218,6 +1218,7 @@ These rules guard selected PostgreSQL ALTER object operations for schema, index,
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
 | `ddl.pg.create_foreign_data_wrapper.notice` | `CREATE FOREIGN DATA WRAPPER` introduces a new FDW — informational notice | notice | No |
+| `ddl.pg.alter_foreign_data_wrapper.target.valid` | Checks PostgreSQL 17 wrapper identity, routines, owner and ordered options. | blocker | Yes |
 | `ddl.pg.alter_foreign_data_wrapper.notice` | `ALTER FOREIGN DATA WRAPPER` modifies an existing FDW — informational notice | notice | No |
 | `ddl.pg.drop_foreign_data_wrapper.warn` | `DROP FOREIGN DATA WRAPPER` removes an FDW — warns about dependent foreign servers and tables | warning | No |
 | `ddl.pg.create_foreign_server.notice` | `CREATE SERVER` registers a new foreign server — informational notice | notice | No |
@@ -1227,6 +1228,7 @@ These rules guard selected PostgreSQL ALTER object operations for schema, index,
 | `ddl.pg.alter_user_mapping.notice` | `ALTER USER MAPPING` modifies an existing user mapping — informational notice | notice | No |
 | `ddl.pg.drop_user_mapping.warn` | `DROP USER MAPPING` removes a user mapping — warns about dependent foreign table connections | warning | No |
 | `ddl.pg.create_foreign_table.notice` | `CREATE FOREIGN TABLE` introduces a new foreign table — informational notice | notice | No |
+| `ddl.pg.alter_foreign_table.target.valid` | Checks PostgreSQL 17 foreign-table targets, columns, options, owners and destinations. | blocker | Yes |
 | `ddl.pg.alter_foreign_table.notice` | `ALTER FOREIGN TABLE` modifies an existing foreign table — informational notice | notice | No |
 | `ddl.pg.drop_foreign_table.warn` | `DROP FOREIGN TABLE` removes a foreign table — warns about dependent queries | warning | No |
 

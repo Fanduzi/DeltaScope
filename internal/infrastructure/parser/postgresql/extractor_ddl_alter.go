@@ -69,6 +69,15 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 	}
 
 	switch stmt.GetRenameType() {
+	case pg_query.ObjectType_OBJECT_FOREIGN_TABLE:
+		statement.DDL = &spec.DDL{Operation: spec.DDLOperationAlterForeignTable, ObjectName: rangeVarName(stmt.GetRelation()), ObjectType: "foreign_table",
+			PGForeignTableChange: pgForeignTableChange(stmt.GetRelation(), "rename", stmt.GetNewname(), stmt.GetMissingOk())}
+		return statement
+	case pg_query.ObjectType_OBJECT_FDW:
+		name := objectNameFromObjectWithArgsOrList(stmt.GetObject())
+		statement.DDL = &spec.DDL{Operation: spec.DDLOperationAlterForeignDataWrapper, ObjectName: name, ObjectType: "foreign_data_wrapper",
+			PGWrapperChange: &spec.PGWrapperChange{Name: name, RenameTo: stmt.GetNewname()}}
+		return statement
 	case pg_query.ObjectType_OBJECT_SEQUENCE:
 		decl := pgSequenceChange(stmt.GetRelation(), nil, stmt.GetMissingOk(), false)
 		decl.RenameTo = stmt.GetNewname()
@@ -267,6 +276,13 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 	table := tableFromRangeVar(stmt.GetRelation())
 	switch stmt.GetRenameType() {
 	case pg_query.ObjectType_OBJECT_COLUMN:
+		if stmt.GetRelationType() == pg_query.ObjectType_OBJECT_FOREIGN_TABLE {
+			decl := pgForeignTableChange(stmt.GetRelation(), "rename_column", stmt.GetNewname(), stmt.GetMissingOk())
+			decl.Column = stmt.GetSubname()
+			statement.DDL = &spec.DDL{Operation: spec.DDLOperationAlterForeignTable, ObjectName: rangeVarName(stmt.GetRelation()),
+				ObjectType: "foreign_table", PGForeignTableChange: decl}
+			return statement
+		}
 		statement.DDL = &spec.DDL{
 			Operation:               spec.DDLOperationAlterTable,
 			PGTableIfExists:         stmt.GetRelationType() == pg_query.ObjectType_OBJECT_TABLE && stmt.GetMissingOk(),
@@ -330,6 +346,11 @@ func pgViewNamespaceSource(relation *pg_query.RangeVar, guard bool) *spec.PGView
 func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.AlterObjectSchemaStmt) spec.Statement {
 	if stmt == nil {
 		return unsupportedStatement(statement, "alter_table", "postgresql alter object schema statement payload is missing")
+	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_FOREIGN_TABLE {
+		statement.DDL = &spec.DDL{Operation: spec.DDLOperationAlterForeignTable, ObjectName: rangeVarName(stmt.GetRelation()), ObjectType: "foreign_table",
+			PGForeignTableChange: pgForeignTableChange(stmt.GetRelation(), "set_schema", stmt.GetNewschema(), stmt.GetMissingOk())}
+		return statement
 	}
 	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_SEQUENCE {
 		decl := pgSequenceChange(stmt.GetRelation(), nil, stmt.GetMissingOk(), false)
@@ -1729,6 +1750,11 @@ func extractAlterOwnerStmt(statement spec.Statement, stmt *pg_query.AlterOwnerSt
 	}
 
 	switch stmt.GetObjectType() {
+	case pg_query.ObjectType_OBJECT_FDW:
+		name := alterOwnerObjectName(stmt)
+		statement.DDL = &spec.DDL{Operation: spec.DDLOperationAlterForeignDataWrapper, ObjectName: name, ObjectType: "foreign_data_wrapper",
+			PGWrapperChange: &spec.PGWrapperChange{Name: name, Owner: pgRoleSelection(stmt.GetNewowner())}}
+		return statement
 	case pg_query.ObjectType_OBJECT_TYPE:
 		names := stmt.GetObject().GetList().GetItems()
 		target := pgTypeChangeDeclaration(names, "set_owner", "")

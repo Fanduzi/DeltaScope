@@ -32,6 +32,10 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 			return p.resolvePolicyChange(ctx, req)
 		case "pg_sequence_change":
 			return p.resolveSequenceChange(ctx, req)
+		case "pg_foreign_table_change":
+			return p.resolveForeignTableChange(ctx, req)
+		case "pg_wrapper_change":
+			return p.resolveWrapperChange(ctx, req)
 		case "pg_collation_change":
 			return p.resolveCollationChange(ctx, req)
 		case "pg_collation_refresh":

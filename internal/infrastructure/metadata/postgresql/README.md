@@ -58,6 +58,8 @@ comparisons for the member and scope binding.
 | collation_change.go | Resolves the exact source in the database encoding and observes the requested namespace or owner. |
 | policy_change.go | Reads exact PostgreSQL policy, relation, role and column evidence. |
 | sequence_change.go | Reads PostgreSQL sequence definitions, ownership and destination catalog facts. |
+| foreign_table_change.go | Reads foreign-table target, column, namespace, option names and role facts. |
+| wrapper_change.go | Reads exact wrapper and routine facts and option names. |
 | collation_refresh.go | Observes the exact qualified collation for the database encoding and keeps provider versions private. |
 | index_include.go | Observes the qualified relation kind, column directories and bounded access-method identity. |
 | index_destination.go | Observes PostgreSQL index rename occupancy and tablespace destinations. |

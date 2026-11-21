@@ -176,6 +176,17 @@ type corpusPGCollationRefresh struct {
 	Default bool   `yaml:"default"`
 }
 
+type corpusPGForeignTable struct {
+	Schema string `yaml:"schema"`
+	Name   string `yaml:"name"`
+	Column string `yaml:"column"`
+}
+
+type corpusPGWrapper struct {
+	Name    string   `yaml:"name"`
+	Options []string `yaml:"options"`
+}
+
 type corpusPGSequenceChange struct {
 	Schema string `yaml:"schema"`
 	Name   string `yaml:"name"`
@@ -304,6 +315,8 @@ type corpusMetadata struct {
 	PGEnums                      []corpusPGEnum                           `yaml:"pg_enums,omitempty"`
 	PGPolicies                   []corpusPGPolicy                         `yaml:"pg_policies,omitempty"`
 	PGSequenceChanges            []corpusPGSequenceChange                 `yaml:"pg_sequence_changes,omitempty"`
+	PGForeignTables              []corpusPGForeignTable                   `yaml:"pg_foreign_tables,omitempty"`
+	PGWrappers                   []corpusPGWrapper                        `yaml:"pg_wrappers,omitempty"`
 	PGCreateSchemas              []corpusPGCreateSchema                   `yaml:"pg_create_schemas,omitempty"`
 	PGPartitionConstraints       []corpusPGPartitionConstraint            `yaml:"pg_partition_constraints,omitempty"`
 	PGMaterializedViewExtensions []corpusPGMaterializedViewExtensionState `yaml:"pg_materialized_view_extensions,omitempty"`

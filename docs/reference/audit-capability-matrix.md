@@ -1119,6 +1119,7 @@ The CREATE VIEW option check needs an observed PostgreSQL 17 version. CHECK OPTI
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|
 | `ddl.pg.create_foreign_data_wrapper.notice` | `CREATE FOREIGN DATA WRAPPER` introduces a new FDW — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_foreign_data_wrapper.target.valid` | Checks exact wrapper, routine, owner and ordered option premises | Gap | ✓ | blocker |
 | `ddl.pg.alter_foreign_data_wrapper.notice` | `ALTER FOREIGN DATA WRAPPER` modifies an existing FDW — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.drop_foreign_data_wrapper.warn` | `DROP FOREIGN DATA WRAPPER` removes an FDW — warns about dependent foreign servers and tables | ✓ | ✗ | warning |
 | `ddl.pg.create_foreign_server.notice` | `CREATE SERVER` registers a new foreign server — informational notice | ✓ | ✗ | notice |
@@ -1128,6 +1129,7 @@ The CREATE VIEW option check needs an observed PostgreSQL 17 version. CHECK OPTI
 | `ddl.pg.alter_user_mapping.notice` | `ALTER USER MAPPING` modifies an existing user mapping — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.drop_user_mapping.warn` | `DROP USER MAPPING` removes a user mapping — warns about dependent foreign table connections | ✓ | ✗ | warning |
 | `ddl.pg.create_foreign_table.notice` | `CREATE FOREIGN TABLE` introduces a new foreign table — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_foreign_table.target.valid` | Checks qualified foreign-table actions and exact catalog facts | Gap | ✓ | blocker |
 | `ddl.pg.alter_foreign_table.notice` | `ALTER FOREIGN TABLE` modifies an existing foreign table — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.drop_foreign_table.warn` | `DROP FOREIGN TABLE` removes a foreign table — warns about dependent queries | ✓ | ✗ | warning |
 

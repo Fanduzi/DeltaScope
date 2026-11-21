@@ -16,6 +16,8 @@ type Metadata struct {
 	PGCollationChange           *PGCollationChangeState           `json:"-"`
 	PGPolicyChange              *PGPolicyChangeState              `json:"-"`
 	PGSequenceChange            *PGSequenceChangeState            `json:"-"`
+	PGForeignTableChange        *PGForeignTableChangeState        `json:"-"`
+	PGWrapperChange             *PGWrapperChangeState             `json:"-"`
 	PGCollationRefresh          *PGCollationRefreshState          `json:"-"`
 	PGCreateSchema              *PGCreateSchemaState              `json:"-"`
 	PGPartitionConstraint       *PGPartitionConstraintState       `json:"-"`
@@ -840,6 +842,8 @@ type ObjectSnapshot struct {
 	PGCollationChange           *PGCollationChangeState           `json:"-"`
 	PGPolicyChange              *PGPolicyChangeState              `json:"-"`
 	PGSequenceChange            *PGSequenceChangeState            `json:"-"`
+	PGForeignTableChange        *PGForeignTableChangeState        `json:"-"`
+	PGWrapperChange             *PGWrapperChangeState             `json:"-"`
 	PGCollationRefresh          *PGCollationRefreshState          `json:"-"`
 	PGCreateSchema              *PGCreateSchemaState              `json:"-"`
 	PGPartitionConstraint       *PGPartitionConstraintState       `json:"-"`
@@ -925,6 +929,7 @@ type ObjectSnapshot struct {
 type ObjectLookupRequest struct {
 	PGOperatorFamilyMember     *PGOperatorFamilyMember     `json:"-"`
 	PGPolicyRoles              []string                    `json:"-"`
+	PGWrapperFunctions         []PGWrapperFunction         `json:"-"`
 	PGForeignKeyEqualityTarget *PGForeignKeyEqualityTarget `json:"-"`
 	Schema                     string
 	Type                       string

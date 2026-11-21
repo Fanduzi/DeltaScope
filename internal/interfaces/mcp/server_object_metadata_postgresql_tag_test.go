@@ -2188,3 +2188,73 @@ func TestMCPPGSequenceChangeTarget(t *testing.T) {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }
+
+type wrapperChangeAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (wrapperChangeAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_wrapper_change" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGWrapperChange: &spec.PGWrapperChangeState{Name: "wrapper", Exists: true, Options: []string{"present", "private_wrapper_option"}}}, nil
+}
+
+func TestMCPPGWrapperChangeTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := wrapperChangeAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER FOREIGN DATA WRAPPER wrapper OPTIONS (DROP missing)", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"foreign_option_absent"`) || !strings.Contains(string(body), `"ddl.pg.alter_foreign_data_wrapper.target.valid"`) || strings.Contains(string(body), "private_wrapper_option") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type foreignTableChangeAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (foreignTableChangeAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_foreign_table_change" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGForeignTableChange: &spec.PGForeignTableChangeState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "ft"}}, Action: "drop_column", Column: "missing", RelationKind: "f"}}, nil
+}
+
+func TestMCPPGForeignTableChangeTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := foreignTableChangeAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER FOREIGN TABLE app.ft DROP COLUMN missing", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"foreign_table_column_absent"`) || !strings.Contains(string(body), `"ddl.pg.alter_foreign_table.target.valid"`) || strings.Contains(string(body), "PGForeignTableChangeState") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}

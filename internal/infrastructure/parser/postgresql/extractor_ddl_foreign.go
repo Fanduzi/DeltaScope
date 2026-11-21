@@ -55,13 +55,37 @@ func extractAlterForeignTableStmt(statement spec.Statement, stmt *pg_query.Alter
 		}
 		break
 	}
+	decl := pgForeignTableChange(stmt.GetRelation(), "", "", stmt.GetMissingOk())
+	if cmds := stmt.GetCmds(); len(cmds) == 1 {
+		cmd := cmds[0].GetAlterTableCmd()
+		decl.ColumnGuard = cmd.GetMissingOk()
+		switch cmd.GetSubtype() {
+		case pg_query.AlterTableType_AT_GenericOptions:
+			decl.Action = "alter_options"
+			decl.Options = pgForeignOptions(cmd.GetDef().GetList().GetItems())
+		case pg_query.AlterTableType_AT_AddColumn:
+			decl.Action, decl.Column = "add_column", cmd.GetDef().GetColumnDef().GetColname()
+		case pg_query.AlterTableType_AT_DropColumn:
+			decl.Action, decl.Column = "drop_column", cmd.GetName()
+		case pg_query.AlterTableType_AT_ChangeOwner:
+			decl.Action, decl.Owner = "set_owner", pgRoleSelection(cmd.GetNewowner())
+		}
+	}
 	statement.DDL = &spec.DDL{
-		Operation:  spec.DDLOperationAlterForeignTable,
-		ObjectName: stmt.GetRelation().GetRelname(),
-		ObjectType: "foreign_table",
-		Options:    options,
+		PGForeignTableChange: decl,
+		Operation:            spec.DDLOperationAlterForeignTable,
+		ObjectName:           stmt.GetRelation().GetRelname(),
+		ObjectType:           "foreign_table",
+		Options:              options,
 	}
 	return statement
+}
+
+func pgForeignTableChange(relation *pg_query.RangeVar, action, destination string, guard bool) *spec.PGForeignTableChange {
+	return &spec.PGForeignTableChange{
+		Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: relation.GetSchemaname(), Name: relation.GetRelname()}, CatalogQualified: relation.GetCatalogname() != ""},
+		Action: action, Destination: destination, IfExists: guard,
+	}
 }
 
 func extractCreateForeignServerStmt(statement spec.Statement, stmt *pg_query.CreateForeignServerStmt) spec.Statement {
@@ -206,13 +230,42 @@ func extractAlterFdwStmt(statement spec.Statement, stmt *pg_query.AlterFdwStmt) 
 		options["has_options"] = "true"
 		options["action"] = "alter_options"
 	}
+	decl := &spec.PGWrapperChange{Name: stmt.GetFdwname(), Options: pgForeignOptions(stmt.GetOptions())}
+	for _, node := range stmt.GetFuncOptions() {
+		d := node.GetDefElem()
+		f := spec.PGWrapperFunction{Kind: d.GetDefname(), Clear: d.GetArg() == nil}
+		names := d.GetArg().GetList().GetItems()
+		if len(names) == 2 {
+			f.Target = spec.Table{Schema: stringNodeValue(names[0]), Name: stringNodeValue(names[1])}
+		}
+		decl.Functions = append(decl.Functions, f)
+	}
 	statement.DDL = &spec.DDL{
-		Operation:  spec.DDLOperationAlterForeignDataWrapper,
-		ObjectName: stmt.GetFdwname(),
-		ObjectType: "foreign_data_wrapper",
-		Options:    options,
+		PGWrapperChange: decl,
+		Operation:       spec.DDLOperationAlterForeignDataWrapper,
+		ObjectName:      stmt.GetFdwname(),
+		ObjectType:      "foreign_data_wrapper",
+		Options:         options,
 	}
 	return statement
+}
+
+func pgForeignOptions(items []*pg_query.Node) []spec.PGForeignOption {
+	options := make([]spec.PGForeignOption, 0, len(items))
+	for _, item := range items {
+		d := item.GetDefElem()
+		action := ""
+		switch d.GetDefaction() {
+		case pg_query.DefElemAction_DEFELEM_ADD, pg_query.DefElemAction_DEFELEM_UNSPEC:
+			action = "add"
+		case pg_query.DefElemAction_DEFELEM_SET:
+			action = "set"
+		case pg_query.DefElemAction_DEFELEM_DROP:
+			action = "drop"
+		}
+		options = append(options, spec.PGForeignOption{Name: d.GetDefname(), Action: action})
+	}
+	return options
 }
 
 func userMappingObjectName(user *pg_query.RoleSpec, server string) string {

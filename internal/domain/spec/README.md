@@ -125,6 +125,8 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGCollationChangeState` binds observed namespace or owner facts to the exact collation and authored action.
 - `PGPolicyChange` preserves policy identity, role order and bounded predicate facts. `PGPolicyChangeState` supplies exact relation and policy catalog evidence.
 - `PGSequenceChange` retains exact sequence identity, guards and each ordered option. `PGSequenceChangeState` binds stable definition, ownership and destination facts.
+- `PGForeignTableChange` preserves the exact target and one action. `PGForeignTableChangeState` binds column, destination, options and role facts.
+- `PGWrapperChange` preserves exact wrapper, owner and ordered routine and option declarations. `PGWrapperChangeState` holds catalog names and eligibility facts.
 - `PGCollationRefreshState` binds the exact qualified collation to its observed encoding eligibility and version presence facts.
 - `PGIndexIncludeState` binds exact user and system column directories and the observed access method for CREATE INDEX INCLUDE.
 - `PGIndexDestinationTarget` retains the qualified ALTER INDEX source, action, destination and absence guard.

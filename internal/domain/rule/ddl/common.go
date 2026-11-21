@@ -483,6 +483,8 @@ const (
 	ruleIDPGAlterUserMappingNotice         = "ddl.pg.alter_user_mapping.notice"
 	ruleIDPGDropUserMappingWarn            = "ddl.pg.drop_user_mapping.warn"
 	ruleIDPGCreateForeignDataWrapperNotice = "ddl.pg.create_foreign_data_wrapper.notice"
+	ruleIDPGForeignTableChangeValid        = "ddl.pg.alter_foreign_table.target.valid"
+	ruleIDPGWrapperChangeValid             = "ddl.pg.alter_foreign_data_wrapper.target.valid"
 	ruleIDPGAlterForeignDataWrapperNotice  = "ddl.pg.alter_foreign_data_wrapper.notice"
 	ruleIDPGDropForeignDataWrapperWarn     = "ddl.pg.drop_foreign_data_wrapper.warn"
 	// PostgreSQL annotation lifecycle rules (PG-only).

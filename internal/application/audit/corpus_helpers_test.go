@@ -40,7 +40,7 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
 		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
-		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGCreateStorage) == 0 && len(tc.Metadata.PGCreateTyped) == 0 && len(tc.Metadata.PGCreateCommits) == 0 && len(tc.Metadata.PGCreateLikes) == 0 && len(tc.Metadata.PGOperatorFamilies) == 0 && len(tc.Metadata.PGIndexIncludes) == 0 && len(tc.Metadata.PGIndexDestinations) == 0 && len(tc.Metadata.PGIndexOptions) == 0 && len(tc.Metadata.PGIndexAttachments) == 0 && len(tc.Metadata.PGOperatorChanges) == 0 && len(tc.Metadata.PGComposites) == 0 && len(tc.Metadata.PGEnums) == 0 && len(tc.Metadata.PGCollationChanges) == 0 && len(tc.Metadata.PGCollationRefreshes) == 0 && len(tc.Metadata.PGPolicies) == 0 && len(tc.Metadata.PGSequenceChanges) == 0 && len(tc.Metadata.PGCreateSchemas) == 0 && len(tc.Metadata.PGPartitionConstraints) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
+		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGCreateStorage) == 0 && len(tc.Metadata.PGCreateTyped) == 0 && len(tc.Metadata.PGCreateCommits) == 0 && len(tc.Metadata.PGCreateLikes) == 0 && len(tc.Metadata.PGOperatorFamilies) == 0 && len(tc.Metadata.PGIndexIncludes) == 0 && len(tc.Metadata.PGIndexDestinations) == 0 && len(tc.Metadata.PGIndexOptions) == 0 && len(tc.Metadata.PGIndexAttachments) == 0 && len(tc.Metadata.PGOperatorChanges) == 0 && len(tc.Metadata.PGComposites) == 0 && len(tc.Metadata.PGEnums) == 0 && len(tc.Metadata.PGCollationChanges) == 0 && len(tc.Metadata.PGCollationRefreshes) == 0 && len(tc.Metadata.PGPolicies) == 0 && len(tc.Metadata.PGSequenceChanges) == 0 && len(tc.Metadata.PGForeignTables) == 0 && len(tc.Metadata.PGWrappers) == 0 && len(tc.Metadata.PGCreateSchemas) == 0 && len(tc.Metadata.PGPartitionConstraints) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
@@ -65,6 +65,8 @@ type corpusFixtureMetadataProvider struct {
 	pgEnums                      []corpusPGEnum
 	pgPolicies                   []corpusPGPolicy
 	pgSequenceChanges            []corpusPGSequenceChange
+	pgForeignTables              []corpusPGForeignTable
+	pgWrappers                   []corpusPGWrapper
 	pgCreateSchemas              []corpusPGCreateSchema
 	pgPartitionConstraints       []corpusPGPartitionConstraint
 	pgDropViewStates             []corpusPGDropViewState
@@ -143,6 +145,8 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 		pgEnums:                      metadata.PGEnums,
 		pgPolicies:                   metadata.PGPolicies,
 		pgSequenceChanges:            metadata.PGSequenceChanges,
+		pgForeignTables:              metadata.PGForeignTables,
+		pgWrappers:                   metadata.PGWrappers,
 		pgCreateSchemas:              metadata.PGCreateSchemas,
 		pgPartitionConstraints:       metadata.PGPartitionConstraints,
 		pgDropViewStates:             metadata.PGDropViewStates,
@@ -684,12 +688,31 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 		}
 		return nil, nil
 	}
+	if request.Type == "pg_foreign_table_change" && request.Qualifiers["action"] == "drop_column" {
+		for _, seed := range p.pgForeignTables {
+			if seed.Schema == request.Schema && seed.Name == request.Name && seed.Column == request.Qualifiers["column"] {
+				return &spec.ObjectSnapshot{PGForeignTableChange: &spec.PGForeignTableChangeState{
+					Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.Schema, Name: seed.Name}},
+					Action: "drop_column", Column: seed.Column, RelationKind: "f",
+				}}, nil
+			}
+		}
+		return nil, nil
+	}
 	if request.Type == "pg_sequence_change" {
 		for _, seed := range p.pgSequenceChanges {
 			if seed.Schema == request.Schema && seed.Name == request.Name {
 				return &spec.ObjectSnapshot{PGSequenceChange: &spec.PGSequenceChangeState{
 					Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.Schema, Name: seed.Name}}, SchemaExists: true, Kind: seed.Kind,
 				}}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_wrapper_change" {
+		for _, seed := range p.pgWrappers {
+			if seed.Name == request.Name {
+				return &spec.ObjectSnapshot{PGWrapperChange: &spec.PGWrapperChangeState{Name: seed.Name, Exists: true, Options: seed.Options}}, nil
 			}
 		}
 		return nil, nil

@@ -32,6 +32,7 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 | parser_column_transition_postgresql_tag_test.go | Pins guards, duplicate modes/options, START versus RESTART, signed int64 boundaries/overflow, unmodeled members, old JSON shape and D2 isolation |
 | extractor_generation.go | Preserves lossless CREATE/ADD COLUMN generation declarations for bounded governance: repeated characteristics/options, signed int64 numeric options, NULL presence and scalar/array type proof; leaves legacy public projections unchanged and never retains expression bodies |
 | extractor_generation_postgresql_tag_test.go | Pins generation seam, duplicates, int64 extremes/overflow, scalar/array/custom types and CREATE/ADD COLUMN parity |
+| extractor_ddl_foreign.go | Preserves foreign object declarations, including exact wrapper routine targets and ordered option names and actions. Binds foreign-table statements to exact action and column identities. |
 | extractor_sequence_change.go | Preserves exact sequence declaration and ownership options in AST order. |
 | extractor_ddl_policy.go | Preserves exact policy relations, ordered roles and bounded predicates. |
 | extractor_operator_change.go | Preserves operator signatures with exact qualified operands and explicit unary absence. Preserves ordered RESTRICT and JOIN options. |

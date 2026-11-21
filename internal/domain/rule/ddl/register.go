@@ -911,6 +911,8 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterUserMappingNotice, construct: newAlterUserMappingNoticeRule},
 		{ruleID: ruleIDPGDropUserMappingWarn, construct: newDropUserMappingWarnRule},
 		{ruleID: ruleIDPGCreateForeignDataWrapperNotice, construct: newCreateForeignDataWrapperNoticeRule},
+		{ruleID: ruleIDPGForeignTableChangeValid, construct: newPGForeignTableChangeRule},
+		{ruleID: ruleIDPGWrapperChangeValid, construct: newPGWrapperChangeRule},
 		{ruleID: ruleIDPGAlterForeignDataWrapperNotice, construct: newAlterForeignDataWrapperNoticeRule},
 		{ruleID: ruleIDPGDropForeignDataWrapperWarn, construct: newDropForeignDataWrapperWarnRule},
 		// PostgreSQL annotation lifecycle rules (PG-only).

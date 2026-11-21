@@ -1,0 +1,1 @@
+ALTER FOREIGN TABLE app.ft DROP COLUMN missing;
