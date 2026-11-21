@@ -1072,6 +1072,10 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 | `ddl.pg.alter_schema.rename.notice` | `ALTER SCHEMA ... RENAME TO` 变更 schema 名称——信息性提示 | notice | 否 |
 | `ddl.pg.alter_schema.owner.notice` | `ALTER SCHEMA ... OWNER TO` 变更 schema owner——信息性提示 | notice | 否 |
 | `ddl.pg.alter_index.rename.notice` | `ALTER INDEX ... RENAME TO` 变更索引名称——信息性提示 | notice | 否 |
+| `ddl.pg.create_index.include.valid` | 检查 PostgreSQL 17 索引 INCLUDE 的目标、访问方法及附加列。 | blocker | 是 |
+| `ddl.pg.alter_index.destination.valid` | 检查 PostgreSQL 17 索引改名和表空间迁移的源对象与目的地。 | blocker | 是 |
+| `ddl.pg.alter_index.options.valid` | 检查 PostgreSQL 17 ALTER INDEX SET/RESET 的目标、整数 fillfactor 和 B-tree deduplicate_items。 | blocker | 是 |
+| `ddl.pg.alter_index.attach_partition.valid` | 检查 PostgreSQL 17 索引分区挂接的限定名称、现有挂接及直属分区关系。 | blocker | 是 |
 | `ddl.pg.alter_index.set_tablespace.notice` | `ALTER INDEX ... SET TABLESPACE` 将索引移至不同表空间——信息性提示 | notice | 否 |
 | `ddl.pg.alter_materialized_view.rename.notice` | `ALTER MATERIALIZED VIEW ... RENAME TO` 变更物化视图名称——信息性提示 | notice | 否 |
 | `ddl.pg.alter_materialized_view.set_schema.notice` | `ALTER MATERIALIZED VIEW ... SET SCHEMA` 将物化视图移至不同 schema——信息性提示 | notice | 否 |
@@ -1496,6 +1500,9 @@ v0.100.0 新增 PostgreSQL 操作符族和操作符类对象生命周期审核�
 
 | 规则 ID | 检查描述 | 默认级别 | 是否需要元数据 |
 |---------|---------|:--------:|:--------------:|
+| `ddl.pg.alter_operator_family.member.valid` | 检查 PostgreSQL 17 B-tree 操作符族中单个搜索操作符的 ADD 或 DROP 槽位。 | blocker | 是 |
+| `ddl.pg.alter_operator_family.change.target.valid` | 检查 PostgreSQL 17 操作符族的改名、迁移 schema 和属主。 | blocker | 是 |
+| `ddl.pg.create_operator_family.target.valid` | 检查 PostgreSQL 17 操作符族的创建 schema、索引访问方法及名称冲突。 | blocker | 是 |
 | `ddl.pg.create_operator_family.notice` | CREATE OPERATOR FAMILY 触发信息通知 | notice | 否 |
 | `ddl.pg.alter_operator_family.notice` | ALTER OPERATOR FAMILY（重命名/属主/模式）触发信息通知 | notice | 否 |
 | `ddl.pg.drop_operator_family.warn` | DROP OPERATOR FAMILY 触发结构销毁警告 | warning | 否 |

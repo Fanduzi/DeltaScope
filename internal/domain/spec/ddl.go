@@ -3,13 +3,18 @@ package spec
 
 // DDL contains the structural metadata extracted from a DDL statement.
 type DDL struct {
-	PGCollationChange  *PGCollationChangeTarget   `json:"-"`
-	PGCollationRefresh *PGColumnCollation         `json:"-"`
-	PGCreateSchema     *PGCreateSchemaTarget      `json:"-"`
-	PGDropViewTargets  []PGDestructiveTableTarget `json:"-"`
-	Operation          DDLOperation               `json:"operation,omitempty"`
-	Table              *Table                     `json:"table,omitempty"`
-	View               *ViewDeclaration           `json:"-"`
+	PGOperatorFamilyChange *PGOperatorFamilyChange    `json:"-"`
+	PGIndexDestination     *PGIndexDestinationTarget  `json:"-"`
+	PGOperatorFamily       *PGOperatorFamilyTarget    `json:"-"`
+	PGOperatorFamilyMember *PGOperatorFamilyMember    `json:"-"`
+	PGIndexAttachment      *PGIndexAttachment         `json:"-"`
+	PGCollationChange      *PGCollationChangeTarget   `json:"-"`
+	PGCollationRefresh     *PGColumnCollation         `json:"-"`
+	PGCreateSchema         *PGCreateSchemaTarget      `json:"-"`
+	PGDropViewTargets      []PGDestructiveTableTarget `json:"-"`
+	Operation              DDLOperation               `json:"operation,omitempty"`
+	Table                  *Table                     `json:"table,omitempty"`
+	View                   *ViewDeclaration           `json:"-"`
 	// PGViewOptions retains authored CREATE VIEW options in AST order.
 	PGViewOptions               []PGViewOption      `json:"-"`
 	PGCreateViewOutput          *PGCreateViewOutput `json:"-"`
@@ -786,16 +791,17 @@ func CloneKeyParts(in []IndexKeyPart) []IndexKeyPart {
 
 // Index describes an index declaration.
 type Index struct {
-	Name              string         `json:"name"`
-	Kind              IndexKind      `json:"kind,omitempty"`
-	Columns           []string       `json:"columns,omitempty"`
-	KeyParts          []IndexKeyPart `json:"key_parts,omitempty"`
-	Cardinality       *int64         `json:"cardinality,omitempty"`
-	AccessMethod      string         `json:"access_method,omitempty"`
-	IncludedColumns   []string       `json:"included_columns,omitempty"`
-	HasPredicate      bool           `json:"has_predicate,omitempty"`
-	HasExpressionKeys bool           `json:"has_expression_keys,omitempty"`
-	ExpressionCount   int            `json:"expression_count,omitempty"`
+	PGNullsNotDistinct bool           `json:"-"`
+	Name               string         `json:"name"`
+	Kind               IndexKind      `json:"kind,omitempty"`
+	Columns            []string       `json:"columns,omitempty"`
+	KeyParts           []IndexKeyPart `json:"key_parts,omitempty"`
+	Cardinality        *int64         `json:"cardinality,omitempty"`
+	AccessMethod       string         `json:"access_method,omitempty"`
+	IncludedColumns    []string       `json:"included_columns,omitempty"`
+	HasPredicate       bool           `json:"has_predicate,omitempty"`
+	HasExpressionKeys  bool           `json:"has_expression_keys,omitempty"`
+	ExpressionCount    int            `json:"expression_count,omitempty"`
 	// PrefixParts/DescParts count column-prefix lengths and descending key
 	// parts parsed on the index but not yet modeled for audit semantics.
 	PrefixParts int `json:"prefix_parts,omitempty"`

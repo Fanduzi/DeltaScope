@@ -1384,3 +1384,248 @@ func TestMCPPGCollationChangeTarget(t *testing.T) {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }
+
+type indexAttachmentAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (indexAttachmentAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_index_attachment" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGIndexAttachment: &spec.PGIndexAttachmentState{Target: spec.PGIndexAttachment{Parent: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: req.Schema, Name: req.Name}}, Child: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: req.Qualifiers["child_schema"], Name: req.Qualifiers["child"]}}}, ParentKind: "I", ChildKind: "i", OtherParent: true}}, nil
+}
+
+func TestMCPPGIndexAttachmentTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := indexAttachmentAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER INDEX app.mv ATTACH PARTITION app.child", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"index_attachment_child_already_attached"`) || !strings.Contains(string(body), `"ddl.pg.alter_index.attach_partition.valid"`) || strings.Contains(string(body), "PGIndexAttachment") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type indexOptionsAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (indexOptionsAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_index_options" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGIndexOptions: &spec.PGIndexOptionsState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: req.Schema, Name: req.Name}}, Kind: "i", Method: "btree"}}, nil
+}
+
+func TestMCPPGIndexOptionsTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := indexOptionsAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER INDEX app.mv SET (fillfactor=9)", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"index_option_out_of_range"`) || !strings.Contains(string(body), `"ddl.pg.alter_index.options.valid"`) || strings.Contains(string(body), "PGIndexOptions") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type indexIncludeAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (indexIncludeAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_index_include" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGIndexInclude: &spec.PGIndexIncludeState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: req.Schema, Name: req.Name}}, Kind: "r", Method: "btree", Columns: []string{"id"}, System: []string{"ctid"}}}, nil
+}
+
+func TestMCPPGIndexIncludeTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := indexIncludeAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "CREATE INDEX idx ON app.t(id) INCLUDE (missing)", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"index_include_column_absent"`) || !strings.Contains(string(body), `"ddl.pg.create_index.include.valid"`) || strings.Contains(string(body), "PGIndexInclude") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type operatorFamilyTargetAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (operatorFamilyTargetAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_operator_family" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGOperatorFamily: &spec.PGOperatorFamilyState{Target: spec.PGOperatorFamilyTarget{Schema: req.Schema, Name: req.Name, Method: req.Qualifiers["method"]}, SchemaExists: true, MethodKind: "i", Exists: true}}, nil
+}
+
+func TestMCPPGOperatorFamilyTargetTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := operatorFamilyTargetAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "CREATE OPERATOR FAMILY app.family USING btree", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"operator_family_already_exists"`) || !strings.Contains(string(body), `"ddl.pg.create_operator_family.target.valid"`) || strings.Contains(string(body), "PGOperatorFamily") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type operatorFamilyMemberAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (operatorFamilyMemberAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_operator_family_member" || req.PGOperatorFamilyMember == nil {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGOperatorFamilyMember: &spec.PGOperatorFamilyMemberState{Target: spec.PGOperatorFamilyTarget{Schema: req.Schema, Name: req.Name, Method: req.Qualifiers["method"]}, Member: *req.PGOperatorFamilyMember, SchemaExists: true, MethodKind: "i", FamilyExists: true, BTree: true, OperandTypesRead: true, OperandTypesOK: true}}, nil
+}
+
+func TestMCPPGOperatorFamilyMemberTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := operatorFamilyMemberAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER OPERATOR FAMILY app.family USING btree DROP OPERATOR 1 (integer)", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"operator_family_slot_absent"`) || !strings.Contains(string(body), `"ddl.pg.alter_operator_family.member.valid"`) || strings.Contains(string(body), "PGOperatorFamilyMember") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type indexDestinationAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (indexDestinationAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_index_destination" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGIndexDestination: &spec.PGIndexDestinationState{Source: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: req.Schema, Name: req.Name}}, Action: "set_tablespace", Destination: "absent_sp", Kind: "i"}}, nil
+}
+
+func TestMCPPGIndexDestinationTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := indexDestinationAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER INDEX app.mv SET TABLESPACE absent_sp", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"index_tablespace_absent"`) || !strings.Contains(string(body), `"ddl.pg.alter_index.destination.valid"`) || strings.Contains(string(body), "PGIndexDestination") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type operatorFamilyChangeAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (operatorFamilyChangeAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_operator_family_change" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGOperatorFamilyChange: &spec.PGOperatorFamilyChangeState{Target: spec.PGOperatorFamilyChange{Source: spec.PGOperatorFamilyTarget{Schema: req.Schema, Name: req.Name, Method: req.Qualifiers["method"]}, Action: "rename", Destination: "occupied"}, SourceSchemaExists: true, MethodKind: "i", SourceExists: true, DestinationOccupied: true}}, nil
+}
+
+func TestMCPPGOperatorFamilyChangeTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := operatorFamilyChangeAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER OPERATOR FAMILY app.family USING btree RENAME TO occupied", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"operator_family_destination_occupied"`) || !strings.Contains(string(body), `"ddl.pg.alter_operator_family.change.target.valid"`) || strings.Contains(string(body), "PGOperatorFamilyChange") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}

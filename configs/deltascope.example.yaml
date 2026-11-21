@@ -2581,6 +2581,41 @@ rules:
     level: blocker
     params:
 
+  ddl.pg.create_index.include.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.pg.alter_index.destination.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.pg.alter_index.options.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.pg.alter_index.attach_partition.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.pg.alter_operator_family.change.target.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.pg.create_operator_family.target.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.pg.alter_operator_family.member.valid:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.pg.alter_view.options.valid:
     enabled: true
     level: blocker

@@ -1135,6 +1135,10 @@ These rules guard selected PostgreSQL ALTER object operations for schema, index,
 | `ddl.pg.alter_schema.rename.notice` | `ALTER SCHEMA ... RENAME TO` changes the schema name — informational notice | notice | No |
 | `ddl.pg.alter_schema.owner.notice` | `ALTER SCHEMA ... OWNER TO` changes the schema owner — informational notice | notice | No |
 | `ddl.pg.alter_index.rename.notice` | `ALTER INDEX ... RENAME TO` changes the index name — informational notice | notice | No |
+| `ddl.pg.create_index.include.valid` | Checks qualified PostgreSQL 17 index INCLUDE targets, method support and exact included columns. | blocker | Yes |
+| `ddl.pg.alter_index.destination.valid` | Checks qualified PostgreSQL 17 ALTER INDEX rename and tablespace destinations. | blocker | Yes |
+| `ddl.pg.alter_index.options.valid` | Checks exact PostgreSQL 17 ALTER INDEX SET/RESET targets, integer fillfactor and B-tree deduplicate_items. | blocker | Yes |
+| `ddl.pg.alter_index.attach_partition.valid` | Checks qualified PostgreSQL 17 index partition attachment identities and direct parent relationships. | blocker | Yes |
 | `ddl.pg.alter_index.set_tablespace.notice` | `ALTER INDEX ... SET TABLESPACE` moves the index to a different tablespace — informational notice | notice | No |
 | `ddl.pg.alter_materialized_view.rename.notice` | `ALTER MATERIALIZED VIEW ... RENAME TO` changes the materialized view name — informational notice | notice | No |
 | `ddl.pg.alter_materialized_view.set_schema.notice` | `ALTER MATERIALIZED VIEW ... SET SCHEMA` moves the materialized view to a different schema — informational notice | notice | No |
@@ -1637,6 +1641,9 @@ v0.100.0 adds lifecycle audit rules for PostgreSQL operator family and operator 
 
 | Rule ID | Check Description | Default Level | Metadata Required |
 |---------|-------------------|:-------------:|:-----------------:|
+| `ddl.pg.alter_operator_family.member.valid` | Checks one qualified PostgreSQL 17 B-tree search-operator ADD or DROP slot. | blocker | Yes |
+| `ddl.pg.alter_operator_family.change.target.valid` | Checks qualified PostgreSQL 17 operator family rename, schema and owner changes. | blocker | Yes |
+| `ddl.pg.create_operator_family.target.valid` | Checks the exact PostgreSQL 17 creation schema, index method and operator family identity. | blocker | Yes |
 | `ddl.pg.create_operator_family.notice` | CREATE OPERATOR FAMILY emits an informational notice | notice | No |
 | `ddl.pg.alter_operator_family.notice` | ALTER OPERATOR FAMILY (rename/owner/schema) emits an informational notice | notice | No |
 | `ddl.pg.drop_operator_family.warn` | DROP OPERATOR FAMILY emits a destructure warning | warning | No |

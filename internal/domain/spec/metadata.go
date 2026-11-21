@@ -10,6 +10,13 @@ type Metadata struct {
 	PGCollationRefresh          *PGCollationRefreshState          `json:"-"`
 	PGCreateSchema              *PGCreateSchemaState              `json:"-"`
 	PGPartitionConstraint       *PGPartitionConstraintState       `json:"-"`
+	PGOperatorFamilyChange      *PGOperatorFamilyChangeState      `json:"-"`
+	PGIndexDestination          *PGIndexDestinationState          `json:"-"`
+	PGOperatorFamilyMember      *PGOperatorFamilyMemberState      `json:"-"`
+	PGOperatorFamily            *PGOperatorFamilyState            `json:"-"`
+	PGIndexInclude              *PGIndexIncludeState              `json:"-"`
+	PGIndexOptions              *PGIndexOptionsState              `json:"-"`
+	PGIndexAttachment           *PGIndexAttachmentState           `json:"-"`
 	PGDropViewSet               *PGDropViewSetState               `json:"-"`
 	PGCreateViewTarget          *PGCreateViewTarget               `json:"-"`
 	PGMaterializedViewExtension *PGMaterializedViewExtensionState `json:"-"`
@@ -816,6 +823,13 @@ type ObjectSnapshot struct {
 	PGCollationRefresh          *PGCollationRefreshState          `json:"-"`
 	PGCreateSchema              *PGCreateSchemaState              `json:"-"`
 	PGPartitionConstraint       *PGPartitionConstraintState       `json:"-"`
+	PGOperatorFamilyChange      *PGOperatorFamilyChangeState      `json:"-"`
+	PGIndexDestination          *PGIndexDestinationState          `json:"-"`
+	PGOperatorFamilyMember      *PGOperatorFamilyMemberState      `json:"-"`
+	PGOperatorFamily            *PGOperatorFamilyState            `json:"-"`
+	PGIndexInclude              *PGIndexIncludeState              `json:"-"`
+	PGIndexOptions              *PGIndexOptionsState              `json:"-"`
+	PGIndexAttachment           *PGIndexAttachmentState           `json:"-"`
 	PGDropViewSet               *PGDropViewSetState               `json:"-"`
 	PGCreateViewTarget          *PGCreateViewTarget               `json:"-"`
 	PGMaterializedViewExtension *PGMaterializedViewExtensionState `json:"-"`
@@ -884,6 +898,7 @@ type ObjectSnapshot struct {
 
 // ObjectLookupRequest describes one object to resolve from live metadata.
 type ObjectLookupRequest struct {
+	PGOperatorFamilyMember     *PGOperatorFamilyMember     `json:"-"`
 	PGForeignKeyEqualityTarget *PGForeignKeyEqualityTarget `json:"-"`
 	Schema                     string
 	Type                       string

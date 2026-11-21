@@ -1126,3 +1126,185 @@ func TestHTTPPGCollationChangeTarget(t *testing.T) {
 		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
 	}
 }
+
+func TestHTTPPGIndexAttachmentTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGIndexAttachment: &spec.PGIndexAttachmentState{Target: spec.PGIndexAttachment{Parent: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, Child: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "child"}}}, ParentKind: "I", ChildKind: "i", OtherParent: true}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER INDEX app.mv ATTACH PARTITION app.child","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter_index.attach_partition.valid"`) || !strings.Contains(body, `"index_attachment_child_already_attached"`) || strings.Contains(body, "PGIndexAttachment") || len(client.objectCalls) != 1 || client.objectCalls[0].Name != "mv" || client.objectCalls[0].Type != "pg_index_attachment" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}
+
+func TestHTTPPGIndexOptionsTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGIndexOptions: &spec.PGIndexOptionsState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, Kind: "i", Method: "btree"}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER INDEX app.mv SET (fillfactor=9)","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter_index.options.valid"`) || !strings.Contains(body, `"index_option_out_of_range"`) || strings.Contains(body, "PGIndexOptions") || len(client.objectCalls) != 1 || client.objectCalls[0].Name != "mv" || client.objectCalls[0].Type != "pg_index_options" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}
+
+func TestHTTPPGIndexIncludeTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGIndexInclude: &spec.PGIndexIncludeState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "t"}}, Kind: "r", Method: "btree", Columns: []string{"id"}, System: []string{"ctid"}}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"CREATE INDEX idx ON app.t(id) INCLUDE (missing)","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.create_index.include.valid"`) || !strings.Contains(body, `"index_include_column_absent"`) || strings.Contains(body, "PGIndexInclude") || len(client.objectCalls) != 1 || client.objectCalls[0].Name != "t" || client.objectCalls[0].Type != "pg_index_include" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}
+
+func TestHTTPPGOperatorFamilyTargetTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGOperatorFamily: &spec.PGOperatorFamilyState{Target: spec.PGOperatorFamilyTarget{Schema: "app", Name: "family", Method: "btree"}, SchemaExists: true, MethodKind: "i", Exists: true}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"CREATE OPERATOR FAMILY app.family USING btree","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.create_operator_family.target.valid"`) || !strings.Contains(body, `"operator_family_already_exists"`) || strings.Contains(body, "PGOperatorFamily") || len(client.objectCalls) != 1 || client.objectCalls[0].Name != "family" || client.objectCalls[0].Type != "pg_operator_family" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}
+
+func TestHTTPPGOperatorFamilyMemberTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGOperatorFamilyMember: &spec.PGOperatorFamilyMemberState{Target: spec.PGOperatorFamilyTarget{Schema: "app", Name: "family", Method: "btree"}, Member: spec.PGOperatorFamilyMember{Number: 1, Drop: true, Left: spec.PGColumnTypeTarget{Schema: "pg_catalog", Name: "int4"}, Right: spec.PGColumnTypeTarget{Schema: "pg_catalog", Name: "int4"}}, SchemaExists: true, MethodKind: "i", FamilyExists: true, BTree: true, OperandTypesRead: true, OperandTypesOK: true}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER OPERATOR FAMILY app.family USING btree DROP OPERATOR 1 (integer)","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter_operator_family.member.valid"`) || !strings.Contains(body, `"operator_family_slot_absent"`) || strings.Contains(body, "PGOperatorFamilyMember") || len(client.objectCalls) != 1 || client.objectCalls[0].Name != "family" || client.objectCalls[0].Type != "pg_operator_family_member" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}
+
+func TestHTTPPGIndexDestinationTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGIndexDestination: &spec.PGIndexDestinationState{Source: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, Action: "set_tablespace", Destination: "absent_sp", Kind: "i"}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER INDEX app.mv SET TABLESPACE absent_sp","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter_index.destination.valid"`) || !strings.Contains(body, `"index_tablespace_absent"`) || strings.Contains(body, "PGIndexDestination") || len(client.objectCalls) != 1 || client.objectCalls[0].Name != "mv" || client.objectCalls[0].Type != "pg_index_destination" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}
+
+func TestHTTPPGOperatorFamilyChangeTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGOperatorFamilyChange: &spec.PGOperatorFamilyChangeState{Target: spec.PGOperatorFamilyChange{Source: spec.PGOperatorFamilyTarget{Schema: "app", Name: "family", Method: "btree"}, Action: "rename", Destination: "occupied"}, SourceSchemaExists: true, MethodKind: "i", SourceExists: true, DestinationOccupied: true}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER OPERATOR FAMILY app.family USING btree RENAME TO occupied","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter_operator_family.change.target.valid"`) || !strings.Contains(body, `"operator_family_destination_occupied"`) || strings.Contains(body, "PGOperatorFamilyChange") || len(client.objectCalls) != 1 || client.objectCalls[0].Name != "family" || client.objectCalls[0].Type != "pg_operator_family_change" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}

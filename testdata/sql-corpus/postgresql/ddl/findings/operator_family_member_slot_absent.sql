@@ -1,0 +1,1 @@
+ALTER OPERATOR FAMILY app.family USING btree DROP OPERATOR 1 (integer);

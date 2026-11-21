@@ -36,6 +36,20 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 			return p.resolveCreateSchema(ctx, req)
 		case "pg_partition_constraint":
 			return p.resolvePartitionConstraint(ctx, req)
+		case "pg_operator_family_change":
+			return p.resolveOperatorFamilyChange(ctx, req)
+		case "pg_operator_family_member":
+			return p.resolveOperatorFamilyMember(ctx, req)
+		case "pg_operator_family":
+			return p.resolveOperatorFamily(ctx, req)
+		case "pg_index_include":
+			return p.resolveIndexInclude(ctx, req)
+		case "pg_index_destination":
+			return p.resolveIndexDestination(ctx, req)
+		case "pg_index_options":
+			return p.resolveIndexOptions(ctx, req)
+		case "pg_index_attachment":
+			return p.resolveIndexAttachment(ctx, req)
 		case "drop_view_set":
 			return p.resolveDropViewSet(ctx, req)
 		case "drop_view_target", "alter_view_options":

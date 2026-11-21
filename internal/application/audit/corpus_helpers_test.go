@@ -40,7 +40,7 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
 		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
-		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGCollationChanges) == 0 && len(tc.Metadata.PGCollationRefreshes) == 0 && len(tc.Metadata.PGCreateSchemas) == 0 && len(tc.Metadata.PGPartitionConstraints) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
+		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGOperatorFamilies) == 0 && len(tc.Metadata.PGIndexIncludes) == 0 && len(tc.Metadata.PGIndexDestinations) == 0 && len(tc.Metadata.PGIndexOptions) == 0 && len(tc.Metadata.PGIndexAttachments) == 0 && len(tc.Metadata.PGCollationChanges) == 0 && len(tc.Metadata.PGCollationRefreshes) == 0 && len(tc.Metadata.PGCreateSchemas) == 0 && len(tc.Metadata.PGPartitionConstraints) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
@@ -49,6 +49,11 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 type corpusFixtureMetadataProvider struct {
 	pgMaterializedViewExtensions []corpusPGMaterializedViewExtensionState
 	pgViewDefaults               []corpusPGViewDefaultState
+	pgOperatorFamilies           []corpusPGOperatorFamily
+	pgIndexIncludes              []corpusPGIndexInclude
+	pgIndexDestinations          []corpusPGIndexDestination
+	pgIndexOptions               []corpusPGIndexOptions
+	pgIndexAttachments           []corpusPGIndexAttachment
 	pgCollationChanges           []corpusPGCollationChange
 	pgCollationRefreshes         []corpusPGCollationRefresh
 	pgCreateSchemas              []corpusPGCreateSchema
@@ -113,6 +118,11 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 		pgDropConstraintReferences:   metadata.PGDropConstraintReferences,
 		pgDestructiveReferences:      metadata.PGDestructiveReferences,
 		pgRefreshStates:              metadata.PGRefreshStates,
+		pgOperatorFamilies:           metadata.PGOperatorFamilies,
+		pgIndexIncludes:              metadata.PGIndexIncludes,
+		pgIndexDestinations:          metadata.PGIndexDestinations,
+		pgIndexOptions:               metadata.PGIndexOptions,
+		pgIndexAttachments:           metadata.PGIndexAttachments,
 		pgCollationChanges:           metadata.PGCollationChanges,
 		pgCollationRefreshes:         metadata.PGCollationRefreshes,
 		pgCreateSchemas:              metadata.PGCreateSchemas,
@@ -501,6 +511,87 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 			state := spec.PGViewDefaultState(entry)
 			if state.MatchesViewDefault(&request) {
 				return &spec.ObjectSnapshot{PGViewDefault: &state}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_operator_family_member" && request.PGOperatorFamilyMember != nil {
+		for _, seed := range p.pgOperatorFamilies {
+			if seed.Schema == request.Schema && seed.Name == request.Name && seed.Method == request.Qualifiers["method"] {
+				return &spec.ObjectSnapshot{PGOperatorFamilyMember: &spec.PGOperatorFamilyMemberState{
+					Target: spec.PGOperatorFamilyTarget{Schema: seed.Schema, Name: seed.Name, Method: seed.Method},
+					Member: *request.PGOperatorFamilyMember, SchemaExists: seed.SchemaExists, MethodKind: seed.MethodKind,
+					FamilyExists: seed.Exists, BTree: seed.Method == "btree", OperandTypesRead: true, OperandTypesOK: true,
+					SlotExists: seed.MemberSlotExists,
+				}}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_operator_family_change" && request.Qualifiers["action"] == "rename" {
+		for _, seed := range p.pgOperatorFamilies {
+			if seed.Schema == request.Schema && seed.Name == request.Name && seed.Method == request.Qualifiers["method"] && seed.OccupiedRename == request.Qualifiers["destination"] {
+				return &spec.ObjectSnapshot{PGOperatorFamilyChange: &spec.PGOperatorFamilyChangeState{
+					Target:     spec.PGOperatorFamilyChange{Source: spec.PGOperatorFamilyTarget{Schema: seed.Schema, Name: seed.Name, Method: seed.Method}, Action: "rename", Destination: seed.OccupiedRename},
+					MethodKind: seed.MethodKind, SourceSchemaExists: seed.SchemaExists, SourceExists: seed.Exists, DestinationOccupied: true,
+				}}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_operator_family" {
+		for _, seed := range p.pgOperatorFamilies {
+			if seed.Schema == request.Schema && seed.Name == request.Name && seed.Method == request.Qualifiers["method"] {
+				return &spec.ObjectSnapshot{PGOperatorFamily: &spec.PGOperatorFamilyState{
+					Target:       spec.PGOperatorFamilyTarget{Schema: seed.Schema, Name: seed.Name, Method: seed.Method},
+					SchemaExists: seed.SchemaExists, MethodKind: seed.MethodKind, Exists: seed.Exists,
+				}}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_index_include" {
+		for _, seed := range p.pgIndexIncludes {
+			if seed.Schema == request.Schema && seed.Name == request.Name && seed.Method == request.Qualifiers["method"] {
+				return &spec.ObjectSnapshot{PGIndexInclude: &spec.PGIndexIncludeState{
+					Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.Schema, Name: seed.Name}},
+					Kind:   seed.Kind, Method: seed.Method, Columns: seed.Columns, System: seed.System,
+				}}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_index_destination" && request.Qualifiers["action"] == "set_tablespace" {
+		for _, seed := range p.pgIndexDestinations {
+			if seed.Schema == request.Schema && seed.Name == request.Name && seed.Tablespace == request.Qualifiers["destination"] {
+				return &spec.ObjectSnapshot{PGIndexDestination: &spec.PGIndexDestinationState{
+					Source: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.Schema, Name: seed.Name}},
+					Action: "set_tablespace", Destination: seed.Tablespace, Kind: "i",
+				}}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_index_options" {
+		for _, seed := range p.pgIndexOptions {
+			if seed.Schema == request.Schema && seed.Name == request.Name {
+				return &spec.ObjectSnapshot{PGIndexOptions: &spec.PGIndexOptionsState{
+					Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.Schema, Name: seed.Name}}, Kind: seed.Kind, Method: seed.Method,
+				}}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_index_attachment" {
+		for _, seed := range p.pgIndexAttachments {
+			if seed.Schema == request.Schema && seed.Parent == request.Name && seed.ChildSchema == request.Qualifiers["child_schema"] && seed.Child == request.Qualifiers["child"] {
+				return &spec.ObjectSnapshot{PGIndexAttachment: &spec.PGIndexAttachmentState{
+					Target: spec.PGIndexAttachment{
+						Parent: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.Schema, Name: seed.Parent}},
+						Child:  spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.ChildSchema, Name: seed.Child}},
+					},
+					ParentKind: "I", ChildKind: "i", TablePartition: true, Definition: seed.Definition,
+				}}, nil
 			}
 		}
 		return nil, nil

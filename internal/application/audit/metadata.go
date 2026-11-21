@@ -240,6 +240,21 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 		if err := enrichPGCollationRefresh(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}
+		if err := enrichPGOperatorFamilies(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
+		if err := enrichPGIndexIncludes(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
+		if err := enrichPGIndexDestinations(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
+		if err := enrichPGIndexOptions(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
+		if err := enrichPGIndexAttachments(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
 		if err := enrichPGCreateViewTargets(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}

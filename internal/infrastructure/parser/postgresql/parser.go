@@ -124,6 +124,7 @@ func classify(node *pg_query.Node) spec.Kind {
 		*pg_query.Node_CreateStatsStmt,
 		*pg_query.Node_AlterStatsStmt,
 		*pg_query.Node_CreateConversionStmt,
+		*pg_query.Node_AlterOpFamilyStmt,
 		*pg_query.Node_CreateOpFamilyStmt,
 		*pg_query.Node_CreateOpClassStmt,
 		*pg_query.Node_CreateTransformStmt,

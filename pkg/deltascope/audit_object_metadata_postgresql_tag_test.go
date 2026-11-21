@@ -809,3 +809,136 @@ func TestAuditPGCollationChangeThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing ALTER COLLATION namespace collision finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditPGIndexAttachmentThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGIndexAttachment: &spec.PGIndexAttachmentState{Target: spec.PGIndexAttachment{Parent: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, Child: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "child"}}}, ParentKind: "I", ChildKind: "i", OtherParent: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER INDEX app.mv ATTACH PARTITION app.child`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "pg_index_attachment" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_index.attach_partition.valid" && f.Metadata["reason_code"] == "index_attachment_child_already_attached" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER INDEX partition attachment finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGIndexOptionsThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGIndexOptions: &spec.PGIndexOptionsState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, Kind: "i", Method: "btree"}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER INDEX app.mv SET (fillfactor=9)`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "pg_index_options" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_index.options.valid" && f.Metadata["reason_code"] == "index_option_out_of_range" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER INDEX storage option finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGIndexIncludeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGIndexInclude: &spec.PGIndexIncludeState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "t"}}, Kind: "r", Method: "btree", Columns: []string{"id"}, System: []string{"ctid"}}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE INDEX idx ON app.t(id) INCLUDE (missing)`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "t" || provider.objectCalls[0].Type != "pg_index_include" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_index.include.valid" && f.Metadata["reason_code"] == "index_include_column_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing CREATE INDEX INCLUDE finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGOperatorFamilyTargetThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGOperatorFamily: &spec.PGOperatorFamilyState{Target: spec.PGOperatorFamilyTarget{Schema: "app", Name: "family", Method: "btree"}, SchemaExists: true, MethodKind: "i", Exists: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE OPERATOR FAMILY app.family USING btree`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "family" || provider.objectCalls[0].Type != "pg_operator_family" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_operator_family.target.valid" && f.Metadata["reason_code"] == "operator_family_already_exists" {
+			return
+		}
+	}
+	t.Fatalf("missing CREATE OPERATOR FAMILY target finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGOperatorFamilyMemberThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGOperatorFamilyMember: &spec.PGOperatorFamilyMemberState{Target: spec.PGOperatorFamilyTarget{Schema: "app", Name: "family", Method: "btree"}, Member: spec.PGOperatorFamilyMember{Number: 1, Drop: true, Left: spec.PGColumnTypeTarget{Schema: "pg_catalog", Name: "int4"}, Right: spec.PGColumnTypeTarget{Schema: "pg_catalog", Name: "int4"}}, SchemaExists: true, MethodKind: "i", FamilyExists: true, BTree: true, OperandTypesRead: true, OperandTypesOK: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER OPERATOR FAMILY app.family USING btree DROP OPERATOR 1 (integer)`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "family" || provider.objectCalls[0].Type != "pg_operator_family_member" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_operator_family.member.valid" && f.Metadata["reason_code"] == "operator_family_slot_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER OPERATOR FAMILY member finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGIndexDestinationThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGIndexDestination: &spec.PGIndexDestinationState{Source: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, Action: "set_tablespace", Destination: "absent_sp", Kind: "i"}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER INDEX app.mv SET TABLESPACE absent_sp`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "pg_index_destination" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_index.destination.valid" && f.Metadata["reason_code"] == "index_tablespace_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER INDEX tablespace finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGOperatorFamilyChangeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGOperatorFamilyChange: &spec.PGOperatorFamilyChangeState{Target: spec.PGOperatorFamilyChange{Source: spec.PGOperatorFamilyTarget{Schema: "app", Name: "family", Method: "btree"}, Action: "rename", Destination: "occupied"}, SourceSchemaExists: true, MethodKind: "i", SourceExists: true, DestinationOccupied: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER OPERATOR FAMILY app.family USING btree RENAME TO occupied`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "family" || provider.objectCalls[0].Type != "pg_operator_family_change" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_operator_family.change.target.valid" && f.Metadata["reason_code"] == "operator_family_destination_occupied" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER OPERATOR FAMILY rename finding: %+v", result.Statements[0].Findings)
+}

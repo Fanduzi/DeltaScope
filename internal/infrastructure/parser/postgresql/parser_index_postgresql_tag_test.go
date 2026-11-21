@@ -219,7 +219,7 @@ func TestExtractCreateIndexNormalizesNonBtreeAccessMethod(t *testing.T) {
 	}
 }
 
-func TestExtractCreateIndexRejectsNullsNotDistinct(t *testing.T) {
+func TestExtractCreateIndexRetainsNullsNotDistinct(t *testing.T) {
 	t.Parallel()
 	parser := New()
 
@@ -235,14 +235,9 @@ func TestExtractCreateIndexRejectsNullsNotDistinct(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
-	if statement.Kind != spec.KindUnknown {
-		t.Fatalf("expected unsupported kind unknown for nulls not distinct, got %q", statement.Kind)
-	}
-	if statement.Unsupported == nil || statement.Unsupported.Feature != "create_index" {
-		t.Fatalf("expected unsupported create_index, got %#v", statement.Unsupported)
-	}
-	if statement.Unsupported.Reason == "" {
-		t.Fatalf("expected non-empty reason for nulls not distinct, got %#v", statement.Unsupported)
+	if statement.Kind != spec.KindDDL || statement.Unsupported != nil || statement.DDL == nil ||
+		statement.DDL.Operation != spec.DDLOperationCreateIndex || len(statement.DDL.Indexes) != 1 || !statement.DDL.Indexes[0].PGNullsNotDistinct {
+		t.Fatalf("expected modeled CREATE INDEX with NULLS NOT DISTINCT, got %#v", statement)
 	}
 }
 
@@ -401,17 +396,17 @@ func TestCharacterizePGUniqueIndexFacts(t *testing.T) {
 	}
 }
 
-func TestCharacterizePGUnsupportedIndexForms(t *testing.T) {
+func TestCharacterizePGIndexNullsNotDistinct(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name        string
-		sql         string
-		wantFeature string
+		name     string
+		sql      string
+		wantKind spec.IndexKind
 	}{
 		{
-			name:        "nulls_not_distinct",
-			sql:         `create unique index idx_users_email_nulls on users (email) nulls not distinct;`,
-			wantFeature: "create_index",
+			name:     "nulls_not_distinct",
+			sql:      `create unique index idx_users_email_nulls on users (email) nulls not distinct;`,
+			wantKind: spec.IndexKindUnique,
 		},
 	}
 
@@ -421,11 +416,9 @@ func TestCharacterizePGUnsupportedIndexForms(t *testing.T) {
 			t.Parallel()
 			statement := extractPostgreSQLStatement(t, tt.sql)
 
-			if statement.Unsupported == nil {
-				t.Fatalf("expected unsupported statement, got supported: %#v", statement)
-			}
-			if statement.Unsupported.Feature != tt.wantFeature {
-				t.Fatalf("expected unsupported feature %q, got %q", tt.wantFeature, statement.Unsupported.Feature)
+			if statement.Unsupported != nil || statement.DDL == nil || len(statement.DDL.Indexes) != 1 ||
+				statement.DDL.Indexes[0].Kind != tt.wantKind || !statement.DDL.Indexes[0].PGNullsNotDistinct {
+				t.Fatalf("expected modeled %s index with NULLS NOT DISTINCT, got %#v", tt.wantKind, statement)
 			}
 		})
 	}

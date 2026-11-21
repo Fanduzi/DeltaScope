@@ -13,10 +13,6 @@ func extractIndexStmt(statement spec.Statement, stmt *pg_query.IndexStmt) spec.S
 	if stmt == nil {
 		return unsupportedStatement(statement, "create_index", "postgresql create index statement payload is missing")
 	}
-	if stmt.GetNullsNotDistinct() {
-		return unsupportedStatement(statement, "create_index", "postgresql create index nulls not distinct is unsupported in this milestone")
-	}
-
 	columns := indexColumnsFromIndexParams(stmt.GetIndexParams())
 	kind := spec.IndexKindSecondary
 	if stmt.GetUnique() {
@@ -32,18 +28,20 @@ func extractIndexStmt(statement spec.Statement, stmt *pg_query.IndexStmt) spec.S
 	includedColumns := indexElemNames(stmt.GetIndexIncludingParams())
 
 	statement.DDL = &spec.DDL{
-		Operation: spec.DDLOperationCreateIndex,
-		Table:     tableFromRangeVar(stmt.GetRelation()),
+		Operation:               spec.DDLOperationCreateIndex,
+		Table:                   tableFromRangeVar(stmt.GetRelation()),
+		PGTableCatalogQualified: stmt.GetRelation().GetCatalogname() != "",
 		Indexes: []spec.Index{
 			{
-				Name:              stmt.GetIdxname(),
-				Kind:              kind,
-				Columns:           columns,
-				AccessMethod:      accessMethod,
-				IncludedColumns:   includedColumns,
-				HasPredicate:      stmt.GetWhereClause() != nil,
-				HasExpressionKeys: exprCount > 0,
-				ExpressionCount:   exprCount,
+				Name:               stmt.GetIdxname(),
+				Kind:               kind,
+				Columns:            columns,
+				AccessMethod:       accessMethod,
+				IncludedColumns:    includedColumns,
+				PGNullsNotDistinct: stmt.GetNullsNotDistinct(),
+				HasPredicate:       stmt.GetWhereClause() != nil,
+				HasExpressionKeys:  exprCount > 0,
+				ExpressionCount:    exprCount,
 			},
 		},
 		Options: map[string]string{

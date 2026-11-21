@@ -113,6 +113,11 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | postgresql_create_schema_metadata.go | Binds PostgreSQL 17 creation namespace and role facts before earlier DDL can change them. |
 | postgresql_collation_change_metadata.go | Binds fresh PostgreSQL collation rename, schema move and owner facts. |
 | postgresql_collation_refresh_metadata.go | Binds fresh collation refresh target facts. |
+| postgresql_index_include_metadata.go | Binds fresh qualified CREATE INDEX INCLUDE relation, method and column facts. |
+| postgresql_index_destination_metadata.go | Binds observed source and destination facts to a qualified PostgreSQL index change. |
+| postgresql_index_options_metadata.go | Binds index kind and access method to the exact qualified storage target. |
+| postgresql_index_attachment_metadata.go | Binds fresh PostgreSQL index attach facts to both exact authored names. |
+| postgresql_operator_family_metadata.go | Binds fresh PostgreSQL operator family creation, member, namespace and owner facts. |
 | postgresql_drop_view_metadata.go | Binds exact DROP VIEW targets and dependency observations for single and ordered targets, and binds ALTER VIEW or ALTER MATERIALIZED VIEW option facts. |
 | postgresql_destructive_table_metadata.go | Binds ordered PostgreSQL 17 DROP/TRUNCATE target identities and private RESTRICT dependency observations. |
 | postgresql_table_persistence_metadata.go | Binds private PG17 persistence transition evidence after exact target freshness checks |

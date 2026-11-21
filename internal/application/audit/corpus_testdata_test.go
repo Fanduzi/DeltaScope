@@ -189,7 +189,53 @@ type corpusPGCollationChange struct {
 	Destination string `yaml:"destination"`
 }
 
+type corpusPGOperatorFamily struct {
+	Schema           string `yaml:"schema"`
+	Name             string `yaml:"name"`
+	Method           string `yaml:"method"`
+	SchemaExists     bool   `yaml:"schema_exists"`
+	MethodKind       string `yaml:"method_kind"`
+	Exists           bool   `yaml:"exists"`
+	MemberSlotExists bool   `yaml:"member_slot_exists,omitempty"`
+	OccupiedRename   string `yaml:"occupied_rename,omitempty"`
+}
+
+type corpusPGIndexInclude struct {
+	Schema  string   `yaml:"schema"`
+	Name    string   `yaml:"name"`
+	Kind    string   `yaml:"kind"`
+	Method  string   `yaml:"method"`
+	Columns []string `yaml:"columns"`
+	System  []string `yaml:"system"`
+}
+
+type corpusPGIndexOptions struct {
+	Schema string `yaml:"schema"`
+	Name   string `yaml:"name"`
+	Kind   string `yaml:"kind"`
+	Method string `yaml:"method"`
+}
+
+type corpusPGIndexAttachment struct {
+	Schema      string `yaml:"schema"`
+	Parent      string `yaml:"parent"`
+	ChildSchema string `yaml:"child_schema"`
+	Child       string `yaml:"child"`
+	Definition  string `yaml:"definition"`
+}
+
+type corpusPGIndexDestination struct {
+	Schema     string `yaml:"schema"`
+	Name       string `yaml:"name"`
+	Tablespace string `yaml:"tablespace"`
+}
+
 type corpusMetadata struct {
+	PGOperatorFamilies           []corpusPGOperatorFamily                 `yaml:"pg_operator_families,omitempty"`
+	PGIndexIncludes              []corpusPGIndexInclude                   `yaml:"pg_index_includes,omitempty"`
+	PGIndexDestinations          []corpusPGIndexDestination               `yaml:"pg_index_destinations,omitempty"`
+	PGIndexOptions               []corpusPGIndexOptions                   `yaml:"pg_index_options,omitempty"`
+	PGIndexAttachments           []corpusPGIndexAttachment                `yaml:"pg_index_attachments,omitempty"`
 	PGCollationChanges           []corpusPGCollationChange                `yaml:"pg_collation_changes,omitempty"`
 	PGCollationRefreshes         []corpusPGCollationRefresh               `yaml:"pg_collation_refreshes,omitempty"`
 	PGCreateSchemas              []corpusPGCreateSchema                   `yaml:"pg_create_schemas,omitempty"`

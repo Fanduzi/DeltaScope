@@ -118,6 +118,13 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGCreateSchemaTarget` retains the exact authored declaration and optional owner role. The provider resolves implicit names privately.
 - `PGCollationChangeState` binds observed namespace or owner facts to the exact collation and authored action.
 - `PGCollationRefreshState` binds the exact qualified collation to its observed encoding eligibility and version presence facts.
+- `PGIndexIncludeState` binds exact user and system column directories and the observed access method for CREATE INDEX INCLUDE.
+- `PGIndexDestinationTarget` retains the qualified ALTER INDEX source, action, destination and absence guard.
+- `PGIndexOptionsState` binds the observed index kind and supported access method to the exact ALTER INDEX storage target.
+- `PGIndexAttachment` retains both qualified index names. `PGIndexAttachmentState` describes their observed attachment and table partition premises.
+- `PGOperatorFamilyMember` retains one authored search-operator strategy and its exact operand identities.
+- `PGOperatorFamilyChangeState` binds a PostgreSQL operator family change to its exact schema, name, access method and destination or owner.
+- `PGOperatorFamilyTarget` binds the exact PostgreSQL operator family namespace, name and access method.
 - `PGDropViewState` binds the observed kind and direct dependencies to a single PostgreSQL DROP VIEW target. `PGDropViewSetState` binds a refusal or proved absence of a covered refusal to the exact ordered list and modifiers.
 - `PGDestructiveTable` preserves ordered DROP and TRUNCATE targets and private modifiers. `PGDestructiveReferences` binds dependency and ONLY membership observations to those exact targets.
 - `PGViewOptions` preserves each authored CREATE VIEW and ALTER VIEW option name, namespace and bounded value facts in AST order.

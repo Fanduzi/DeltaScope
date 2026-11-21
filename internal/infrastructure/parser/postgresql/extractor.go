@@ -145,6 +145,8 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractDefineStmt(statement, node.DefineStmt), nil
 	case *pg_query.Node_CreateConversionStmt:
 		return extractCreateConversionStmt(statement, node.CreateConversionStmt), nil
+	case *pg_query.Node_AlterOpFamilyStmt:
+		return extractAlterOpFamilyStmt(statement, node.AlterOpFamilyStmt), nil
 	case *pg_query.Node_CreateOpFamilyStmt:
 		return extractCreateOpFamilyStmt(statement, node.CreateOpFamilyStmt), nil
 	case *pg_query.Node_CreateOpClassStmt:

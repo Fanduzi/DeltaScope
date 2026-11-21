@@ -92,7 +92,7 @@ func TestExtractIndexStmtConcurrentPartial(t *testing.T) {
 	}
 }
 
-func TestExtractIndexStmtNullsNotDistinctUnsupported(t *testing.T) {
+func TestExtractIndexStmtNullsNotDistinct(t *testing.T) {
 	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "CREATE INDEX idx_nulls ON t (col) NULLS NOT DISTINCT")
@@ -106,11 +106,8 @@ func TestExtractIndexStmtNullsNotDistinctUnsupported(t *testing.T) {
 	if extractErr != nil {
 		t.Fatalf("extract: %v", extractErr)
 	}
-	if stmt.Unsupported == nil {
-		t.Fatal("expected NULLS NOT DISTINCT to remain unsupported")
-	}
-	if stmt.Unsupported.Feature != "create_index" {
-		t.Errorf("expected feature create_index, got %q", stmt.Unsupported.Feature)
+	if stmt.Unsupported != nil || stmt.DDL == nil || len(stmt.DDL.Indexes) != 1 || !stmt.DDL.Indexes[0].PGNullsNotDistinct || stmt.DDL.Indexes[0].Kind != spec.IndexKindSecondary {
+		t.Fatalf("expected nonunique index with authored NULLS NOT DISTINCT, got %+v", stmt)
 	}
 }
 

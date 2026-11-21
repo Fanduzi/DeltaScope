@@ -193,10 +193,11 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 	case pg_query.ObjectType_OBJECT_OPFAMILY:
 		objectName, am := opNameAndAccessMethod(stmt.GetObject())
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterOperatorFamily,
-			ObjectName: objectName,
-			ObjectType: "operator_family",
-			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname(), "access_method": am},
+			PGOperatorFamilyChange: pgOperatorFamilyChange(stmt.GetObject(), "rename", stmt.GetNewname(), spec.PGTableOwnerTarget{}),
+			Operation:              spec.DDLOperationAlterOperatorFamily,
+			ObjectName:             objectName,
+			ObjectType:             "operator_family",
+			Options:                map[string]string{"action": "rename", "new_name": stmt.GetNewname(), "access_method": am},
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_OPCLASS:
@@ -294,6 +295,12 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 			ObjectName: objectName,
 			ObjectType: "index",
 			Options:    options,
+		}
+		if table != nil {
+			statement.DDL.PGIndexDestination = &spec.PGIndexDestinationTarget{
+				Source: spec.PGDestructiveTableTarget{Table: *table, CatalogQualified: stmt.GetRelation().GetCatalogname() != ""},
+				Action: "rename", Destination: stmt.GetNewname(), IfExists: stmt.GetMissingOk(),
+			}
 		}
 		return statement
 	default:
@@ -443,9 +450,10 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_OPFAMILY {
 		objectName, am := opNameAndAccessMethod(stmt.GetObject())
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterOperatorFamily,
-			ObjectName: objectName,
-			ObjectType: "operator_family",
+			PGOperatorFamilyChange: pgOperatorFamilyChange(stmt.GetObject(), "set_schema", stmt.GetNewschema(), spec.PGTableOwnerTarget{}),
+			Operation:              spec.DDLOperationAlterOperatorFamily,
+			ObjectName:             objectName,
+			ObjectType:             "operator_family",
 			Options: map[string]string{
 				"action":        "set_schema",
 				"new_schema":    stmt.GetNewschema(),
@@ -1735,10 +1743,11 @@ func extractAlterOwnerStmt(statement spec.Statement, stmt *pg_query.AlterOwnerSt
 	case pg_query.ObjectType_OBJECT_OPFAMILY:
 		objectName, am := opNameAndAccessMethod(stmt.GetObject())
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterOperatorFamily,
-			ObjectName: objectName,
-			ObjectType: "operator_family",
-			Options:    map[string]string{"action": "set_owner", "owner": owner, "access_method": am},
+			PGOperatorFamilyChange: pgOperatorFamilyChange(stmt.GetObject(), "set_owner", "", pgRoleSelection(stmt.GetNewowner())),
+			Operation:              spec.DDLOperationAlterOperatorFamily,
+			ObjectName:             objectName,
+			ObjectType:             "operator_family",
+			Options:                map[string]string{"action": "set_owner", "owner": owner, "access_method": am},
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_OPCLASS:
@@ -1784,6 +1793,20 @@ func extractAlterOwnerStmt(statement spec.Statement, stmt *pg_query.AlterOwnerSt
 }
 
 func extractAlterIndexStmt(statement spec.Statement, stmt *pg_query.AlterTableStmt) spec.Statement {
+	if len(stmt.GetCmds()) == 1 && stmt.GetCmds()[0].GetAlterTableCmd().GetSubtype() == pg_query.AlterTableType_AT_AttachPartition {
+		parent := stmt.GetRelation()
+		child := stmt.GetCmds()[0].GetAlterTableCmd().GetDef().GetPartitionCmd().GetName()
+		p, c := tableFromRangeVar(parent), tableFromRangeVar(child)
+		if p == nil || c == nil {
+			return unsupportedStatement(statement, "alter_index", "postgresql index attachment target is missing")
+		}
+		statement.DDL = &spec.DDL{Operation: spec.DDLOperationAlterIndex, ObjectType: "index", ObjectName: p.Name,
+			Alter: []spec.Alter{{Action: "attach_partition"}}, PGIndexAttachment: &spec.PGIndexAttachment{
+				Parent: spec.PGDestructiveTableTarget{Table: *p, CatalogQualified: parent.GetCatalogname() != ""},
+				Child:  spec.PGDestructiveTableTarget{Table: *c, CatalogQualified: child.GetCatalogname() != ""},
+			}}
+		return statement
+	}
 	if len(stmt.GetCmds()) == 0 {
 		return unsupportedStatement(statement, "alter_index", "postgresql alter index statement has no commands")
 	}
@@ -1806,6 +1829,33 @@ func extractAlterIndexStmt(statement spec.Statement, stmt *pg_query.AlterTableSt
 				ObjectType: "index",
 				Options:    map[string]string{"action": "set_tablespace", "tablespace": tablespace},
 			}
+			if table != nil && len(stmt.GetCmds()) == 1 {
+				statement.DDL.PGIndexDestination = &spec.PGIndexDestinationTarget{
+					Source: spec.PGDestructiveTableTarget{Table: *table, CatalogQualified: stmt.GetRelation().GetCatalogname() != ""},
+					Action: "set_tablespace", Destination: tablespace, IfExists: stmt.GetMissingOk(),
+				}
+			}
+			return statement
+		case pg_query.AlterTableType_AT_SetRelOptions, pg_query.AlterTableType_AT_ResetRelOptions:
+			items := cmd.GetDef().GetList().GetItems()
+			if table == nil || len(stmt.GetCmds()) != 1 || len(items) == 0 {
+				return unsupportedStatement(statement, "alter_index", "postgresql index storage option target or action is unmodeled")
+			}
+			reset := cmd.GetSubtype() == pg_query.AlterTableType_AT_ResetRelOptions
+			alter := spec.Alter{Action: "set_options", PGTableReloptions: pgTableReloptions(items, reset, false)}
+			if reset {
+				alter.Action = "reset_options"
+			} else {
+				for i, item := range items {
+					option := &alter.PGTableReloptions[i]
+					if option.Namespace == "" && option.Name == "deduplicate_items" {
+						option.Value = pgBooleanReloptionValue(item.GetDefElem().GetArg())
+					}
+				}
+			}
+			statement.DDL = &spec.DDL{Operation: spec.DDLOperationAlterIndex, ObjectType: "index", ObjectName: objectName,
+				Table: table, PGTableIfExists: stmt.GetMissingOk(), PGTableCatalogQualified: stmt.GetRelation().GetCatalogname() != "",
+				Alter: []spec.Alter{alter}}
 			return statement
 		default:
 			return unsupportedStatement(statement, "alter_index", fmt.Sprintf("postgresql alter index command %s is deferred", cmd.GetSubtype()))
@@ -2060,6 +2110,16 @@ func extractCreateConversionStmt(statement spec.Statement, stmt *pg_query.Create
 
 // opNameAndAccessMethod extracts object name and access method from an object list
 // where items are [access_method, object_name] (used by operator family/class).
+func pgOperatorFamilyChange(object *pg_query.Node, action, destination string, owner spec.PGTableOwnerTarget) *spec.PGOperatorFamilyChange {
+	parts := object.GetList().GetItems()
+	name, method := opNameAndAccessMethod(object)
+	source := spec.PGOperatorFamilyTarget{Name: name, Method: method}
+	if len(parts) == 3 {
+		source.Schema = parts[1].GetString_().GetSval()
+	}
+	return &spec.PGOperatorFamilyChange{Source: source, Action: action, Destination: destination, Owner: owner}
+}
+
 func opNameAndAccessMethod(node *pg_query.Node) (string, string) {
 	if node == nil {
 		return "", ""
@@ -2081,12 +2141,18 @@ func extractCreateOpFamilyStmt(statement spec.Statement, stmt *pg_query.CreateOp
 	if stmt == nil {
 		return unsupportedStatement(statement, "create_operator_family", "postgresql create operator family statement payload is missing")
 	}
-	objectName := lastStringFromNodes(stmt.GetOpfamilyname())
+	parts := stmt.GetOpfamilyname()
+	objectName := lastStringFromNodes(parts)
+	target := &spec.PGOperatorFamilyTarget{Name: objectName, Method: stmt.GetAmname()}
+	if len(parts) == 2 {
+		target.Schema = parts[0].GetString_().GetSval()
+	}
 	statement.DDL = &spec.DDL{
-		Operation:  spec.DDLOperationCreateOperatorFamily,
-		ObjectName: objectName,
-		ObjectType: "operator_family",
-		Options:    map[string]string{"access_method": stmt.GetAmname()},
+		PGOperatorFamily: target,
+		Operation:        spec.DDLOperationCreateOperatorFamily,
+		ObjectName:       objectName,
+		ObjectType:       "operator_family",
+		Options:          map[string]string{"access_method": stmt.GetAmname()},
 	}
 	return statement
 }

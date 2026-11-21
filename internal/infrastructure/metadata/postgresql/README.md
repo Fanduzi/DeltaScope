@@ -49,6 +49,13 @@ comparisons for the member and scope binding.
 | create_schema.go | Observes the requested PostgreSQL schema and optional owner without returning resolved role identities. |
 | collation_change.go | Resolves the exact source in the database encoding and observes the requested namespace or owner. |
 | collation_refresh.go | Observes the exact qualified collation for the database encoding and keeps provider versions private. |
+| index_include.go | Observes the qualified relation kind, column directories and bounded access-method identity. |
+| index_destination.go | Observes PostgreSQL index rename occupancy and tablespace destinations. |
+| index_options.go | Observes exact PostgreSQL index kind and built-in B-tree or hash method. |
+| index_attachment.go | Observes PostgreSQL index kinds, attachment occupancy and direct table partition membership. |
+| operator_family_member.go | Observes the exact B-tree family and the operator and member-slot premises in one PostgreSQL catalog read. |
+| operator_family_change.go | Observes exact operator family namespace and role facts for PostgreSQL. |
+| operator_family.go | Observes the exact PostgreSQL schema, access method kind and operator family identity. |
 | drop_view.go | Observes exact DROP VIEW relation kind, normal rewrite and row-type column dependencies. |
 | drop_view_set.go | Checks the ordered qualified DROP VIEW list in one catalog read and looks for covered dependencies outside the selection. |
 | destructive_references.go | Observes external foreign keys for the expanded TRUNCATE RESTRICT set and checks ordered partitioned ONLY eligibility and direct foreign-key and rewrite dependencies for DROP RESTRICT over exact target lists. |

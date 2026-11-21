@@ -240,6 +240,20 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 		return "Checks exact PostgreSQL 17 collation refresh target identity in the database encoding."
 	case "ddl.pg.alter_collation.change.target.valid":
 		return "Checks qualified PostgreSQL 17 collation rename, namespace and owner targets."
+	case "ddl.pg.create_index.include.valid":
+		return "Checks exact PostgreSQL 17 CREATE INDEX INCLUDE targets, bounded access-method eligibility and user-column names."
+	case "ddl.pg.alter_index.destination.valid":
+		return "Checks qualified PostgreSQL 17 ALTER INDEX rename and tablespace source and destination premises."
+	case "ddl.pg.alter_index.options.valid":
+		return "Checks exact PostgreSQL 17 index SET/RESET targets and bounded B-tree and hash declarations."
+	case "ddl.pg.alter_index.attach_partition.valid":
+		return "Checks exact PostgreSQL 17 index partition attachment identities and catalog relationships."
+	case "ddl.pg.create_operator_family.target.valid":
+		return "Checks the exact PostgreSQL 17 operator family creation namespace, index method and destination identity."
+	case "ddl.pg.alter_operator_family.change.target.valid":
+		return "Checks PostgreSQL 17 qualified operator family rename, schema and owner premises."
+	case "ddl.pg.alter_operator_family.member.valid":
+		return "Checks exact PostgreSQL 17 B-tree search operator family member slots."
 	case "ddl.pg.create_view.output.valid":
 		return "Checks exact PostgreSQL 17 CREATE VIEW targets and literal output compatibility."
 	case "ddl.pg.alter_view.column_default.valid":
@@ -652,7 +666,9 @@ func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 		"ddl.pg.refresh_materialized_view.target.valid", "ddl.pg.drop_view.target.valid", "ddl.pg.alter_view.namespace.valid",
 		"ddl.pg.alter_view.owner.valid", "ddl.pg.alter_view.options.valid", "ddl.pg.alter_view.column_default.valid",
 		"ddl.pg.alter_materialized_view.options.valid", "ddl.pg.alter_materialized_view.extension.valid",
-		"ddl.pg.create_schema.target.valid", "ddl.pg.alter_collation.refresh.target.valid", "ddl.pg.alter_collation.change.target.valid":
+		"ddl.pg.create_schema.target.valid", "ddl.pg.alter_collation.refresh.target.valid", "ddl.pg.alter_collation.change.target.valid",
+		"ddl.pg.create_index.include.valid", "ddl.pg.alter_index.options.valid", "ddl.pg.alter_index.attach_partition.valid", "ddl.pg.create_operator_family.target.valid",
+		"ddl.pg.alter_operator_family.member.valid", "ddl.pg.alter_index.destination.valid", "ddl.pg.alter_operator_family.change.target.valid":
 		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true
 	case "ddl.pg.alter.column.storage.valid", "ddl.pg.alter.column.compression.valid", "ddl.pg.alter.column.statistics.target.valid", "ddl.pg.alter.column.statistics.clamp.warn", "ddl.pg.alter.column.options.valid", "ddl.alter.drop_column.exists.require", "ddl.pg.alter.drop_column.advisory":
 		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true
