@@ -1098,9 +1098,9 @@ insufficient.
 | F11 | `postgresql.create-operator-family` | CREATE OPERATOR FAMILY; AS members | unreviewed |
 | F11 | `postgresql.alter-operator-family` | ADD/DROP members; RENAME/OWNER/SET SCHEMA | unreviewed |
 | F12 | `postgresql.create-view` | CREATE VIEW; OR REPLACE / TEMP; column list; WITH options; CHECK OPTION; RECURSIVE | Option checks delivered. Query and target premises remain open. |
-| F12 | `postgresql.alter-view` | RENAME/SET SCHEMA/OWNER; SET/RESET options; ALTER COLUMN DEFAULT; IF EXISTS | Rename and schema-move notices now match the authored action. Catalog and additional action premises remain open. |
+| F12 | `postgresql.alter-view` | RENAME/SET SCHEMA/OWNER; SET/RESET options; ALTER COLUMN DEFAULT; IF EXISTS | Qualified RENAME, SET SCHEMA, OWNER and single SET/RESET option checks delivered. Other action and execution premises remain open. |
 | F12 | `postgresql.drop-view` | DROP VIEW; IF EXISTS CASCADE | Target, guarded absence and direct RESTRICT checks delivered. Wider dependency and session cases remain open. |
-| F12 | `postgresql.alter-materialized-view` | RENAME/SET SCHEMA/OWNER; SET/RESET options; DEPENDS ON EXTENSION | unreviewed |
+| F12 | `postgresql.alter-materialized-view` | RENAME/SET SCHEMA/OWNER; SET/RESET options; DEPENDS ON EXTENSION | Qualified rename, schema-move and owner checks delivered. Storage options and extension dependencies remain open. |
 | F12 | `postgresql.refresh-materialized-view` | REFRESH basic; CONCURRENTLY; WITH NO DATA | Target and concurrent refresh prerequisites delivered. Runtime query, privilege and lock outcomes remain open. |
 | F13 | `postgresql.create-type` | ENUM; composite; RANGE; base type; shell type | unreviewed |
 | F13 | `postgresql.alter-type` | ADD VALUE; RENAME VALUE; RENAME/OWNER/SET SCHEMA; composite attributes; SET properties | unreviewed |
@@ -1230,13 +1230,13 @@ The five rows below contain the same 18 authored and normalized dimension names 
 | `postgresql.create-view` / WITH options | `pg-create-view-options-*` distinguishes recognized Boolean and CHECK OPTION values from invalid values, unknown names and duplicates. The offline control reports a missing observed version. | Effective privileges, barrier behavior and query execution require separate evidence. |
 | `postgresql.create-view` / CHECK OPTION | `create-view-check-option` exercises authored LOCAL. `pg-create-view-options-both-check-options` proves duplicate declaration refusal. `pg-create-view-options-not-updatable-check-option` records the native updatability refusal separately. | LOCAL and CASCADED evaluation and query updatability require their own facts. |
 | `postgresql.create-view` / RECURSIVE | `create-view-recursive` parses the recursive form. The AST and binding can express the equivalent recursive query. | Recursive self-binding and query semantics need separate evidence. |
-| `postgresql.alter-view` / RENAME/SET SCHEMA/OWNER | `alter-view-rename-set-schema-owner` and the corpus cases verify action-specific notices. Native rollbacks establish wrong-kind `42809`, occupied relation `42P07`, row-type collision `42710`, missing destination schema `3F000` and a successful same-schema move. | Audit still requires exact source and destination binding for these catalog decisions. OWNER requires independent evidence. |
-| `postgresql.alter-view` / SET/RESET options | `alter-view-set-reset-options` pins `alter_table` unsupported on observed parser input. PostgreSQL 17.7 accepts SET and unknown or repeated RESET names in native probes. | Add exact target eligibility and declared option facts before making a rule decision. |
+| `postgresql.alter-view` / RENAME/SET SCHEMA/OWNER | T40 `pg-view-namespace-*` checks exact qualified names, row and array type conflicts, missing schemas, same-name rename and same-schema moves. `pg-view-owner-*` covers literal and session roles, including missing roles and PUBLIC. | Unqualified sources still need fresh search-path evidence. Membership, authorization and locks need separate evidence. |
+| `postgresql.alter-view` / SET/RESET options | `pg-alter-view-options-*` checks exact target kind before SET/RESET declarations, including invalid SET values, RESET with a value, repetitive or unknown RESET names and ignored namespaces. | CHECK OPTION needs evidence of updatability. Multi-action changes still require ordered-state evidence. |
 | `postgresql.alter-view` / ALTER COLUMN DEFAULT | `alter-view-alter-column-default` pins `alter_table` unsupported for SET DEFAULT. | Model old and new default intent, exact view column and the context-specific expression rules. |
-| `postgresql.alter-view` / IF EXISTS | `alter-view-if-exists` accepts the guarded rename syntax. PostgreSQL 17.7 skips an absent target and refuses a table target with `42809` under the same guard. | Audit still needs the decoded guard and exact kind and absence facts. |
+| `postgresql.alter-view` / IF EXISTS | The qualified `pg-view-namespace-*`, `pg-view-owner-*` and `pg-alter-view-options-*` controls skip proved absence under the guard. A present object of the wrong kind still blocks. | Column defaults and unqualified source resolution need their own evidence. |
 | `postgresql.drop-view` / DROP VIEW | T40 proves ordinary and materialized dependent views block RESTRICT on the exact bound target, alongside missing and successful quoted targets. | Other dependency classes need separate catalog evidence. Ordered multi-target DROP VIEW remains an explicit parser-adapter boundary. |
 | `postgresql.drop-view` / IF EXISTS CASCADE | T40 confirms guarded absence is silent under the metadata blocker, while wrong-kind `42809` and guarded RESTRICT dependencies still block. A native CASCADE control removes the dependent view. | Wider CASCADE effects and session-local resolution require independent evidence. |
-| `postgresql.alter-materialized-view` / RENAME/SET SCHEMA/OWNER | `alter-materialized-view-rename-set-schema-owner` covers a normalized rename and its advisory. Native SET SCHEMA refuses `42P07` when an attached index name is already in use at the destination, and succeeds when the relevant names are available. | Audit still needs exact kind, destination identities and companion index evidence. The owner premise is independent. |
+| `postgresql.alter-materialized-view` / RENAME/SET SCHEMA/OWNER | T40 `pg-view-namespace-*` checks exact source and destination identities. Native and audit controls show the array conflict precedes the attached-index conflict. `pg-view-owner-*` covers present and absent destination roles. | Membership, authorization and locks need separate evidence. |
 | `postgresql.alter-materialized-view` / SET/RESET options | `alter-materialized-view-set-reset-options` pins `alter_table` unsupported for a parsed fillfactor declaration. | Apply supported storage parameters by actual relation method and model RESET separately. |
 | `postgresql.alter-materialized-view` / DEPENDS ON EXTENSION | `alter-materialized-view-depends-on-extension` pins an unsupported normalized boundary. | Requires retaining the exact statement identities and observed extension and existing dependency facts. |
 | `postgresql.refresh-materialized-view` / REFRESH basic | `pg-refresh-target-missing`, `-wrong-kind` and `-nonconcurrent-empty` exercise exact target binding and refusal. | Query execution, privileges and lock outcomes remain separate. |
@@ -1283,7 +1283,14 @@ The combined preview against `da3efecc` passed 109 T40 cases with 3,013
 assertions. The earlier 68 cases, authored SQL and native controls remain. The
 existing SET options case now verifies the modeled adapter action.
 Forty-four references bind four exact PostgreSQL 17 inventory cells.
-Verification on the fixed candidate is pending.
+Delivered at `d4cf7b6caa8798c9af60cfc82f914482c6f1a5ba`. All 50 canonical tasks passed with 4,013 cases and
+79,797 assertions. T40 passed 109 cases and 3,013 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44854641890/job/136693858397),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44854641890/job/136693858213),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44854641890/job/136693858406),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44854641840/job/136693858413),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136693935697) passed at the delivered SHA.
 
 - [View namespace targets](../decisions/2026-11-21-postgresql-view-namespace-targets.md)
 - [View owner targets](../decisions/2026-11-21-postgresql-view-owner-targets.md)
