@@ -1031,7 +1031,7 @@ new default behavior is approved per family before implementation.
 | F05 | MySQL/TiDB ALTER options/online DDL | 3 | T15 | unreviewed |
 | F06 | TiDB recovery/flashback | 1 | T16 | unreviewed |
 | F07 | PostgreSQL schema/collation | 2 | T35 | Qualified schema creation and collation checks delivered at `3eba78f6`. Embedded schema elements and wider provider and execution facts remain open. |
-| F08 | PostgreSQL CREATE TABLE | 6 | T36 | D2 delivered; remaining dimensions unreviewed |
+| F08 | PostgreSQL CREATE TABLE | 6 | T36 | Qualified declaration checks delivered at `10354d2b` alongside D2. The exact dimension review lists remaining catalog, parser and execution premises. |
 | F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2–D47 bounded ALTER checks delivered; authored and normalized dimensions remain open where catalog or expression facts are incomplete |
 | F10 | PostgreSQL DROP/TRUNCATE | 2 | T38 | Qualified target and RESTRICT dependency slice delivered at `b5cf88ce`. Wider boundaries remain in the dimension review. |
 | F11 | PostgreSQL indexes/operator families | 4 | T39 | Qualified index and operator-family checks delivered at `47cf3020`. Wider key expressions, predicates and method-specific members remain open. |
@@ -1080,12 +1080,12 @@ insufficient.
 | F06 | `tidb.flashback-recover` | FLASHBACK TABLE; FLASHBACK DATABASE; FLASHBACK CLUSTER; RECOVER TABLE | unreviewed |
 | F07 | `postgresql.create-schema` | CREATE SCHEMA; IF NOT EXISTS / AUTHORIZATION; schema elements | Exact namespace and role checks delivered. Embedded schema elements and execution authorization remain open. |
 | F07 | `postgresql.alter-collation` | REFRESH VERSION; RENAME/OWNER/SET SCHEMA | Qualified target checks and bounded provider-version presence checks delivered. Other provider and session facts remain open. |
-| F08 | `postgresql.create-table` | basic columns; IF NOT EXISTS; column defaults; CHECK constraint; PRIMARY KEY / UNIQUE; FOREIGN KEY / REFERENCES; EXCLUDE constraint; table constraint clause; WITH storage parameters; USING access method; ON COMMIT / TABLESPACE; OF composite type; arrays and composite columns; generation-declaration | partial:D2; others unreviewed |
-| F08 | `postgresql.create-table-constraints` | PRIMARY KEY variants; UNIQUE NULLS NOT DISTINCT; UNIQUE USING INDEX; EXCLUDE; NOT NULL named constraint; REFERENCES actions | unreviewed |
-| F08 | `postgresql.create-table-generated-identity` | GENERATED ALWAYS AS IDENTITY; BY DEFAULT AS IDENTITY; sequence options; GENERATED ALWAYS AS expression STORED; generation-declaration | partial:D2; others unreviewed |
-| F08 | `postgresql.create-table-partitioning` | PARTITION BY RANGE; PARTITION BY LIST; PARTITION BY HASH; PARTITION OF; PARTITION OF DEFAULT; INHERITS | unreviewed |
-| F08 | `postgresql.create-table-temporary` | TEMP/TEMPORARY; GLOBAL TEMPORARY compat noise; UNLOGGED; ON COMMIT actions | unreviewed |
-| F08 | `postgresql.create-table-like` | LIKE basic; INCLUDING options | unreviewed |
+| F08 | `postgresql.create-table` | basic columns; IF NOT EXISTS; column defaults; CHECK constraint; PRIMARY KEY / UNIQUE; FOREIGN KEY / REFERENCES; EXCLUDE constraint; table constraint clause; WITH storage parameters; USING access method; ON COMMIT / TABLESPACE; OF composite type; arrays and composite columns; generation-declaration | D2 and qualified direct column, key, foreign-key, expression, storage, typed-table and guard checks delivered. Complex expressions, EXCLUDE and wider resolution remain open. |
+| F08 | `postgresql.create-table-constraints` | PRIMARY KEY variants; UNIQUE NULLS NOT DISTINCT; UNIQUE USING INDEX; EXCLUDE; NOT NULL named constraint; REFERENCES actions | Direct primary and unique declarations, USING INDEX refusal, native NULLS flags and bounded REFERENCES actions verified. Additional constraints and actions remain open. |
+| F08 | `postgresql.create-table-generated-identity` | GENERATED ALWAYS AS IDENTITY; BY DEFAULT AS IDENTITY; sequence options; GENERATED ALWAYS AS expression STORED; generation-declaration | D2 and bounded generated expression refusals verified. General volatility and expression coercion remain open. |
+| F08 | `postgresql.create-table-partitioning` | PARTITION BY RANGE; PARTITION BY LIST; PARTITION BY HASH; PARTITION OF; PARTITION OF DEFAULT; INHERITS | Qualified INHERITS parent checks verified. Partition declarations retain their explicit unsupported boundaries. |
+| F08 | `postgresql.create-table-temporary` | TEMP/TEMPORARY; GLOBAL TEMPORARY compat noise; UNLOGGED; ON COMMIT actions | Qualified temporary persistence and ON COMMIT premises verified. Session-derived behavior remains open. |
+| F08 | `postgresql.create-table-like` | LIKE basic; INCLUDING options | Qualified LIKE source and destination checks verified. Copied option effects remain evidence gaps. |
 | F09 | `postgresql.alter-table.columns` | ADD COLUMN; ADD COLUMN IF NOT EXISTS; DROP COLUMN; DROP COLUMN IF EXISTS CASCADE; RENAME COLUMN; ALTER COLUMN TYPE; ALTER COLUMN TYPE USING; multi-action; add-column-generation-declaration | partial:D2; D6 bounded DROP/guard delivered; D7 bounded system/ordering evidence delivered; D8 exact ADD/RENAME target and guard evidence delivered; D14 TYPE/USING source checks delivered; D18 exact destination, D27 direct DROP dependency and D30 bounded TYPE destination prerequisites and D33 direct column traversal checks delivered. D34 direct TYPE dependencies, D35 inherited TYPE eligibility and D36 ADD traversal and D43 TYPE ONLY, D44 recursive RENAME, D45 extra TYPE catalog dependencies and D47 recursive TYPE inheritance checks delivered; wider conversion and ordered outcomes remain open |
 | F09 | `postgresql.alter-table.column-attributes` | SET/DROP NOT NULL; SET/DROP DEFAULT; SET GENERATED / DROP EXPRESSION; ADD/DROP IDENTITY; identity options; RESTART; SET STATISTICS; SET STORAGE / COMPRESSION; SET n_distinct / RESET | partial:D5 generation and D6 statistics/options delivered with accepted gaps; D7 bounded storage/compression/system delivered; D20 replica identity key check and D35 inherited/ONLY DROP EXPRESSION and D39 partition NOT NULL traversal and D40 SET DEFAULT reference checks delivered; broader data, expression and relation scopes remain open |
 | F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; D19 exact CHECK name checks delivered; D21 USING INDEX prerequisites delivered; D22 FK target checks delivered; D23 referenced key checks delivered; D24 direct FK dependencies and D25–D26 CHECK inheritance, D31 bounded default operator classes and D32 ON DELETE SET column checks, D37 scalar FK equality and D38 CHECK validation traversal, D41 default operator class resolution and D42 bounded FK domain/enum/array comparisons and D46 CHECK subquery checks delivered; remaining dimensions open |
@@ -1558,7 +1558,14 @@ New cases separately record catalog decisions, native outcomes and guard order.
 | `postgresql.create-table-like` / LIKE basic | T36 checks exact ordered source kinds, destination guard and duplicate copied column names. | Source resolution via `search_path`, temporary overlays and execution permissions still require evidence. |
 | `postgresql.create-table-like` / INCLUDING options | T36 preserves ordered AST sources and effective INCLUDE/EXCLUDE option bits. | Individual copied DEFAULT, generation, identity, index and storage definitions require additional facts. |
 
-The joint T36 preview passed 214 cases and 5,903 assertions. Verification on the fixed F08 candidate is pending.
+The joint T36 preview passed 214 cases and 5,903 assertions. Delivered at `10354d2bf167f0741a6eeb079e72cb981b4d15a8`. All 50 canonical tasks passed with 4,431 cases and
+93,615 assertions. T36 passed 214 cases and 5,903 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44897967671/job/136827571766),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44897967671/job/136827571796),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44897967671/job/136827571522),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44897967497/job/136827571236),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136827630993) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
