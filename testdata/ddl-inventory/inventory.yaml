@@ -8927,18 +8927,18 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-view.rename-set-schema-owner.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-view.rename-set-schema-owner.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json#view-namespace-offline, file:testdata/ddl-golden/T40.json#pg-view-namespace-rename-regular-view-against-exact-domain, file:testdata/ddl-golden/T40.json#pg-view-namespace-rename-regular-view-against-case-distinct-unoccupied-slot, file:testdata/ddl-golden/T40.json#pg-view-namespace-rename-regular-view-against-same-authored-name, file:testdata/ddl-golden/T40.json#pg-view-namespace-move-regular-view-into-current-schema, file:testdata/ddl-golden/T40.json#pg-view-namespace-move-regular-view-into-missing-schema, file:testdata/ddl-golden/T40.json#pg-view-namespace-move-regular-view-against-row-type-only, file:testdata/ddl-golden/T40.json#pg-view-namespace-unqualified-target-checked-by-search-path, file:testdata/ddl-golden/T40.json#pg-view-namespace-view-associated-array-destination-collision, file:testdata/ddl-golden/T40.json#pg-view-namespace-view-array-moves-to-clear-destination, file:testdata/ddl-golden/T40.json#view-owner-offline, file:testdata/ddl-golden/T40.json#pg-view-owner-exact-literal-view-owner, file:testdata/ddl-golden/T40.json#pg-view-owner-case-distinct-missing-owner, file:testdata/ddl-golden/T40.json#pg-view-owner-public-owner, file:testdata/ddl-golden/T40.json#pg-view-owner-current-role-owner, file:testdata/ddl-golden/T40.json#pg-view-owner-unguarded-absent-view-with-missing-owner]
       - subaction_id: SET/RESET options
         parser_status: partial
-        audit_status: explicit_unsupported
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: partial
-            audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-view.set-reset-options.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-view.set-reset-options.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json#alter-view-options-offline, file:testdata/ddl-golden/T40.json#pg-alter-view-options-set-boolean-options, file:testdata/ddl-golden/T40.json#pg-alter-view-options-set-invalid-boolean, file:testdata/ddl-golden/T40.json#pg-alter-view-options-set-duplicate, file:testdata/ddl-golden/T40.json#pg-alter-view-options-set-unknown, file:testdata/ddl-golden/T40.json#pg-alter-view-options-set-namespaced, file:testdata/ddl-golden/T40.json#pg-alter-view-options-reset-duplicate-unknown, file:testdata/ddl-golden/T40.json#pg-alter-view-options-reset-unknown-namespace, file:testdata/ddl-golden/T40.json#pg-alter-view-options-reset-with-a-value, file:testdata/ddl-golden/T40.json#pg-alter-view-options-guarded-absent-skips-invalid-set, file:testdata/ddl-golden/T40.json#pg-alter-view-options-unguarded-absent-before-invalid-set, file:testdata/ddl-golden/T40.json#pg-alter-view-options-guarded-wrong-type-before-invalid-set, file:testdata/ddl-golden/T40.json#pg-alter-view-options-matched-materialized-kind-is-wrong-for-alter-view, file:testdata/ddl-golden/T40.json#pg-alter-view-options-updatable-check-option, file:testdata/ddl-golden/T40.json#pg-alter-view-options-not-updatable-with-check-option, file:testdata/sql-corpus/postgresql/ddl/findings/alter_view_reset_value.expected.yaml#ddl.pg.alter_view.options.valid]
       - subaction_id: ALTER COLUMN DEFAULT
         parser_status: partial
         audit_status: explicit_unsupported
@@ -8960,7 +8960,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-view.if-exists.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-view.if-exists.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json#pg-view-namespace-guarded-missing-source-precedes-missing-destination, file:testdata/ddl-golden/T40.json#pg-view-namespace-wrong-kind-source-precedes-missing-destination, file:testdata/ddl-golden/T40.json#pg-view-owner-guarded-absent-view-with-missing-owner, file:testdata/ddl-golden/T40.json#pg-view-owner-guarded-wrong-kind-source-with-missing-owner, file:testdata/sql-corpus/postgresql/ddl/findings/alter_view_owner_absent_role.expected.yaml#ddl.pg.alter_view.owner.valid]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-view.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
@@ -9112,7 +9112,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-materialized-view.rename-set-schema-owner.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-materialized-view.rename-set-schema-owner.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json#pg-view-namespace-move-materialized-view-against-attached-index, file:testdata/ddl-golden/T40.json#pg-view-namespace-move-materialized-view-into-available-schema, file:testdata/ddl-golden/T40.json#pg-view-namespace-materialized-view-array-precedes-attached-index-conflict, file:testdata/sql-corpus/postgresql/ddl/findings/alter_view_namespace_conflict.expected.yaml#ddl.pg.alter_view.namespace.valid, file:testdata/ddl-golden/T40.json#pg-view-owner-missing-materialized-view-owner, file:testdata/ddl-golden/T40.json#pg-view-owner-exact-literal-materialized-view-owner, file:testdata/ddl-golden/T40.json#pg-view-owner-session-user-owner]
       - subaction_id: SET/RESET options
         parser_status: partial
         audit_status: explicit_unsupported

@@ -1259,6 +1259,36 @@ The validator, read-only review, isolated cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44849731024/job/136677972934),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136678070236) passed at the delivered SHA.
 
+### F12 view namespace, owner and option changes
+
+`ddl.pg.alter_view.namespace.valid` checks exact PostgreSQL 17 source,
+guard and catalog destination premises for ordinary and materialized view
+RENAME and SET SCHEMA. Source kind and guarded absence precede destination
+checks. Destination relation, row type and associated array identities can
+block. For a materialized view, an attached index name can also block a
+schema move. The checks keep catalog-dependent names private.
+
+`ddl.pg.alter_view.owner.valid` checks qualified OWNER TO. A proved absent
+source under IF EXISTS is silent. The audit checks source kind before the
+role fact, and distinguishes absent literal roles, PUBLIC and the role seen
+in the audit session. Role membership, privileges and locks require separate
+evidence.
+
+The SET/RESET check binds an exact ordinary view before assessing options.
+It refuses RESET values and preserves an updatability evidence gap for
+CHECK OPTION. Materialized storage options and multi-action statements
+retain their independent boundaries.
+
+The combined preview against `da3efecc` passed 109 T40 cases with 3,013
+assertions. The earlier 68 cases, authored SQL and native controls remain. The
+existing SET options case now verifies the modeled adapter action.
+Forty-four references bind four exact PostgreSQL 17 inventory cells.
+Verification on the fixed candidate is pending.
+
+- [View namespace targets](../decisions/2026-11-21-postgresql-view-namespace-targets.md)
+- [View owner targets](../decisions/2026-11-21-postgresql-view-owner-targets.md)
+- [ALTER VIEW options](../decisions/2026-11-21-postgresql-alter-view-options.md)
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
