@@ -1156,8 +1156,8 @@ These five F09 rows have 40 authored labels and 40 normalized records at `d8ccee
 
 | Dimension | Covered premise or reproduced boundary | Remaining premise and evidence needed |
 | --- | --- | --- |
-| ADD PRIMARY KEY | D3 covers index build risk. D21 checks exact USING INDEX identity, ownership and catalog eligibility, including PRIMARY KEY with NULLS NOT DISTINCT. | D31 checks installed class defaults for exact type. D41 resolves binary-compatible and polymorphic defaults. Existing rows, locks and execution outcomes need separate evidence. |
-| ADD UNIQUE | D3 separates ordinary build risk from USING INDEX. D21 checks catalog eligibility and distinguishes same-name attachment from an occupied rename destination. | D31 checks installed class defaults for exact type. D41 resolves binary-compatible and polymorphic defaults. Execution prerequisites require separate facts. |
+| ADD PRIMARY KEY | D3 covers index build risk. D21 checks exact USING INDEX identity, ownership and catalog eligibility, including PRIMARY KEY with NULLS NOT DISTINCT. D48 verifies key and INCLUDE columns for a qualified ordinary table, including the refusal for a second primary key. | D31 checks installed class defaults for exact type. D41 resolves binary-compatible and polymorphic defaults. Existing rows, locks and execution outcomes need separate evidence. |
+| ADD UNIQUE | D3 separates ordinary build risk from USING INDEX. D21 checks catalog eligibility and distinguishes same-name attachment from an occupied rename destination. D48 verifies key and INCLUDE columns for a qualified ordinary table, including permitted repetitions in INCLUDE. | D31 checks installed class defaults for exact type. D41 resolves binary-compatible and polymorphic defaults. Execution prerequisites require separate facts. |
 | ADD FOREIGN KEY | D3 covers initial-validation risk. D22 covers exact table and column identity. D23 adds referenced key eligibility, omitted primary-key selection, duplicate referenced columns and arity. | D32 checks ON DELETE SET members. D37 at `683d84ac` checks scalar equality and distinguishes assignment-only casts from implicit casts. D42 checks nested domain bases and the native enum and array equality premises. Remaining polymorphic and custom conversion definitions require independent evidence. Row validity, runtime actions and privileges require separate facts. |
 | ADD CHECK | D19 approved exact named collision on a fresh ordinary table. Native same expression with new/unnamed CHECK succeeds; purely inherited constraint can merge. | D46 checks subqueries before name collisions. Remaining predicate validity, data and inheritance require separate evidence. |
 | ADD CHECK NOT VALID | D19 approved exact collision. Existing follow-up distinguishes migration validation intent. Native can register over an old violation while invalid predicates still fail. | D46 checks subqueries even under NOT VALID. Other expression legality, row checks and batch outcome remain separate. |
@@ -1370,8 +1370,17 @@ within a column identifier stay part of that identifier.
 The rebased T37 preview passed 576 cases and 17,015 assertions.
 Fifteen selectors bind the exact ADD PRIMARY KEY and ADD UNIQUE cells.
 Partition key requirements, row validation, locks and ordered ALTER
-semantics require separate evidence. Verification on the fixed candidate
-is pending.
+semantics require separate evidence.
+
+Delivered at `a83a171084d5311ff8feaab48546b6ef246ddff1`. All 50 canonical tasks passed with 4,099 cases and
+82,646 assertions. T37 passed with 576 cases and 17,015 assertions. The
+validator, read-only review, owned resource cleanup and merged-root gates
+passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44869972937/job/136742085319),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44869972937/job/136742085101),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44869972937/job/136742085253),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44869972905/job/136742084765),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136742168384) passed at the delivered SHA.
 
 - [Constraint column checks](../decisions/2026-11-21-postgresql-primary-unique-constraint-columns.md)
 
