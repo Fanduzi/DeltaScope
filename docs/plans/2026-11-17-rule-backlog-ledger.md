@@ -1034,7 +1034,7 @@ new default behavior is approved per family before implementation.
 | F08 | PostgreSQL CREATE TABLE | 6 | T36 | D2 delivered; remaining dimensions unreviewed |
 | F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2–D47 bounded ALTER checks delivered; authored and normalized dimensions remain open where catalog or expression facts are incomplete |
 | F10 | PostgreSQL DROP/TRUNCATE | 2 | T38 | Qualified target and RESTRICT dependency slice delivered at `b5cf88ce`. Wider boundaries remain in the dimension review. |
-| F11 | PostgreSQL indexes/operator families | 4 | T39 | unreviewed |
+| F11 | PostgreSQL indexes/operator families | 4 | T39 | Qualified index and operator-family checks delivered at `47cf3020`. Wider key expressions, predicates and method-specific members remain open. |
 | F12 | PostgreSQL views/materialized views | 5 | T40 | Qualified lifecycle, options, refresh and bounded view output and dependency checks delivered through `919f1d17`. Remaining premises below. |
 | F13 | PostgreSQL types/operators | 3 | T41 | unreviewed |
 | F14 | PostgreSQL row-security policy | 1 | T42 | unreviewed |
@@ -1093,10 +1093,10 @@ insufficient.
 | F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | partial:D15 primary destination checks delivered; D16 owner checks and D28 attached SET SCHEMA names delivered; wider dependent moves and permissions remain open |
 | F10 | `postgresql.drop-table` | DROP TABLE; IF EXISTS / multi-target | Qualified targets, guarded absence and direct RESTRICT references checked. Wider dependency classes, relation shapes and session binding remain open. |
 | F10 | `postgresql.truncate-table` | TRUNCATE basic; RESTART/CONTINUE IDENTITY; ONLY / CASCADE | Qualified ordering, `ONLY` and RESTRICT references checked. Native fixtures verify bounded identity and CASCADE outcomes. Remaining facts are recorded below. |
-| F11 | `postgresql.create-index` | CREATE INDEX basic; UNIQUE; CONCURRENTLY; USING method; expression index; partial WHERE; INCLUDE / NULLS DISTINCT; opclass/parameters; WITH/TABLESPACE | unreviewed |
-| F11 | `postgresql.alter-index` | RENAME TO; SET TABLESPACE; SET/RESET parameters; ATTACH PARTITION; IF EXISTS | unreviewed |
-| F11 | `postgresql.create-operator-family` | CREATE OPERATOR FAMILY; AS members | unreviewed |
-| F11 | `postgresql.alter-operator-family` | ADD/DROP members; RENAME/OWNER/SET SCHEMA | unreviewed |
+| F11 | `postgresql.create-index` | CREATE INDEX basic; UNIQUE; CONCURRENTLY; USING method; expression index; partial WHERE; INCLUDE / NULLS DISTINCT; opclass/parameters; WITH/TABLESPACE | Qualified INCLUDE and NULLS checks add native evidence. General key and method eligibility remain open. |
+| F11 | `postgresql.alter-index` | RENAME TO; SET TABLESPACE; SET/RESET parameters; ATTACH PARTITION; IF EXISTS | Rename, tablespace, bounded storage options and exact attachment checked. Complex predicates and expression matching remain open. |
+| F11 | `postgresql.create-operator-family` | CREATE OPERATOR FAMILY; AS members | Qualified creation checks the access method, namespace and name slot. AS members retains its PostgreSQL 17 parser refusal. |
+| F11 | `postgresql.alter-operator-family` | ADD/DROP members; RENAME/OWNER/SET SCHEMA | Qualified identity, changes and bounded B-tree search members checked. Other member kinds and access methods remain open. |
 | F12 | `postgresql.create-view` | CREATE VIEW; OR REPLACE / TEMP; column list; WITH options; CHECK OPTION; RECURSIVE | Options, qualified targets and source-free literal outputs have delivered checks. Broader query and session semantics remain open. |
 | F12 | `postgresql.alter-view` | RENAME/SET SCHEMA/OWNER; SET/RESET options; ALTER COLUMN DEFAULT; IF EXISTS | Qualified RENAME, SET SCHEMA, OWNER, SET/RESET options and column defaults delivered in the documented scope. Wider definition and execution facts remain open. |
 | F12 | `postgresql.drop-view` | DROP VIEW; IF EXISTS CASCADE | Ordered qualified targets, guarded absence and direct rewrite and row-type column dependencies delivered. Broader cascades and session cases remain open. |
@@ -1503,7 +1503,14 @@ The four rows below retain all 18 authored dimensions. In the joint preview, 111
 
 The inventory keeps 301 rows and retains the original four F11 parent classifications. No cell is promoted to a full semantic-support claim from a generic warning or parser refusal.
 
-The joint T39 preview passed 162 cases and 4,005 assertions. Verification on the fixed F11 candidate is pending.
+The joint T39 preview passed 162 cases and 4,005 assertions. Delivered at `47cf3020b24fd6fddcf7e9420ee9250b6b3e683c`. All 50 canonical tasks passed with 4,276 cases and
+88,372 assertions. T39 passed 162 cases and 4,005 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44893435461/job/136813955853),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44893435461/job/136813955806),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44893435461/job/136813955584),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44893435427/job/136813955470),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136814022125) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
