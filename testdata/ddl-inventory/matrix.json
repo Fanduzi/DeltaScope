@@ -14493,7 +14493,7 @@
         {
           "subaction_id": "CREATE SEQUENCE",
           "parser_status": "recognized",
-          "audit_status": "silent",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -14501,11 +14501,13 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-sequence.create-sequence.probes.txt",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "file:testdata/ddl-golden/T43.json"
+                "file:testdata/ddl-golden/T43.json",
+                "file:testdata/ddl-golden/T43.json#sequence-declaration-offline",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-smallint-sequence"
               ]
             }
           ]
@@ -14524,7 +14526,17 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-sequence.options.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/create_sequence_zero_increment.expected.yaml#ddl.pg.sequence.declaration.valid",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-zero-increment",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-cache-zero",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-invalid-as-type",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-repeated-option",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-unguarded-option-before-absent-schema",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-bounds-equal",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-starting-value-outside-bounds",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-descending-default-bounds",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-exceeds-smallint-bounds"
               ]
             }
           ]
@@ -14532,7 +14544,7 @@
         {
           "subaction_id": "OWNED BY / TEMP / IF NOT EXISTS",
           "parser_status": "recognized",
-          "audit_status": "silent",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -14540,11 +14552,25 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-sequence.owned-by-temp-if-not-exists.probes.txt",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "file:testdata/ddl-golden/T43.json"
+                "file:testdata/ddl-golden/T43.json",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-guard-before-bad-option",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-guarded-namespace-before-bad-option",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-owned-by-exact-column",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-owned-by-view-column",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-owned-by-invalid-kind",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-owner-mismatch-before-missing-column",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-schema-mismatch-before-missing-column",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-owned-by-missing-column",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-temporary-explicit-ordinary-schema",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-missing-owner-relation",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-invalid-single-part-owned-by",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-unqualified-owner-relation",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-create-none-owner",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-temporary-guard-before-existing-relation"
               ]
             }
           ]
@@ -14587,7 +14613,10 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-sequence.restart.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-alter-restart-exceeds-definition-bounds",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-alter-bare-restart-uses-start",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-alter-narrow-bounds-with-explicit-restart"
               ]
             }
           ]
@@ -14606,7 +14635,9 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-sequence.options.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-alter-zero-increment",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-alter-narrow-bounds-without-restart"
               ]
             }
           ]
@@ -14614,7 +14645,7 @@
         {
           "subaction_id": "OWNED BY / RENAME / SET SCHEMA",
           "parser_status": "recognized",
-          "audit_status": "silent",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -14622,11 +14653,27 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "silent",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-sequence.owned-by-rename-set-schema.probes.txt",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
-                "file:testdata/ddl-golden/T43.json"
+                "file:testdata/ddl-golden/T43.json",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-rename-regular-owned-sequence",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-rename-identity-sequence",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-rename-occupied-relation",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-rename-to-same-name",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-rename-wrong-kind",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-move-free-sequence",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-move-free-sequence-to-same-schema",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-move-regular-owned-sequence",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-move-identity-to-same-schema",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-ownership-before-missing-destination",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-free-move-to-occupied-slot",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-free-move-to-missing-schema",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-toast-namespace-rejects-free-sequence",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-identity-cannot-detach",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-identity-checks-missing-column-first",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-regular-sequence-can-detach"
               ]
             }
           ]
@@ -14645,7 +14692,11 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-sequence.if-exists.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-rename-guarded-absence",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-guarded-absence-before-destination",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-alter-guarded-missing",
+                "file:testdata/ddl-golden/T43.json#pg-sequence-alter-wrong-kind-despite-guard"
               ]
             }
           ]

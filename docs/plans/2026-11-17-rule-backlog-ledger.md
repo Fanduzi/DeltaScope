@@ -1612,6 +1612,20 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44906994256/job/136854599427),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136854666281) passed at the delivered SHA.
 
+## F15 exact dimension review
+
+| Inventory dimension | Evidence and present scope | Remaining premise |
+| --- | --- | --- |
+| `postgresql.create-sequence` / CREATE SEQUENCE | T43 checks the qualified catalog target and confirms a smallint sequence definition without calling `nextval`. | Session namespace selection and execution privileges. |
+| `postgresql.create-sequence` / options | T43 checks type, bounds, START, nonzero INCREMENT, positive CACHE, duplicate options and default descending bounds. Existing CYCLE advice is preserved. | Unqualified AS type resolution and runtime issuance. |
+| `postgresql.create-sequence` / OWNED BY / TEMP / IF NOT EXISTS | T43 verifies owner kind, same owner and schema, exact column names, temporary namespace refusal and guard precedence. Valid VIEW ownership has a dependency witness. | Session-owned temporary schemas and name resolution through `search_path`. |
+| `postgresql.alter-sequence` / RESTART | T43 verifies explicit restart bounds and that a bare restart uses START. | The audit reads stable definitions without reading or advancing current issuance. |
+| `postgresql.alter-sequence` / options | T43 checks exact relation kind and altered bounds. It leaves an evidence gap when bounds narrow without a replacement restart. | Concurrent issuance and later batch effects. |
+| `postgresql.alter-sequence` / OWNED BY / RENAME / SET SCHEMA | T43 distinguishes automatic and identity ownership, verifies their rename dependencies and checks exact relation occupancy. A free sequence can stay in its schema, while an owned sequence fails before destination resolution. | Execution privileges and wider dependency changes. |
+| `postgresql.alter-sequence` / IF EXISTS | T43 verifies absent targets short-circuit ALTER, RENAME and SET SCHEMA. A relation of the wrong kind still fails. | Unqualified and session-dependent relation identities. |
+
+The joint T43 preview passed 86 cases and 2,951 assertions. Verification on the fixed F15 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
