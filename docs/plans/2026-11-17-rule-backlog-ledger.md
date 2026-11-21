@@ -1653,6 +1653,23 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44919262993/job/136891517708),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136891611844) passed at the delivered SHA.
 
+## F17 exact dimension review
+
+| Row and authored cell | Verified PostgreSQL 17 premise | Remaining evidence |
+| --- | --- | --- |
+| `postgresql.alter-text-search-configuration` / `ADD/DROP/ALTER MAPPING` | Exact qualified configuration, built-in parser token aliases, ordered dictionary targets, ADD occupancy, ALTER insertion and replacement, and guarded DROP. T45 covers missing token before dictionary lookup and duplicate token names. | An unqualified dictionary or configuration needs effective session resolution. A custom parser needs a trusted token directory. |
+| `postgresql.alter-text-search-configuration` / `RENAME/OWNER/SET SCHEMA` | Exact source, destination collision, and role resolution. T45 compares same-name RENAME and occupied SET SCHEMA with native errors. | Ownership, role membership and namespace privileges depend on the executing session. |
+| `postgresql.alter-text-search-dictionary` / `option changes` | Exact dictionary and built-in simple template. T45 checks unsupported names, final ACCEPT Boolean value and absent option removal. | Stop-word-file availability requires evidence from the PostgreSQL server filesystem. Other templates require validator-specific evidence. |
+| `postgresql.alter-text-search-dictionary` / `RENAME/OWNER/SET SCHEMA` | Exact source, destination and owner role. T45 tests conflicts and verifies the same owner transactionally. | Execution permissions and unqualified lookup depend on session facts. |
+
+The two rows retain `mixed_coverage`. The 26 PostgreSQL 17 references include
+24 live controls, one offline evidence gap and one corpus reference. Catalog
+option values, opaque identities and unauthored dictionary names stay private.
+See [decision record](../decisions/2026-11-21-postgresql-text-search-changes.md)
+and [T45](../../testdata/ddl-golden/T45.json).
+
+The joint T45 preview passed 59 cases and 1,435 assertions. Verification on the fixed F17 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

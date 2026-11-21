@@ -12447,26 +12447,26 @@ rows:
     subaction_status:
       - subaction_id: ADD/DROP/ALTER MAPPING
         parser_status: partial
-        audit_status: explicit_unsupported
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: partial
-            audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-text-search-configuration.add-drop-alter-mapping.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-text-search-configuration.add-drop-alter-mapping.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T45.json#text-search-catalog-offline, file:testdata/ddl-golden/T45.json#pg-text-search-configuration-absent-first, file:testdata/ddl-golden/T45.json#pg-text-search-token-absent-before-dictionary, file:testdata/ddl-golden/T45.json#pg-text-search-add-occupied-mapping, file:testdata/ddl-golden/T45.json#pg-text-search-missing-dictionary-before-occupied-mapping, file:testdata/ddl-golden/T45.json#pg-text-search-add-empty-mapping, file:testdata/ddl-golden/T45.json#pg-text-search-duplicate-token-names-deduplicate, file:testdata/ddl-golden/T45.json#pg-text-search-alter-existing-mapping, file:testdata/ddl-golden/T45.json#pg-text-search-alter-absent-mapping-inserts, file:testdata/ddl-golden/T45.json#pg-text-search-replace-dictionary-across-all-tokens, file:testdata/ddl-golden/T45.json#pg-text-search-drop-absent-mapping, file:testdata/ddl-golden/T45.json#pg-text-search-guarded-drop-absent-mapping, file:testdata/ddl-golden/T45.json#pg-text-search-guard-cannot-skip-missing-token]
       - subaction_id: RENAME/OWNER/SET SCHEMA
         parser_status: recognized
-        audit_status: audited
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-text-search-configuration.rename-owner-set-schema.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-text-search-configuration.rename-owner-set-schema.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T45.json#pg-text-search-rename-configuration-same-name, file:testdata/ddl-golden/T45.json#pg-text-search-configuration-owner-missing-before-source, file:testdata/ddl-golden/T45.json#pg-text-search-configuration-move-occupied]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-text-search-configuration.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
@@ -12597,26 +12597,26 @@ rows:
     subaction_status:
       - subaction_id: option changes
         parser_status: partial
-        audit_status: explicit_unsupported
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: partial
-            audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-text-search-dictionary.option-changes.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-text-search-dictionary.option-changes.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/sql-corpus/postgresql/ddl/findings/alter_text_search_dictionary_unknown_option.expected.yaml#ddl.pg.text_search.change.target.valid, file:testdata/ddl-golden/T45.json#pg-text-search-dictionary-set-bounded-parameter, file:testdata/ddl-golden/T45.json#pg-text-search-dictionary-unknown-parameter, file:testdata/ddl-golden/T45.json#pg-text-search-dictionary-repeated-parameter, file:testdata/ddl-golden/T45.json#pg-text-search-invalid-simple-accept, file:testdata/ddl-golden/T45.json#pg-text-search-last-simple-accept-wins, file:testdata/ddl-golden/T45.json#pg-text-search-remove-unknown-option]
       - subaction_id: RENAME/OWNER/SET SCHEMA
         parser_status: recognized
-        audit_status: audited
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-text-search-dictionary.rename-owner-set-schema.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-text-search-dictionary.rename-owner-set-schema.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T45.json#pg-text-search-dictionary-rename-collision, file:testdata/ddl-golden/T45.json#pg-text-search-dictionary-move-occupied, file:testdata/ddl-golden/T45.json#pg-text-search-dictionary-set-current-owner]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-text-search-dictionary.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
