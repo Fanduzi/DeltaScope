@@ -8464,7 +8464,16 @@
                 "file:testdata/ddl-golden/T37.json#pg-add-check-name-predicate-duplicate",
                 "file:testdata/ddl-golden/T37.json#pg-add-check-name-predicate-column",
                 "file:testdata/ddl-golden/T37.json#pg-add-check-name-predicate-string",
-                "file:testdata/ddl-golden/T37.json#pg-add-check-name-predicate-guard"
+                "file:testdata/ddl-golden/T37.json#pg-add-check-name-predicate-guard",
+                "file:testdata/ddl-golden/T37.json#check-literal-offline",
+                "file:testdata/ddl-golden/T37.json#pg-check-literal-integer-literal",
+                "file:testdata/ddl-golden/T37.json#pg-check-literal-exact-boolean-column",
+                "file:testdata/ddl-golden/T37.json#pg-check-literal-true-literal",
+                "file:testdata/ddl-golden/T37.json#pg-check-literal-castable-unknown-literal",
+                "file:testdata/ddl-golden/T37.json#pg-check-literal-uncastable-unknown-literal",
+                "file:testdata/ddl-golden/T37.json#pg-check-literal-null-literal",
+                "file:testdata/ddl-golden/T37.json#pg-check-literal-valid-qualified-boolean-column",
+                "file:testdata/ddl-golden/T37.json#pg-check-literal-guarded-absence-before-predicate"
               ]
             }
           ]
@@ -8492,7 +8501,10 @@
                 "file:testdata/ddl-golden/T37.json#pg-add-check-name-scope-order",
                 "file:testdata/sql-corpus/postgresql/ddl/findings/add_check_constraint_name.expected.yaml#ddl.pg.alter.add_check.name.available",
                 "file:testdata/ddl-golden/T37.json#pg-add-check-name-predicate-not-valid",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/check_subquery.expected.yaml#ddl.pg.alter.add_check.name.available"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/check_subquery.expected.yaml#ddl.pg.alter.add_check.name.available",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/check_literal_invalid_boolean.expected.yaml#ddl.pg.alter.add_check.name.available",
+                "file:testdata/ddl-golden/T37.json#pg-check-literal-integer-literal-before-occupied-name",
+                "file:testdata/ddl-golden/T37.json#pg-check-literal-whitespace-around-unknown-boolean"
               ]
             }
           ]

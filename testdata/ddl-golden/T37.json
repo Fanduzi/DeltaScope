@@ -5,7 +5,7 @@
  "policy_profile": "pg-acceptance",
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
-  "profiles": {
+  "profiles": {"pg-check-literal": {"enable": {"ddl.pg.alter.add_check.name.available": {"level": "blocker"}}},
    "pg-constraint-columns": {"enable": {"ddl.pg.alter.constraint_columns.valid": {"level": "blocker"}}},
    "pg-column-type-descendants": {"enable": {"ddl.pg.alter.column_type.destination.valid": {"level": "blocker"}}},
    "pg-add-check-predicate": {"enable": {"ddl.pg.alter.add_check.name.available": {"level": "blocker"}}},
@@ -1913,6 +1913,49 @@
   }
  },
  "cli_cases": [
+   {
+     "id": "check-literal-offline",
+     "dialect": "postgresql",
+     "policy": "pg-check-literal",
+     "sql": "ALTER TABLE app.t ADD CHECK (42)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "reason_code": "unproven_check_constraint_name",
+           "required_facts": [
+             "instance.version"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGCheckLiteral",
+         "PGCheckIntegerCoercion"
+       ]
+     }
+   },
    {
      "id": "constraint-columns-offline",
      "dialect": "postgresql",
@@ -4863,6 +4906,1470 @@
   }
  ],
  "metadata_cases": [
+   {
+     "id": "pg-check-literal-integer-literal",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-literal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_literal_integer_literal"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_literal_integer_literal CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_integer_literal'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_literal_integer_literal.t ADD CHECK (42)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_integer_literal'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_literal_integer_literal",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_literal_integer_literal.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_literal_integer_literal.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_literal_integer_literal.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "metadata": {
+             "reason_code": "check_predicate_boolean_required"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckLiteral",
+         "PGCheckIntegerCoercion"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_integer_literal'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_integer_literal.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_integer_literal.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcheck_literal_integer_literal.t ADD CHECK (42)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42804:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_integer_literal'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_integer_literal.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_integer_literal.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_literal_integer_literal CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_integer_literal'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-literal-integer-literal-before-occupied-name",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-literal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_literal_integer_literal_before_occupied_name"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_literal_integer_literal_before_occupied_name CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_integer_literal_before_occupied_name'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_literal_integer_literal_before_occupied_name.t ADD CONSTRAINT used CHECK (42) NOT VALID",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_integer_literal_before_occupied_name'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_literal_integer_literal_before_occupied_name",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_literal_integer_literal_before_occupied_name.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_literal_integer_literal_before_occupied_name.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_literal_integer_literal_before_occupied_name.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "metadata": {
+             "reason_code": "check_predicate_boolean_required"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckLiteral",
+         "PGCheckIntegerCoercion"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_integer_literal_before_occupied_name'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_integer_literal_before_occupied_name.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_integer_literal_before_occupied_name.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcheck_literal_integer_literal_before_occupied_name.t ADD CONSTRAINT used CHECK (42) NOT VALID",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42804:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_integer_literal_before_occupied_name'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_integer_literal_before_occupied_name.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_integer_literal_before_occupied_name.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_literal_integer_literal_before_occupied_name CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_integer_literal_before_occupied_name'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-literal-exact-boolean-column",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-literal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_literal_exact_boolean_column"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_literal_exact_boolean_column CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_exact_boolean_column'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_literal_exact_boolean_column.t ADD CHECK (\" Exact Flag \")",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_exact_boolean_column'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_literal_exact_boolean_column",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_literal_exact_boolean_column.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_literal_exact_boolean_column.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_literal_exact_boolean_column.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckLiteral",
+         "PGCheckIntegerCoercion"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_exact_boolean_column'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_exact_boolean_column.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_exact_boolean_column.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "ALTER TABLE pgcheck_literal_exact_boolean_column.t ADD CHECK (\" Exact Flag \")",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_exact_boolean_column'::regnamespace AND contype='c'",
+         "expect": "2"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_exact_boolean_column.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_exact_boolean_column.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_literal_exact_boolean_column CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_exact_boolean_column'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-literal-true-literal",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-literal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_literal_true_literal"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_literal_true_literal CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_true_literal'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_literal_true_literal.t ADD CHECK (true)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_true_literal'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_literal_true_literal",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_literal_true_literal.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_literal_true_literal.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_literal_true_literal.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckLiteral",
+         "PGCheckIntegerCoercion"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_true_literal'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_true_literal.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_true_literal.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "ALTER TABLE pgcheck_literal_true_literal.t ADD CHECK (true)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_true_literal'::regnamespace AND contype='c'",
+         "expect": "2"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_true_literal.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_true_literal.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_literal_true_literal CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_true_literal'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-literal-castable-unknown-literal",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-literal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_literal_castable_unknown_literal"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_literal_castable_unknown_literal CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_castable_unknown_literal'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_literal_castable_unknown_literal.t ADD CHECK ('true')",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_castable_unknown_literal'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_literal_castable_unknown_literal",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_literal_castable_unknown_literal.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_literal_castable_unknown_literal.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_literal_castable_unknown_literal.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckLiteral",
+         "PGCheckIntegerCoercion"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_castable_unknown_literal'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_castable_unknown_literal.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_castable_unknown_literal.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "ALTER TABLE pgcheck_literal_castable_unknown_literal.t ADD CHECK ('true')",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_castable_unknown_literal'::regnamespace AND contype='c'",
+         "expect": "2"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_castable_unknown_literal.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_castable_unknown_literal.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_literal_castable_unknown_literal CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_castable_unknown_literal'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-literal-uncastable-unknown-literal",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-literal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_literal_uncastable_unknown_literal"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_literal_uncastable_unknown_literal CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_uncastable_unknown_literal'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_literal_uncastable_unknown_literal.t ADD CHECK ('invalid')",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_uncastable_unknown_literal'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_literal_uncastable_unknown_literal",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_literal_uncastable_unknown_literal.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_literal_uncastable_unknown_literal.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_literal_uncastable_unknown_literal.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.add_check.name.available",
+           "metadata": {
+             "reason_code": "check_predicate_invalid_boolean"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckLiteral",
+         "PGCheckIntegerCoercion"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_uncastable_unknown_literal'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_uncastable_unknown_literal.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_uncastable_unknown_literal.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgcheck_literal_uncastable_unknown_literal.t ADD CHECK ('invalid')",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  22P02:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_uncastable_unknown_literal'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_uncastable_unknown_literal.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_uncastable_unknown_literal.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_literal_uncastable_unknown_literal CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_uncastable_unknown_literal'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-literal-null-literal",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-literal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_literal_null_literal"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_literal_null_literal CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_null_literal'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_literal_null_literal.t ADD CHECK (NULL)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_null_literal'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_literal_null_literal",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_literal_null_literal.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_literal_null_literal.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_literal_null_literal.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckLiteral",
+         "PGCheckIntegerCoercion"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_null_literal'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_null_literal.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_null_literal.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "ALTER TABLE pgcheck_literal_null_literal.t ADD CHECK (NULL)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_null_literal'::regnamespace AND contype='c'",
+         "expect": "2"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_null_literal.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_null_literal.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_literal_null_literal CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_null_literal'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-literal-valid-qualified-boolean-column",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-literal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_literal_valid_qualified_boolean_column"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_literal_valid_qualified_boolean_column CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_valid_qualified_boolean_column'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_literal_valid_qualified_boolean_column.t ADD CHECK (t.truth)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_valid_qualified_boolean_column'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_literal_valid_qualified_boolean_column",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_literal_valid_qualified_boolean_column.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_literal_valid_qualified_boolean_column.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_literal_valid_qualified_boolean_column.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckLiteral",
+         "PGCheckIntegerCoercion"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_valid_qualified_boolean_column'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_valid_qualified_boolean_column.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_valid_qualified_boolean_column.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "ALTER TABLE pgcheck_literal_valid_qualified_boolean_column.t ADD CHECK (t.truth)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_valid_qualified_boolean_column'::regnamespace AND contype='c'",
+         "expect": "2"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_valid_qualified_boolean_column.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_valid_qualified_boolean_column.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_literal_valid_qualified_boolean_column CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_valid_qualified_boolean_column'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-literal-guarded-absence-before-predicate",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-literal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_literal_guarded_absence_before_predicate"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_literal_guarded_absence_before_predicate CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_guarded_absence_before_predicate'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE IF EXISTS pgcheck_literal_guarded_absence_before_predicate.absent ADD CHECK (42)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_guarded_absence_before_predicate'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_literal_guarded_absence_before_predicate",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_literal_guarded_absence_before_predicate.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_literal_guarded_absence_before_predicate.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_literal_guarded_absence_before_predicate.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckLiteral",
+         "PGCheckIntegerCoercion"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_guarded_absence_before_predicate'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_guarded_absence_before_predicate.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_guarded_absence_before_predicate.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "ALTER TABLE IF EXISTS pgcheck_literal_guarded_absence_before_predicate.absent ADD CHECK (42)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_guarded_absence_before_predicate'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_guarded_absence_before_predicate.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_guarded_absence_before_predicate.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_literal_guarded_absence_before_predicate CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_guarded_absence_before_predicate'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-check-literal-whitespace-around-unknown-boolean",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-check-literal",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgcheck_literal_whitespace_around_unknown_boolean"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgcheck_literal_whitespace_around_unknown_boolean CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_whitespace_around_unknown_boolean'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgcheck_literal_whitespace_around_unknown_boolean.t ADD CHECK (' Yes ') NOT VALID",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_whitespace_around_unknown_boolean'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgcheck_literal_whitespace_around_unknown_boolean",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgcheck_literal_whitespace_around_unknown_boolean.t(n int, truth bool, \" Exact Flag \" bool, CONSTRAINT used CHECK(n>0));\nINSERT INTO pgcheck_literal_whitespace_around_unknown_boolean.t VALUES(7,true,true);\nCREATE SEQUENCE pgcheck_literal_whitespace_around_unknown_boolean.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCheckLiteral",
+         "PGCheckIntegerCoercion"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_whitespace_around_unknown_boolean'::regnamespace AND contype='c'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_whitespace_around_unknown_boolean.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_whitespace_around_unknown_boolean.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks CHECK predicate",
+         "sql": "ALTER TABLE pgcheck_literal_whitespace_around_unknown_boolean.t ADD CHECK (' Yes ') NOT VALID",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgcheck_literal_whitespace_around_unknown_boolean'::regnamespace AND contype='c'",
+         "expect": "2"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT n FROM pgcheck_literal_whitespace_around_unknown_boolean.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgcheck_literal_whitespace_around_unknown_boolean.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgcheck_literal_whitespace_around_unknown_boolean CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgcheck_literal_whitespace_around_unknown_boolean'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
    {
      "id": "pg-partition-constraint-primary-key-includes-partition-column",
      "anchor": "postgres17",
@@ -34171,6 +35678,17 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.check-literal-offline",
+  "T37.meta.pg-check-literal-integer-literal",
+  "T37.meta.pg-check-literal-integer-literal-before-occupied-name",
+  "T37.meta.pg-check-literal-exact-boolean-column",
+  "T37.meta.pg-check-literal-true-literal",
+  "T37.meta.pg-check-literal-castable-unknown-literal",
+  "T37.meta.pg-check-literal-uncastable-unknown-literal",
+  "T37.meta.pg-check-literal-null-literal",
+  "T37.meta.pg-check-literal-valid-qualified-boolean-column",
+  "T37.meta.pg-check-literal-guarded-absence-before-predicate",
+  "T37.meta.pg-check-literal-whitespace-around-unknown-boolean",
   "T37.meta.pg-partition-constraint-primary-key-includes-partition-column",
   "T37.meta.pg-partition-constraint-unique-key-excludes-partition-column",
   "T37.meta.pg-partition-constraint-included-partition-column-is-not-a-key",

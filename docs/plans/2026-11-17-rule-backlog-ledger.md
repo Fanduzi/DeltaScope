@@ -1436,6 +1436,20 @@ absences remains unverified.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44880641893/job/136774959596),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136775035919) passed at the delivered SHA.
 
+### F09 CHECK literal predicates (D50)
+
+The existing ADD CHECK rule rejects invalid untyped Boolean strings and
+checks the current implicit or assignment cast catalog for int4 predicates.
+The rule keeps cast presence, unresolved facts and complex expressions
+outside the proved refusal. Both ADD CHECK and ADD CHECK NOT VALID retain
+the established name, guard and subquery checks.
+
+The rebased T37 preview passed 600 cases and 17,779 assertions. Twelve
+selectors bind the two CHECK inventory cells. Verification on the fixed D50
+candidate is pending.
+
+- [CHECK literal predicates](../decisions/2026-11-21-postgresql-check-literal.md)
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
