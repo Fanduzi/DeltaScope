@@ -1156,8 +1156,8 @@ These five F09 rows have 40 authored labels and 40 normalized records at `d8ccee
 
 | Dimension | Covered premise or reproduced boundary | Remaining premise and evidence needed |
 | --- | --- | --- |
-| ADD PRIMARY KEY | D3 covers index build risk. D21 checks exact USING INDEX identity, ownership and catalog eligibility, including PRIMARY KEY with NULLS NOT DISTINCT. D48 verifies key and INCLUDE columns for a qualified ordinary table, including the refusal for a second primary key. | D31 checks installed class defaults for exact type. D41 resolves binary-compatible and polymorphic defaults. Existing rows, locks and execution outcomes need separate evidence. |
-| ADD UNIQUE | D3 separates ordinary build risk from USING INDEX. D21 checks catalog eligibility and distinguishes same-name attachment from an occupied rename destination. D48 verifies key and INCLUDE columns for a qualified ordinary table, including permitted repetitions in INCLUDE. | D31 checks installed class defaults for exact type. D41 resolves binary-compatible and polymorphic defaults. Execution prerequisites require separate facts. |
+| ADD PRIMARY KEY | D3 covers index build risk. D21 checks exact USING INDEX identity, ownership and catalog eligibility, including PRIMARY KEY with NULLS NOT DISTINCT. D48 verifies key and INCLUDE columns for a qualified ordinary table, including the refusal for a second primary key. D49 checks partition-key compatibility on a qualified partitioned root. | D31 checks installed class defaults for exact type. D41 resolves binary-compatible and polymorphic defaults. Existing rows, locks and execution outcomes need separate evidence. |
+| ADD UNIQUE | D3 separates ordinary build risk from USING INDEX. D21 checks catalog eligibility and distinguishes same-name attachment from an occupied rename destination. D48 verifies key and INCLUDE columns for a qualified ordinary table, including permitted repetitions in INCLUDE. D49 checks qualified partitioned roots, including missing partition columns, expression slots and bounded equality or collation mismatch. | D31 checks installed class defaults for exact type. D41 resolves binary-compatible and polymorphic defaults. Execution prerequisites require separate facts. |
 | ADD FOREIGN KEY | D3 covers initial-validation risk. D22 covers exact table and column identity. D23 adds referenced key eligibility, omitted primary-key selection, duplicate referenced columns and arity. | D32 checks ON DELETE SET members. D37 at `683d84ac` checks scalar equality and distinguishes assignment-only casts from implicit casts. D42 checks nested domain bases and the native enum and array equality premises. Remaining polymorphic and custom conversion definitions require independent evidence. Row validity, runtime actions and privileges require separate facts. |
 | ADD CHECK | D19 approved exact named collision on a fresh ordinary table. Native same expression with new/unnamed CHECK succeeds; purely inherited constraint can merge. | D46 checks subqueries before name collisions. Remaining predicate validity, data and inheritance require separate evidence. |
 | ADD CHECK NOT VALID | D19 approved exact collision. Existing follow-up distinguishes migration validation intent. Native can register over an old violation while invalid predicates still fail. | D46 checks subqueries even under NOT VALID. Other expression legality, row checks and batch outcome remain separate. |
@@ -1394,8 +1394,15 @@ operator classes, subtrees and row validation require separate evidence.
 
 T37 preview passed 589 cases and 17,444 assertions. Fourteen D49
 selectors bind ADD PRIMARY KEY and ADD UNIQUE. Two existing D48 expectations
-now verify the observed partition-key outcomes. Verification on the fixed
-candidate is pending.
+now verify the observed partition-key outcomes.
+Delivered at `ddeec62e45a0e9ca7d4eb083d42e32f2425c891e`. All 50 canonical tasks passed with 4,112 cases and
+83,075 assertions. T37 passed 589 cases and 17,444 assertions.
+The validator, read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44873675390/job/136753543346),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44873675390/job/136753543122),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44873675390/job/136753543368),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44873675529/job/136753543593),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136753629641) passed at the delivered SHA.
 
 - [Partition constraint keys](../decisions/2026-11-21-postgresql-partition-constraint-keys.md)
 
