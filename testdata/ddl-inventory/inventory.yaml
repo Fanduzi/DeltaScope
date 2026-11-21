@@ -10879,26 +10879,26 @@ rows:
     subaction_status:
       - subaction_id: USING/WITH CHECK
         parser_status: recognized
-        audit_status: audited
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-policy.using-with-check.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-policy.using-with-check.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/sql-corpus/postgresql/ddl/findings/alter_policy_select_with_check.expected.yaml#ddl.pg.alter_policy.target.valid, file:testdata/ddl-golden/T42.json#pg-policy-select-using, file:testdata/ddl-golden/T42.json#pg-policy-select-with-check, file:testdata/ddl-golden/T42.json#pg-policy-insert-using, file:testdata/ddl-golden/T42.json#pg-policy-insert-with-check, file:testdata/ddl-golden/T42.json#pg-policy-update-both-clauses, file:testdata/ddl-golden/T42.json#pg-policy-wrong-table-kind, file:testdata/ddl-golden/T42.json#pg-policy-policy-absent, file:testdata/ddl-golden/T42.json#pg-policy-predicate-parsed-before-absent-policy, file:testdata/ddl-golden/T42.json#pg-policy-exact-column, file:testdata/ddl-golden/T42.json#pg-policy-case-mismatch]
       - subaction_id: TO role / RENAME
-        parser_status: unrecognized
-        audit_status: not_applicable
+        parser_status: partial
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
-            parser_status: unrecognized
-            audit_status: not_applicable
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-policy.to-role-rename.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            parser_status: partial
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-policy.to-role-rename.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T42.json#policy-catalog-offline, file:testdata/ddl-golden/T42.json#pg-policy-named-role, file:testdata/ddl-golden/T42.json#pg-policy-missing-role-before-table, file:testdata/ddl-golden/T42.json#pg-policy-public-skips-later-missing-role, file:testdata/ddl-golden/T42.json#pg-policy-missing-role-before-public-still-fails, file:testdata/ddl-golden/T42.json#pg-policy-rename-exact, file:testdata/ddl-golden/T42.json#pg-policy-rename-conflicts-on-same-table, file:testdata/ddl-golden/T42.json#pg-policy-rename-equal-name, file:testdata/ddl-golden/T42.json#pg-policy-rename-destination-before-absent-source, file:testdata/ddl-golden/T42.json#pg-policy-rename-combined-with-roles-parser-boundary]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-policy.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]

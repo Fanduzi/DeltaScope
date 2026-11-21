@@ -1596,6 +1596,15 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44902948983/job/136842505275),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136842593183) passed at the delivered SHA.
 
+## F14 exact dimension review
+
+| Inventory dimension | Evidence and present scope | Remaining premise |
+| --- | --- | --- |
+| `postgresql.alter-policy` / USING/WITH CHECK | T42 verifies exact table and policy binding, SELECT and INSERT clause eligibility, quoted columns and null tests. The native controls demonstrate predicate parsing before missing policy diagnosis and preserve observed changes to each clause. | General expression types and function resolution, policy ownership and effective row access require separate evidence. |
+| `postgresql.alter-policy` / TO role / RENAME | T42 verifies role resolution before relation lookup, PUBLIC skipping later roles, table-local destination occupancy, rename to the same name and destination-before-source precedence. The combined TO and RENAME form still returns native SQLSTATE `42601` and a parser diagnostic. | Session-dependent relation lookup and execution privileges require separate evidence. |
+
+The joint T42 preview passed 65 cases and 1,261 assertions. Verification on the fixed F14 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

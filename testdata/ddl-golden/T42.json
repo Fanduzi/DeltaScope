@@ -5,6 +5,7 @@
  "policy_profile": "pg-acceptance",
  "description": "TRIGGER/RULE/POLICY(RLS)/EVENT TRIGGER acceptance on postgresql17 (#125): trigger lifecycle incl. constraint/event triggers, rewrite rules, row-level security policies and event triggers execute natively.",
  "policy": {
+  "profiles": {"pg-policy-catalog": {"enable": {"ddl.pg.alter_policy.target.valid": {"level": "blocker"}}}},
   "enable": {
    "ddl.alter.add_column.exists.forbid": {
     "enabled": true
@@ -1806,6 +1807,50 @@
   }
  },
  "cli_cases": [
+   {
+     "id": "policy-catalog-offline",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "sql": "ALTER POLICY p ON app.t RENAME TO q",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "reason_code": "unproven_pg_policy_change",
+           "required_facts": [
+             "instance.version"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     }
+   },
   {
    "id": "create-trigger",
    "dialect": "postgresql",
@@ -2936,6 +2981,4037 @@
   }
  ],
  "metadata_cases": [
+   {
+     "id": "pg-policy-select-using",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_1"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_1 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_1'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_1_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_1_role','pgpol_1_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY rd ON pgpol_1.t USING (id >= 0)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_1'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_1_role','pgpol_1_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_1",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_1_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_1.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_1.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_1.other(id integer);\nCREATE VIEW pgpol_1.v AS SELECT id FROM pgpol_1.t;\nCREATE POLICY rd ON pgpol_1.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_1.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_1.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_1.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_1.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_1.guard START 7;\nCREATE TABLE pgpol_1.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_1'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "reason_code": "unproven_pg_policy_change",
+           "required_facts": [
+             "alter_policy.predicate_type"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_1.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_1'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_1'::regnamespace) EXCEPT TABLE pgpol_1.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_1_role','pgpol_1_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_1.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_1.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nBEGIN; ALTER POLICY rd ON pgpol_1.t USING (id >= 0); SELECT 'changed='||(pg_get_expr(polqual,polrelid)='(id >= 0)')::text FROM pg_policy WHERE polrelid='pgpol_1.t'::regclass AND polname='rd'; ROLLBACK;",
+         "via": "stdin",
+         "expect_rc": 0,
+         "stdout_contains": [
+           "changed=true"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_1.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_1'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_1'::regnamespace) EXCEPT TABLE pgpol_1.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_1_role','pgpol_1_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_1.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_1.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_1 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_1'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_1_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_1_role','pgpol_1_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-select-with-check",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_2"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_2 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_2'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_2_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_2_role','pgpol_2_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY rd ON pgpol_2.t WITH CHECK (true)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_2'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_2_role','pgpol_2_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_2",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_2_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_2.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_2.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_2.other(id integer);\nCREATE VIEW pgpol_2.v AS SELECT id FROM pgpol_2.t;\nCREATE POLICY rd ON pgpol_2.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_2.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_2.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_2.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_2.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_2.guard START 7;\nCREATE TABLE pgpol_2.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_2'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "metadata": {
+             "policy": "rd",
+             "reason_code": "alter_policy_with_check_inapplicable",
+             "schema": "pgpol_2",
+             "table": "t"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_2.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_2'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_2'::regnamespace) EXCEPT TABLE pgpol_2.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_2_role','pgpol_2_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_2.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_2.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nALTER POLICY rd ON pgpol_2.t WITH CHECK (true)",
+         "via": "stdin",
+         "expect_rc": 3,
+         "stderr_contains": [
+           "ERROR:  42601:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_2.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_2'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_2'::regnamespace) EXCEPT TABLE pgpol_2.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_2_role','pgpol_2_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_2.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_2.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_2 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_2'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_2_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_2_role','pgpol_2_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-insert-using",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_3"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_3 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_3'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_3_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_3_role','pgpol_3_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY wr ON pgpol_3.t USING (true)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_3'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_3_role','pgpol_3_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_3",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_3_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_3.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_3.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_3.other(id integer);\nCREATE VIEW pgpol_3.v AS SELECT id FROM pgpol_3.t;\nCREATE POLICY rd ON pgpol_3.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_3.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_3.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_3.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_3.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_3.guard START 7;\nCREATE TABLE pgpol_3.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_3'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "metadata": {
+             "policy": "wr",
+             "reason_code": "alter_policy_using_inapplicable",
+             "schema": "pgpol_3",
+             "table": "t"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_3.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_3'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_3'::regnamespace) EXCEPT TABLE pgpol_3.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_3_role','pgpol_3_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_3.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_3.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nALTER POLICY wr ON pgpol_3.t USING (true)",
+         "via": "stdin",
+         "expect_rc": 3,
+         "stderr_contains": [
+           "ERROR:  42601:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_3.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_3'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_3'::regnamespace) EXCEPT TABLE pgpol_3.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_3_role','pgpol_3_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_3.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_3.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_3 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_3'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_3_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_3_role','pgpol_3_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-insert-with-check",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_4"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_4 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_4'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_4_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_4_role','pgpol_4_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY wr ON pgpol_4.t WITH CHECK (id>=0)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_4'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_4_role','pgpol_4_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_4",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_4_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_4.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_4.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_4.other(id integer);\nCREATE VIEW pgpol_4.v AS SELECT id FROM pgpol_4.t;\nCREATE POLICY rd ON pgpol_4.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_4.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_4.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_4.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_4.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_4.guard START 7;\nCREATE TABLE pgpol_4.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_4'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "reason_code": "unproven_pg_policy_change",
+           "required_facts": [
+             "alter_policy.predicate_type"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_4.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_4'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_4'::regnamespace) EXCEPT TABLE pgpol_4.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_4_role','pgpol_4_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_4.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_4.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nBEGIN; ALTER POLICY wr ON pgpol_4.t WITH CHECK (id>=0); SELECT 'changed='||(pg_get_expr(polwithcheck,polrelid)='(id >= 0)')::text FROM pg_policy WHERE polrelid='pgpol_4.t'::regclass AND polname='wr'; ROLLBACK;",
+         "via": "stdin",
+         "expect_rc": 0,
+         "stdout_contains": [
+           "changed=true"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_4.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_4'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_4'::regnamespace) EXCEPT TABLE pgpol_4.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_4_role','pgpol_4_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_4.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_4.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_4 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_4'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_4_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_4_role','pgpol_4_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-update-both-clauses",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_5"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_5 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_5'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_5_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_5_role','pgpol_5_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY upd ON pgpol_5.t USING (id>=0) WITH CHECK (id>=0)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_5'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_5_role','pgpol_5_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_5",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_5_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_5.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_5.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_5.other(id integer);\nCREATE VIEW pgpol_5.v AS SELECT id FROM pgpol_5.t;\nCREATE POLICY rd ON pgpol_5.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_5.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_5.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_5.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_5.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_5.guard START 7;\nCREATE TABLE pgpol_5.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_5'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "reason_code": "unproven_pg_policy_change",
+           "required_facts": [
+             "alter_policy.predicate_type"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_5.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_5'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_5'::regnamespace) EXCEPT TABLE pgpol_5.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_5_role','pgpol_5_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_5.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_5.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nBEGIN; ALTER POLICY upd ON pgpol_5.t USING (id>=0) WITH CHECK (id>=0); SELECT 'changed='||(pg_get_expr(polqual,polrelid)='(id >= 0)' AND pg_get_expr(polwithcheck,polrelid)='(id >= 0)')::text FROM pg_policy WHERE polrelid='pgpol_5.t'::regclass AND polname='upd'; ROLLBACK;",
+         "via": "stdin",
+         "expect_rc": 0,
+         "stdout_contains": [
+           "changed=true"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_5.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_5'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_5'::regnamespace) EXCEPT TABLE pgpol_5.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_5_role','pgpol_5_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_5.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_5.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_5 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_5'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_5_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_5_role','pgpol_5_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-wrong-table-kind",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_6"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_6 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_6'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_6_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_6_role','pgpol_6_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY rd ON pgpol_6.v USING (true)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_6'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_6_role','pgpol_6_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_6",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_6_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_6.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_6.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_6.other(id integer);\nCREATE VIEW pgpol_6.v AS SELECT id FROM pgpol_6.t;\nCREATE POLICY rd ON pgpol_6.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_6.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_6.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_6.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_6.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_6.guard START 7;\nCREATE TABLE pgpol_6.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_6'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "metadata": {
+             "policy": "rd",
+             "reason_code": "alter_policy_wrong_relation_kind",
+             "schema": "pgpol_6",
+             "table": "v"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_6.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_6'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_6'::regnamespace) EXCEPT TABLE pgpol_6.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_6_role','pgpol_6_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_6.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_6.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nALTER POLICY rd ON pgpol_6.v USING (true)",
+         "via": "stdin",
+         "expect_rc": 3,
+         "stderr_contains": [
+           "ERROR:  42809:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_6.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_6'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_6'::regnamespace) EXCEPT TABLE pgpol_6.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_6_role','pgpol_6_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_6.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_6.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_6 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_6'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_6_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_6_role','pgpol_6_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-policy-absent",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_7"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_7 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_7'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_7_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_7_role','pgpol_7_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY absent ON pgpol_7.t USING (true)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_7'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_7_role','pgpol_7_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_7",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_7_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_7.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_7.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_7.other(id integer);\nCREATE VIEW pgpol_7.v AS SELECT id FROM pgpol_7.t;\nCREATE POLICY rd ON pgpol_7.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_7.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_7.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_7.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_7.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_7.guard START 7;\nCREATE TABLE pgpol_7.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_7'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "metadata": {
+             "policy": "absent",
+             "reason_code": "alter_policy_source_absent",
+             "schema": "pgpol_7",
+             "table": "t"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_7.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_7'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_7'::regnamespace) EXCEPT TABLE pgpol_7.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_7_role','pgpol_7_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_7.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_7.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nALTER POLICY absent ON pgpol_7.t USING (true)",
+         "via": "stdin",
+         "expect_rc": 3,
+         "stderr_contains": [
+           "ERROR:  42704:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_7.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_7'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_7'::regnamespace) EXCEPT TABLE pgpol_7.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_7_role','pgpol_7_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_7.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_7.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_7 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_7'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_7_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_7_role','pgpol_7_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-predicate-parsed-before-absent-policy",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_8"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_8 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_8'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_8_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_8_role','pgpol_8_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY absent ON pgpol_8.t USING (missing IS NULL)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_8'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_8_role','pgpol_8_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_8",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_8_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_8.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_8.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_8.other(id integer);\nCREATE VIEW pgpol_8.v AS SELECT id FROM pgpol_8.t;\nCREATE POLICY rd ON pgpol_8.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_8.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_8.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_8.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_8.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_8.guard START 7;\nCREATE TABLE pgpol_8.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_8'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "metadata": {
+             "policy": "absent",
+             "reason_code": "alter_policy_column_absent",
+             "schema": "pgpol_8",
+             "table": "t"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_8.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_8'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_8'::regnamespace) EXCEPT TABLE pgpol_8.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_8_role','pgpol_8_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_8.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_8.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nALTER POLICY absent ON pgpol_8.t USING (missing IS NULL)",
+         "via": "stdin",
+         "expect_rc": 3,
+         "stderr_contains": [
+           "ERROR:  42703:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_8.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_8'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_8'::regnamespace) EXCEPT TABLE pgpol_8.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_8_role','pgpol_8_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_8.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_8.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_8 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_8'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_8_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_8_role','pgpol_8_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-exact-column",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_9"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_9 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_9'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_9_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_9_role','pgpol_9_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY rd ON pgpol_9.t USING (\" X \")",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_9'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_9_role','pgpol_9_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_9",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_9_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_9.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_9.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_9.other(id integer);\nCREATE VIEW pgpol_9.v AS SELECT id FROM pgpol_9.t;\nCREATE POLICY rd ON pgpol_9.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_9.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_9.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_9.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_9.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_9.guard START 7;\nCREATE TABLE pgpol_9.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_9'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "reason_code": "unproven_pg_policy_change",
+           "required_facts": [
+             "alter_policy.predicate_type"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_9.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_9'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_9'::regnamespace) EXCEPT TABLE pgpol_9.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_9_role','pgpol_9_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_9.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_9.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nBEGIN; ALTER POLICY rd ON pgpol_9.t USING (\" X \"); SELECT 'changed='||(pg_get_expr(polqual,polrelid)='\" X \"')::text FROM pg_policy WHERE polrelid='pgpol_9.t'::regclass AND polname='rd'; ROLLBACK;",
+         "via": "stdin",
+         "expect_rc": 0,
+         "stdout_contains": [
+           "changed=true"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_9.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_9'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_9'::regnamespace) EXCEPT TABLE pgpol_9.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_9_role','pgpol_9_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_9.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_9.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_9 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_9'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_9_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_9_role','pgpol_9_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-case-mismatch",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_10"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_10 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_10'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_10_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_10_role','pgpol_10_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY rd ON pgpol_10.t USING (\" x \" IS NULL)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_10'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_10_role','pgpol_10_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_10",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_10_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_10.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_10.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_10.other(id integer);\nCREATE VIEW pgpol_10.v AS SELECT id FROM pgpol_10.t;\nCREATE POLICY rd ON pgpol_10.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_10.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_10.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_10.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_10.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_10.guard START 7;\nCREATE TABLE pgpol_10.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_10'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "metadata": {
+             "policy": "rd",
+             "reason_code": "alter_policy_column_absent",
+             "schema": "pgpol_10",
+             "table": "t"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_10.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_10'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_10'::regnamespace) EXCEPT TABLE pgpol_10.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_10_role','pgpol_10_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_10.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_10.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nALTER POLICY rd ON pgpol_10.t USING (\" x \" IS NULL)",
+         "via": "stdin",
+         "expect_rc": 3,
+         "stderr_contains": [
+           "ERROR:  42703:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_10.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_10'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_10'::regnamespace) EXCEPT TABLE pgpol_10.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_10_role','pgpol_10_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_10.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_10.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_10 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_10'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_10_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_10_role','pgpol_10_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-named-role",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_11"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_11 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_11'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_11_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_11_role','pgpol_11_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY rd ON pgpol_11.t TO pgpol_11_role",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_11'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_11_role','pgpol_11_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_11",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_11_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_11.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_11.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_11.other(id integer);\nCREATE VIEW pgpol_11.v AS SELECT id FROM pgpol_11.t;\nCREATE POLICY rd ON pgpol_11.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_11.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_11.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_11.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_11.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_11.guard START 7;\nCREATE TABLE pgpol_11.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_11'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_11.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_11'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_11'::regnamespace) EXCEPT TABLE pgpol_11.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_11_role','pgpol_11_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_11.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_11.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nBEGIN; ALTER POLICY rd ON pgpol_11.t TO pgpol_11_role; SELECT 'changed='||(polroles=ARRAY['pgpol_11_role'::regrole::oid])::text FROM pg_policy WHERE polrelid='pgpol_11.t'::regclass AND polname='rd'; ROLLBACK;",
+         "via": "stdin",
+         "expect_rc": 0,
+         "stdout_contains": [
+           "changed=true"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_11.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_11'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_11'::regnamespace) EXCEPT TABLE pgpol_11.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_11_role','pgpol_11_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_11.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_11.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_11 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_11'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_11_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_11_role','pgpol_11_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-missing-role-before-table",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_12"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_12 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_12'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_12_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_12_role','pgpol_12_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY rd ON pgpol_12.absent TO pgpol_12_role_missing",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_12'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_12_role','pgpol_12_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_12",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_12_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_12.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_12.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_12.other(id integer);\nCREATE VIEW pgpol_12.v AS SELECT id FROM pgpol_12.t;\nCREATE POLICY rd ON pgpol_12.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_12.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_12.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_12.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_12.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_12.guard START 7;\nCREATE TABLE pgpol_12.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_12'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "metadata": {
+             "policy": "rd",
+             "reason_code": "alter_policy_role_absent",
+             "schema": "pgpol_12",
+             "table": "absent"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_12.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_12'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_12'::regnamespace) EXCEPT TABLE pgpol_12.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_12_role','pgpol_12_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_12.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_12.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nALTER POLICY rd ON pgpol_12.absent TO pgpol_12_role_missing",
+         "via": "stdin",
+         "expect_rc": 3,
+         "stderr_contains": [
+           "ERROR:  42704:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_12.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_12'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_12'::regnamespace) EXCEPT TABLE pgpol_12.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_12_role','pgpol_12_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_12.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_12.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_12 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_12'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_12_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_12_role','pgpol_12_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-public-skips-later-missing-role",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_13"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_13 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_13'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_13_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_13_role','pgpol_13_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY rd ON pgpol_13.t TO PUBLIC, pgpol_13_role_missing",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_13'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_13_role','pgpol_13_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_13",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_13_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_13.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_13.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_13.other(id integer);\nCREATE VIEW pgpol_13.v AS SELECT id FROM pgpol_13.t;\nCREATE POLICY rd ON pgpol_13.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_13.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_13.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_13.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_13.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_13.guard START 7;\nCREATE TABLE pgpol_13.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_13'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_13.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_13'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_13'::regnamespace) EXCEPT TABLE pgpol_13.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_13_role','pgpol_13_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_13.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_13.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nBEGIN; ALTER POLICY rd ON pgpol_13.t TO PUBLIC, pgpol_13_role_missing; SELECT 'changed='||(polroles=ARRAY[0::oid])::text FROM pg_policy WHERE polrelid='pgpol_13.t'::regclass AND polname='rd'; ROLLBACK;",
+         "via": "stdin",
+         "expect_rc": 0,
+         "stdout_contains": [
+           "changed=true"
+         ],
+         "stderr_contains": [
+           "WARNING:  22023:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_13.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_13'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_13'::regnamespace) EXCEPT TABLE pgpol_13.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_13_role','pgpol_13_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_13.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_13.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_13 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_13'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_13_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_13_role','pgpol_13_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-missing-role-before-public-still-fails",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_14"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_14 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_14'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_14_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_14_role','pgpol_14_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY rd ON pgpol_14.t TO pgpol_14_role_missing, PUBLIC",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_14'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_14_role','pgpol_14_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_14",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_14_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_14.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_14.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_14.other(id integer);\nCREATE VIEW pgpol_14.v AS SELECT id FROM pgpol_14.t;\nCREATE POLICY rd ON pgpol_14.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_14.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_14.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_14.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_14.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_14.guard START 7;\nCREATE TABLE pgpol_14.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_14'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "metadata": {
+             "policy": "rd",
+             "reason_code": "alter_policy_role_absent",
+             "schema": "pgpol_14",
+             "table": "t"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_14.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_14'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_14'::regnamespace) EXCEPT TABLE pgpol_14.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_14_role','pgpol_14_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_14.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_14.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nALTER POLICY rd ON pgpol_14.t TO pgpol_14_role_missing, PUBLIC",
+         "via": "stdin",
+         "expect_rc": 3,
+         "stderr_contains": [
+           "ERROR:  42704:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_14.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_14'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_14'::regnamespace) EXCEPT TABLE pgpol_14.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_14_role','pgpol_14_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_14.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_14.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_14 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_14'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_14_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_14_role','pgpol_14_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-rename-exact",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_15"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_15 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_15'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_15_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_15_role','pgpol_15_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY rd ON pgpol_15.t RENAME TO \" Read \"",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_15'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_15_role','pgpol_15_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_15",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_15_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_15.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_15.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_15.other(id integer);\nCREATE VIEW pgpol_15.v AS SELECT id FROM pgpol_15.t;\nCREATE POLICY rd ON pgpol_15.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_15.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_15.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_15.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_15.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_15.guard START 7;\nCREATE TABLE pgpol_15.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_15'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_15.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_15'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_15'::regnamespace) EXCEPT TABLE pgpol_15.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_15_role','pgpol_15_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_15.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_15.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nBEGIN; ALTER POLICY rd ON pgpol_15.t RENAME TO \" Read \"; SELECT 'changed='||(polcmd='r' AND pg_get_expr(polqual,polrelid)='(id > 0)')::text FROM pg_policy WHERE polrelid='pgpol_15.t'::regclass AND polname=' Read '; ROLLBACK;",
+         "via": "stdin",
+         "expect_rc": 0,
+         "stdout_contains": [
+           "changed=true"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_15.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_15'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_15'::regnamespace) EXCEPT TABLE pgpol_15.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_15_role','pgpol_15_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_15.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_15.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_15 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_15'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_15_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_15_role','pgpol_15_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-rename-conflicts-on-same-table",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_16"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_16 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_16'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_16_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_16_role','pgpol_16_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY rd ON pgpol_16.t RENAME TO upd",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_16'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_16_role','pgpol_16_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_16",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_16_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_16.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_16.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_16.other(id integer);\nCREATE VIEW pgpol_16.v AS SELECT id FROM pgpol_16.t;\nCREATE POLICY rd ON pgpol_16.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_16.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_16.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_16.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_16.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_16.guard START 7;\nCREATE TABLE pgpol_16.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_16'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "metadata": {
+             "policy": "rd",
+             "reason_code": "alter_policy_rename_occupied",
+             "schema": "pgpol_16",
+             "table": "t"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_16.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_16'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_16'::regnamespace) EXCEPT TABLE pgpol_16.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_16_role','pgpol_16_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_16.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_16.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nALTER POLICY rd ON pgpol_16.t RENAME TO upd",
+         "via": "stdin",
+         "expect_rc": 3,
+         "stderr_contains": [
+           "ERROR:  42710:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_16.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_16'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_16'::regnamespace) EXCEPT TABLE pgpol_16.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_16_role','pgpol_16_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_16.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_16.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_16 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_16'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_16_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_16_role','pgpol_16_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-rename-equal-name",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_17"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_17 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_17'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_17_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_17_role','pgpol_17_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY rd ON pgpol_17.t RENAME TO rd",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_17'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_17_role','pgpol_17_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_17",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_17_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_17.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_17.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_17.other(id integer);\nCREATE VIEW pgpol_17.v AS SELECT id FROM pgpol_17.t;\nCREATE POLICY rd ON pgpol_17.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_17.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_17.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_17.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_17.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_17.guard START 7;\nCREATE TABLE pgpol_17.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_17'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "metadata": {
+             "policy": "rd",
+             "reason_code": "alter_policy_rename_occupied",
+             "schema": "pgpol_17",
+             "table": "t"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_17.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_17'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_17'::regnamespace) EXCEPT TABLE pgpol_17.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_17_role','pgpol_17_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_17.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_17.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nALTER POLICY rd ON pgpol_17.t RENAME TO rd",
+         "via": "stdin",
+         "expect_rc": 3,
+         "stderr_contains": [
+           "ERROR:  42710:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_17.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_17'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_17'::regnamespace) EXCEPT TABLE pgpol_17.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_17_role','pgpol_17_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_17.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_17.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_17 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_17'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_17_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_17_role','pgpol_17_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-rename-destination-before-absent-source",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_18"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_18 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_18'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_18_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_18_role','pgpol_18_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY absent ON pgpol_18.t RENAME TO rd",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_18'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_18_role','pgpol_18_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_18",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_18_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_18.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_18.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_18.other(id integer);\nCREATE VIEW pgpol_18.v AS SELECT id FROM pgpol_18.t;\nCREATE POLICY rd ON pgpol_18.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_18.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_18.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_18.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_18.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_18.guard START 7;\nCREATE TABLE pgpol_18.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_18'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter_policy.target.valid",
+           "metadata": {
+             "policy": "absent",
+             "reason_code": "alter_policy_rename_occupied",
+             "schema": "pgpol_18",
+             "table": "t"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGPolicyChangeState",
+         "private_catalog_attribute",
+         "private_catalog_policy"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_18.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_18'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_18'::regnamespace) EXCEPT TABLE pgpol_18.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_18_role','pgpol_18_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_18.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_18.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nALTER POLICY absent ON pgpol_18.t RENAME TO rd",
+         "via": "stdin",
+         "expect_rc": 3,
+         "stderr_contains": [
+           "ERROR:  42710:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_18.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_18'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_18'::regnamespace) EXCEPT TABLE pgpol_18.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_18_role','pgpol_18_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_18.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_18.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_18 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_18'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_18_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_18_role','pgpol_18_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-policy-rename-combined-with-roles-parser-boundary",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-policy-catalog",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgpol_19"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgpol_19 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_19'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned role",
+           "fixture_key": "role",
+           "sql": "DROP ROLE pgpol_19_role",
+           "verify": {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_19_role','pgpol_19_role_missing')",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER POLICY rd ON pgpol_19.t TO pgpol_19_role RENAME TO renamed",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_19'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "prove role absent",
+         "fixture_key": "role",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_19_role','pgpol_19_role_missing')",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgpol_19",
+         "expect_rc": 0
+       },
+       {
+         "name": "claim role",
+         "fixture_key": "role",
+         "creates_fixture": true,
+         "sql": "CREATE ROLE pgpol_19_role",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped policies and independent witnesses",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgpol_19.t(id integer,\" X \" boolean,private_catalog_attribute text);\nINSERT INTO pgpol_19.t VALUES(7,true,NULL);\nCREATE TABLE pgpol_19.other(id integer);\nCREATE VIEW pgpol_19.v AS SELECT id FROM pgpol_19.t;\nCREATE POLICY rd ON pgpol_19.t FOR SELECT USING (id>0);\nCREATE POLICY wr ON pgpol_19.t FOR INSERT WITH CHECK (id>0);\nCREATE POLICY upd ON pgpol_19.t FOR UPDATE USING (id>0) WITH CHECK (id>0);\nCREATE POLICY rd ON pgpol_19.other FOR SELECT USING (true);\nCREATE POLICY private_catalog_policy ON pgpol_19.t FOR SELECT USING (true);\nCREATE SEQUENCE pgpol_19.guard START 7;\nCREATE TABLE pgpol_19.receipt AS SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_19'::regnamespace"
+       }
+     ],
+     "expect": {
+       "exit": 2,
+       "verdict": "",
+       "statements": 0,
+       "findings": 0,
+       "diagnostics": 1,
+       "unsupported": 0,
+       "coverage": "incomplete",
+       "statement_coverage": [],
+       "statement_indices": []
+     },
+     "post_verify": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_19.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_19'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_19'::regnamespace) EXCEPT TABLE pgpol_19.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_19_role','pgpol_19_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_19.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_19.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "run PostgreSQL policy change",
+         "sql": "\\set VERBOSITY verbose\nALTER POLICY rd ON pgpol_19.t TO pgpol_19_role RENAME TO renamed",
+         "via": "stdin",
+         "expect_rc": 3,
+         "stderr_contains": [
+           "ERROR:  42601:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "policy directory, clauses and role arrays unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgpol_19.receipt EXCEPT (SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_19'::regnamespace)) UNION ALL ((SELECT p.oid,p.polrelid,p.polname,p.polcmd,p.polroles,p.polqual::text AS qual,p.polwithcheck::text AS withcheck FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid WHERE c.relnamespace='pgpol_19'::regnamespace) EXCEPT TABLE pgpol_19.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "owned role and missing role remain distinct",
+         "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_19_role','pgpol_19_role_missing')",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgpol_19.t",
+         "expect": "7"
+       },
+       {
+         "assert": "sequence state unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgpol_19.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgpol_19 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_namespace WHERE nspname='pgpol_19'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned role",
+         "fixture_key": "role",
+         "sql": "DROP ROLE pgpol_19_role",
+         "verify": [
+           {
+             "assert": "owned role absent",
+             "sql": "SELECT count(*) FROM pg_roles WHERE rolname IN ('pgpol_19_role','pgpol_19_role_missing')",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
   {
    "id": "pg-live-rls-table",
    "anchor": "postgres17",
@@ -2990,6 +7066,26 @@
   }
  ],
  "required_case_ids": [
+  "T42.cli.policy-catalog-offline",
+  "T42.meta.pg-policy-select-using",
+  "T42.meta.pg-policy-select-with-check",
+  "T42.meta.pg-policy-insert-using",
+  "T42.meta.pg-policy-insert-with-check",
+  "T42.meta.pg-policy-update-both-clauses",
+  "T42.meta.pg-policy-wrong-table-kind",
+  "T42.meta.pg-policy-policy-absent",
+  "T42.meta.pg-policy-predicate-parsed-before-absent-policy",
+  "T42.meta.pg-policy-exact-column",
+  "T42.meta.pg-policy-case-mismatch",
+  "T42.meta.pg-policy-named-role",
+  "T42.meta.pg-policy-missing-role-before-table",
+  "T42.meta.pg-policy-public-skips-later-missing-role",
+  "T42.meta.pg-policy-missing-role-before-public-still-fails",
+  "T42.meta.pg-policy-rename-exact",
+  "T42.meta.pg-policy-rename-conflicts-on-same-table",
+  "T42.meta.pg-policy-rename-equal-name",
+  "T42.meta.pg-policy-rename-destination-before-absent-source",
+  "T42.meta.pg-policy-rename-combined-with-roles-parser-boundary",
   "T42.db.postgres17.ddl",
   "T42.db.postgres17.syntax_negative",
   "T42.cli.create-trigger",
