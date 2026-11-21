@@ -229,6 +229,18 @@ type corpusPGReplicationTarget struct {
 	Exists bool   `yaml:"exists"`
 }
 
+type corpusPGLanguage struct {
+	Name          string `yaml:"name"`
+	HandlerSchema string `yaml:"handler_schema"`
+	HandlerName   string `yaml:"handler_name"`
+}
+
+type corpusPGGrant struct {
+	Schema  string `yaml:"schema"`
+	Name    string `yaml:"name"`
+	Grantee string `yaml:"grantee"`
+}
+
 type corpusPGCreateSchema struct {
 	Name        string `yaml:"name"`
 	Owner       string `yaml:"owner"`
@@ -317,6 +329,8 @@ type corpusMetadata struct {
 	PGOperatorFamilies           []corpusPGOperatorFamily                 `yaml:"pg_operator_families,omitempty"`
 	PGIndexIncludes              []corpusPGIndexInclude                   `yaml:"pg_index_includes,omitempty"`
 	PGReplicationTargets         []corpusPGReplicationTarget              `yaml:"pg_replication_targets,omitempty"`
+	PGLanguages                  []corpusPGLanguage                       `yaml:"pg_languages,omitempty"`
+	PGGrants                     []corpusPGGrant                          `yaml:"pg_grants,omitempty"`
 	PGIndexDestinations          []corpusPGIndexDestination               `yaml:"pg_index_destinations,omitempty"`
 	PGIndexOptions               []corpusPGIndexOptions                   `yaml:"pg_index_options,omitempty"`
 	PGIndexAttachments           []corpusPGIndexAttachment                `yaml:"pg_index_attachments,omitempty"`

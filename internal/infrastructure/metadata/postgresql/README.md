@@ -62,6 +62,8 @@ comparisons for the member and scope binding.
 | wrapper_change.go | Reads exact wrapper and routine facts and option names. |
 | text_search_change.go | Reads qualified text search target and destination facts, built-in parser token identities and exact dictionary names. |
 | publication_change.go and subscription_change.go | Read bounded local catalog facts for PostgreSQL 17 publication and subscription changes. |
+| language.go | Reads the exact local language name and ordered callback signatures. |
+| grant.go | Reads PostgreSQL object, column and role identities for privilege declarations. |
 | collation_refresh.go | Observes the exact qualified collation for the database encoding and keeps provider versions private. |
 | index_include.go | Observes the qualified relation kind, column directories and bounded access-method identity. |
 | index_destination.go | Observes PostgreSQL index rename occupancy and tablespace destinations. |

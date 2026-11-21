@@ -866,6 +866,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
+| `ddl.pg.create_language.handler.valid` | 检查 PostgreSQL 17 显式语言回调签名和替换前提。 | blocker | 是 |
 | `ddl.pg.create_extension.notice` | `CREATE EXTENSION` 安装扩展到数据库——信息性提示 | notice | 否 |
 | `ddl.pg.create_extension.cascade.warn` | `CREATE EXTENSION ... CASCADE` 自动安装依赖——可能引入非预期扩展 | warning | 否 |
 | `ddl.pg.alter_extension.update.notice` | `ALTER EXTENSION ... UPDATE` / `UPDATE TO` 升级扩展——信息性提示 | notice | 否 |
@@ -883,6 +884,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
+| `ddl.pg.grant.declaration.valid` | 检查 PostgreSQL 17 授权和撤销声明的目标、角色和列前提。 | blocker | 是 |
 | `ddl.pg.grant.table_privilege.notice` | `GRANT ... ON TABLE` 授予表级权限——信息性通知 | notice | No |
 | `ddl.pg.grant.table_privilege.all.warn` | `GRANT ALL PRIVILEGES ON TABLE` 授予所有权限——警告过度授权 | warning | No |
 | `ddl.pg.revoke.table_privilege.notice` | `REVOKE ... ON TABLE` 撤销表级权限——信息性通知 | notice | No |

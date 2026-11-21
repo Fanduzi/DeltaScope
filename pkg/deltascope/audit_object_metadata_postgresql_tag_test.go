@@ -1341,3 +1341,41 @@ func TestAuditPGSubscriptionChangeThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing subscription slot finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditPGLanguageThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGLanguage: &spec.PGLanguageState{Name: "fixture_lang", Database: "postgres", Routines: []spec.PGLanguageRoutineState{{Target: spec.PGLanguageRoutine{Kind: "handler", Schema: "app", Name: "missing_handler"}}}}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE LANGUAGE fixture_lang HANDLER app.missing_handler`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "fixture_lang" || provider.objectCalls[len(provider.objectCalls)-1].Type != "pg_language_declaration" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_language.handler.valid" && f.Metadata["reason_code"] == "language_callback_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing missing language callback finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGGrantDeclarationThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGGrant: &spec.PGGrantState{ObjectKind: "table", Targets: []spec.PGGrantTargetState{{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "fixture"}}, Exists: true, Kind: "r", Columns: []string{"catalog_only_column"}}}, Grantees: []spec.PGTableOwnerTarget{{Kind: "public"}}, GranteeExists: []bool{true}}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `GRANT SELECT (missing_column) ON TABLE app.fixture TO PUBLIC`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "table" || provider.objectCalls[len(provider.objectCalls)-1].Type != "pg_grant_declaration" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.grant.declaration.valid" && f.Metadata["reason_code"] == "grant_column_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing missing column finding: %+v", result.Statements[0].Findings)
+}

@@ -43,6 +43,8 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 | extractor_alter_enum.go | Retains exact ALTER TYPE enum labels and recovers empty label presence from the parser JSON AST. |
 | extractor_create_columns.go | Preserves exact duplicate and system column facts and qualified type targets from direct CREATE TABLE declarations. |
 | extractor_create_expression.go | Captures bounded PostgreSQL DEFAULT, CHECK and generated expression refusals from the AST. |
+| extractor_create_language.go | Extracts explicit HANDLER, INLINE and VALIDATOR identities with replacement and trust flags. |
+| extractor_pg_grant.go | Captures ordered PostgreSQL privilege targets, columns, role selectors and modifiers. |
 | extractor_ddl_create.go | Extracts CREATE column facts, including exact PostgreSQL `CREATE TABLE OF` source identities and column options. Preserves explicit storage settings, access methods and tablespaces. Preserves exact ordered primary and unique key and INCLUDE declarations. `columnFromDef` also supplies ADD COLUMN declarations through the shared generation extractor. |
 | extractor_helpers.go | Shared AST-to-spec conversion helpers, including multi-relation target lists |
 | extractor_multi_target_postgresql_tag_test.go | Verifies PostgreSQL DROP TABLE and TRUNCATE extraction retains every named relation target |

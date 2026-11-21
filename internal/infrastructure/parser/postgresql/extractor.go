@@ -93,6 +93,8 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return statement, nil
 	case *pg_query.Node_AlterDomainStmt:
 		return extractAlterDomainStmt(statement, node.AlterDomainStmt), nil
+	case *pg_query.Node_CreatePlangStmt:
+		return extractCreateLanguageStmt(statement, node.CreatePlangStmt), nil
 	case *pg_query.Node_CreateExtensionStmt:
 		return extractCreateExtensionStmt(statement, node.CreateExtensionStmt), nil
 	case *pg_query.Node_AlterExtensionStmt:

@@ -25,6 +25,8 @@ type Metadata struct {
 	PGOperatorFamilyChange      *PGOperatorFamilyChangeState      `json:"-"`
 	PGPublicationChange         *PGPublicationChangeState         `json:"-"`
 	PGSubscriptionChange        *PGSubscriptionChangeState        `json:"-"`
+	PGLanguage                  *PGLanguageState                  `json:"-"`
+	PGGrant                     *PGGrantState                     `json:"-"`
 	PGIndexDestination          *PGIndexDestinationState          `json:"-"`
 	PGOperatorFamilyMember      *PGOperatorFamilyMemberState      `json:"-"`
 	PGOperatorFamily            *PGOperatorFamilyState            `json:"-"`
@@ -854,6 +856,8 @@ type ObjectSnapshot struct {
 	PGOperatorFamilyChange      *PGOperatorFamilyChangeState      `json:"-"`
 	PGPublicationChange         *PGPublicationChangeState         `json:"-"`
 	PGSubscriptionChange        *PGSubscriptionChangeState        `json:"-"`
+	PGLanguage                  *PGLanguageState                  `json:"-"`
+	PGGrant                     *PGGrantState                     `json:"-"`
 	PGIndexDestination          *PGIndexDestinationState          `json:"-"`
 	PGOperatorFamilyMember      *PGOperatorFamilyMemberState      `json:"-"`
 	PGOperatorFamily            *PGOperatorFamilyState            `json:"-"`
@@ -935,6 +939,8 @@ type ObjectSnapshot struct {
 type ObjectLookupRequest struct {
 	PGTextSearchDictionaries   []Table                     `json:"-"`
 	PGPublicationMembers       []PGPublicationMember       `json:"-"`
+	PGLanguageRoutines         []PGLanguageRoutine         `json:"-"`
+	PGGrant                    *PGGrantDeclaration         `json:"-"`
 	PGOperatorFamilyMember     *PGOperatorFamilyMember     `json:"-"`
 	PGPolicyRoles              []string                    `json:"-"`
 	PGWrapperFunctions         []PGWrapperFunction         `json:"-"`

@@ -279,6 +279,12 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 		if err := enrichPGSubscriptionChanges(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}
+		if err := enrichPGLanguageDeclarations(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
+		if err := enrichPGGrantDeclarations(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
 		if err := enrichPGIndexDestinations(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}

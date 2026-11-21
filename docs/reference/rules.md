@@ -929,6 +929,7 @@ These rules guard against risky PostgreSQL extension lifecycle DDL operations �
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.create_language.handler.valid` | Checks PostgreSQL 17 explicit language callback signatures and replacement prerequisites. | blocker | Yes |
 | `ddl.pg.create_extension.notice` | `CREATE EXTENSION` installs an extension into the database — informational notice | notice | No |
 | `ddl.pg.create_extension.cascade.warn` | `CREATE EXTENSION ... CASCADE` auto-installs dependencies — may introduce unintended extensions | warning | No |
 | `ddl.pg.alter_extension.update.notice` | `ALTER EXTENSION ... UPDATE` / `UPDATE TO` upgrades an extension — informational notice | notice | No |
@@ -946,6 +947,7 @@ These rules guard PostgreSQL table-level privilege DCL operations — `GRANT ...
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.grant.declaration.valid` | Checks PostgreSQL 17 privilege target, role and column prerequisites. | blocker | Yes |
 | `ddl.pg.grant.table_privilege.notice` | `GRANT ... ON TABLE` grants table-level privileges — informational notice | notice | No |
 | `ddl.pg.grant.table_privilege.all.warn` | `GRANT ALL PRIVILEGES ON TABLE` grants all privileges — warns about over-permission | warning | No |
 | `ddl.pg.revoke.table_privilege.notice` | `REVOKE ... ON TABLE` revokes table-level privileges — informational notice | notice | No |

@@ -1,0 +1,13 @@
+name: grant_missing_column
+dialect: postgresql
+category: ddl
+metadata:
+  instance: {version: PostgreSQL 17.7}
+  pg_grants:
+    - {schema: app, name: fixture, grantee: fixture_reader}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.grant.declaration.valid]

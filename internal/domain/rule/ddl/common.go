@@ -377,11 +377,13 @@ const (
 	ruleIDPGAlterTypeAlterAttributeTypeWarn = "ddl.pg.alter_type.alter_attribute_type.warn"
 	ruleIDPGAlterTypeRenameAttributeNotice  = "ddl.pg.alter_type.rename_attribute.notice"
 	// PostgreSQL table privilege rules (PG-only).
+	ruleIDPGGrantDeclarationValid           = "ddl.pg.grant.declaration.valid"
 	ruleIDPGGrantTablePrivilegeNotice       = "ddl.pg.grant.table_privilege.notice"
 	ruleIDPGGrantTablePrivilegeAllWarn      = "ddl.pg.grant.table_privilege.all.warn"
 	ruleIDPGRevokeTablePrivilegeNotice      = "ddl.pg.revoke.table_privilege.notice"
 	ruleIDPGRevokeTablePrivilegeCascadeWarn = "ddl.pg.revoke.table_privilege.cascade.warn"
 	// PostgreSQL extension lifecycle rules (PG-only).
+	ruleIDPGLanguageDeclarationValid      = "ddl.pg.create_language.handler.valid"
 	ruleIDPGCreateExtensionNotice         = "ddl.pg.create_extension.notice"
 	ruleIDPGCreateExtensionCascadeWarn    = "ddl.pg.create_extension.cascade.warn"
 	ruleIDPGAlterExtensionUpdateNotice    = "ddl.pg.alter_extension.update.notice"

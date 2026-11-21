@@ -413,8 +413,6 @@ func TestTablePrivilegeDCLDeltaScopeBaseline(t *testing.T) {
 // Post-Task-2 state:
 //   - Ordinary table GRANT forms: KindDDL, normalized as grant_table
 //   - Ordinary table REVOKE forms: KindDDL, normalized as revoke_table
-//   - ALL TABLES IN SCHEMA: KindDDL, unsupported with feature grant_all_tables_in_schema
-//   - Sequence privileges: KindDDL, unsupported with feature grant_table
 //   - Role membership: KindDDL, unsupported with feature grant_role
 //   - ALTER DEFAULT PRIVILEGES: KindDDL, unsupported with feature alter_default_privileges
 func assertTablePrivilegeDCLBaseline(t *testing.T, fact tablePrivilegeDCLBaselineFact) {
@@ -525,21 +523,9 @@ func assertTablePrivilegeDCLBaseline(t *testing.T, fact tablePrivilegeDCLBaselin
 			t.Errorf("%s: expected cascade=true, got %v", fact.Name, fact.DDLOptions)
 		}
 
-	// Deferred: broader scopes with stable feature names.
-	case "grant_select_all_tables_in_schema":
-		if !fact.Unsupported {
-			t.Errorf("%s: expected unsupported", fact.Name)
-		}
-		if fact.UnsupportedFeature != "grant_all_tables_in_schema" {
-			t.Errorf("%s: expected feature 'grant_all_tables_in_schema', got %q", fact.Name, fact.UnsupportedFeature)
-		}
-
-	case "grant_select_on_sequence":
-		if !fact.Unsupported {
-			t.Errorf("%s: expected unsupported", fact.Name)
-		}
-		if fact.UnsupportedFeature != "grant_table" {
-			t.Errorf("%s: expected feature 'grant_table', got %q", fact.Name, fact.UnsupportedFeature)
+	case "grant_select_all_tables_in_schema", "grant_select_on_sequence":
+		if fact.Unsupported || fact.DDLOperation != "grant_object" {
+			t.Errorf("%s: expected normalized grant_object, got %q, unsupported=%v", fact.Name, fact.DDLOperation, fact.Unsupported)
 		}
 
 	case "grant_role_to_role", "revoke_role_from_role":
@@ -596,7 +582,7 @@ func TestTablePrivilegeDCLRuleCoverageBaseline(t *testing.T) {
 		case "grant_select_on_table", "grant_select_insert_on_table",
 			"grant_all_on_table", "grant_select_on_qualified_table",
 			"revoke_select_on_table", "revoke_select_insert_on_table",
-			"revoke_all_on_table_cascade":
+			"revoke_all_on_table_cascade", "grant_select_all_tables_in_schema", "grant_select_on_sequence":
 			// Supported: produces normalized DDL, no unsupported marker.
 			if !hasDDL {
 				t.Errorf("%s: expected normalized DDL", tc.Name)

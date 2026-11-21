@@ -797,6 +797,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.create_language.handler.valid` | Checks exact PostgreSQL 17 language handlers and optional callbacks | Gap | ✓ | blocker |
 | `ddl.pg.create_extension.notice` | `CREATE EXTENSION` installs an extension into the database — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.create_extension.cascade.warn` | `CREATE EXTENSION ... CASCADE` auto-installs dependencies — may introduce unintended extensions | ✓ | ✗ | warning |
 | `ddl.pg.alter_extension.update.notice` | `ALTER EXTENSION ... UPDATE` / `UPDATE TO` upgrades an extension — informational notice | ✓ | ✗ | notice |
@@ -836,6 +837,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.grant.declaration.valid` | Checks local PostgreSQL 17 privilege targets, role identity and columns | Gap | ✓ | blocker |
 | `ddl.pg.grant.table_privilege.notice` | `GRANT ... ON TABLE` grants table-level privileges — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.grant.table_privilege.all.warn` | `GRANT ALL PRIVILEGES ON TABLE` grants all privileges — warns about over-permission | ✓ | ✗ | warning |
 | `ddl.pg.revoke.table_privilege.notice` | `REVOKE ... ON TABLE` revokes table-level privileges — informational notice | ✓ | ✗ | notice |

@@ -96,6 +96,7 @@ func classify(node *pg_query.Node) spec.Kind {
 		*pg_query.Node_AlterTsdictionaryStmt,
 		*pg_query.Node_AlterCollationStmt,
 		*pg_query.Node_AlterDomainStmt,
+		*pg_query.Node_CreatePlangStmt,
 		*pg_query.Node_CreateExtensionStmt,
 		*pg_query.Node_AlterExtensionStmt,
 		*pg_query.Node_AlterExtensionContentsStmt,

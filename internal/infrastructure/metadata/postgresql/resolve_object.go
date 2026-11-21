@@ -66,6 +66,10 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 			return p.resolvePublicationChange(ctx, req)
 		case "pg_subscription_change":
 			return p.resolveSubscriptionChange(ctx, req)
+		case "pg_language_declaration":
+			return p.resolveLanguageDeclaration(ctx, req)
+		case "pg_grant_declaration":
+			return p.resolveGrantDeclaration(ctx, req)
 		case "pg_index_destination":
 			return p.resolveIndexDestination(ctx, req)
 		case "pg_index_options":

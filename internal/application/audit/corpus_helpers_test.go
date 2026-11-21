@@ -40,7 +40,7 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
 		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
-		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGCreateStorage) == 0 && len(tc.Metadata.PGCreateTyped) == 0 && len(tc.Metadata.PGCreateCommits) == 0 && len(tc.Metadata.PGCreateLikes) == 0 && len(tc.Metadata.PGOperatorFamilies) == 0 && len(tc.Metadata.PGIndexIncludes) == 0 && len(tc.Metadata.PGReplicationTargets) == 0 && len(tc.Metadata.PGIndexDestinations) == 0 && len(tc.Metadata.PGIndexOptions) == 0 && len(tc.Metadata.PGIndexAttachments) == 0 && len(tc.Metadata.PGOperatorChanges) == 0 && len(tc.Metadata.PGComposites) == 0 && len(tc.Metadata.PGEnums) == 0 && len(tc.Metadata.PGCollationChanges) == 0 && len(tc.Metadata.PGCollationRefreshes) == 0 && len(tc.Metadata.PGPolicies) == 0 && len(tc.Metadata.PGSequenceChanges) == 0 && len(tc.Metadata.PGForeignTables) == 0 && len(tc.Metadata.PGWrappers) == 0 && len(tc.Metadata.PGTextSearch) == 0 && len(tc.Metadata.PGCreateSchemas) == 0 && len(tc.Metadata.PGPartitionConstraints) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
+		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGCreateStorage) == 0 && len(tc.Metadata.PGCreateTyped) == 0 && len(tc.Metadata.PGCreateCommits) == 0 && len(tc.Metadata.PGCreateLikes) == 0 && len(tc.Metadata.PGOperatorFamilies) == 0 && len(tc.Metadata.PGIndexIncludes) == 0 && len(tc.Metadata.PGReplicationTargets) == 0 && len(tc.Metadata.PGLanguages) == 0 && len(tc.Metadata.PGGrants) == 0 && len(tc.Metadata.PGIndexDestinations) == 0 && len(tc.Metadata.PGIndexOptions) == 0 && len(tc.Metadata.PGIndexAttachments) == 0 && len(tc.Metadata.PGOperatorChanges) == 0 && len(tc.Metadata.PGComposites) == 0 && len(tc.Metadata.PGEnums) == 0 && len(tc.Metadata.PGCollationChanges) == 0 && len(tc.Metadata.PGCollationRefreshes) == 0 && len(tc.Metadata.PGPolicies) == 0 && len(tc.Metadata.PGSequenceChanges) == 0 && len(tc.Metadata.PGForeignTables) == 0 && len(tc.Metadata.PGWrappers) == 0 && len(tc.Metadata.PGTextSearch) == 0 && len(tc.Metadata.PGCreateSchemas) == 0 && len(tc.Metadata.PGPartitionConstraints) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
@@ -56,6 +56,8 @@ type corpusFixtureMetadataProvider struct {
 	pgOperatorFamilies           []corpusPGOperatorFamily
 	pgIndexIncludes              []corpusPGIndexInclude
 	pgReplicationTargets         []corpusPGReplicationTarget
+	pgLanguages                  []corpusPGLanguage
+	pgGrants                     []corpusPGGrant
 	pgIndexDestinations          []corpusPGIndexDestination
 	pgIndexOptions               []corpusPGIndexOptions
 	pgIndexAttachments           []corpusPGIndexAttachment
@@ -138,6 +140,8 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 		pgOperatorFamilies:           metadata.PGOperatorFamilies,
 		pgIndexIncludes:              metadata.PGIndexIncludes,
 		pgReplicationTargets:         metadata.PGReplicationTargets,
+		pgLanguages:                  metadata.PGLanguages,
+		pgGrants:                     metadata.PGGrants,
 		pgIndexDestinations:          metadata.PGIndexDestinations,
 		pgIndexOptions:               metadata.PGIndexOptions,
 		pgIndexAttachments:           metadata.PGIndexAttachments,
@@ -806,6 +810,28 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 				return &spec.ObjectSnapshot{PGSubscriptionChange: &spec.PGSubscriptionChangeState{Name: seed.Name, Exists: seed.Exists}}, nil
 			}
 		}
+	}
+	if request.Type == "pg_language_declaration" {
+		for _, seed := range p.pgLanguages {
+			target := spec.PGLanguageRoutine{Kind: "handler", Schema: seed.HandlerSchema, Name: seed.HandlerName}
+			if seed.Name == request.Name && len(request.PGLanguageRoutines) == 1 && request.PGLanguageRoutines[0] == target {
+				return &spec.ObjectSnapshot{PGLanguage: &spec.PGLanguageState{Name: seed.Name, Database: "postgres", Routines: []spec.PGLanguageRoutineState{{Target: target}}}}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_grant_declaration" && request.PGGrant != nil {
+		d := request.PGGrant
+		for _, seed := range p.pgGrants {
+			target := spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.Schema, Name: seed.Name}}
+			grantee := spec.PGTableOwnerTarget{Kind: "named", Name: seed.Grantee}
+			if d.ObjectKind == "table" && len(d.Targets) == 1 && d.Targets[0] == target && len(d.Grantees) == 1 && d.Grantees[0] == grantee {
+				return &spec.ObjectSnapshot{PGGrant: &spec.PGGrantState{ObjectKind: "table",
+					Targets:  []spec.PGGrantTargetState{{Target: target, Exists: true, Kind: "r", Columns: []string{"id"}}},
+					Grantees: []spec.PGTableOwnerTarget{grantee}, GranteeExists: []bool{true}}}, nil
+			}
+		}
+		return nil, nil
 	}
 	if request.Type == "pg_create_schema" {
 		for _, seed := range p.pgCreateSchemas {

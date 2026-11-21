@@ -3,6 +3,8 @@ package spec
 
 // DDL contains the structural metadata extracted from a DDL statement.
 type DDL struct {
+	PGLanguage                 *PGLanguageDeclaration      `json:"-"`
+	PGGrant                    *PGGrantDeclaration         `json:"-"`
 	PGPublicationChange        *PGPublicationChange        `json:"-"`
 	PGSubscriptionChange       *PGSubscriptionChange       `json:"-"`
 	PGTextSearchChange         *PGTextSearchChange         `json:"-"`
@@ -324,12 +326,15 @@ const (
 	DDLOperationAlterDomain  DDLOperation = "alter_domain"
 	DDLOperationDropDomain   DDLOperation = "drop_domain"
 
+	DDLOperationCreateLanguage  DDLOperation = "create_language"
 	DDLOperationCreateExtension DDLOperation = "create_extension"
 	DDLOperationAlterExtension  DDLOperation = "alter_extension"
 	DDLOperationDropExtension   DDLOperation = "drop_extension"
 
-	DDLOperationGrantTable  DDLOperation = "grant_table"
-	DDLOperationRevokeTable DDLOperation = "revoke_table"
+	DDLOperationGrantObject  DDLOperation = "grant_object"
+	DDLOperationRevokeObject DDLOperation = "revoke_object"
+	DDLOperationGrantTable   DDLOperation = "grant_table"
+	DDLOperationRevokeTable  DDLOperation = "revoke_table"
 
 	DDLOperationCreatePolicy DDLOperation = "create_policy"
 	DDLOperationAlterPolicy  DDLOperation = "alter_policy"

@@ -2224,6 +2224,9 @@ rules:
     level: warning
     params:
 
+  ddl.pg.create_language.handler.valid:
+    enabled: true
+    level: blocker
   ddl.pg.create_extension.notice:
     enabled: true
     level: notice
@@ -2714,6 +2717,9 @@ rules:
     level: warning
     params:
 
+  ddl.pg.grant.declaration.valid:
+    enabled: true
+    level: blocker
   ddl.pg.grant.table_privilege.all.warn:
     enabled: true
     level: warning

@@ -495,6 +495,7 @@ func ddlPgRules() map[string]RulePolicy {
 			Params:  map[string]any{},
 		},
 		// PG table privilege rules (PostgreSQL-only).
+		"ddl.pg.grant.declaration.valid": {Enabled: true, Level: "blocker"},
 		"ddl.pg.grant.table_privilege.notice": {
 			Enabled: true,
 			Level:   rule.LevelNotice,
@@ -516,6 +517,7 @@ func ddlPgRules() map[string]RulePolicy {
 			Params:  map[string]any{},
 		},
 		// PG extension lifecycle rules (PostgreSQL-only).
+		"ddl.pg.create_language.handler.valid": {Enabled: true, Level: "blocker"},
 		"ddl.pg.create_extension.notice": {
 			Enabled: true,
 			Level:   rule.LevelNotice,

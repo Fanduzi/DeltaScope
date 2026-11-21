@@ -129,6 +129,8 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGWrapperChange` preserves exact wrapper, owner and ordered routine and option declarations. `PGWrapperChangeState` holds catalog names and eligibility facts.
 - `PGTextSearchChange` preserves the exact identity, ordered mapping and dictionary option declarations. `PGTextSearchChangeState` binds observed token, dictionary and namespace facts.
 - `PGPublicationChange` and `PGSubscriptionChange` preserve parsed replication actions and names. Their catalog states carry local membership and slot premises internally.
+- `PGLanguageDeclaration` and `PGLanguageState` hold authored procedural language callbacks and local catalog signatures.
+- `PGGrantDeclaration` and `PGGrantState` keep ordered PostgreSQL privilege operands and exact local identity facts.
 - `PGCollationRefreshState` binds the exact qualified collation to its observed encoding eligibility and version presence facts.
 - `PGIndexIncludeState` binds exact user and system column directories and the observed access method for CREATE INDEX INCLUDE.
 - `PGIndexDestinationTarget` retains the qualified ALTER INDEX source, action, destination and absence guard.

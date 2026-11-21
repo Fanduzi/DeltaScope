@@ -2328,3 +2328,73 @@ func TestMCPPGSubscriptionChangeTarget(t *testing.T) {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }
+
+type languageDeclarationAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (languageDeclarationAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_language_declaration" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGLanguage: &spec.PGLanguageState{Name: "fixture_lang", Database: "postgres", Routines: []spec.PGLanguageRoutineState{{Target: spec.PGLanguageRoutine{Kind: "handler", Schema: "app", Name: "missing_handler"}}}}}, nil
+}
+
+func TestMCPPGLanguageTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := languageDeclarationAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "CREATE LANGUAGE fixture_lang HANDLER app.missing_handler", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"language_callback_absent"`) || !strings.Contains(string(body), `"ddl.pg.create_language.handler.valid"`) || strings.Contains(string(body), "PGLanguageState") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type grantDeclarationAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (grantDeclarationAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_grant_declaration" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGGrant: &spec.PGGrantState{ObjectKind: "table", Targets: []spec.PGGrantTargetState{{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "fixture"}}, Exists: true, Kind: "r", Columns: []string{"catalog_only_column"}}}, Grantees: []spec.PGTableOwnerTarget{{Kind: "public"}}, GranteeExists: []bool{true}}}, nil
+}
+
+func TestMCPPGGrantDeclarationTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := grantDeclarationAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "GRANT SELECT (missing_column) ON TABLE app.fixture TO PUBLIC", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"grant_column_absent"`) || !strings.Contains(string(body), `"ddl.pg.grant.declaration.valid"`) || strings.Contains(string(body), "catalog_only_column") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}

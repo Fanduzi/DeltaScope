@@ -797,11 +797,13 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGDropDomainAdvisory, construct: newDropDomainAdvisoryRule},
 		{ruleID: ruleIDPGDropDomainCascadeWarn, construct: newDropDomainCascadeWarnRule},
 		// PostgreSQL table privilege rules (PG-only).
+		{ruleID: ruleIDPGGrantDeclarationValid, construct: newPGGrantDeclarationRule},
 		{ruleID: ruleIDPGGrantTablePrivilegeNotice, construct: newGrantTablePrivilegeNoticeRule},
 		{ruleID: ruleIDPGGrantTablePrivilegeAllWarn, construct: newGrantTablePrivilegeAllWarnRule},
 		{ruleID: ruleIDPGRevokeTablePrivilegeNotice, construct: newRevokeTablePrivilegeNoticeRule},
 		{ruleID: ruleIDPGRevokeTablePrivilegeCascadeWarn, construct: newRevokeTablePrivilegeCascadeWarnRule},
 		// PostgreSQL extension lifecycle rules (PG-only).
+		{ruleID: ruleIDPGLanguageDeclarationValid, construct: newPGLanguageDeclarationRule},
 		{ruleID: ruleIDPGCreateExtensionNotice, construct: newCreateExtensionNoticeRule},
 		{ruleID: ruleIDPGCreateExtensionCascadeWarn, construct: newCreateExtensionCascadeWarnRule},
 		{ruleID: ruleIDPGAlterExtensionUpdateNotice, construct: newAlterExtensionUpdateNoticeRule},

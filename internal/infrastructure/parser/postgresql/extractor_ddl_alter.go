@@ -1701,15 +1701,16 @@ func extractGrantStmt(statement spec.Statement, stmt *pg_query.GrantStmt) spec.S
 		return unsupportedStatement(statement, "grant_table", "postgresql grant statement payload is missing")
 	}
 
-	// Only support ordinary table privileges (ACL_TARGET_OBJECT + OBJECT_TABLE).
-	if stmt.GetTargtype() == pg_query.GrantTargetType_ACL_TARGET_ALL_IN_SCHEMA {
-		return unsupportedStatement(statement, "grant_all_tables_in_schema", "postgresql grant all tables in schema is deferred")
-	}
-	if stmt.GetObjtype() != pg_query.ObjectType_OBJECT_TABLE {
+	kind := map[pg_query.ObjectType]string{
+		pg_query.ObjectType_OBJECT_TABLE: "table", pg_query.ObjectType_OBJECT_SEQUENCE: "sequence",
+		pg_query.ObjectType_OBJECT_SCHEMA: "schema", pg_query.ObjectType_OBJECT_DATABASE: "database",
+		pg_query.ObjectType_OBJECT_TABLESPACE: "tablespace",
+	}[stmt.GetObjtype()]
+	if kind == "" || (stmt.GetTargtype() != pg_query.GrantTargetType_ACL_TARGET_OBJECT && stmt.GetTargtype() != pg_query.GrantTargetType_ACL_TARGET_ALL_IN_SCHEMA) {
 		return unsupportedStatement(statement, "grant_table", fmt.Sprintf("postgresql grant object type %s is deferred", stmt.GetObjtype()))
 	}
-	if stmt.GetTargtype() != pg_query.GrantTargetType_ACL_TARGET_OBJECT {
-		return unsupportedStatement(statement, "grant_table", fmt.Sprintf("postgresql grant target type %s is deferred", stmt.GetTargtype()))
+	if kind != "table" || stmt.GetTargtype() == pg_query.GrantTargetType_ACL_TARGET_ALL_IN_SCHEMA {
+		return extractPGGrantObject(statement, stmt, kind)
 	}
 
 	// Extract table name from first RangeVar object.
@@ -1747,6 +1748,7 @@ func extractGrantStmt(statement spec.Statement, stmt *pg_query.GrantStmt) spec.S
 	}
 
 	statement.DDL = &spec.DDL{
+		PGGrant:    pgGrantDeclaration(stmt, kind),
 		Operation:  operation,
 		ObjectName: tableName,
 		ObjectType: "table",

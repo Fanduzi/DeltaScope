@@ -262,6 +262,10 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 		return "Checks local PostgreSQL 17 publication membership, named targets and supported options."
 	case "ddl.pg.alter_subscription.target.valid":
 		return "Checks PostgreSQL 17 local subscription identity, options, publication names and slot prerequisites."
+	case "ddl.pg.create_language.handler.valid":
+		return "Checks PostgreSQL 17 handler-form language declarations against exact local callback signatures."
+	case "ddl.pg.grant.declaration.valid":
+		return "Checks exact PostgreSQL 17 privilege subjects, local objects and columns without resolving effective privileges."
 	case "ddl.pg.create_schema.target.valid":
 		return "Checks PostgreSQL 17 schema creation identity, authored owner and guarded destination premises."
 	case "ddl.pg.alter_collation.refresh.target.valid":
@@ -718,7 +722,7 @@ func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 		"ddl.pg.alter_policy.target.valid",
 		"ddl.pg.alter_operator.change.target.valid", "ddl.pg.alter_type.change.target.valid", "ddl.pg.type.base.valid", "ddl.pg.type.composite.valid",
 		"ddl.pg.alter_type.enum.valid", "ddl.pg.create_type.range.valid", "ddl.pg.create_type.enum.valid",
-		"ddl.pg.text_search.change.target.valid", "ddl.pg.create_schema.target.valid", "ddl.pg.alter_collation.refresh.target.valid", "ddl.pg.alter_collation.change.target.valid",
+		"ddl.pg.text_search.change.target.valid", "ddl.pg.create_language.handler.valid", "ddl.pg.grant.declaration.valid", "ddl.pg.create_schema.target.valid", "ddl.pg.alter_collation.refresh.target.valid", "ddl.pg.alter_collation.change.target.valid",
 		"ddl.pg.create_index.include.valid", "ddl.pg.alter_index.options.valid", "ddl.pg.alter_index.attach_partition.valid", "ddl.pg.create_operator_family.target.valid",
 		"ddl.pg.alter_operator_family.member.valid", "ddl.pg.alter_index.destination.valid", "ddl.pg.alter_operator_family.change.target.valid":
 		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true
@@ -949,6 +953,7 @@ func categoryForPGRule(ruleID string) string {
 		{"drop_domain", "domain"},
 		{"grant", "privilege"},
 		{"revoke", "privilege"},
+		{"create_language", "language"},
 		{"create_extension", "extension"},
 		{"alter_extension", "extension"},
 		{"drop_extension", "extension"},
