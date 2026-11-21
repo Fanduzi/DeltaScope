@@ -162,7 +162,15 @@ type corpusPGViewDefaultState struct {
 	ColumnExists bool   `yaml:"column_exists"`
 }
 
+type corpusPGPartitionConstraint struct {
+	Schema  string   `yaml:"schema"`
+	Name    string   `yaml:"name"`
+	Columns []string `yaml:"columns"`
+	Key     string   `yaml:"key"`
+}
+
 type corpusMetadata struct {
+	PGPartitionConstraints       []corpusPGPartitionConstraint            `yaml:"pg_partition_constraints,omitempty"`
 	PGMaterializedViewExtensions []corpusPGMaterializedViewExtensionState `yaml:"pg_materialized_view_extensions,omitempty"`
 	PGViewDefaults               []corpusPGViewDefaultState               `yaml:"pg_view_defaults,omitempty"`
 	PGDropViewStates             []corpusPGDropViewState                  `yaml:"pg_drop_view_states,omitempty"`

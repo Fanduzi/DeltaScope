@@ -48,11 +48,18 @@ type PGColumnCatalog struct {
 
 // FindColumn returns one uniquely proven member or proven absence.
 func (c *PGColumnCatalog) FindColumn(name string) (*PGColumnState, bool) {
-	if c == nil || !c.Ordinary || c.Columns == nil || name == "" {
+	if c == nil || !c.Ordinary {
+		return nil, false
+	}
+	return findPGColumn(c.Columns, c.SystemColumns, name)
+}
+
+func findPGColumn(columns, systemColumns []PGColumnState, name string) (*PGColumnState, bool) {
+	if columns == nil || name == "" {
 		return nil, false
 	}
 	var found *PGColumnState
-	for namespace, members := range [][]PGColumnState{c.Columns, c.SystemColumns} {
+	for namespace, members := range [][]PGColumnState{columns, systemColumns} {
 		for i := range members {
 			m := &members[i]
 			if m.Name == "" || m.System != (namespace == 1) || pgSystemColumnName(m.Name) != (namespace == 1) {

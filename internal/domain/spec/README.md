@@ -110,6 +110,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGTableOwnerState` carries observed source-kind evidence for a view owner change.
 - `PGMaterializedViewExtensionState` binds the exact source relation kind and installed extension for a dependency change.
 - `PGMaterializedViewOptionsLookup` binds the exact materialized view for a single storage option action.
+- `PGPartitionConstraintState` binds exact observed column and partition-key facts to a qualified PostgreSQL partitioned root.
 - `PGViewDefaultState` binds the observed relation kind and user column for the exact PostgreSQL view default target.
 - `PGViewNamespaceSource` preserves the exact authored view identity and guard for RENAME and SET SCHEMA.
 - `PGCreateViewOutput` preserves known literal output columns. `PGCreateViewTarget` binds the exact target and ordered existing output.

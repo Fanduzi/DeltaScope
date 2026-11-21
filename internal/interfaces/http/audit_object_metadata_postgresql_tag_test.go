@@ -1022,3 +1022,29 @@ func TestHTTPPGDropViewSet(t *testing.T) {
 		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
 	}
 }
+
+func TestHTTPPGPartitionConstraintTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "p"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGPartitionConstraint: &spec.PGPartitionConstraintState{Target: spec.Table{Schema: "app", Name: "t"}, Columns: []spec.PGColumnState{{Name: "id"}, {Name: "payload"}}, PartitionKeys: []spec.PGPartitionConstraintKey{{Name: "id", CollationOK: true, EqualityRead: true, EqualityOK: true}}}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER TABLE app.t ADD UNIQUE (payload) INCLUDE (id)","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter.constraint_columns.valid"`) || !strings.Contains(body, `"constraint_partition_column_missing"`) || strings.Contains(body, "PGPartitionConstraint") || len(client.objectCalls) != 1 || client.objectCalls[0].Name != "t" || client.objectCalls[0].Type != "pg_partition_constraint" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}

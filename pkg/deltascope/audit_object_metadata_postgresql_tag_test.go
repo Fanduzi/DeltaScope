@@ -733,3 +733,22 @@ func TestAuditPGDropViewSetThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing DROP VIEW row-type dependency finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditPGPartitionConstraintThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "p"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGPartitionConstraint: &spec.PGPartitionConstraintState{Target: spec.Table{Schema: "app", Name: "t"}, Columns: []spec.PGColumnState{{Name: "id"}, {Name: "payload"}}, PartitionKeys: []spec.PGPartitionConstraintKey{{Name: "id", CollationOK: true, EqualityRead: true, EqualityOK: true}}}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t ADD UNIQUE (payload) INCLUDE (id)`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "t" || provider.objectCalls[0].Type != "pg_partition_constraint" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.constraint_columns.valid" && f.Metadata["reason_code"] == "constraint_partition_column_missing" {
+			return
+		}
+	}
+	t.Fatalf("missing partition-key finding: %+v", result.Statements[0].Findings)
+}

@@ -26,6 +26,8 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 			return p.resolveMaterializedViewExtension(ctx, req)
 		case "materialized_view_options":
 			return p.resolveMaterializedViewOptions(ctx, req)
+		case "pg_partition_constraint":
+			return p.resolvePartitionConstraint(ctx, req)
 		case "drop_view_set":
 			return p.resolveDropViewSet(ctx, req)
 		case "drop_view_target", "alter_view_options":

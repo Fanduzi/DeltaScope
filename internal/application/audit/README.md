@@ -104,6 +104,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | postgresql_column_type_metadata.go | Binds one exact PG17 TYPE destination after proving the fresh D14 source-column premise |
 | postgresql_table_namespace_metadata.go | Binds exact private PostgreSQL 17 rename and schema destination observations after target freshness checks |
 | postgresql_materialized_view_extension_metadata.go | Binds fresh source and extension existence facts. |
+| postgresql_partition_constraint_metadata.go | Binds fresh PostgreSQL partition-root column and comparison facts for direct primary and unique constraints. |
 | postgresql_view_default_metadata.go | Binds fresh exact PostgreSQL view default column facts. |
 | postgresql_view_owner_metadata.go | Binds fresh exact view OWNER TO source and observed role facts. |
 | postgresql_view_namespace_metadata.go | Binds fresh catalog source and destination facts for qualified view rename and schema moves. |

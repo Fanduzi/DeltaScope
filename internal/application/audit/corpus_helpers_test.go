@@ -40,7 +40,7 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
 		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
-		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
+		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGPartitionConstraints) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
@@ -49,6 +49,7 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 type corpusFixtureMetadataProvider struct {
 	pgMaterializedViewExtensions []corpusPGMaterializedViewExtensionState
 	pgViewDefaults               []corpusPGViewDefaultState
+	pgPartitionConstraints       []corpusPGPartitionConstraint
 	pgDropViewStates             []corpusPGDropViewState
 	instance                     *spec.InstanceFacts
 	tables                       map[string]*spec.TableSnapshot
@@ -109,6 +110,7 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 		pgDropConstraintReferences:   metadata.PGDropConstraintReferences,
 		pgDestructiveReferences:      metadata.PGDestructiveReferences,
 		pgRefreshStates:              metadata.PGRefreshStates,
+		pgPartitionConstraints:       metadata.PGPartitionConstraints,
 		pgDropViewStates:             metadata.PGDropViewStates,
 		pgMaterializedViewExtensions: metadata.PGMaterializedViewExtensions,
 		pgViewDefaults:               metadata.PGViewDefaults,
@@ -493,6 +495,20 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 			state := spec.PGViewDefaultState(entry)
 			if state.MatchesViewDefault(&request) {
 				return &spec.ObjectSnapshot{PGViewDefault: &state}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_partition_constraint" {
+		for _, seed := range p.pgPartitionConstraints {
+			if seed.Schema == request.Schema && seed.Name == request.Name {
+				state := &spec.PGPartitionConstraintState{Target: spec.Table{Schema: seed.Schema, Name: seed.Name},
+					Columns:       make([]spec.PGColumnState, 0, len(seed.Columns)),
+					PartitionKeys: []spec.PGPartitionConstraintKey{{Name: seed.Key, CollationOK: true, EqualityRead: true, EqualityOK: true}}}
+				for _, name := range seed.Columns {
+					state.Columns = append(state.Columns, spec.PGColumnState{Name: name})
+				}
+				return &spec.ObjectSnapshot{PGPartitionConstraint: state}, nil
 			}
 		}
 		return nil, nil

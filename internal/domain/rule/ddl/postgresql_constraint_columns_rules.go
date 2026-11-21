@@ -32,7 +32,21 @@ func assessPGConstraintColumns(s spec.Statement) (reason, fact, column string) {
 	if exists, known := pgAlterRelation(s); s.DDL.PGTableIfExists && known && !exists {
 		return "", "", ""
 	}
-	if !spec.PGOrdinaryTableBound(s) {
+	var columns []spec.PGColumnState
+	var findColumn func(string) (*spec.PGColumnState, bool)
+	var partition *spec.PGPartitionConstraintState
+	if spec.PGOrdinaryTableBound(s) {
+		catalog := s.Metadata.TargetTable.PGColumns
+		if catalog != nil {
+			columns, findColumn = catalog.Columns, catalog.FindColumn
+		}
+	} else if lookup := spec.PGPartitionConstraintLookup(s); lookup != nil {
+		partition = s.Metadata.PGPartitionConstraint
+		if partition != nil && partition.Target == *s.DDL.Table {
+			columns, findColumn = partition.Columns, partition.FindColumn
+		}
+	}
+	if findColumn == nil {
 		return "", "target_table.pg_columns", ""
 	}
 	a := s.DDL.Alter[0]
@@ -49,13 +63,12 @@ func assessPGConstraintColumns(s spec.Statement) (reason, fact, column string) {
 		}
 		seen[name] = true
 	}
-	catalog := s.Metadata.TargetTable.PGColumns
 	for _, columns := range [][]string{a.PGKeyColumns, a.PGIncludeColumns} {
 		for _, name := range columns {
 			if name == "" {
 				return "", "constraint.include_columns", ""
 			}
-			member, known := catalog.FindColumn(name)
+			member, known := findColumn(name)
 			if !known {
 				return "", "target_table.pg_columns", ""
 			}
@@ -67,12 +80,31 @@ func assessPGConstraintColumns(s spec.Statement) (reason, fact, column string) {
 			}
 		}
 	}
-	if a.Options["constraint_type"] == "primary_key" && slices.ContainsFunc(catalog.Columns, func(column spec.PGColumnState) bool {
+	if a.Options["constraint_type"] == "primary_key" && slices.ContainsFunc(columns, func(column spec.PGColumnState) bool {
 		return column.PrimaryKey
 	}) {
 		return "constraint_primary_key_already_exists", "", ""
 	}
-	return "", "", ""
+	if partition != nil {
+		if len(partition.PartitionKeys) == 0 {
+			return "", "constraint.partition_keys", ""
+		}
+		for _, key := range partition.PartitionKeys {
+			switch {
+			case key.Expression:
+				return "constraint_partition_expression", "", ""
+			case key.Name == "":
+				return "", "constraint.partition_keys", ""
+			case !seen[key.Name]:
+				return "constraint_partition_column_missing", "", ""
+			case !key.CollationOK || key.EqualityRead && !key.EqualityOK:
+				return "constraint_partition_comparison_mismatch", "", ""
+			case !key.EqualityRead:
+				fact = "constraint.partition_equality"
+			}
+		}
+	}
+	return "", fact, ""
 }
 
 func (r pgConstraintColumnsRule) Evaluate(ctx context.Context, s spec.Statement) ([]rule.Finding, error) {
@@ -93,6 +125,12 @@ func (r pgConstraintColumnsRule) Evaluate(ctx context.Context, s spec.Statement)
 		message = "PostgreSQL cannot create a constraint index on a system column"
 	case "constraint_primary_key_already_exists":
 		message = "The PostgreSQL table already has a primary key"
+	case "constraint_partition_expression":
+		message = "PostgreSQL rejects a primary or unique constraint on an expression partition key"
+	case "constraint_partition_column_missing":
+		message = "The PostgreSQL constraint key must include every partition key column"
+	case "constraint_partition_comparison_mismatch":
+		message = "The PostgreSQL constraint key must use the partition key's collation and equality operator"
 	default:
 		return nil, nil
 	}

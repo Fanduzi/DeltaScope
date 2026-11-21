@@ -41,6 +41,7 @@ comparisons for the member and scope binding.
 | provider_test.go | Verifies catalog-backed schema discovery, reltuples/statistics loading, PK constraint truth, and plain-`EXPLAIN` estimation without a live database |
 | materialized_view_extension.go | Observes exact materialized-view source kind and installed extension identity. |
 | materialized_view_options.go | Observes exact PostgreSQL relation kind, heap method and TOAST presence for materialized view options. |
+| partition_constraint.go | Observes exact partition-root columns, partition key membership and bounded default B-tree equality and collation facts. |
 | view_default.go | Observes qualified view relation kind and exact user-column existence. |
 | view_owner.go | Observes view kind and owner-role existence in one catalog read. |
 | create_view_output.go | Observes exact PostgreSQL creation namespace, relation kind and ordered user output columns. |
