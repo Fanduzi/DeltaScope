@@ -1037,7 +1037,7 @@ new default behavior is approved per family before implementation.
 | F11 | PostgreSQL indexes/operator families | 4 | T39 | Qualified index and operator-family checks delivered at `47cf3020`. Wider key expressions, predicates and method-specific members remain open. |
 | F12 | PostgreSQL views/materialized views | 5 | T40 | Qualified lifecycle, options, refresh and bounded view output and dependency checks delivered through `919f1d17`. Remaining premises below. |
 | F13 | PostgreSQL types/operators | 3 | T41 | Qualified declaration checks delivered at `fd6b2792`. The exact dimension review records remaining catalog and execution premises. |
-| F14 | PostgreSQL row-security policy | 1 | T42 | unreviewed |
+| F14 | PostgreSQL row-security policy | 1 | T42 | Qualified policy target, role and clause checks delivered at `9308fb4c`. General predicate and effective access facts remain open. |
 | F15 | PostgreSQL sequences | 2 | T43 | unreviewed |
 | F16 | PostgreSQL foreign objects | 2 | T44 | unreviewed |
 | F17 | PostgreSQL text search | 2 | T45 | unreviewed |
@@ -1105,7 +1105,7 @@ insufficient.
 | F13 | `postgresql.create-type` | ENUM; composite; RANGE; base type; shell type | Qualified enum, composite, range, shell and bounded base declarations verified. Additional I/O, subtype and privilege checks remain open. |
 | F13 | `postgresql.alter-type` | ADD VALUE; RENAME VALUE; RENAME/OWNER/SET SCHEMA; composite attributes; SET properties | Exact enum labels, type changes, composite attributes and bounded properties verified. Dependencies and support functions remain open. |
 | F13 | `postgresql.alter-operator` | OWNER/SET SCHEMA; SET RESTRICT/JOIN | Exact qualified owner and schema changes and bounded RESTRICT/JOIN checks verified. Session names and other operator changes remain open. |
-| F14 | `postgresql.alter-policy` | USING/WITH CHECK; TO role / RENAME | unreviewed |
+| F14 | `postgresql.alter-policy` | USING/WITH CHECK; TO role / RENAME | Exact relation and policy targeting, role order, rename occupancy and bounded clauses verified. Combined TO and RENAME is a parser refusal. |
 | F15 | `postgresql.create-sequence` | CREATE SEQUENCE; options; OWNED BY / TEMP / IF NOT EXISTS | unreviewed |
 | F15 | `postgresql.alter-sequence` | RESTART; options; OWNED BY / RENAME / SET SCHEMA; IF EXISTS | unreviewed |
 | F16 | `postgresql.alter-foreign-data-wrapper` | HANDLER/VALIDATOR changes; OPTIONS; OWNER/RENAME | unreviewed |
@@ -1603,7 +1603,14 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136842593183) passed at t
 | `postgresql.alter-policy` / USING/WITH CHECK | T42 verifies exact table and policy binding, SELECT and INSERT clause eligibility, quoted columns and null tests. The native controls demonstrate predicate parsing before missing policy diagnosis and preserve observed changes to each clause. | General expression types and function resolution, policy ownership and effective row access require separate evidence. |
 | `postgresql.alter-policy` / TO role / RENAME | T42 verifies role resolution before relation lookup, PUBLIC skipping later roles, table-local destination occupancy, rename to the same name and destination-before-source precedence. The combined TO and RENAME form still returns native SQLSTATE `42601` and a parser diagnostic. | Session-dependent relation lookup and execution privileges require separate evidence. |
 
-The joint T42 preview passed 65 cases and 1,261 assertions. Verification on the fixed F14 candidate is pending.
+The joint T42 preview passed 65 cases and 1,261 assertions. Delivered at `9308fb4c9a1812618bd8a724f20d7dfca0814976`. All 50 canonical tasks passed with 4,592 cases and
+99,812 assertions. T42 passed 65 cases and 1,261 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44906994323/job/136854599770),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44906994323/job/136854599769),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44906994323/job/136854599620),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44906994256/job/136854599427),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136854666281) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
