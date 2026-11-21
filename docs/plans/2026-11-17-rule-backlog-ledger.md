@@ -1512,6 +1512,54 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44893435427/job/136813955470),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136814022125) passed at the delivered SHA.
 
+## F08 exact dimension review
+
+The six PostgreSQL 17 inventory rows retain all 37 authored dimensions. Existing
+T36 controls distinguish parser normalization, governance and unsupported forms.
+New cases separately record catalog decisions, native outcomes and guard order.
+
+| Inventory dimension | Evidence and present scope | Remaining premise |
+| --- | --- | --- |
+| `postgresql.create-table` / basic columns | T36 `create-table-basic-columns` pins ordinary extraction. The column rule checks duplicate exact names and reserved system attribute names. The native controls preserve case-distinct quoted names and verify guard precedence. | General type resolution, type modifiers and full default binding need additional facts. |
+| `postgresql.create-table` / IF NOT EXISTS | T36 `pg-create-keys-guard-before-key-validation`, `pg-create-commit-guard-skips-on-commit`, `pg-create-typed-guard-skips-missing-type` and `pg-create-storage-guard-skips-method-option-and-tablespace` show when native creation skips the rest of the declaration. | Generic creation guard behavior and session-dependent namespaces need separate evidence. |
+| `postgresql.create-table` / column defaults | T36 `pg-create-expression-default-references-sibling-column` and `pg-create-expression-default-contains-subquery` check bounded refusals. Literal array and composite-field defaults execute correctly. | Function overload and type coercion, aggregate and window restrictions remain open. |
+| `postgresql.create-table` / CHECK constraint | T36 `pg-create-expression-check-contains-subquery` checks refusal. `pg-create-expression-check-plain-boolean` is a valid control. | The invalid string, integer and missing column controls demonstrate remaining CHECK coercion and binding. |
+| `postgresql.create-table` / PRIMARY KEY / UNIQUE | T36 `pg-create-keys-two-primary-key-declarations`, `pg-create-keys-duplicate-key-member`, `pg-create-keys-missing-included-member`, quoted members and INCLUDE controls check direct declarations. | Inherited, typed, LIKE, partition and opclass-dependent keys require their own evidence. |
+| `postgresql.create-table` / FOREIGN KEY / REFERENCES | T36 checks external targets, exact local and remote members, referenced key eligibility and arity. Native controls distinguish immediate unique keys from partial indexes. | Self-reference and creation-time type equality use evidence gaps. Partitioning, scoped permissions and execution effects remain open. |
+| `postgresql.create-table` / EXCLUDE constraint | T36 `create-table-exclude-constraint` pins explicit unsupported and native PostgreSQL can create the supported fixture shape. | Exclusion elements and strategy/operator compatibility need a normalized contract. |
+| `postgresql.create-table` / table constraint clause | T36 `create-table-table-constraint-clause` pins named key extraction. Direct key controls cover selected semantics. | General name collisions, constraint options and cross-constraint ordering remain open. |
+| `postgresql.create-table` / WITH storage parameters | T36 `pg-create-storage-valid-heap-fillfactor`, bound refusal, duplicate and Boolean controls verify exact built-in parameters. | Quoted numeric forms, TOAST, other parameters and custom method execution remain open. |
+| `postgresql.create-table` / USING access method | T36 verifies explicit heap, wrong kind `55000`, absent method and exact quoted name. | Implicit method selection, custom method handler behavior and partition eligibility remain open. |
+| `postgresql.create-table` / ON COMMIT / TABLESPACE | T36 checks target/guard precedence for explicit actions and table spaces. Absent and global spaces refuse. | Space permissions, implicit tablespace and partition inheritance remain open. |
+| `postgresql.create-table` / OF composite type | T36 checks exact standalone composite identity and its live option names. Type eligibility, shell status, guards, dropped fields and exact spelling have native controls. | Session namespace, type USAGE and typed defaults or constraints require additional facts. `OF d.c[]` is a native `42601` and a DeltaScope parser diagnostic. |
+| `postgresql.create-table` / arrays and composite columns | T36 verifies exact qualified composite types and their array types. Missing array targets, shell types and pseudo-types have refusal controls. Literal composite and array defaults have execution witnesses. | General unqualified type resolution, inherited column types and arbitrary composite expression legality remain open. |
+| `postgresql.create-table` / generation-declaration | D2 T36 generation-declaration controls check mixed declaration forms, scalar identity type and sequence parameter domains. | General expression types, volatility and runtime sequence state remain open. |
+| `postgresql.create-table-constraints` / PRIMARY KEY variants | T36 checks one primary declaration, key member validity, INCLUDE repeats and key overlap against `pg_index` and ordered attributes. | Additional constraint options and inherited/partitioned cases remain open. |
+| `postgresql.create-table-constraints` / UNIQUE NULLS NOT DISTINCT | Both explicit NULL forms are extracted and have positive native `indnullsnotdistinct` and catalog witnesses. | Data-dependent uniqueness and unsupported partition behavior need separate evidence. |
+| `postgresql.create-table-constraints` / UNIQUE USING INDEX | `pg-create-keys-using-index-from-create` proves the CREATE form parses and PostgreSQL refuses with `0A000`. | ALTER attachment retains its separate rules and T37 evidence. |
+| `postgresql.create-table-constraints` / EXCLUDE | T36 `create-table-constraints-exclude` preserves explicit unsupported. | Method, operator and constraint attribute premises remain open. |
+| `postgresql.create-table-constraints` / NOT NULL named constraint | T36 keeps the PostgreSQL 17 parser diagnostic for `CONSTRAINT nn NOT NULL id`. | PostgreSQL 18 syntax awaits an approved parser/anchor change where applicable. |
+| `postgresql.create-table-constraints` / REFERENCES actions | T36 checks a valid `ON DELETE SET NULL` column list and refuses a column outside the referencing key with native `42P10`. | Other referential actions, deferrability and type equality need their own evidence. |
+| `postgresql.create-table-generated-identity` / GENERATED ALWAYS AS IDENTITY | D2 and `generation-identity-controls` cover the declared mode on an integer column. | Future values and runtime sequence state remain open. |
+| `postgresql.create-table-generated-identity` / BY DEFAULT AS IDENTITY | D2 and `generation-identity-controls` cover the declared mode. | Write-time override and issuance remain outside declaration proof. |
+| `postgresql.create-table-generated-identity` / sequence options | D2 T36 verifies int64 preservation, negative increment, bounds, invalid forms and explicit CYCLE advice. | Sequence schema/name/ownership and execution depend on their own facts. |
+| `postgresql.create-table-generated-identity` / GENERATED ALWAYS AS expression STORED | T36 checks subqueries and direct references to generated columns, including self-reference. A valid generation expression executes with the expected result. | Nested generated references, expression coercion and function volatility remain open. |
+| `postgresql.create-table-generated-identity` / generation-declaration | D2 native positive and refusal cases verify declaration restrictions. | Broader execution eligibility remains open. |
+| `postgresql.create-table-partitioning` / PARTITION BY RANGE | T36 `create-table-partitioning-partition-by-range` pins explicit unsupported. | CREATE partition key and strategy facts need a normalized semantic model. |
+| `postgresql.create-table-partitioning` / PARTITION BY LIST | T36 `create-table-partitioning-partition-by-list` pins explicit unsupported. | Key and partition bounds need strategy-specific evidence. |
+| `postgresql.create-table-partitioning` / PARTITION BY HASH | T36 `create-table-partitioning-partition-by-hash` pins explicit unsupported. | Method, key and modulus/remainder checks need their own facts. |
+| `postgresql.create-table-partitioning` / PARTITION OF | T36 `create-table-partitioning-partition-of` pins explicit unsupported. | Parent identity, key correspondence and overlap require catalog and bound comparison evidence. |
+| `postgresql.create-table-partitioning` / PARTITION OF DEFAULT | T36 `create-table-partitioning-partition-of-default` pins explicit unsupported. | Existing default partition, parent key and overlap require their own facts. |
+| `postgresql.create-table-partitioning` / INHERITS | T36 checks ordered parent lookup, duplicate parents, views, partitioned roots and partition children. Successful controls verify `pg_inherits` and the merged column order. | The audit keeps a gap for inherited column merging and session-dependent parent names. |
+| `postgresql.create-table-temporary` / TEMP/TEMPORARY | T36 verifies native temporary namespace rules for exact explicit targets. | Session temporary schema identity and privilege remain open. |
+| `postgresql.create-table-temporary` / GLOBAL TEMPORARY compat noise | `pg-create-commit-global-temp-spelling` preserves the native deprecation notice and local temporary behavior. | No session-wide proof is claimed. |
+| `postgresql.create-table-temporary` / UNLOGGED | T36 `pg-create-commit-unlogged-on-commit-delete-rows` verifies a permanent-storage refusal, and the temporary alias yields a gap. | Crash/recovery behavior and session-derived persistence remain outside declaration proof. |
+| `postgresql.create-table-temporary` / ON COMMIT actions | T36 same-session native controls verify PRESERVE ROWS, DELETE ROWS and DROP after commit. | Transaction execution and temporary aliases require session evidence. |
+| `postgresql.create-table-like` / LIKE basic | T36 checks exact ordered source kinds, destination guard and duplicate copied column names. | Source resolution via `search_path`, temporary overlays and execution permissions still require evidence. |
+| `postgresql.create-table-like` / INCLUDING options | T36 preserves ordered AST sources and effective INCLUDE/EXCLUDE option bits. | Individual copied DEFAULT, generation, identity, index and storage definitions require additional facts. |
+
+The joint T36 preview passed 214 cases and 5,903 assertions. Verification on the fixed F08 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

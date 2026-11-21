@@ -6264,70 +6264,70 @@ rows:
               - file:testdata/sql-corpus/postgresql/ddl/findings/identity_cycle.expected.yaml#ddl.pg.column.identity.cycle.warn
       - subaction_id: basic columns
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.basic-columns.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.basic-columns.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-columns-offline, file:testdata/ddl-golden/T36.json#pg-create-columns-absent-schema-before-duplicates, file:testdata/ddl-golden/T36.json#pg-create-columns-case-distinct-quoted-names, file:testdata/ddl-golden/T36.json#pg-create-columns-duplicate-exact-column, file:testdata/ddl-golden/T36.json#pg-create-columns-guard-skips-duplicate-columns, file:testdata/ddl-golden/T36.json#pg-create-columns-named-options, file:testdata/ddl-golden/T36.json#pg-create-columns-quoted-spelling-differs-from-system-attribute, file:testdata/ddl-golden/T36.json#pg-create-columns-system-attribute-conflict, file:testdata/ddl-golden/T36.json#pg-create-columns-system-conflict-precedes-occupancy, file:testdata/ddl-golden/T36.json#pg-create-columns-unguarded-duplicate-columns-precede-occupied-table, file:testdata/sql-corpus/postgresql/ddl/findings/create_column_system_name.expected.yaml#ddl.pg.create_table.columns.valid]
       - subaction_id: IF NOT EXISTS
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.if-not-exists.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.if-not-exists.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-storage-guard-skips-method-option-and-tablespace, file:testdata/ddl-golden/T36.json#pg-create-keys-guard-before-key-validation, file:testdata/ddl-golden/T36.json#pg-create-expression-guard-skips-default-and-check, file:testdata/ddl-golden/T36.json#pg-create-columns-guard-skips-duplicate-columns]
       - subaction_id: column defaults
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.column-defaults.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.column-defaults.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-expression-default-references-same-column, file:testdata/ddl-golden/T36.json#pg-create-expression-default-references-sibling-column, file:testdata/ddl-golden/T36.json#pg-create-expression-default-contains-subquery, file:testdata/ddl-golden/T36.json#pg-create-expression-default-aggregate, file:testdata/ddl-golden/T36.json#pg-create-expression-default-window, file:testdata/ddl-golden/T36.json#pg-create-expression-literal-composite-field-uses-no-column, file:testdata/ddl-golden/T36.json#pg-create-expression-literal-array-expression, file:testdata/ddl-golden/T36.json#create-expression-offline, file:testdata/sql-corpus/postgresql/ddl/findings/create_default_subquery.expected.yaml#ddl.pg.create_table.expression.valid]
       - subaction_id: CHECK constraint
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.check-constraint.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.check-constraint.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-expression-check-contains-subquery, file:testdata/ddl-golden/T36.json#pg-create-expression-check-plain-boolean, file:testdata/ddl-golden/T36.json#pg-create-expression-invalid-boolean-string-check, file:testdata/ddl-golden/T36.json#pg-create-expression-check-nonboolean-integer, file:testdata/ddl-golden/T36.json#pg-create-expression-check-missing-column]
       - subaction_id: PRIMARY KEY / UNIQUE
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.primary-key-unique.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.primary-key-unique.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-keys-offline, file:testdata/ddl-golden/T36.json#pg-create-keys-inline-primary, file:testdata/ddl-golden/T36.json#pg-create-keys-explicit-unique-nulls-distinct, file:testdata/ddl-golden/T36.json#pg-create-keys-explicit-unique-nulls-not-distinct, file:testdata/ddl-golden/T36.json#pg-create-keys-two-primary-key-declarations, file:testdata/ddl-golden/T36.json#pg-create-keys-missing-key-member, file:testdata/ddl-golden/T36.json#pg-create-keys-duplicate-key-member, file:testdata/ddl-golden/T36.json#pg-create-keys-missing-included-member, file:testdata/ddl-golden/T36.json#pg-create-keys-duplicate-include-is-allowed, file:testdata/ddl-golden/T36.json#pg-create-keys-key-and-include-may-overlap, file:testdata/ddl-golden/T36.json#pg-create-keys-system-column-indexed, file:testdata/ddl-golden/T36.json#pg-create-keys-using-index-from-create, file:testdata/ddl-golden/T36.json#pg-create-keys-guard-before-key-validation, file:testdata/ddl-golden/T36.json#pg-create-keys-unguarded-occupancy-before-key-execution, file:testdata/ddl-golden/T36.json#pg-create-keys-missing-qualifier-before-keys, file:testdata/ddl-golden/T36.json#pg-create-keys-quoted-key-exact, file:testdata/ddl-golden/T36.json#pg-create-keys-quoted-key-mismatches, file:testdata/ddl-golden/T36.json#pg-create-keys-unique-and-primary-merged, file:testdata/sql-corpus/postgresql/ddl/findings/create_unique_absent_column.expected.yaml#ddl.pg.create_table.keys.valid]
       - subaction_id: FOREIGN KEY / REFERENCES
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.foreign-key-references.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.foreign-key-references.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-fk-offline, file:testdata/ddl-golden/T36.json#pg-create-fk-duplicate-remote-key-member, file:testdata/ddl-golden/T36.json#pg-create-fk-existing-destination-before-source-lookup, file:testdata/ddl-golden/T36.json#pg-create-fk-guard-skips-source-lookup, file:testdata/ddl-golden/T36.json#pg-create-fk-local-and-foreign-key-types-differ, file:testdata/ddl-golden/T36.json#pg-create-fk-local-and-remote-arity-mismatch, file:testdata/ddl-golden/T36.json#pg-create-fk-partial-unique-is-ineligible, file:testdata/ddl-golden/T36.json#pg-create-fk-qualified-referenced-primary, file:testdata/ddl-golden/T36.json#pg-create-fk-qualified-referenced-unique, file:testdata/ddl-golden/T36.json#pg-create-fk-qualified-source-missing, file:testdata/ddl-golden/T36.json#pg-create-fk-referenced-column-missing, file:testdata/ddl-golden/T36.json#pg-create-fk-referenced-column-not-unique, file:testdata/ddl-golden/T36.json#pg-create-fk-referencing-column-missing, file:testdata/ddl-golden/T36.json#pg-create-fk-self-reference-without-existing-catalog, file:testdata/ddl-golden/T36.json#pg-create-fk-valid-set-action-member, file:testdata/ddl-golden/T36.json#pg-create-fk-wrong-set-action-member, file:testdata/ddl-golden/T36.json#pg-create-fk-wrong-source-relation-kind, file:testdata/sql-corpus/postgresql/ddl/findings/create_foreign_key_missing_reference.expected.yaml#ddl.pg.create_table.foreign_key.valid]
       - subaction_id: EXCLUDE constraint
         parser_status: partial
         audit_status: explicit_unsupported
@@ -6352,59 +6352,59 @@ rows:
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.table-constraint-clause.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
       - subaction_id: WITH storage parameters
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.with-storage-parameters.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.with-storage-parameters.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-storage-valid-heap-fillfactor, file:testdata/ddl-golden/T36.json#pg-create-storage-invalid-heap-fillfactor, file:testdata/ddl-golden/T36.json#pg-create-storage-duplicate-heap-option, file:testdata/ddl-golden/T36.json#pg-create-storage-invalid-option-precedes-method, file:testdata/ddl-golden/T36.json#pg-create-storage-guard-skips-method-option-and-tablespace, file:testdata/ddl-golden/T36.json#pg-create-storage-namespace-before-storage-parameters, file:testdata/ddl-golden/T36.json#pg-create-storage-valid-boolean-shorthand, file:testdata/ddl-golden/T36.json#pg-create-storage-invalid-boolean-option, file:testdata/ddl-golden/T36.json#pg-create-storage-quoted-fillfactor-gap]
       - subaction_id: USING access method
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.using-access-method.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.using-access-method.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-storage-heap-access-method, file:testdata/ddl-golden/T36.json#pg-create-storage-wrong-method-kind, file:testdata/ddl-golden/T36.json#pg-create-storage-missing-access-method, file:testdata/ddl-golden/T36.json#pg-create-storage-quoted-method-is-exact, file:testdata/ddl-golden/T36.json#pg-create-storage-tablespace-precedes-method, file:testdata/ddl-golden/T36.json#pg-create-storage-invalid-option-precedes-method, file:testdata/ddl-golden/T36.json#pg-create-storage-guard-skips-method-option-and-tablespace, file:testdata/ddl-golden/T36.json#pg-create-storage-namespace-before-storage-parameters, file:testdata/ddl-golden/T36.json#pg-create-storage-unqualified-target-gap, file:testdata/ddl-golden/T36.json#create-storage-offline, file:testdata/sql-corpus/postgresql/ddl/findings/create_table_index_access_method.expected.yaml#ddl.pg.create_table.storage.valid]
       - subaction_id: ON COMMIT / TABLESPACE
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.on-commit-tablespace.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.on-commit-tablespace.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-commit-permanent-on-commit-drop, file:testdata/ddl-golden/T36.json#pg-create-commit-guard-skips-on-commit, file:testdata/ddl-golden/T36.json#pg-create-commit-temporary-drop, file:testdata/ddl-golden/T36.json#pg-create-storage-built-in-default-tablespace, file:testdata/ddl-golden/T36.json#pg-create-storage-global-tablespace, file:testdata/ddl-golden/T36.json#pg-create-storage-missing-tablespace, file:testdata/ddl-golden/T36.json#pg-create-storage-tablespace-precedes-method, file:testdata/ddl-golden/T36.json#pg-create-storage-guard-skips-method-option-and-tablespace]
       - subaction_id: OF composite type
         parser_status: recognized
-        audit_status: audited
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.of-composite-type.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.of-composite-type.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-typed-offline, file:testdata/ddl-golden/T36.json#pg-create-typed-qualified-standalone-composite, file:testdata/ddl-golden/T36.json#pg-create-typed-table-row-type, file:testdata/ddl-golden/T36.json#pg-create-typed-view-row-type, file:testdata/ddl-golden/T36.json#pg-create-typed-domain-over-composite, file:testdata/ddl-golden/T36.json#pg-create-typed-array-of-composite, file:testdata/ddl-golden/T36.json#pg-create-typed-scalar-type, file:testdata/ddl-golden/T36.json#pg-create-typed-undefined-shell, file:testdata/ddl-golden/T36.json#pg-create-typed-missing-type, file:testdata/ddl-golden/T36.json#pg-create-typed-missing-qualifier-before-missing-type, file:testdata/ddl-golden/T36.json#pg-create-typed-guard-skips-missing-type, file:testdata/ddl-golden/T36.json#pg-create-typed-unguarded-occupied-resolves-missing-type, file:testdata/ddl-golden/T36.json#pg-create-typed-typed-column-with-options, file:testdata/ddl-golden/T36.json#pg-create-typed-typed-column-exact-mismatch, file:testdata/ddl-golden/T36.json#pg-create-typed-typed-column-exact-name, file:testdata/ddl-golden/T36.json#pg-create-typed-duplicate-typed-column, file:testdata/ddl-golden/T36.json#pg-create-typed-missing-destination-schema-before-type, file:testdata/ddl-golden/T36.json#pg-create-typed-dropped-type-attribute, file:testdata/ddl-golden/T36.json#pg-create-typed-unqualified-type-remains-open, file:testdata/sql-corpus/postgresql/ddl/findings/create_of_table_row_type.expected.yaml#ddl.pg.create_table.of.valid]
       - subaction_id: arrays and composite columns
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.arrays-and-composite-columns.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.arrays-and-composite-columns.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-columns-exact-composite-array-column, file:testdata/ddl-golden/T36.json#pg-create-columns-exact-composite-column, file:testdata/ddl-golden/T36.json#pg-create-columns-missing-exact-composite-array-column, file:testdata/ddl-golden/T36.json#pg-create-columns-pseudo-type-column, file:testdata/ddl-golden/T36.json#pg-create-columns-record-pseudo-type-column, file:testdata/ddl-golden/T36.json#pg-create-columns-shell-column-type]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.create-table.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, gate:T36, file:testdata/sql-corpus/postgresql/ddl/findings/generation_declaration_invalid.expected.yaml]
@@ -6439,15 +6439,15 @@ rows:
     subaction_status:
       - subaction_id: PRIMARY KEY variants
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.primary-key-variants.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.primary-key-variants.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-keys-inline-primary, file:testdata/ddl-golden/T36.json#pg-create-keys-two-primary-key-declarations, file:testdata/ddl-golden/T36.json#pg-create-keys-key-and-include-may-overlap, file:testdata/ddl-golden/T36.json#pg-create-keys-guard-before-key-validation, file:testdata/ddl-golden/T36.json#pg-create-keys-unique-and-primary-merged]
       - subaction_id: UNIQUE NULLS NOT DISTINCT
         parser_status: recognized
         audit_status: notice_only
@@ -6458,18 +6458,18 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.unique-nulls-not-distinct.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.unique-nulls-not-distinct.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-keys-explicit-unique-nulls-distinct, file:testdata/ddl-golden/T36.json#pg-create-keys-explicit-unique-nulls-not-distinct]
       - subaction_id: UNIQUE USING INDEX
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.unique-using-index.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.unique-using-index.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-keys-using-index-from-create]
       - subaction_id: EXCLUDE
         parser_status: partial
         audit_status: explicit_unsupported
@@ -6494,15 +6494,15 @@ rows:
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.not-null-named-constraint.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
       - subaction_id: REFERENCES actions
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.references-actions.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.references-actions.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-fk-wrong-set-action-member, file:testdata/ddl-golden/T36.json#pg-create-fk-valid-set-action-member]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
@@ -6586,15 +6586,15 @@ rows:
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.sequence-options.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
       - subaction_id: GENERATED ALWAYS AS expression STORED
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.generated-always-as-expression-stored.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.generated-always-as-expression-stored.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-expression-generated-uses-function-outside-immutable-class, file:testdata/ddl-golden/T36.json#pg-create-expression-generated-contains-subquery, file:testdata/ddl-golden/T36.json#pg-create-expression-generated-uses-another-generated-column, file:testdata/ddl-golden/T36.json#pg-create-expression-generated-directly-references-generated-column, file:testdata/ddl-golden/T36.json#pg-create-expression-generated-directly-references-self, file:testdata/ddl-golden/T36.json#pg-create-expression-generated-uses-ordinary-column]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, gate:T36, file:testdata/sql-corpus/postgresql/ddl/findings/identity_cycle.expected.yaml]
@@ -6684,15 +6684,15 @@ rows:
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-of-default.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
       - subaction_id: INHERITS
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.inherits.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.inherits.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-inherits-offline, file:testdata/ddl-golden/T36.json#pg-create-inherits-duplicate-parent, file:testdata/ddl-golden/T36.json#pg-create-inherits-duplicate-parent-precedes-later-absent, file:testdata/ddl-golden/T36.json#pg-create-inherits-guard-skips-absent-parent, file:testdata/ddl-golden/T36.json#pg-create-inherits-missing-parent, file:testdata/ddl-golden/T36.json#pg-create-inherits-missing-parent-precedes-wrong-kind, file:testdata/ddl-golden/T36.json#pg-create-inherits-ordinary-inheritance, file:testdata/ddl-golden/T36.json#pg-create-inherits-overlapping-attribute-merge, file:testdata/ddl-golden/T36.json#pg-create-inherits-partition-child-parent, file:testdata/ddl-golden/T36.json#pg-create-inherits-partition-root-parent, file:testdata/ddl-golden/T36.json#pg-create-inherits-target-schema-precedes-parent, file:testdata/ddl-golden/T36.json#pg-create-inherits-two-distinct-parents, file:testdata/ddl-golden/T36.json#pg-create-inherits-unqualified-parent-remains-open, file:testdata/ddl-golden/T36.json#pg-create-inherits-view-parent, file:testdata/ddl-golden/T36.json#pg-create-inherits-wrong-inherited-column-type, file:testdata/sql-corpus/postgresql/ddl/findings/create_inheritance_absent_parent.expected.yaml#ddl.pg.create_table.inherits.valid]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
@@ -6709,9 +6709,9 @@ rows:
       - ON COMMIT actions
     sql_shape: CREATE TEMPORARY TABLE staging (id bigint)
     prerequisites: "none"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 5 shapes -> 5 notice_only; golden manifests and native execution evidence land with the owner task"
     targets: temporary/unlogged persistence, ON COMMIT behavior
     applicability:
@@ -6720,20 +6720,20 @@ rows:
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-temporary.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
     subaction_status:
       - subaction_id: TEMP/TEMPORARY
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-temporary.temp-temporary.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-temporary.temp-temporary.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-commit-temporary-named-persistent-schema, file:testdata/ddl-golden/T36.json#pg-create-commit-temporary-alias-without-temp-keyword, file:testdata/ddl-golden/T36.json#pg-create-commit-temporary-preserve-rows]
       - subaction_id: GLOBAL TEMPORARY compat noise
         parser_status: recognized
         audit_status: notice_only
@@ -6744,29 +6744,29 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-temporary.global-temporary-compat-noise.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-temporary.global-temporary-compat-noise.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-commit-global-temp-spelling]
       - subaction_id: UNLOGGED
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-temporary.unlogged.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-temporary.unlogged.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-commit-unlogged-on-commit-delete-rows, file:testdata/ddl-golden/T36.json#pg-create-commit-unlogged-temp-alias]
       - subaction_id: ON COMMIT actions
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-temporary.on-commit-actions.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-temporary.on-commit-actions.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-commit-offline, file:testdata/ddl-golden/T36.json#pg-create-commit-permanent-on-commit-drop, file:testdata/ddl-golden/T36.json#pg-create-commit-unlogged-on-commit-delete-rows, file:testdata/ddl-golden/T36.json#pg-create-commit-permanent-explicit-preserve-rows, file:testdata/ddl-golden/T36.json#pg-create-commit-temporary-preserve-rows, file:testdata/ddl-golden/T36.json#pg-create-commit-temporary-delete-rows, file:testdata/ddl-golden/T36.json#pg-create-commit-temporary-drop, file:testdata/ddl-golden/T36.json#pg-create-commit-temporary-named-persistent-schema, file:testdata/ddl-golden/T36.json#pg-create-commit-temporary-alias-without-temp-keyword, file:testdata/ddl-golden/T36.json#pg-create-commit-unlogged-temp-alias, file:testdata/ddl-golden/T36.json#pg-create-commit-guard-skips-on-commit, file:testdata/ddl-golden/T36.json#pg-create-commit-missing-schema-before-on-commit, file:testdata/ddl-golden/T36.json#pg-create-commit-global-temp-spelling, file:testdata/sql-corpus/postgresql/ddl/findings/create_on_commit_permanent.expected.yaml#ddl.pg.create_table.on_commit.valid]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.create-table-temporary.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
@@ -6781,9 +6781,9 @@ rows:
       - INCLUDING options
     sql_shape: CREATE TABLE users_copy (LIKE users INCLUDING ALL)
     prerequisites: source table
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     status_evidence: "2026-11-24 T33 (#116) observed baseline: offline pg17 probes over 3 shapes -> 3 notice_only; golden manifests and native execution evidence land with the owner task"
     targets: LIKE source identity, including/excluding options
     applicability:
@@ -6792,31 +6792,31 @@ rows:
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-like.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
     subaction_status:
       - subaction_id: LIKE basic
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-like.like-basic.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-like.like-basic.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-like-offline, file:testdata/sql-corpus/postgresql/ddl/findings/create_like_source_absent.expected.yaml#ddl.pg.create_table.like.target.valid, file:testdata/ddl-golden/T36.json#pg-create-like-copy-ordinary-table, file:testdata/ddl-golden/T36.json#pg-create-like-copy-exact-view, file:testdata/ddl-golden/T36.json#pg-create-like-copy-materialized-view, file:testdata/ddl-golden/T36.json#pg-create-like-copy-composite-type, file:testdata/ddl-golden/T36.json#pg-create-like-copy-partitioned-table, file:testdata/ddl-golden/T36.json#pg-create-like-missing-source, file:testdata/ddl-golden/T36.json#pg-create-like-sequence-source, file:testdata/ddl-golden/T36.json#pg-create-like-index-source, file:testdata/ddl-golden/T36.json#pg-create-like-guard-skips-missing-source, file:testdata/ddl-golden/T36.json#pg-create-like-unguarded-occupied-and-missing-source, file:testdata/ddl-golden/T36.json#pg-create-like-multiple-sources-duplicate-columns]
       - subaction_id: INCLUDING options
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-like.including-options.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-like.including-options.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#pg-create-like-including-defaults, file:testdata/ddl-golden/T36.json#pg-create-like-last-excluded-defaults, file:testdata/ddl-golden/T36.json#pg-create-like-last-included-defaults, file:testdata/ddl-golden/T36.json#pg-create-like-including-identity]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.create-table-like.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
