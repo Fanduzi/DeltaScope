@@ -1019,6 +1019,9 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.alter_view.namespace.valid` | Checks PostgreSQL 17 view and materialized-view rename and schema-move premises | Gap | ✓ | blocker |
 | `ddl.pg.alter_view.owner.valid` | Checks exact PostgreSQL 17 view OWNER TO targets, guards and role existence | Gap | ✓ | blocker |
 | `ddl.pg.alter_view.options.valid` | Checks exact PostgreSQL 17 ordinary-view SET/RESET targets and declarations | Gap | ✓ | blocker |
+| `ddl.pg.alter_view.column_default.valid` | Checks exact PostgreSQL 17 ordinary-view column default targets and disallowed references | Gap | ✓ | blocker |
+| `ddl.pg.alter_materialized_view.options.valid` | Checks exact PostgreSQL 17 materialized-view targets and supported storage options | Gap | ✓ | blocker |
+| `ddl.pg.alter_materialized_view.extension.valid` | Checks exact PostgreSQL 17 materialized-view extension dependency targets | Gap | ✓ | blocker |
 
 The CREATE VIEW option check needs an observed PostgreSQL 17 version. View query evaluation and updatability require separate evidence.
 

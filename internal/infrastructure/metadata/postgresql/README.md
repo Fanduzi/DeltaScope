@@ -39,6 +39,9 @@ comparisons for the member and scope binding.
 | constraint_state_test.go | Pins complete/empty/quoted/duplicate catalog reads and query/scan/iteration errors without a live database |
 | provider.go | Loads normalized dialect, schema, instance-fact (including private known/support lz4 facts from the existing pg_catalog.pg_settings enum read with system-qualified version and comparison operators), table snapshot, and plain-`EXPLAIN` plan-estimate data from PostgreSQL catalogs and planner stats |
 | provider_test.go | Verifies catalog-backed schema discovery, reltuples/statistics loading, PK constraint truth, and plain-`EXPLAIN` estimation without a live database |
+| materialized_view_extension.go | Observes exact materialized-view source kind and installed extension identity. |
+| materialized_view_options.go | Observes exact PostgreSQL relation kind, heap method and TOAST presence for materialized view options. |
+| view_default.go | Observes qualified view relation kind and exact user-column existence. |
 | view_owner.go | Observes view kind and owner-role existence in one catalog read. |
 | drop_view.go | Observes exact DROP VIEW relation kind and normal rewrite dependencies without exposing discovered object names. |
 | destructive_references.go | Observes external foreign keys for the expanded TRUNCATE RESTRICT set and checks ordered partitioned ONLY eligibility and direct foreign-key and rewrite dependencies for DROP RESTRICT over exact target lists. |

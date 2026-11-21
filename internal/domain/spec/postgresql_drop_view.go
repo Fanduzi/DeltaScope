@@ -7,6 +7,8 @@ type PGDropViewState struct {
 	Kind          string
 	DependentView bool
 	CheckOption   bool
+	Heap          bool
+	HasToast      bool
 }
 
 // PGDropViewLookup returns the exact qualified target of a single DROP VIEW.

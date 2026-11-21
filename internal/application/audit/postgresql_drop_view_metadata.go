@@ -12,6 +12,9 @@ func enrichPGDropViews(ctx context.Context, request *MetadataRequest, statements
 		if lookup == nil {
 			lookup = spec.PGAlterViewOptionsLookup(s)
 		}
+		if lookup == nil {
+			lookup = spec.PGMaterializedViewOptionsLookup(s)
+		}
 		if lookup == nil || s.Metadata == nil || !spec.PG17Observed(s.Metadata.Instance) {
 			continue
 		}

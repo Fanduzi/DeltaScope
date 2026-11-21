@@ -43,6 +43,9 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_column_traversal_test.go | Pins inherited, partition-key and parent-only refusals and stale evidence for DROP and RENAME |
 | postgresql_column_tuning_rules.go | Three approved PG17 statistics/options rules; shared exact user/system target and guard checks drive the existing DROP COLUMN rule and conditional advice. The blocker also checks observed direct PostgreSQL dependencies under RESTRICT |
 | postgresql_column_tuning_rules_test.go | Pins statistics bounds/DEFAULT/clamp, finite options/duplicates/RESET/unknown/privacy, exact DROP guards/catalog/version/freshness and independent forbid behavior |
+| postgresql_view_default_rules.go | Checks ordinary PostgreSQL view default targets and disallowed expression references. |
+| postgresql_materialized_view_extension_rules.go | Checks PostgreSQL 17 materialized-view source and installed extension premises. |
+| postgresql_materialized_view_options_rules.go | Checks PostgreSQL 17 materialized-view SET/RESET targets and supported storage options. |
 | postgresql_alter_view_options_rules.go | Checks PostgreSQL 17 ordinary-view SET/RESET targets and option declarations. |
 | postgresql_view_owner_rules.go | Checks PostgreSQL 17 view OWNER TO source, guard and role premises. |
 | postgresql_view_namespace_rules.go | Checks PostgreSQL 17 view and materialized-view rename and schema-move targets and namespace collisions. |

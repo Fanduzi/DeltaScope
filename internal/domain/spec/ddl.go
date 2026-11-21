@@ -7,7 +7,8 @@ type DDL struct {
 	Table     *Table           `json:"table,omitempty"`
 	View      *ViewDeclaration `json:"-"`
 	// PGViewOptions retains authored CREATE VIEW options in AST order.
-	PGViewOptions []PGViewOption `json:"-"`
+	PGViewOptions               []PGViewOption `json:"-"`
+	PGMaterializedViewExtension string         `json:"-"`
 	// PGTableIfExists is the authored PostgreSQL ALTER TABLE relation guard.
 	PGTableIfExists bool `json:"-"`
 	// PGTableCatalogQualified records a three-part PostgreSQL ALTER TABLE identity.

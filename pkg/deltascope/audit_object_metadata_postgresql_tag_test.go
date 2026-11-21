@@ -638,3 +638,60 @@ func TestAuditPGAlterViewOptionsThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing ALTER VIEW option finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditPGViewDefaultThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGViewDefault: &spec.PGViewDefaultState{Schema: "app", View: "mv", Column: "id", Kind: "v", ColumnExists: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER VIEW app.mv ALTER COLUMN id SET DEFAULT (SELECT 42)`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "view_column_default" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_view.column_default.valid" && f.Metadata["reason_code"] == "view_default_reference_inapplicable" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER VIEW default finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGMaterializedViewOptionsThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGDropViewState: &spec.PGDropViewState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, Kind: "m", Heap: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER MATERIALIZED VIEW app.mv SET (fillfactor=9)`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 2 || provider.objectCalls[0].Type != "materialized_view" || provider.objectCalls[1].Name != "mv" || provider.objectCalls[1].Type != "materialized_view_options" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_materialized_view.options.valid" && f.Metadata["reason_code"] == "materialized_view_option_out_of_range" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER MATERIALIZED VIEW storage option finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGMaterializedViewExtensionThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGMaterializedViewExtension: &spec.PGMaterializedViewExtensionState{Schema: "app", View: "mv", Extension: "missing_ext", Kind: "m"}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER MATERIALIZED VIEW app.mv NO DEPENDS ON EXTENSION missing_ext`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 2 || provider.objectCalls[0].Type != "materialized_view" || provider.objectCalls[1].Name != "mv" || provider.objectCalls[1].Type != "materialized_view_extension" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_materialized_view.extension.valid" && f.Metadata["reason_code"] == "materialized_view_extension_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER MATERIALIZED VIEW extension dependency finding: %+v", result.Statements[0].Findings)
+}

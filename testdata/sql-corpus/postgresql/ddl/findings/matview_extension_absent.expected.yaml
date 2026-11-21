@@ -1,0 +1,14 @@
+name: matview_extension_absent
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  pg_materialized_view_extensions:
+    - {schema: app, view: mv, extension: "Exact Extension", kind: m, extension_exists: false}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter_materialized_view.extension.valid]

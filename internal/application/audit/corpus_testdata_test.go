@@ -141,29 +141,49 @@ type corpusPGDropViewState struct {
 	Kind          string `yaml:"kind"`
 	DependentView bool   `yaml:"dependent_view"`
 	CheckOption   bool   `yaml:"check_option,omitempty"`
+	Heap          bool   `yaml:"heap,omitempty"`
+	HasToast      bool   `yaml:"has_toast,omitempty"`
+}
+
+type corpusPGMaterializedViewExtensionState struct {
+	Schema          string `yaml:"schema"`
+	View            string `yaml:"view"`
+	Extension       string `yaml:"extension"`
+	Kind            string `yaml:"kind"`
+	ExtensionExists bool   `yaml:"extension_exists"`
+}
+
+type corpusPGViewDefaultState struct {
+	Schema       string `yaml:"schema"`
+	View         string `yaml:"view"`
+	Column       string `yaml:"column"`
+	Kind         string `yaml:"kind"`
+	ColumnExists bool   `yaml:"column_exists"`
 }
 
 type corpusMetadata struct {
-	PGDropViewStates           []corpusPGDropViewState           `yaml:"pg_drop_view_states,omitempty"`
-	PGColumnTraversals         []corpusPGColumnTraversal         `yaml:"pg_column_traversals,omitempty"`
-	PGDestructiveReferences    []corpusPGDestructiveReference    `yaml:"pg_destructive_references,omitempty"`
-	PGRefreshStates            []corpusPGRefreshState            `yaml:"pg_refresh_states,omitempty"`
-	Schema                     string                            `yaml:"schema,omitempty"`
-	Instance                   *corpusInstanceFacts              `yaml:"instance,omitempty"`
-	Tables                     map[string]corpusTableSnapshot    `yaml:"tables,omitempty"`
-	IndexOwners                map[string]string                 `yaml:"index_owners,omitempty"`
-	PGTableOwners              []corpusPGTableOwner              `yaml:"pg_table_owners,omitempty"`
-	PGDropColumnDependencies   []corpusPGDropColumnDependency    `yaml:"pg_drop_column_dependencies,omitempty"`
-	PGDropConstraintReferences []corpusPGDropConstraintReference `yaml:"pg_drop_constraint_references,omitempty"`
-	PGForeignKeyDirectories    []corpusPGForeignKeyKeys          `yaml:"pg_foreign_key_directories,omitempty"`
-	PGConstraintIndexes        []corpusPGConstraintIndex         `yaml:"pg_constraint_indexes,omitempty"`
-	PGColumnTypes              []corpusPGColumnType              `yaml:"pg_column_types,omitempty"`
-	PGBulkTablespaces          []corpusPGBulkTablespace          `yaml:"pg_bulk_tablespaces,omitempty"`
-	PGTableNamespaces          []corpusPGTableNamespace          `yaml:"pg_table_namespaces,omitempty"`
-	PGTablePersistences        []corpusPGTablePersistence        `yaml:"pg_table_persistences,omitempty"`
-	PGTableAccessMethods       []corpusPGTableAccessMethod       `yaml:"pg_table_access_methods,omitempty"`
-	PGTableTablespaces         []corpusPGTableTablespace         `yaml:"pg_table_tablespaces,omitempty"`
-	PGReplicaIndexes           []corpusPGReplicaIndex            `yaml:"pg_replica_indexes,omitempty"`
+	PGMaterializedViewExtensions []corpusPGMaterializedViewExtensionState `yaml:"pg_materialized_view_extensions,omitempty"`
+	PGViewDefaults               []corpusPGViewDefaultState               `yaml:"pg_view_defaults,omitempty"`
+	PGDropViewStates             []corpusPGDropViewState                  `yaml:"pg_drop_view_states,omitempty"`
+	PGColumnTraversals           []corpusPGColumnTraversal                `yaml:"pg_column_traversals,omitempty"`
+	PGDestructiveReferences      []corpusPGDestructiveReference           `yaml:"pg_destructive_references,omitempty"`
+	PGRefreshStates              []corpusPGRefreshState                   `yaml:"pg_refresh_states,omitempty"`
+	Schema                       string                                   `yaml:"schema,omitempty"`
+	Instance                     *corpusInstanceFacts                     `yaml:"instance,omitempty"`
+	Tables                       map[string]corpusTableSnapshot           `yaml:"tables,omitempty"`
+	IndexOwners                  map[string]string                        `yaml:"index_owners,omitempty"`
+	PGTableOwners                []corpusPGTableOwner                     `yaml:"pg_table_owners,omitempty"`
+	PGDropColumnDependencies     []corpusPGDropColumnDependency           `yaml:"pg_drop_column_dependencies,omitempty"`
+	PGDropConstraintReferences   []corpusPGDropConstraintReference        `yaml:"pg_drop_constraint_references,omitempty"`
+	PGForeignKeyDirectories      []corpusPGForeignKeyKeys                 `yaml:"pg_foreign_key_directories,omitempty"`
+	PGConstraintIndexes          []corpusPGConstraintIndex                `yaml:"pg_constraint_indexes,omitempty"`
+	PGColumnTypes                []corpusPGColumnType                     `yaml:"pg_column_types,omitempty"`
+	PGBulkTablespaces            []corpusPGBulkTablespace                 `yaml:"pg_bulk_tablespaces,omitempty"`
+	PGTableNamespaces            []corpusPGTableNamespace                 `yaml:"pg_table_namespaces,omitempty"`
+	PGTablePersistences          []corpusPGTablePersistence               `yaml:"pg_table_persistences,omitempty"`
+	PGTableAccessMethods         []corpusPGTableAccessMethod              `yaml:"pg_table_access_methods,omitempty"`
+	PGTableTablespaces           []corpusPGTableTablespace                `yaml:"pg_table_tablespaces,omitempty"`
+	PGReplicaIndexes             []corpusPGReplicaIndex                   `yaml:"pg_replica_indexes,omitempty"`
 	// PlacementPolicies is the proven TiDB policy catalog the provider
 	// reads once: a non-nil map (even empty) is a vouched policy set;
 	// bound_targets lists the proven inbound references the drop premise

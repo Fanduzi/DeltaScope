@@ -877,14 +877,26 @@ func extractAlterViewAction(statement spec.Statement, stmt *pg_query.AlterTableS
 		}
 		ddl.Alter = []spec.Alter{{Action: "change_owner", PGTableOwner: owner}}
 	case pg_query.AlterTableType_AT_SetRelOptions, pg_query.AlterTableType_AT_ResetRelOptions:
-		if operation != spec.DDLOperationAlterView || len(cmd.GetDef().GetList().GetItems()) == 0 {
+		if len(cmd.GetDef().GetList().GetItems()) == 0 {
 			return unsupportedStatement(statement, "alter_table", "postgresql alter table object type is unsupported in v1")
 		}
+		reset := cmd.GetSubtype() == pg_query.AlterTableType_AT_ResetRelOptions
 		ddl.Alter = []spec.Alter{{Action: "set_options"}}
-		if cmd.GetSubtype() == pg_query.AlterTableType_AT_ResetRelOptions {
+		if reset {
 			ddl.Alter[0].Action = "reset_options"
 		}
-		ddl.PGViewOptions = pgViewOptions(cmd.GetDef().GetList().GetItems())
+		items := cmd.GetDef().GetList().GetItems()
+		if operation == spec.DDLOperationAlterMaterializedView {
+			ddl.Alter[0].PGTableReloptions = pgTableReloptions(items, reset, true)
+		} else {
+			ddl.PGViewOptions = pgViewOptions(items)
+		}
+	case pg_query.AlterTableType_AT_ColumnDefault:
+		if operation != spec.DDLOperationAlterView || cmd.GetName() == "" {
+			return unsupportedStatement(statement, "alter_table", "postgresql alter table object type is unsupported in v1")
+		}
+		alter, _, _ := alterFromCmd(cmd)
+		ddl.Alter = []spec.Alter{alter}
 	default:
 		return unsupportedStatement(statement, "alter_table", "postgresql alter table object type is unsupported in v1")
 	}
@@ -1192,7 +1204,7 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			action, countKey = "reset_reloptions", "reset_count"
 		}
 		return spec.Alter{Action: action, Options: map[string]string{countKey: strconv.Itoa(len(items)), "has_reloptions": "true"},
-			PGTableReloptions: pgTableReloptions(items, reset)}, true, nil
+			PGTableReloptions: pgTableReloptions(items, reset, false)}, true, nil
 	case pg_query.AlterTableType_AT_SetStatistics:
 		kind := "default"
 		if cmd.GetDef() != nil {

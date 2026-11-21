@@ -5,30 +5,32 @@ import "strings"
 
 // Metadata carries optional non-SQL facts for one statement evaluation.
 type Metadata struct {
-	PGDropViewState             *PGDropViewState             `json:"-"`
-	PGForeignKeyEquality        *PGForeignKeyEquality        `json:"-"`
-	Schema                      string                       `json:"schema,omitempty"`
-	Instance                    *InstanceFacts               `json:"instance,omitempty"`
-	Version                     *VersionIdentity             `json:"version,omitempty"`
-	TargetTable                 *TableSnapshot               `json:"target_table,omitempty"`
-	PGForeignKeyReference       *TableSnapshot               `json:"-"`
-	PGForeignKeyKeys            *PGForeignKeyKeys            `json:"-"`
-	PGDropConstraintReference   *PGDropConstraintReference   `json:"-"`
-	PGDropColumnDependency      *PGDropColumnDependency      `json:"-"`
-	PGColumnTraversal           *PGColumnTraversal           `json:"-"`
-	PGReplicaIdentity           *PGReplicaIdentityIndex      `json:"-"`
-	PGConstraintUsingIndex      *PGConstraintUsingIndex      `json:"-"`
-	PGTableTablespace           *PGTableTablespace           `json:"-"`
-	PGTableAccessMethod         *PGTableAccessMethod         `json:"-"`
-	PGTablePersistence          *PGTablePersistence          `json:"-"`
-	PGTableNamespace            *PGTableNamespace            `json:"-"`
-	PGTableOwner                *PGTableOwnerState           `json:"-"`
-	PGColumnType                *PGColumnTypeState           `json:"-"`
-	PGBulkTablespace            *PGBulkTablespaceState       `json:"-"`
-	View                        *ViewMetadata                `json:"-"`
-	PGDestructiveReferences     *PGDestructiveReferences     `json:"-"`
-	PGDestructiveTableRelations []PGDestructiveTableRelation `json:"-"`
-	PGRefreshState              *PGRefreshState              `json:"-"`
+	PGMaterializedViewExtension *PGMaterializedViewExtensionState `json:"-"`
+	PGViewDefault               *PGViewDefaultState               `json:"-"`
+	PGDropViewState             *PGDropViewState                  `json:"-"`
+	PGForeignKeyEquality        *PGForeignKeyEquality             `json:"-"`
+	Schema                      string                            `json:"schema,omitempty"`
+	Instance                    *InstanceFacts                    `json:"instance,omitempty"`
+	Version                     *VersionIdentity                  `json:"version,omitempty"`
+	TargetTable                 *TableSnapshot                    `json:"target_table,omitempty"`
+	PGForeignKeyReference       *TableSnapshot                    `json:"-"`
+	PGForeignKeyKeys            *PGForeignKeyKeys                 `json:"-"`
+	PGDropConstraintReference   *PGDropConstraintReference        `json:"-"`
+	PGDropColumnDependency      *PGDropColumnDependency           `json:"-"`
+	PGColumnTraversal           *PGColumnTraversal                `json:"-"`
+	PGReplicaIdentity           *PGReplicaIdentityIndex           `json:"-"`
+	PGConstraintUsingIndex      *PGConstraintUsingIndex           `json:"-"`
+	PGTableTablespace           *PGTableTablespace                `json:"-"`
+	PGTableAccessMethod         *PGTableAccessMethod              `json:"-"`
+	PGTablePersistence          *PGTablePersistence               `json:"-"`
+	PGTableNamespace            *PGTableNamespace                 `json:"-"`
+	PGTableOwner                *PGTableOwnerState                `json:"-"`
+	PGColumnType                *PGColumnTypeState                `json:"-"`
+	PGBulkTablespace            *PGBulkTablespaceState            `json:"-"`
+	View                        *ViewMetadata                     `json:"-"`
+	PGDestructiveReferences     *PGDestructiveReferences          `json:"-"`
+	PGDestructiveTableRelations []PGDestructiveTableRelation      `json:"-"`
+	PGRefreshState              *PGRefreshState                   `json:"-"`
 	// ExchangeTable is the ordered pre-state projection of the
 	// EXCHANGE PARTITION counterpart table — the second object identity
 	// the action touches, resolved through the same once-per-key seam as
@@ -802,16 +804,18 @@ const (
 
 // ObjectSnapshot carries the metadata-validated state of one non-table database object.
 type ObjectSnapshot struct {
-	PGDropViewState         *PGDropViewState         `json:"-"`
-	PGForeignKeyEquality    *PGForeignKeyEquality    `json:"-"`
-	Schema                  string                   `json:"schema,omitempty"`
-	Type                    string                   `json:"type,omitempty"`
-	Name                    string                   `json:"name,omitempty"`
-	Status                  MetadataStatus           `json:"status,omitempty"`
-	Exists                  bool                     `json:"exists"`
-	Attributes              map[string]string        `json:"attributes,omitempty"`
-	AmbiguousCandidates     []string                 `json:"ambiguous_candidates,omitempty"`
-	PGDestructiveReferences *PGDestructiveReferences `json:"-"`
+	PGMaterializedViewExtension *PGMaterializedViewExtensionState `json:"-"`
+	PGViewDefault               *PGViewDefaultState               `json:"-"`
+	PGDropViewState             *PGDropViewState                  `json:"-"`
+	PGForeignKeyEquality        *PGForeignKeyEquality             `json:"-"`
+	Schema                      string                            `json:"schema,omitempty"`
+	Type                        string                            `json:"type,omitempty"`
+	Name                        string                            `json:"name,omitempty"`
+	Status                      MetadataStatus                    `json:"status,omitempty"`
+	Exists                      bool                              `json:"exists"`
+	Attributes                  map[string]string                 `json:"attributes,omitempty"`
+	AmbiguousCandidates         []string                          `json:"ambiguous_candidates,omitempty"`
+	PGDestructiveReferences     *PGDestructiveReferences          `json:"-"`
 	// Sequence carries the provider-proven sequence definition parameters
 	// when the resolved object is a sequence. Internal evidence only —
 	// definition parameters are never runtime issuance progress (T21/#100).

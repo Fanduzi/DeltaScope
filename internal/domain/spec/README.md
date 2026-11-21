@@ -107,6 +107,9 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGForeignKeySelection` keeps exact, ordered source, referenced and ON DELETE SET column names and the reference qualification privately.
 - `PGConstraintUsingIndex` binds private exact index observations, including key operator-class defaults, to the selected table for PRIMARY KEY and UNIQUE attachment.
 - `PGTableOwnerState` carries observed source-kind evidence for a view owner change.
+- `PGMaterializedViewExtensionState` binds the exact source relation kind and installed extension for a dependency change.
+- `PGMaterializedViewOptionsLookup` binds the exact materialized view for a single storage option action.
+- `PGViewDefaultState` binds the observed relation kind and user column for the exact PostgreSQL view default target.
 - `PGViewNamespaceSource` preserves the exact authored view identity and guard for RENAME and SET SCHEMA.
 - `PGDropViewState` binds the observed relation kind and direct rewrite dependency to the exact PostgreSQL DROP VIEW target.
 - `PGDestructiveTable` preserves ordered DROP and TRUNCATE targets and private modifiers. `PGDestructiveReferences` binds dependency and ONLY membership observations to those exact targets.

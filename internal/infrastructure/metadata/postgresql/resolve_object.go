@@ -20,6 +20,10 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 			return p.resolveColumnTraversal(ctx, req)
 		case "drop_column_dependency":
 			return p.resolveDropColumnDependency(ctx, req)
+		case "materialized_view_extension":
+			return p.resolveMaterializedViewExtension(ctx, req)
+		case "materialized_view_options":
+			return p.resolveMaterializedViewOptions(ctx, req)
 		case "drop_view_target", "alter_view_options":
 			return p.resolveDropView(ctx, req)
 		case "truncate_references", "drop_references":
@@ -40,6 +44,8 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 			return p.resolveColumnType(ctx, req)
 		case "bulk_tablespace":
 			return p.resolveBulkTablespace(ctx, req.PGBulkTablespace)
+		case "view_column_default":
+			return p.resolveViewDefault(ctx, req)
 		case "view_owner":
 			return p.resolveViewOwner(ctx, req)
 		case "table_owner":

@@ -1098,7 +1098,7 @@ These rules guard PostgreSQL function and procedure lifecycle operations. They o
 
 ---
 
-## DDL: PostgreSQL Advanced View Lifecycle Rules (11 rules)
+## DDL: PostgreSQL Advanced View Lifecycle Rules (14 rules)
 
 These rules guard PostgreSQL view lifecycle operations beyond the base `CREATE VIEW` / `DROP VIEW` forms. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
 
@@ -1115,6 +1115,9 @@ These rules guard PostgreSQL view lifecycle operations beyond the base `CREATE V
 | `ddl.pg.alter_view.namespace.valid` | Checks exact PostgreSQL 17 VIEW and MATERIALIZED VIEW rename and schema-move sources, guards and destination collisions | blocker | Yes |
 | `ddl.pg.alter_view.owner.valid` | Checks PostgreSQL 17 ordinary and materialized view owner-change source, guarded absence and observed role existence | blocker | Yes |
 | `ddl.pg.alter_view.options.valid` | Checks ordinary PostgreSQL 17 ALTER VIEW SET/RESET targets and declarations. CHECK OPTION updatability requires separate evidence. | blocker | Yes |
+| `ddl.pg.alter_view.column_default.valid` | Checks PostgreSQL 17 view SET/DROP DEFAULT targets and rejects raw column references or subqueries in a default | blocker | Yes |
+| `ddl.pg.alter_materialized_view.options.valid` | Checks a qualified PostgreSQL 17 materialized-view SET or RESET, including integer fillfactor and recognized heap and TOAST declarations. | blocker | Yes |
+| `ddl.pg.alter_materialized_view.extension.valid` | Checks the exact PostgreSQL 17 materialized view and installed extension for dependency changes. | blocker | Yes |
 
 The option check uses the observed server version and authored options. View updatability, query results and downstream effects require separate evidence.
 

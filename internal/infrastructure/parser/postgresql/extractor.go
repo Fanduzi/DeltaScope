@@ -41,6 +41,11 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractAlterTableStmt(statement, node.AlterTableStmt), nil
 	case *pg_query.Node_AlterTableMoveAllStmt:
 		return extractAlterTableMoveAllStmt(statement, node.AlterTableMoveAllStmt), nil
+	case *pg_query.Node_AlterObjectDependsStmt:
+		if node.AlterObjectDependsStmt.GetObjectType() == pg_query.ObjectType_OBJECT_MATVIEW {
+			return extractAlterMaterializedViewExtension(statement, node.AlterObjectDependsStmt), nil
+		}
+		return unsupportedStatement(statement, featureNameForNode(e.node), "postgresql statement type is not in the approved v1 subset"), nil
 	case *pg_query.Node_AlterObjectSchemaStmt:
 		return extractAlterObjectSchemaStmt(statement, node.AlterObjectSchemaStmt), nil
 	case *pg_query.Node_RenameStmt:

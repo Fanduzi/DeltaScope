@@ -9,20 +9,20 @@ import (
 	pg_query "github.com/pganalyze/pg_query_go/v6"
 )
 
-func pgTableReloptions(items []*pg_query.Node, reset bool) []spec.PGTableReloption {
+func pgTableReloptions(items []*pg_query.Node, reset, validateToast bool) []spec.PGTableReloption {
 	options := make([]spec.PGTableReloption, 0, len(items))
 	for _, item := range items {
 		d := item.GetDefElem()
 		arg := d.GetArg()
 		o := spec.PGTableReloption{Name: d.GetDefname(), Namespace: d.GetDefnamespace(), HasValue: arg != nil}
-		if !reset && o.Namespace == "" {
-			switch o.Name {
-			case "fillfactor":
+		if !reset {
+			switch {
+			case o.Namespace == "" && o.Name == "fillfactor":
 				if n := arg.GetInteger(); n != nil {
 					o.Value = spec.PGTableReloptionInteger
 					o.Integer = n.GetIval()
 				}
-			case "autovacuum_enabled":
+			case (o.Namespace == "" || (validateToast && o.Namespace == "toast")) && o.Name == "autovacuum_enabled":
 				o.Value = pgBooleanReloptionValue(arg)
 			}
 		}

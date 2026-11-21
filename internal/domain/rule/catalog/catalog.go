@@ -234,6 +234,12 @@ func summaryForRule(ruleID string) string {
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	switch ruleID {
+	case "ddl.pg.alter_view.column_default.valid":
+		return "Checks exact PostgreSQL 17 ordinary-view column default targets and prohibited references."
+	case "ddl.pg.alter_materialized_view.extension.valid":
+		return "Checks the exact PostgreSQL 17 materialized view and installed extension for DEPENDS ON EXTENSION."
+	case "ddl.pg.alter_materialized_view.options.valid":
+		return "Checks exact PostgreSQL 17 materialized-view SET and RESET targets and bounded heap and TOAST option declarations."
 	case "ddl.pg.alter_view.options.valid":
 		return "Checks exact PostgreSQL 17 ALTER VIEW SET and RESET targets, guards and option declarations."
 	case "ddl.pg.alter_view.owner.valid":
@@ -632,7 +638,7 @@ func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 	switch ruleID {
 	case "ddl.pg.create_view.options.valid":
 		return []MetadataKind{MetadataKindInstance}, true
-	case "ddl.pg.refresh_materialized_view.target.valid", "ddl.pg.drop_view.target.valid", "ddl.pg.alter_view.namespace.valid", "ddl.pg.alter_view.owner.valid", "ddl.pg.alter_view.options.valid":
+	case "ddl.pg.refresh_materialized_view.target.valid", "ddl.pg.drop_view.target.valid", "ddl.pg.alter_view.namespace.valid", "ddl.pg.alter_view.owner.valid", "ddl.pg.alter_view.options.valid", "ddl.pg.alter_view.column_default.valid", "ddl.pg.alter_materialized_view.options.valid", "ddl.pg.alter_materialized_view.extension.valid":
 		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true
 	case "ddl.pg.alter.column.storage.valid", "ddl.pg.alter.column.compression.valid", "ddl.pg.alter.column.statistics.target.valid", "ddl.pg.alter.column.statistics.clamp.warn", "ddl.pg.alter.column.options.valid", "ddl.alter.drop_column.exists.require", "ddl.pg.alter.drop_column.advisory":
 		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true

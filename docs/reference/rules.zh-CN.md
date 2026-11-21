@@ -1035,7 +1035,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 
 ---
 
-## DDL：PostgreSQL 高级视图生命周期规则（11 条）
+## DDL：PostgreSQL 高级视图生命周期规则（14 条）
 
 这些规则覆盖 PostgreSQL 视图生命周期操作，覆盖范围超出基础 `CREATE VIEW` / `DROP VIEW` 形态。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
 
@@ -1052,6 +1052,9 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 | `ddl.pg.alter_view.namespace.valid` | 检查 PostgreSQL 17 视图和物化视图改名、迁移 schema 的精确源、缺失目标保护及目标名称冲突 | blocker | 是 |
 | `ddl.pg.alter_view.owner.valid` | 检查 PostgreSQL 17 视图及物化视图变更所有者时的对象类型、缺失目标保护和角色存在性 | blocker | 是 |
 | `ddl.pg.alter_view.options.valid` | 检查 PostgreSQL 17 普通视图的 SET/RESET 目标和选项声明。CHECK OPTION 的可更新性需要单独证据。 | blocker | 是 |
+| `ddl.pg.alter_view.column_default.valid` | 检查 PostgreSQL 17 普通视图的 SET/DROP DEFAULT 目标，并拒绝默认值中的列引用和子查询 | blocker | 是 |
+| `ddl.pg.alter_materialized_view.options.valid` | 检查 PostgreSQL 17 物化视图的 SET 或 RESET 目标、整数 fillfactor，以及已建模的 heap 和 TOAST 参数。 | blocker | 是 |
+| `ddl.pg.alter_materialized_view.extension.valid` | 检查 PostgreSQL 17 物化视图的扩展依赖变更，核对目标类型及扩展是否已安装。 | blocker | 是 |
 
 选项检查使用观测到的服务端版本和 SQL 声明。视图可更新性、查询结果和下游影响需要单独的证据。
 

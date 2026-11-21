@@ -40,32 +40,34 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
 		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
-		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGDropViewStates) == 0 {
+		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
 }
 
 type corpusFixtureMetadataProvider struct {
-	pgDropViewStates           []corpusPGDropViewState
-	instance                   *spec.InstanceFacts
-	tables                     map[string]*spec.TableSnapshot
-	indexOwners                map[string]string
-	pgTableOwners              []corpusPGTableOwner
-	pgDropColumnDependencies   []corpusPGDropColumnDependency
-	pgColumnTraversals         []corpusPGColumnTraversal
-	pgDropConstraintReferences []corpusPGDropConstraintReference
-	pgDestructiveReferences    []corpusPGDestructiveReference
-	pgRefreshStates            []corpusPGRefreshState
-	pgForeignKeyDirectories    []corpusPGForeignKeyKeys
-	pgConstraintIndexes        []corpusPGConstraintIndex
-	pgColumnTypes              []corpusPGColumnType
-	pgBulkTablespaces          []corpusPGBulkTablespace
-	pgTableNamespaces          []corpusPGTableNamespace
-	pgTablePersistences        []corpusPGTablePersistence
-	pgTableAccessMethods       []corpusPGTableAccessMethod
-	pgTableTablespaces         []corpusPGTableTablespace
-	pgReplicaIndexes           []corpusPGReplicaIndex
+	pgMaterializedViewExtensions []corpusPGMaterializedViewExtensionState
+	pgViewDefaults               []corpusPGViewDefaultState
+	pgDropViewStates             []corpusPGDropViewState
+	instance                     *spec.InstanceFacts
+	tables                       map[string]*spec.TableSnapshot
+	indexOwners                  map[string]string
+	pgTableOwners                []corpusPGTableOwner
+	pgDropColumnDependencies     []corpusPGDropColumnDependency
+	pgColumnTraversals           []corpusPGColumnTraversal
+	pgDropConstraintReferences   []corpusPGDropConstraintReference
+	pgDestructiveReferences      []corpusPGDestructiveReference
+	pgRefreshStates              []corpusPGRefreshState
+	pgForeignKeyDirectories      []corpusPGForeignKeyKeys
+	pgConstraintIndexes          []corpusPGConstraintIndex
+	pgColumnTypes                []corpusPGColumnType
+	pgBulkTablespaces            []corpusPGBulkTablespace
+	pgTableNamespaces            []corpusPGTableNamespace
+	pgTablePersistences          []corpusPGTablePersistence
+	pgTableAccessMethods         []corpusPGTableAccessMethod
+	pgTableTablespaces           []corpusPGTableTablespace
+	pgReplicaIndexes             []corpusPGReplicaIndex
 	// placement nil means the catalog is unvouched; a non-nil map is the
 	// proven policy set (empty map = proven-empty).
 	placement map[string]*spec.PlacementPolicyFact
@@ -99,24 +101,26 @@ type corpusFixtureMetadataProvider struct {
 
 func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataProvider {
 	provider := &corpusFixtureMetadataProvider{
-		tables:                     make(map[string]*spec.TableSnapshot, len(metadata.Tables)),
-		indexOwners:                make(map[string]string, len(metadata.IndexOwners)),
-		pgTableOwners:              metadata.PGTableOwners,
-		pgDropColumnDependencies:   metadata.PGDropColumnDependencies,
-		pgColumnTraversals:         metadata.PGColumnTraversals,
-		pgDropConstraintReferences: metadata.PGDropConstraintReferences,
-		pgDestructiveReferences:    metadata.PGDestructiveReferences,
-		pgRefreshStates:            metadata.PGRefreshStates,
-		pgDropViewStates:           metadata.PGDropViewStates,
-		pgForeignKeyDirectories:    metadata.PGForeignKeyDirectories,
-		pgConstraintIndexes:        metadata.PGConstraintIndexes,
-		pgColumnTypes:              metadata.PGColumnTypes,
-		pgBulkTablespaces:          metadata.PGBulkTablespaces,
-		pgTableNamespaces:          metadata.PGTableNamespaces,
-		pgTablePersistences:        metadata.PGTablePersistences,
-		pgTableAccessMethods:       metadata.PGTableAccessMethods,
-		pgTableTablespaces:         metadata.PGTableTablespaces,
-		pgReplicaIndexes:           metadata.PGReplicaIndexes,
+		tables:                       make(map[string]*spec.TableSnapshot, len(metadata.Tables)),
+		indexOwners:                  make(map[string]string, len(metadata.IndexOwners)),
+		pgTableOwners:                metadata.PGTableOwners,
+		pgDropColumnDependencies:     metadata.PGDropColumnDependencies,
+		pgColumnTraversals:           metadata.PGColumnTraversals,
+		pgDropConstraintReferences:   metadata.PGDropConstraintReferences,
+		pgDestructiveReferences:      metadata.PGDestructiveReferences,
+		pgRefreshStates:              metadata.PGRefreshStates,
+		pgDropViewStates:             metadata.PGDropViewStates,
+		pgMaterializedViewExtensions: metadata.PGMaterializedViewExtensions,
+		pgViewDefaults:               metadata.PGViewDefaults,
+		pgForeignKeyDirectories:      metadata.PGForeignKeyDirectories,
+		pgConstraintIndexes:          metadata.PGConstraintIndexes,
+		pgColumnTypes:                metadata.PGColumnTypes,
+		pgBulkTablespaces:            metadata.PGBulkTablespaces,
+		pgTableNamespaces:            metadata.PGTableNamespaces,
+		pgTablePersistences:          metadata.PGTablePersistences,
+		pgTableAccessMethods:         metadata.PGTableAccessMethods,
+		pgTableTablespaces:           metadata.PGTableTablespaces,
+		pgReplicaIndexes:             metadata.PGReplicaIndexes,
 	}
 	if metadata.Instance != nil {
 		provider.instance = &spec.InstanceFacts{
@@ -476,11 +480,28 @@ func parseCorpusUint(text string) (uint64, bool) {
 // `schema.name`. An unkeyed identity or a nil sequence map is unvouched,
 // never a silent absent; non-sequence lookups stay unavailable.
 func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
-	if request.Type == "drop_view_target" || request.Type == "alter_view_options" {
+	if request.Type == "materialized_view_extension" {
+		for _, seed := range p.pgMaterializedViewExtensions {
+			if seed.Schema == request.Schema && seed.View == request.Name && seed.Extension == request.Qualifiers["extension"] {
+				return &spec.ObjectSnapshot{PGMaterializedViewExtension: &spec.PGMaterializedViewExtensionState{Schema: seed.Schema, View: seed.View, Extension: seed.Extension, Kind: seed.Kind, ExtensionExists: seed.ExtensionExists}}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "view_column_default" {
+		for _, entry := range p.pgViewDefaults {
+			state := spec.PGViewDefaultState(entry)
+			if state.MatchesViewDefault(&request) {
+				return &spec.ObjectSnapshot{PGViewDefault: &state}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "drop_view_target" || request.Type == "alter_view_options" || request.Type == "materialized_view_options" {
 		for _, seed := range p.pgDropViewStates {
 			if seed.Schema == request.Schema && seed.Name == request.Name {
 				target := spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.Schema, Name: seed.Name}}
-				return &spec.ObjectSnapshot{PGDropViewState: &spec.PGDropViewState{Target: target, Kind: seed.Kind, DependentView: seed.DependentView, CheckOption: seed.CheckOption}}, nil
+				return &spec.ObjectSnapshot{PGDropViewState: &spec.PGDropViewState{Target: target, Kind: seed.Kind, DependentView: seed.DependentView, CheckOption: seed.CheckOption, Heap: seed.Heap, HasToast: seed.HasToast}}, nil
 			}
 		}
 		return nil, nil

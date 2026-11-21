@@ -2541,6 +2541,21 @@ rules:
     level: warning
     params:
 
+  ddl.pg.alter_view.column_default.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.pg.alter_materialized_view.extension.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.pg.alter_materialized_view.options.valid:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.pg.alter_view.options.valid:
     enabled: true
     level: blocker
