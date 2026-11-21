@@ -8046,15 +8046,15 @@ rows:
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.partial-where.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
       - subaction_id: INCLUDE / NULLS DISTINCT
         parser_status: partial
-        audit_status: explicit_unsupported
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: partial
-            audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.include-nulls-distinct.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.include-nulls-distinct.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#index-include-offline, file:testdata/ddl-golden/T39.json#pg-index-include-nonunique-nulls-not-distinct, file:testdata/ddl-golden/T39.json#pg-index-include-unique-nulls-not-distinct, file:testdata/ddl-golden/T39.json#pg-index-include-repeated-include, file:testdata/ddl-golden/T39.json#pg-index-include-include-repeats-key, file:testdata/ddl-golden/T39.json#pg-index-include-missing-included-column, file:testdata/ddl-golden/T39.json#pg-index-include-system-include, file:testdata/ddl-golden/T39.json#pg-index-include-hash-include, file:testdata/ddl-golden/T39.json#pg-index-include-gin-include, file:testdata/ddl-golden/T39.json#pg-index-include-expression-include, file:testdata/ddl-golden/T39.json#pg-index-include-unique-partition-without-partition-key, file:testdata/sql-corpus/postgresql/ddl/findings/index_include_missing_column.expected.yaml#ddl.pg.create_index.include.valid]
       - subaction_id: opclass/parameters
         parser_status: recognized
         audit_status: audited
@@ -8118,7 +8118,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-index.rename-to.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-index.rename-to.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#pg-index-destination-rename-index-clear, file:testdata/ddl-golden/T39.json#pg-index-destination-rename-index-same, file:testdata/ddl-golden/T39.json#pg-index-destination-rename-index-destination-table, file:testdata/ddl-golden/T39.json#pg-index-destination-rename-table-via-index-syntax, file:testdata/ddl-golden/T39.json#pg-index-destination-rename-composite-via-index-syntax, file:testdata/ddl-golden/T39.json#pg-index-destination-missing-source-unguarded]
       - subaction_id: SET TABLESPACE
         parser_status: recognized
         audit_status: audited
@@ -8129,29 +8129,29 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-index.set-tablespace.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-index.set-tablespace.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#pg-index-destination-tablespace-existing-index-missing-destination, file:testdata/ddl-golden/T39.json#pg-index-destination-tablespace-partitioned-index-missing-destination, file:testdata/ddl-golden/T39.json#pg-index-destination-tablespace-partitioned-index-default, file:testdata/ddl-golden/T39.json#pg-index-destination-tablespace-shared-destination-on-normal-index, file:testdata/ddl-golden/T39.json#pg-index-destination-partitioned-index-shared-destination, file:testdata/ddl-golden/T39.json#pg-index-destination-ordinary-index-default-destination, file:testdata/ddl-golden/T39.json#index-destination-offline, file:testdata/sql-corpus/postgresql/ddl/findings/index_tablespace_absent.expected.yaml#ddl.pg.alter_index.destination.valid]
       - subaction_id: SET/RESET parameters
         parser_status: partial
-        audit_status: explicit_unsupported
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: partial
-            audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-index.set-reset-parameters.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-index.set-reset-parameters.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#index-storage-options-offline, file:testdata/ddl-golden/T39.json#pg-index-storage-options-low-fillfactor, file:testdata/ddl-golden/T39.json#pg-index-storage-options-lower-fillfactor, file:testdata/ddl-golden/T39.json#pg-index-storage-options-upper-fillfactor, file:testdata/ddl-golden/T39.json#pg-index-storage-options-quoted-fillfactor, file:testdata/ddl-golden/T39.json#pg-index-storage-options-missing-fillfactor, file:testdata/ddl-golden/T39.json#pg-index-storage-options-valid-boolean, file:testdata/ddl-golden/T39.json#pg-index-storage-options-invalid-boolean, file:testdata/ddl-golden/T39.json#pg-index-storage-options-duplicate-fillfactor, file:testdata/ddl-golden/T39.json#pg-index-storage-options-unknown-b-tree-parameter, file:testdata/ddl-golden/T39.json#pg-index-storage-options-known-but-inapplicable-method, file:testdata/ddl-golden/T39.json#pg-index-storage-options-partitioned-index-cannot-set, file:testdata/ddl-golden/T39.json#pg-index-storage-options-partitioned-index-cannot-reset, file:testdata/ddl-golden/T39.json#pg-index-storage-options-reset-any-name-without-values, file:testdata/ddl-golden/T39.json#pg-index-storage-options-reset-entry-has-value, file:testdata/ddl-golden/T39.json#pg-index-storage-options-toast-option-ignored, file:testdata/ddl-golden/T39.json#pg-index-storage-options-unknown-namespace, file:testdata/ddl-golden/T39.json#pg-index-storage-options-guarded-absent-skips-invalid-option, file:testdata/ddl-golden/T39.json#pg-index-storage-options-wrong-kind-before-parameter, file:testdata/sql-corpus/postgresql/ddl/findings/index_storage_option_bounds.expected.yaml#ddl.pg.alter_index.options.valid]
       - subaction_id: ATTACH PARTITION
         parser_status: partial
-        audit_status: explicit_unsupported
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: partial
-            audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-index.attach-partition.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-index.attach-partition.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#index-attachment-offline, file:testdata/ddl-golden/T39.json#pg-index-attach-qualified-matching-child, file:testdata/ddl-golden/T39.json#pg-index-attach-same-attachment-is-silent, file:testdata/ddl-golden/T39.json#pg-index-attach-second-index-on-same-partition, file:testdata/ddl-golden/T39.json#pg-index-attach-attached-to-another-parent, file:testdata/ddl-golden/T39.json#pg-index-attach-unrelated-child-table, file:testdata/ddl-golden/T39.json#pg-index-attach-mismatching-key, file:testdata/ddl-golden/T39.json#pg-index-attach-wrong-child-kind, file:testdata/ddl-golden/T39.json#pg-index-attach-missing-child, file:testdata/ddl-golden/T39.json#pg-index-attach-missing-parent, file:testdata/ddl-golden/T39.json#pg-index-attach-wrong-parent-kind, file:testdata/ddl-golden/T39.json#pg-index-attach-plain-parent-index, file:testdata/ddl-golden/T39.json#pg-index-attach-matches-reordered-attribute-numbers, file:testdata/ddl-golden/T39.json#pg-index-attach-different-key-and-include-assignment, file:testdata/ddl-golden/T39.json#pg-index-attach-different-uniqueness, file:testdata/ddl-golden/T39.json#pg-index-attach-different-null-handling, file:testdata/ddl-golden/T39.json#pg-index-attach-different-collation, file:testdata/ddl-golden/T39.json#pg-index-attach-different-operator-family, file:testdata/ddl-golden/T39.json#pg-index-attach-partial-index-versus-plain-index, file:testdata/ddl-golden/T39.json#pg-index-attach-both-predicates-require-facts, file:testdata/ddl-golden/T39.json#pg-index-attach-both-expressions-require-facts, file:testdata/ddl-golden/T39.json#pg-index-attach-child-lacks-owning-constraint, file:testdata/sql-corpus/postgresql/ddl/findings/index_attachment_definition_mismatch.expected.yaml#ddl.pg.alter_index.attach_partition.valid]
       - subaction_id: IF EXISTS
         parser_status: recognized
         audit_status: audited
@@ -8162,7 +8162,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-index.if-exists.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-index.if-exists.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#pg-index-destination-missing-source-guarded-rename, file:testdata/ddl-golden/T39.json#pg-index-destination-tablespace-prior-absence, file:testdata/ddl-golden/T39.json#pg-index-destination-tablespace-table-wrong-kind]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-index.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
@@ -8489,7 +8489,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-operator-family.create-operator-family.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-operator-family.create-operator-family.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#operator-family-target-offline, file:testdata/ddl-golden/T39.json#pg-operator-family-target-create-exact-family, file:testdata/ddl-golden/T39.json#pg-operator-family-target-same-family-in-different-method, file:testdata/ddl-golden/T39.json#pg-operator-family-target-existing-exact-family, file:testdata/ddl-golden/T39.json#pg-operator-family-target-missing-schema, file:testdata/ddl-golden/T39.json#pg-operator-family-target-missing-access-method, file:testdata/ddl-golden/T39.json#pg-operator-family-target-table-access-method, file:testdata/sql-corpus/postgresql/ddl/findings/operator_family_target_exists.expected.yaml#ddl.pg.create_operator_family.target.valid]
       - subaction_id: AS members
         parser_status: unrecognized
         audit_status: not_applicable
@@ -8531,15 +8531,15 @@ rows:
     subaction_status:
       - subaction_id: ADD/DROP members
         parser_status: partial
-        audit_status: explicit_unsupported
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: partial
-            audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-operator-family.add-drop-members.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-operator-family.add-drop-members.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#operator-family-member-offline, file:testdata/ddl-golden/T39.json#pg-operator-family-member-add-exact-search-operator, file:testdata/ddl-golden/T39.json#pg-operator-family-member-drop-exact-slot, file:testdata/ddl-golden/T39.json#pg-operator-family-member-absent-drop-slot, file:testdata/ddl-golden/T39.json#pg-operator-family-member-duplicate-add-slot, file:testdata/ddl-golden/T39.json#pg-operator-family-member-strategy-above-bound, file:testdata/ddl-golden/T39.json#pg-operator-family-member-missing-family-precedes-invalid-strategy, file:testdata/ddl-golden/T39.json#pg-operator-family-member-nonboolean-search-result, file:testdata/ddl-golden/T39.json#pg-operator-family-member-missing-qualified-operator, file:testdata/ddl-golden/T39.json#pg-operator-family-member-missing-qualified-operand, file:testdata/ddl-golden/T39.json#pg-operator-family-member-operator-search-path-unobserved, file:testdata/ddl-golden/T39.json#pg-operator-family-member-operand-search-path-unobserved, file:testdata/ddl-golden/T39.json#pg-operator-family-member-protected-catalog-slot, file:testdata/sql-corpus/postgresql/ddl/findings/operator_family_member_slot_absent.expected.yaml#ddl.pg.alter_operator_family.member.valid]
       - subaction_id: RENAME/OWNER/SET SCHEMA
         parser_status: recognized
         audit_status: audited
@@ -8550,7 +8550,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-operator-family.rename-owner-set-schema.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-operator-family.rename-owner-set-schema.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#operator-family-change-offline, file:testdata/ddl-golden/T39.json#pg-operator-family-change-operator-family-rename-clear, file:testdata/ddl-golden/T39.json#pg-operator-family-change-operator-family-rename-same, file:testdata/ddl-golden/T39.json#pg-operator-family-change-operator-family-rename-occupied, file:testdata/ddl-golden/T39.json#pg-operator-family-change-operator-family-rename-different-method, file:testdata/ddl-golden/T39.json#pg-operator-family-change-operator-family-move-occupied, file:testdata/ddl-golden/T39.json#pg-operator-family-change-operator-family-move-same, file:testdata/ddl-golden/T39.json#pg-operator-family-change-operator-family-move-missing-schema, file:testdata/ddl-golden/T39.json#pg-operator-family-change-operator-family-missing-source-and-schema, file:testdata/ddl-golden/T39.json#pg-operator-family-change-operator-family-missing-index-method, file:testdata/ddl-golden/T39.json#pg-operator-family-change-operator-family-table-access-method, file:testdata/ddl-golden/T39.json#pg-operator-family-change-operator-family-owner-exact, file:testdata/ddl-golden/T39.json#pg-operator-family-change-operator-family-owner-missing, file:testdata/ddl-golden/T39.json#pg-operator-family-change-operator-family-owner-public, file:testdata/ddl-golden/T39.json#pg-operator-family-change-operator-family-missing-source-and-owner, file:testdata/ddl-golden/T39.json#pg-operator-family-change-operator-family-move-toast, file:testdata/sql-corpus/postgresql/ddl/findings/operator_family_rename_occupied.expected.yaml#ddl.pg.alter_operator_family.change.target.valid]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-operator-family.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]

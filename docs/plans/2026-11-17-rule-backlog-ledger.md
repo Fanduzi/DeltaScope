@@ -1476,6 +1476,35 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136800751025) passed at t
 
 - [CHECK column null tests](../decisions/2026-11-21-postgresql-check-null-test.md)
 
+## F11 exact dimension review
+
+The four rows below retain all 18 authored dimensions. In the joint preview, 111 selectors cover nine exact PostgreSQL 17 cells. The preview evidence remains separate from the fixed delivery receipt. Baseline T39 parser controls, migration advice and native fixtures are listed with the specific premises they exercise.
+
+| Inventory dimension | Evidence and present scope | Remaining premise |
+| --- | --- | --- |
+| `postgresql.create-index` / CREATE INDEX basic | T39 `create-index-create-index-basic` verifies normalization, the secondary naming warning and the non-concurrent build warning. The native `create index btree` step creates an index on the named column. | General target kind, name collisions, and all key forms still need checks outside the qualified INCLUDE slice. |
+| `postgresql.create-index` / UNIQUE | `create-index-unique` verifies unique-kind extraction and its migration warning, and the native partial unique fixture verifies PostgreSQL creates the index. The NULLS controls verify the stored native flag. | Existing duplicate data, NULL behavior during writes and partition-key eligibility for standalone CREATE INDEX require separate evidence. |
+| `postgresql.create-index` / CONCURRENTLY | `create-index-concurrently` and the native non-transactional control establish the modeled flag and distinguish it from the non-concurrent warning. | Transaction blocks, partitioned-root and other object-specific concurrent eligibility need independent checks. |
+| `postgresql.create-index` / USING method | `create-index-using-method` records the authored method. Native B-tree, GIN and GiST fixtures exercise distinct installed methods. The qualified INCLUDE check rejects tested combinations with hash and GIN. | General method and type compatibility, including extension-defined methods, remains open. |
+| `postgresql.create-index` / expression index | `create-index-expression-index` and the native `lower` witness exercise expression keys. The rule retains a count and the plain-key comparisons avoid treating them as plain members. | Expression legality and function properties need separately modeled facts. |
+| `postgresql.create-index` / partial WHERE | The `create-index-partial-where` CLI case and native partial-unique index witness verify predicate presence. | Predicate type, allowed references and equivalence are still open. |
+| `postgresql.create-index` / INCLUDE / NULLS DISTINCT | `pg-index-include-*` checks a qualified target, names, observed system columns, method eligibility, and stores the exact NULLS fact privately. Native fixtures preserve repeated INCLUDE slots and overlap with keys. | Wider methods, partitioned targets and uniqueness effects on existing or future data need separate evidence. |
+| `postgresql.create-index` / opclass/parameters | The `create-index-opclass-parameters` baseline audits the authored form with naming and migration rules. | Exact opclass membership, defaults, parameters and input type need more than the current migration notice. |
+| `postgresql.create-index` / WITH/TABLESPACE | `create-index-with-tablespace` preserves the accepted spelling, and the native `create index with params` step exercises an integer fillfactor. | The new ALTER destination and option checks are specific to ALTER. CREATE needs separate creation, method and tablespace premises. |
+| `postgresql.alter-index` / RENAME TO | `pg-index-destination-*` checks exact source absence, composite rejection, a clear destination and collision with a table or the source's current name. The ordinary table rename control pins the row-type gap. | Row-type and companion constraint namespaces, unqualified source selection and authorization stay open. |
+| `postgresql.alter-index` / SET TABLESPACE | `pg-index-destination-*` checks ordinary and partitioned index targets, missing space, same space and inadmissible `pg_global`. No index is copied during audit. | Execution permissions, data movement and locks need independent evidence. |
+| `postgresql.alter-index` / SET/RESET parameters | `pg-index-storage-options-*` verifies target kind, absence guard, integer fillfactor, B-tree Boolean syntax, duplicates, and RESET values. | Quoted integer forms, additional parameters, other access methods and multiple actions require facts. |
+| `postgresql.alter-index` / ATTACH PARTITION | `pg-index-attach-*` verifies exact parent and child, direct partition membership, occupied attachments and plain index definitions and constraint premises. Native controls exercise reordered attributes. | Expression or predicate equivalence, detach-pending visibility and broader validation stay open. |
+| `postgresql.alter-index` / IF EXISTS | `pg-index-destination-guarded-*`, the wrong-kind tablespace guard and guarded options checks pin the absence short circuit. `pg-index-attach-guarded-absent-parent` records `42601` for the native grammar restriction. | The guard does not establish unqualified namespace selection or authorization. |
+| `postgresql.create-operator-family` / CREATE OPERATOR FAMILY | `pg-operator-family-target-*` binds exact namespace, family name and index method. Native controls show that another method may reuse the name. | Unqualified creation namespace and owner privileges remain separate. |
+| `postgresql.create-operator-family` / AS members | `create-operator-family-as-members` preserves the parser failure. The PostgreSQL 17.7 native probe reports `42601`. | PostgreSQL's grammar places members under ALTER OPERATOR FAMILY. This remains a syntax boundary for the retained form. |
+| `postgresql.alter-operator-family` / ADD/DROP members | `pg-operator-family-member-*` checks one qualified B-tree search operator. It verifies strategy bounds, Boolean result, exact member occupancy and the protected drop slot. | Other methods, ordering operators, support functions, multi-member actions and broader dependency and privilege checks stay open. |
+| `postgresql.alter-operator-family` / RENAME/OWNER/SET SCHEMA | `pg-operator-family-change-*` checks qualified source and method, occupied namespaces for that method, owner-first refusal, same-schema no-op and TOAST restriction. | Session alias resolution and access privileges still require evidence. |
+
+The inventory keeps 301 rows and retains the original four F11 parent classifications. No cell is promoted to a full semantic-support claim from a generic warning or parser refusal.
+
+The joint T39 preview passed 162 cases and 4,005 assertions. Verification on the fixed F11 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
