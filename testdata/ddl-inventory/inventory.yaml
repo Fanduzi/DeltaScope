@@ -13037,48 +13037,48 @@ rows:
     subaction_status:
       - subaction_id: ADD/DROP/SET TABLE
         parser_status: recognized
-        audit_status: audited
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-publication.add-drop-set-table.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-publication.add-drop-set-table.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T46.json#pg-publication-all-tables-before-missing-table, file:testdata/ddl-golden/T46.json#pg-publication-existing-member, file:testdata/ddl-golden/T46.json#pg-publication-unpublished-table, file:testdata/ddl-golden/T46.json#pg-publication-unlogged-table, file:testdata/ddl-golden/T46.json#pg-publication-view-target, file:testdata/ddl-golden/T46.json#pg-publication-valid-add, file:testdata/ddl-golden/T46.json#pg-publication-remove-member, file:testdata/ddl-golden/T46.json#pg-publication-duplicate-table-selectors-merge, file:testdata/ddl-golden/T46.json#pg-publication-ordinary-inheritance-gap, file:testdata/ddl-golden/T46.json#pg-publication-only-excludes-inheritance, file:testdata/ddl-golden/T46.json#pg-publication-row-filter-analysis-gap, file:testdata/ddl-golden/T46.json#pg-publication-drop-list-unsupported-by-server, file:testdata/ddl-golden/T46.json#pg-publication-drop-filter-unsupported-by-server]
       - subaction_id: SET TABLES IN SCHEMA
         parser_status: recognized
-        audit_status: audited
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-publication.set-tables-in-schema.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-publication.set-tables-in-schema.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T46.json#pg-publication-missing-publication-schema, file:testdata/ddl-golden/T46.json#pg-publication-missing-schema-before-all-tables-rejection, file:testdata/ddl-golden/T46.json#pg-publication-valid-set, file:testdata/ddl-golden/T46.json#pg-publication-schema-selectors-deduplicate, file:testdata/ddl-golden/T46.json#pg-publication-schema-add-with-existing-lists, file:testdata/ddl-golden/T46.json#pg-publication-schema-set-clears-old-lists, file:testdata/ddl-golden/T46.json#pg-publication-schema-repeated-add, file:testdata/ddl-golden/T46.json#pg-publication-schema-drop-absent, file:testdata/ddl-golden/T46.json#pg-publication-system-schema-rejected]
       - subaction_id: SET publish options
         parser_status: recognized
-        audit_status: audited
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-publication.set-publish-options.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-publication.set-publish-options.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/sql-corpus/postgresql/ddl/findings/alter_publication_unknown_option.expected.yaml#ddl.pg.alter_publication.target.valid, file:testdata/ddl-golden/T46.json#pg-publication-missing-publication-before-option-error, file:testdata/ddl-golden/T46.json#pg-publication-unknown-option, file:testdata/ddl-golden/T46.json#pg-publication-duplicate-publication-option, file:testdata/ddl-golden/T46.json#pg-publication-repeated-actions-allowed, file:testdata/ddl-golden/T46.json#pg-publication-quoted-action-case, file:testdata/ddl-golden/T46.json#pg-publication-empty-action-list, file:testdata/ddl-golden/T46.json#pg-publication-invalid-option-boolean, file:testdata/ddl-golden/T46.json#pg-publication-partition-root-option-conflict, file:testdata/ddl-golden/T46.json#pg-publication-partition-root-option-true, file:testdata/ddl-golden/T46.json#pg-publication-partition-root-boolean-integer, file:testdata/ddl-golden/T46.json#pg-publication-partition-root-boolean-string, file:testdata/ddl-golden/T46.json#pg-publication-trailing-action-comma, file:testdata/ddl-golden/T46.json#pg-publication-simple-quoted-action]
       - subaction_id: OWNER/RENAME
-        parser_status: partial
-        audit_status: explicit_unsupported
+        parser_status: recognized
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
-            parser_status: partial
-            audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-publication.owner-rename.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            parser_status: recognized
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-publication.owner-rename.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T46.json#pg-publication-publication-rename-same-name, file:testdata/ddl-golden/T46.json#pg-publication-publication-owner-absent, file:testdata/ddl-golden/T46.json#pg-publication-owner-before-missing-publication, file:testdata/ddl-golden/T46.json#pg-publication-same-owner]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-publication.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
@@ -13212,59 +13212,59 @@ rows:
     subaction_status:
       - subaction_id: ENABLE/DISABLE
         parser_status: recognized
-        audit_status: audited
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-subscription.enable-disable.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-subscription.enable-disable.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/sql-corpus/postgresql/ddl/findings/alter_subscription_enable_without_slot.expected.yaml#ddl.pg.alter_subscription.target.valid, file:testdata/ddl-golden/T46.json#pg-replication-offline, file:testdata/ddl-golden/T46.json#pg-subscription-missing-subscription, file:testdata/ddl-golden/T46.json#pg-subscription-enable-without-slot, file:testdata/ddl-golden/T46.json#pg-subscription-disable-without-slot, file:testdata/ddl-golden/T46.json#pg-subscription-enable-quoted-identifier]
       - subaction_id: CONNECTION/PUBLICATION/SET
         parser_status: recognized
-        audit_status: audited
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-subscription.connection-publication-set.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-subscription.connection-publication-set.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T46.json#pg-subscription-failover-without-slot, file:testdata/ddl-golden/T46.json#pg-subscription-duplicate-replacement-publications, file:testdata/ddl-golden/T46.json#pg-subscription-adding-existing-publication, file:testdata/ddl-golden/T46.json#pg-subscription-dropping-last-publication, file:testdata/ddl-golden/T46.json#pg-subscription-dropping-missing-publication, file:testdata/ddl-golden/T46.json#pg-subscription-replacement-publication-uses-local-name-only, file:testdata/ddl-golden/T46.json#pg-subscription-no-remote-connection-validation, file:testdata/ddl-golden/T46.json#pg-subscription-quoted-numeric-boolean, file:testdata/ddl-golden/T46.json#pg-subscription-integer-boolean, file:testdata/ddl-golden/T46.json#pg-subscription-unknown-set-parameter]
       - subaction_id: REFRESH PUBLICATION
         parser_status: recognized
-        audit_status: audited
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-subscription.refresh-publication.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-subscription.refresh-publication.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T46.json#pg-subscription-refresh-disabled]
       - subaction_id: SKIP
         parser_status: recognized
-        audit_status: audited
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-subscription.skip.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-subscription.skip.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T46.json#pg-subscription-skip-reset, file:testdata/ddl-golden/T46.json#pg-subscription-skip-invalid-text, file:testdata/ddl-golden/T46.json#pg-subscription-skip-all-zero, file:testdata/ddl-golden/T46.json#pg-subscription-skip-valid-lsn]
       - subaction_id: OWNER/RENAME
-        parser_status: partial
-        audit_status: explicit_unsupported
+        parser_status: recognized
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
-            parser_status: partial
-            audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-subscription.owner-rename.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            parser_status: recognized
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-subscription.owner-rename.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T46.json#pg-subscription-subscription-rename-same-name, file:testdata/ddl-golden/T46.json#pg-subscription-subscription-owner-absent, file:testdata/ddl-golden/T46.json#pg-subscription-owner-before-missing-subscription]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.alter-subscription.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
@@ -13296,15 +13296,15 @@ rows:
     subaction_status:
       - subaction_id: DROP SUBSCRIPTION
         parser_status: recognized
-        audit_status: audited
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.drop-subscription.drop-subscription.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.drop-subscription.drop-subscription.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T46.json#pg-subscription-drop-missing-subscription, file:testdata/ddl-golden/T46.json#pg-subscription-slotless-drop, file:testdata/ddl-golden/T46.json#pg-subscription-drop-with-slot-in-transaction]
       - subaction_id: IF EXISTS
         parser_status: recognized
         audit_status: audited
@@ -13315,7 +13315,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.drop-subscription.if-exists.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.drop-subscription.if-exists.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T46.json#pg-subscription-guarded-absent-subscription]
       - subaction_id: WITH drop_slot
         parser_status: unrecognized
         audit_status: not_applicable
@@ -13326,7 +13326,7 @@ rows:
             product_scope: registered
             parser_status: unrecognized
             audit_status: not_applicable
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.drop-subscription.with-drop-slot.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.drop-subscription.with-drop-slot.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T46.json#pg-subscription-drop-with-syntax]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.drop-subscription.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]

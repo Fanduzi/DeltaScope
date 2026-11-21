@@ -1677,6 +1677,30 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44937661276/job/136947738124),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136947815184) passed at the delivered SHA.
 
+## F18 exact dimension review
+
+| Row and authored cell | Verified PostgreSQL 17 premise | Remaining evidence |
+| --- | --- | --- |
+| `postgresql.alter-publication` / `ADD/DROP/SET TABLE` | Exact publication source, qualified direct relation eligibility, presence and membership. T46 verifies successful changes, duplicate simple selectors, ONLY, FOR ALL TABLES and DROP row-filter and column-list refusals. | Implicit names, ordinary inheritance expansion, expressions and column-list validation require additional catalog or semantic facts. |
+| `postgresql.alter-publication` / `SET TABLES IN SCHEMA` | Exact named schemas, ordered table/schema checks, set replacement, and schema versus existing column-list conflict. | `CURRENT_SCHEMA` and temporary schema aliases require the effective session. |
+| `postgresql.alter-publication` / `SET publish options` | Ordered options, action list and Boolean syntax, and existing partition root row-filter or column-list conflict. | Runtime publisher behavior requires publisher evidence. |
+| `postgresql.alter-publication` / `OWNER/RENAME` | Exact owner role lookup and same-name or occupied rename. | Actor ownership and role privileges require executing-session evidence. |
+| `postgresql.alter-subscription` / `ENABLE/DISABLE` | AST Boolean including a quoted name containing DISABLE. ENABLE requires a slot name. | Worker and publisher state require runtime evidence. |
+| `postgresql.alter-subscription` / `CONNECTION/PUBLICATION/SET` | Local identity, ordered publication-list changes, bounded options, slot preconditions and refresh policy. | Connection validation, remote publication availability and slot alteration require publisher or libpq evidence. |
+| `postgresql.alter-subscription` / `REFRESH PUBLICATION` | Disabled subscription refusal and observed two-phase premise. | Remote refresh, transaction context and live worker state require separate facts. |
+| `postgresql.alter-subscription` / `SKIP` | Reset and bounded LSN syntax. | Valid nonzero LSN requires replication origin progress. |
+| `postgresql.alter-subscription` / `OWNER/RENAME` | Current-database identity, exact role lookup and rename occupancy. | Grant and role privileges require executing-session evidence. |
+| `postgresql.drop-subscription` / `DROP SUBSCRIPTION` | Exact current-database identity and slotless local DROP. A slot is an explicit evidence gap with a native transaction refusal control. | Publisher-side slot effects and transaction context remain open. |
+| `postgresql.drop-subscription` / `IF EXISTS` | Guard distinguishes a known absent name from an existing slotless subscription. | Remote work for an existing subscription with a slot needs publisher evidence. |
+| `postgresql.drop-subscription` / `WITH drop_slot` | PostgreSQL 17.7 and the bound parser reject WITH with `42601`. | Revisit only if a future PostgreSQL grammar actually adds the form. |
+
+All three parent rows retain `mixed_coverage`. The 69 references bind the 12
+PostgreSQL 17 cells. Findings and gaps exclude notification contents, unreported
+catalog publication names and slot identifiers. See [decision record](../decisions/2026-11-21-postgresql-replication-changes.md)
+and [T46](../../testdata/ddl-golden/T46.json).
+
+The joint T46 preview passed 96 cases and 3,981 assertions. Verification on the fixed F18 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
