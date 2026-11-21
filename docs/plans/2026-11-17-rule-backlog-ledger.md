@@ -1159,8 +1159,8 @@ These five F09 rows have 40 authored labels and 40 normalized records at `d8ccee
 | ADD PRIMARY KEY | D3 covers index build risk. D21 checks exact USING INDEX identity, ownership and catalog eligibility, including PRIMARY KEY with NULLS NOT DISTINCT. D48 verifies key and INCLUDE columns for a qualified ordinary table, including the refusal for a second primary key. D49 checks partition-key compatibility on a qualified partitioned root. | D31 checks installed class defaults for exact type. D41 resolves binary-compatible and polymorphic defaults. Existing rows, locks and execution outcomes need separate evidence. |
 | ADD UNIQUE | D3 separates ordinary build risk from USING INDEX. D21 checks catalog eligibility and distinguishes same-name attachment from an occupied rename destination. D48 verifies key and INCLUDE columns for a qualified ordinary table, including permitted repetitions in INCLUDE. D49 checks qualified partitioned roots, including missing partition columns, expression slots and bounded equality or collation mismatch. | D31 checks installed class defaults for exact type. D41 resolves binary-compatible and polymorphic defaults. Execution prerequisites require separate facts. |
 | ADD FOREIGN KEY | D3 covers initial-validation risk. D22 covers exact table and column identity. D23 adds referenced key eligibility, omitted primary-key selection, duplicate referenced columns and arity. | D32 checks ON DELETE SET members. D37 at `683d84ac` checks scalar equality and distinguishes assignment-only casts from implicit casts. D42 checks nested domain bases and the native enum and array equality premises. Remaining polymorphic and custom conversion definitions require independent evidence. Row validity, runtime actions and privileges require separate facts. |
-| ADD CHECK | D19 approved exact named collision on a fresh ordinary table. Native same expression with new/unnamed CHECK succeeds; purely inherited constraint can merge. | D46 checks subqueries before name collisions. Remaining predicate validity, data and inheritance require separate evidence. |
-| ADD CHECK NOT VALID | D19 approved exact collision. Existing follow-up distinguishes migration validation intent. Native can register over an old violation while invalid predicates still fail. | D46 checks subqueries even under NOT VALID. Other expression legality, row checks and batch outcome remain separate. |
+| ADD CHECK | D19 approved exact named collision on a fresh ordinary table. Native same expression with new/unnamed CHECK succeeds; purely inherited constraint can merge. D50 verifies direct invalid Boolean text and bounded int4 coercion premises. | D46 checks subqueries before name collisions. Remaining predicate validity, data and inheritance require separate evidence. |
+| ADD CHECK NOT VALID | D19 approved exact collision. Existing follow-up distinguishes migration validation intent. Native can register over an old violation while invalid predicates still fail. D50 applies the same literal check to this form. | D46 checks subqueries even under NOT VALID. Other expression legality, row checks and batch outcome remain separate. |
 | DROP CONSTRAINT | D4 binds exact target and guard behavior. D24 checks direct RESTRICT foreign-key dependencies on the supporting index in the ordinary-table scope. | D25 and D26 at `7af6f84a` cover direct CHECK inheritance and partition-parent ONLY. Wider dependency closure and foreign-table inheritance need separate evidence. |
 | DROP CONSTRAINT CASCADE | D4 binds target, and native CASCADE removes a dependent FK while retaining the table and rows. | D25 and D26 at `7af6f84a` preserve direct inheritance and ONLY refusals under CASCADE. Dependency closure and lock or privilege requirements need separate catalog evidence. |
 | VALIDATE CONSTRAINT | D4 exact CHECK/FK kind and validated-state no-op. Native row validation can still refuse `23514` or `23503`. | D38 at `683d84ac` distinguishes ordinary and partitioned ONLY refusal, recursive validation, NO INHERIT and already validated checks. Row-data validity remains a separate evidence requirement. |
@@ -1445,8 +1445,14 @@ outside the proved refusal. Both ADD CHECK and ADD CHECK NOT VALID retain
 the established name, guard and subquery checks.
 
 The rebased T37 preview passed 600 cases and 17,779 assertions. Twelve
-selectors bind the two CHECK inventory cells. Verification on the fixed D50
-candidate is pending.
+selectors bind the two CHECK inventory cells. Delivered at `0548f90779d56d9cce8b1c91002c81bf26305665`. All 50 canonical tasks passed with 4,157 cases and
+84,554 assertions. T37 passed 600 cases and 17,779 assertions.
+The validator, read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44885164434/job/136788784012),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44885164434/job/136788783915),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44885164434/job/136788784066),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44885164520/job/136788783932),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136788853581) passed at the delivered SHA.
 
 - [CHECK literal predicates](../decisions/2026-11-21-postgresql-check-literal.md)
 
