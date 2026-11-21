@@ -1358,6 +1358,23 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136727062716) passed at t
 - [CREATE VIEW output](../decisions/2026-11-21-postgresql-create-view-output.md)
 - [Ordered DROP VIEW](../decisions/2026-11-21-postgresql-drop-view-target-set.md)
 
+### F09 direct primary and unique constraint columns (D48)
+
+`ddl.pg.alter.constraint_columns.valid` checks a single direct ADD PRIMARY
+KEY or ADD UNIQUE on a qualified, bound PostgreSQL 17 ordinary table.
+It rejects duplicate key members, missing or system columns, and a second
+primary key after checking the selected columns. Native evidence confirms
+that repeated INCLUDE members and key overlap are accepted. Quoted commas
+within a column identifier stay part of that identifier.
+
+The rebased T37 preview passed 576 cases and 17,015 assertions.
+Fifteen selectors bind the exact ADD PRIMARY KEY and ADD UNIQUE cells.
+Partition key requirements, row validation, locks and ordered ALTER
+semantics require separate evidence. Verification on the fixed candidate
+is pending.
+
+- [Constraint column checks](../decisions/2026-11-21-postgresql-primary-unique-constraint-columns.md)
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

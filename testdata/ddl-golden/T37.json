@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-constraint-columns": {"enable": {"ddl.pg.alter.constraint_columns.valid": {"level": "blocker"}}},
    "pg-column-type-descendants": {"enable": {"ddl.pg.alter.column_type.destination.valid": {"level": "blocker"}}},
    "pg-add-check-predicate": {"enable": {"ddl.pg.alter.add_check.name.available": {"level": "blocker"}}},
    "pg-column-type-other-dependencies": {"enable": {"ddl.pg.alter.column_type.destination.valid": {"level": "blocker"}}},
@@ -1912,6 +1913,49 @@
   }
  },
  "cli_cases": [
+   {
+     "id": "constraint-columns-offline",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "sql": "ALTER TABLE app.t ADD UNIQUE (id)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "reason_code": "unproven_pg_constraint_columns",
+           "required_facts": [
+             "instance.version"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     }
+   },
   {
    "id": "column-type-coercion-offline",
    "dialect": "postgresql",
@@ -4819,6 +4863,2302 @@
   }
  ],
  "metadata_cases": [
+   {
+     "id": "pg-constraint-columns-quoted-exact-keys-and-include",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgkey_quoted_exact_keys_and_include"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgkey_quoted_exact_keys_and_include CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_quoted_exact_keys_and_include'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgkey_quoted_exact_keys_and_include.clean ADD UNIQUE (\" A,B \",\" a,b \") INCLUDE(payload)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_quoted_exact_keys_and_include'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgkey_quoted_exact_keys_and_include",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgkey_quoted_exact_keys_and_include.clean(id int NOT NULL, payload int, \" A,B \" int, \" a,b \" int);\nCREATE TABLE pgkey_quoted_exact_keys_and_include.keyed(id int PRIMARY KEY, payload int NOT NULL);\nCREATE TABLE pgkey_quoted_exact_keys_and_include.partitioned(id int, payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgkey_quoted_exact_keys_and_include.part PARTITION OF pgkey_quoted_exact_keys_and_include.partitioned DEFAULT;\nINSERT INTO pgkey_quoted_exact_keys_and_include.clean VALUES(1,7,8,9); INSERT INTO pgkey_quoted_exact_keys_and_include.keyed VALUES(1,7);\nCREATE SEQUENCE pgkey_quoted_exact_keys_and_include.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_quoted_exact_keys_and_include'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_quoted_exact_keys_and_include.clean)+(SELECT id*10+payload FROM pgkey_quoted_exact_keys_and_include.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_quoted_exact_keys_and_include.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "ALTER TABLE pgkey_quoted_exact_keys_and_include.clean ADD UNIQUE (\" A,B \",\" a,b \") INCLUDE(payload)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_quoted_exact_keys_and_include'::regnamespace AND contype IN ('p','u')",
+         "expect": "2"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_quoted_exact_keys_and_include.clean)+(SELECT id*10+payload FROM pgkey_quoted_exact_keys_and_include.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_quoted_exact_keys_and_include.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "native index preserves key and INCLUDE slots",
+         "sql": "SELECT indnkeyatts=2 AND indnatts=3 AND indkey::text='3 4 2' FROM pg_catalog.pg_index WHERE indrelid='pgkey_quoted_exact_keys_and_include.clean'::regclass",
+         "expect": "t"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgkey_quoted_exact_keys_and_include CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_quoted_exact_keys_and_include'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-constraint-columns-missing-quoted-primary-key",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgkey_missing_quoted_primary_key"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgkey_missing_quoted_primary_key CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_missing_quoted_primary_key'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgkey_missing_quoted_primary_key.clean ADD PRIMARY KEY (\" a,B \")",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_missing_quoted_primary_key'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgkey_missing_quoted_primary_key",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgkey_missing_quoted_primary_key.clean(id int NOT NULL, payload int, \" A,B \" int, \" a,b \" int);\nCREATE TABLE pgkey_missing_quoted_primary_key.keyed(id int PRIMARY KEY, payload int NOT NULL);\nCREATE TABLE pgkey_missing_quoted_primary_key.partitioned(id int, payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgkey_missing_quoted_primary_key.part PARTITION OF pgkey_missing_quoted_primary_key.partitioned DEFAULT;\nINSERT INTO pgkey_missing_quoted_primary_key.clean VALUES(1,7,8,9); INSERT INTO pgkey_missing_quoted_primary_key.keyed VALUES(1,7);\nCREATE SEQUENCE pgkey_missing_quoted_primary_key.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_column_absent"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_missing_quoted_primary_key'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_missing_quoted_primary_key.clean)+(SELECT id*10+payload FROM pgkey_missing_quoted_primary_key.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_missing_quoted_primary_key.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgkey_missing_quoted_primary_key.clean ADD PRIMARY KEY (\" a,B \")",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42703:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_missing_quoted_primary_key'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_missing_quoted_primary_key.clean)+(SELECT id*10+payload FROM pgkey_missing_quoted_primary_key.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_missing_quoted_primary_key.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgkey_missing_quoted_primary_key CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_missing_quoted_primary_key'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-constraint-columns-missing-unique-key",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgkey_missing_unique_key"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgkey_missing_unique_key CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_missing_unique_key'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgkey_missing_unique_key.clean ADD UNIQUE (missing)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_missing_unique_key'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgkey_missing_unique_key",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgkey_missing_unique_key.clean(id int NOT NULL, payload int, \" A,B \" int, \" a,b \" int);\nCREATE TABLE pgkey_missing_unique_key.keyed(id int PRIMARY KEY, payload int NOT NULL);\nCREATE TABLE pgkey_missing_unique_key.partitioned(id int, payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgkey_missing_unique_key.part PARTITION OF pgkey_missing_unique_key.partitioned DEFAULT;\nINSERT INTO pgkey_missing_unique_key.clean VALUES(1,7,8,9); INSERT INTO pgkey_missing_unique_key.keyed VALUES(1,7);\nCREATE SEQUENCE pgkey_missing_unique_key.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_column_absent"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_missing_unique_key'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_missing_unique_key.clean)+(SELECT id*10+payload FROM pgkey_missing_unique_key.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_missing_unique_key.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgkey_missing_unique_key.clean ADD UNIQUE (missing)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42703:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_missing_unique_key'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_missing_unique_key.clean)+(SELECT id*10+payload FROM pgkey_missing_unique_key.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_missing_unique_key.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgkey_missing_unique_key CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_missing_unique_key'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-constraint-columns-duplicate-primary-key-member",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgkey_duplicate_primary_key_member"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgkey_duplicate_primary_key_member CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_duplicate_primary_key_member'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgkey_duplicate_primary_key_member.clean ADD PRIMARY KEY (id,id)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_duplicate_primary_key_member'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgkey_duplicate_primary_key_member",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgkey_duplicate_primary_key_member.clean(id int NOT NULL, payload int, \" A,B \" int, \" a,b \" int);\nCREATE TABLE pgkey_duplicate_primary_key_member.keyed(id int PRIMARY KEY, payload int NOT NULL);\nCREATE TABLE pgkey_duplicate_primary_key_member.partitioned(id int, payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgkey_duplicate_primary_key_member.part PARTITION OF pgkey_duplicate_primary_key_member.partitioned DEFAULT;\nINSERT INTO pgkey_duplicate_primary_key_member.clean VALUES(1,7,8,9); INSERT INTO pgkey_duplicate_primary_key_member.keyed VALUES(1,7);\nCREATE SEQUENCE pgkey_duplicate_primary_key_member.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_key_column_duplicate"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_duplicate_primary_key_member'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_duplicate_primary_key_member.clean)+(SELECT id*10+payload FROM pgkey_duplicate_primary_key_member.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_duplicate_primary_key_member.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgkey_duplicate_primary_key_member.clean ADD PRIMARY KEY (id,id)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42701:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_duplicate_primary_key_member'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_duplicate_primary_key_member.clean)+(SELECT id*10+payload FROM pgkey_duplicate_primary_key_member.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_duplicate_primary_key_member.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgkey_duplicate_primary_key_member CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_duplicate_primary_key_member'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-constraint-columns-duplicate-unique-key-member",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgkey_duplicate_unique_key_member"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgkey_duplicate_unique_key_member CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_duplicate_unique_key_member'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgkey_duplicate_unique_key_member.clean ADD UNIQUE (id,id)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_duplicate_unique_key_member'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgkey_duplicate_unique_key_member",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgkey_duplicate_unique_key_member.clean(id int NOT NULL, payload int, \" A,B \" int, \" a,b \" int);\nCREATE TABLE pgkey_duplicate_unique_key_member.keyed(id int PRIMARY KEY, payload int NOT NULL);\nCREATE TABLE pgkey_duplicate_unique_key_member.partitioned(id int, payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgkey_duplicate_unique_key_member.part PARTITION OF pgkey_duplicate_unique_key_member.partitioned DEFAULT;\nINSERT INTO pgkey_duplicate_unique_key_member.clean VALUES(1,7,8,9); INSERT INTO pgkey_duplicate_unique_key_member.keyed VALUES(1,7);\nCREATE SEQUENCE pgkey_duplicate_unique_key_member.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_key_column_duplicate"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_duplicate_unique_key_member'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_duplicate_unique_key_member.clean)+(SELECT id*10+payload FROM pgkey_duplicate_unique_key_member.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_duplicate_unique_key_member.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgkey_duplicate_unique_key_member.clean ADD UNIQUE (id,id)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42701:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_duplicate_unique_key_member'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_duplicate_unique_key_member.clean)+(SELECT id*10+payload FROM pgkey_duplicate_unique_key_member.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_duplicate_unique_key_member.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgkey_duplicate_unique_key_member CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_duplicate_unique_key_member'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-constraint-columns-missing-include",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgkey_missing_include"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgkey_missing_include CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_missing_include'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgkey_missing_include.clean ADD UNIQUE (id) INCLUDE(missing)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_missing_include'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgkey_missing_include",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgkey_missing_include.clean(id int NOT NULL, payload int, \" A,B \" int, \" a,b \" int);\nCREATE TABLE pgkey_missing_include.keyed(id int PRIMARY KEY, payload int NOT NULL);\nCREATE TABLE pgkey_missing_include.partitioned(id int, payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgkey_missing_include.part PARTITION OF pgkey_missing_include.partitioned DEFAULT;\nINSERT INTO pgkey_missing_include.clean VALUES(1,7,8,9); INSERT INTO pgkey_missing_include.keyed VALUES(1,7);\nCREATE SEQUENCE pgkey_missing_include.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_column_absent"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_missing_include'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_missing_include.clean)+(SELECT id*10+payload FROM pgkey_missing_include.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_missing_include.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgkey_missing_include.clean ADD UNIQUE (id) INCLUDE(missing)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42703:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_missing_include'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_missing_include.clean)+(SELECT id*10+payload FROM pgkey_missing_include.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_missing_include.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgkey_missing_include CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_missing_include'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-constraint-columns-duplicate-include",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgkey_duplicate_include"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgkey_duplicate_include CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_duplicate_include'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgkey_duplicate_include.clean ADD UNIQUE (id) INCLUDE(payload,payload)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_duplicate_include'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgkey_duplicate_include",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgkey_duplicate_include.clean(id int NOT NULL, payload int, \" A,B \" int, \" a,b \" int);\nCREATE TABLE pgkey_duplicate_include.keyed(id int PRIMARY KEY, payload int NOT NULL);\nCREATE TABLE pgkey_duplicate_include.partitioned(id int, payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgkey_duplicate_include.part PARTITION OF pgkey_duplicate_include.partitioned DEFAULT;\nINSERT INTO pgkey_duplicate_include.clean VALUES(1,7,8,9); INSERT INTO pgkey_duplicate_include.keyed VALUES(1,7);\nCREATE SEQUENCE pgkey_duplicate_include.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_duplicate_include'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_duplicate_include.clean)+(SELECT id*10+payload FROM pgkey_duplicate_include.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_duplicate_include.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "ALTER TABLE pgkey_duplicate_include.clean ADD UNIQUE (id) INCLUDE(payload,payload)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_duplicate_include'::regnamespace AND contype IN ('p','u')",
+         "expect": "2"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_duplicate_include.clean)+(SELECT id*10+payload FROM pgkey_duplicate_include.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_duplicate_include.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "native index preserves key and INCLUDE slots",
+         "sql": "SELECT indnkeyatts=1 AND indnatts=3 AND indkey::text='1 2 2' FROM pg_catalog.pg_index WHERE indrelid='pgkey_duplicate_include.clean'::regclass",
+         "expect": "t"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgkey_duplicate_include CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_duplicate_include'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-constraint-columns-key-and-include-overlap",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgkey_key_and_include_overlap"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgkey_key_and_include_overlap CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_key_and_include_overlap'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgkey_key_and_include_overlap.clean ADD UNIQUE (id) INCLUDE(id)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_key_and_include_overlap'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgkey_key_and_include_overlap",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgkey_key_and_include_overlap.clean(id int NOT NULL, payload int, \" A,B \" int, \" a,b \" int);\nCREATE TABLE pgkey_key_and_include_overlap.keyed(id int PRIMARY KEY, payload int NOT NULL);\nCREATE TABLE pgkey_key_and_include_overlap.partitioned(id int, payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgkey_key_and_include_overlap.part PARTITION OF pgkey_key_and_include_overlap.partitioned DEFAULT;\nINSERT INTO pgkey_key_and_include_overlap.clean VALUES(1,7,8,9); INSERT INTO pgkey_key_and_include_overlap.keyed VALUES(1,7);\nCREATE SEQUENCE pgkey_key_and_include_overlap.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_key_and_include_overlap'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_key_and_include_overlap.clean)+(SELECT id*10+payload FROM pgkey_key_and_include_overlap.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_key_and_include_overlap.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "ALTER TABLE pgkey_key_and_include_overlap.clean ADD UNIQUE (id) INCLUDE(id)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_key_and_include_overlap'::regnamespace AND contype IN ('p','u')",
+         "expect": "2"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_key_and_include_overlap.clean)+(SELECT id*10+payload FROM pgkey_key_and_include_overlap.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_key_and_include_overlap.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "native index preserves key and INCLUDE slots",
+         "sql": "SELECT indnkeyatts=1 AND indnatts=2 AND indkey::text='1 1' FROM pg_catalog.pg_index WHERE indrelid='pgkey_key_and_include_overlap.clean'::regclass",
+         "expect": "t"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgkey_key_and_include_overlap CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_key_and_include_overlap'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-constraint-columns-system-key",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgkey_system_key"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgkey_system_key CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_system_key'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgkey_system_key.clean ADD UNIQUE (tableoid)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_system_key'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgkey_system_key",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgkey_system_key.clean(id int NOT NULL, payload int, \" A,B \" int, \" a,b \" int);\nCREATE TABLE pgkey_system_key.keyed(id int PRIMARY KEY, payload int NOT NULL);\nCREATE TABLE pgkey_system_key.partitioned(id int, payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgkey_system_key.part PARTITION OF pgkey_system_key.partitioned DEFAULT;\nINSERT INTO pgkey_system_key.clean VALUES(1,7,8,9); INSERT INTO pgkey_system_key.keyed VALUES(1,7);\nCREATE SEQUENCE pgkey_system_key.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_system_column_inapplicable"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_system_key'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_system_key.clean)+(SELECT id*10+payload FROM pgkey_system_key.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_system_key.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgkey_system_key.clean ADD UNIQUE (tableoid)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  0A000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_system_key'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_system_key.clean)+(SELECT id*10+payload FROM pgkey_system_key.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_system_key.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgkey_system_key CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_system_key'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-constraint-columns-system-include",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgkey_system_include"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgkey_system_include CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_system_include'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgkey_system_include.clean ADD UNIQUE (id) INCLUDE(tableoid)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_system_include'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgkey_system_include",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgkey_system_include.clean(id int NOT NULL, payload int, \" A,B \" int, \" a,b \" int);\nCREATE TABLE pgkey_system_include.keyed(id int PRIMARY KEY, payload int NOT NULL);\nCREATE TABLE pgkey_system_include.partitioned(id int, payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgkey_system_include.part PARTITION OF pgkey_system_include.partitioned DEFAULT;\nINSERT INTO pgkey_system_include.clean VALUES(1,7,8,9); INSERT INTO pgkey_system_include.keyed VALUES(1,7);\nCREATE SEQUENCE pgkey_system_include.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_system_column_inapplicable"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_system_include'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_system_include.clean)+(SELECT id*10+payload FROM pgkey_system_include.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_system_include.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgkey_system_include.clean ADD UNIQUE (id) INCLUDE(tableoid)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  0A000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_system_include'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_system_include.clean)+(SELECT id*10+payload FROM pgkey_system_include.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_system_include.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgkey_system_include CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_system_include'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-constraint-columns-second-primary-key",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgkey_second_primary_key"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgkey_second_primary_key CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_second_primary_key'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgkey_second_primary_key.keyed ADD PRIMARY KEY (payload)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_second_primary_key'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgkey_second_primary_key",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgkey_second_primary_key.clean(id int NOT NULL, payload int, \" A,B \" int, \" a,b \" int);\nCREATE TABLE pgkey_second_primary_key.keyed(id int PRIMARY KEY, payload int NOT NULL);\nCREATE TABLE pgkey_second_primary_key.partitioned(id int, payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgkey_second_primary_key.part PARTITION OF pgkey_second_primary_key.partitioned DEFAULT;\nINSERT INTO pgkey_second_primary_key.clean VALUES(1,7,8,9); INSERT INTO pgkey_second_primary_key.keyed VALUES(1,7);\nCREATE SEQUENCE pgkey_second_primary_key.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "metadata": {
+             "reason_code": "constraint_primary_key_already_exists"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_second_primary_key'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_second_primary_key.clean)+(SELECT id*10+payload FROM pgkey_second_primary_key.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_second_primary_key.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgkey_second_primary_key.keyed ADD PRIMARY KEY (payload)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_second_primary_key'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_second_primary_key.clean)+(SELECT id*10+payload FROM pgkey_second_primary_key.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_second_primary_key.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgkey_second_primary_key CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_second_primary_key'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-constraint-columns-unique-beside-primary-key",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgkey_unique_beside_primary_key"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgkey_unique_beside_primary_key CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_unique_beside_primary_key'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgkey_unique_beside_primary_key.keyed ADD UNIQUE (payload)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_unique_beside_primary_key'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgkey_unique_beside_primary_key",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgkey_unique_beside_primary_key.clean(id int NOT NULL, payload int, \" A,B \" int, \" a,b \" int);\nCREATE TABLE pgkey_unique_beside_primary_key.keyed(id int PRIMARY KEY, payload int NOT NULL);\nCREATE TABLE pgkey_unique_beside_primary_key.partitioned(id int, payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgkey_unique_beside_primary_key.part PARTITION OF pgkey_unique_beside_primary_key.partitioned DEFAULT;\nINSERT INTO pgkey_unique_beside_primary_key.clean VALUES(1,7,8,9); INSERT INTO pgkey_unique_beside_primary_key.keyed VALUES(1,7);\nCREATE SEQUENCE pgkey_unique_beside_primary_key.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_unique_beside_primary_key'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_unique_beside_primary_key.clean)+(SELECT id*10+payload FROM pgkey_unique_beside_primary_key.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_unique_beside_primary_key.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "ALTER TABLE pgkey_unique_beside_primary_key.keyed ADD UNIQUE (payload)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_unique_beside_primary_key'::regnamespace AND contype IN ('p','u')",
+         "expect": "2"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_unique_beside_primary_key.clean)+(SELECT id*10+payload FROM pgkey_unique_beside_primary_key.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_unique_beside_primary_key.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgkey_unique_beside_primary_key CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_unique_beside_primary_key'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-constraint-columns-partition-includes-all-plain-keys",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgkey_partition_includes_all_plain_keys"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgkey_partition_includes_all_plain_keys CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_partition_includes_all_plain_keys'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgkey_partition_includes_all_plain_keys.partitioned ADD UNIQUE (id,payload)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_partition_includes_all_plain_keys'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgkey_partition_includes_all_plain_keys",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgkey_partition_includes_all_plain_keys.clean(id int NOT NULL, payload int, \" A,B \" int, \" a,b \" int);\nCREATE TABLE pgkey_partition_includes_all_plain_keys.keyed(id int PRIMARY KEY, payload int NOT NULL);\nCREATE TABLE pgkey_partition_includes_all_plain_keys.partitioned(id int, payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgkey_partition_includes_all_plain_keys.part PARTITION OF pgkey_partition_includes_all_plain_keys.partitioned DEFAULT;\nINSERT INTO pgkey_partition_includes_all_plain_keys.clean VALUES(1,7,8,9); INSERT INTO pgkey_partition_includes_all_plain_keys.keyed VALUES(1,7);\nCREATE SEQUENCE pgkey_partition_includes_all_plain_keys.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "reason_code": "unproven_pg_constraint_columns",
+           "required_facts": [
+             "target_table.pg_columns"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_partition_includes_all_plain_keys'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_partition_includes_all_plain_keys.clean)+(SELECT id*10+payload FROM pgkey_partition_includes_all_plain_keys.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_partition_includes_all_plain_keys.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "ALTER TABLE pgkey_partition_includes_all_plain_keys.partitioned ADD UNIQUE (id,payload)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_partition_includes_all_plain_keys'::regnamespace AND contype IN ('p','u')",
+         "expect": "3"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_partition_includes_all_plain_keys.clean)+(SELECT id*10+payload FROM pgkey_partition_includes_all_plain_keys.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_partition_includes_all_plain_keys.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgkey_partition_includes_all_plain_keys CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_partition_includes_all_plain_keys'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-constraint-columns-partition-key-cannot-be-include-only",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgkey_partition_key_cannot_be_include_only"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgkey_partition_key_cannot_be_include_only CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_partition_key_cannot_be_include_only'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE pgkey_partition_key_cannot_be_include_only.partitioned ADD UNIQUE (payload) INCLUDE(id)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_partition_key_cannot_be_include_only'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgkey_partition_key_cannot_be_include_only",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgkey_partition_key_cannot_be_include_only.clean(id int NOT NULL, payload int, \" A,B \" int, \" a,b \" int);\nCREATE TABLE pgkey_partition_key_cannot_be_include_only.keyed(id int PRIMARY KEY, payload int NOT NULL);\nCREATE TABLE pgkey_partition_key_cannot_be_include_only.partitioned(id int, payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgkey_partition_key_cannot_be_include_only.part PARTITION OF pgkey_partition_key_cannot_be_include_only.partitioned DEFAULT;\nINSERT INTO pgkey_partition_key_cannot_be_include_only.clean VALUES(1,7,8,9); INSERT INTO pgkey_partition_key_cannot_be_include_only.keyed VALUES(1,7);\nCREATE SEQUENCE pgkey_partition_key_cannot_be_include_only.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_columns.valid",
+           "reason_code": "unproven_pg_constraint_columns",
+           "required_facts": [
+             "target_table.pg_columns"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_partition_key_cannot_be_include_only'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_partition_key_cannot_be_include_only.clean)+(SELECT id*10+payload FROM pgkey_partition_key_cannot_be_include_only.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_partition_key_cannot_be_include_only.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgkey_partition_key_cannot_be_include_only.partitioned ADD UNIQUE (payload) INCLUDE(id)",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  0A000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_partition_key_cannot_be_include_only'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_partition_key_cannot_be_include_only.clean)+(SELECT id*10+payload FROM pgkey_partition_key_cannot_be_include_only.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_partition_key_cannot_be_include_only.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgkey_partition_key_cannot_be_include_only CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_partition_key_cannot_be_include_only'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-constraint-columns-guard-absent-skips-declaration",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-constraint-columns",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgkey_guard_absent_skips_declaration"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgkey_guard_absent_skips_declaration CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_guard_absent_skips_declaration'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "ALTER TABLE IF EXISTS pgkey_guard_absent_skips_declaration.absent ADD UNIQUE (id,id)",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_guard_absent_skips_declaration'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgkey_guard_absent_skips_declaration",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped catalog and two payloads",
+         "sql": "CREATE TABLE pgkey_guard_absent_skips_declaration.clean(id int NOT NULL, payload int, \" A,B \" int, \" a,b \" int);\nCREATE TABLE pgkey_guard_absent_skips_declaration.keyed(id int PRIMARY KEY, payload int NOT NULL);\nCREATE TABLE pgkey_guard_absent_skips_declaration.partitioned(id int, payload int) PARTITION BY RANGE(id);\nCREATE TABLE pgkey_guard_absent_skips_declaration.part PARTITION OF pgkey_guard_absent_skips_declaration.partitioned DEFAULT;\nINSERT INTO pgkey_guard_absent_skips_declaration.clean VALUES(1,7,8,9); INSERT INTO pgkey_guard_absent_skips_declaration.keyed VALUES(1,7);\nCREATE SEQUENCE pgkey_guard_absent_skips_declaration.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGKeyColumns",
+         "PGIncludeColumns"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_guard_absent_skips_declaration'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_guard_absent_skips_declaration.clean)+(SELECT id*10+payload FROM pgkey_guard_absent_skips_declaration.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_guard_absent_skips_declaration.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks constraint columns",
+         "sql": "ALTER TABLE IF EXISTS pgkey_guard_absent_skips_declaration.absent ADD UNIQUE (id,id)",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact constraint count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_constraint WHERE connamespace='pgkey_guard_absent_skips_declaration'::regnamespace AND contype IN ('p','u')",
+         "expect": "1"
+       },
+       {
+         "assert": "original rows unchanged",
+         "sql": "SELECT (SELECT id*10+payload FROM pgkey_guard_absent_skips_declaration.clean)+(SELECT id*10+payload FROM pgkey_guard_absent_skips_declaration.keyed)",
+         "expect": "34"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgkey_guard_absent_skips_declaration.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgkey_guard_absent_skips_declaration CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgkey_guard_absent_skips_declaration'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
   {
    "id": "pg-column-type-coercion-recursive-outside-parent",
    "anchor": "postgres17",
@@ -29845,6 +32185,22 @@
   }
  ],
  "required_case_ids": [
+  "T37.cli.constraint-columns-offline",
+  "T37.meta.pg-constraint-columns-quoted-exact-keys-and-include",
+  "T37.meta.pg-constraint-columns-missing-quoted-primary-key",
+  "T37.meta.pg-constraint-columns-missing-unique-key",
+  "T37.meta.pg-constraint-columns-duplicate-primary-key-member",
+  "T37.meta.pg-constraint-columns-duplicate-unique-key-member",
+  "T37.meta.pg-constraint-columns-missing-include",
+  "T37.meta.pg-constraint-columns-duplicate-include",
+  "T37.meta.pg-constraint-columns-key-and-include-overlap",
+  "T37.meta.pg-constraint-columns-system-key",
+  "T37.meta.pg-constraint-columns-system-include",
+  "T37.meta.pg-constraint-columns-second-primary-key",
+  "T37.meta.pg-constraint-columns-unique-beside-primary-key",
+  "T37.meta.pg-constraint-columns-partition-includes-all-plain-keys",
+  "T37.meta.pg-constraint-columns-partition-key-cannot-be-include-only",
+  "T37.meta.pg-constraint-columns-guard-absent-skips-declaration",
   "T37.meta.pg-column-type-coercion-recursive-outside-parent",
   "T37.meta.pg-column-type-coercion-recursive-missing-type",
   "T37.meta.pg-column-type-coercion-recursive-diamond",

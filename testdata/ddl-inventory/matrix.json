@@ -8237,7 +8237,10 @@
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-absent",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-null-distinct",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-primary-nondefault",
-                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-fallback-compatible-not-selected"
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-fallback-compatible-not-selected",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-columns-missing-quoted-primary-key",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-columns-duplicate-primary-key-member",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-columns-second-primary-key"
               ]
             }
           ]
@@ -8284,7 +8287,19 @@
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-fallback-array",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-fallback-range",
                 "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-fallback-multirange",
-                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-fallback-composite"
+                "file:testdata/ddl-golden/T37.json#pg-constraint-index-opclass-fallback-composite",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-columns-quoted-exact-keys-and-include",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-columns-missing-unique-key",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-columns-duplicate-unique-key-member",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-columns-missing-include",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-columns-duplicate-include",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-columns-key-and-include-overlap",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-columns-system-key",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-columns-system-include",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-columns-unique-beside-primary-key",
+                "file:testdata/ddl-golden/T37.json#pg-constraint-columns-guard-absent-skips-declaration",
+                "file:testdata/ddl-golden/T37.json#constraint-columns-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_columns_duplicate.expected.yaml#ddl.pg.alter.constraint_columns.valid"
               ]
             }
           ]
