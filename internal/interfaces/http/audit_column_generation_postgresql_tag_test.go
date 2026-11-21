@@ -90,3 +90,20 @@ func TestHandlerPGColumnGeneration(t *testing.T) {
 		}
 	}
 }
+
+func TestHandlerPGCreateViewOptions(t *testing.T) {
+	h, err := NewHandler("", "test", WithAuditFunc(func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+		request.MetadataProvider = pgColumnGenerationHTTPProvider{}
+		return deltascope.Audit(ctx, request)
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"CREATE VIEW app.v WITH (security_invoker=' true ') AS SELECT 1","dialect":"postgresql"}`))
+	req.Header.Set("Content-Type", "application/json")
+	out := httptest.NewRecorder()
+	h.ServeHTTP(out, req)
+	if out.Code != http.StatusOK || !bytes.Contains(out.Body.Bytes(), []byte(`"ddl.pg.create_view.options.valid"`)) || !bytes.Contains(out.Body.Bytes(), []byte(`"view_option_invalid_value"`)) {
+		t.Fatalf("status=%d body=%s", out.Code, out.Body)
+	}
+}

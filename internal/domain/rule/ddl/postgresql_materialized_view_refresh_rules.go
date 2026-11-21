@@ -88,7 +88,7 @@ func (r pgRefreshMaterializedViewNoDataRule) Evaluate(ctx context.Context, state
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
-	if statement.DDL.Options["with_no_data"] != "true" {
+	if statement.DDL.Options["with_no_data"] != "true" || statement.DDL.Options["concurrently"] == "true" {
 		return nil, nil
 	}
 

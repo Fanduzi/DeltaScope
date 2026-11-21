@@ -100,8 +100,10 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | corpus_coverage_test.go | Verifies every non-deferred shipped rule has corpus coverage for its supported dialect targets, including MySQL/TiDB-only metadata rules |
 | postgresql_table_owner_metadata.go | Binds exact private PostgreSQL 17 owner-target observations after target freshness checks |
 | postgresql_bulk_tablespace_metadata.go | Binds the exact PG17 bulk request to endpoint and ordered role observations before the batch freshness cutoff |
+| postgresql_refresh_materialized_view_metadata.go | Binds private refresh prerequisites to a fresh, exactly qualified PostgreSQL 17 materialized-view target. |
 | postgresql_column_type_metadata.go | Binds one exact PG17 TYPE destination after proving the fresh D14 source-column premise |
 | postgresql_table_namespace_metadata.go | Binds exact private PostgreSQL 17 rename and schema destination observations after target freshness checks |
+| postgresql_drop_view_metadata.go | Binds exact DROP VIEW target and dependency observations before unapplied DDL can change the catalog. |
 | postgresql_destructive_table_metadata.go | Binds ordered PostgreSQL 17 DROP/TRUNCATE target identities and private RESTRICT dependency observations. |
 | postgresql_table_persistence_metadata.go | Binds private PG17 persistence transition evidence after exact target freshness checks |
 | postgresql_table_access_method_metadata.go | Binds private PostgreSQL 17 access-method kind and same-method facts after the target freshness check |

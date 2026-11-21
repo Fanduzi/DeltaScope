@@ -856,7 +856,8 @@ These rules guard against risky PostgreSQL object lifecycle DDL operations — s
 | `ddl.pg.drop_materialized_view.advisory` | `DROP MATERIALIZED VIEW` removes a materialized view — advises review of dependent queries | notice | No |
 | `ddl.pg.drop_materialized_view.cascade.warn` | `DROP MATERIALIZED VIEW ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
 | `ddl.pg.refresh_materialized_view.concurrently.warn` | Non-concurrent `REFRESH MATERIALIZED VIEW` (default or explicit `WITH DATA`) holds an exclusive lock | warning | No |
-| `ddl.pg.refresh_materialized_view.no_data.notice` | `REFRESH MATERIALIZED VIEW ... WITH NO DATA` empties the view — downstream readers may see empty results | notice | No |
+| `ddl.pg.refresh_materialized_view.no_data.notice` | `REFRESH MATERIALIZED VIEW ... WITH NO DATA` empties the view — PostgreSQL marks the view unpopulated until a refresh with data | notice | No |
+| `ddl.pg.refresh_materialized_view.target.valid` | Checks exact PostgreSQL 17 refresh targets. Concurrent refresh requires a populated materialized view and a usable unique B-tree index. WITH NO DATA conflicts with CONCURRENTLY. Missing catalog facts produce an evidence gap. | blocker | Yes |
 
 > **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. `CREATE SCHEMA IF NOT EXISTS` still emits the notice from `ddl.pg.create_schema.notice`. Existing `DROP SCHEMA` behavior (`ddl.pg.drop_schema.advisory`, `ddl.pg.drop_schema.cascade.warn`) is unchanged. `CREATE SCHEMA AUTHORIZATION` and nested `CREATE SCHEMA ... CREATE TABLE ...` remain unsupported/deferred. DeltaScope does not perform live schema existence validation. `CONCURRENTLY` refreshes pass both materialized view rules without findings. `WITH NO DATA` triggers both rules because it is also non-concurrent. This is not live unique-index validation for `CONCURRENTLY` — DeltaScope does not verify whether a unique index exists on the materialized view.
 
@@ -1097,7 +1098,7 @@ These rules guard PostgreSQL function and procedure lifecycle operations. They o
 
 ---
 
-## DDL: PostgreSQL Advanced View Lifecycle Rules (6 rules)
+## DDL: PostgreSQL Advanced View Lifecycle Rules (8 rules)
 
 These rules guard PostgreSQL view lifecycle operations beyond the base `CREATE VIEW` / `DROP VIEW` forms. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
 
@@ -1106,11 +1107,13 @@ These rules guard PostgreSQL view lifecycle operations beyond the base `CREATE V
 | `ddl.pg.create_or_replace_view.advisory` | `CREATE OR REPLACE VIEW` replaces an existing view — advises review of downstream dependencies | notice | No |
 | `ddl.pg.create_temp_view.notice` | `CREATE TEMP VIEW` / `CREATE TEMPORARY VIEW` creates a session-scoped view — informational notice | notice | No |
 | `ddl.pg.create_view.check_option.notice` | `CREATE VIEW ... WITH CHECK OPTION` enforces check option on inserts/updates through the view — informational notice | notice | No |
+| `ddl.pg.create_view.options.valid` | Checks declared option names, duplicate declarations, security Boolean values and CHECK OPTION values on observed PostgreSQL 17 | blocker | Yes |
 | `ddl.pg.drop_view.cascade.warn` | `DROP VIEW ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
+| `ddl.pg.drop_view.target.valid` | Checks PostgreSQL 17 DROP VIEW target identity, guarded absence and direct view or materialized-view dependencies under RESTRICT | blocker | Yes |
 | `ddl.pg.alter_view.rename.notice` | `ALTER VIEW ... RENAME TO` changes the view name — informational notice | notice | No |
 | `ddl.pg.alter_view.set_schema.notice` | `ALTER VIEW ... SET SCHEMA` moves the view to a different schema — informational notice | notice | No |
 
-> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. `CREATE OR REPLACE VIEW` intentionally emits both the base `ddl.view.create.forbid` (when enabled) and `ddl.pg.create_or_replace_view.advisory`. `CASCADED` vs `LOCAL` check option semantics are not modeled. DeltaScope does not evaluate view query bodies or inspect live view state. This is not full PostgreSQL view governance.
+The option check uses the observed server version and authored options. View updatability, query results and downstream effects require separate evidence.
 
 ---
 

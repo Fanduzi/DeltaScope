@@ -5,6 +5,7 @@ import "strings"
 
 // Metadata carries optional non-SQL facts for one statement evaluation.
 type Metadata struct {
+	PGDropViewState             *PGDropViewState             `json:"-"`
 	PGForeignKeyEquality        *PGForeignKeyEquality        `json:"-"`
 	Schema                      string                       `json:"schema,omitempty"`
 	Instance                    *InstanceFacts               `json:"instance,omitempty"`
@@ -27,6 +28,7 @@ type Metadata struct {
 	View                        *ViewMetadata                `json:"-"`
 	PGDestructiveReferences     *PGDestructiveReferences     `json:"-"`
 	PGDestructiveTableRelations []PGDestructiveTableRelation `json:"-"`
+	PGRefreshState              *PGRefreshState              `json:"-"`
 	// ExchangeTable is the ordered pre-state projection of the
 	// EXCHANGE PARTITION counterpart table — the second object identity
 	// the action touches, resolved through the same once-per-key seam as
@@ -800,6 +802,7 @@ const (
 
 // ObjectSnapshot carries the metadata-validated state of one non-table database object.
 type ObjectSnapshot struct {
+	PGDropViewState         *PGDropViewState         `json:"-"`
 	PGForeignKeyEquality    *PGForeignKeyEquality    `json:"-"`
 	Schema                  string                   `json:"schema,omitempty"`
 	Type                    string                   `json:"type,omitempty"`
@@ -826,6 +829,7 @@ type ObjectSnapshot struct {
 	PGDropConstraintReference *PGDropConstraintReference `json:"-"`
 	PGDropColumnDependency    *PGDropColumnDependency    `json:"-"`
 	PGColumnTraversal         *PGColumnTraversal         `json:"-"`
+	PGRefreshState            *PGRefreshState            `json:"-"`
 	// SequenceReferences is the bounded inbound-reference read for a proven
 	// sequence identity — the catalog's owner-slot/target edge list. A nil
 	// slice means the read never happened — never a proven-empty set;

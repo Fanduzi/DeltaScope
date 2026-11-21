@@ -6,13 +6,17 @@ type DDL struct {
 	Operation DDLOperation     `json:"operation,omitempty"`
 	Table     *Table           `json:"table,omitempty"`
 	View      *ViewDeclaration `json:"-"`
+	// PGViewOptions retains authored CREATE VIEW options in AST order.
+	PGViewOptions []PGViewOption `json:"-"`
 	// PGTableIfExists is the authored PostgreSQL ALTER TABLE relation guard.
 	PGTableIfExists bool `json:"-"`
 	// PGTableCatalogQualified records a three-part PostgreSQL ALTER TABLE identity.
 	PGTableCatalogQualified bool `json:"-"`
 	// PGTableOnly records an ALTER TABLE target whose traversal is disabled.
-	PGTableOnly        bool                `json:"-"`
-	PGDestructiveTable *PGDestructiveTable `json:"-"`
+	PGTableOnly        bool                      `json:"-"`
+	PGDestructiveTable *PGDestructiveTable       `json:"-"`
+	PGRefreshTarget    PGRefreshTarget           `json:"-"`
+	PGDropViewTarget   *PGDestructiveTableTarget `json:"-"`
 	// Targets lists every table-level object identity the statement names, in
 	// source order: each DROP TABLE/VIEW name, each TRUNCATE relation, each
 	// RENAME TABLE source and destination pair-wise, and ALTER TABLE

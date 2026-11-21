@@ -33,11 +33,12 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 			options["cascade"] = "true"
 		}
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationDropView,
-			ObjectName: objectNameFromObjectName(stmt.GetObjects()),
-			ObjectType: "view",
-			Table:      viewTable,
-			Options:    options,
+			Operation:        spec.DDLOperationDropView,
+			ObjectName:       objectNameFromObjectName(stmt.GetObjects()),
+			ObjectType:       "view",
+			Table:            viewTable,
+			PGDropViewTarget: pgDropViewTarget(stmt),
+			Options:          options,
 		}
 	case pg_query.ObjectType_OBJECT_INDEX:
 		options := map[string]string{}
@@ -378,6 +379,14 @@ func extractTruncateStmt(statement spec.Statement, stmt *pg_query.TruncateStmt) 
 		PGDestructiveTable: pgTruncateTableFacts(stmt),
 	}
 	return statement
+}
+
+func pgDropViewTarget(stmt *pg_query.DropStmt) *spec.PGDestructiveTableTarget {
+	parts := objectNameParts(stmt.GetObjects())
+	if table := tableFromNameParts(parts); table != nil && len(parts) <= 3 {
+		return &spec.PGDestructiveTableTarget{Table: *table, CatalogQualified: len(parts) == 3}
+	}
+	return nil
 }
 
 func pgDropTableFacts(stmt *pg_query.DropStmt) *spec.PGDestructiveTable {

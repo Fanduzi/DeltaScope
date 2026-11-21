@@ -8,3 +8,5 @@ expect:
   findings:
     include:
       - ddl.pg.alter_view.rename.notice
+    exclude:
+      - ddl.pg.alter_view.set_schema.notice

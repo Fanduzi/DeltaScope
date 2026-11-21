@@ -2341,6 +2341,11 @@ rules:
     level: notice
     params:
 
+  ddl.pg.create_view.options.valid:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.pg.create_view.check_option.notice:
     enabled: true
     level: notice
@@ -2536,6 +2541,11 @@ rules:
     level: warning
     params:
 
+  ddl.pg.drop_view.target.valid:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.pg.drop_view.cascade.warn:
     enabled: true
     level: warning
@@ -2554,6 +2564,11 @@ rules:
   ddl.pg.refresh_materialized_view.concurrently.warn:
     enabled: true
     level: warning
+    params:
+
+  ddl.pg.refresh_materialized_view.target.valid:
+    enabled: true
+    level: blocker
     params:
 
   ddl.pg.refresh_materialized_view.no_data.notice:

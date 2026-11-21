@@ -112,6 +112,14 @@ type corpusPGDestructiveReference struct {
 	BlockedPosition int    `yaml:"blocked_position"`
 }
 
+type corpusPGRefreshState struct {
+	Schema      string `yaml:"schema"`
+	Name        string `yaml:"name"`
+	Kind        string `yaml:"kind"`
+	Populated   bool   `yaml:"populated"`
+	UniqueIndex bool   `yaml:"unique_index"`
+}
+
 type corpusPGColumnTraversal struct {
 	Schema                   string `yaml:"schema"`
 	Table                    string `yaml:"table"`
@@ -127,9 +135,18 @@ type corpusPGColumnTraversal struct {
 	TypeDescendantConflict   bool   `yaml:"type_descendant_conflict,omitempty"`
 }
 
+type corpusPGDropViewState struct {
+	Schema        string `yaml:"schema"`
+	Name          string `yaml:"name"`
+	Kind          string `yaml:"kind"`
+	DependentView bool   `yaml:"dependent_view"`
+}
+
 type corpusMetadata struct {
+	PGDropViewStates           []corpusPGDropViewState           `yaml:"pg_drop_view_states,omitempty"`
 	PGColumnTraversals         []corpusPGColumnTraversal         `yaml:"pg_column_traversals,omitempty"`
 	PGDestructiveReferences    []corpusPGDestructiveReference    `yaml:"pg_destructive_references,omitempty"`
+	PGRefreshStates            []corpusPGRefreshState            `yaml:"pg_refresh_states,omitempty"`
 	Schema                     string                            `yaml:"schema,omitempty"`
 	Instance                   *corpusInstanceFacts              `yaml:"instance,omitempty"`
 	Tables                     map[string]corpusTableSnapshot    `yaml:"tables,omitempty"`

@@ -58,9 +58,10 @@ func extractRefreshMatViewStmt(statement spec.Statement, stmt *pg_query.RefreshM
 		return unsupportedStatement(statement, "refresh_materialized_view", "postgresql refresh materialized view target is missing")
 	}
 	statement.DDL = &spec.DDL{
-		Operation:  spec.DDLOperationRefreshMaterializedView,
-		ObjectName: rangeVarName(stmt.GetRelation()),
-		ObjectType: "materialized_view",
+		Operation:       spec.DDLOperationRefreshMaterializedView,
+		PGRefreshTarget: spec.PGRefreshTarget{Schema: stmt.GetRelation().GetSchemaname(), Name: stmt.GetRelation().GetRelname(), CatalogQualified: stmt.GetRelation().GetCatalogname() != ""},
+		ObjectName:      rangeVarName(stmt.GetRelation()),
+		ObjectType:      "materialized_view",
 		Options: map[string]string{
 			"concurrently": strconv.FormatBool(stmt.GetConcurrent()),
 			"with_no_data": strconv.FormatBool(stmt.GetSkipData()),

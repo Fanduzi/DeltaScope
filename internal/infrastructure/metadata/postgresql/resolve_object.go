@@ -20,8 +20,12 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 			return p.resolveColumnTraversal(ctx, req)
 		case "drop_column_dependency":
 			return p.resolveDropColumnDependency(ctx, req)
+		case "drop_view_target":
+			return p.resolveDropView(ctx, req)
 		case "truncate_references", "drop_references":
 			return p.resolveDestructiveReferences(ctx, req)
+		case "refresh_materialized_view":
+			return p.resolveRefreshMaterializedView(ctx, req)
 		case "drop_constraint_reference":
 			return p.resolveDropConstraintReference(ctx, req)
 		case "foreign_key_scalar_equality":

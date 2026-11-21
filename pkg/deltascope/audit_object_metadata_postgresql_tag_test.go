@@ -543,3 +543,41 @@ func TestAuditColumnTypeRecursiveParentThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing recursive traversal finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditPGRefreshMaterializedViewThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGRefreshState: &spec.PGRefreshState{Target: spec.PGRefreshTarget{Schema: "app", Name: "mv"}, Kind: "m", Populated: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `REFRESH MATERIALIZED VIEW CONCURRENTLY app.mv`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 2 || provider.objectCalls[1].Name != "mv" || provider.objectCalls[1].Type != "refresh_materialized_view" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.refresh_materialized_view.target.valid" && f.Metadata["reason_code"] == "refresh_concurrent_unique_index_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing refresh prerequisite finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGDropViewThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGDropViewState: &spec.PGDropViewState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, Kind: "v", DependentView: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `DROP VIEW app.mv RESTRICT`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "drop_view_target" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.drop_view.target.valid" && f.Metadata["reason_code"] == "drop_view_has_direct_dependency" {
+			return
+		}
+	}
+	t.Fatalf("missing DROP VIEW dependency finding: %+v", result.Statements[0].Findings)
+}

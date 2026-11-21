@@ -3584,8 +3584,7 @@
       "form": "ALTER VIEW RENAME TO",
       "classification": "finding_covered",
       "finding_rule_ids": [
-        "ddl.pg.alter_view.rename.notice",
-        "ddl.pg.alter_view.set_schema.notice"
+        "ddl.pg.alter_view.rename.notice"
       ],
       "notes": ""
     },
@@ -3595,7 +3594,6 @@
       "form": "ALTER VIEW SET SCHEMA",
       "classification": "finding_covered",
       "finding_rule_ids": [
-        "ddl.pg.alter_view.rename.notice",
         "ddl.pg.alter_view.set_schema.notice"
       ],
       "notes": ""

@@ -76,3 +76,34 @@ func TestAuditSQLPGColumnGeneration(t *testing.T) {
 		}
 	}
 }
+
+func TestAuditSQLPGCreateViewOptions(t *testing.T) {
+	ctx := context.Background()
+	previous := prepareMetadataAudit
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	prepareMetadataAudit = func(context.Context, auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		client := &mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL}
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	session, err := connectClientSession(ctx, NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	result, err := session.CallTool(ctx, &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": `CREATE VIEW app.v WITH (security_invoker=' true ') AS SELECT 1`, "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "auditor", "database": "fixture", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	out := requireAuditStructuredMap(t, result)
+	row := out["statements"].([]any)[0].(map[string]any)
+	for _, value := range row["findings"].([]any) {
+		finding := value.(map[string]any)
+		if finding["rule_id"] == "ddl.pg.create_view.options.valid" && finding["metadata"].(map[string]any)["reason_code"] == "view_option_invalid_value" {
+			return
+		}
+	}
+	t.Fatalf("missing view option finding: %+v", row)
+}

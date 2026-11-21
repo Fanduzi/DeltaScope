@@ -1,0 +1,14 @@
+name: refresh_materialized_view_target
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  pg_refresh_states:
+    - {schema: app, name: " Exact MV ", kind: m, populated: true, unique_index: false}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.refresh_materialized_view.target.valid]

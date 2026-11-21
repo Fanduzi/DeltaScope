@@ -1,0 +1,14 @@
+name: drop_view_restrict_dependency
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  pg_drop_view_states:
+    - {schema: app, name: v, kind: v, dependent_view: true}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.drop_view.target.valid]

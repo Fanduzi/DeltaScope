@@ -52,3 +52,17 @@ func TestAuditPGColumnGenerationContract(t *testing.T) {
 		}
 	}
 }
+
+func TestAuditPGCreateViewOptions(t *testing.T) {
+	provider := &fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"}}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE VIEW app.v WITH (security_invoker=' true ') AS SELECT 1`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || len(result.Statements) != 1 {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.pg.create_view.options.valid" && finding.Metadata["reason_code"] == "view_option_invalid_value" {
+			return
+		}
+	}
+	t.Fatalf("missing view option finding: %+v", result.Statements[0].Findings)
+}

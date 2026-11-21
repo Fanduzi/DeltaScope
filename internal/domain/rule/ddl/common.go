@@ -298,6 +298,7 @@ const (
 	ruleIDPGDropMaterializedViewAdvisory                    = "ddl.pg.drop_materialized_view.advisory"
 	ruleIDPGDropMaterializedViewCascadeWarn                 = "ddl.pg.drop_materialized_view.cascade.warn"
 	ruleIDPGRefreshMaterializedViewConcurrentlyWarn         = "ddl.pg.refresh_materialized_view.concurrently.warn"
+	ruleIDPGRefreshMaterializedViewTargetValid              = "ddl.pg.refresh_materialized_view.target.valid"
 	ruleIDPGRefreshMaterializedViewNoDataNotice             = "ddl.pg.refresh_materialized_view.no_data.notice"
 	ruleIDPGAlterDropColumnAdvisory                         = "ddl.pg.alter.drop_column.advisory"
 	ruleIDPGAlterValidateConstraintTargetRequire            = "ddl.pg.alter.validate_constraint.target.require"
@@ -415,9 +416,11 @@ const (
 	// PG advanced view lifecycle rules (PostgreSQL-only).
 	ruleIDPGCreateOrReplaceViewAdvisory = "ddl.pg.create_or_replace_view.advisory"
 	ruleIDPGCreateTempViewNotice        = "ddl.pg.create_temp_view.notice"
+	ruleIDPGCreateViewOptionsValid      = "ddl.pg.create_view.options.valid"
 	ruleIDPGCreateViewCheckOptionNotice = "ddl.pg.create_view.check_option.notice"
 	ruleIDPGAlterViewRenameNotice       = "ddl.pg.alter_view.rename.notice"
 	ruleIDPGAlterViewSetSchemaNotice    = "ddl.pg.alter_view.set_schema.notice"
+	ruleIDPGDropViewTargetValid         = "ddl.pg.drop_view.target.valid"
 	ruleIDPGDropViewCascadeWarn         = "ddl.pg.drop_view.cascade.warn"
 
 	// PG alter object lifecycle rules (PostgreSQL-only).

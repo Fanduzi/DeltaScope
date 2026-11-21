@@ -44,8 +44,8 @@ func newCreateViewCheckOptionNoticeRule(cfg policy.RulePolicy) (rule.StatementRu
 }
 
 func newAlterViewRenameNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
-	return newPGObjectLifecycleRuleWithType(
-		ruleIDPGAlterViewRenameNotice, rule.LevelNotice, spec.DDLOperationAlterView, "",
+	return newPGObjectLifecycleRuleWithAction(
+		ruleIDPGAlterViewRenameNotice, rule.LevelNotice, spec.DDLOperationAlterView, "rename_view",
 		"view", "view",
 		"ALTER VIEW %q RENAME TO changes the view identifier on PostgreSQL",
 		"Renaming a view changes its qualified name, breaking any query or application code that references the old name.",
@@ -56,8 +56,8 @@ func newAlterViewRenameNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, er
 }
 
 func newAlterViewSetSchemaNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
-	return newPGObjectLifecycleRuleWithType(
-		ruleIDPGAlterViewSetSchemaNotice, rule.LevelNotice, spec.DDLOperationAlterView, "",
+	return newPGObjectLifecycleRuleWithAction(
+		ruleIDPGAlterViewSetSchemaNotice, rule.LevelNotice, spec.DDLOperationAlterView, "set_schema",
 		"view", "view",
 		"ALTER VIEW %q SET SCHEMA changes the view's namespace on PostgreSQL",
 		"Moving a view to a different schema changes its fully qualified name and may affect search_path resolution.",

@@ -793,7 +793,8 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 | `ddl.pg.drop_materialized_view.advisory` | `DROP MATERIALIZED VIEW` 移除物化视图，建议审查依赖查询 | notice | 否 |
 | `ddl.pg.drop_materialized_view.cascade.warn` | `DROP MATERIALIZED VIEW ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
 | `ddl.pg.refresh_materialized_view.concurrently.warn` | 非并发 `REFRESH MATERIALIZED VIEW`（默认或显式 `WITH DATA`）持有排他锁 | warning | 否 |
-| `ddl.pg.refresh_materialized_view.no_data.notice` | `REFRESH MATERIALIZED VIEW ... WITH NO DATA` 清空物化视图——下游读取方可能看到空结果 | notice | 否 |
+| `ddl.pg.refresh_materialized_view.no_data.notice` | `REFRESH MATERIALIZED VIEW ... WITH NO DATA` 清空物化视图——视图将标记为未填充，直到再次刷新并填充数据 | notice | 否 |
+| `ddl.pg.refresh_materialized_view.target.valid` | 检查 PostgreSQL 17 的精确限定目标。并发刷新要求物化视图已填充、具有可用的唯一 B-tree 索引，且未使用 WITH NO DATA。目录证据不足时报告证据缺口。 | blocker | 是 |
 
 > **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`CREATE SCHEMA IF NOT EXISTS` 仍然会发出 `ddl.pg.create_schema.notice` 的 notice。已有 `DROP SCHEMA` 行为（`ddl.pg.drop_schema.advisory`、`ddl.pg.drop_schema.cascade.warn`）不变。`CREATE SCHEMA AUTHORIZATION` 和嵌套 `CREATE SCHEMA ... CREATE TABLE ...` 仍不支持/推迟支持。DeltaScope 不执行在线 schema 存在性验证。`CONCURRENTLY` 刷新通过两条物化视图规则均不产生 finding。`WITH NO DATA` 同时触发两条规则，因为它也是非并发的。这不是 `CONCURRENTLY` 所需的唯一索引在线验证——DeltaScope 不会检查物化视图上是否存在唯一索引。
 
@@ -1034,7 +1035,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 
 ---
 
-## DDL：PostgreSQL 高级视图生命周期规则（6 条）
+## DDL：PostgreSQL 高级视图生命周期规则（8 条）
 
 这些规则覆盖 PostgreSQL 视图生命周期操作，覆盖范围超出基础 `CREATE VIEW` / `DROP VIEW` 形态。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
 
@@ -1043,11 +1044,13 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 | `ddl.pg.create_or_replace_view.advisory` | `CREATE OR REPLACE VIEW` 替换已有视图——建议审查下游依赖 | notice | 否 |
 | `ddl.pg.create_temp_view.notice` | `CREATE TEMP VIEW` / `CREATE TEMPORARY VIEW` 创建会话级临时视图——信息性提示 | notice | 否 |
 | `ddl.pg.create_view.check_option.notice` | `CREATE VIEW ... WITH CHECK OPTION` 对通过视图的插入/更新强制检查选项——信息性提示 | notice | 否 |
+| `ddl.pg.create_view.options.valid` | 对已观测的 PostgreSQL 17 检查选项名、重复声明、安全布尔值和 CHECK OPTION 取值 | blocker | 是 |
 | `ddl.pg.drop_view.cascade.warn` | `DROP VIEW ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
+| `ddl.pg.drop_view.target.valid` | 检查 PostgreSQL 17 DROP VIEW 的目标类型、缺失目标保护以及 RESTRICT 下直接依赖的视图和物化视图 | blocker | 是 |
 | `ddl.pg.alter_view.rename.notice` | `ALTER VIEW ... RENAME TO` 变更视图名称——信息性提示 | notice | 否 |
 | `ddl.pg.alter_view.set_schema.notice` | `ALTER VIEW ... SET SCHEMA` 将视图移至不同 schema——信息性提示 | notice | 否 |
 
-> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`CREATE OR REPLACE VIEW` 在基础 `ddl.view.create.forbid`（启用时）之外还会触发 `ddl.pg.create_or_replace_view.advisory`。`CASCADED` 与 `LOCAL` 检查选项语义不被建模。DeltaScope 不评估视图查询体、不检查在线视图状态。这不是完整的 PostgreSQL 视图治理。
+选项检查使用观测到的服务端版本和 SQL 声明。视图可更新性、查询结果和下游影响需要单独的证据。
 
 ---
 

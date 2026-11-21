@@ -23,7 +23,7 @@ func pgTableReloptions(items []*pg_query.Node, reset bool) []spec.PGTableRelopti
 					o.Integer = n.GetIval()
 				}
 			case "autovacuum_enabled":
-				o.Value = pgAutovacuumReloptionValue(arg)
+				o.Value = pgBooleanReloptionValue(arg)
 			}
 		}
 		options = append(options, o)
@@ -31,7 +31,7 @@ func pgTableReloptions(items []*pg_query.Node, reset bool) []spec.PGTableRelopti
 	return options
 }
 
-func pgAutovacuumReloptionValue(arg *pg_query.Node) spec.PGTableReloptionValue {
+func pgBooleanReloptionValue(arg *pg_query.Node) spec.PGTableReloptionValue {
 	switch {
 	case arg == nil || arg.GetBoolean() != nil:
 		return spec.PGTableReloptionBoolean

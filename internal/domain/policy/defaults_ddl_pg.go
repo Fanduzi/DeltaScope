@@ -375,6 +375,11 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelWarning,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.refresh_materialized_view.target.valid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
 		"ddl.pg.refresh_materialized_view.no_data.notice": {
 			Enabled: true,
 			Level:   rule.LevelNotice,
@@ -635,6 +640,11 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.create_view.options.valid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
 		"ddl.pg.create_view.check_option.notice": {
 			Enabled: true,
 			Level:   rule.LevelNotice,
@@ -650,6 +660,7 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.drop_view.target.valid": {Enabled: true, Level: rule.LevelBlocker},
 		"ddl.pg.drop_view.cascade.warn": {
 			Enabled: true,
 			Level:   rule.LevelWarning,

@@ -762,6 +762,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGDropMaterializedViewAdvisory, construct: newDropMaterializedViewAdvisoryRule},
 		{ruleID: ruleIDPGDropMaterializedViewCascadeWarn, construct: newDropMaterializedViewCascadeWarnRule},
 		{ruleID: ruleIDPGRefreshMaterializedViewConcurrentlyWarn, construct: newRefreshMaterializedViewConcurrentlyWarnRule},
+		{ruleID: ruleIDPGRefreshMaterializedViewTargetValid, construct: newPGRefreshMaterializedViewTargetRule},
 		{ruleID: ruleIDPGRefreshMaterializedViewNoDataNotice, construct: newRefreshMaterializedViewNoDataNoticeRule},
 		// PostgreSQL type lifecycle rules (PG-only).
 		{ruleID: ruleIDPGCreateTypeEnumNotice, construct: newCreateTypeEnumNoticeRule},
@@ -845,9 +846,11 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		// PostgreSQL advanced view lifecycle rules (PG-only).
 		{ruleID: ruleIDPGCreateOrReplaceViewAdvisory, construct: newCreateOrReplaceViewAdvisoryRule},
 		{ruleID: ruleIDPGCreateTempViewNotice, construct: newCreateTempViewNoticeRule},
+		{ruleID: ruleIDPGCreateViewOptionsValid, construct: newPGCreateViewOptionsRule},
 		{ruleID: ruleIDPGCreateViewCheckOptionNotice, construct: newCreateViewCheckOptionNoticeRule},
 		{ruleID: ruleIDPGAlterViewRenameNotice, construct: newAlterViewRenameNoticeRule},
 		{ruleID: ruleIDPGAlterViewSetSchemaNotice, construct: newAlterViewSetSchemaNoticeRule},
+		{ruleID: ruleIDPGDropViewTargetValid, construct: newPGDropViewTargetRule},
 		{ruleID: ruleIDPGDropViewCascadeWarn, construct: newDropViewCascadeWarnRule},
 		// PostgreSQL alter object lifecycle rules (PG-only).
 		{ruleID: ruleIDPGAlterSchemaRenameNotice, construct: newAlterSchemaRenameNoticeRule},

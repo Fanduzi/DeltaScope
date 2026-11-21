@@ -73,12 +73,13 @@ func extractViewStmt(statement spec.Statement, stmt *pg_query.ViewStmt) spec.Sta
 	}
 
 	statement.DDL = &spec.DDL{
-		Operation:  spec.DDLOperationCreateView,
-		ObjectName: view.GetRelname(),
-		ObjectType: "view",
-		Table:      tableFromRangeVar(view),
-		HasSelect:  stmt.GetQuery() != nil,
-		Options:    options,
+		Operation:     spec.DDLOperationCreateView,
+		ObjectName:    view.GetRelname(),
+		ObjectType:    "view",
+		Table:         tableFromRangeVar(view),
+		HasSelect:     stmt.GetQuery() != nil,
+		Options:       options,
+		PGViewOptions: pgViewOptions(stmt.GetOptions()),
 	}
 	return statement
 }
