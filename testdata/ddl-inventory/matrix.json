@@ -10740,7 +10740,7 @@
         {
           "subaction_id": "CREATE VIEW",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -10748,10 +10748,15 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-view.create-view.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T40.json#create-view-output-offline",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-duplicate-implicit-constant-outputs",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-create-without-replace-collides",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-empty-output-create",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-unlogged-view"
               ]
             }
           ]
@@ -10759,7 +10764,7 @@
         {
           "subaction_id": "OR REPLACE / TEMP",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -10767,10 +10772,19 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "audited",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-view.or-replace-temp.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-replace-extends-output",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-replace-renames-output",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-replace-changes-int-type",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-replace-loses-output",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-replace-changes-collation",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-replace-rejects-wrong-kind",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-missing-schema",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-explicit-temp-outside-temp-namespace",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-explicit-temp-alias"
               ]
             }
           ]
@@ -10778,7 +10792,7 @@
         {
           "subaction_id": "column list",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -10786,10 +10800,16 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-view.column-list.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-more-aliases-than-targets",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-duplicate-exact-explicit-aliases",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-distinct-case-aliases",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-prefix-alias-list",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-output-duplicate-result-name",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/create_view_excess_aliases.expected.yaml#ddl.pg.create_view.output.valid"
               ]
             }
           ]
@@ -10828,7 +10848,7 @@
         {
           "subaction_id": "CHECK OPTION",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -10836,12 +10856,13 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "audited",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-view.check-option.probes.txt",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T40.json#pg-create-view-options-both-check-options",
-                "file:testdata/ddl-golden/T40.json#pg-create-view-options-not-updatable-check-option"
+                "file:testdata/ddl-golden/T40.json#pg-create-view-options-not-updatable-check-option",
+                "file:testdata/ddl-golden/T40.json#pg-create-view-options-literal-check-clause"
               ]
             }
           ]
@@ -11057,7 +11078,16 @@
                 "file:testdata/ddl-golden/T40.json#pg-drop-view-target-ordinary-dependent",
                 "file:testdata/ddl-golden/T40.json#pg-drop-view-target-materialized-dependent",
                 "file:testdata/ddl-golden/T40.json#pg-drop-view-target-quoted-exact-target",
-                "file:testdata/ddl-golden/T40.json#pg-drop-view-target-quoted-case-mismatch"
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-target-quoted-case-mismatch",
+                "file:testdata/ddl-golden/T40.json#drop-view-set-offline",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-set-both-selected-under-restrict",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-set-reverse-dependency-order",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-set-external-direct-dependent",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-set-unguarded-absence-before-dependency",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-set-duplicate-authored-target",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-set-composite-type-outside-dependency",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-set-row-type-outside-selected-list",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_view_row_type_dependency.expected.yaml#ddl.pg.drop_view.target.valid"
               ]
             }
           ]
@@ -11081,7 +11111,11 @@
                 "file:testdata/ddl-golden/T40.json#pg-drop-view-target-wrong-kind-under-guard",
                 "file:testdata/ddl-golden/T40.json#pg-drop-view-target-guarded-ordinary-dependent",
                 "file:testdata/ddl-golden/T40.json#pg-drop-view-target-cascade",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_view_restrict_dependency.expected.yaml#ddl.pg.drop_view.target.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_view_restrict_dependency.expected.yaml#ddl.pg.drop_view.target.valid",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-set-guarded-absence-and-both-selected",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-set-wrong-kind-before-dependency",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-set-cascade-outside-selection",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-set-composite-type-cascade"
               ]
             }
           ]

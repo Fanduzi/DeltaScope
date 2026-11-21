@@ -1329,6 +1329,27 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136711220493) passed at t
 - [Materialized-view storage options](../decisions/2026-11-21-postgresql-materialized-view-storage-options.md)
 - [Materialized-view extension dependencies](../decisions/2026-11-21-postgresql-materialized-view-extension.md)
 
+### F12 view output and ordered DROP VIEW targets
+
+The CREATE VIEW rule checks exact qualified targets and ordered outputs for
+bounded source-free literal queries. Replacement preserves the existing
+column prefix, including names, types, modifiers and collations. The option
+rule now rejects CHECK OPTION on these queries.
+
+The DROP VIEW rule binds an ordered qualified list and catches missing or
+wrong-kind targets before RESTRICT dependency checks. It recognizes
+rewrite dependencies within the selected list and reports external direct
+rewrite and row-type column dependencies. Unqualified name resolution,
+recursive query semantics and broader CASCADE effects require separate facts.
+
+T40 preview passed 179 cases and 5,354 assertions. Thirty-four
+selectors bind six exact PostgreSQL 17 cells. The prior 147 case IDs and
+authored DDL remain. One expectation now checks the CHECK OPTION blocker.
+Verification on the fixed candidate is pending.
+
+- [CREATE VIEW output](../decisions/2026-11-21-postgresql-create-view-output.md)
+- [Ordered DROP VIEW](../decisions/2026-11-21-postgresql-drop-view-target-set.md)
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

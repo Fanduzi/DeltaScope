@@ -5,7 +5,7 @@
  "policy_profile": "pg-acceptance",
  "description": "VIEW/MATERIALIZED VIEW/REFRESH acceptance on postgresql17 (#123): view lifecycle incl. WITH CHECK OPTION, materialized view storage and refresh variants execute natively.",
  "policy": {
-  "profiles": {"pg-matview-extension": {"enable": {"ddl.pg.alter_materialized_view.extension.valid": {"level": "blocker"}}}, "pg-matview-storage-options": {"enable": {"ddl.pg.alter_materialized_view.options.valid": {"level": "blocker"}}}, "pg-view-column-default": {"enable": {"ddl.pg.alter_view.column_default.valid": {"level": "blocker"}}}, "pg-alter-view-options": {"enable": {"ddl.pg.alter_view.options.valid": {"level": "blocker"}}}, "pg-view-owner": {"enable": {"ddl.pg.alter_view.owner.valid": {"level": "blocker"}}}, "pg-view-namespace": {"enable": {"ddl.pg.alter_view.namespace.valid": {"level": "blocker"}}}, "pg-drop-view-target": {"enable": {"ddl.pg.drop_view.target.valid": {"level": "blocker"}}}, "pg-create-view-options": {"enable": {"ddl.pg.create_view.options.valid": {"level": "blocker"}}}, "pg-refresh-target": {"enable": {"ddl.pg.refresh_materialized_view.target.valid": {"level": "blocker"}}}},
+  "profiles": {"pg-drop-view-set": {"enable": {"ddl.pg.drop_view.target.valid": {"level": "blocker"}}}, "pg-create-view-output": {"enable": {"ddl.pg.create_view.output.valid": {"level": "blocker"}}}, "pg-matview-extension": {"enable": {"ddl.pg.alter_materialized_view.extension.valid": {"level": "blocker"}}}, "pg-matview-storage-options": {"enable": {"ddl.pg.alter_materialized_view.options.valid": {"level": "blocker"}}}, "pg-view-column-default": {"enable": {"ddl.pg.alter_view.column_default.valid": {"level": "blocker"}}}, "pg-alter-view-options": {"enable": {"ddl.pg.alter_view.options.valid": {"level": "blocker"}}}, "pg-view-owner": {"enable": {"ddl.pg.alter_view.owner.valid": {"level": "blocker"}}}, "pg-view-namespace": {"enable": {"ddl.pg.alter_view.namespace.valid": {"level": "blocker"}}}, "pg-drop-view-target": {"enable": {"ddl.pg.drop_view.target.valid": {"level": "blocker"}}}, "pg-create-view-options": {"enable": {"ddl.pg.create_view.options.valid": {"level": "blocker"}}}, "pg-refresh-target": {"enable": {"ddl.pg.refresh_materialized_view.target.valid": {"level": "blocker"}}}},
   "enable": {
    "ddl.alter.add_column.exists.forbid": {
     "enabled": true
@@ -1764,6 +1764,96 @@
  },
  "cli_cases": [
    {
+     "id": "drop-view-set-offline",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-set",
+     "sql": "DROP VIEW app.v,app.other",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "reason_code": "unproven_pg_drop_view_target",
+           "required_facts": [
+             "instance.version"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGDropViewSet",
+         "PGDropViewState",
+         "DependentColumn",
+         "composite_user"
+       ]
+     }
+   },
+   {
+     "id": "create-view-output-offline",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "sql": "CREATE VIEW app.v AS SELECT 1",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "reason_code": "unproven_pg_view_output",
+           "required_facts": [
+             "instance.version"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     }
+   },
+   {
      "id": "matview-extension-offline",
      "dialect": "postgresql",
      "policy": "pg-matview-extension",
@@ -2937,6 +3027,4936 @@
   }
  ],
  "metadata_cases": [
+   {
+     "id": "pg-drop-view-set-both-selected-under-restrict",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-set",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_set_1"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_set_1 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_1'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_set_1.constant_view,pgview_set_1.outer_view RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_1'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_set_1",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_set_1.t(id int); INSERT INTO pgview_set_1.t VALUES(7);\nCREATE VIEW pgview_set_1.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_set_1.outer_view AS SELECT id FROM pgview_set_1.constant_view;\nCREATE VIEW pgview_set_1.independent AS SELECT 7 AS n;\nCREATE VIEW pgview_set_1.middle_view AS SELECT id FROM pgview_set_1.t;\nCREATE VIEW pgview_set_1.end_view AS SELECT id FROM pgview_set_1.middle_view;\nCREATE TABLE pgview_set_1.composite_user(data pgview_set_1.independent);\nCREATE SEQUENCE pgview_set_1.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewSet",
+         "PGDropViewState",
+         "DependentColumn",
+         "composite_user"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_1'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_1.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_1.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_1.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "DROP VIEW pgview_set_1.constant_view,pgview_set_1.outer_view RESTRICT",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_1'::regnamespace AND relkind='v'",
+         "expect": "end_view,independent,middle_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_1.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_1.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_1.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_set_1 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_1'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-set-reverse-dependency-order",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-set",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_set_2"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_set_2 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_2'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_set_2.outer_view,pgview_set_2.constant_view RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_2'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_set_2",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_set_2.t(id int); INSERT INTO pgview_set_2.t VALUES(7);\nCREATE VIEW pgview_set_2.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_set_2.outer_view AS SELECT id FROM pgview_set_2.constant_view;\nCREATE VIEW pgview_set_2.independent AS SELECT 7 AS n;\nCREATE VIEW pgview_set_2.middle_view AS SELECT id FROM pgview_set_2.t;\nCREATE VIEW pgview_set_2.end_view AS SELECT id FROM pgview_set_2.middle_view;\nCREATE TABLE pgview_set_2.composite_user(data pgview_set_2.independent);\nCREATE SEQUENCE pgview_set_2.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewSet",
+         "PGDropViewState",
+         "DependentColumn",
+         "composite_user"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_2'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_2.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_2.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_2.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "DROP VIEW pgview_set_2.outer_view,pgview_set_2.constant_view RESTRICT",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_2'::regnamespace AND relkind='v'",
+         "expect": "end_view,independent,middle_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_2.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_2.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_2.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_set_2 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_2'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-set-external-direct-dependent",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-set",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_set_3"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_set_3 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_3'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_set_3.constant_view,pgview_set_3.middle_view RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_3'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_set_3",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_set_3.t(id int); INSERT INTO pgview_set_3.t VALUES(7);\nCREATE VIEW pgview_set_3.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_set_3.outer_view AS SELECT id FROM pgview_set_3.constant_view;\nCREATE VIEW pgview_set_3.independent AS SELECT 7 AS n;\nCREATE VIEW pgview_set_3.middle_view AS SELECT id FROM pgview_set_3.t;\nCREATE VIEW pgview_set_3.end_view AS SELECT id FROM pgview_set_3.middle_view;\nCREATE TABLE pgview_set_3.composite_user(data pgview_set_3.independent);\nCREATE SEQUENCE pgview_set_3.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "metadata": {
+             "reason_code": "drop_view_has_direct_dependency"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewSet",
+         "PGDropViewState",
+         "DependentColumn",
+         "composite_user"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_3'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_3.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_3.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_3.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "\\set VERBOSITY verbose\nDROP VIEW pgview_set_3.constant_view,pgview_set_3.middle_view RESTRICT",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  2BP01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_3'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_3.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_3.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_3.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_set_3 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_3'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-set-guarded-absence-and-both-selected",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-set",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_set_4"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_set_4 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_4'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW IF EXISTS pgview_set_4.absent,pgview_set_4.constant_view,pgview_set_4.outer_view RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_4'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_set_4",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_set_4.t(id int); INSERT INTO pgview_set_4.t VALUES(7);\nCREATE VIEW pgview_set_4.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_set_4.outer_view AS SELECT id FROM pgview_set_4.constant_view;\nCREATE VIEW pgview_set_4.independent AS SELECT 7 AS n;\nCREATE VIEW pgview_set_4.middle_view AS SELECT id FROM pgview_set_4.t;\nCREATE VIEW pgview_set_4.end_view AS SELECT id FROM pgview_set_4.middle_view;\nCREATE TABLE pgview_set_4.composite_user(data pgview_set_4.independent);\nCREATE SEQUENCE pgview_set_4.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewSet",
+         "PGDropViewState",
+         "DependentColumn",
+         "composite_user"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_4'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_4.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_4.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_4.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "DROP VIEW IF EXISTS pgview_set_4.absent,pgview_set_4.constant_view,pgview_set_4.outer_view RESTRICT",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_4'::regnamespace AND relkind='v'",
+         "expect": "end_view,independent,middle_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_4.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_4.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_4.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_set_4 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_4'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-set-unguarded-absence-before-dependency",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-set",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_set_5"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_set_5 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_5'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_set_5.constant_view,pgview_set_5.absent RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_5'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_set_5",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_set_5.t(id int); INSERT INTO pgview_set_5.t VALUES(7);\nCREATE VIEW pgview_set_5.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_set_5.outer_view AS SELECT id FROM pgview_set_5.constant_view;\nCREATE VIEW pgview_set_5.independent AS SELECT 7 AS n;\nCREATE VIEW pgview_set_5.middle_view AS SELECT id FROM pgview_set_5.t;\nCREATE VIEW pgview_set_5.end_view AS SELECT id FROM pgview_set_5.middle_view;\nCREATE TABLE pgview_set_5.composite_user(data pgview_set_5.independent);\nCREATE SEQUENCE pgview_set_5.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "metadata": {
+             "reason_code": "drop_view_absent"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewSet",
+         "PGDropViewState",
+         "DependentColumn",
+         "composite_user"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_5'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_5.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_5.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_5.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "\\set VERBOSITY verbose\nDROP VIEW pgview_set_5.constant_view,pgview_set_5.absent RESTRICT",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_5'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_5.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_5.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_5.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_set_5 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_5'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-set-wrong-kind-before-dependency",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-set",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_set_6"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_set_6 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_6'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW IF EXISTS pgview_set_6.constant_view,pgview_set_6.t RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_6'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_set_6",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_set_6.t(id int); INSERT INTO pgview_set_6.t VALUES(7);\nCREATE VIEW pgview_set_6.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_set_6.outer_view AS SELECT id FROM pgview_set_6.constant_view;\nCREATE VIEW pgview_set_6.independent AS SELECT 7 AS n;\nCREATE VIEW pgview_set_6.middle_view AS SELECT id FROM pgview_set_6.t;\nCREATE VIEW pgview_set_6.end_view AS SELECT id FROM pgview_set_6.middle_view;\nCREATE TABLE pgview_set_6.composite_user(data pgview_set_6.independent);\nCREATE SEQUENCE pgview_set_6.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "metadata": {
+             "reason_code": "drop_view_wrong_kind"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewSet",
+         "PGDropViewState",
+         "DependentColumn",
+         "composite_user"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_6'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_6.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_6.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_6.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "\\set VERBOSITY verbose\nDROP VIEW IF EXISTS pgview_set_6.constant_view,pgview_set_6.t RESTRICT",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42809:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_6'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_6.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_6.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_6.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_set_6 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_6'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-set-duplicate-authored-target",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-set",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_set_7"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_set_7 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_7'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_set_7.constant_view,pgview_set_7.outer_view,pgview_set_7.constant_view",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_7'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_set_7",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_set_7.t(id int); INSERT INTO pgview_set_7.t VALUES(7);\nCREATE VIEW pgview_set_7.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_set_7.outer_view AS SELECT id FROM pgview_set_7.constant_view;\nCREATE VIEW pgview_set_7.independent AS SELECT 7 AS n;\nCREATE VIEW pgview_set_7.middle_view AS SELECT id FROM pgview_set_7.t;\nCREATE VIEW pgview_set_7.end_view AS SELECT id FROM pgview_set_7.middle_view;\nCREATE TABLE pgview_set_7.composite_user(data pgview_set_7.independent);\nCREATE SEQUENCE pgview_set_7.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewSet",
+         "PGDropViewState",
+         "DependentColumn",
+         "composite_user"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_7'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_7.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_7.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_7.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "DROP VIEW pgview_set_7.constant_view,pgview_set_7.outer_view,pgview_set_7.constant_view",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_7'::regnamespace AND relkind='v'",
+         "expect": "end_view,independent,middle_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_7.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_7.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_7.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_set_7 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_7'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-set-cascade-outside-selection",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-set",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_set_8"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_set_8 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_8'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_set_8.constant_view,pgview_set_8.middle_view CASCADE",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_8'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_set_8",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_set_8.t(id int); INSERT INTO pgview_set_8.t VALUES(7);\nCREATE VIEW pgview_set_8.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_set_8.outer_view AS SELECT id FROM pgview_set_8.constant_view;\nCREATE VIEW pgview_set_8.independent AS SELECT 7 AS n;\nCREATE VIEW pgview_set_8.middle_view AS SELECT id FROM pgview_set_8.t;\nCREATE VIEW pgview_set_8.end_view AS SELECT id FROM pgview_set_8.middle_view;\nCREATE TABLE pgview_set_8.composite_user(data pgview_set_8.independent);\nCREATE SEQUENCE pgview_set_8.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewSet",
+         "PGDropViewState",
+         "DependentColumn",
+         "composite_user"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_8'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_8.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_8.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_8.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "DROP VIEW pgview_set_8.constant_view,pgview_set_8.middle_view CASCADE",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_8'::regnamespace AND relkind='v'",
+         "expect": "independent"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_8.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_8.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_8.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_set_8 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_8'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-set-composite-type-outside-dependency",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-set",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_set_9"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_set_9 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_9'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_set_9.independent RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_9'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_set_9",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_set_9.t(id int); INSERT INTO pgview_set_9.t VALUES(7);\nCREATE VIEW pgview_set_9.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_set_9.outer_view AS SELECT id FROM pgview_set_9.constant_view;\nCREATE VIEW pgview_set_9.independent AS SELECT 7 AS n;\nCREATE VIEW pgview_set_9.middle_view AS SELECT id FROM pgview_set_9.t;\nCREATE VIEW pgview_set_9.end_view AS SELECT id FROM pgview_set_9.middle_view;\nCREATE TABLE pgview_set_9.composite_user(data pgview_set_9.independent);\nCREATE SEQUENCE pgview_set_9.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "metadata": {
+             "reason_code": "drop_view_has_row_type_dependency"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewSet",
+         "PGDropViewState",
+         "DependentColumn",
+         "composite_user"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_9'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_9.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_9.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_9.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "\\set VERBOSITY verbose\nDROP VIEW pgview_set_9.independent RESTRICT",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  2BP01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_9'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_9.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_9.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_9.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_set_9 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_9'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-set-composite-type-cascade",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-set",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_set_10"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_set_10 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_10'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_set_10.independent CASCADE",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_10'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_set_10",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_set_10.t(id int); INSERT INTO pgview_set_10.t VALUES(7);\nCREATE VIEW pgview_set_10.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_set_10.outer_view AS SELECT id FROM pgview_set_10.constant_view;\nCREATE VIEW pgview_set_10.independent AS SELECT 7 AS n;\nCREATE VIEW pgview_set_10.middle_view AS SELECT id FROM pgview_set_10.t;\nCREATE VIEW pgview_set_10.end_view AS SELECT id FROM pgview_set_10.middle_view;\nCREATE TABLE pgview_set_10.composite_user(data pgview_set_10.independent);\nCREATE SEQUENCE pgview_set_10.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewSet",
+         "PGDropViewState",
+         "DependentColumn",
+         "composite_user"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_10'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_10.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_10.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_10.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "DROP VIEW pgview_set_10.independent CASCADE",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_10'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_10.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_10.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_10.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_set_10 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_10'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-set-row-type-outside-selected-list",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-set",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_set_11"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_set_11 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_11'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_set_11.independent,pgview_set_11.outer_view RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_11'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_set_11",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_set_11.t(id int); INSERT INTO pgview_set_11.t VALUES(7);\nCREATE VIEW pgview_set_11.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_set_11.outer_view AS SELECT id FROM pgview_set_11.constant_view;\nCREATE VIEW pgview_set_11.independent AS SELECT 7 AS n;\nCREATE VIEW pgview_set_11.middle_view AS SELECT id FROM pgview_set_11.t;\nCREATE VIEW pgview_set_11.end_view AS SELECT id FROM pgview_set_11.middle_view;\nCREATE TABLE pgview_set_11.composite_user(data pgview_set_11.independent);\nCREATE SEQUENCE pgview_set_11.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "metadata": {
+             "reason_code": "drop_view_has_row_type_dependency"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewSet",
+         "PGDropViewState",
+         "DependentColumn",
+         "composite_user"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_11'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_11.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_11.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_11.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "\\set VERBOSITY verbose\nDROP VIEW pgview_set_11.independent,pgview_set_11.outer_view RESTRICT",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  2BP01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact remaining views",
+         "sql": "SELECT coalesce(string_agg(relname, ',' ORDER BY relname),'') FROM pg_catalog.pg_class WHERE relnamespace='pgview_set_11'::regnamespace AND relkind='v'",
+         "expect": "constant_view,end_view,independent,middle_view,outer_view"
+       },
+       {
+         "assert": "composite column still registered",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_set_11.composite_user'::regclass AND attname='data' AND NOT attisdropped",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_set_11.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_set_11.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_set_11 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_set_11'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-options-literal-check-clause",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-options",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_opt_literal_check_clause"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_opt_literal_check_clause CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_literal_check_clause'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_opt_literal_check_clause.v2 AS SELECT 1 WITH LOCAL CHECK OPTION",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_literal_check_clause'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_opt_literal_check_clause",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed base table and independent sequence",
+         "sql": "CREATE TABLE pgview_opt_literal_check_clause.t(id int, payload int); INSERT INTO pgview_opt_literal_check_clause.t VALUES (1,7); CREATE SEQUENCE pgview_opt_literal_check_clause.guard START 7",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.options.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.options.valid",
+           "metadata": {
+             "reason_code": "view_not_automatically_updatable"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGViewOptions",
+         "ValueKnown",
+         "ValueValid"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_literal_check_clause'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_literal_check_clause.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_literal_check_clause.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native validates options",
+         "sql": "\\set VERBOSITY verbose\nCREATE VIEW pgview_opt_literal_check_clause.v2 AS SELECT 1 WITH LOCAL CHECK OPTION",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  0A000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_literal_check_clause'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_literal_check_clause.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_literal_check_clause.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_opt_literal_check_clause CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_literal_check_clause'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-more-aliases-than-targets",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_1"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_1 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_1'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_output_1.new_view(a,b) AS SELECT 1",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_1'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_1_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_1",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_1.t(id int); INSERT INTO pgview_output_1.t VALUES(7);\nCREATE VIEW pgview_output_1.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_1.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_1.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_1.guard START 7;\nCREATE TABLE pgview_output_1.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_1'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "metadata": {
+             "reason_code": "view_output_excess_aliases"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_1.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_1'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_1'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_1.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_1.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_1.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "\\set VERBOSITY verbose\nCREATE VIEW pgview_output_1.new_view(a,b) AS SELECT 1",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42601:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_1.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_1'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_1'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_1.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_1.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_1.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_1 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_1'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_1_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-duplicate-exact-explicit-aliases",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_2"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_2 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_2'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_output_2.new_view(\"a\",\"a\") AS SELECT 1,2",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_2'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_2_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_2",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_2.t(id int); INSERT INTO pgview_output_2.t VALUES(7);\nCREATE VIEW pgview_output_2.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_2.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_2.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_2.guard START 7;\nCREATE TABLE pgview_output_2.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_2'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "metadata": {
+             "reason_code": "view_output_duplicate_column"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_2.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_2'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_2'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_2.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_2.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_2.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "\\set VERBOSITY verbose\nCREATE VIEW pgview_output_2.new_view(\"a\",\"a\") AS SELECT 1,2",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42701:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_2.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_2'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_2'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_2.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_2.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_2.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_2 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_2'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_2_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-distinct-case-aliases",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_3"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_3 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_3'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_output_3.new_view(\"a\",\"A\") AS SELECT 1,2",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_3'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_3_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_3",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_3.t(id int); INSERT INTO pgview_output_3.t VALUES(7);\nCREATE VIEW pgview_output_3.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_3.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_3.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_3.guard START 7;\nCREATE TABLE pgview_output_3.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_3'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_3.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_3'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_3'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_3.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_3.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_3.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "CREATE VIEW pgview_output_3.new_view(\"a\",\"A\") AS SELECT 1,2",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native emits ordered view output",
+         "sql": "SELECT coalesce(string_agg(attname, ',' ORDER BY attnum), '') FROM pg_catalog.pg_attribute WHERE attrelid='pgview_output_3.new_view'::regclass AND attnum>0 AND NOT attisdropped",
+         "expect": "a,A"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_3.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_3.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_3 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_3'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_3_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-prefix-alias-list",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_4"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_4 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_4'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_output_4.new_view(a) AS SELECT 1 AS first, 2 AS second",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_4'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_4_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_4",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_4.t(id int); INSERT INTO pgview_output_4.t VALUES(7);\nCREATE VIEW pgview_output_4.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_4.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_4.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_4.guard START 7;\nCREATE TABLE pgview_output_4.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_4'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_4.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_4'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_4'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_4.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_4.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_4.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "CREATE VIEW pgview_output_4.new_view(a) AS SELECT 1 AS first, 2 AS second",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native emits ordered view output",
+         "sql": "SELECT coalesce(string_agg(attname, ',' ORDER BY attnum), '') FROM pg_catalog.pg_attribute WHERE attrelid='pgview_output_4.new_view'::regclass AND attnum>0 AND NOT attisdropped",
+         "expect": "a,second"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_4.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_4.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_4 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_4'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_4_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-duplicate-result-name",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_5"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_5 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_5'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_output_5.new_view(a) AS SELECT 1 AS first, 2 AS a",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_5'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_5_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_5",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_5.t(id int); INSERT INTO pgview_output_5.t VALUES(7);\nCREATE VIEW pgview_output_5.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_5.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_5.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_5.guard START 7;\nCREATE TABLE pgview_output_5.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_5'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "metadata": {
+             "reason_code": "view_output_duplicate_column"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_5.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_5'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_5'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_5.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_5.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_5.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "\\set VERBOSITY verbose\nCREATE VIEW pgview_output_5.new_view(a) AS SELECT 1 AS first, 2 AS a",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42701:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_5.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_5'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_5'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_5.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_5.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_5.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_5 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_5'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_5_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-duplicate-implicit-constant-outputs",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_6"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_6 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_6'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_output_6.new_view AS SELECT 1,2",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_6'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_6_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_6",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_6.t(id int); INSERT INTO pgview_output_6.t VALUES(7);\nCREATE VIEW pgview_output_6.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_6.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_6.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_6.guard START 7;\nCREATE TABLE pgview_output_6.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_6'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "metadata": {
+             "reason_code": "view_output_duplicate_column"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_6.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_6'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_6'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_6.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_6.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_6.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "\\set VERBOSITY verbose\nCREATE VIEW pgview_output_6.new_view AS SELECT 1,2",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42701:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_6.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_6'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_6'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_6.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_6.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_6.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_6 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_6'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_6_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-replace-extends-output",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_7"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_7 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_7'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE OR REPLACE VIEW pgview_output_7.constant_view AS SELECT 1 AS id, true AS enabled",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_7'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_7_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_7",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_7.t(id int); INSERT INTO pgview_output_7.t VALUES(7);\nCREATE VIEW pgview_output_7.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_7.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_7.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_7.guard START 7;\nCREATE TABLE pgview_output_7.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_7'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_7.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_7'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_7'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_7.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_7.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_7.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "CREATE OR REPLACE VIEW pgview_output_7.constant_view AS SELECT 1 AS id, true AS enabled",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native emits ordered view output",
+         "sql": "SELECT coalesce(string_agg(attname, ',' ORDER BY attnum), '') FROM pg_catalog.pg_attribute WHERE attrelid='pgview_output_7.constant_view'::regclass AND attnum>0 AND NOT attisdropped",
+         "expect": "id,enabled"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_7.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_7.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_7 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_7'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_7_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-replace-renames-output",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_8"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_8 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_8'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE OR REPLACE VIEW pgview_output_8.constant_view AS SELECT 1 AS new_id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_8'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_8_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_8",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_8.t(id int); INSERT INTO pgview_output_8.t VALUES(7);\nCREATE VIEW pgview_output_8.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_8.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_8.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_8.guard START 7;\nCREATE TABLE pgview_output_8.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_8'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "metadata": {
+             "reason_code": "view_output_column_name_changed"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_8.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_8'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_8'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_8.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_8.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_8.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "\\set VERBOSITY verbose\nCREATE OR REPLACE VIEW pgview_output_8.constant_view AS SELECT 1 AS new_id",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_8.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_8'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_8'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_8.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_8.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_8.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_8 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_8'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_8_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-replace-changes-int-type",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_9"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_9 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_9'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE OR REPLACE VIEW pgview_output_9.constant_view AS SELECT 2147483648 AS id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_9'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_9_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_9",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_9.t(id int); INSERT INTO pgview_output_9.t VALUES(7);\nCREATE VIEW pgview_output_9.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_9.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_9.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_9.guard START 7;\nCREATE TABLE pgview_output_9.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_9'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "metadata": {
+             "reason_code": "view_output_column_type_changed"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_9.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_9'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_9'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_9.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_9.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_9.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "\\set VERBOSITY verbose\nCREATE OR REPLACE VIEW pgview_output_9.constant_view AS SELECT 2147483648 AS id",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_9.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_9'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_9'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_9.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_9.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_9.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_9 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_9'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_9_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-replace-loses-output",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_10"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_10 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_10'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE OR REPLACE VIEW pgview_output_10.two_cols AS SELECT 1 AS id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_10'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_10_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_10",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_10.t(id int); INSERT INTO pgview_output_10.t VALUES(7);\nCREATE VIEW pgview_output_10.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_10.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_10.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_10.guard START 7;\nCREATE TABLE pgview_output_10.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_10'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "metadata": {
+             "reason_code": "view_output_removed_column"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_10.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_10'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_10'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_10.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_10.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_10.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "\\set VERBOSITY verbose\nCREATE OR REPLACE VIEW pgview_output_10.two_cols AS SELECT 1 AS id",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_10.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_10'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_10'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_10.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_10.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_10.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_10 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_10'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_10_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-replace-changes-collation",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_11"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_11 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_11'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE OR REPLACE VIEW pgview_output_11.collated AS SELECT 'value' COLLATE pg_catalog.\"POSIX\" AS v",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_11'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_11_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_11",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_11.t(id int); INSERT INTO pgview_output_11.t VALUES(7);\nCREATE VIEW pgview_output_11.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_11.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_11.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_11.guard START 7;\nCREATE TABLE pgview_output_11.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_11'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "metadata": {
+             "reason_code": "view_output_column_collation_changed"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_11.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_11'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_11'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_11.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_11.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_11.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "\\set VERBOSITY verbose\nCREATE OR REPLACE VIEW pgview_output_11.collated AS SELECT 'value' COLLATE pg_catalog.\"POSIX\" AS v",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_11.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_11'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_11'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_11.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_11.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_11.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_11 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_11'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_11_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-create-without-replace-collides",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_12"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_12 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_12'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_output_12.constant_view AS SELECT 1 AS id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_12'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_12_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_12",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_12.t(id int); INSERT INTO pgview_output_12.t VALUES(7);\nCREATE VIEW pgview_output_12.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_12.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_12.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_12.guard START 7;\nCREATE TABLE pgview_output_12.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_12'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "metadata": {
+             "reason_code": "view_output_target_exists"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_12.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_12'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_12'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_12.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_12.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_12.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "\\set VERBOSITY verbose\nCREATE VIEW pgview_output_12.constant_view AS SELECT 1 AS id",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P07:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_12.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_12'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_12'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_12.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_12.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_12.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_12 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_12'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_12_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-replace-rejects-wrong-kind",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_13"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_13 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_13'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE OR REPLACE VIEW pgview_output_13.t AS SELECT 1 AS id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_13'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_13_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_13",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_13.t(id int); INSERT INTO pgview_output_13.t VALUES(7);\nCREATE VIEW pgview_output_13.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_13.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_13.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_13.guard START 7;\nCREATE TABLE pgview_output_13.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_13'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "metadata": {
+             "reason_code": "view_output_target_wrong_kind"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_13.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_13'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_13'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_13.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_13.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_13.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "\\set VERBOSITY verbose\nCREATE OR REPLACE VIEW pgview_output_13.t AS SELECT 1 AS id",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42809:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_13.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_13'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_13'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_13.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_13.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_13.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_13 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_13'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_13_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-missing-schema",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_14"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_14 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_14'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE OR REPLACE VIEW pgview_output_14_absent.v AS SELECT 1 AS id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_14'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_14_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_14",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_14.t(id int); INSERT INTO pgview_output_14.t VALUES(7);\nCREATE VIEW pgview_output_14.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_14.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_14.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_14.guard START 7;\nCREATE TABLE pgview_output_14.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_14'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "metadata": {
+             "reason_code": "view_output_schema_absent"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_14.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_14'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_14'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_14.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_14.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_14.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "\\set VERBOSITY verbose\nCREATE OR REPLACE VIEW pgview_output_14_absent.v AS SELECT 1 AS id",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  3F000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_14.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_14'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_14'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_14.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_14.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_14.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_14 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_14'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_14_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-explicit-temp-outside-temp-namespace",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_15"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_15 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_15'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE TEMP VIEW pgview_output_15.new_view AS SELECT 1 AS id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_15'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_15_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_15",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_15.t(id int); INSERT INTO pgview_output_15.t VALUES(7);\nCREATE VIEW pgview_output_15.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_15.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_15.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_15.guard START 7;\nCREATE TABLE pgview_output_15.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_15'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "metadata": {
+             "reason_code": "view_output_temporary_in_persistent_schema"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_15.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_15'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_15'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_15.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_15.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_15.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "\\set VERBOSITY verbose\nCREATE TEMP VIEW pgview_output_15.new_view AS SELECT 1 AS id",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P16:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_15.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_15'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_15'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_15.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_15.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_15.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_15 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_15'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_15_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-empty-output-create",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_16"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_16 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_16'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_output_16.new_view AS SELECT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_16'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_16_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_16",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_16.t(id int); INSERT INTO pgview_output_16.t VALUES(7);\nCREATE VIEW pgview_output_16.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_16.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_16.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_16.guard START 7;\nCREATE TABLE pgview_output_16.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_16'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_16.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_16'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_16'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_16.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_16.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_16.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "CREATE VIEW pgview_output_16.new_view AS SELECT",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native emits ordered view output",
+         "sql": "SELECT coalesce(string_agg(attname, ',' ORDER BY attnum), '') FROM pg_catalog.pg_attribute WHERE attrelid='pgview_output_16.new_view'::regclass AND attnum>0 AND NOT attisdropped",
+         "expect": ""
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_16.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_16.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_16 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_16'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_16_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-unlogged-view",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_17"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_17 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_17'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE UNLOGGED VIEW pgview_output_17.new_view AS SELECT 1",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_17'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_17_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_17",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_17.t(id int); INSERT INTO pgview_output_17.t VALUES(7);\nCREATE VIEW pgview_output_17.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_17.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_17.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_17.guard START 7;\nCREATE TABLE pgview_output_17.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_17'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "metadata": {
+             "reason_code": "view_output_unlogged"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_17.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_17'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_17'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_17.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_17.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_17.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "\\set VERBOSITY verbose\nCREATE UNLOGGED VIEW pgview_output_17.new_view AS SELECT 1",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42601:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_17.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_17'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_17'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_17.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_17.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_17.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_17 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_17'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_17_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-output-explicit-temp-alias",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-output",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_output_18"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_output_18 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_18'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE TEMP VIEW pg_temp.new_view AS SELECT 1 AS id",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_18'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_18_absent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_output_18",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed ordered output and independent sequence",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgview_output_18.t(id int); INSERT INTO pgview_output_18.t VALUES(7);\nCREATE VIEW pgview_output_18.constant_view AS SELECT 1 AS id;\nCREATE VIEW pgview_output_18.two_cols AS SELECT 1 AS id, true AS enabled;\nCREATE VIEW pgview_output_18.collated AS SELECT 'value' COLLATE pg_catalog.\"C\" AS v;\nCREATE SEQUENCE pgview_output_18.guard START 7;\nCREATE TABLE pgview_output_18.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_18'::regnamespace AND c.relname<>'receipt'"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.output.valid",
+           "reason_code": "unproven_pg_view_output",
+           "required_facts": [
+             "view.creation_namespace"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGCreateViewTarget",
+         "PGCreateViewOutput",
+         "TypeOID",
+         "Typmod"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_18.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_18'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_18'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_18.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_18.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_18.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks view output",
+         "sql": "CREATE TEMP VIEW pg_temp.new_view AS SELECT 1 AS id",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact catalog remains unchanged",
+         "sql": "SELECT count(*) FROM ((TABLE pgview_output_18.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_18'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode,a.attnum,a.attname,a.atttypid,a.atttypmod,a.attcollation FROM pg_catalog.pg_class c LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped WHERE c.relnamespace='pgview_output_18'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgview_output_18.receipt)) AS delta",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_output_18.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_output_18.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_output_18 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_18'",
+             "expect": "0"
+           },
+           {
+             "assert": "companion schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_output_18_absent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
    {
      "id": "pg-matview-extension-add-exact-installed-extension",
      "anchor": "postgres17",
@@ -18664,9 +23684,9 @@
      ],
      "expect": {
        "exit": 0,
-       "verdict": "pass",
+       "verdict": "reject",
        "statements": 1,
-       "findings": 0,
+       "findings": 1,
        "diagnostics": 0,
        "unsupported": 0,
        "coverage": "complete",
@@ -18677,8 +23697,22 @@
          0
        ],
        "rule_summary_loaded": 1,
-       "finding_entries": [],
-       "finding_metadata": [],
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.options.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.options.valid",
+           "metadata": {
+             "reason_code": "view_not_automatically_updatable"
+           }
+         }
+       ],
        "evidence_gaps": 0,
        "evidence_gap_entries": [],
        "serialized_not_contains": [
@@ -20843,6 +25877,38 @@
   }
  ],
  "required_case_ids": [
+  "T40.cli.drop-view-set-offline",
+  "T40.meta.pg-drop-view-set-both-selected-under-restrict",
+  "T40.meta.pg-drop-view-set-reverse-dependency-order",
+  "T40.meta.pg-drop-view-set-external-direct-dependent",
+  "T40.meta.pg-drop-view-set-guarded-absence-and-both-selected",
+  "T40.meta.pg-drop-view-set-unguarded-absence-before-dependency",
+  "T40.meta.pg-drop-view-set-wrong-kind-before-dependency",
+  "T40.meta.pg-drop-view-set-duplicate-authored-target",
+  "T40.meta.pg-drop-view-set-cascade-outside-selection",
+  "T40.meta.pg-drop-view-set-composite-type-outside-dependency",
+  "T40.meta.pg-drop-view-set-composite-type-cascade",
+  "T40.meta.pg-drop-view-set-row-type-outside-selected-list",
+  "T40.meta.pg-create-view-options-literal-check-clause",
+  "T40.cli.create-view-output-offline",
+  "T40.meta.pg-create-view-output-more-aliases-than-targets",
+  "T40.meta.pg-create-view-output-duplicate-exact-explicit-aliases",
+  "T40.meta.pg-create-view-output-distinct-case-aliases",
+  "T40.meta.pg-create-view-output-prefix-alias-list",
+  "T40.meta.pg-create-view-output-duplicate-result-name",
+  "T40.meta.pg-create-view-output-duplicate-implicit-constant-outputs",
+  "T40.meta.pg-create-view-output-replace-extends-output",
+  "T40.meta.pg-create-view-output-replace-renames-output",
+  "T40.meta.pg-create-view-output-replace-changes-int-type",
+  "T40.meta.pg-create-view-output-replace-loses-output",
+  "T40.meta.pg-create-view-output-replace-changes-collation",
+  "T40.meta.pg-create-view-output-create-without-replace-collides",
+  "T40.meta.pg-create-view-output-replace-rejects-wrong-kind",
+  "T40.meta.pg-create-view-output-missing-schema",
+  "T40.meta.pg-create-view-output-explicit-temp-outside-temp-namespace",
+  "T40.meta.pg-create-view-output-empty-output-create",
+  "T40.meta.pg-create-view-output-unlogged-view",
+  "T40.meta.pg-create-view-output-explicit-temp-alias",
   "T40.cli.matview-extension-offline",
   "T40.meta.pg-matview-extension-add-exact-installed-extension",
   "T40.meta.pg-matview-extension-add-same-attachment",
