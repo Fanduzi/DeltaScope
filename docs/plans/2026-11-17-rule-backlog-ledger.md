@@ -1742,6 +1742,21 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44954200431/job/136998584537),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136998660126) passed at the delivered SHA.
 
+## F06 exact dimension review
+
+| Original cell | TiDB 8.5 evidence | Audit boundary |
+| --- | --- | --- |
+| `FLASHBACK TABLE` | Isolated TiKV fixture refuses an occupied destination with `1050` and restores the renamed table with its witness row when the destination is free. | `flashback_table` unsupported. Execution needs the source DDL history and snapshot, GC and destination facts. |
+| `FLASHBACK DATABASE` | Isolated TiKV fixture restores the dropped database and its table's witness row. The canonical unistore fixture refuses when its GC safe point is missing. | `flashback_database` unsupported. Recovery requires the history and snapshot for the database and its contained objects. |
+| `FLASHBACK CLUSTER` | TiDB and the bound parser reject bare syntax. The two documented recovery point forms parse and generate `flashback_cluster` unsupported. | Live cluster restoration requires topology, safe point, DDL timing and execution evidence. The tests stop at the audit boundary for valid cluster requests. |
+| `RECOVER TABLE` | TiKV restores by name and explicit DROP job ID. It refuses a missing history entry or a CREATE job ID. | `recover_table` unsupported. A job lookup and retrievable snapshot are required. |
+
+The parent row retains `mixed_coverage`. Six canonical T16 cases supplement
+its historical probes. [Native fixture and evidence](../../testdata/ddl-inventory/evidence/tidb.flashback-recover.native.md)
+· [Decision record](../decisions/2026-11-21-tidb-recovery-boundaries.md).
+
+The joint T16 preview passed 66 cases and 974 assertions. Verification on the fixed F06 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

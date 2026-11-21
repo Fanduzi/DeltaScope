@@ -4512,7 +4512,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: explicit_unsupported
-            evidence: ["file:testdata/ddl-inventory/evidence/tidb.flashback-recover.flashback-table.probes.txt", "file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
+            evidence: ["file:testdata/ddl-golden/T16.json#t16-tidb85-flashback-table", "file:testdata/ddl-inventory/evidence/tidb.flashback-recover.flashback-table.probes.txt", "file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
       - subaction_id: FLASHBACK DATABASE
         parser_status: recognized
         audit_status: explicit_unsupported
@@ -4523,18 +4523,18 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: explicit_unsupported
-            evidence: ["file:testdata/ddl-inventory/evidence/tidb.flashback-recover.flashback-database.probes.txt", "file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
+            evidence: ["file:testdata/ddl-golden/T16.json#t16-tidb85-flashback-database", "file:testdata/ddl-inventory/evidence/tidb.flashback-recover.flashback-database.probes.txt", "file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
       - subaction_id: FLASHBACK CLUSTER
-        parser_status: unrecognized
-        audit_status: not_applicable
+        parser_status: recognized
+        audit_status: explicit_unsupported
         applicability:
           - anchor: tidb85
             version_range: 8.5
             official_presence: documented
             product_scope: registered
-            parser_status: unrecognized
-            audit_status: not_applicable
-            evidence: ["file:testdata/ddl-inventory/evidence/tidb.flashback-recover.flashback-cluster.probes.txt", "file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
+            parser_status: recognized
+            audit_status: explicit_unsupported
+            evidence: ["file:testdata/ddl-golden/T16.json#t16-tidb85-cluster-bare", "file:testdata/ddl-golden/T16.json#t16-tidb85-cluster-timestamp", "file:testdata/ddl-golden/T16.json#t16-tidb85-cluster-tso", "file:testdata/ddl-inventory/evidence/tidb.flashback-recover.flashback-cluster.probes.txt", "file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
       - subaction_id: RECOVER TABLE
         parser_status: recognized
         audit_status: explicit_unsupported
@@ -4545,9 +4545,9 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: explicit_unsupported
-            evidence: ["file:testdata/ddl-inventory/evidence/tidb.flashback-recover.recover-table.probes.txt", "file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
+            evidence: ["file:testdata/ddl-golden/T16.json#t16-tidb85-recover-table", "file:testdata/ddl-inventory/evidence/tidb.flashback-recover.recover-table.probes.txt", "file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
 
-    status_evidence: "2026-11-13 R3 probe (8.5): FLASHBACK TABLE/DATABASE/CLUSTER and RECOVER TABLE TABLE/DATABASE/RECOVER emit explicit unsupported feature records; FLASHBACK CLUSTER fails parse (parser_error) -> row mixed_coverage. Earlier: 2026-09-22 silent; T03 unsupported evidence"
+    status_evidence: "T16 verifies explicit unsupported entries for table, database and recover statements and valid cluster timestamp/TSO forms. Bare FLASHBACK CLUSTER remains a parser error. A separate TiKV fixture confirms restoration and refusal effects without executing a cluster flashback."
     targets: "restored object identity, source-of-restore semantics, recoverability limits"
     acceptance:
       dimensions: "object identity and boundary facts, no success guarantee claims"

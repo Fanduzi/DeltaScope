@@ -232,6 +232,58 @@
     }
   },
   "cli_cases": [
+  {
+   "id": "t16-tidb85-cluster-timestamp",
+   "dialect": "tidb",
+   "policy": "t16-lifecycle",
+   "sql": "FLASHBACK CLUSTER TO TIMESTAMP '2022-09-21 16:02:50'",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "flashback_cluster",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0
+   }
+  },
+  {
+   "id": "t16-tidb85-cluster-tso",
+   "dialect": "tidb",
+   "policy": "t16-lifecycle",
+   "sql": "FLASHBACK CLUSTER TO TSO 445494839813079041",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "flashback_cluster",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0
+   }
+  },
     {
       "id": "t16-cli-seed-offline",
       "dialect": "mysql",
@@ -531,6 +583,559 @@
     }
   ],
   "metadata_cases": [
+  {
+   "id": "t16-tidb85-flashback-table",
+   "dialect": "tidb",
+   "anchor": "tidb85",
+   "policy": "t16-lifecycle",
+   "sql": "FLASHBACK TABLE t16_recovery_1.source TO restored",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "drop owned recovery fixture",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE t16_recovery_1",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_1'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "flashback_table",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0
+   },
+   "setup": [
+    {
+     "name": "prove fixture namespace absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_1'",
+       "expect": "0"
+      },
+      {
+       "assert": "no restored database lands",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_1_missing'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim isolated schema",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE t16_recovery_1",
+     "expect_rc": 0
+    },
+    {
+     "name": "create original witness and drop an owned source",
+     "sql": "CREATE TABLE t16_recovery_1.witness(id INT PRIMARY KEY); INSERT INTO t16_recovery_1.witness VALUES(23); CREATE TABLE t16_recovery_1.source(id INT PRIMARY KEY); DROP TABLE t16_recovery_1.source;",
+     "expect_rc": 0
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original row remains",
+     "sql": "SELECT id FROM t16_recovery_1.witness",
+     "expect": "23"
+    },
+    {
+     "assert": "no restored table lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t16_recovery_1' AND TABLE_NAME IN ('source','restored')",
+     "expect": "0"
+    },
+    {
+     "assert": "no restored database lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_1_missing'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native SQL",
+     "sql": "FLASHBACK TABLE t16_recovery_1.source TO restored",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "1105",
+      "can not get 'tikv_gc_safe_point'"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original row remains",
+     "sql": "SELECT id FROM t16_recovery_1.witness",
+     "expect": "23"
+    },
+    {
+     "assert": "no restored table lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t16_recovery_1' AND TABLE_NAME IN ('source','restored')",
+     "expect": "0"
+    },
+    {
+     "assert": "no restored database lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_1_missing'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop owned recovery fixture",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE t16_recovery_1",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_1'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t16-tidb85-recover-table",
+   "dialect": "tidb",
+   "anchor": "tidb85",
+   "policy": "t16-lifecycle",
+   "sql": "RECOVER TABLE t16_recovery_2.source",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "drop owned recovery fixture",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE t16_recovery_2",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_2'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "recover_table",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0
+   },
+   "setup": [
+    {
+     "name": "prove fixture namespace absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_2'",
+       "expect": "0"
+      },
+      {
+       "assert": "no restored database lands",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_2_missing'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim isolated schema",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE t16_recovery_2",
+     "expect_rc": 0
+    },
+    {
+     "name": "create original witness and drop an owned source",
+     "sql": "CREATE TABLE t16_recovery_2.witness(id INT PRIMARY KEY); INSERT INTO t16_recovery_2.witness VALUES(23); CREATE TABLE t16_recovery_2.source(id INT PRIMARY KEY); DROP TABLE t16_recovery_2.source;",
+     "expect_rc": 0
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original row remains",
+     "sql": "SELECT id FROM t16_recovery_2.witness",
+     "expect": "23"
+    },
+    {
+     "assert": "no restored table lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t16_recovery_2' AND TABLE_NAME IN ('source','restored')",
+     "expect": "0"
+    },
+    {
+     "assert": "no restored database lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_2_missing'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native SQL",
+     "sql": "RECOVER TABLE t16_recovery_2.source",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "1105",
+      "can not get 'tikv_gc_safe_point'"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original row remains",
+     "sql": "SELECT id FROM t16_recovery_2.witness",
+     "expect": "23"
+    },
+    {
+     "assert": "no restored table lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t16_recovery_2' AND TABLE_NAME IN ('source','restored')",
+     "expect": "0"
+    },
+    {
+     "assert": "no restored database lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_2_missing'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop owned recovery fixture",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE t16_recovery_2",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_2'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t16-tidb85-flashback-database",
+   "dialect": "tidb",
+   "anchor": "tidb85",
+   "policy": "t16-lifecycle",
+   "sql": "FLASHBACK DATABASE t16_recovery_3_missing",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "drop owned recovery fixture",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE t16_recovery_3",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_3'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "flashback_database",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0
+   },
+   "setup": [
+    {
+     "name": "prove fixture namespace absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_3'",
+       "expect": "0"
+      },
+      {
+       "assert": "no restored database lands",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_3_missing'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim isolated schema",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE t16_recovery_3",
+     "expect_rc": 0
+    },
+    {
+     "name": "create original witness and drop an owned source",
+     "sql": "CREATE TABLE t16_recovery_3.witness(id INT PRIMARY KEY); INSERT INTO t16_recovery_3.witness VALUES(23); CREATE TABLE t16_recovery_3.source(id INT PRIMARY KEY); DROP TABLE t16_recovery_3.source;",
+     "expect_rc": 0
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original row remains",
+     "sql": "SELECT id FROM t16_recovery_3.witness",
+     "expect": "23"
+    },
+    {
+     "assert": "no restored table lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t16_recovery_3' AND TABLE_NAME IN ('source','restored')",
+     "expect": "0"
+    },
+    {
+     "assert": "no restored database lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_3_missing'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native SQL",
+     "sql": "FLASHBACK DATABASE t16_recovery_3_missing",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "1105",
+      "can not get 'tikv_gc_safe_point'"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original row remains",
+     "sql": "SELECT id FROM t16_recovery_3.witness",
+     "expect": "23"
+    },
+    {
+     "assert": "no restored table lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t16_recovery_3' AND TABLE_NAME IN ('source','restored')",
+     "expect": "0"
+    },
+    {
+     "assert": "no restored database lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_3_missing'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop owned recovery fixture",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE t16_recovery_3",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_3'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t16-tidb85-cluster-bare",
+   "dialect": "tidb",
+   "anchor": "tidb85",
+   "policy": "t16-lifecycle",
+   "sql": "FLASHBACK CLUSTER",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "drop owned recovery fixture",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE t16_recovery_4",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_4'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "evidence_gaps": 0
+   },
+   "setup": [
+    {
+     "name": "prove fixture namespace absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_4'",
+       "expect": "0"
+      },
+      {
+       "assert": "no restored database lands",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_4_missing'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim isolated schema",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE t16_recovery_4",
+     "expect_rc": 0
+    },
+    {
+     "name": "create original witness and drop an owned source",
+     "sql": "CREATE TABLE t16_recovery_4.witness(id INT PRIMARY KEY); INSERT INTO t16_recovery_4.witness VALUES(23); CREATE TABLE t16_recovery_4.source(id INT PRIMARY KEY); DROP TABLE t16_recovery_4.source;",
+     "expect_rc": 0
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original row remains",
+     "sql": "SELECT id FROM t16_recovery_4.witness",
+     "expect": "23"
+    },
+    {
+     "assert": "no restored table lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t16_recovery_4' AND TABLE_NAME IN ('source','restored')",
+     "expect": "0"
+    },
+    {
+     "assert": "no restored database lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_4_missing'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native SQL",
+     "sql": "FLASHBACK CLUSTER",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "1064"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original row remains",
+     "sql": "SELECT id FROM t16_recovery_4.witness",
+     "expect": "23"
+    },
+    {
+     "assert": "no restored table lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t16_recovery_4' AND TABLE_NAME IN ('source','restored')",
+     "expect": "0"
+    },
+    {
+     "assert": "no restored database lands",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_4_missing'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop owned recovery fixture",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE t16_recovery_4",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t16_recovery_4'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
     {
       "id": "t16-mysql80-seed-golden",
       "anchor": "mysql80",
@@ -3312,6 +3917,12 @@
     }
   ],
   "required_case_ids": [
+  "T16.cli.t16-tidb85-cluster-timestamp",
+  "T16.cli.t16-tidb85-cluster-tso",
+  "T16.meta.t16-tidb85-flashback-table",
+  "T16.meta.t16-tidb85-recover-table",
+  "T16.meta.t16-tidb85-flashback-database",
+  "T16.meta.t16-tidb85-cluster-bare",
     "T16.db.mysql57.ddl",
     "T16.db.mysql57.syntax_negative",
     "T16.db.mysql80.ddl",

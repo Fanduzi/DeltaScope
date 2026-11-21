@@ -4730,6 +4730,7 @@
               "parser_status": "recognized",
               "audit_status": "explicit_unsupported",
               "evidence": [
+                "file:testdata/ddl-golden/T16.json#t16-tidb85-flashback-table",
                 "file:testdata/ddl-inventory/evidence/tidb.flashback-recover.flashback-table.probes.txt",
                 "file:internal/application/audit/coverage.go",
                 "file:testdata/ddl-golden/T16.json",
@@ -4751,6 +4752,7 @@
               "parser_status": "recognized",
               "audit_status": "explicit_unsupported",
               "evidence": [
+                "file:testdata/ddl-golden/T16.json#t16-tidb85-flashback-database",
                 "file:testdata/ddl-inventory/evidence/tidb.flashback-recover.flashback-database.probes.txt",
                 "file:internal/application/audit/coverage.go",
                 "file:testdata/ddl-golden/T16.json",
@@ -4761,17 +4763,20 @@
         },
         {
           "subaction_id": "FLASHBACK CLUSTER",
-          "parser_status": "unrecognized",
-          "audit_status": "not_applicable",
+          "parser_status": "recognized",
+          "audit_status": "explicit_unsupported",
           "applicability": [
             {
               "anchor": "tidb85",
               "version_range": 8.5,
               "official_presence": "documented",
               "product_scope": "registered",
-              "parser_status": "unrecognized",
-              "audit_status": "not_applicable",
+              "parser_status": "recognized",
+              "audit_status": "explicit_unsupported",
               "evidence": [
+                "file:testdata/ddl-golden/T16.json#t16-tidb85-cluster-bare",
+                "file:testdata/ddl-golden/T16.json#t16-tidb85-cluster-timestamp",
+                "file:testdata/ddl-golden/T16.json#t16-tidb85-cluster-tso",
                 "file:testdata/ddl-inventory/evidence/tidb.flashback-recover.flashback-cluster.probes.txt",
                 "file:internal/application/audit/coverage.go",
                 "file:testdata/ddl-golden/T16.json",
@@ -4793,6 +4798,7 @@
               "parser_status": "recognized",
               "audit_status": "explicit_unsupported",
               "evidence": [
+                "file:testdata/ddl-golden/T16.json#t16-tidb85-recover-table",
                 "file:testdata/ddl-inventory/evidence/tidb.flashback-recover.recover-table.probes.txt",
                 "file:internal/application/audit/coverage.go",
                 "file:testdata/ddl-golden/T16.json",
