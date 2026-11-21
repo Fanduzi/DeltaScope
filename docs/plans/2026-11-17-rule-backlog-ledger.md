@@ -1029,7 +1029,7 @@ new default behavior is approved per family before implementation.
 | F03 | MySQL/TiDB columns/generated/multi-action | 6 | T03/T05/T07/T08 | unreviewed |
 | F04 | MySQL/TiDB index lifecycle | 3 | T09/T10 | unreviewed |
 | F05 | MySQL/TiDB ALTER options/online DDL | 3 | T15 | unreviewed |
-| F06 | TiDB recovery/flashback | 1 | T16 | unreviewed |
+| F06 | TiDB recovery/flashback | 1 | T16 | Exact TiDB 8.5 recovery boundaries verified and delivered at `0b485f88`. |
 | F07 | PostgreSQL schema/collation | 2 | T35 | Qualified schema creation and collation checks delivered at `3eba78f6`. Embedded schema elements and wider provider and execution facts remain open. |
 | F08 | PostgreSQL CREATE TABLE | 6 | T36 | Qualified declaration checks delivered at `10354d2b` alongside D2. The exact dimension review lists remaining catalog, parser and execution premises. |
 | F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2–D47 bounded ALTER checks delivered; authored and normalized dimensions remain open where catalog or expression facts are incomplete |
@@ -1077,7 +1077,7 @@ insufficient.
 | F05 | `mysql.alter-table.online-ddl` | ALGORITHM=INSTANT/INPLACE/COPY/DEFAULT; LOCK=NONE/SHARED/EXCLUSIVE/DEFAULT | unreviewed |
 | F05 | `mysql.alter-table.options` | ORDER BY; CONVERT TO CHARACTER SET; DEFAULT CHARACTER SET; ROW_FORMAT; AUTO_INCREMENT=; FORCE; ENABLE/DISABLE KEYS; COMMENT; ENGINE | unreviewed |
 | F05 | `tidb.alter-table.online-options` | ALGORITHM= (capability assertion, not selection); LOCK=; multiple actions per ALTER | unreviewed |
-| F06 | `tidb.flashback-recover` | FLASHBACK TABLE; FLASHBACK DATABASE; FLASHBACK CLUSTER; RECOVER TABLE | unreviewed |
+| F06 | `tidb.flashback-recover` | FLASHBACK TABLE; FLASHBACK DATABASE; FLASHBACK CLUSTER; RECOVER TABLE | Native fixtures verify table/database and job-based effects. Valid cluster forms parse and stay explicitly unsupported. Bare syntax still fails parse. |
 | F07 | `postgresql.create-schema` | CREATE SCHEMA; IF NOT EXISTS / AUTHORIZATION; schema elements | Exact namespace and role checks delivered. Embedded schema elements and execution authorization remain open. |
 | F07 | `postgresql.alter-collation` | REFRESH VERSION; RENAME/OWNER/SET SCHEMA | Qualified target checks and bounded provider-version presence checks delivered. Other provider and session facts remain open. |
 | F08 | `postgresql.create-table` | basic columns; IF NOT EXISTS; column defaults; CHECK constraint; PRIMARY KEY / UNIQUE; FOREIGN KEY / REFERENCES; EXCLUDE constraint; table constraint clause; WITH storage parameters; USING access method; ON COMMIT / TABLESPACE; OF composite type; arrays and composite columns; generation-declaration | D2 and qualified direct column, key, foreign-key, expression, storage, typed-table and guard checks delivered. Complex expressions, EXCLUDE and wider resolution remain open. |
@@ -1755,7 +1755,14 @@ The parent row retains `mixed_coverage`. Six canonical T16 cases supplement
 its historical probes. [Native fixture and evidence](../../testdata/ddl-inventory/evidence/tidb.flashback-recover.native.md)
 · [Decision record](../decisions/2026-11-21-tidb-recovery-boundaries.md).
 
-The joint T16 preview passed 66 cases and 974 assertions. Verification on the fixed F06 candidate is pending.
+The joint T16 preview passed 66 cases and 974 assertions. Delivered at `0b485f886099f60b3b7a5023b521bf616a8aab75`. All 50 canonical tasks passed with 4,832 cases and
+112,120 assertions. T16 passed 66 cases and 974 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44960903269/job/137019256983),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44960903269/job/137019256855),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44960903269/job/137019256927),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44960903245/job/137019256707),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137019318257) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
