@@ -1406,6 +1406,25 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136753629641) passed at t
 
 - [Partition constraint keys](../decisions/2026-11-21-postgresql-partition-constraint-keys.md)
 
+## F07 exact dimension review
+
+The two rows retain the five authored dimensions at the PostgreSQL 17 anchor. The joint candidate binds 37 selectors across four cells. Its fixed delivery receipt will identify the commit and complete validation chain.
+
+| Inventory dimension | Evidence and present scope | Remaining premise |
+| --- | --- | --- |
+| `postgresql.create-schema` / CREATE SCHEMA | `pg-create-schema-target-*` distinguishes an occupied exact namespace from a fresh one and checks the `pg_` prefix under the observed setting. Native controls preserve quoted case and distinguish reserved lowercase from ordinary quoted uppercase. | Database CREATE privilege, lock and execution outcomes need separate evidence. |
+| `postgresql.create-schema` / IF NOT EXISTS / AUTHORIZATION | `pg-create-schema-target-*` verifies explicit and implicit schema names, missing or PUBLIC owner, and owner resolution before a guard can skip creation. PostgreSQL 17.7 native probes also resolve `CURRENT_USER` and `SESSION_USER`. | Session-role authorization and extension membership are separate premises. Ordered audit withholds schema state for an authored owner when execution remains uncertain. |
+| `postgresql.create-schema` / schema elements | T35 `create-schema-schema-elements` preserves the existing adapter refusal for `CREATE SCHEMA app CREATE TABLE t (id int)`. The PostgreSQL 17.7 native control creates the embedded table in a rollback transaction. | The adapter would need modeled child statements, PostgreSQL's creation ordering and exact name resolution under the command's temporary search path. |
+| `postgresql.alter-collation` / REFRESH VERSION | `pg-collation-refresh-*` checks exact source identity in the database encoding, rejects refreshing the database default via ALTER COLLATION, and compares version presence for tested libc and built-in C/POSIX cases. | Other provider locales and unqualified source selection need evidence. Updating a recorded version does not establish that dependent indexes were rebuilt. |
+| `postgresql.alter-collation` / RENAME/OWNER/SET SCHEMA | `pg-collation-change-*` checks qualified source and destination slots, missing schemas, the same-schema no-op and the TOAST restriction. The owner controls verify resolved session roles and the refusal for a missing role before source lookup. | Temporary namespace aliases, unqualified source selection, execution privileges and other provider encodings need separate evidence. |
+
+- [Original T35 and paired controls](../../testdata/ddl-golden/T35.json)
+- [Schema creation targets](../decisions/2026-11-21-postgresql-create-schema-target.md)
+- [Collation refresh targets](../decisions/2026-11-21-postgresql-collation-refresh-target.md)
+- [Collation namespace and owner checks](../decisions/2026-11-21-postgresql-collation-change-target.md)
+
+The joint T35 preview passed 77 cases and 1,608 assertions. Verification on the fixed F07 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

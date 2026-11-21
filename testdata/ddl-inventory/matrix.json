@@ -6029,7 +6029,10 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-schema.create-schema.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T35.json#pg-create-schema-target-unguarded-duplicate",
+                "file:testdata/ddl-golden/T35.json#pg-create-schema-target-reserved-observed-settings",
+                "file:testdata/ddl-golden/T35.json#pg-create-schema-target-quoted-case-distinct-nonreserved-name"
               ]
             }
           ]
@@ -6037,7 +6040,7 @@
         {
           "subaction_id": "IF NOT EXISTS / AUTHORIZATION",
           "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -6045,10 +6048,18 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-schema.if-not-exists-authorization.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T35.json#create-schema-target-offline",
+                "file:testdata/ddl-golden/T35.json#pg-create-schema-target-explicit-exact-schema-owner",
+                "file:testdata/ddl-golden/T35.json#pg-create-schema-target-implicit-owner-schema",
+                "file:testdata/ddl-golden/T35.json#pg-create-schema-target-missing-role-precedes-guard",
+                "file:testdata/ddl-golden/T35.json#pg-create-schema-target-present-role-and-existing-schema",
+                "file:testdata/ddl-golden/T35.json#pg-create-schema-target-public-role",
+                "file:testdata/ddl-golden/T35.json#pg-create-schema-target-reserved-name-before-duplicate-guard",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/create_schema_owner_absent.expected.yaml#ddl.pg.create_schema.target.valid"
               ]
             }
           ]
@@ -6304,7 +6315,7 @@
         {
           "subaction_id": "REFRESH VERSION",
           "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -6312,10 +6323,20 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-collation.refresh-version.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T35.json#collation-refresh-offline",
+                "file:testdata/ddl-golden/T35.json#pg-collation-refresh-missing-collation",
+                "file:testdata/ddl-golden/T35.json#pg-collation-refresh-default-collation",
+                "file:testdata/ddl-golden/T35.json#pg-collation-refresh-version-untracked-c-collation",
+                "file:testdata/ddl-golden/T35.json#pg-collation-refresh-quoted-case-distinction",
+                "file:testdata/ddl-golden/T35.json#pg-collation-refresh-same-name-as-default-in-other-schema",
+                "file:testdata/ddl-golden/T35.json#pg-collation-refresh-stored-version-without-a-provider-version",
+                "file:testdata/ddl-golden/T35.json#pg-collation-refresh-tracked-builtin-version-changes",
+                "file:testdata/ddl-golden/T35.json#pg-collation-refresh-external-provider-version-unobserved",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/collation_refresh_default.expected.yaml#ddl.pg.alter_collation.refresh.target.valid"
               ]
             }
           ]
@@ -6334,7 +6355,23 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-collation.rename-owner-set-schema.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T35.json#collation-change-offline",
+                "file:testdata/ddl-golden/T35.json#pg-collation-change-rename-to-clear-slot",
+                "file:testdata/ddl-golden/T35.json#pg-collation-change-rename-existing-destination",
+                "file:testdata/ddl-golden/T35.json#pg-collation-change-rename-to-same-name",
+                "file:testdata/ddl-golden/T35.json#pg-collation-change-move-to-clear-namespace",
+                "file:testdata/ddl-golden/T35.json#pg-collation-change-move-to-same-namespace",
+                "file:testdata/ddl-golden/T35.json#pg-collation-change-move-with-occupied-name",
+                "file:testdata/ddl-golden/T35.json#pg-collation-change-move-to-missing-namespace",
+                "file:testdata/ddl-golden/T35.json#pg-collation-change-missing-source-before-missing-destination",
+                "file:testdata/ddl-golden/T35.json#pg-collation-change-owner-exact-name",
+                "file:testdata/ddl-golden/T35.json#pg-collation-change-owner-missing-name",
+                "file:testdata/ddl-golden/T35.json#pg-collation-change-owner-public",
+                "file:testdata/ddl-golden/T35.json#pg-collation-change-owner-session-alias",
+                "file:testdata/ddl-golden/T35.json#pg-collation-change-move-to-toast-schema",
+                "file:testdata/ddl-golden/T35.json#pg-collation-change-missing-owner-precedes-missing-source",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/collation_rename_destination_exists.expected.yaml#ddl.pg.alter_collation.change.target.valid"
               ]
             }
           ]
