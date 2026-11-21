@@ -1035,7 +1035,7 @@ new default behavior is approved per family before implementation.
 | F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2–D47 bounded ALTER checks delivered; authored and normalized dimensions remain open where catalog or expression facts are incomplete |
 | F10 | PostgreSQL DROP/TRUNCATE | 2 | T38 | Qualified target and RESTRICT dependency slice delivered at `b5cf88ce`. Wider boundaries remain in the dimension review. |
 | F11 | PostgreSQL indexes/operator families | 4 | T39 | unreviewed |
-| F12 | PostgreSQL views/materialized views | 5 | T40 | CREATE options, DROP target and REFRESH checks delivered at `da3efecc`. Remaining dimensions are tracked below. |
+| F12 | PostgreSQL views/materialized views | 5 | T40 | Qualified lifecycle, options, refresh and bounded view output and dependency checks delivered through `919f1d17`. Remaining premises below. |
 | F13 | PostgreSQL types/operators | 3 | T41 | unreviewed |
 | F14 | PostgreSQL row-security policy | 1 | T42 | unreviewed |
 | F15 | PostgreSQL sequences | 2 | T43 | unreviewed |
@@ -1097,9 +1097,9 @@ insufficient.
 | F11 | `postgresql.alter-index` | RENAME TO; SET TABLESPACE; SET/RESET parameters; ATTACH PARTITION; IF EXISTS | unreviewed |
 | F11 | `postgresql.create-operator-family` | CREATE OPERATOR FAMILY; AS members | unreviewed |
 | F11 | `postgresql.alter-operator-family` | ADD/DROP members; RENAME/OWNER/SET SCHEMA | unreviewed |
-| F12 | `postgresql.create-view` | CREATE VIEW; OR REPLACE / TEMP; column list; WITH options; CHECK OPTION; RECURSIVE | Option checks delivered. Query and target premises remain open. |
+| F12 | `postgresql.create-view` | CREATE VIEW; OR REPLACE / TEMP; column list; WITH options; CHECK OPTION; RECURSIVE | Options, qualified targets and source-free literal outputs have delivered checks. Broader query and session semantics remain open. |
 | F12 | `postgresql.alter-view` | RENAME/SET SCHEMA/OWNER; SET/RESET options; ALTER COLUMN DEFAULT; IF EXISTS | Qualified RENAME, SET SCHEMA, OWNER, SET/RESET options and column defaults delivered in the documented scope. Wider definition and execution facts remain open. |
-| F12 | `postgresql.drop-view` | DROP VIEW; IF EXISTS CASCADE | Target, guarded absence and direct RESTRICT checks delivered. Wider dependency and session cases remain open. |
+| F12 | `postgresql.drop-view` | DROP VIEW; IF EXISTS CASCADE | Ordered qualified targets, guarded absence and direct rewrite and row-type column dependencies delivered. Broader cascades and session cases remain open. |
 | F12 | `postgresql.alter-materialized-view` | RENAME/SET SCHEMA/OWNER; SET/RESET options; DEPENDS ON EXTENSION | Qualified rename, schema-move, owner, selected storage options and installed extension checks delivered. Other options and drop-time effects remain open. |
 | F12 | `postgresql.refresh-materialized-view` | REFRESH basic; CONCURRENTLY; WITH NO DATA | Target and concurrent refresh prerequisites delivered. Runtime query, privilege and lock outcomes remain open. |
 | F13 | `postgresql.create-type` | ENUM; composite; RANGE; base type; shell type | unreviewed |
@@ -1224,18 +1224,18 @@ The five rows below contain the same 18 authored and normalized dimension names 
 
 | Inventory dimension | Evidence and present scope | Remaining premise |
 | --- | --- | --- |
-| `postgresql.create-view` / CREATE VIEW | T40 `create-view-create-view` retains the normal operation, and the native baseline creates a view over its fixture table. The independent forbid controls policy. | Exact target existence and collisions, query legality and source kind require separate checks. |
-| `postgresql.create-view` / OR REPLACE / TEMP | `create-view-or-replace-temp` exercises both authored flags. The native baseline replaces a view and adds an output column. | Replacement must preserve existing names, order, types and collations. Session-local resolution and temporary restrictions need facts. |
-| `postgresql.create-view` / column list | `create-view-column-list` parses a two-name alias list. The raw AST probe preserves an exact name with spaces. | Excess aliases, duplicate output names and query-derived column count require exact declarations and output facts. |
+| `postgresql.create-view` / CREATE VIEW | `pg-create-view-output-*` checks qualified targets of source-free literal queries, including a proved missing schema, a relation collision and an observed empty output. | Query analysis, type namespace collisions, permissions and broader source facts require separate evidence. |
+| `postgresql.create-view` / OR REPLACE / TEMP | `pg-create-view-output-*` checks the existing name, type, modifier and collation prefix and permits an appended output column. TEMP in a proved persistent schema blocks. | The `explicit-temp-alias` control pins the gap for the `pg_temp` session alias. Other query shapes and implicit temporary sources require facts. |
+| `postgresql.create-view` / column list | `pg-create-view-output-*` verifies alias order, excess aliases, duplicate exact names, and valid partial alias lists for source-free literal outputs. | Expanded stars and other query-derived outputs still need analysis. |
 | `postgresql.create-view` / WITH options | `pg-create-view-options-*` distinguishes recognized Boolean and CHECK OPTION values from invalid values, unknown names and duplicates. The offline control reports a missing observed version. | Effective privileges, barrier behavior and query execution require separate evidence. |
-| `postgresql.create-view` / CHECK OPTION | `create-view-check-option` exercises authored LOCAL. `pg-create-view-options-both-check-options` proves duplicate declaration refusal. `pg-create-view-options-not-updatable-check-option` records the native updatability refusal separately. | LOCAL and CASCADED evaluation and query updatability require their own facts. |
+| `postgresql.create-view` / CHECK OPTION | The `pg-create-view-options-not-updatable-check-option` and `-literal-check-clause` controls verify the PostgreSQL 17 refusal for the option and clause forms on source-free literal queries. | LOCAL and CASCADED execution and the automatic updatability of other queries require separate evidence. |
 | `postgresql.create-view` / RECURSIVE | `create-view-recursive` parses the recursive form. The AST and binding can express the equivalent recursive query. | Recursive self-binding and query semantics need separate evidence. |
 | `postgresql.alter-view` / RENAME/SET SCHEMA/OWNER | T40 `pg-view-namespace-*` checks exact qualified names, row and array type conflicts, missing schemas, same-name rename and same-schema moves. `pg-view-owner-*` covers literal and session roles, including missing roles and PUBLIC. | Unqualified sources still need fresh search-path evidence. Membership, authorization and locks need separate evidence. |
 | `postgresql.alter-view` / SET/RESET options | `pg-alter-view-options-*` checks exact target kind before SET/RESET declarations, including invalid SET values, RESET with a value, repetitive or unknown RESET names and ignored namespaces. | CHECK OPTION needs evidence of updatability. Multi-action changes still require ordered-state evidence. |
 | `postgresql.alter-view` / ALTER COLUMN DEFAULT | `pg-view-column-default-*` binds the exact qualified view and user column for SET or DROP. It checks source precedence and reports column references and subqueries in a default. Native SET and DROP verify the stored catalog default. | Coercion, function resolution and later writes require independent evidence. |
 | `postgresql.alter-view` / IF EXISTS | The qualified `pg-view-namespace-*`, `pg-view-owner-*` and `pg-alter-view-options-*` controls skip proved absence under the guard. A present object of the wrong kind still blocks. | Column default controls also verify guarded absence and wrong-kind precedence. Unqualified source resolution requires fresh session facts. |
-| `postgresql.drop-view` / DROP VIEW | T40 proves ordinary and materialized dependent views block RESTRICT on the exact bound target, alongside missing and successful quoted targets. | Other dependency classes need separate catalog evidence. Ordered multi-target DROP VIEW remains an explicit parser-adapter boundary. |
-| `postgresql.drop-view` / IF EXISTS CASCADE | T40 confirms guarded absence is silent under the metadata blocker, while wrong-kind `42809` and guarded RESTRICT dependencies still block. A native CASCADE control removes the dependent view. | Wider CASCADE effects and session-local resolution require independent evidence. |
+| `postgresql.drop-view` / DROP VIEW | T40 `pg-drop-view-set-*` covers ordered qualified targets, duplicates, a dependency within the deletion set and an external rewrite or row-type column dependency. | Other dependency classes and execution authorization require evidence. |
+| `postgresql.drop-view` / IF EXISTS CASCADE | T40 covers guarded absence in a list, wrong-kind precedence and native CASCADE removal of the tested external views or column. | Wider CASCADE effects and session-local resolution require independent evidence. |
 | `postgresql.alter-materialized-view` / RENAME/SET SCHEMA/OWNER | T40 `pg-view-namespace-*` checks exact source and destination identities. Native and audit controls show the array conflict precedes the attached-index conflict. `pg-view-owner-*` covers present and absent destination roles. | Membership, authorization and locks need separate evidence. |
 | `postgresql.alter-materialized-view` / SET/RESET options | `pg-matview-storage-options-*` checks qualified targets, integer fillfactor, selected heap and TOAST options, namespaces and RESET values. Native controls observe stored options and their removal. | Quoted fillfactor, other parameters and custom access methods need distinct evidence. |
 | `postgresql.alter-materialized-view` / DEPENDS ON EXTENSION | `pg-matview-extension-*` checks the exact source kind and installed extension for add and remove. Native controls verify repeated add and absent-edge remove. | Drop-time effects, unqualified source selection and authorization remain separate. |
@@ -1345,7 +1345,15 @@ recursive query semantics and broader CASCADE effects require separate facts.
 T40 preview passed 179 cases and 5,354 assertions. Thirty-four
 selectors bind six exact PostgreSQL 17 cells. The prior 147 case IDs and
 authored DDL remain. One expectation now checks the CHECK OPTION blocker.
-Verification on the fixed candidate is pending.
+Delivered at `919f1d17c11f86bd4eea7a58fc6c53f504565488`. All 50 canonical tasks passed with 4,083 cases and
+82,138 assertions. T40 passed 179 cases and 5,354
+assertions. The validator, read-only review, owned resource cleanup and
+merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44865129618/job/136726995751),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44865129618/job/136726995694),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44865129618/job/136726995564),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44865129574/job/136726995103),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136727062716) passed at the delivered SHA.
 
 - [CREATE VIEW output](../decisions/2026-11-21-postgresql-create-view-output.md)
 - [Ordered DROP VIEW](../decisions/2026-11-21-postgresql-drop-view-target-set.md)
