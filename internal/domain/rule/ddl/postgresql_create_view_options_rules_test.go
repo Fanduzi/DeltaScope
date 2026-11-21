@@ -12,9 +12,9 @@ func TestPGCreateViewOptions(t *testing.T) {
 	valid := spec.PGViewOption{Name: "security_invoker", ValueKnown: true, ValueValid: true}
 	check := spec.PGViewOption{Name: "check_option", ValueKnown: true, ValueValid: true}
 	for _, tc := range []struct {
-		name, reason, gap string
-		options           []spec.PGViewOption
-		clause, offline   bool
+		name, reason, gap        string
+		options                  []spec.PGViewOption
+		clause, offline, literal bool
 	}{
 		{name: "valid", options: []spec.PGViewOption{valid, check}},
 		{name: "duplicate", options: []spec.PGViewOption{valid, valid}, reason: "view_option_duplicate"},
@@ -23,6 +23,9 @@ func TestPGCreateViewOptions(t *testing.T) {
 		{name: "bad value", options: []spec.PGViewOption{{Name: "security_invoker", ValueKnown: true}}, reason: "view_option_invalid_value"},
 		{name: "unmodeled value", options: []spec.PGViewOption{{Name: "security_invoker"}}, gap: "view.option_value"},
 		{name: "duplicate CHECK OPTION", options: []spec.PGViewOption{check}, clause: true, reason: "view_check_option_duplicate"},
+		{name: "literal CHECK OPTION clause", clause: true, literal: true, reason: "view_not_automatically_updatable"},
+		{name: "literal check_option parameter", options: []spec.PGViewOption{check}, literal: true, reason: "view_not_automatically_updatable"},
+		{name: "literal without CHECK OPTION", options: []spec.PGViewOption{valid}, literal: true},
 		{name: "offline version", options: []spec.PGViewOption{valid}, offline: true, gap: "instance.version"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -33,6 +36,9 @@ func TestPGCreateViewOptions(t *testing.T) {
 			}
 			if tc.clause {
 				s.DDL.Options["check_option"] = "true"
+			}
+			if tc.literal {
+				s.DDL.PGCreateViewOutput = &spec.PGCreateViewOutput{Columns: []spec.PGViewOutputColumn{}}
 			}
 			r := pgCreateViewOptionsRule{rule.LevelBlocker}
 			if reason, gap := assessPGCreateViewOptions(s); reason != tc.reason || gap != tc.gap {

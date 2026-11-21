@@ -5,6 +5,8 @@ import "strings"
 
 // Metadata carries optional non-SQL facts for one statement evaluation.
 type Metadata struct {
+	PGDropViewSet               *PGDropViewSetState               `json:"-"`
+	PGCreateViewTarget          *PGCreateViewTarget               `json:"-"`
 	PGMaterializedViewExtension *PGMaterializedViewExtensionState `json:"-"`
 	PGViewDefault               *PGViewDefaultState               `json:"-"`
 	PGDropViewState             *PGDropViewState                  `json:"-"`
@@ -804,6 +806,8 @@ const (
 
 // ObjectSnapshot carries the metadata-validated state of one non-table database object.
 type ObjectSnapshot struct {
+	PGDropViewSet               *PGDropViewSetState               `json:"-"`
+	PGCreateViewTarget          *PGCreateViewTarget               `json:"-"`
 	PGMaterializedViewExtension *PGMaterializedViewExtensionState `json:"-"`
 	PGViewDefault               *PGViewDefaultState               `json:"-"`
 	PGDropViewState             *PGDropViewState                  `json:"-"`

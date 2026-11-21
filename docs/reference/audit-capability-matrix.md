@@ -1013,17 +1013,18 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.create_view.check_option.notice` | `CREATE VIEW ... WITH CHECK OPTION` enforces check option — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.create_view.options.valid` | Checks PostgreSQL 17 CREATE VIEW option names, duplicates, Boolean and CHECK OPTION values | Gap | ✓ | blocker |
 | `ddl.pg.drop_view.cascade.warn` | `DROP VIEW ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
-| `ddl.pg.drop_view.target.valid` | Checks exact PostgreSQL 17 DROP VIEW targets and direct dependent views under RESTRICT | Gap | ✓ | blocker |
+| `ddl.pg.drop_view.target.valid` | Checks ordered PostgreSQL 17 DROP VIEW targets and direct rewrite or row-type column dependencies under RESTRICT | Gap | ✓ | blocker |
 | `ddl.pg.alter_view.rename.notice` | `ALTER VIEW ... RENAME TO` changes the view name — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.alter_view.set_schema.notice` | `ALTER VIEW ... SET SCHEMA` moves the view to a different schema — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.alter_view.namespace.valid` | Checks PostgreSQL 17 view and materialized-view rename and schema-move premises | Gap | ✓ | blocker |
 | `ddl.pg.alter_view.owner.valid` | Checks exact PostgreSQL 17 view OWNER TO targets, guards and role existence | Gap | ✓ | blocker |
+| `ddl.pg.create_view.output.valid` | Checks exact PostgreSQL 17 view creation targets and literal output compatibility | Gap | ✓ | blocker |
 | `ddl.pg.alter_view.options.valid` | Checks exact PostgreSQL 17 ordinary-view SET/RESET targets and declarations | Gap | ✓ | blocker |
 | `ddl.pg.alter_view.column_default.valid` | Checks exact PostgreSQL 17 ordinary-view column default targets and disallowed references | Gap | ✓ | blocker |
 | `ddl.pg.alter_materialized_view.options.valid` | Checks exact PostgreSQL 17 materialized-view targets and supported storage options | Gap | ✓ | blocker |
 | `ddl.pg.alter_materialized_view.extension.valid` | Checks exact PostgreSQL 17 materialized-view extension dependency targets | Gap | ✓ | blocker |
 
-The CREATE VIEW option check needs an observed PostgreSQL 17 version. View query evaluation and updatability require separate evidence.
+The CREATE VIEW option check needs an observed PostgreSQL 17 version. CHECK OPTION on a source-free literal query is refused. Other query updatability requires separate evidence.
 
 ---
 

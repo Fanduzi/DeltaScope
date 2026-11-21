@@ -1,0 +1,1 @@
+DROP VIEW app.v RESTRICT;

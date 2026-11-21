@@ -501,7 +501,7 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 		for _, seed := range p.pgDropViewStates {
 			if seed.Schema == request.Schema && seed.Name == request.Name {
 				target := spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.Schema, Name: seed.Name}}
-				return &spec.ObjectSnapshot{PGDropViewState: &spec.PGDropViewState{Target: target, Kind: seed.Kind, DependentView: seed.DependentView, CheckOption: seed.CheckOption, Heap: seed.Heap, HasToast: seed.HasToast}}, nil
+				return &spec.ObjectSnapshot{PGDropViewState: &spec.PGDropViewState{Target: target, Kind: seed.Kind, DependentView: seed.DependentView, DependentColumn: seed.DependentColumn, CheckOption: seed.CheckOption, Heap: seed.Heap, HasToast: seed.HasToast}}, nil
 			}
 		}
 		return nil, nil

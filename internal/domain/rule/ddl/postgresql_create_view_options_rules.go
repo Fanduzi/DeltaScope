@@ -17,13 +17,33 @@ func newPGCreateViewOptionsRule(cfg policy.RulePolicy) (rule.StatementRule, erro
 func (r pgCreateViewOptionsRule) ID() string { return ruleIDPGCreateViewOptionsValid }
 
 func (r pgCreateViewOptionsRule) AppliesTo(s spec.Statement) bool {
-	return s.Dialect == spec.DialectPostgreSQL && s.Kind == spec.KindDDL && s.Unsupported == nil && s.DDL != nil &&
-		s.DDL.Operation == spec.DDLOperationCreateView && len(s.DDL.PGViewOptions) != 0
+	if s.Dialect != spec.DialectPostgreSQL || s.Unsupported != nil || s.DDL == nil || s.DDL.Operation != spec.DDLOperationCreateView {
+		return false
+	}
+	return len(s.DDL.PGViewOptions) != 0 || pgLiteralViewCheckOption(s.DDL)
+}
+
+func pgLiteralViewCheckOption(ddl *spec.DDL) bool {
+	if ddl.PGCreateViewOutput == nil || ddl.PGCreateViewOutput.Columns == nil {
+		return false
+	}
+	if ddl.Options["check_option"] == "true" {
+		return true
+	}
+	for _, option := range ddl.PGViewOptions {
+		if option.Namespace == "" && option.Name == "check_option" {
+			return true
+		}
+	}
+	return false
 }
 
 func assessPGCreateViewOptions(s spec.Statement) (reason, fact string) {
 	if !pgConstraintTargetVersionKnown(s) {
 		return "", "instance.version"
+	}
+	if pgLiteralViewCheckOption(s.DDL) {
+		return "view_not_automatically_updatable", ""
 	}
 	return assessPGViewOptionDeclarations(s.DDL.PGViewOptions, s.DDL.Options["check_option"] == "true", false)
 }
@@ -87,6 +107,8 @@ func (r pgCreateViewOptionsRule) Evaluate(ctx context.Context, s spec.Statement)
 		message = "A CREATE VIEW option has an invalid value"
 	case "view_check_option_duplicate":
 		message = "CHECK OPTION appears in both the option list and the clause"
+	case "view_not_automatically_updatable":
+		message = "PostgreSQL requires an automatically updatable view for CHECK OPTION"
 	}
 	return []rule.Finding{{Level: r.level, Message: message,
 		Metadata: map[string]any{"view": s.DDL.ObjectName, "reason_code": reason}}}, nil

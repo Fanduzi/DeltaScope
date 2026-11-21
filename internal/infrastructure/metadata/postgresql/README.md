@@ -43,7 +43,9 @@ comparisons for the member and scope binding.
 | materialized_view_options.go | Observes exact PostgreSQL relation kind, heap method and TOAST presence for materialized view options. |
 | view_default.go | Observes qualified view relation kind and exact user-column existence. |
 | view_owner.go | Observes view kind and owner-role existence in one catalog read. |
-| drop_view.go | Observes exact DROP VIEW relation kind and normal rewrite dependencies without exposing discovered object names. |
+| create_view_output.go | Observes exact PostgreSQL creation namespace, relation kind and ordered user output columns. |
+| drop_view.go | Observes exact DROP VIEW relation kind, normal rewrite and row-type column dependencies. |
+| drop_view_set.go | Checks the ordered qualified DROP VIEW list in one catalog read and looks for covered dependencies outside the selection. |
 | destructive_references.go | Observes external foreign keys for the expanded TRUNCATE RESTRICT set and checks ordered partitioned ONLY eligibility and direct foreign-key and rewrite dependencies for DROP RESTRICT over exact target lists. |
 | refresh_materialized_view.go | Reads relation kind, population and usable unique B-tree eligibility over all index attributes. |
 | resolve_object.go | Resolves non-table database object metadata from PostgreSQL catalogs with schema-qualified ambiguity detection and privacy-safe attribute projection |

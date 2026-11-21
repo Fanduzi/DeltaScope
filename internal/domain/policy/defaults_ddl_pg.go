@@ -660,6 +660,7 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.create_view.output.valid":                {Enabled: true, Level: rule.LevelBlocker},
 		"ddl.pg.alter_view.column_default.valid":         {Enabled: true, Level: rule.LevelBlocker},
 		"ddl.pg.alter_view.options.valid":                {Enabled: true, Level: rule.LevelBlocker},
 		"ddl.pg.alter_materialized_view.extension.valid": {Enabled: true, Level: rule.LevelBlocker},

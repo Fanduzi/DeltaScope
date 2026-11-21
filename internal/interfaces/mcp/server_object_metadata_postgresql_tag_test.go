@@ -1174,3 +1174,73 @@ func TestMCPPGMaterializedViewExtensionTarget(t *testing.T) {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }
+
+type createViewOutputAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (createViewOutputAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "create_view_output" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGCreateViewTarget: &spec.PGCreateViewTarget{Table: spec.Table{Schema: req.Schema, Name: req.Name}, SchemaExists: true, Kind: "v"}}, nil
+}
+
+func TestMCPPGCreateViewOutputTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := createViewOutputAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "CREATE VIEW app.mv AS SELECT 1 AS id", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"view_output_target_exists"`) || !strings.Contains(string(body), `"ddl.pg.create_view.output.valid"`) || strings.Contains(string(body), "PGCreateViewTarget") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type dropViewSetAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (dropViewSetAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "drop_view_set" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGDropViewSet: &spec.PGDropViewSetState{Targets: req.PGDestructiveTargets, Position: 2, Reason: "drop_view_has_row_type_dependency"}}, nil
+}
+
+func TestMCPPGDropViewSet(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := dropViewSetAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "DROP VIEW app.mv,other.v RESTRICT", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"drop_view_has_row_type_dependency"`) || !strings.Contains(string(body), `"ddl.pg.drop_view.target.valid"`) || strings.Contains(string(body), "PGDropViewSet") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}

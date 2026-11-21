@@ -695,3 +695,41 @@ func TestAuditPGMaterializedViewExtensionThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing ALTER MATERIALIZED VIEW extension dependency finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditPGCreateViewOutputThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCreateViewTarget: &spec.PGCreateViewTarget{Table: spec.Table{Schema: "app", Name: "mv"}, SchemaExists: true, Kind: "v"}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE VIEW app.mv AS SELECT 1 AS id`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "create_view_output" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_view.output.valid" && f.Metadata["reason_code"] == "view_output_target_exists" {
+			return
+		}
+	}
+	t.Fatalf("missing CREATE VIEW collision finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGDropViewSetThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGDropViewSet: &spec.PGDropViewSetState{Targets: []spec.PGDestructiveTableTarget{{Table: spec.Table{Schema: "app", Name: "mv"}}, {Table: spec.Table{Schema: "other", Name: "v"}}}, Position: 2, Reason: "drop_view_has_row_type_dependency"}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `DROP VIEW app.mv,other.v RESTRICT`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || len(provider.objectCalls[0].PGDestructiveTargets) != 2 || provider.objectCalls[0].Type != "drop_view_set" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.drop_view.target.valid" && f.Metadata["reason_code"] == "drop_view_has_row_type_dependency" {
+			return
+		}
+	}
+	t.Fatalf("missing DROP VIEW row-type dependency finding: %+v", result.Statements[0].Findings)
+}

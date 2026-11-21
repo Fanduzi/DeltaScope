@@ -25,6 +25,16 @@ func assessPGDropViewTarget(s spec.Statement) (reason, missing string) {
 	if s.Metadata == nil || !spec.PG17Observed(s.Metadata.Instance) {
 		return "", "instance.version"
 	}
+	if len(s.DDL.PGDropViewTargets) > 1 {
+		if spec.PGDropViewSetLookup(s) == nil {
+			return "", "view.target_identity"
+		}
+		state := s.Metadata.PGDropViewSet
+		if state == nil || !state.Matches(s.DDL.PGDropViewTargets, s.DDL.Options["if_exists"] == "true", s.DDL.Options["cascade"] == "true") {
+			return "", "view.pg_drop_state"
+		}
+		return state.Reason, ""
+	}
 	if spec.PGDropViewLookup(s) == nil {
 		return "", "view.target_identity"
 	}
@@ -41,6 +51,8 @@ func assessPGDropViewTarget(s spec.Statement) (reason, missing string) {
 		return "drop_view_wrong_kind", ""
 	case state.DependentView && s.DDL.Options["cascade"] != "true":
 		return "drop_view_has_direct_dependency", ""
+	case state.DependentColumn && s.DDL.Options["cascade"] != "true":
+		return "drop_view_has_row_type_dependency", ""
 	}
 	return "", ""
 }
@@ -61,12 +73,17 @@ func (r pgDropViewTargetRule) Evaluate(ctx context.Context, s spec.Statement) ([
 		message = "The PostgreSQL DROP VIEW target has the wrong relation kind"
 	case "drop_view_has_direct_dependency":
 		message = "A view or materialized view depends on the PostgreSQL DROP VIEW target"
+	case "drop_view_has_row_type_dependency":
+		message = "A column outside the drop selection depends on the PostgreSQL view row type"
 	default:
 		return nil, nil
 	}
-	target := s.DDL.PGDropViewTarget.Table
+	target := s.DDL.PGDropViewTarget
+	if len(s.DDL.PGDropViewTargets) > 1 {
+		target = &s.DDL.PGDropViewTargets[s.Metadata.PGDropViewSet.Position-1]
+	}
 	return []rule.Finding{{Level: r.level, Message: message, Metadata: map[string]any{
-		"schema": target.Schema, "view": target.Name, "reason_code": reason,
+		"schema": target.Table.Schema, "view": target.Table.Name, "reason_code": reason,
 	}}}, nil
 }
 

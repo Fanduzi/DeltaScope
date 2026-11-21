@@ -1098,7 +1098,7 @@ These rules guard PostgreSQL function and procedure lifecycle operations. They o
 
 ---
 
-## DDL: PostgreSQL Advanced View Lifecycle Rules (14 rules)
+## DDL: PostgreSQL Advanced View Lifecycle Rules (15 rules)
 
 These rules guard PostgreSQL view lifecycle operations beyond the base `CREATE VIEW` / `DROP VIEW` forms. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
 
@@ -1107,14 +1107,15 @@ These rules guard PostgreSQL view lifecycle operations beyond the base `CREATE V
 | `ddl.pg.create_or_replace_view.advisory` | `CREATE OR REPLACE VIEW` replaces an existing view — advises review of downstream dependencies | notice | No |
 | `ddl.pg.create_temp_view.notice` | `CREATE TEMP VIEW` / `CREATE TEMPORARY VIEW` creates a session-scoped view — informational notice | notice | No |
 | `ddl.pg.create_view.check_option.notice` | `CREATE VIEW ... WITH CHECK OPTION` enforces check option on inserts/updates through the view — informational notice | notice | No |
-| `ddl.pg.create_view.options.valid` | Checks declared option names, duplicate declarations, security Boolean values and CHECK OPTION values on observed PostgreSQL 17 | blocker | Yes |
+| `ddl.pg.create_view.options.valid` | Checks PostgreSQL 17 view option declarations and refuses CHECK OPTION on a source-free literal query | blocker | Yes |
 | `ddl.pg.drop_view.cascade.warn` | `DROP VIEW ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
-| `ddl.pg.drop_view.target.valid` | Checks PostgreSQL 17 DROP VIEW target identity, guarded absence and direct view or materialized-view dependencies under RESTRICT | blocker | Yes |
+| `ddl.pg.drop_view.target.valid` | Checks ordered PostgreSQL 17 DROP VIEW targets, guarded absence, and direct rewrite and row-type column dependencies under RESTRICT | blocker | Yes |
 | `ddl.pg.alter_view.rename.notice` | `ALTER VIEW ... RENAME TO` changes the view name — informational notice | notice | No |
 | `ddl.pg.alter_view.set_schema.notice` | `ALTER VIEW ... SET SCHEMA` moves the view to a different schema — informational notice | notice | No |
 | `ddl.pg.alter_view.namespace.valid` | Checks exact PostgreSQL 17 VIEW and MATERIALIZED VIEW rename and schema-move sources, guards and destination collisions | blocker | Yes |
 | `ddl.pg.alter_view.owner.valid` | Checks PostgreSQL 17 ordinary and materialized view owner-change source, guarded absence and observed role existence | blocker | Yes |
 | `ddl.pg.alter_view.options.valid` | Checks ordinary PostgreSQL 17 ALTER VIEW SET/RESET targets and declarations. CHECK OPTION updatability requires separate evidence. | blocker | Yes |
+| `ddl.pg.create_view.output.valid` | Checks qualified PostgreSQL 17 CREATE VIEW targets and literal output compatibility for OR REPLACE. | blocker | Yes |
 | `ddl.pg.alter_view.column_default.valid` | Checks PostgreSQL 17 view SET/DROP DEFAULT targets and rejects raw column references or subqueries in a default | blocker | Yes |
 | `ddl.pg.alter_materialized_view.options.valid` | Checks a qualified PostgreSQL 17 materialized-view SET or RESET, including integer fillfactor and recognized heap and TOAST declarations. | blocker | Yes |
 | `ddl.pg.alter_materialized_view.extension.valid` | Checks the exact PostgreSQL 17 materialized view and installed extension for dependency changes. | blocker | Yes |

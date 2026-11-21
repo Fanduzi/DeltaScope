@@ -3,12 +3,13 @@ package spec
 // PGDropViewState binds the observed kind and rewrite dependency to a DROP VIEW target.
 // A blank kind on a bound state means the relation is absent.
 type PGDropViewState struct {
-	Target        PGDestructiveTableTarget
-	Kind          string
-	DependentView bool
-	CheckOption   bool
-	Heap          bool
-	HasToast      bool
+	Target          PGDestructiveTableTarget
+	Kind            string
+	DependentView   bool
+	DependentColumn bool
+	CheckOption     bool
+	Heap            bool
+	HasToast        bool
 }
 
 // PGDropViewLookup returns the exact qualified target of a single DROP VIEW.

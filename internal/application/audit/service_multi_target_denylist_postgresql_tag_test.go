@@ -48,3 +48,24 @@ func TestAuditSQLDenylistKeepsDistinctPostgreSQLDottedIdentities(t *testing.T) {
 		t.Fatalf("expected reject verdict, got %q", result.Verdict)
 	}
 }
+
+func TestAuditSQLDenylistChecksLaterPostgreSQLViewTarget(t *testing.T) {
+	configPath := writeDenylistPolicy(t, "      qualified_tables: [other.protected]\n")
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:        "DROP VIEW app.visible, other.protected",
+		Dialect:    spec.DialectPostgreSQL,
+		ConfigPath: configPath,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Verdict != report.VerdictReject || len(result.Statements) != 1 {
+		t.Fatalf("result = %+v", result)
+	}
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.table.denylist.forbid" && finding.Metadata["schema"] == "other" && finding.Metadata["table"] == "protected" {
+			return
+		}
+	}
+	t.Fatalf("missing denylist finding for second target: %+v", result.Statements[0].Findings)
+}

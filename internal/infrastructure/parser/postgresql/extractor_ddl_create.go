@@ -60,7 +60,7 @@ func extractViewStmt(statement spec.Statement, stmt *pg_query.ViewStmt) spec.Sta
 	if stmt.GetReplace() {
 		options["replace"] = "true"
 	}
-	if persistence := view.GetRelpersistence(); persistence != "" && persistence != "p" {
+	if view.GetRelpersistence() == "t" {
 		options["temporary"] = "true"
 	}
 	switch stmt.GetWithCheckOption() {
@@ -73,13 +73,15 @@ func extractViewStmt(statement spec.Statement, stmt *pg_query.ViewStmt) spec.Sta
 	}
 
 	statement.DDL = &spec.DDL{
-		Operation:     spec.DDLOperationCreateView,
-		ObjectName:    view.GetRelname(),
-		ObjectType:    "view",
-		Table:         tableFromRangeVar(view),
-		HasSelect:     stmt.GetQuery() != nil,
-		Options:       options,
-		PGViewOptions: pgViewOptions(stmt.GetOptions()),
+		Operation:               spec.DDLOperationCreateView,
+		ObjectName:              view.GetRelname(),
+		ObjectType:              "view",
+		Table:                   tableFromRangeVar(view),
+		HasSelect:               stmt.GetQuery() != nil,
+		Options:                 options,
+		PGViewOptions:           pgViewOptions(stmt.GetOptions()),
+		PGCreateViewOutput:      pgCreateViewOutput(stmt),
+		PGTableCatalogQualified: view.GetCatalogname() != "",
 	}
 	return statement
 }

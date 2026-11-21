@@ -486,7 +486,7 @@ func TestParserSupportsPostgreSQLDropView(t *testing.T) {
 	}
 }
 
-func TestParserRejectsPostgreSQLMultiTargetDropView(t *testing.T) {
+func TestParserPostgreSQLMultiTargetDropView(t *testing.T) {
 	t.Parallel()
 	parser := New()
 
@@ -502,10 +502,12 @@ func TestParserRejectsPostgreSQLMultiTargetDropView(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
-	if statement.Unsupported == nil {
-		t.Fatalf("expected multi-target drop view to stay unsupported, got %#v", statement)
+	if statement.Unsupported != nil || statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationDropView {
+		t.Fatalf("expected modeled DROP VIEW, got %#v", statement)
 	}
-	if statement.Unsupported.Feature != "drop" {
-		t.Fatalf("expected unsupported feature drop, got %#v", statement.Unsupported)
+	targets := statement.DDL.PGDropViewTargets
+	if len(targets) != 2 || targets[0].Table != (spec.Table{Schema: "public", Name: "active_users"}) ||
+		targets[1].Table != (spec.Table{Schema: "public", Name: "disabled_users"}) {
+		t.Fatalf("expected both exact targets in authored order, got %#v", targets)
 	}
 }

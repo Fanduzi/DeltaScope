@@ -136,13 +136,14 @@ type corpusPGColumnTraversal struct {
 }
 
 type corpusPGDropViewState struct {
-	Schema        string `yaml:"schema"`
-	Name          string `yaml:"name"`
-	Kind          string `yaml:"kind"`
-	DependentView bool   `yaml:"dependent_view"`
-	CheckOption   bool   `yaml:"check_option,omitempty"`
-	Heap          bool   `yaml:"heap,omitempty"`
-	HasToast      bool   `yaml:"has_toast,omitempty"`
+	Schema          string `yaml:"schema"`
+	Name            string `yaml:"name"`
+	Kind            string `yaml:"kind"`
+	DependentView   bool   `yaml:"dependent_view"`
+	DependentColumn bool   `yaml:"dependent_column,omitempty"`
+	CheckOption     bool   `yaml:"check_option,omitempty"`
+	Heap            bool   `yaml:"heap,omitempty"`
+	HasToast        bool   `yaml:"has_toast,omitempty"`
 }
 
 type corpusPGMaterializedViewExtensionState struct {

@@ -3,12 +3,14 @@ package spec
 
 // DDL contains the structural metadata extracted from a DDL statement.
 type DDL struct {
-	Operation DDLOperation     `json:"operation,omitempty"`
-	Table     *Table           `json:"table,omitempty"`
-	View      *ViewDeclaration `json:"-"`
+	PGDropViewTargets []PGDestructiveTableTarget `json:"-"`
+	Operation         DDLOperation               `json:"operation,omitempty"`
+	Table             *Table                     `json:"table,omitempty"`
+	View              *ViewDeclaration           `json:"-"`
 	// PGViewOptions retains authored CREATE VIEW options in AST order.
-	PGViewOptions               []PGViewOption `json:"-"`
-	PGMaterializedViewExtension string         `json:"-"`
+	PGViewOptions               []PGViewOption      `json:"-"`
+	PGCreateViewOutput          *PGCreateViewOutput `json:"-"`
+	PGMaterializedViewExtension string              `json:"-"`
 	// PGTableIfExists is the authored PostgreSQL ALTER TABLE relation guard.
 	PGTableIfExists bool `json:"-"`
 	// PGTableCatalogQualified records a three-part PostgreSQL ALTER TABLE identity.

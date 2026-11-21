@@ -1035,7 +1035,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 
 ---
 
-## DDL：PostgreSQL 高级视图生命周期规则（14 条）
+## DDL：PostgreSQL 高级视图生命周期规则（15 条）
 
 这些规则覆盖 PostgreSQL 视图生命周期操作，覆盖范围超出基础 `CREATE VIEW` / `DROP VIEW` 形态。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
 
@@ -1044,14 +1044,15 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 | `ddl.pg.create_or_replace_view.advisory` | `CREATE OR REPLACE VIEW` 替换已有视图——建议审查下游依赖 | notice | 否 |
 | `ddl.pg.create_temp_view.notice` | `CREATE TEMP VIEW` / `CREATE TEMPORARY VIEW` 创建会话级临时视图——信息性提示 | notice | 否 |
 | `ddl.pg.create_view.check_option.notice` | `CREATE VIEW ... WITH CHECK OPTION` 对通过视图的插入/更新强制检查选项——信息性提示 | notice | 否 |
-| `ddl.pg.create_view.options.valid` | 对已观测的 PostgreSQL 17 检查选项名、重复声明、安全布尔值和 CHECK OPTION 取值 | blocker | 是 |
+| `ddl.pg.create_view.options.valid` | 检查 PostgreSQL 17 视图选项声明，并拒绝常量查询上的 CHECK OPTION | blocker | 是 |
 | `ddl.pg.drop_view.cascade.warn` | `DROP VIEW ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
-| `ddl.pg.drop_view.target.valid` | 检查 PostgreSQL 17 DROP VIEW 的目标类型、缺失目标保护以及 RESTRICT 下直接依赖的视图和物化视图 | blocker | 是 |
+| `ddl.pg.drop_view.target.valid` | 按顺序检查 PostgreSQL 17 DROP VIEW 的目标和缺失保护，以及 RESTRICT 下的直接重写依赖和行类型列依赖 | blocker | 是 |
 | `ddl.pg.alter_view.rename.notice` | `ALTER VIEW ... RENAME TO` 变更视图名称——信息性提示 | notice | 否 |
 | `ddl.pg.alter_view.set_schema.notice` | `ALTER VIEW ... SET SCHEMA` 将视图移至不同 schema——信息性提示 | notice | 否 |
 | `ddl.pg.alter_view.namespace.valid` | 检查 PostgreSQL 17 视图和物化视图改名、迁移 schema 的精确源、缺失目标保护及目标名称冲突 | blocker | 是 |
 | `ddl.pg.alter_view.owner.valid` | 检查 PostgreSQL 17 视图及物化视图变更所有者时的对象类型、缺失目标保护和角色存在性 | blocker | 是 |
 | `ddl.pg.alter_view.options.valid` | 检查 PostgreSQL 17 普通视图的 SET/RESET 目标和选项声明。CHECK OPTION 的可更新性需要单独证据。 | blocker | 是 |
+| `ddl.pg.create_view.output.valid` | 检查 PostgreSQL 17 视图创建目标及 OR REPLACE 的常量查询输出兼容性。 | blocker | 是 |
 | `ddl.pg.alter_view.column_default.valid` | 检查 PostgreSQL 17 普通视图的 SET/DROP DEFAULT 目标，并拒绝默认值中的列引用和子查询 | blocker | 是 |
 | `ddl.pg.alter_materialized_view.options.valid` | 检查 PostgreSQL 17 物化视图的 SET 或 RESET 目标、整数 fillfactor，以及已建模的 heap 和 TOAST 参数。 | blocker | 是 |
 | `ddl.pg.alter_materialized_view.extension.valid` | 检查 PostgreSQL 17 物化视图的扩展依赖变更，核对目标类型及扩展是否已安装。 | blocker | 是 |

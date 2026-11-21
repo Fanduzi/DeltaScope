@@ -419,6 +419,7 @@ const (
 	ruleIDPGCreateViewOptionsValid         = "ddl.pg.create_view.options.valid"
 	ruleIDPGCreateViewCheckOptionNotice    = "ddl.pg.create_view.check_option.notice"
 	ruleIDPGAlterViewRenameNotice          = "ddl.pg.alter_view.rename.notice"
+	ruleIDPGCreateViewOutputValid          = "ddl.pg.create_view.output.valid"
 	ruleIDPGViewDefaultValid               = "ddl.pg.alter_view.column_default.valid"
 	ruleIDPGAlterViewOptionsValid          = "ddl.pg.alter_view.options.valid"
 	ruleIDPGMaterializedViewExtensionValid = "ddl.pg.alter_materialized_view.extension.valid"

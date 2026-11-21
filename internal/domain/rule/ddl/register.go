@@ -849,6 +849,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGCreateViewOptionsValid, construct: newPGCreateViewOptionsRule},
 		{ruleID: ruleIDPGCreateViewCheckOptionNotice, construct: newCreateViewCheckOptionNoticeRule},
 		{ruleID: ruleIDPGAlterViewRenameNotice, construct: newAlterViewRenameNoticeRule},
+		{ruleID: ruleIDPGCreateViewOutputValid, construct: newPGCreateViewOutputRule},
 		{ruleID: ruleIDPGViewDefaultValid, construct: newPGViewDefaultRule},
 		{ruleID: ruleIDPGAlterViewOptionsValid, construct: newPGAlterViewOptionsRule},
 		{ruleID: ruleIDPGMaterializedViewExtensionValid, construct: newPGMaterializedViewExtensionRule},

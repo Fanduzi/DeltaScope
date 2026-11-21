@@ -24,21 +24,27 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 			PGDestructiveTable: pgDropTableFacts(stmt),
 		}
 	case pg_query.ObjectType_OBJECT_VIEW:
-		if len(stmt.GetObjects()) != 1 {
-			return unsupportedStatement(statement, "drop", "postgresql multi-target drop view is unsupported in v1")
+		facts := pgDropTableFacts(stmt)
+		if facts == nil || len(facts.Targets) == 0 {
+			return unsupportedStatement(statement, "drop", "postgresql drop view has an unmodeled target")
 		}
-		viewTable := tableFromObjectName(stmt.GetObjects())
+		viewTable := facts.Targets[0].Table
 		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
 		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
 			options["cascade"] = "true"
 		}
 		statement.DDL = &spec.DDL{
-			Operation:        spec.DDLOperationDropView,
-			ObjectName:       objectNameFromObjectName(stmt.GetObjects()),
-			ObjectType:       "view",
-			Table:            viewTable,
-			PGDropViewTarget: pgDropViewTarget(stmt),
-			Options:          options,
+			Operation:  spec.DDLOperationDropView,
+			ObjectName: objectNameFromObjectName(stmt.GetObjects()),
+			ObjectType: "view",
+			Table:      &viewTable,
+			Options:    options,
+		}
+		if len(facts.Targets) == 1 {
+			statement.DDL.PGDropViewTarget = &facts.Targets[0]
+		} else {
+			statement.DDL.PGDropViewTargets = facts.Targets
+			statement.DDL.Targets = tablesFromObjectNames(stmt.GetObjects())
 		}
 	case pg_query.ObjectType_OBJECT_INDEX:
 		options := map[string]string{}
@@ -379,14 +385,6 @@ func extractTruncateStmt(statement spec.Statement, stmt *pg_query.TruncateStmt) 
 		PGDestructiveTable: pgTruncateTableFacts(stmt),
 	}
 	return statement
-}
-
-func pgDropViewTarget(stmt *pg_query.DropStmt) *spec.PGDestructiveTableTarget {
-	parts := objectNameParts(stmt.GetObjects())
-	if table := tableFromNameParts(parts); table != nil && len(parts) <= 3 {
-		return &spec.PGDestructiveTableTarget{Table: *table, CatalogQualified: len(parts) == 3}
-	}
-	return nil
 }
 
 func pgDropTableFacts(stmt *pg_query.DropStmt) *spec.PGDestructiveTable {

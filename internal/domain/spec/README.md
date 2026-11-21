@@ -111,7 +111,8 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGMaterializedViewOptionsLookup` binds the exact materialized view for a single storage option action.
 - `PGViewDefaultState` binds the observed relation kind and user column for the exact PostgreSQL view default target.
 - `PGViewNamespaceSource` preserves the exact authored view identity and guard for RENAME and SET SCHEMA.
-- `PGDropViewState` binds the observed relation kind and direct rewrite dependency to the exact PostgreSQL DROP VIEW target.
+- `PGCreateViewOutput` preserves known literal output columns. `PGCreateViewTarget` binds the exact target and ordered existing output.
+- `PGDropViewState` binds the observed kind and direct dependencies to a single PostgreSQL DROP VIEW target. `PGDropViewSetState` binds a refusal or proved absence of a covered refusal to the exact ordered list and modifiers.
 - `PGDestructiveTable` preserves ordered DROP and TRUNCATE targets and private modifiers. `PGDestructiveReferences` binds dependency and ONLY membership observations to those exact targets.
 - `PGViewOptions` preserves each authored CREATE VIEW and ALTER VIEW option name, namespace and bounded value facts in AST order.
 - `PGRefreshTarget` and `PGRefreshState` bind exact PostgreSQL materialized-view identity and private refresh catalog facts.

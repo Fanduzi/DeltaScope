@@ -28,12 +28,20 @@ func (p *Provider) resolveDropView(ctx context.Context, req spec.ObjectLookupReq
 		), not $3::pg_catalog.bool and exists (
 		    select 1 from pg_catalog.unnest(c.reloptions) as options(entry)
 		    where pg_catalog.split_part(entry, '=', 1) OPERATOR(pg_catalog.=) 'check_option'
+		), $3::pg_catalog.bool and exists (
+		    select 1 from pg_catalog.pg_depend d
+		    join pg_catalog.pg_attribute a on a.attrelid OPERATOR(pg_catalog.=) d.objid
+		      and a.attnum OPERATOR(pg_catalog.=) d.objsubid and a.attnum OPERATOR(pg_catalog.>) 0 and not a.attisdropped
+		    where d.refclassid OPERATOR(pg_catalog.=) 'pg_catalog.pg_type'::pg_catalog.regclass
+		      and d.refobjid OPERATOR(pg_catalog.=) c.reltype and d.refobjsubid OPERATOR(pg_catalog.=) 0
+		      and d.classid OPERATOR(pg_catalog.=) 'pg_catalog.pg_class'::pg_catalog.regclass
+		      and d.objid OPERATOR(pg_catalog.<>) c.oid and d.deptype OPERATOR(pg_catalog.=) 'n'
 		)
 		from (values (1)) as witness(dummy)
 		left join pg_catalog.pg_namespace n on n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text
 		left join pg_catalog.pg_class c on c.relnamespace OPERATOR(pg_catalog.=) n.oid
 		 and c.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text
-	`, req.Schema, req.Name, req.Type == "drop_view_target").Scan(&state.Kind, &state.DependentView, &state.CheckOption)
+	`, req.Schema, req.Name, req.Type == "drop_view_target").Scan(&state.Kind, &state.DependentView, &state.CheckOption, &state.DependentColumn)
 	if err != nil {
 		return nil, fmt.Errorf("read PostgreSQL view target: %w", err)
 	}
