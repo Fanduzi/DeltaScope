@@ -8856,15 +8856,15 @@ rows:
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-view.column-list.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
       - subaction_id: WITH options
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-view.with-options.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-view.with-options.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json#create-view-options-offline, file:testdata/ddl-golden/T40.json#pg-create-view-options-bare-boolean-options, file:testdata/ddl-golden/T40.json#pg-create-view-options-space-in-quoted-boolean, file:testdata/ddl-golden/T40.json#pg-create-view-options-boolean-abbreviation, file:testdata/ddl-golden/T40.json#pg-create-view-options-duplicate-option, file:testdata/ddl-golden/T40.json#pg-create-view-options-unrecognized-option, file:testdata/ddl-golden/T40.json#pg-create-view-options-check-option-local, file:testdata/ddl-golden/T40.json#pg-create-view-options-both-check-options, file:testdata/ddl-golden/T40.json#pg-create-view-options-bare-check-option, file:testdata/ddl-golden/T40.json#pg-create-view-options-quoted-enum-case, file:testdata/ddl-golden/T40.json#pg-create-view-options-not-updatable-check-option, file:testdata/sql-corpus/postgresql/ddl/findings/create_view_options_invalid.expected.yaml#ddl.pg.create_view.options.valid]
       - subaction_id: CHECK OPTION
         parser_status: recognized
         audit_status: audited
@@ -8875,7 +8875,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-view.check-option.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-view.check-option.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json#pg-create-view-options-both-check-options, file:testdata/ddl-golden/T40.json#pg-create-view-options-not-updatable-check-option]
       - subaction_id: RECURSIVE
         parser_status: recognized
         audit_status: notice_only
@@ -8991,15 +8991,15 @@ rows:
     subaction_status:
       - subaction_id: DROP VIEW
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.drop-view.drop-view.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.drop-view.drop-view.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json#drop-view-target-offline, file:testdata/ddl-golden/T40.json#pg-drop-view-target-missing-target, file:testdata/ddl-golden/T40.json#pg-drop-view-target-ordinary-dependent, file:testdata/ddl-golden/T40.json#pg-drop-view-target-materialized-dependent, file:testdata/ddl-golden/T40.json#pg-drop-view-target-quoted-exact-target, file:testdata/ddl-golden/T40.json#pg-drop-view-target-quoted-case-mismatch]
       - subaction_id: IF EXISTS CASCADE
         parser_status: recognized
         audit_status: audited
@@ -9010,7 +9010,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.drop-view.if-exists-cascade.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.drop-view.if-exists-cascade.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json#pg-drop-view-target-guarded-absence, file:testdata/ddl-golden/T40.json#pg-drop-view-target-wrong-kind-under-guard, file:testdata/ddl-golden/T40.json#pg-drop-view-target-guarded-ordinary-dependent, file:testdata/ddl-golden/T40.json#pg-drop-view-target-cascade, file:testdata/sql-corpus/postgresql/ddl/findings/drop_view_restrict_dependency.expected.yaml#ddl.pg.drop_view.target.valid]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.drop-view.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
@@ -9224,18 +9224,18 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.refresh-materialized-view.refresh-basic.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.refresh-materialized-view.refresh-basic.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json#pg-refresh-target-missing, file:testdata/ddl-golden/T40.json#pg-refresh-target-wrong-kind, file:testdata/ddl-golden/T40.json#pg-refresh-target-nonconcurrent-empty]
       - subaction_id: CONCURRENTLY
         parser_status: recognized
-        audit_status: silent
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: silent
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.refresh-materialized-view.concurrently.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json]
+            audit_status: mixed
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.refresh-materialized-view.concurrently.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json, file:testdata/ddl-golden/T40.json#refresh-materialized-view-target-offline, file:testdata/ddl-golden/T40.json#pg-refresh-target-no-index, file:testdata/ddl-golden/T40.json#pg-refresh-target-partial, file:testdata/ddl-golden/T40.json#pg-refresh-target-expression, file:testdata/ddl-golden/T40.json#pg-refresh-target-eligible, file:testdata/ddl-golden/T40.json#pg-refresh-target-include, file:testdata/ddl-golden/T40.json#pg-refresh-target-unpopulated, file:testdata/ddl-golden/T40.json#pg-refresh-target-unpopulated-conflict, file:testdata/ddl-golden/T40.json#pg-refresh-target-conflict, file:testdata/ddl-golden/T40.json#pg-refresh-target-invalid-index, file:testdata/ddl-golden/T40.json#pg-refresh-target-invalid-and-valid-index]
       - subaction_id: WITH NO DATA
         parser_status: recognized
         audit_status: audited
@@ -9246,7 +9246,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.refresh-materialized-view.with-no-data.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.refresh-materialized-view.with-no-data.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T40.json#pg-refresh-target-unpopulated-conflict, file:testdata/ddl-golden/T40.json#pg-refresh-target-conflict, file:testdata/ddl-golden/T40.json#pg-refresh-target-nonconcurrent-empty]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.refresh-materialized-view.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]

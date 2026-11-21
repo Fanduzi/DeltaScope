@@ -1218,6 +1218,38 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136660256807) passed at t
 - [DROP TABLE RESTRICT dependencies](../decisions/2026-11-21-postgresql-drop-table-restrict-dependencies.md)
 - [TRUNCATE inherited references](../decisions/2026-11-21-postgresql-truncate-inherited-references.md)
 
+## F12 exact dimension review
+
+The five rows below contain the same 18 authored and normalized dimension names as `d8cceea6`. The CREATE option, DROP target and REFRESH findings in this review have preview evidence. Their shipping evidence will use the fixed delivery SHA. Scope outside those checks remains open.
+
+| Inventory dimension | Evidence and present scope | Remaining premise |
+| --- | --- | --- |
+| `postgresql.create-view` / CREATE VIEW | T40 `create-view-create-view` retains the normal operation, and the native baseline creates a view over its fixture table. The independent forbid controls policy. | Exact target existence and collisions, query legality and source kind require separate checks. |
+| `postgresql.create-view` / OR REPLACE / TEMP | `create-view-or-replace-temp` exercises both authored flags. The native baseline replaces a view and adds an output column. | Replacement must preserve existing names, order, types and collations. Session-local resolution and temporary restrictions need facts. |
+| `postgresql.create-view` / column list | `create-view-column-list` parses a two-name alias list. The raw AST probe preserves an exact name with spaces. | Excess aliases, duplicate output names and query-derived column count require exact declarations and output facts. |
+| `postgresql.create-view` / WITH options | `pg-create-view-options-*` distinguishes recognized Boolean and CHECK OPTION values from invalid values, unknown names and duplicates. The offline control reports a missing observed version. | Effective privileges, barrier behavior and query execution require separate evidence. |
+| `postgresql.create-view` / CHECK OPTION | `create-view-check-option` exercises authored LOCAL. `pg-create-view-options-both-check-options` proves duplicate declaration refusal. `pg-create-view-options-not-updatable-check-option` records the native updatability refusal separately. | LOCAL and CASCADED evaluation and query updatability require their own facts. |
+| `postgresql.create-view` / RECURSIVE | `create-view-recursive` parses the recursive form. The AST and binding can express the equivalent recursive query. | Recursive self-binding and query semantics need separate evidence. |
+| `postgresql.alter-view` / RENAME/SET SCHEMA/OWNER | `alter-view-rename-set-schema-owner` and the corpus cases verify action-specific notices. Native rollbacks establish wrong-kind `42809`, occupied relation `42P07`, row-type collision `42710`, missing destination schema `3F000` and a successful same-schema move. | Audit still requires exact source and destination binding for these catalog decisions. OWNER requires independent evidence. |
+| `postgresql.alter-view` / SET/RESET options | `alter-view-set-reset-options` pins `alter_table` unsupported on observed parser input. PostgreSQL 17.7 accepts SET and unknown or repeated RESET names in native probes. | Add exact target eligibility and declared option facts before making a rule decision. |
+| `postgresql.alter-view` / ALTER COLUMN DEFAULT | `alter-view-alter-column-default` pins `alter_table` unsupported for SET DEFAULT. | Model old and new default intent, exact view column and the context-specific expression rules. |
+| `postgresql.alter-view` / IF EXISTS | `alter-view-if-exists` accepts the guarded rename syntax. PostgreSQL 17.7 skips an absent target and refuses a table target with `42809` under the same guard. | Audit still needs the decoded guard and exact kind and absence facts. |
+| `postgresql.drop-view` / DROP VIEW | T40 proves ordinary and materialized dependent views block RESTRICT on the exact bound target, alongside missing and successful quoted targets. | Other dependency classes need separate catalog evidence. Ordered multi-target DROP VIEW remains an explicit parser-adapter boundary. |
+| `postgresql.drop-view` / IF EXISTS CASCADE | T40 confirms guarded absence is silent under the metadata blocker, while wrong-kind `42809` and guarded RESTRICT dependencies still block. A native CASCADE control removes the dependent view. | Wider CASCADE effects and session-local resolution require independent evidence. |
+| `postgresql.alter-materialized-view` / RENAME/SET SCHEMA/OWNER | `alter-materialized-view-rename-set-schema-owner` covers a normalized rename and its advisory. Native SET SCHEMA refuses `42P07` when an attached index name is already in use at the destination, and succeeds when the relevant names are available. | Audit still needs exact kind, destination identities and companion index evidence. The owner premise is independent. |
+| `postgresql.alter-materialized-view` / SET/RESET options | `alter-materialized-view-set-reset-options` pins `alter_table` unsupported for a parsed fillfactor declaration. | Apply supported storage parameters by actual relation method and model RESET separately. |
+| `postgresql.alter-materialized-view` / DEPENDS ON EXTENSION | `alter-materialized-view-depends-on-extension` pins an unsupported normalized boundary. | Requires retaining the exact statement identities and observed extension and existing dependency facts. |
+| `postgresql.refresh-materialized-view` / REFRESH basic | `pg-refresh-target-missing`, `-wrong-kind` and `-nonconcurrent-empty` exercise exact target binding and refusal. | Query execution, privileges and lock outcomes remain separate. |
+| `postgresql.refresh-materialized-view` / CONCURRENTLY | `pg-refresh-target-*` verifies population, conflict precedence, partial/expression/invalid indexes, a usable unique index and INCLUDE. | A usable index proves the catalog prerequisite. Refresh execution and results require independent facts. |
+| `postgresql.refresh-materialized-view` / WITH NO DATA | The native `-nonconcurrent-empty` control observes an unpopulated view. The two conflict controls prove the distinct order of population and flag refusals. | Downstream demand and concurrent sessions require separate evidence. |
+
+At preview base `b5cf88ce`, T40 passed 68 cases and 1,482 assertions. All 33 original cases and their order remain. Four rename cases now expect the rename notice alone, with their SQL and native controls preserved. The coverage catalog was regenerated for the action-specific notices. The 42 additions to inventory evidence bind seven PostgreSQL 17 cells. The WITH options, DROP VIEW and CONCURRENTLY subactions change to mixed. The 301-row distribution stays as on the F10 base. The three decision records describe the default blockers and runtime boundaries.
+
+- [CREATE VIEW option validation](../decisions/2026-11-21-postgresql-create-view-options.md)
+- [Materialized view refresh prerequisites](../decisions/2026-11-21-postgresql-materialized-view-refresh-prerequisites.md)
+- [DROP VIEW targets and direct dependencies](../decisions/2026-11-21-postgresql-drop-view-targets.md)
+- [T40 cases](../../testdata/ddl-golden/T40.json)
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

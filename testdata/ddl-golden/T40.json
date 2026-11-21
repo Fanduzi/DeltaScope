@@ -5,6 +5,7 @@
  "policy_profile": "pg-acceptance",
  "description": "VIEW/MATERIALIZED VIEW/REFRESH acceptance on postgresql17 (#123): view lifecycle incl. WITH CHECK OPTION, materialized view storage and refresh variants execute natively.",
  "policy": {
+  "profiles": {"pg-drop-view-target": {"enable": {"ddl.pg.drop_view.target.valid": {"level": "blocker"}}}, "pg-create-view-options": {"enable": {"ddl.pg.create_view.options.valid": {"level": "blocker"}}}, "pg-refresh-target": {"enable": {"ddl.pg.refresh_materialized_view.target.valid": {"level": "blocker"}}}},
   "enable": {
    "ddl.alter.add_column.exists.forbid": {
     "enabled": true
@@ -1762,6 +1763,138 @@
   }
  },
  "cli_cases": [
+   {
+     "id": "drop-view-target-offline",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "sql": "DROP VIEW app.v",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "reason_code": "unproven_pg_drop_view_target",
+           "required_facts": [
+             "instance.version"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "hidden_dep_view",
+         "hidden_dep_mv"
+       ]
+     }
+   },
+   {
+     "id": "create-view-options-offline",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-options",
+     "sql": "CREATE VIEW app.v WITH (security_invoker='off') AS SELECT 1",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.options.valid",
+           "reason_code": "unproven_pg_view_options",
+           "required_facts": [
+             "instance.version"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGViewOptions",
+         "ValueKnown",
+         "ValueValid"
+       ]
+     }
+   },
+   {
+     "id": "refresh-materialized-view-target-offline",
+     "dialect": "postgresql",
+     "policy": "pg-refresh-target",
+     "sql": "REFRESH MATERIALIZED VIEW CONCURRENTLY app.foo",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "review",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "unverified",
+       "statement_coverage": [
+         "unverified"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "evidence_gaps": 1,
+       "evidence_gap_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "reason_code": "unproven_materialized_view_refresh_target",
+           "required_facts": [
+             "instance.version"
+           ]
+         }
+       ],
+       "serialized_not_contains": [
+         "PGRefreshState",
+         "PGRefreshTarget",
+         "private_refresh_index"
+       ]
+     }
+   },
   {
    "id": "create-view",
    "dialect": "postgresql",
@@ -1974,7 +2107,7 @@
     "exit": 0,
     "verdict": "pass",
     "statements": 1,
-    "findings": 2,
+    "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "complete",
@@ -1988,11 +2121,6 @@
      {
       "index": 0,
       "rule_id": "ddl.pg.alter_view.rename.notice",
-      "level": "notice"
-     },
-     {
-      "index": 0,
-      "rule_id": "ddl.pg.alter_view.set_schema.notice",
       "level": "notice"
      }
     ]
@@ -2006,7 +2134,7 @@
     "exit": 0,
     "verdict": "pass",
     "statements": 1,
-    "findings": 2,
+    "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "complete",
@@ -2020,11 +2148,6 @@
      {
       "index": 0,
       "rule_id": "ddl.pg.alter_view.rename.notice",
-      "level": "notice"
-     },
-     {
-      "index": 0,
-      "rule_id": "ddl.pg.alter_view.set_schema.notice",
       "level": "notice"
      }
     ]
@@ -2092,7 +2215,7 @@
     "exit": 0,
     "verdict": "pass",
     "statements": 1,
-    "findings": 2,
+    "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "complete",
@@ -2106,11 +2229,6 @@
      {
       "index": 0,
       "rule_id": "ddl.pg.alter_view.rename.notice",
-      "level": "notice"
-     },
-     {
-      "index": 0,
-      "rule_id": "ddl.pg.alter_view.set_schema.notice",
       "level": "notice"
      }
     ]
@@ -2584,6 +2702,4955 @@
   }
  ],
  "metadata_cases": [
+   {
+     "id": "pg-drop-view-target-missing-target",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_drop_missing_target"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_drop_missing_target CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_missing_target'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_drop_missing_target.absent",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_missing_target'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_drop_missing_target",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_drop_missing_target.t(id int); INSERT INTO pgview_drop_missing_target.t VALUES(7);\nCREATE VIEW pgview_drop_missing_target.v AS SELECT id FROM pgview_drop_missing_target.t;\nCREATE VIEW pgview_drop_missing_target.hidden_dep_view AS SELECT id FROM pgview_drop_missing_target.v;\nCREATE VIEW pgview_drop_missing_target.mv_source AS SELECT id FROM pgview_drop_missing_target.t;\nCREATE MATERIALIZED VIEW pgview_drop_missing_target.hidden_dep_mv AS SELECT id FROM pgview_drop_missing_target.mv_source;\nCREATE VIEW pgview_drop_missing_target.\" Plain View \" AS SELECT id FROM pgview_drop_missing_target.t;\nCREATE SEQUENCE pgview_drop_missing_target.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "metadata": {
+             "reason_code": "drop_view_absent"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "hidden_dep_view",
+         "hidden_dep_mv"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_missing_target'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_missing_target.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_missing_target.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "\\set VERBOSITY verbose\nDROP VIEW pgview_drop_missing_target.absent",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_missing_target'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_missing_target.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_missing_target.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_drop_missing_target CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_missing_target'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-target-guarded-absence",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_drop_guarded_absence"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_drop_guarded_absence CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_guarded_absence'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW IF EXISTS pgview_drop_guarded_absence.absent CASCADE",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_guarded_absence'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_drop_guarded_absence",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_drop_guarded_absence.t(id int); INSERT INTO pgview_drop_guarded_absence.t VALUES(7);\nCREATE VIEW pgview_drop_guarded_absence.v AS SELECT id FROM pgview_drop_guarded_absence.t;\nCREATE VIEW pgview_drop_guarded_absence.hidden_dep_view AS SELECT id FROM pgview_drop_guarded_absence.v;\nCREATE VIEW pgview_drop_guarded_absence.mv_source AS SELECT id FROM pgview_drop_guarded_absence.t;\nCREATE MATERIALIZED VIEW pgview_drop_guarded_absence.hidden_dep_mv AS SELECT id FROM pgview_drop_guarded_absence.mv_source;\nCREATE VIEW pgview_drop_guarded_absence.\" Plain View \" AS SELECT id FROM pgview_drop_guarded_absence.t;\nCREATE SEQUENCE pgview_drop_guarded_absence.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "hidden_dep_view",
+         "hidden_dep_mv"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_guarded_absence'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_guarded_absence.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_guarded_absence.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "DROP VIEW IF EXISTS pgview_drop_guarded_absence.absent CASCADE",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_guarded_absence'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_guarded_absence.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_guarded_absence.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_drop_guarded_absence CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_guarded_absence'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-target-wrong-kind-under-guard",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_drop_wrong_kind_under_guard"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_drop_wrong_kind_under_guard CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_wrong_kind_under_guard'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW IF EXISTS pgview_drop_wrong_kind_under_guard.t CASCADE",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_wrong_kind_under_guard'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_drop_wrong_kind_under_guard",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_drop_wrong_kind_under_guard.t(id int); INSERT INTO pgview_drop_wrong_kind_under_guard.t VALUES(7);\nCREATE VIEW pgview_drop_wrong_kind_under_guard.v AS SELECT id FROM pgview_drop_wrong_kind_under_guard.t;\nCREATE VIEW pgview_drop_wrong_kind_under_guard.hidden_dep_view AS SELECT id FROM pgview_drop_wrong_kind_under_guard.v;\nCREATE VIEW pgview_drop_wrong_kind_under_guard.mv_source AS SELECT id FROM pgview_drop_wrong_kind_under_guard.t;\nCREATE MATERIALIZED VIEW pgview_drop_wrong_kind_under_guard.hidden_dep_mv AS SELECT id FROM pgview_drop_wrong_kind_under_guard.mv_source;\nCREATE VIEW pgview_drop_wrong_kind_under_guard.\" Plain View \" AS SELECT id FROM pgview_drop_wrong_kind_under_guard.t;\nCREATE SEQUENCE pgview_drop_wrong_kind_under_guard.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "metadata": {
+             "reason_code": "drop_view_wrong_kind"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "hidden_dep_view",
+         "hidden_dep_mv"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_wrong_kind_under_guard'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_wrong_kind_under_guard.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_wrong_kind_under_guard.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "\\set VERBOSITY verbose\nDROP VIEW IF EXISTS pgview_drop_wrong_kind_under_guard.t CASCADE",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42809:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_wrong_kind_under_guard'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_wrong_kind_under_guard.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_wrong_kind_under_guard.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_drop_wrong_kind_under_guard CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_wrong_kind_under_guard'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-target-ordinary-dependent",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_drop_ordinary_dependent"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_drop_ordinary_dependent CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_ordinary_dependent'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_drop_ordinary_dependent.v RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_ordinary_dependent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_drop_ordinary_dependent",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_drop_ordinary_dependent.t(id int); INSERT INTO pgview_drop_ordinary_dependent.t VALUES(7);\nCREATE VIEW pgview_drop_ordinary_dependent.v AS SELECT id FROM pgview_drop_ordinary_dependent.t;\nCREATE VIEW pgview_drop_ordinary_dependent.hidden_dep_view AS SELECT id FROM pgview_drop_ordinary_dependent.v;\nCREATE VIEW pgview_drop_ordinary_dependent.mv_source AS SELECT id FROM pgview_drop_ordinary_dependent.t;\nCREATE MATERIALIZED VIEW pgview_drop_ordinary_dependent.hidden_dep_mv AS SELECT id FROM pgview_drop_ordinary_dependent.mv_source;\nCREATE VIEW pgview_drop_ordinary_dependent.\" Plain View \" AS SELECT id FROM pgview_drop_ordinary_dependent.t;\nCREATE SEQUENCE pgview_drop_ordinary_dependent.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "metadata": {
+             "reason_code": "drop_view_has_direct_dependency"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "hidden_dep_view",
+         "hidden_dep_mv"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_ordinary_dependent'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_ordinary_dependent.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_ordinary_dependent.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "\\set VERBOSITY verbose\nDROP VIEW pgview_drop_ordinary_dependent.v RESTRICT",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  2BP01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_ordinary_dependent'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_ordinary_dependent.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_ordinary_dependent.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_drop_ordinary_dependent CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_ordinary_dependent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-target-guarded-ordinary-dependent",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_drop_guarded_ordinary_dependent"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_drop_guarded_ordinary_dependent CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_guarded_ordinary_dependent'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW IF EXISTS pgview_drop_guarded_ordinary_dependent.v",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_guarded_ordinary_dependent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_drop_guarded_ordinary_dependent",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_drop_guarded_ordinary_dependent.t(id int); INSERT INTO pgview_drop_guarded_ordinary_dependent.t VALUES(7);\nCREATE VIEW pgview_drop_guarded_ordinary_dependent.v AS SELECT id FROM pgview_drop_guarded_ordinary_dependent.t;\nCREATE VIEW pgview_drop_guarded_ordinary_dependent.hidden_dep_view AS SELECT id FROM pgview_drop_guarded_ordinary_dependent.v;\nCREATE VIEW pgview_drop_guarded_ordinary_dependent.mv_source AS SELECT id FROM pgview_drop_guarded_ordinary_dependent.t;\nCREATE MATERIALIZED VIEW pgview_drop_guarded_ordinary_dependent.hidden_dep_mv AS SELECT id FROM pgview_drop_guarded_ordinary_dependent.mv_source;\nCREATE VIEW pgview_drop_guarded_ordinary_dependent.\" Plain View \" AS SELECT id FROM pgview_drop_guarded_ordinary_dependent.t;\nCREATE SEQUENCE pgview_drop_guarded_ordinary_dependent.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "metadata": {
+             "reason_code": "drop_view_has_direct_dependency"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "hidden_dep_view",
+         "hidden_dep_mv"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_guarded_ordinary_dependent'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_guarded_ordinary_dependent.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_guarded_ordinary_dependent.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "\\set VERBOSITY verbose\nDROP VIEW IF EXISTS pgview_drop_guarded_ordinary_dependent.v",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  2BP01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_guarded_ordinary_dependent'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_guarded_ordinary_dependent.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_guarded_ordinary_dependent.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_drop_guarded_ordinary_dependent CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_guarded_ordinary_dependent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-target-materialized-dependent",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_drop_materialized_dependent"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_drop_materialized_dependent CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_materialized_dependent'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_drop_materialized_dependent.mv_source",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_materialized_dependent'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_drop_materialized_dependent",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_drop_materialized_dependent.t(id int); INSERT INTO pgview_drop_materialized_dependent.t VALUES(7);\nCREATE VIEW pgview_drop_materialized_dependent.v AS SELECT id FROM pgview_drop_materialized_dependent.t;\nCREATE VIEW pgview_drop_materialized_dependent.hidden_dep_view AS SELECT id FROM pgview_drop_materialized_dependent.v;\nCREATE VIEW pgview_drop_materialized_dependent.mv_source AS SELECT id FROM pgview_drop_materialized_dependent.t;\nCREATE MATERIALIZED VIEW pgview_drop_materialized_dependent.hidden_dep_mv AS SELECT id FROM pgview_drop_materialized_dependent.mv_source;\nCREATE VIEW pgview_drop_materialized_dependent.\" Plain View \" AS SELECT id FROM pgview_drop_materialized_dependent.t;\nCREATE SEQUENCE pgview_drop_materialized_dependent.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "metadata": {
+             "reason_code": "drop_view_has_direct_dependency"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "hidden_dep_view",
+         "hidden_dep_mv"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_materialized_dependent'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_materialized_dependent.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_materialized_dependent.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "\\set VERBOSITY verbose\nDROP VIEW pgview_drop_materialized_dependent.mv_source",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  2BP01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_materialized_dependent'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_materialized_dependent.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_materialized_dependent.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_drop_materialized_dependent CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_materialized_dependent'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-target-cascade",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_drop_cascade"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_drop_cascade CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_cascade'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_drop_cascade.v CASCADE",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_cascade'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_drop_cascade",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_drop_cascade.t(id int); INSERT INTO pgview_drop_cascade.t VALUES(7);\nCREATE VIEW pgview_drop_cascade.v AS SELECT id FROM pgview_drop_cascade.t;\nCREATE VIEW pgview_drop_cascade.hidden_dep_view AS SELECT id FROM pgview_drop_cascade.v;\nCREATE VIEW pgview_drop_cascade.mv_source AS SELECT id FROM pgview_drop_cascade.t;\nCREATE MATERIALIZED VIEW pgview_drop_cascade.hidden_dep_mv AS SELECT id FROM pgview_drop_cascade.mv_source;\nCREATE VIEW pgview_drop_cascade.\" Plain View \" AS SELECT id FROM pgview_drop_cascade.t;\nCREATE SEQUENCE pgview_drop_cascade.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "hidden_dep_view",
+         "hidden_dep_mv"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_cascade'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_cascade.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_cascade.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "DROP VIEW pgview_drop_cascade.v CASCADE",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_cascade'::regnamespace AND relkind IN ('v','m')",
+         "expect": "3"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_cascade.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_cascade.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_drop_cascade CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_cascade'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-target-quoted-exact-target",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_drop_quoted_exact_target"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_drop_quoted_exact_target CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_quoted_exact_target'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_drop_quoted_exact_target.\" Plain View \"",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_quoted_exact_target'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_drop_quoted_exact_target",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_drop_quoted_exact_target.t(id int); INSERT INTO pgview_drop_quoted_exact_target.t VALUES(7);\nCREATE VIEW pgview_drop_quoted_exact_target.v AS SELECT id FROM pgview_drop_quoted_exact_target.t;\nCREATE VIEW pgview_drop_quoted_exact_target.hidden_dep_view AS SELECT id FROM pgview_drop_quoted_exact_target.v;\nCREATE VIEW pgview_drop_quoted_exact_target.mv_source AS SELECT id FROM pgview_drop_quoted_exact_target.t;\nCREATE MATERIALIZED VIEW pgview_drop_quoted_exact_target.hidden_dep_mv AS SELECT id FROM pgview_drop_quoted_exact_target.mv_source;\nCREATE VIEW pgview_drop_quoted_exact_target.\" Plain View \" AS SELECT id FROM pgview_drop_quoted_exact_target.t;\nCREATE SEQUENCE pgview_drop_quoted_exact_target.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "hidden_dep_view",
+         "hidden_dep_mv"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_quoted_exact_target'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_quoted_exact_target.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_quoted_exact_target.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "DROP VIEW pgview_drop_quoted_exact_target.\" Plain View \"",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_quoted_exact_target'::regnamespace AND relkind IN ('v','m')",
+         "expect": "4"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_quoted_exact_target.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_quoted_exact_target.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_drop_quoted_exact_target CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_quoted_exact_target'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-target-quoted-case-mismatch",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_drop_quoted_case_mismatch"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_drop_quoted_case_mismatch CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_quoted_case_mismatch'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_drop_quoted_case_mismatch.\" plain View \"",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_quoted_case_mismatch'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_drop_quoted_case_mismatch",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_drop_quoted_case_mismatch.t(id int); INSERT INTO pgview_drop_quoted_case_mismatch.t VALUES(7);\nCREATE VIEW pgview_drop_quoted_case_mismatch.v AS SELECT id FROM pgview_drop_quoted_case_mismatch.t;\nCREATE VIEW pgview_drop_quoted_case_mismatch.hidden_dep_view AS SELECT id FROM pgview_drop_quoted_case_mismatch.v;\nCREATE VIEW pgview_drop_quoted_case_mismatch.mv_source AS SELECT id FROM pgview_drop_quoted_case_mismatch.t;\nCREATE MATERIALIZED VIEW pgview_drop_quoted_case_mismatch.hidden_dep_mv AS SELECT id FROM pgview_drop_quoted_case_mismatch.mv_source;\nCREATE VIEW pgview_drop_quoted_case_mismatch.\" Plain View \" AS SELECT id FROM pgview_drop_quoted_case_mismatch.t;\nCREATE SEQUENCE pgview_drop_quoted_case_mismatch.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "metadata": {
+             "reason_code": "drop_view_absent"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "hidden_dep_view",
+         "hidden_dep_mv"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_quoted_case_mismatch'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_quoted_case_mismatch.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_quoted_case_mismatch.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "\\set VERBOSITY verbose\nDROP VIEW pgview_drop_quoted_case_mismatch.\" plain View \"",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_drop_quoted_case_mismatch'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_drop_quoted_case_mismatch.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_drop_quoted_case_mismatch.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_drop_quoted_case_mismatch CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_drop_quoted_case_mismatch'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-options-bare-boolean-options",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-options",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_opt_bare_boolean_options"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_opt_bare_boolean_options CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_bare_boolean_options'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_opt_bare_boolean_options.v2 WITH (security_barrier, security_invoker) AS SELECT id FROM pgview_opt_bare_boolean_options.t",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_bare_boolean_options'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_opt_bare_boolean_options",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed base table and independent sequence",
+         "sql": "CREATE TABLE pgview_opt_bare_boolean_options.t(id int, payload int); INSERT INTO pgview_opt_bare_boolean_options.t VALUES (1,7); CREATE SEQUENCE pgview_opt_bare_boolean_options.guard START 7",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGViewOptions",
+         "ValueKnown",
+         "ValueValid"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_bare_boolean_options'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_bare_boolean_options.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_bare_boolean_options.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native validates options",
+         "sql": "CREATE VIEW pgview_opt_bare_boolean_options.v2 WITH (security_barrier, security_invoker) AS SELECT id FROM pgview_opt_bare_boolean_options.t",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_bare_boolean_options'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_bare_boolean_options.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_bare_boolean_options.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_opt_bare_boolean_options CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_bare_boolean_options'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-options-space-in-quoted-boolean",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-options",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_opt_space_in_quoted_boolean"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_opt_space_in_quoted_boolean CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_space_in_quoted_boolean'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_opt_space_in_quoted_boolean.v2 WITH (security_invoker=' true ') AS SELECT id FROM pgview_opt_space_in_quoted_boolean.t",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_space_in_quoted_boolean'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_opt_space_in_quoted_boolean",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed base table and independent sequence",
+         "sql": "CREATE TABLE pgview_opt_space_in_quoted_boolean.t(id int, payload int); INSERT INTO pgview_opt_space_in_quoted_boolean.t VALUES (1,7); CREATE SEQUENCE pgview_opt_space_in_quoted_boolean.guard START 7",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.options.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.options.valid",
+           "metadata": {
+             "reason_code": "view_option_invalid_value"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGViewOptions",
+         "ValueKnown",
+         "ValueValid"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_space_in_quoted_boolean'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_space_in_quoted_boolean.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_space_in_quoted_boolean.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native validates options",
+         "sql": "\\set VERBOSITY verbose\nCREATE VIEW pgview_opt_space_in_quoted_boolean.v2 WITH (security_invoker=' true ') AS SELECT id FROM pgview_opt_space_in_quoted_boolean.t",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  22023:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_space_in_quoted_boolean'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_space_in_quoted_boolean.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_space_in_quoted_boolean.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_opt_space_in_quoted_boolean CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_space_in_quoted_boolean'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-options-boolean-abbreviation",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-options",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_opt_boolean_abbreviation"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_opt_boolean_abbreviation CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_boolean_abbreviation'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_opt_boolean_abbreviation.v2 WITH (security_invoker='of') AS SELECT id FROM pgview_opt_boolean_abbreviation.t",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_boolean_abbreviation'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_opt_boolean_abbreviation",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed base table and independent sequence",
+         "sql": "CREATE TABLE pgview_opt_boolean_abbreviation.t(id int, payload int); INSERT INTO pgview_opt_boolean_abbreviation.t VALUES (1,7); CREATE SEQUENCE pgview_opt_boolean_abbreviation.guard START 7",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGViewOptions",
+         "ValueKnown",
+         "ValueValid"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_boolean_abbreviation'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_boolean_abbreviation.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_boolean_abbreviation.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native validates options",
+         "sql": "CREATE VIEW pgview_opt_boolean_abbreviation.v2 WITH (security_invoker='of') AS SELECT id FROM pgview_opt_boolean_abbreviation.t",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_boolean_abbreviation'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_boolean_abbreviation.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_boolean_abbreviation.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_opt_boolean_abbreviation CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_boolean_abbreviation'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-options-duplicate-option",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-options",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_opt_duplicate_option"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_opt_duplicate_option CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_duplicate_option'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_opt_duplicate_option.v2 WITH (security_invoker=true,security_invoker=false) AS SELECT id FROM pgview_opt_duplicate_option.t",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_duplicate_option'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_opt_duplicate_option",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed base table and independent sequence",
+         "sql": "CREATE TABLE pgview_opt_duplicate_option.t(id int, payload int); INSERT INTO pgview_opt_duplicate_option.t VALUES (1,7); CREATE SEQUENCE pgview_opt_duplicate_option.guard START 7",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.options.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.options.valid",
+           "metadata": {
+             "reason_code": "view_option_duplicate"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGViewOptions",
+         "ValueKnown",
+         "ValueValid"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_duplicate_option'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_duplicate_option.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_duplicate_option.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native validates options",
+         "sql": "\\set VERBOSITY verbose\nCREATE VIEW pgview_opt_duplicate_option.v2 WITH (security_invoker=true,security_invoker=false) AS SELECT id FROM pgview_opt_duplicate_option.t",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  22023:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_duplicate_option'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_duplicate_option.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_duplicate_option.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_opt_duplicate_option CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_duplicate_option'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-options-unrecognized-option",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-options",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_opt_unrecognized_option"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_opt_unrecognized_option CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_unrecognized_option'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_opt_unrecognized_option.v2 WITH (fillfactor=65) AS SELECT id FROM pgview_opt_unrecognized_option.t",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_unrecognized_option'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_opt_unrecognized_option",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed base table and independent sequence",
+         "sql": "CREATE TABLE pgview_opt_unrecognized_option.t(id int, payload int); INSERT INTO pgview_opt_unrecognized_option.t VALUES (1,7); CREATE SEQUENCE pgview_opt_unrecognized_option.guard START 7",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.options.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.options.valid",
+           "metadata": {
+             "reason_code": "view_option_unrecognized"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGViewOptions",
+         "ValueKnown",
+         "ValueValid"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_unrecognized_option'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_unrecognized_option.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_unrecognized_option.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native validates options",
+         "sql": "\\set VERBOSITY verbose\nCREATE VIEW pgview_opt_unrecognized_option.v2 WITH (fillfactor=65) AS SELECT id FROM pgview_opt_unrecognized_option.t",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  22023:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_unrecognized_option'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_unrecognized_option.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_unrecognized_option.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_opt_unrecognized_option CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_unrecognized_option'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-options-check-option-local",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-options",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_opt_check_option_local"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_opt_check_option_local CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_check_option_local'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_opt_check_option_local.v2 WITH (check_option='local') AS SELECT id FROM pgview_opt_check_option_local.t",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_check_option_local'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_opt_check_option_local",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed base table and independent sequence",
+         "sql": "CREATE TABLE pgview_opt_check_option_local.t(id int, payload int); INSERT INTO pgview_opt_check_option_local.t VALUES (1,7); CREATE SEQUENCE pgview_opt_check_option_local.guard START 7",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGViewOptions",
+         "ValueKnown",
+         "ValueValid"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_check_option_local'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_check_option_local.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_check_option_local.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native validates options",
+         "sql": "CREATE VIEW pgview_opt_check_option_local.v2 WITH (check_option='local') AS SELECT id FROM pgview_opt_check_option_local.t",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_check_option_local'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_check_option_local.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_check_option_local.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_opt_check_option_local CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_check_option_local'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-options-both-check-options",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-options",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_opt_both_check_options"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_opt_both_check_options CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_both_check_options'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_opt_both_check_options.v2 WITH (check_option='local') AS SELECT id FROM pgview_opt_both_check_options.t WITH CASCADED CHECK OPTION",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_both_check_options'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_opt_both_check_options",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed base table and independent sequence",
+         "sql": "CREATE TABLE pgview_opt_both_check_options.t(id int, payload int); INSERT INTO pgview_opt_both_check_options.t VALUES (1,7); CREATE SEQUENCE pgview_opt_both_check_options.guard START 7",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.options.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.options.valid",
+           "metadata": {
+             "reason_code": "view_check_option_duplicate"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGViewOptions",
+         "ValueKnown",
+         "ValueValid"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_both_check_options'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_both_check_options.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_both_check_options.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native validates options",
+         "sql": "\\set VERBOSITY verbose\nCREATE VIEW pgview_opt_both_check_options.v2 WITH (check_option='local') AS SELECT id FROM pgview_opt_both_check_options.t WITH CASCADED CHECK OPTION",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  22023:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_both_check_options'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_both_check_options.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_both_check_options.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_opt_both_check_options CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_both_check_options'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-options-bare-check-option",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-options",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_opt_bare_check_option"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_opt_bare_check_option CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_bare_check_option'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_opt_bare_check_option.v2 WITH (check_option) AS SELECT id FROM pgview_opt_bare_check_option.t",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_bare_check_option'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_opt_bare_check_option",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed base table and independent sequence",
+         "sql": "CREATE TABLE pgview_opt_bare_check_option.t(id int, payload int); INSERT INTO pgview_opt_bare_check_option.t VALUES (1,7); CREATE SEQUENCE pgview_opt_bare_check_option.guard START 7",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.options.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.create_view.options.valid",
+           "metadata": {
+             "reason_code": "view_option_invalid_value"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGViewOptions",
+         "ValueKnown",
+         "ValueValid"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_bare_check_option'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_bare_check_option.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_bare_check_option.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native validates options",
+         "sql": "\\set VERBOSITY verbose\nCREATE VIEW pgview_opt_bare_check_option.v2 WITH (check_option) AS SELECT id FROM pgview_opt_bare_check_option.t",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  22023:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_bare_check_option'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_bare_check_option.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_bare_check_option.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_opt_bare_check_option CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_bare_check_option'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-options-quoted-enum-case",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-options",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_opt_quoted_enum_case"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_opt_quoted_enum_case CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_quoted_enum_case'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_opt_quoted_enum_case.v2 WITH (check_option='LOCAL') AS SELECT id FROM pgview_opt_quoted_enum_case.t",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_quoted_enum_case'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_opt_quoted_enum_case",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed base table and independent sequence",
+         "sql": "CREATE TABLE pgview_opt_quoted_enum_case.t(id int, payload int); INSERT INTO pgview_opt_quoted_enum_case.t VALUES (1,7); CREATE SEQUENCE pgview_opt_quoted_enum_case.guard START 7",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGViewOptions",
+         "ValueKnown",
+         "ValueValid"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_quoted_enum_case'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_quoted_enum_case.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_quoted_enum_case.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native validates options",
+         "sql": "CREATE VIEW pgview_opt_quoted_enum_case.v2 WITH (check_option='LOCAL') AS SELECT id FROM pgview_opt_quoted_enum_case.t",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_quoted_enum_case'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "1"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_quoted_enum_case.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_quoted_enum_case.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_opt_quoted_enum_case CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_quoted_enum_case'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-create-view-options-not-updatable-check-option",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-create-view-options",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_opt_not_updatable_check_option"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_opt_not_updatable_check_option CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_not_updatable_check_option'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "CREATE VIEW pgview_opt_not_updatable_check_option.v2 WITH (check_option='local') AS SELECT 1",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_not_updatable_check_option'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_opt_not_updatable_check_option",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed base table and independent sequence",
+         "sql": "CREATE TABLE pgview_opt_not_updatable_check_option.t(id int, payload int); INSERT INTO pgview_opt_not_updatable_check_option.t VALUES (1,7); CREATE SEQUENCE pgview_opt_not_updatable_check_option.guard START 7",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGViewOptions",
+         "ValueKnown",
+         "ValueValid"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_not_updatable_check_option'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_not_updatable_check_option.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_not_updatable_check_option.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native validates options",
+         "sql": "\\set VERBOSITY verbose\nCREATE VIEW pgview_opt_not_updatable_check_option.v2 WITH (check_option='local') AS SELECT 1",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  0A000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view registration",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_opt_not_updatable_check_option'::regnamespace AND relname='v2' AND relkind='v'",
+         "expect": "0"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id*10+payload FROM pgview_opt_not_updatable_check_option.t",
+         "expect": "17"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_opt_not_updatable_check_option.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_opt_not_updatable_check_option CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_opt_not_updatable_check_option'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-refresh-target-invalid-index",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-refresh-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgmv_invalid_index"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgmv_invalid_index CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_invalid_index'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "REFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_invalid_index.\" Exact MV \"",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_invalid_index'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgmv_invalid_index",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned view and catalog receipt",
+         "sql": "CREATE TABLE pgmv_invalid_index.source(id int,payload text); INSERT INTO pgmv_invalid_index.source VALUES (1,'keep'); CREATE MATERIALIZED VIEW pgmv_invalid_index.\" Exact MV \" AS SELECT id,payload FROM pgmv_invalid_index.source;  CREATE SEQUENCE pgmv_invalid_index.guard START 7; INSERT INTO pgmv_invalid_index.source VALUES (1,'extra'); REFRESH MATERIALIZED VIEW pgmv_invalid_index.\" Exact MV \";",
+         "expect_rc": 0
+       },
+       {
+         "name": "failed build leaves an invalid unique index",
+         "sql": "CREATE UNIQUE INDEX CONCURRENTLY private_invalid_index ON pgmv_invalid_index.\" Exact MV \"(id)",
+         "expect_rc": 1,
+         "verify": [
+           {
+             "assert": "index is live and invalid",
+             "sql": "SELECT indislive AND NOT indisvalid AND indisunique FROM pg_catalog.pg_index WHERE indexrelid='pgmv_invalid_index.private_invalid_index'::regclass",
+             "expect": "t"
+           }
+         ]
+       },
+       {
+         "name": "capture catalog after index build",
+         "sql": "CREATE TABLE pgmv_invalid_index.receipt AS SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_invalid_index'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGRefreshState",
+         "PGRefreshTarget",
+         "private_refresh_index",
+         "private_invalid_index"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "metadata": {
+             "reason_code": "refresh_concurrent_unique_index_absent"
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_invalid_index.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_invalid_index'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_invalid_index'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_invalid_index.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=2 AND bool_and(id=1) AND count(DISTINCT payload)=2 FROM pgmv_invalid_index.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_invalid_index.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 55000",
+         "sql": "\\set VERBOSITY verbose\nREFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_invalid_index.\" Exact MV \"",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  55000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_invalid_index.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_invalid_index'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_invalid_index'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_invalid_index.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=2 AND bool_and(id=1) AND count(DISTINCT payload)=2 FROM pgmv_invalid_index.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_invalid_index.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgmv_invalid_index CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_invalid_index'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-refresh-target-invalid-and-valid-index",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-refresh-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgmv_invalid_and_valid_index"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgmv_invalid_and_valid_index CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_invalid_and_valid_index'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "REFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_invalid_and_valid_index.\" Exact MV \"",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_invalid_and_valid_index'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgmv_invalid_and_valid_index",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned view and catalog receipt",
+         "sql": "CREATE TABLE pgmv_invalid_and_valid_index.source(id int,payload text); INSERT INTO pgmv_invalid_and_valid_index.source VALUES (1,'keep'); CREATE MATERIALIZED VIEW pgmv_invalid_and_valid_index.\" Exact MV \" AS SELECT id,payload FROM pgmv_invalid_and_valid_index.source; CREATE UNIQUE INDEX private_refresh_index ON pgmv_invalid_and_valid_index.\" Exact MV \" (payload); CREATE SEQUENCE pgmv_invalid_and_valid_index.guard START 7; INSERT INTO pgmv_invalid_and_valid_index.source VALUES (1,'extra'); REFRESH MATERIALIZED VIEW pgmv_invalid_and_valid_index.\" Exact MV \";",
+         "expect_rc": 0
+       },
+       {
+         "name": "failed build leaves an invalid unique index",
+         "sql": "CREATE UNIQUE INDEX CONCURRENTLY private_invalid_index ON pgmv_invalid_and_valid_index.\" Exact MV \"(id)",
+         "expect_rc": 1,
+         "verify": [
+           {
+             "assert": "index is live and invalid",
+             "sql": "SELECT indislive AND NOT indisvalid AND indisunique FROM pg_catalog.pg_index WHERE indexrelid='pgmv_invalid_and_valid_index.private_invalid_index'::regclass",
+             "expect": "t"
+           }
+         ]
+       },
+       {
+         "name": "capture catalog after index build",
+         "sql": "CREATE TABLE pgmv_invalid_and_valid_index.receipt AS SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_invalid_and_valid_index'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGRefreshState",
+         "PGRefreshTarget",
+         "private_refresh_index",
+         "private_invalid_index"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_invalid_and_valid_index.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_invalid_and_valid_index'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_invalid_and_valid_index'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_invalid_and_valid_index.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=2 AND bool_and(id=1) AND count(DISTINCT payload)=2 FROM pgmv_invalid_and_valid_index.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_invalid_and_valid_index.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refresh",
+         "sql": "REFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_invalid_and_valid_index.\" Exact MV \"",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native population state",
+         "sql": "SELECT relispopulated FROM pg_catalog.pg_class WHERE oid='pgmv_invalid_and_valid_index.\" Exact MV \"'::regclass",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=2 AND bool_and(id=1) AND count(DISTINCT payload)=2 FROM pgmv_invalid_and_valid_index.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_invalid_and_valid_index.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgmv_invalid_and_valid_index CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_invalid_and_valid_index'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-refresh-target-missing",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-refresh-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgmv_missing"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgmv_missing CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_missing'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "REFRESH MATERIALIZED VIEW pgmv_missing.\" exact mv \"",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_missing'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgmv_missing",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned view and catalog receipt",
+         "sql": "CREATE TABLE pgmv_missing.source(id int,payload text); INSERT INTO pgmv_missing.source VALUES (1,'keep'); CREATE MATERIALIZED VIEW pgmv_missing.\" Exact MV \" AS SELECT id,payload FROM pgmv_missing.source;  CREATE SEQUENCE pgmv_missing.guard START 7; CREATE TABLE pgmv_missing.receipt AS SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_missing'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGRefreshState",
+         "PGRefreshTarget",
+         "private_refresh_index"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "metadata": {
+             "reason_code": "refresh_materialized_view_absent"
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_missing.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_missing'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_missing'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_missing.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_missing.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_missing.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P01",
+         "sql": "\\set VERBOSITY verbose\nREFRESH MATERIALIZED VIEW pgmv_missing.\" exact mv \"",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_missing.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_missing'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_missing'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_missing.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_missing.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_missing.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgmv_missing CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_missing'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-refresh-target-wrong-kind",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-refresh-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgmv_wrong_kind"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgmv_wrong_kind CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_wrong_kind'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "REFRESH MATERIALIZED VIEW pgmv_wrong_kind.source",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_wrong_kind'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgmv_wrong_kind",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned view and catalog receipt",
+         "sql": "CREATE TABLE pgmv_wrong_kind.source(id int,payload text); INSERT INTO pgmv_wrong_kind.source VALUES (1,'keep'); CREATE MATERIALIZED VIEW pgmv_wrong_kind.\" Exact MV \" AS SELECT id,payload FROM pgmv_wrong_kind.source;  CREATE SEQUENCE pgmv_wrong_kind.guard START 7; CREATE TABLE pgmv_wrong_kind.receipt AS SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_wrong_kind'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGRefreshState",
+         "PGRefreshTarget",
+         "private_refresh_index"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "metadata": {
+             "reason_code": "refresh_target_wrong_kind"
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_wrong_kind.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_wrong_kind'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_wrong_kind'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_wrong_kind.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_wrong_kind.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_wrong_kind.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 0A000",
+         "sql": "\\set VERBOSITY verbose\nREFRESH MATERIALIZED VIEW pgmv_wrong_kind.source",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  0A000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_wrong_kind.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_wrong_kind'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_wrong_kind'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_wrong_kind.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_wrong_kind.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_wrong_kind.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgmv_wrong_kind CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_wrong_kind'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-refresh-target-no-index",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-refresh-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgmv_no_index"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgmv_no_index CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_no_index'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "REFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_no_index.\" Exact MV \"",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_no_index'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgmv_no_index",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned view and catalog receipt",
+         "sql": "CREATE TABLE pgmv_no_index.source(id int,payload text); INSERT INTO pgmv_no_index.source VALUES (1,'keep'); CREATE MATERIALIZED VIEW pgmv_no_index.\" Exact MV \" AS SELECT id,payload FROM pgmv_no_index.source;  CREATE SEQUENCE pgmv_no_index.guard START 7; CREATE TABLE pgmv_no_index.receipt AS SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_no_index'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGRefreshState",
+         "PGRefreshTarget",
+         "private_refresh_index"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "metadata": {
+             "reason_code": "refresh_concurrent_unique_index_absent"
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_no_index.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_no_index'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_no_index'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_no_index.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_no_index.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_no_index.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 55000",
+         "sql": "\\set VERBOSITY verbose\nREFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_no_index.\" Exact MV \"",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  55000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_no_index.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_no_index'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_no_index'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_no_index.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_no_index.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_no_index.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgmv_no_index CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_no_index'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-refresh-target-partial",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-refresh-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgmv_partial"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgmv_partial CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_partial'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "REFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_partial.\" Exact MV \"",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_partial'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgmv_partial",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned view and catalog receipt",
+         "sql": "CREATE TABLE pgmv_partial.source(id int,payload text); INSERT INTO pgmv_partial.source VALUES (1,'keep'); CREATE MATERIALIZED VIEW pgmv_partial.\" Exact MV \" AS SELECT id,payload FROM pgmv_partial.source; CREATE UNIQUE INDEX private_refresh_index ON pgmv_partial.\" Exact MV \" (id) WHERE id>0; CREATE SEQUENCE pgmv_partial.guard START 7; CREATE TABLE pgmv_partial.receipt AS SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_partial'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGRefreshState",
+         "PGRefreshTarget",
+         "private_refresh_index"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "metadata": {
+             "reason_code": "refresh_concurrent_unique_index_absent"
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_partial.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_partial'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_partial'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_partial.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_partial.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_partial.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 55000",
+         "sql": "\\set VERBOSITY verbose\nREFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_partial.\" Exact MV \"",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  55000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_partial.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_partial'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_partial'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_partial.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_partial.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_partial.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgmv_partial CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_partial'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-refresh-target-expression",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-refresh-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgmv_expression"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgmv_expression CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_expression'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "REFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_expression.\" Exact MV \"",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_expression'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgmv_expression",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned view and catalog receipt",
+         "sql": "CREATE TABLE pgmv_expression.source(id int,payload text); INSERT INTO pgmv_expression.source VALUES (1,'keep'); CREATE MATERIALIZED VIEW pgmv_expression.\" Exact MV \" AS SELECT id,payload FROM pgmv_expression.source; CREATE UNIQUE INDEX private_refresh_index ON pgmv_expression.\" Exact MV \" ((id+1)); CREATE SEQUENCE pgmv_expression.guard START 7; CREATE TABLE pgmv_expression.receipt AS SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_expression'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGRefreshState",
+         "PGRefreshTarget",
+         "private_refresh_index"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "metadata": {
+             "reason_code": "refresh_concurrent_unique_index_absent"
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_expression.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_expression'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_expression'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_expression.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_expression.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_expression.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 55000",
+         "sql": "\\set VERBOSITY verbose\nREFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_expression.\" Exact MV \"",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  55000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_expression.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_expression'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_expression'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_expression.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_expression.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_expression.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgmv_expression CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_expression'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-refresh-target-eligible",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-refresh-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgmv_eligible"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgmv_eligible CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_eligible'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "REFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_eligible.\" Exact MV \"",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_eligible'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgmv_eligible",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned view and catalog receipt",
+         "sql": "CREATE TABLE pgmv_eligible.source(id int,payload text); INSERT INTO pgmv_eligible.source VALUES (1,'keep'); CREATE MATERIALIZED VIEW pgmv_eligible.\" Exact MV \" AS SELECT id,payload FROM pgmv_eligible.source; CREATE UNIQUE INDEX private_refresh_index ON pgmv_eligible.\" Exact MV \" (id); CREATE SEQUENCE pgmv_eligible.guard START 7; CREATE TABLE pgmv_eligible.receipt AS SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_eligible'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGRefreshState",
+         "PGRefreshTarget",
+         "private_refresh_index"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_eligible.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_eligible'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_eligible'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_eligible.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_eligible.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_eligible.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refresh",
+         "sql": "REFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_eligible.\" Exact MV \"",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native population state",
+         "sql": "SELECT relispopulated FROM pg_catalog.pg_class WHERE oid='pgmv_eligible.\" Exact MV \"'::regclass",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_eligible.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_eligible.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgmv_eligible CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_eligible'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-refresh-target-include",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-refresh-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgmv_include"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgmv_include CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_include'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "REFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_include.\" Exact MV \"",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_include'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgmv_include",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned view and catalog receipt",
+         "sql": "CREATE TABLE pgmv_include.source(id int,payload text); INSERT INTO pgmv_include.source VALUES (1,'keep'); CREATE MATERIALIZED VIEW pgmv_include.\" Exact MV \" AS SELECT id,payload FROM pgmv_include.source; CREATE UNIQUE INDEX private_refresh_index ON pgmv_include.\" Exact MV \" (id) INCLUDE(payload); CREATE SEQUENCE pgmv_include.guard START 7; CREATE TABLE pgmv_include.receipt AS SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_include'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGRefreshState",
+         "PGRefreshTarget",
+         "private_refresh_index"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_include.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_include'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_include'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_include.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_include.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_include.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refresh",
+         "sql": "REFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_include.\" Exact MV \"",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native population state",
+         "sql": "SELECT relispopulated FROM pg_catalog.pg_class WHERE oid='pgmv_include.\" Exact MV \"'::regclass",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_include.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_include.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgmv_include CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_include'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-refresh-target-unpopulated",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-refresh-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgmv_unpopulated"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgmv_unpopulated CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_unpopulated'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "REFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_unpopulated.\" Exact MV \"",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_unpopulated'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgmv_unpopulated",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned view and catalog receipt",
+         "sql": "CREATE TABLE pgmv_unpopulated.source(id int,payload text); INSERT INTO pgmv_unpopulated.source VALUES (1,'keep'); CREATE MATERIALIZED VIEW pgmv_unpopulated.\" Exact MV \" AS SELECT id,payload FROM pgmv_unpopulated.source WITH NO DATA; CREATE UNIQUE INDEX private_refresh_index ON pgmv_unpopulated.\" Exact MV \" (id); CREATE SEQUENCE pgmv_unpopulated.guard START 7; CREATE TABLE pgmv_unpopulated.receipt AS SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_unpopulated'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGRefreshState",
+         "PGRefreshTarget",
+         "private_refresh_index"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "metadata": {
+             "reason_code": "refresh_concurrent_unpopulated"
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_unpopulated.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_unpopulated'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_unpopulated'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_unpopulated.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_unpopulated.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_unpopulated.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 0A000",
+         "sql": "\\set VERBOSITY verbose\nREFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_unpopulated.\" Exact MV \"",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  0A000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_unpopulated.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_unpopulated'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_unpopulated'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_unpopulated.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_unpopulated.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_unpopulated.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgmv_unpopulated CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_unpopulated'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-refresh-target-unpopulated-conflict",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-refresh-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgmv_unpopulated_conflict"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgmv_unpopulated_conflict CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_unpopulated_conflict'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "REFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_unpopulated_conflict.\" Exact MV \" WITH NO DATA",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_unpopulated_conflict'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgmv_unpopulated_conflict",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned view and catalog receipt",
+         "sql": "CREATE TABLE pgmv_unpopulated_conflict.source(id int,payload text); INSERT INTO pgmv_unpopulated_conflict.source VALUES (1,'keep'); CREATE MATERIALIZED VIEW pgmv_unpopulated_conflict.\" Exact MV \" AS SELECT id,payload FROM pgmv_unpopulated_conflict.source WITH NO DATA; CREATE UNIQUE INDEX private_refresh_index ON pgmv_unpopulated_conflict.\" Exact MV \" (id); CREATE SEQUENCE pgmv_unpopulated_conflict.guard START 7; CREATE TABLE pgmv_unpopulated_conflict.receipt AS SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_unpopulated_conflict'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGRefreshState",
+         "PGRefreshTarget",
+         "private_refresh_index"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "metadata": {
+             "reason_code": "refresh_concurrent_unpopulated"
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_unpopulated_conflict.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_unpopulated_conflict'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_unpopulated_conflict'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_unpopulated_conflict.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_unpopulated_conflict.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_unpopulated_conflict.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 0A000",
+         "sql": "\\set VERBOSITY verbose\nREFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_unpopulated_conflict.\" Exact MV \" WITH NO DATA",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  0A000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_unpopulated_conflict.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_unpopulated_conflict'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_unpopulated_conflict'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_unpopulated_conflict.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_unpopulated_conflict.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_unpopulated_conflict.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgmv_unpopulated_conflict CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_unpopulated_conflict'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-refresh-target-conflict",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-refresh-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgmv_conflict"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgmv_conflict CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_conflict'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "REFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_conflict.\" Exact MV \" WITH NO DATA",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_conflict'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgmv_conflict",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned view and catalog receipt",
+         "sql": "CREATE TABLE pgmv_conflict.source(id int,payload text); INSERT INTO pgmv_conflict.source VALUES (1,'keep'); CREATE MATERIALIZED VIEW pgmv_conflict.\" Exact MV \" AS SELECT id,payload FROM pgmv_conflict.source;  CREATE SEQUENCE pgmv_conflict.guard START 7; CREATE TABLE pgmv_conflict.receipt AS SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_conflict'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGRefreshState",
+         "PGRefreshTarget",
+         "private_refresh_index"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.refresh_materialized_view.target.valid",
+           "metadata": {
+             "reason_code": "refresh_concurrent_no_data"
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_conflict.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_conflict'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_conflict'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_conflict.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_conflict.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_conflict.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42601",
+         "sql": "\\set VERBOSITY verbose\nREFRESH MATERIALIZED VIEW CONCURRENTLY pgmv_conflict.\" Exact MV \" WITH NO DATA",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42601:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_conflict.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_conflict'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_conflict'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_conflict.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_conflict.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_conflict.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgmv_conflict CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_conflict'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-refresh-target-nonconcurrent-empty",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-refresh-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgmv_nonconcurrent_empty"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgmv_nonconcurrent_empty CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_nonconcurrent_empty'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "REFRESH MATERIALIZED VIEW pgmv_nonconcurrent_empty.\" Exact MV \" WITH NO DATA",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_nonconcurrent_empty'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgmv_nonconcurrent_empty",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned view and catalog receipt",
+         "sql": "CREATE TABLE pgmv_nonconcurrent_empty.source(id int,payload text); INSERT INTO pgmv_nonconcurrent_empty.source VALUES (1,'keep'); CREATE MATERIALIZED VIEW pgmv_nonconcurrent_empty.\" Exact MV \" AS SELECT id,payload FROM pgmv_nonconcurrent_empty.source; CREATE UNIQUE INDEX private_refresh_index ON pgmv_nonconcurrent_empty.\" Exact MV \" (id); CREATE SEQUENCE pgmv_nonconcurrent_empty.guard START 7; CREATE TABLE pgmv_nonconcurrent_empty.receipt AS SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_nonconcurrent_empty'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGRefreshState",
+         "PGRefreshTarget",
+         "private_refresh_index"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "catalog and file identities match",
+         "sql": "SELECT count(*) FROM ((TABLE pgmv_nonconcurrent_empty.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_nonconcurrent_empty'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relispopulated,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pgmv_nonconcurrent_empty'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pgmv_nonconcurrent_empty.receipt)) delta",
+         "expect": "0"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_nonconcurrent_empty.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_nonconcurrent_empty.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refresh",
+         "sql": "REFRESH MATERIALIZED VIEW pgmv_nonconcurrent_empty.\" Exact MV \" WITH NO DATA",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native population state",
+         "sql": "SELECT relispopulated FROM pg_catalog.pg_class WHERE oid='pgmv_nonconcurrent_empty.\" Exact MV \"'::regclass",
+         "expect": "f"
+       },
+       {
+         "assert": "keeps source rows",
+         "sql": "SELECT count(*)=1 AND bool_and(id=1 AND payload='keep') FROM pgmv_nonconcurrent_empty.source",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgmv_nonconcurrent_empty.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgmv_nonconcurrent_empty CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgmv_nonconcurrent_empty'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
   {
    "id": "pg-live-view-metadata",
    "anchor": "postgres17",
@@ -2608,7 +7675,7 @@
     "exit": 0,
     "verdict": "pass",
     "statements": 1,
-    "findings": 2,
+    "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "complete",
@@ -2616,11 +7683,6 @@
      {
       "index": 0,
       "rule_id": "ddl.pg.alter_view.rename.notice",
-      "level": "notice"
-     },
-     {
-      "index": 0,
-      "rule_id": "ddl.pg.alter_view.set_schema.notice",
       "level": "notice"
      }
     ]
@@ -2643,6 +7705,41 @@
   }
  ],
  "required_case_ids": [
+  "T40.cli.drop-view-target-offline",
+  "T40.meta.pg-drop-view-target-missing-target",
+  "T40.meta.pg-drop-view-target-guarded-absence",
+  "T40.meta.pg-drop-view-target-wrong-kind-under-guard",
+  "T40.meta.pg-drop-view-target-ordinary-dependent",
+  "T40.meta.pg-drop-view-target-guarded-ordinary-dependent",
+  "T40.meta.pg-drop-view-target-materialized-dependent",
+  "T40.meta.pg-drop-view-target-cascade",
+  "T40.meta.pg-drop-view-target-quoted-exact-target",
+  "T40.meta.pg-drop-view-target-quoted-case-mismatch",
+  "T40.cli.create-view-options-offline",
+  "T40.meta.pg-create-view-options-bare-boolean-options",
+  "T40.meta.pg-create-view-options-space-in-quoted-boolean",
+  "T40.meta.pg-create-view-options-boolean-abbreviation",
+  "T40.meta.pg-create-view-options-duplicate-option",
+  "T40.meta.pg-create-view-options-unrecognized-option",
+  "T40.meta.pg-create-view-options-check-option-local",
+  "T40.meta.pg-create-view-options-both-check-options",
+  "T40.meta.pg-create-view-options-bare-check-option",
+  "T40.meta.pg-create-view-options-quoted-enum-case",
+  "T40.meta.pg-create-view-options-not-updatable-check-option",
+  "T40.meta.pg-refresh-target-invalid-index",
+  "T40.meta.pg-refresh-target-invalid-and-valid-index",
+  "T40.cli.refresh-materialized-view-target-offline",
+  "T40.meta.pg-refresh-target-missing",
+  "T40.meta.pg-refresh-target-wrong-kind",
+  "T40.meta.pg-refresh-target-no-index",
+  "T40.meta.pg-refresh-target-partial",
+  "T40.meta.pg-refresh-target-expression",
+  "T40.meta.pg-refresh-target-eligible",
+  "T40.meta.pg-refresh-target-include",
+  "T40.meta.pg-refresh-target-unpopulated",
+  "T40.meta.pg-refresh-target-unpopulated-conflict",
+  "T40.meta.pg-refresh-target-conflict",
+  "T40.meta.pg-refresh-target-nonconcurrent-empty",
   "T40.db.postgres17.ddl",
   "T40.db.postgres17.syntax_negative",
   "T40.cli.create-view",
