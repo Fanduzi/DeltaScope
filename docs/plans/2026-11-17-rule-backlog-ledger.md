@@ -1033,7 +1033,7 @@ new default behavior is approved per family before implementation.
 | F07 | PostgreSQL schema/collation | 2 | T35 | unreviewed |
 | F08 | PostgreSQL CREATE TABLE | 6 | T36 | D2 delivered; remaining dimensions unreviewed |
 | F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2–D47 bounded ALTER checks delivered; authored and normalized dimensions remain open where catalog or expression facts are incomplete |
-| F10 | PostgreSQL DROP/TRUNCATE | 2 | T38 | unreviewed |
+| F10 | PostgreSQL DROP/TRUNCATE | 2 | T38 | Qualified target and RESTRICT dependency slice delivered at `b5cf88ce`. Wider boundaries remain in the dimension review. |
 | F11 | PostgreSQL indexes/operator families | 4 | T39 | unreviewed |
 | F12 | PostgreSQL views/materialized views | 5 | T40 | unreviewed |
 | F13 | PostgreSQL types/operators | 3 | T41 | unreviewed |
@@ -1091,8 +1091,8 @@ insufficient.
 | F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; D19 exact CHECK name checks delivered; D21 USING INDEX prerequisites delivered; D22 FK target checks delivered; D23 referenced key checks delivered; D24 direct FK dependencies and D25–D26 CHECK inheritance, D31 bounded default operator classes and D32 ON DELETE SET column checks, D37 scalar FK equality and D38 CHECK validation traversal, D41 default operator class resolution and D42 bounded FK domain/enum/array comparisons and D46 CHECK subquery checks delivered; remaining dimensions open |
 | F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | partial:D9 bounded attachment delivered; D10 bounded heap declarations delivered; D11 single-table tablespace delivered; D12 ordinary-table methods delivered; D13 persistence delivered; D17 bulk tablespace prerequisites and D29 SET WITHOUT OIDS target evidence delivered; other dimensions open |
 | F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | partial:D15 primary destination checks delivered; D16 owner checks and D28 attached SET SCHEMA names delivered; wider dependent moves and permissions remain open |
-| F10 | `postgresql.drop-table` | DROP TABLE; IF EXISTS / multi-target | unreviewed |
-| F10 | `postgresql.truncate-table` | TRUNCATE basic; RESTART/CONTINUE IDENTITY; ONLY / CASCADE | unreviewed |
+| F10 | `postgresql.drop-table` | DROP TABLE; IF EXISTS / multi-target | Qualified targets, guarded absence and direct RESTRICT references checked. Wider dependency classes, relation shapes and session binding remain open. |
+| F10 | `postgresql.truncate-table` | TRUNCATE basic; RESTART/CONTINUE IDENTITY; ONLY / CASCADE | Qualified ordering, `ONLY` and RESTRICT references checked. Native fixtures verify bounded identity and CASCADE outcomes. Remaining facts are recorded below. |
 | F11 | `postgresql.create-index` | CREATE INDEX basic; UNIQUE; CONCURRENTLY; USING method; expression index; partial WHERE; INCLUDE / NULLS DISTINCT; opclass/parameters; WITH/TABLESPACE | unreviewed |
 | F11 | `postgresql.alter-index` | RENAME TO; SET TABLESPACE; SET/RESET parameters; ATTACH PARTITION; IF EXISTS | unreviewed |
 | F11 | `postgresql.create-operator-family` | CREATE OPERATOR FAMILY; AS members | unreviewed |
@@ -1204,8 +1204,15 @@ The rebased preview at `df33755e` passed 62 cases with 1,761 assertions. The bas
 
 The implementation uses three decision records for the exact target binding,
 direct DROP RESTRICT dependencies, and extended TRUNCATE target order and
-inherited references. The canonical all-task receipt and CI for the fixed
-candidate are pending.
+inherited references. The bounded slice shipped at `b5cf88ce15f8ba8a369ef11e553d370d30308d39`. All 50 canonical tasks passed with
+3,937 cases and 77,123 assertions. T38 passed 62 cases and 1,761 assertions.
+The validator, independent review, isolated cleanup and merged-root gates
+passed. The inventory now classifies the two F10 parents as mixed coverage.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44844312112/job/136660156079),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44844312112/job/136660156600),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44844312112/job/136660156544),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44844312471/job/136660156573),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136660256807) passed at the delivered SHA.
 
 - [Destructive table targets](../decisions/2026-11-21-postgresql-destructive-table-targets.md)
 - [DROP TABLE RESTRICT dependencies](../decisions/2026-11-21-postgresql-drop-table-restrict-dependencies.md)
