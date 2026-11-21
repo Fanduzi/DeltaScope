@@ -1036,7 +1036,7 @@ new default behavior is approved per family before implementation.
 | F10 | PostgreSQL DROP/TRUNCATE | 2 | T38 | Qualified target and RESTRICT dependency slice delivered at `b5cf88ce`. Wider boundaries remain in the dimension review. |
 | F11 | PostgreSQL indexes/operator families | 4 | T39 | Qualified index and operator-family checks delivered at `47cf3020`. Wider key expressions, predicates and method-specific members remain open. |
 | F12 | PostgreSQL views/materialized views | 5 | T40 | Qualified lifecycle, options, refresh and bounded view output and dependency checks delivered through `919f1d17`. Remaining premises below. |
-| F13 | PostgreSQL types/operators | 3 | T41 | unreviewed |
+| F13 | PostgreSQL types/operators | 3 | T41 | Qualified declaration checks delivered at `fd6b2792`. The exact dimension review records remaining catalog and execution premises. |
 | F14 | PostgreSQL row-security policy | 1 | T42 | unreviewed |
 | F15 | PostgreSQL sequences | 2 | T43 | unreviewed |
 | F16 | PostgreSQL foreign objects | 2 | T44 | unreviewed |
@@ -1102,9 +1102,9 @@ insufficient.
 | F12 | `postgresql.drop-view` | DROP VIEW; IF EXISTS CASCADE | Ordered qualified targets, guarded absence and direct rewrite and row-type column dependencies delivered. Broader cascades and session cases remain open. |
 | F12 | `postgresql.alter-materialized-view` | RENAME/SET SCHEMA/OWNER; SET/RESET options; DEPENDS ON EXTENSION | Qualified rename, schema-move, owner, selected storage options and installed extension checks delivered. Other options and drop-time effects remain open. |
 | F12 | `postgresql.refresh-materialized-view` | REFRESH basic; CONCURRENTLY; WITH NO DATA | Target and concurrent refresh prerequisites delivered. Runtime query, privilege and lock outcomes remain open. |
-| F13 | `postgresql.create-type` | ENUM; composite; RANGE; base type; shell type | unreviewed |
-| F13 | `postgresql.alter-type` | ADD VALUE; RENAME VALUE; RENAME/OWNER/SET SCHEMA; composite attributes; SET properties | unreviewed |
-| F13 | `postgresql.alter-operator` | OWNER/SET SCHEMA; SET RESTRICT/JOIN | unreviewed |
+| F13 | `postgresql.create-type` | ENUM; composite; RANGE; base type; shell type | Qualified enum, composite, range, shell and bounded base declarations verified. Additional I/O, subtype and privilege checks remain open. |
+| F13 | `postgresql.alter-type` | ADD VALUE; RENAME VALUE; RENAME/OWNER/SET SCHEMA; composite attributes; SET properties | Exact enum labels, type changes, composite attributes and bounded properties verified. Dependencies and support functions remain open. |
+| F13 | `postgresql.alter-operator` | OWNER/SET SCHEMA; SET RESTRICT/JOIN | Exact qualified owner and schema changes and bounded RESTRICT/JOIN checks verified. Session names and other operator changes remain open. |
 | F14 | `postgresql.alter-policy` | USING/WITH CHECK; TO role / RENAME | unreviewed |
 | F15 | `postgresql.create-sequence` | CREATE SEQUENCE; options; OWNED BY / TEMP / IF NOT EXISTS | unreviewed |
 | F15 | `postgresql.alter-sequence` | RESTART; options; OWNED BY / RENAME / SET SCHEMA; IF EXISTS | unreviewed |
@@ -1587,7 +1587,14 @@ checks in T41 cover the premises below. The parent rows remain mixed.
 | `postgresql.alter-operator` / OWNER/SET SCHEMA | T41 operator-change cases cover exact unary and binary signatures, role precedence and occupied destination. | Implicit operand naming, session namespaces and permissions. |
 | `postgresql.alter-operator` / SET RESTRICT/JOIN | T41 estimator cases cover `NONE`, repeated option order, qualified signatures, result eligibility, valid built-ins and missing-function refusal. | Other SET options, unqualified function selection and execution privileges. |
 
-The joint T41 preview passed 221 cases and 6,241 assertions. Verification on the fixed F13 candidate is pending.
+The joint T41 preview passed 221 cases and 6,241 assertions. Delivered at `fd6b27926267b96138773fc37e21a8d56346bdcb`. All 50 canonical tasks passed with 4,572 cases and
+99,020 assertions. T41 passed 221 cases and 6,241 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44902948993/job/136842505359),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44902948993/job/136842505579),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44902948993/job/136842505631),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44902948983/job/136842505275),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136842593183) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
