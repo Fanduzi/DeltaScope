@@ -1296,6 +1296,32 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136693935697) passed at t
 - [View owner targets](../decisions/2026-11-21-postgresql-view-owner-targets.md)
 - [ALTER VIEW options](../decisions/2026-11-21-postgresql-alter-view-options.md)
 
+### F12 view defaults, materialized storage and extension dependencies
+
+The ordinary-view default check binds the qualified view and exact user
+column. IF EXISTS skips proved relation absence. The audit rejects raw
+column references and subqueries in a default after checking the target.
+Type coercion, function resolution and future writes require separate facts.
+
+The materialized-view storage check binds the qualified target and observes
+its heap access method and attached TOAST relation. It checks RESET values,
+integer fillfactor, selected heap and TOAST parameters and option namespace.
+Other parameter and access-method semantics still require evidence.
+
+The extension dependency check binds the qualified materialized view and
+installed extension. The native add, repeated add, remove and absent-edge
+controls verify the automatic dependency behavior independently of audit.
+Drop-time effects and execution permissions require separate evidence.
+
+The joint preview passed 147 T40 cases and 4,224 assertions. The
+41 new references bind three exact PostgreSQL 17 cells. Existing authored
+SQL and native controls remain. Three baseline CLI cases now check modeled
+adapter actions. Verification on the fixed candidate is pending.
+
+- [Ordinary-view column defaults](../decisions/2026-11-21-postgresql-view-column-default.md)
+- [Materialized-view storage options](../decisions/2026-11-21-postgresql-materialized-view-storage-options.md)
+- [Materialized-view extension dependencies](../decisions/2026-11-21-postgresql-materialized-view-extension.md)
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

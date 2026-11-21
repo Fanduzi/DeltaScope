@@ -10962,7 +10962,7 @@
         {
           "subaction_id": "ALTER COLUMN DEFAULT",
           "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -10970,10 +10970,21 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-view.alter-column-default.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T40.json#view-column-default-offline",
+                "file:testdata/ddl-golden/T40.json#pg-view-column-default-set-exact-numeric-default",
+                "file:testdata/ddl-golden/T40.json#pg-view-column-default-drop-default-on-ordinary-view",
+                "file:testdata/ddl-golden/T40.json#pg-view-column-default-missing-column",
+                "file:testdata/ddl-golden/T40.json#pg-view-column-default-guarded-missing-view-skips-invalid-expression",
+                "file:testdata/ddl-golden/T40.json#pg-view-column-default-source-table-under-view-spelling",
+                "file:testdata/ddl-golden/T40.json#pg-view-column-default-system-column",
+                "file:testdata/ddl-golden/T40.json#pg-view-column-default-subquery-default",
+                "file:testdata/ddl-golden/T40.json#pg-view-column-default-column-reference-default",
+                "file:testdata/ddl-golden/T40.json#pg-view-column-default-constant-view-default",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/view_default_subquery.expected.yaml#ddl.pg.alter_view.column_default.valid"
               ]
             }
           ]
@@ -11213,7 +11224,7 @@
         {
           "subaction_id": "SET/RESET options",
           "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -11221,10 +11232,30 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-materialized-view.set-reset-options.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T40.json#matview-storage-options-offline",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-lower-fillfactor",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-upper-fillfactor",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-low-fillfactor",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-quoted-fillfactor",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-missing-value",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-boolean-autovacuum",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-invalid-boolean",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-duplicate-option",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-view-option-wrong-here",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-unknown-namespace",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-toast-ignored-without-toast",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-toast-option-on-toast-bearing-view",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-toast-autovacuum",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-reset-removes-option-and-ignores-unknown",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-reset-with-value",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-absent-guard",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-unguarded-absent",
+                "file:testdata/ddl-golden/T40.json#pg-matview-storage-options-guarded-wrong-kind",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/matview_storage_option_bounds.expected.yaml#ddl.pg.alter_materialized_view.options.valid"
               ]
             }
           ]
@@ -11232,7 +11263,7 @@
         {
           "subaction_id": "DEPENDS ON EXTENSION",
           "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -11240,10 +11271,20 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-materialized-view.depends-on-extension.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T40.json#matview-extension-offline",
+                "file:testdata/ddl-golden/T40.json#pg-matview-extension-add-exact-installed-extension",
+                "file:testdata/ddl-golden/T40.json#pg-matview-extension-add-same-attachment",
+                "file:testdata/ddl-golden/T40.json#pg-matview-extension-remove-prior-attachment",
+                "file:testdata/ddl-golden/T40.json#pg-matview-extension-remove-absent-attachment",
+                "file:testdata/ddl-golden/T40.json#pg-matview-extension-case-distinct-absent-extension",
+                "file:testdata/ddl-golden/T40.json#pg-matview-extension-absent-extension-on-remove",
+                "file:testdata/ddl-golden/T40.json#pg-matview-extension-missing-source-before-missing-extension",
+                "file:testdata/ddl-golden/T40.json#pg-matview-extension-wrong-kind-before-missing-extension",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/matview_extension_absent.expected.yaml#ddl.pg.alter_materialized_view.extension.valid"
               ]
             }
           ]
