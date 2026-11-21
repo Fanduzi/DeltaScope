@@ -319,6 +319,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.tidb.alter.compat_options.notice`
 - `ddl.alter.rebuild.warn`
 - `ddl.alter.keys_toggle.notice`
+  Uses the observed MyISAM engine to distinguish stopping nonunique index maintenance from rebuilding disabled nonunique indexes.
 - `ddl.alter.charset_conversion.applicability`
 - `ddl.alter.charset_conversion.warn`
 - `ddl.alter.table_option.applicability`
@@ -461,6 +462,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.pg.drop_function.advisory`
 - `ddl.pg.create_procedure.notice`
 - `ddl.pg.drop_procedure.advisory`
+
+The MySQL INSTANT ADD COLUMN applicability check shares table and action premises with coverage and ordered state.
 
 - `ddl.pg.create_statistics.notice`
 - `ddl.pg.alter_statistics.notice`

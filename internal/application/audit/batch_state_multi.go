@@ -643,11 +643,7 @@ func multiActionNonPrimaryAction(alter *spec.Alter) bool {
 func (s *batchState) multiActionStatementOutcome(ddl *spec.DDL, shape *spec.TableSnapshot) statementOutcome {
 	_, _, actions, _ := spec.OnlineDDLModifierValues(ddl.Alter)
 	if len(actions) != len(ddl.Alter) {
-		engine := ""
-		if shape != nil {
-			engine = shape.Options["engine"]
-		}
-		switch spec.OnlineDDLOutcomeFor(s.dialect, s.resolvedVersion, engine, ddl.Alter).Verdict {
+		switch spec.OnlineDDLOutcomeFor(s.dialect, s.resolvedVersion, shape, ddl.Alter).Verdict {
 		case spec.OnlineDDLRefused:
 			return statementOutcomeRefused
 		case spec.OnlineDDLUnproven:

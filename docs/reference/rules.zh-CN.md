@@ -493,6 +493,10 @@ PostgreSQL `ALTER TABLE IF EXISTS` 的既有存在性规则在已证明限定名
 
 ---
 
+`ddl.alter.online_ddl.applicability` 使用已观测的表事实，检查 MySQL 8.x 显式 `ALGORITHM=INSTANT` 加列遇到的 MyISAM、InnoDB `ROW_FORMAT=COMPRESSED` 和 InnoDB FULLTEXT 限制，并报告原生拒绝类别。
+
+`ddl.alter.keys_toggle.notice` 根据观测到的 MyISAM 引擎区分两种操作。`DISABLE KEYS` 停止维护非唯一索引，`ENABLE KEYS` 重建已禁用的非唯一索引。
+
 ## DDL：对象生命周期规则（8 条）
 
 这些规则约束 `DROP TABLE` 和 `TRUNCATE TABLE` 操作。

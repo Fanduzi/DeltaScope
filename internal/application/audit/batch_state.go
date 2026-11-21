@@ -2153,13 +2153,13 @@ func (s *batchState) statementVersion() *spec.VersionIdentity {
 func (s *batchState) applyModifierOnlyAlter(statement spec.Statement, targets []spec.Table) {
 	key := s.keyFor(s.schema, targets[0])
 	entry := s.entries[key]
-	var engine string
+	var table *spec.TableSnapshot
 	if entry != nil && entry.state == tablePresent && entry.shape != nil {
-		engine = entry.shape.Options["engine"]
-	} else if statement.Metadata != nil && statement.Metadata.TargetTable != nil {
-		engine = statement.Metadata.TargetTable.Options["engine"]
+		table = entry.shape
+	} else if statement.Metadata != nil {
+		table = statement.Metadata.TargetTable
 	}
-	outcome := spec.OnlineDDLOutcomeFor(s.dialect, s.statementVersion(), engine, statement.DDL.Alter)
+	outcome := spec.OnlineDDLOutcomeFor(s.dialect, s.statementVersion(), table, statement.DDL.Alter)
 	switch outcome.Verdict {
 	case spec.OnlineDDLRefused:
 		return

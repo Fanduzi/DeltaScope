@@ -1,0 +1,2 @@
+ALTER TABLE app.compressed ADD COLUMN c INT, ALGORITHM=INSTANT;
+ALTER TABLE app.compressed DROP COLUMN c;

@@ -55,14 +55,12 @@ func statementOnlineOutcome(statement spec.Statement) spec.OnlineDDLOutcome {
 		return spec.OnlineDDLOutcome{}
 	}
 	var version *spec.VersionIdentity
-	var engine string
+	var table *spec.TableSnapshot
 	if statement.Metadata != nil {
 		version = statement.Metadata.Version
-		if statement.Metadata.TargetTable != nil {
-			engine = statement.Metadata.TargetTable.Options["engine"]
-		}
+		table = statement.Metadata.TargetTable
 	}
-	return spec.OnlineDDLOutcomeFor(statement.Dialect, version, engine, ddl.Alter)
+	return spec.OnlineDDLOutcomeFor(statement.Dialect, version, table, ddl.Alter)
 }
 
 // authoredModifierValues folds the authored algorithm/lock declarations
@@ -450,8 +448,10 @@ func (r alterKeysToggleNoticeRule) Evaluate(ctx context.Context, statement spec.
 		}
 		var message string
 		switch {
+		case strings.EqualFold(engine, "myisam") && alter.Action == "disable_keys":
+			message = "alter table disable_keys stops maintaining MyISAM nonunique indexes"
 		case strings.EqualFold(engine, "myisam"):
-			message = fmt.Sprintf("alter table %s performs real MyISAM key maintenance — indexes rebuild while the table is locked", alter.Action)
+			message = "alter table enable_keys rebuilds disabled MyISAM nonunique indexes"
 		case strings.TrimSpace(engine) == "":
 			message = fmt.Sprintf("alter table %s is only effective on MyISAM; the target engine is unobserved", alter.Action)
 		default:

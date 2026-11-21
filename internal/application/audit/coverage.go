@@ -652,14 +652,12 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 	if ddl.Operation == spec.DDLOperationAlterTable && !hasPartitionAlterAction(ddl) {
 		if _, _, actions, _ := spec.OnlineDDLModifierValues(ddl.Alter); len(actions) != len(ddl.Alter) {
 			var version *spec.VersionIdentity
-			var engine string
+			var table *spec.TableSnapshot
 			if statement.Metadata != nil {
 				version = statement.Metadata.Version
-				if statement.Metadata.TargetTable != nil {
-					engine = statement.Metadata.TargetTable.Options["engine"]
-				}
+				table = statement.Metadata.TargetTable
 			}
-			outcome := spec.OnlineDDLOutcomeFor(dialect, version, engine, ddl.Alter)
+			outcome := spec.OnlineDDLOutcomeFor(dialect, version, table, ddl.Alter)
 			if outcome.Verdict == spec.OnlineDDLUnproven && len(outcome.GapFacts) == 0 {
 				gaps = append(gaps, aspectGap(
 					fmt.Sprintf("%s.online_ddl", ddl.Operation), false,

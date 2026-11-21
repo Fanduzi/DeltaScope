@@ -115,10 +115,9 @@ var tidbInstantCapableActions = map[string]struct{}{
 
 // OnlineDDLOutcomeFor adjudicates the statement's effective ALGORITHM/LOCK
 // declarations against the probed matrix. alters must be the statement's
-// full spec list (the function folds modifier values itself). engine is
-// the observed pre-state engine, already lowercased-insensitive compared
-// here.
-func OnlineDDLOutcomeFor(dialect Dialect, version *VersionIdentity, engine string, alters []Alter) OnlineDDLOutcome {
+// full spec list (the function folds modifier values itself). The optional
+// table snapshot supplies observed pre-state engine and index facts.
+func OnlineDDLOutcomeFor(dialect Dialect, version *VersionIdentity, table *TableSnapshot, alters []Alter) OnlineDDLOutcome {
 	algorithm, lock, actions, tableOptionKeys := OnlineDDLModifierValues(alters)
 	if !knownAlgorithmValue(algorithm) || !knownLockValue(lock) {
 		return OnlineDDLOutcome{Verdict: OnlineDDLUnproven}
@@ -127,7 +126,7 @@ func OnlineDDLOutcomeFor(dialect Dialect, version *VersionIdentity, engine strin
 	case DialectTiDB:
 		return tidbOnlineDDLOutcome(algorithm, actions)
 	case DialectMySQL:
-		return mysqlOnlineDDLOutcome(version, engine, algorithm, lock, actions, tableOptionKeys)
+		return mysqlOnlineDDLOutcome(version, table, algorithm, lock, actions, tableOptionKeys)
 	default:
 		return OnlineDDLOutcome{Verdict: OnlineDDLUnproven}
 	}
@@ -174,7 +173,11 @@ func tidbOnlineDDLOutcome(algorithm string, actions []string) OnlineDDLOutcome {
 	return OnlineDDLOutcome{Verdict: OnlineDDLCombinable}
 }
 
-func mysqlOnlineDDLOutcome(version *VersionIdentity, engine, algorithm, lock string, actions []string, tableOptionKeys map[string]struct{}) OnlineDDLOutcome {
+func mysqlOnlineDDLOutcome(version *VersionIdentity, table *TableSnapshot, algorithm, lock string, actions []string, tableOptionKeys map[string]struct{}) OnlineDDLOutcome {
+	var engine string
+	if table != nil {
+		engine = table.Options["engine"]
+	}
 	switch algorithm {
 	case "instant":
 		// INSTANT gates on the version fact first — an unobserved or
@@ -209,6 +212,9 @@ func mysqlOnlineDDLOutcome(version *VersionIdentity, engine, algorithm, lock str
 		}
 		if unproven {
 			return OnlineDDLOutcome{Verdict: OnlineDDLUnproven}
+		}
+		if refusal := mysqlInstantAddRefusal(table, actions); refusal != "" {
+			return OnlineDDLOutcome{Verdict: OnlineDDLRefused, Refusal: refusal}
 		}
 		return OnlineDDLOutcome{Verdict: OnlineDDLCombinable}
 	case "copy":
@@ -248,6 +254,33 @@ func mysqlOnlineDDLOutcome(version *VersionIdentity, engine, algorithm, lock str
 	default:
 		return OnlineDDLOutcome{Verdict: OnlineDDLUnproven}
 	}
+}
+
+// mysqlInstantAddRefusal uses positive catalog evidence from the pre-state.
+func mysqlInstantAddRefusal(table *TableSnapshot, actions []string) string {
+	if table == nil || !table.Exists || len(actions) == 0 {
+		return ""
+	}
+	for _, action := range actions {
+		if action != "add_columns" {
+			return ""
+		}
+	}
+	if strings.EqualFold(table.Options["engine"], "MyISAM") {
+		return "1845"
+	}
+	if !strings.EqualFold(table.Options["engine"], "InnoDB") {
+		return ""
+	}
+	if strings.EqualFold(table.Options["row_format"], "COMPRESSED") {
+		return "1845"
+	}
+	for _, index := range table.Indexes {
+		if index.Kind == IndexKindFulltext {
+			return "1846"
+		}
+	}
+	return ""
 }
 
 // mysqlLockNoneOutcome adjudicates a LOCK=NONE request (with no explicit

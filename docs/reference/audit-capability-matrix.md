@@ -519,6 +519,8 @@ For PostgreSQL 17, the DROP and TRUNCATE target rules check exact qualified targ
 
 ---
 
+MySQL 8.x metadata-aware INSTANT ADD COLUMN checks cover observed MyISAM, InnoDB COMPRESSED row format, and InnoDB FULLTEXT indexes. The shared classifier preserves the prior schema for a proven refusal.
+
 ## DDL: MySQL/TiDB Database/Schema Lifecycle (v0.64.0)
 
 `v0.64.0` normalizes MySQL/TiDB database and schema lifecycle DDL — `CREATE DATABASE`, `CREATE SCHEMA`, `DROP DATABASE`, `DROP SCHEMA` — through the audit pipeline instead of passing silently. In MySQL/TiDB, `SCHEMA` is a synonym for `DATABASE`. Two new rules provide notice and warning coverage. These rules only apply when `--dialect mysql` or `--dialect tidb` is set.

@@ -561,6 +561,10 @@ completed. They cannot fire on a single statement in isolation.
 
 ---
 
+`ddl.alter.online_ddl.applicability` checks explicit MySQL 8.x `ALGORITHM=INSTANT` additions against observed MyISAM, InnoDB `ROW_FORMAT=COMPRESSED`, and InnoDB FULLTEXT restrictions. The existing rule reports the native refusal class.
+
+`ddl.alter.keys_toggle.notice` uses the observed MyISAM engine to distinguish stopping maintenance of nonunique indexes with `DISABLE KEYS` from rebuilding disabled nonunique indexes with `ENABLE KEYS`.
+
 ## DDL: MySQL/TiDB Database/Schema Lifecycle Rules (2 rules)
 
 These rules guard against MySQL and TiDB database/schema lifecycle DDL operations — `CREATE DATABASE`, `CREATE SCHEMA`, `DROP DATABASE`, and `DROP SCHEMA`. In MySQL/TiDB, `SCHEMA` is a synonym for `DATABASE`. They only apply when `--dialect mysql` or `--dialect tidb` is set and are skipped for PostgreSQL dialects.

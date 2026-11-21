@@ -202,6 +202,41 @@ func TestT15InstantVersionAndLockGates(t *testing.T) {
 	})
 }
 
+func TestT15InstantAddCatalogRefusalsPreserveTable(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name, engine, rowFormat, refusal string
+		indexes                          []spec.Index
+	}{
+		{name: "compressed", engine: "InnoDB", rowFormat: "COMPRESSED", refusal: "1845"},
+		{name: "fulltext", engine: "InnoDB", rowFormat: "DYNAMIC", refusal: "1846", indexes: []spec.Index{{Name: "ft", Kind: spec.IndexKindFulltext, Columns: []string{"s"}}}},
+		{name: "myisam", engine: "MyISAM", refusal: "1845"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			table := t15InnoDBShape("t")
+			table.Options["engine"] = tc.engine
+			table.Options["row_format"] = tc.rowFormat
+			table.Indexes = tc.indexes
+			provider := t15ProviderFor(spec.DialectMySQL, "8.0.46", map[string]*spec.TableSnapshot{"t": table})
+			result := t15Audit(t, spec.DialectMySQL, `
+ALTER TABLE t ADD COLUMN c INT, ADD COLUMN d INT, ALGORITHM=INSTANT;
+ALTER TABLE t DROP COLUMN c;
+`, provider, map[string]t05RuleConfig{
+				t15RuleOnlineApplicability:             {level: "blocker"},
+				"ddl.alter.drop_column.exists.require": {level: "blocker"},
+			})
+			refusals := t05FindingsByRule(result, 0, t15RuleOnlineApplicability)
+			if len(refusals) != 1 || refusals[0].Metadata["refusal"] != tc.refusal {
+				t.Fatalf("expected refusal %s, got %#v", tc.refusal, refusals)
+			}
+			if absent := t05FindingsByRule(result, 1, "ddl.alter.drop_column.exists.require"); len(absent) != 1 {
+				t.Fatalf("the refused addition must preserve column absence, got %#v", result.Statements[1])
+			}
+		})
+	}
+}
+
 // Accepted-but-risky declarations carry the warn rule; benign modifiers
 // stay silent.
 func TestT15WarnMatrix(t *testing.T) {
@@ -592,12 +627,14 @@ func TestT15KeysToggleEngineArms(t *testing.T) {
 		shape := t15InnoDBShape("t")
 		shape.Options["engine"] = "MyISAM"
 		result := t15Audit(t, spec.DialectMySQL,
-			"ALTER TABLE t DISABLE KEYS;",
+			"ALTER TABLE t DISABLE KEYS; ALTER TABLE t ENABLE KEYS;",
 			t15ProviderFor(spec.DialectMySQL, "8.0.46", map[string]*spec.TableSnapshot{"t": shape}),
 			map[string]t05RuleConfig{"ddl.alter.keys_toggle.notice": {level: "notice"}})
-		notices := t05FindingsByRule(result, 0, "ddl.alter.keys_toggle.notice")
-		if len(notices) != 1 || !strings.Contains(notices[0].Message, "MyISAM") {
-			t.Fatalf("MyISAM must report real key maintenance, got %#v", result.Statements[0].Findings)
+		for i, want := range []string{"stops maintaining MyISAM nonunique indexes", "rebuilds disabled MyISAM nonunique indexes"} {
+			notices := t05FindingsByRule(result, i, "ddl.alter.keys_toggle.notice")
+			if len(notices) != 1 || !strings.Contains(notices[0].Message, want) {
+				t.Fatalf("statement %d: expected %q, got %#v", i, want, notices)
+			}
 		}
 	})
 
