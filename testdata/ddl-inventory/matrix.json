@@ -15281,7 +15281,7 @@
         {
           "subaction_id": "HANDLER/VALIDATOR changes",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -15289,10 +15289,13 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "audited",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-foreign-data-wrapper.handler-validator-changes.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T44.json#pg-fdw-missing-handler-before-option",
+                "file:testdata/ddl-golden/T44.json#pg-fdw-wrong-handler-return",
+                "file:testdata/ddl-golden/T44.json#pg-fdw-no-handler-validator"
               ]
             }
           ]
@@ -15300,7 +15303,7 @@
         {
           "subaction_id": "OPTIONS",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -15308,10 +15311,19 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "audited",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-foreign-data-wrapper.options.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T44.json#fdw-catalog-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/alter_wrapper_drop_absent_option.expected.yaml#ddl.pg.alter_foreign_data_wrapper.target.valid",
+                "file:testdata/ddl-golden/T44.json#pg-fdw-missing-wrapper-before-option",
+                "file:testdata/ddl-golden/T44.json#pg-fdw-add-existing-option",
+                "file:testdata/ddl-golden/T44.json#pg-fdw-drop-missing-option",
+                "file:testdata/ddl-golden/T44.json#pg-fdw-set-missing-option",
+                "file:testdata/ddl-golden/T44.json#pg-fdw-ordered-drop-and-add",
+                "file:testdata/ddl-golden/T44.json#pg-fdw-ordered-add-then-set-then-drop",
+                "file:testdata/ddl-golden/T44.json#pg-fdw-exact-quoted-option-name"
               ]
             }
           ]
@@ -15319,7 +15331,7 @@
         {
           "subaction_id": "OWNER/RENAME",
           "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -15327,10 +15339,15 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-foreign-data-wrapper.owner-rename.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T44.json#pg-fdw-rename-wrapper",
+                "file:testdata/ddl-golden/T44.json#pg-fdw-rename-to-occupied-wrapper",
+                "file:testdata/ddl-golden/T44.json#pg-fdw-rename-wrapper-to-same-name",
+                "file:testdata/ddl-golden/T44.json#pg-fdw-wrapper-owner-must-be-superuser",
+                "file:testdata/ddl-golden/T44.json#pg-fdw-missing-owner-before-wrapper"
               ]
             }
           ]
@@ -15710,7 +15727,7 @@
         {
           "subaction_id": "OPTIONS",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -15718,10 +15735,13 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "audited",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-foreign-table.options.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-alter-foreign-table-option",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-alter-foreign-table-duplicate-option",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-wrong-relation-kind"
               ]
             }
           ]
@@ -15729,7 +15749,7 @@
         {
           "subaction_id": "ADD/DROP COLUMN",
           "parser_status": "recognized",
-          "audit_status": "audited",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -15737,10 +15757,21 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "audited",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-foreign-table.add-drop-column.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T44.json#foreign-table-catalog-offline",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/alter_foreign_table_drop_absent_column.expected.yaml#ddl.pg.alter_foreign_table.target.valid",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-alter-foreign-table-add-existing-column",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-alter-foreign-table-guarded-add-existing-column",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-alter-foreign-table-missing-column",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-drop-existing-column",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-drop-system-column",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-guarded-relation-absent",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-rename-qualified-column-conflict",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-rename-qualified-column",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-rename-missing-source-before-destination"
               ]
             }
           ]
@@ -15748,7 +15779,7 @@
         {
           "subaction_id": "RENAME/OWNER/SET SCHEMA",
           "parser_status": "partial",
-          "audit_status": "explicit_unsupported",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -15756,10 +15787,22 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "partial",
-              "audit_status": "explicit_unsupported",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-foreign-table.rename-owner-set-schema.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-foreign-table-rename-relation",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-foreign-table-rename-occupied",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-foreign-table-rename-same-name",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-foreign-table-rename-ordinary-relation",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-move-to-schema",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-move-to-same-schema",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-move-to-missing-schema",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-move-to-occupied-schema",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-owner-current-user",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-new-owner-must-have-server-usage",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-missing-owner-and-table",
+                "file:testdata/ddl-golden/T44.json#pg-foreign-table-missing-owner-on-exact-table"
               ]
             }
           ]

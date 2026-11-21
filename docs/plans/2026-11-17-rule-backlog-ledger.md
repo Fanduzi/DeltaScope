@@ -1633,6 +1633,19 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44913894095/job/136875255649),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136875330065) passed at the delivered SHA.
 
+## F16 exact dimension review
+
+| Inventory dimension | Evidence and present scope | Remaining premise |
+| --- | --- | --- |
+| `postgresql.alter-foreign-data-wrapper` / HANDLER/VALIDATOR changes | T44 checks qualified routine signatures and the handler result type. Native cases verify NO HANDLER, NO VALIDATOR, missing handlers and incompatible handler returns. | Unqualified function resolution, caller authorization, and behavior of handler or validator code. |
+| `postgresql.alter-foreign-data-wrapper` / OPTIONS | T44 checks exact ordered option names. ADD requires absence. SET and DROP require presence. DROP then ADD and case-distinct names have native catalog witnesses. | Option values and validator results need separate evidence. |
+| `postgresql.alter-foreign-data-wrapper` / OWNER/RENAME | T44 verifies role lookup before wrapper resolution, the target role's superuser requirement, destination occupancy and same-name rename refusal. | Caller privileges and session-dependent authorization. |
+| `postgresql.alter-foreign-table` / OPTIONS | T44 checks exact foreign table kind and reuses the ordered option checks. | Validator results and the behavior of external systems. |
+| `postgresql.alter-foreign-table` / ADD/DROP COLUMN | T44 verifies exact column names, guarded absence or occupancy, invalid system-column DROP and rename precedence. | Column type resolution, dependent and inherited changes, and multi-action state. |
+| `postgresql.alter-foreign-table` / RENAME/OWNER/SET SCHEMA | T44 verifies source relation kind, destination occupancy, same-schema moves and role lookup after relation resolution. | Caller privileges and additional dependency changes. |
+
+The joint T44 preview passed 89 cases and 2,825 assertions. Verification on the fixed F16 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
