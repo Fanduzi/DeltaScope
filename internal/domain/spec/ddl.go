@@ -1017,8 +1017,9 @@ type Alter struct {
 	PGKeyColumns     []string `json:"-"`
 	PGIncludeColumns []string `json:"-"`
 	// PGCheckHasSubquery records a raw subquery in an ALTER TABLE CHECK predicate.
-	PGCheckHasSubquery bool   `json:"-"`
-	PGCheckLiteral     string `json:"-"`
+	PGCheckHasSubquery bool     `json:"-"`
+	PGCheckLiteral     string   `json:"-"`
+	PGCheckNullTest    []string `json:"-"`
 	// PGForeignKey preserves both ordered foreign-key column lists privately.
 	PGForeignKey *PGForeignKeySelection `json:"-"`
 	// PGAddColumnIfNotExists is the authored ADD COLUMN guard, separate from the table guard.

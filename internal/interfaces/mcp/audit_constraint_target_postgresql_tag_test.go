@@ -20,6 +20,7 @@ func TestAuditSQLPGConstraintTarget(t *testing.T) {
 	}{
 		{`ALTER TABLE app.t ADD CONSTRAINT " Exact Check " CHECK (1 > 0) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", []spec.PGConstraintState{{Name: " Exact Check ", Type: "c", Validated: true}}},
 		{`ALTER TABLE app.t ADD CHECK (id > (SELECT 0)) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
+		{`ALTER TABLE app.t ADD CHECK (" Exact Missing " IS NULL) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD CHECK ('invalid') NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD UNIQUE (id, id)`, "ddl.pg.alter.constraint_columns.valid", "reject", nil},
 		{`ALTER TABLE app.t ADD FOREIGN KEY (id) REFERENCES app.t ("Missing") NOT VALID`, "ddl.pg.alter.add_foreign_key.targets.valid", "reject", []spec.PGConstraintState{}},

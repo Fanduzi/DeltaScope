@@ -17,7 +17,8 @@ func newPGAddCheckNameRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 func (r pgAddCheckNameRule) ID() string { return ruleIDPGAlterAddCheckNameAvailable }
 
 func (r pgAddCheckNameRule) AppliesTo(s spec.Statement) bool {
-	return pgAddCheck(s) && (s.DDL.Alter[0].Name != "" || s.DDL.Alter[0].PGCheckHasSubquery || s.DDL.Alter[0].PGCheckLiteral != "")
+	return pgAddCheck(s) && (s.DDL.Alter[0].Name != "" || s.DDL.Alter[0].PGCheckHasSubquery ||
+		s.DDL.Alter[0].PGCheckLiteral != "" || len(s.DDL.Alter[0].PGCheckNullTest) != 0)
 }
 
 func pgNamedAddCheck(s spec.Statement) bool {
@@ -57,6 +58,21 @@ func assessPGAddCheckName(s spec.Statement) (reason, missing string) {
 		}
 		return "check_predicate_boolean_required", ""
 	}
+	if parts := a.PGCheckNullTest; len(parts) != 0 {
+		if len(parts) == 2 && parts[0] != s.DDL.Table.Name {
+			return "check_predicate_qualifier_absent", ""
+		}
+		name := parts[len(parts)-1]
+		member, known := s.Metadata.TargetTable.PGColumns.FindColumn(name)
+		switch {
+		case !known:
+			return "", "target_table.pg_columns"
+		case member != nil && member.System && name != "tableoid":
+			return "check_predicate_system_column", ""
+		case member == nil && (len(parts) == 2 || name != s.DDL.Table.Name):
+			return "check_predicate_column_absent", ""
+		}
+	}
 	if a.Name == "" {
 		return "", ""
 	}
@@ -89,6 +105,12 @@ func (r pgAddCheckNameRule) Evaluate(ctx context.Context, s spec.Statement) ([]r
 		message = "PostgreSQL cannot interpret the CHECK predicate literal as a Boolean"
 	case "check_predicate_boolean_required":
 		message = "The CHECK predicate must have a Boolean result"
+	case "check_predicate_qualifier_absent":
+		message = "The CHECK predicate qualifier does not name the target table"
+	case "check_predicate_column_absent":
+		message = "The CHECK predicate references a column that does not exist"
+	case "check_predicate_system_column":
+		message = "PostgreSQL rejects this system column in a CHECK predicate"
 	}
 	return []rule.Finding{{Level: r.level, Message: message,
 		Metadata: map[string]any{

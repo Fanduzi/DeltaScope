@@ -17,6 +17,8 @@ func TestPGAddCheckName(t *testing.T) {
 		unmatched                  bool
 		subquery                   bool
 		coercion                   *spec.PGCheckIntegerCoercion
+		nullTest                   []string
+		columns                    []spec.PGColumnState
 	}{
 		{name: "exact check", entries: []spec.PGConstraintState{{Name: " Exact Check ", Type: "c"}}, occupied: true},
 		{name: "different kind", entries: []spec.PGConstraintState{{Name: " Exact Check ", Type: "p"}}, occupied: true},
@@ -29,6 +31,13 @@ func TestPGAddCheckName(t *testing.T) {
 		{name: "integer cast unknown", literal: "integer", gap: "check.integer_boolean_coercion"},
 		{name: "assignment cast needs result evidence", literal: "integer", coercion: &spec.PGCheckIntegerCoercion{Allowed: true}, gap: "check.integer_boolean_coercion"},
 		{name: "malformed Boolean string", literal: "invalid_boolean", reason: "check_predicate_invalid_boolean", occupied: true, change: func(s *spec.Statement) { s.DDL.Alter[0].Name = "" }},
+		{name: "known absent exact column", nullTest: []string{" exact Flag "}, columns: []spec.PGColumnState{{Name: " Exact Flag "}}, reason: "check_predicate_column_absent", occupied: true},
+		{name: "unknown column catalog", nullTest: []string{"missing"}, gap: "target_table.pg_columns"},
+		{name: "whole-row spelling", nullTest: []string{"t"}, columns: []spec.PGColumnState{}, entries: []spec.PGConstraintState{}},
+		{name: "system column refusal", nullTest: []string{"ctid"}, columns: []spec.PGColumnState{}, reason: "check_predicate_system_column", occupied: true, change: func(s *spec.Statement) {
+			s.Metadata.TargetTable.PGColumns.SystemColumns = []spec.PGColumnState{{Name: "ctid", System: true}}
+		}},
+		{name: "mismatched qualifier", nullTest: []string{"other", "id"}, reason: "check_predicate_qualifier_absent", occupied: true},
 		{name: "missing directory", gap: "target_table.pg_constraints"},
 		{name: "ambiguous names", gap: "target_table.pg_constraints", entries: []spec.PGConstraintState{{Name: " Exact Check ", Type: "c"}, {Name: " Exact Check ", Type: "p"}}},
 		{name: "stale binding", gap: "target_table.pg_constraint_scope", change: func(s *spec.Statement) { s.Metadata.TargetTable.PGRelation = spec.PGRelationState{} }},
@@ -56,6 +65,8 @@ func TestPGAddCheckName(t *testing.T) {
 			}
 			s.DDL.Alter[0].PGCheckHasSubquery = tc.subquery
 			s.DDL.Alter[0].PGCheckLiteral = tc.literal
+			s.DDL.Alter[0].PGCheckNullTest = tc.nullTest
+			s.Metadata.TargetTable.PGColumns.Columns = tc.columns
 			s.Metadata.PGCheckIntegerCoercion = tc.coercion
 			if tc.change != nil {
 				tc.change(&s)

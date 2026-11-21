@@ -1,0 +1,1 @@
+ALTER TABLE app.t ADD CHECK (absent IS NULL) NOT VALID;

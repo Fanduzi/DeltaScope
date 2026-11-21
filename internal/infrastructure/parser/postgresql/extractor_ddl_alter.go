@@ -1066,6 +1066,13 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			expr := constraint.GetRawExpr()
 			alter.PGCheckHasSubquery = pgExpressionHasReference(expr, false)
 			alter.PGCheckLiteral = pgCheckLiteral(expr)
+			fields := expr.GetNullTest().GetArg().GetColumnRef().GetFields()
+			if len(fields) == 1 || len(fields) == 2 {
+				names := stringValuesFromNodes(fields)
+				if len(names) == len(fields) {
+					alter.PGCheckNullTest = names
+				}
+			}
 		}
 		return alter, true, nil
 	case pg_query.AlterTableType_AT_DropConstraint:
