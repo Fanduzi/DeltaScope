@@ -1908,3 +1908,213 @@ func TestMCPPGCreateColumnsTarget(t *testing.T) {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }
+
+type alterEnumAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (alterEnumAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_alter_enum" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGEnum: &spec.PGEnumState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mood"}}, SchemaExists: true, TypeExists: true, Defined: true, TypeKind: "e", Encoding: "UTF8", LabelBytes: 63, Labels: []string{"private_catalog_label"}}}, nil
+}
+
+func TestMCPPGAlterEnumTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := alterEnumAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER TYPE app.mood RENAME VALUE 'missing' TO 'new'", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"alter_enum_old_label_absent"`) || !strings.Contains(string(body), `"ddl.pg.alter_type.enum.valid"`) || strings.Contains(string(body), "private_catalog_label") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type compositeAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (compositeAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_composite_type" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGComposite: &spec.PGCompositeState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "pair"}}, SchemaExists: true, RelationKind: "c", Attributes: []string{"private_catalog_label"}}}, nil
+}
+
+func TestMCPPGCompositeTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := compositeAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER TYPE app.pair DROP ATTRIBUTE missing", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"composite_attribute_absent"`) || !strings.Contains(string(body), `"ddl.pg.type.composite.valid"`) || strings.Contains(string(body), "private_catalog_label") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type typeChangeAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (typeChangeAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_type_change" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGTypeChange: &spec.PGTypeChangeState{Target: spec.PGTypeChange{Source: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "pair"}}, Action: "rename", Destination: "used"}, SourceExists: true, Defined: true, Composite: true, DestinationRelation: true}}, nil
+}
+
+func TestMCPPGTypeChangeTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := typeChangeAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER TYPE app.pair RENAME TO used", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"alter_type_relation_occupied"`) || !strings.Contains(string(body), `"ddl.pg.alter_type.change.target.valid"`) || strings.Contains(string(body), "DestinationRelation") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type operatorChangeAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (operatorChangeAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_operator_change" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGOperatorChange: &spec.PGOperatorChangeState{Target: spec.PGOperatorChange{Source: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "==="}}, Action: "set_schema", Destination: "used", Signature: true, Left: spec.PGColumnTypeTarget{Schema: "pg_catalog", Name: "int4"}, Right: spec.PGColumnTypeTarget{Schema: "pg_catalog", Name: "int4"}}, OperandSchema: true, OperandTypes: true, SourceSchema: true, SourceExists: true, DestinationSchema: true, DestinationOccupied: true}}, nil
+}
+
+func TestMCPPGOperatorChangeTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := operatorChangeAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER OPERATOR app.=== (pg_catalog.int4, pg_catalog.int4) SET SCHEMA used", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"alter_operator_destination_occupied"`) || !strings.Contains(string(body), `"ddl.pg.alter_operator.change.target.valid"`) || strings.Contains(string(body), "DestinationOccupied") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type createRangeAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (createRangeAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_create_range" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGEnum: &spec.PGEnumState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mood"}}, SchemaExists: true, TypeExists: true, Defined: true, TypeKind: "e", Encoding: "UTF8", LabelBytes: 63, Labels: []string{"private_catalog_label"}}}, nil
+}
+
+func TestMCPPGCreateRangeTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := createRangeAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "CREATE TYPE app.mood AS RANGE (unknown_option=1)", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"range_option_unknown"`) || !strings.Contains(string(body), `"ddl.pg.create_type.range.valid"`) || strings.Contains(string(body), "private_catalog_label") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type createBaseTypeAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (createBaseTypeAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_base_type" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGEnum: &spec.PGEnumState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mood"}}, SchemaExists: true, TypeExists: true, Defined: false, Encoding: "UTF8", LabelBytes: 63, Labels: []string{"private_catalog_label"}}}, nil
+}
+
+func TestMCPPGCreateBaseTypeTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := createBaseTypeAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "CREATE TYPE app.mood (OUTPUT=pg_catalog.int4out)", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"base_type_io_required"`) || !strings.Contains(string(body), `"ddl.pg.type.base.valid"`) || strings.Contains(string(body), "private_catalog_label") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}

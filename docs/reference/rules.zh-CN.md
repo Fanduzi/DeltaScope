@@ -810,6 +810,13 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
+| `ddl.pg.alter_operator.change.target.valid` | 检查 PostgreSQL 17 运算符的精确签名、所有者解析、目标 schema 和限定的 RESTRICT/JOIN 函数。 | blocker | 是 |
+| `ddl.pg.alter_type.change.target.valid` | 检查 PostgreSQL 17 类型改名、schema 迁移与所有者解析。 | blocker | 是 |
+| `ddl.pg.type.composite.valid` | 检查 PostgreSQL 17 限定复合类型创建和单个属性操作。 | blocker | 是 |
+| `ddl.pg.type.base.valid` | 检查 PostgreSQL 17 shell、基础类型声明及部分属性变更。 | blocker | 是 |
+| `ddl.pg.create_type.range.valid` | 检查 PostgreSQL 17 限定范围类型的创建目标、标量子类型与可确定的选项拒绝条件。 | blocker | 是 |
+| `ddl.pg.create_type.enum.valid` | 检查 PostgreSQL 17 限定 ENUM 创建目标及标签声明。 | blocker | 是 |
+| `ddl.pg.alter_type.enum.valid` | 检查 PostgreSQL 17 限定 ENUM 类型、精确标签及 ADD/RENAME 优先级。 | blocker | 是 |
 | `ddl.pg.create_type.enum.notice` | `CREATE TYPE ... AS ENUM` 引入新的 enum 类型——信息性提示 | notice | 否 |
 | `ddl.pg.alter_type.add_value.advisory` | `ALTER TYPE ... ADD VALUE` 向已有 enum 追加值——建议审查应用使用情况 | warning | 否 |
 | `ddl.pg.alter_type.add_value.position.notice` | `ALTER TYPE ... ADD VALUE ... BEFORE/AFTER` 定位新 enum 值——信息性提示 | notice | 否 |

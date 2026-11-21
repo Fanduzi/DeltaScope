@@ -2351,6 +2351,27 @@ rules:
     level: notice
     params:
 
+  ddl.pg.alter_type.enum.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.alter_operator.change.target.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.alter_type.change.target.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.type.composite.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.type.base.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.create_type.range.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.create_type.enum.valid:
+    enabled: true
+    level: blocker
   ddl.pg.create_type.enum.notice:
     enabled: true
     level: notice

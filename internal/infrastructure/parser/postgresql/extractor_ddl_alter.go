@@ -78,10 +78,11 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 			objectName = renameObjectTypeName(stmt)
 		}
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterType,
-			ObjectName: objectName,
-			ObjectType: "type",
-			Options:    map[string]string{"type_kind": "composite", "action": "rename", "new_name": stmt.GetNewname()},
+			PGTypeChange: pgTypeChangeDeclaration(stmt.GetObject().GetList().GetItems(), "rename", stmt.GetNewname()),
+			Operation:    spec.DDLOperationAlterType,
+			ObjectName:   objectName,
+			ObjectType:   "type",
+			Options:      map[string]string{"type_kind": "composite", "action": "rename", "new_name": stmt.GetNewname()},
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_ATTRIBUTE:
@@ -90,9 +91,10 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 			typeName = rng.GetRelname()
 		}
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterType,
-			ObjectName: typeName,
-			ObjectType: "type",
+			PGComposite: pgCompositeAttributeDeclaration(stmt.GetRelation(), "rename_attribute", stmt.GetSubname(), stmt.GetNewname(), stmt.GetMissingOk()),
+			Operation:   spec.DDLOperationAlterType,
+			ObjectName:  typeName,
+			ObjectType:  "type",
 			Options: map[string]string{
 				"type_kind": "composite",
 				"action":    "rename_attribute",
@@ -424,9 +426,10 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_OPERATOR {
 		objectName := objectNameFromObjectWithArgsOrList(stmt.GetObject())
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterOperator,
-			ObjectName: objectName,
-			ObjectType: "operator",
+			PGOperatorChange: pgOperatorChangeDeclaration(stmt.GetObject().GetObjectWithArgs(), "set_schema", stmt.GetNewschema(), spec.PGTableOwnerTarget{}),
+			Operation:        spec.DDLOperationAlterOperator,
+			ObjectName:       objectName,
+			ObjectType:       "operator",
 			Options: map[string]string{
 				"action":     "set_schema",
 				"new_schema": stmt.GetNewschema(),
@@ -579,30 +582,26 @@ func extractAlterEnumStmt(statement spec.Statement, stmt *pg_query.AlterEnumStmt
 	if objectName == "" {
 		return unsupportedStatement(statement, "alter_type", "postgresql alter enum type name is missing")
 	}
-	newVal := stmt.GetNewVal()
-	if newVal == "" {
-		return unsupportedStatement(statement, "alter_type", "postgresql alter enum type new value is missing")
-	}
+	decl := pgAlterEnumDeclaration(stmt, statement.RawSQL)
 	options := map[string]string{
-		"type_kind":     "enum",
-		"action":        "add_value",
-		"value":         newVal,
-		"if_not_exists": strconv.FormatBool(stmt.GetSkipIfNewValExists()),
+		"type_kind": "enum", "action": "add_value", "value": decl.Value,
+		"if_not_exists": strconv.FormatBool(decl.IfNotExists),
 	}
-	neighbor := stmt.GetNewValNeighbor()
-	if neighbor != "" {
+	if decl.Old != nil {
+		options["action"] = "rename_value"
+	} else if decl.Neighbor != nil {
+		options["placement"] = "before"
 		if stmt.GetNewValIsAfter() {
 			options["placement"] = "after"
-		} else {
-			options["placement"] = "before"
 		}
-		options["neighbor"] = neighbor
+		options["neighbor"] = *decl.Neighbor
 	}
 	statement.DDL = &spec.DDL{
-		Operation:  spec.DDLOperationAlterType,
-		ObjectName: objectName,
-		ObjectType: "type",
-		Options:    options,
+		PGAlterEnum: decl,
+		Operation:   spec.DDLOperationAlterType,
+		ObjectName:  objectName,
+		ObjectType:  "type",
+		Options:     options,
 	}
 	return statement
 }
@@ -729,6 +728,13 @@ func extractAlterExtensionContentsStmt(statement spec.Statement, stmt *pg_query.
 // extractAlterTypeCompositeFromAlterTableStmt handles ALTER TYPE ...
 // ADD/DROP/ALTER ATTRIBUTE which pg_query maps to AlterTableStmt with
 // objtype=OBJECT_TYPE.
+func pgCompositeAttributeDeclaration(relation *pg_query.RangeVar, action, name, newName string, ifExists bool) *spec.PGCompositeDeclaration {
+	return &spec.PGCompositeDeclaration{
+		Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: relation.GetSchemaname(), Name: relation.GetRelname()}, CatalogQualified: relation.GetCatalogname() != ""},
+		Action: action, Name: name, NewName: newName, IfExists: ifExists,
+	}
+}
+
 func extractAlterTypeCompositeFromAlterTableStmt(statement spec.Statement, stmt *pg_query.AlterTableStmt) spec.Statement {
 	if len(stmt.GetCmds()) == 0 {
 		return unsupportedStatement(statement, "alter_type", "postgresql alter type composite statement has no commands")
@@ -742,6 +748,20 @@ func extractAlterTypeCompositeFromAlterTableStmt(statement spec.Statement, stmt 
 	if rng := stmt.GetRelation(); rng != nil {
 		objectName = rng.GetRelname()
 	}
+
+	var action, name string
+	switch cmd.GetSubtype() {
+	case pg_query.AlterTableType_AT_AddColumn:
+		action, name = "add_attribute", cmd.GetDef().GetColumnDef().GetColname()
+	case pg_query.AlterTableType_AT_DropColumn:
+		action, name = "drop_attribute", cmd.GetName()
+	case pg_query.AlterTableType_AT_AlterColumnType:
+		action, name = "alter_attribute_type", cmd.GetName()
+	}
+	if len(stmt.GetCmds()) != 1 {
+		action = ""
+	}
+	decl := pgCompositeAttributeDeclaration(stmt.GetRelation(), action, name, "", cmd.GetMissingOk())
 
 	switch cmd.GetSubtype() {
 	case pg_query.AlterTableType_AT_AddColumn:
@@ -764,17 +784,19 @@ func extractAlterTypeCompositeFromAlterTableStmt(statement spec.Statement, stmt 
 			options["attribute_type"] = attributeType
 		}
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterType,
-			ObjectName: objectName,
-			ObjectType: "type",
-			Options:    options,
+			PGComposite: decl,
+			Operation:   spec.DDLOperationAlterType,
+			ObjectName:  objectName,
+			ObjectType:  "type",
+			Options:     options,
 		}
 		return statement
 	case pg_query.AlterTableType_AT_DropColumn:
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterType,
-			ObjectName: objectName,
-			ObjectType: "type",
+			PGComposite: decl,
+			Operation:   spec.DDLOperationAlterType,
+			ObjectName:  objectName,
+			ObjectType:  "type",
 			Options: map[string]string{
 				"type_kind": "composite",
 				"action":    "drop_attribute",
@@ -803,15 +825,24 @@ func extractAlterTypeCompositeFromAlterTableStmt(statement spec.Statement, stmt 
 			options["attribute_type"] = attributeType
 		}
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterType,
-			ObjectName: objectName,
-			ObjectType: "type",
-			Options:    options,
+			PGComposite: decl,
+			Operation:   spec.DDLOperationAlterType,
+			ObjectName:  objectName,
+			ObjectType:  "type",
+			Options:     options,
 		}
 		return statement
 	default:
 		return unsupportedStatement(statement, "alter_type", fmt.Sprintf("postgresql alter type composite action %s is deferred", cmd.GetSubtype()))
 	}
+}
+
+func pgTypeChangeDeclaration(names []*pg_query.Node, action, destination string) *spec.PGTypeChange {
+	decl := &spec.PGTypeChange{Action: action, Destination: destination}
+	if len(names) == 2 {
+		decl.Source.Table = spec.Table{Schema: stringNodeValue(names[0]), Name: stringNodeValue(names[1])}
+	}
+	return decl
 }
 
 // extractAlterTypeSetSchema normalizes ALTER TYPE ... SET SCHEMA into
@@ -824,9 +855,10 @@ func extractAlterTypeSetSchema(statement spec.Statement, stmt *pg_query.AlterObj
 		}
 	}
 	statement.DDL = &spec.DDL{
-		Operation:  spec.DDLOperationAlterType,
-		ObjectName: objectName,
-		ObjectType: "type",
+		PGTypeChange: pgTypeChangeDeclaration(stmt.GetObject().GetList().GetItems(), "set_schema", stmt.GetNewschema()),
+		Operation:    spec.DDLOperationAlterType,
+		ObjectName:   objectName,
+		ObjectType:   "type",
 		Options: map[string]string{
 			"type_kind":  "composite",
 			"action":     "set_schema",
@@ -1681,6 +1713,15 @@ func extractAlterOwnerStmt(statement spec.Statement, stmt *pg_query.AlterOwnerSt
 	}
 
 	switch stmt.GetObjectType() {
+	case pg_query.ObjectType_OBJECT_TYPE:
+		names := stmt.GetObject().GetList().GetItems()
+		target := pgTypeChangeDeclaration(names, "set_owner", "")
+		target.Owner = pgRoleSelection(stmt.GetNewowner())
+		statement.DDL = &spec.DDL{
+			Operation: spec.DDLOperationAlterType, ObjectName: lastStringFromNodes(names), ObjectType: "type",
+			Options: map[string]string{"action": "set_owner", "owner": owner}, PGTypeChange: target,
+		}
+		return statement
 	case pg_query.ObjectType_OBJECT_SCHEMA:
 		objectName := alterOwnerObjectName(stmt)
 		statement.DDL = &spec.DDL{
@@ -1725,10 +1766,11 @@ func extractAlterOwnerStmt(statement spec.Statement, stmt *pg_query.AlterOwnerSt
 	case pg_query.ObjectType_OBJECT_OPERATOR:
 		objectName := objectNameFromObjectWithArgsOrList(stmt.GetObject())
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterOperator,
-			ObjectName: objectName,
-			ObjectType: "operator",
-			Options:    map[string]string{"action": "set_owner", "owner": owner},
+			PGOperatorChange: pgOperatorChangeDeclaration(stmt.GetObject().GetObjectWithArgs(), "set_owner", "", pgRoleSelection(stmt.GetNewowner())),
+			Operation:        spec.DDLOperationAlterOperator,
+			ObjectName:       objectName,
+			ObjectType:       "operator",
+			Options:          map[string]string{"action": "set_owner", "owner": owner},
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_CONVERSION:
@@ -1950,6 +1992,12 @@ func extractDefineStmt(statement spec.Statement, stmt *pg_query.DefineStmt) spec
 		return unsupportedStatement(statement, "unknown", "postgresql define statement payload is missing")
 	}
 	switch stmt.GetKind() {
+	case pg_query.ObjectType_OBJECT_TYPE:
+		action := "create_base"
+		if len(stmt.GetDefinition()) == 0 {
+			action = "create_shell"
+		}
+		return extractBaseTypeDeclaration(statement, stmt.GetDefnames(), stmt.GetDefinition(), action)
 	case pg_query.ObjectType_OBJECT_COLLATION:
 		objectName := lastStringFromNodes(stmt.GetDefnames())
 		statement.DDL = &spec.DDL{

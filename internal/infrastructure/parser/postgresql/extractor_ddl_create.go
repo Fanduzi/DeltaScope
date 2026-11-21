@@ -282,11 +282,20 @@ func extractCreateEnumStmt(statement spec.Statement, stmt *pg_query.CreateEnumSt
 	if len(labels) > 0 {
 		options["labels"] = strings.Join(labels, ",")
 	}
+	declaration := &spec.PGCreateEnum{}
+	names := stmt.GetTypeName()
+	if len(names) == 2 {
+		declaration.Target.Table = spec.Table{Schema: stringNodeValue(names[0]), Name: stringNodeValue(names[1])}
+	}
+	for _, value := range stmt.GetVals() {
+		declaration.Labels = append(declaration.Labels, value.GetString_().GetSval())
+	}
 	statement.DDL = &spec.DDL{
-		Operation:  spec.DDLOperationCreateType,
-		ObjectName: objectName,
-		ObjectType: "type",
-		Options:    options,
+		PGCreateEnum: declaration,
+		Operation:    spec.DDLOperationCreateType,
+		ObjectName:   objectName,
+		ObjectType:   "type",
+		Options:      options,
 	}
 	return statement
 }
@@ -404,6 +413,10 @@ func extractCompositeTypeStmt(statement spec.Statement, stmt *pg_query.Composite
 		options["schema"] = schemaName
 	}
 	statement.DDL = &spec.DDL{
+		PGComposite: &spec.PGCompositeDeclaration{
+			Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: schemaName, Name: objectName}, CatalogQualified: stmt.GetTypevar().GetCatalogname() != ""},
+			Action: "create", Attributes: attrNames,
+		},
 		Operation:  spec.DDLOperationCreateType,
 		ObjectName: objectName,
 		ObjectType: "type",

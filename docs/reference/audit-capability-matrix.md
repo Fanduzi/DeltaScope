@@ -683,6 +683,13 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.alter_operator.change.target.valid` | Checks exact operator signatures, owner and schema targets, and qualified estimators | Gap | ✓ | blocker |
+| `ddl.pg.alter_type.change.target.valid` | Checks exact type rename, schema destinations and owner resolution | Gap | ✓ | blocker |
+| `ddl.pg.type.composite.valid` | Checks exact composite creation and attribute premises | Gap | ✓ | blocker |
+| `ddl.pg.type.base.valid` | Checks shell and base type targets, required I/O declarations and bounded property changes | Gap | ✓ | blocker |
+| `ddl.pg.create_type.range.valid` | Checks qualified PostgreSQL range targets, scalar subtypes and bounded options | Gap | ✓ | blocker |
+| `ddl.pg.create_type.enum.valid` | Checks exact PostgreSQL enum creation targets and labels | Gap | ✓ | blocker |
+| `ddl.pg.alter_type.enum.valid` | Checks exact PostgreSQL enum label changes | Gap | ✓ | blocker |
 | `ddl.pg.create_type.enum.notice` | `CREATE TYPE ... AS ENUM` introduces a new enum type — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.alter_type.add_value.advisory` | `ALTER TYPE ... ADD VALUE` appends a value to an existing enum — advises review of application usage | ✓ | ✗ | warning |
 | `ddl.pg.alter_type.add_value.position.notice` | `ALTER TYPE ... ADD VALUE ... BEFORE/AFTER` positions a new enum value — informational notice | ✓ | ✗ | notice |

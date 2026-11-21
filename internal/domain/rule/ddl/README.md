@@ -116,6 +116,13 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_replica_identity_rules.go | Checks exact PG17 USING INDEX attachment eligibility with bounded reason codes and missing-fact gaps |
 | postgresql_materialized_view_refresh_rules.go | Implements PostgreSQL-only materialized view refresh rules: non-concurrent refresh warning, WITH NO DATA notice |
 | postgresql_alter_table_rules.go | Implements PostgreSQL-only alter table gap rules: drop-column advisory, validate-constraint advisory, add-column nullable notice, set-schema advisory, owner advisory, enable-trigger notice, disable-trigger warn, attach-partition advisory, detach-partition warn |
+| postgresql_operator_change_rules.go | Checks PostgreSQL 17 operator owner, schema and estimator changes using exact catalog signatures. |
+| postgresql_type_change_rules.go | Checks PostgreSQL type change eligibility, exact rename and schema occupancy, and owner resolution. |
+| postgresql_composite_rules.go | Checks exact PostgreSQL composite CREATE and single attribute name requirements. |
+| postgresql_base_type_rules.go | Checks PostgreSQL 17 shell and base type targets and supported SET properties. |
+| postgresql_range_rules.go | Checks PostgreSQL 17 range creation targets, qualified scalar subtypes and bounded options. |
+| postgresql_create_enum_rules.go | Checks PostgreSQL 17 enum creation name eligibility and label declarations. |
+| postgresql_alter_enum_rules.go | Checks PostgreSQL 17 ADD/RENAME VALUE with exact type and catalog labels. |
 | postgresql_type_lifecycle_rules.go | Implements PostgreSQL-only type lifecycle rules: create-type enum/composite notice, alter-type add-value advisory, alter-type add-value position notice, alter-type composite rename/set-schema notice, alter-type composite add/drop/alter/rename attribute notice/warn, drop-type advisory, drop-type cascade warn |
 | postgresql_domain_lifecycle_rules.go | Implements PostgreSQL-only domain lifecycle rules: create-domain notice, alter-domain constraint/default/not-null/rename notices, drop-domain advisory, drop-domain cascade warn |
 | postgresql_extension_lifecycle_rules.go | Implements PostgreSQL-only extension lifecycle rules: create-extension notice, create-extension cascade warn, alter-extension update/set-schema/add-member/drop-member notices/warnings, drop-extension advisory, drop-extension cascade warn |

@@ -114,6 +114,12 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGViewDefaultState` binds the observed relation kind and user column for the exact PostgreSQL view default target.
 - `PGViewNamespaceSource` preserves the exact authored view identity and guard for RENAME and SET SCHEMA.
 - `PGCreateViewOutput` preserves known literal output columns. `PGCreateViewTarget` binds the exact target and ordered existing output.
+- `PGOperatorChange` preserves the exact qualified operator signature, unary form, action and destination. `PGOperatorEstimatorOption` preserves ordered RESTRICT and JOIN declarations.
+- `PGTypeChange` and `PGTypeChangeState` bind the exact source and destination of a supported PostgreSQL type rename, schema move or owner selection.
+- `PGCompositeDeclaration` preserves exact composite attributes and guards. `PGCompositeState` binds the target type and relation facts.
+- `PGBaseTypeDeclaration` preserves shell, base type and property actions and their ordered options.
+- `PGRangeDeclaration` preserves ordered options and the first qualified subtype. Range target and subtype facts come from the existing type catalog queries.
+- `PGCreateEnum` and `PGAlterEnum` retain exact authored labels. `PGEnumState` binds type and private label facts to their exact target.
 - `PGCheckIntegerCoercion` carries whether the observed PostgreSQL catalog permits assignment coercion from int4 to bool. `PGCheckNullTest` preserves exact one- or two-part identifiers from a simple column null test.
 - `PGCreateSchemaTarget` retains the exact authored declaration and optional owner role. The provider resolves implicit names privately.
 - `PGCollationChangeState` binds observed namespace or owner facts to the exact collation and authored action.

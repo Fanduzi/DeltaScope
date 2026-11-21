@@ -32,6 +32,14 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 			return p.resolveCollationChange(ctx, req)
 		case "pg_collation_refresh":
 			return p.resolveCollationRefresh(ctx, req)
+		case "pg_operator_change":
+			return p.resolveOperatorChange(ctx, req)
+		case "pg_type_change":
+			return p.resolveTypeChange(ctx, req)
+		case "pg_composite_type":
+			return p.resolveCompositeType(ctx, req)
+		case "pg_create_enum", "pg_alter_enum", "pg_create_range", "pg_base_type":
+			return p.resolveEnum(ctx, req)
 		case "pg_create_schema":
 			return p.resolveCreateSchema(ctx, req)
 		case "pg_partition_constraint":

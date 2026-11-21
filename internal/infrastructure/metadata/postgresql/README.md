@@ -50,6 +50,10 @@ comparisons for the member and scope binding.
 | create_like.go | Observes ordered LIKE and INHERITS source facts and the destination guard in one catalog read. |
 | create_view_output.go | Observes exact PostgreSQL creation namespace, relation kind and ordered user output columns. |
 | check_literal.go | Observes PostgreSQL assignment cast eligibility for a bounded CHECK predicate. |
+| operator_change.go | Resolves exact PostgreSQL operator operand types, namespace occupancy, owner existence and qualified estimator signatures. |
+| type_change.go | Observes source and destination type and relation identities and associated array names. |
+| composite_type.go | Observes namespace, type or relation occupancy and an exact composite attribute directory. |
+| create_enum.go | Observes the target type, encoding and private enum labels for qualified PostgreSQL creation and alteration. |
 | create_schema.go | Observes the requested PostgreSQL schema and optional owner without returning resolved role identities. |
 | collation_change.go | Resolves the exact source in the database encoding and observes the requested namespace or owner. |
 | collation_refresh.go | Observes the exact qualified collation for the database encoding and keeps provider versions private. |

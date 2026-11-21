@@ -1542,3 +1542,159 @@ func TestHTTPPGCreateColumnsTarget(t *testing.T) {
 		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
 	}
 }
+
+func TestHTTPPGAlterEnumTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGEnum: &spec.PGEnumState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mood"}}, SchemaExists: true, TypeExists: true, Defined: true, TypeKind: "e", Encoding: "UTF8", LabelBytes: 63, Labels: []string{"private_catalog_label"}}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER TYPE app.mood RENAME VALUE 'missing' TO 'new'","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter_type.enum.valid"`) || !strings.Contains(body, `"alter_enum_old_label_absent"`) || strings.Contains(body, "private_catalog_label") || len(client.objectCalls) < 1 || client.objectCalls[len(client.objectCalls)-1].Name != "mood" || client.objectCalls[len(client.objectCalls)-1].Type != "pg_alter_enum" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}
+
+func TestHTTPPGCompositeTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGComposite: &spec.PGCompositeState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "pair"}}, SchemaExists: true, RelationKind: "c", Attributes: []string{"private_catalog_label"}}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER TYPE app.pair DROP ATTRIBUTE missing","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.type.composite.valid"`) || !strings.Contains(body, `"composite_attribute_absent"`) || strings.Contains(body, "private_catalog_label") || len(client.objectCalls) < 1 || client.objectCalls[len(client.objectCalls)-1].Name != "pair" || client.objectCalls[len(client.objectCalls)-1].Type != "pg_composite_type" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}
+
+func TestHTTPPGTypeChangeTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGTypeChange: &spec.PGTypeChangeState{Target: spec.PGTypeChange{Source: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "pair"}}, Action: "rename", Destination: "used"}, SourceExists: true, Defined: true, Composite: true, DestinationRelation: true}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER TYPE app.pair RENAME TO used","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter_type.change.target.valid"`) || !strings.Contains(body, `"alter_type_relation_occupied"`) || strings.Contains(body, "DestinationRelation") || len(client.objectCalls) < 1 || client.objectCalls[len(client.objectCalls)-1].Name != "pair" || client.objectCalls[len(client.objectCalls)-1].Type != "pg_type_change" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}
+
+func TestHTTPPGOperatorChangeTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGOperatorChange: &spec.PGOperatorChangeState{Target: spec.PGOperatorChange{Source: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "==="}}, Action: "set_schema", Destination: "used", Signature: true, Left: spec.PGColumnTypeTarget{Schema: "pg_catalog", Name: "int4"}, Right: spec.PGColumnTypeTarget{Schema: "pg_catalog", Name: "int4"}}, OperandSchema: true, OperandTypes: true, SourceSchema: true, SourceExists: true, DestinationSchema: true, DestinationOccupied: true}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER OPERATOR app.=== (pg_catalog.int4, pg_catalog.int4) SET SCHEMA used","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter_operator.change.target.valid"`) || !strings.Contains(body, `"alter_operator_destination_occupied"`) || strings.Contains(body, "DestinationOccupied") || len(client.objectCalls) < 1 || client.objectCalls[len(client.objectCalls)-1].Name != "===" || client.objectCalls[len(client.objectCalls)-1].Type != "pg_operator_change" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}
+
+func TestHTTPPGCreateRangeTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGEnum: &spec.PGEnumState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mood"}}, SchemaExists: true, TypeExists: true, Defined: true, TypeKind: "e", Encoding: "UTF8", LabelBytes: 63, Labels: []string{"private_catalog_label"}}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"CREATE TYPE app.mood AS RANGE (unknown_option=1)","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.create_type.range.valid"`) || !strings.Contains(body, `"range_option_unknown"`) || strings.Contains(body, "private_catalog_label") || len(client.objectCalls) < 1 || client.objectCalls[len(client.objectCalls)-1].Name != "mood" || client.objectCalls[len(client.objectCalls)-1].Type != "pg_create_range" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}
+
+func TestHTTPPGCreateBaseTypeTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGEnum: &spec.PGEnumState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mood"}}, SchemaExists: true, TypeExists: true, Defined: false, Encoding: "UTF8", LabelBytes: 63, Labels: []string{"private_catalog_label"}}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"CREATE TYPE app.mood (OUTPUT=pg_catalog.int4out)","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.type.base.valid"`) || !strings.Contains(body, `"base_type_io_required"`) || strings.Contains(body, "private_catalog_label") || len(client.objectCalls) < 1 || client.objectCalls[len(client.objectCalls)-1].Name != "mood" || client.objectCalls[len(client.objectCalls)-1].Type != "pg_base_type" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}

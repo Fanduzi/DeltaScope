@@ -66,6 +66,10 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractCreateTableAsStmt(statement, node.CreateTableAsStmt), nil
 	case *pg_query.Node_RefreshMatViewStmt:
 		return extractRefreshMatViewStmt(statement, node.RefreshMatViewStmt), nil
+	case *pg_query.Node_AlterTypeStmt:
+		return extractBaseTypeDeclaration(statement, node.AlterTypeStmt.GetTypeName(), node.AlterTypeStmt.GetOptions(), "set_properties"), nil
+	case *pg_query.Node_CreateRangeStmt:
+		return extractCreateRangeStmt(statement, node.CreateRangeStmt), nil
 	case *pg_query.Node_CreateEnumStmt:
 		return extractCreateEnumStmt(statement, node.CreateEnumStmt), nil
 	case *pg_query.Node_AlterEnumStmt:
@@ -159,6 +163,8 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractCreateStatsStmt(statement, node.CreateStatsStmt), nil
 	case *pg_query.Node_AlterStatsStmt:
 		return extractAlterStatsStmt(statement, node.AlterStatsStmt), nil
+	case *pg_query.Node_AlterOperatorStmt:
+		return extractOperatorEstimators(statement, node.AlterOperatorStmt), nil
 	case *pg_query.Node_AlterOwnerStmt:
 		return extractAlterOwnerStmt(statement, node.AlterOwnerStmt), nil
 	case *pg_query.Node_InsertStmt:

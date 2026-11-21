@@ -388,6 +388,13 @@ func ddlPgRules() map[string]RulePolicy {
 			Params:  map[string]any{},
 		},
 		// PG type lifecycle rules (PostgreSQL-only).
+		"ddl.pg.alter_type.enum.valid":              {Enabled: true, Level: rule.LevelBlocker},
+		"ddl.pg.alter_operator.change.target.valid": {Enabled: true, Level: rule.LevelBlocker},
+		"ddl.pg.alter_type.change.target.valid":     {Enabled: true, Level: rule.LevelBlocker},
+		"ddl.pg.type.composite.valid":               {Enabled: true, Level: rule.LevelBlocker},
+		"ddl.pg.type.base.valid":                    {Enabled: true, Level: rule.LevelBlocker},
+		"ddl.pg.create_type.range.valid":            {Enabled: true, Level: rule.LevelBlocker},
+		"ddl.pg.create_type.enum.valid":             {Enabled: true, Level: rule.LevelBlocker},
 		"ddl.pg.create_type.enum.notice": {
 			Enabled: true,
 			Level:   rule.LevelNotice,

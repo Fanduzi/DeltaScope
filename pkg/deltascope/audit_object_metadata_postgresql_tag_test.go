@@ -1113,3 +1113,117 @@ func TestAuditPGCreateColumnsThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing CREATE TABLE column finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditPGAlterEnumThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGEnum: &spec.PGEnumState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mood"}}, SchemaExists: true, TypeExists: true, Defined: true, TypeKind: "e", Encoding: "UTF8", LabelBytes: 63, Labels: []string{"private_catalog_label"}}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TYPE app.mood RENAME VALUE 'missing' TO 'new'`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "mood" || provider.objectCalls[len(provider.objectCalls)-1].Type != "pg_alter_enum" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_type.enum.valid" && f.Metadata["reason_code"] == "alter_enum_old_label_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER TYPE label finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGCompositeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGComposite: &spec.PGCompositeState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "pair"}}, SchemaExists: true, RelationKind: "c", Attributes: []string{"private_catalog_label"}}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TYPE app.pair DROP ATTRIBUTE missing`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "pair" || provider.objectCalls[len(provider.objectCalls)-1].Type != "pg_composite_type" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.type.composite.valid" && f.Metadata["reason_code"] == "composite_attribute_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER TYPE attribute finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGTypeChangeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGTypeChange: &spec.PGTypeChangeState{Target: spec.PGTypeChange{Source: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "pair"}}, Action: "rename", Destination: "used"}, SourceExists: true, Defined: true, Composite: true, DestinationRelation: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TYPE app.pair RENAME TO used`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "pair" || provider.objectCalls[len(provider.objectCalls)-1].Type != "pg_type_change" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_type.change.target.valid" && f.Metadata["reason_code"] == "alter_type_relation_occupied" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER TYPE destination finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGOperatorChangeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGOperatorChange: &spec.PGOperatorChangeState{Target: spec.PGOperatorChange{Source: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "==="}}, Action: "set_schema", Destination: "used", Signature: true, Left: spec.PGColumnTypeTarget{Schema: "pg_catalog", Name: "int4"}, Right: spec.PGColumnTypeTarget{Schema: "pg_catalog", Name: "int4"}}, OperandSchema: true, OperandTypes: true, SourceSchema: true, SourceExists: true, DestinationSchema: true, DestinationOccupied: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER OPERATOR app.=== (pg_catalog.int4, pg_catalog.int4) SET SCHEMA used`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "===" || provider.objectCalls[len(provider.objectCalls)-1].Type != "pg_operator_change" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_operator.change.target.valid" && f.Metadata["reason_code"] == "alter_operator_destination_occupied" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER OPERATOR destination finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGCreateRangeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGEnum: &spec.PGEnumState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mood"}}, SchemaExists: true, TypeExists: true, Defined: true, TypeKind: "e", Encoding: "UTF8", LabelBytes: 63, Labels: []string{"private_catalog_label"}}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE TYPE app.mood AS RANGE (unknown_option=1)`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "mood" || provider.objectCalls[len(provider.objectCalls)-1].Type != "pg_create_range" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_type.range.valid" && f.Metadata["reason_code"] == "range_option_unknown" {
+			return
+		}
+	}
+	t.Fatalf("missing CREATE TYPE range finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGCreateBaseTypeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGEnum: &spec.PGEnumState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mood"}}, SchemaExists: true, TypeExists: true, Defined: false, Encoding: "UTF8", LabelBytes: 63, Labels: []string{"private_catalog_label"}}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE TYPE app.mood (OUTPUT=pg_catalog.int4out)`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "mood" || provider.objectCalls[len(provider.objectCalls)-1].Type != "pg_base_type" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.type.base.valid" && f.Metadata["reason_code"] == "base_type_io_required" {
+			return
+		}
+	}
+	t.Fatalf("missing CREATE TYPE base finding: %+v", result.Statements[0].Findings)
+}

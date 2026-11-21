@@ -231,6 +231,18 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 		if err := enrichPGPartitionConstraints(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}
+		if err := enrichPGOperatorChanges(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
+		if err := enrichPGTypeChanges(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
+		if err := enrichPGCompositeTypes(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
+		if err := enrichPGEnums(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
 		if err := enrichPGCreateSchemas(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}

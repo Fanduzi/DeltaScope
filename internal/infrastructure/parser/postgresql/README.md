@@ -32,6 +32,10 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 | parser_column_transition_postgresql_tag_test.go | Pins guards, duplicate modes/options, START versus RESTART, signed int64 boundaries/overflow, unmodeled members, old JSON shape and D2 isolation |
 | extractor_generation.go | Preserves lossless CREATE/ADD COLUMN generation declarations for bounded governance: repeated characteristics/options, signed int64 numeric options, NULL presence and scalar/array type proof; leaves legacy public projections unchanged and never retains expression bodies |
 | extractor_generation_postgresql_tag_test.go | Pins generation seam, duplicates, int64 extremes/overflow, scalar/array/custom types and CREATE/ADD COLUMN parity |
+| extractor_operator_change.go | Preserves operator signatures with exact qualified operands and explicit unary absence. Preserves ordered RESTRICT and JOIN options. |
+| extractor_base_type.go | Preserves shell and base type actions, ordered options and bounded storage values. |
+| extractor_create_range.go | Preserves the PostgreSQL range target, option order and qualified subtype. |
+| extractor_alter_enum.go | Retains exact ALTER TYPE enum labels and recovers empty label presence from the parser JSON AST. |
 | extractor_create_columns.go | Preserves exact duplicate and system column facts and qualified type targets from direct CREATE TABLE declarations. |
 | extractor_create_expression.go | Captures bounded PostgreSQL DEFAULT, CHECK and generated expression refusals from the AST. |
 | extractor_ddl_create.go | Extracts CREATE column facts, including exact PostgreSQL `CREATE TABLE OF` source identities and column options. Preserves explicit storage settings, access methods and tablespaces. Preserves exact ordered primary and unique key and INCLUDE declarations. `columnFromDef` also supplies ADD COLUMN declarations through the shared generation extractor. |

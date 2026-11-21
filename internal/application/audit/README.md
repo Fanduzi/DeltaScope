@@ -116,6 +116,10 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | postgresql_create_like_metadata.go | Binds fresh qualified PostgreSQL LIKE sources without publishing an ordered table shape. |
 | postgresql_create_view_output_metadata.go | Binds the fresh qualified PostgreSQL view target and ordered existing columns. |
 | postgresql_check_integer_metadata.go | Binds observed integer-to-Boolean cast eligibility to a fresh qualified ADD CHECK. |
+| postgresql_operator_change_metadata.go | Binds fresh operator signature facts for PostgreSQL owner, schema and estimator changes. |
+| postgresql_type_change_metadata.go | Binds fresh PostgreSQL type rename, schema move and owner observations. |
+| postgresql_composite_metadata.go | Binds fresh PostgreSQL composite declarations to exact catalog facts. |
+| postgresql_create_enum_metadata.go | Binds fresh enum type and label facts and qualified range, shell and base type facts. |
 | postgresql_create_schema_metadata.go | Binds PostgreSQL 17 creation namespace and role facts before earlier DDL can change them. |
 | postgresql_collation_change_metadata.go | Binds fresh PostgreSQL collation rename, schema move and owner facts. |
 | postgresql_collation_refresh_metadata.go | Binds fresh collation refresh target facts. |

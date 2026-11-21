@@ -1,0 +1,13 @@
+name: alter_operator_destination_occupied
+dialect: postgresql
+category: ddl
+metadata:
+  instance: {version: PostgreSQL 17.7}
+  pg_operator_changes:
+    - {schema: app, name: "===", destination: used}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter_operator.change.target.valid]

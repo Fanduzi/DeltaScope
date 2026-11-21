@@ -766,6 +766,13 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGRefreshMaterializedViewTargetValid, construct: newPGRefreshMaterializedViewTargetRule},
 		{ruleID: ruleIDPGRefreshMaterializedViewNoDataNotice, construct: newRefreshMaterializedViewNoDataNoticeRule},
 		// PostgreSQL type lifecycle rules (PG-only).
+		{ruleID: ruleIDPGAlterEnumValid, construct: newPGAlterEnumRule},
+		{ruleID: ruleIDPGOperatorChangeValid, construct: newPGOperatorChangeRule},
+		{ruleID: ruleIDPGTypeChangeValid, construct: newPGTypeChangeRule},
+		{ruleID: ruleIDPGCompositeValid, construct: newPGCompositeRule},
+		{ruleID: ruleIDPGBaseTypeValid, construct: newPGBaseTypeRule},
+		{ruleID: ruleIDPGRangeValid, construct: newPGRangeRule},
+		{ruleID: ruleIDPGCreateEnumValid, construct: newPGCreateEnumRule},
 		{ruleID: ruleIDPGCreateTypeEnumNotice, construct: newCreateTypeEnumNoticeRule},
 		{ruleID: ruleIDPGAlterTypeAddValueAdvisory, construct: newAlterTypeAddValueAdvisoryRule},
 		{ruleID: ruleIDPGAlterTypeAddValuePositionNotice, construct: newAlterTypeAddValuePositionNoticeRule},

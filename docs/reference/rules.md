@@ -873,6 +873,13 @@ These rules guard against risky PostgreSQL type lifecycle DDL operations — enu
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.alter_operator.change.target.valid` | Checks exact PostgreSQL 17 operator signatures, owner resolution, schema destinations and qualified RESTRICT/JOIN functions. | blocker | Yes |
+| `ddl.pg.alter_type.change.target.valid` | Checks exact PostgreSQL 17 type rename, schema moves and owner resolution. | blocker | Yes |
+| `ddl.pg.type.composite.valid` | Checks qualified PostgreSQL 17 composite type creation and single attribute actions. | blocker | Yes |
+| `ddl.pg.type.base.valid` | Checks PostgreSQL 17 shell and base type declarations and bounded property changes. | blocker | Yes |
+| `ddl.pg.create_type.range.valid` | Checks qualified PostgreSQL 17 range targets, scalar subtypes and bounded option refusals. | blocker | Yes |
+| `ddl.pg.create_type.enum.valid` | Checks qualified PostgreSQL 17 enum creation and ordered label declarations. | blocker | Yes |
+| `ddl.pg.alter_type.enum.valid` | Checks qualified PostgreSQL 17 enum type identity, exact labels and ADD/RENAME precedence. | blocker | Yes |
 | `ddl.pg.create_type.enum.notice` | `CREATE TYPE ... AS ENUM` introduces a new enum type — informational notice | notice | No |
 | `ddl.pg.alter_type.add_value.advisory` | `ALTER TYPE ... ADD VALUE` appends a value to an existing enum — advises review of application usage | warning | No |
 | `ddl.pg.alter_type.add_value.position.notice` | `ALTER TYPE ... ADD VALUE ... BEFORE/AFTER` positions a new enum value — informational notice | notice | No |

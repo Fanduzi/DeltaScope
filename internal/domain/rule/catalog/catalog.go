@@ -234,6 +234,20 @@ func summaryForRule(ruleID string) string {
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	switch ruleID {
+	case "ddl.pg.alter_type.enum.valid":
+		return "Checks PostgreSQL 17 enum ADD VALUE and RENAME VALUE using exact type and label catalog facts."
+	case "ddl.pg.alter_operator.change.target.valid":
+		return "Checks qualified PostgreSQL 17 operator signatures, OWNER TO and SET SCHEMA destinations, and qualified RESTRICT and JOIN estimators."
+	case "ddl.pg.alter_type.change.target.valid":
+		return "Checks exact PostgreSQL 17 type identity, rename and schema destinations, and owner resolution."
+	case "ddl.pg.type.composite.valid":
+		return "Checks qualified PostgreSQL 17 composite type creation and exact attribute actions."
+	case "ddl.pg.type.base.valid":
+		return "Checks PostgreSQL 17 shell and base type targets, required I/O declarations and bounded property changes."
+	case "ddl.pg.create_type.range.valid":
+		return "Checks qualified PostgreSQL 17 range creation destinations, exact subtypes and bounded declarations."
+	case "ddl.pg.create_type.enum.valid":
+		return "Checks a PostgreSQL 17 enum creation target, repeated labels and the UTF8 label size limit."
 	case "ddl.pg.create_schema.target.valid":
 		return "Checks PostgreSQL 17 schema creation identity, authored owner and guarded destination premises."
 	case "ddl.pg.alter_collation.refresh.target.valid":
@@ -684,6 +698,8 @@ func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 		"ddl.pg.refresh_materialized_view.target.valid", "ddl.pg.drop_view.target.valid", "ddl.pg.alter_view.namespace.valid",
 		"ddl.pg.alter_view.owner.valid", "ddl.pg.alter_view.options.valid", "ddl.pg.alter_view.column_default.valid",
 		"ddl.pg.alter_materialized_view.options.valid", "ddl.pg.alter_materialized_view.extension.valid",
+		"ddl.pg.alter_operator.change.target.valid", "ddl.pg.alter_type.change.target.valid", "ddl.pg.type.base.valid", "ddl.pg.type.composite.valid",
+		"ddl.pg.alter_type.enum.valid", "ddl.pg.create_type.range.valid", "ddl.pg.create_type.enum.valid",
 		"ddl.pg.create_schema.target.valid", "ddl.pg.alter_collation.refresh.target.valid", "ddl.pg.alter_collation.change.target.valid",
 		"ddl.pg.create_index.include.valid", "ddl.pg.alter_index.options.valid", "ddl.pg.alter_index.attach_partition.valid", "ddl.pg.create_operator_family.target.valid",
 		"ddl.pg.alter_operator_family.member.valid", "ddl.pg.alter_index.destination.valid", "ddl.pg.alter_operator_family.change.target.valid":
@@ -905,6 +921,7 @@ func categoryForPGRule(ruleID string) string {
 		{"drop_materialized_view", "materialized_view"},
 		{"refresh_materialized_view", "materialized_view"},
 		{"alter_materialized_view", "materialized_view"},
+		{"type.", "type"},
 		{"create_type", "type"},
 		{"alter_type", "type"},
 		{"drop_type", "type"},

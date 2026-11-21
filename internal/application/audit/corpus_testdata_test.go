@@ -176,6 +176,24 @@ type corpusPGCollationRefresh struct {
 	Default bool   `yaml:"default"`
 }
 
+type corpusPGOperatorChange struct {
+	Schema      string `yaml:"schema"`
+	Name        string `yaml:"name"`
+	Destination string `yaml:"destination"`
+}
+
+type corpusPGComposite struct {
+	Schema     string   `yaml:"schema"`
+	Name       string   `yaml:"name"`
+	Attributes []string `yaml:"attributes"`
+}
+
+type corpusPGEnum struct {
+	Schema string   `yaml:"schema"`
+	Name   string   `yaml:"name"`
+	Labels []string `yaml:"labels"`
+}
+
 type corpusPGCreateSchema struct {
 	Name        string `yaml:"name"`
 	Owner       string `yaml:"owner"`
@@ -268,6 +286,9 @@ type corpusMetadata struct {
 	PGIndexAttachments           []corpusPGIndexAttachment                `yaml:"pg_index_attachments,omitempty"`
 	PGCollationChanges           []corpusPGCollationChange                `yaml:"pg_collation_changes,omitempty"`
 	PGCollationRefreshes         []corpusPGCollationRefresh               `yaml:"pg_collation_refreshes,omitempty"`
+	PGOperatorChanges            []corpusPGOperatorChange                 `yaml:"pg_operator_changes,omitempty"`
+	PGComposites                 []corpusPGComposite                      `yaml:"pg_composites,omitempty"`
+	PGEnums                      []corpusPGEnum                           `yaml:"pg_enums,omitempty"`
 	PGCreateSchemas              []corpusPGCreateSchema                   `yaml:"pg_create_schemas,omitempty"`
 	PGPartitionConstraints       []corpusPGPartitionConstraint            `yaml:"pg_partition_constraints,omitempty"`
 	PGMaterializedViewExtensions []corpusPGMaterializedViewExtensionState `yaml:"pg_materialized_view_extensions,omitempty"`

@@ -3,28 +3,36 @@ package spec
 
 // DDL contains the structural metadata extracted from a DDL statement.
 type DDL struct {
-	PGCreateColumns        *PGCreateColumns           `json:"-"`
-	PGCreateInheritance    *PGCreateInheritance       `json:"-"`
-	PGCreateForeignKeys    *PGCreateForeignKeys       `json:"-"`
-	PGCreateExpression     *PGCreateExpressionRefusal `json:"-"`
-	PGCreateKeys           *PGCreateKeys              `json:"-"`
-	PGCreateStorage        *PGCreateStorage           `json:"-"`
-	PGCreateTyped          *PGCreateTyped             `json:"-"`
-	PGCreateCommit         *PGCreateCommit            `json:"-"`
-	PGCreateLike           []PGCreateLikeSource       `json:"-"`
-	PGCreateLikeUnbound    bool                       `json:"-"`
-	PGOperatorFamilyChange *PGOperatorFamilyChange    `json:"-"`
-	PGIndexDestination     *PGIndexDestinationTarget  `json:"-"`
-	PGOperatorFamily       *PGOperatorFamilyTarget    `json:"-"`
-	PGOperatorFamilyMember *PGOperatorFamilyMember    `json:"-"`
-	PGIndexAttachment      *PGIndexAttachment         `json:"-"`
-	PGCollationChange      *PGCollationChangeTarget   `json:"-"`
-	PGCollationRefresh     *PGColumnCollation         `json:"-"`
-	PGCreateSchema         *PGCreateSchemaTarget      `json:"-"`
-	PGDropViewTargets      []PGDestructiveTableTarget `json:"-"`
-	Operation              DDLOperation               `json:"operation,omitempty"`
-	Table                  *Table                     `json:"table,omitempty"`
-	View                   *ViewDeclaration           `json:"-"`
+	PGBaseType                 *PGBaseTypeDeclaration      `json:"-"`
+	PGRange                    *PGRangeDeclaration         `json:"-"`
+	PGOperatorEstimatorOptions []PGOperatorEstimatorOption `json:"-"`
+	PGOperatorChange           *PGOperatorChange           `json:"-"`
+	PGTypeChange               *PGTypeChange               `json:"-"`
+	PGComposite                *PGCompositeDeclaration     `json:"-"`
+	PGAlterEnum                *PGAlterEnum                `json:"-"`
+	PGCreateEnum               *PGCreateEnum               `json:"-"`
+	PGCreateColumns            *PGCreateColumns            `json:"-"`
+	PGCreateInheritance        *PGCreateInheritance        `json:"-"`
+	PGCreateForeignKeys        *PGCreateForeignKeys        `json:"-"`
+	PGCreateExpression         *PGCreateExpressionRefusal  `json:"-"`
+	PGCreateKeys               *PGCreateKeys               `json:"-"`
+	PGCreateStorage            *PGCreateStorage            `json:"-"`
+	PGCreateTyped              *PGCreateTyped              `json:"-"`
+	PGCreateCommit             *PGCreateCommit             `json:"-"`
+	PGCreateLike               []PGCreateLikeSource        `json:"-"`
+	PGCreateLikeUnbound        bool                        `json:"-"`
+	PGOperatorFamilyChange     *PGOperatorFamilyChange     `json:"-"`
+	PGIndexDestination         *PGIndexDestinationTarget   `json:"-"`
+	PGOperatorFamily           *PGOperatorFamilyTarget     `json:"-"`
+	PGOperatorFamilyMember     *PGOperatorFamilyMember     `json:"-"`
+	PGIndexAttachment          *PGIndexAttachment          `json:"-"`
+	PGCollationChange          *PGCollationChangeTarget    `json:"-"`
+	PGCollationRefresh         *PGColumnCollation          `json:"-"`
+	PGCreateSchema             *PGCreateSchemaTarget       `json:"-"`
+	PGDropViewTargets          []PGDestructiveTableTarget  `json:"-"`
+	Operation                  DDLOperation                `json:"operation,omitempty"`
+	Table                      *Table                      `json:"table,omitempty"`
+	View                       *ViewDeclaration            `json:"-"`
 	// PGViewOptions retains authored CREATE VIEW options in AST order.
 	PGViewOptions               []PGViewOption      `json:"-"`
 	PGCreateViewOutput          *PGCreateViewOutput `json:"-"`
