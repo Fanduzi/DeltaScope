@@ -1039,7 +1039,7 @@ new default behavior is approved per family before implementation.
 | F13 | PostgreSQL types/operators | 3 | T41 | Qualified declaration checks delivered at `fd6b2792`. The exact dimension review records remaining catalog and execution premises. |
 | F14 | PostgreSQL row-security policy | 1 | T42 | Qualified policy target, role and clause checks delivered at `9308fb4c`. General predicate and effective access facts remain open. |
 | F15 | PostgreSQL sequences | 2 | T43 | Qualified sequence declarations, options and ownership delivered at `d11b4881`. Session names and runtime issuance remain open. |
-| F16 | PostgreSQL foreign objects | 2 | T44 | unreviewed |
+| F16 | PostgreSQL foreign objects | 2 | T44 | Qualified wrapper and foreign table checks delivered at `d6cb07d2`. Validator behavior and remote effects remain open. |
 | F17 | PostgreSQL text search | 2 | T45 | unreviewed |
 | F18 | PostgreSQL replication | 3 | T46 | unreviewed |
 | F19 | PostgreSQL grants/languages | 3 | T47 | unreviewed |
@@ -1108,8 +1108,8 @@ insufficient.
 | F14 | `postgresql.alter-policy` | USING/WITH CHECK; TO role / RENAME | Exact relation and policy targeting, role order, rename occupancy and bounded clauses verified. Combined TO and RENAME is a parser refusal. |
 | F15 | `postgresql.create-sequence` | CREATE SEQUENCE; options; OWNED BY / TEMP / IF NOT EXISTS | Exact creation target, guarded absence, options, persistence and OWNED BY verified. |
 | F15 | `postgresql.alter-sequence` | RESTART; options; OWNED BY / RENAME / SET SCHEMA; IF EXISTS | Exact definition options, restart bounds, ownership, rename and schema changes verified. Narrowed bounds can still require current value evidence. |
-| F16 | `postgresql.alter-foreign-data-wrapper` | HANDLER/VALIDATOR changes; OPTIONS; OWNER/RENAME | unreviewed |
-| F16 | `postgresql.alter-foreign-table` | OPTIONS; ADD/DROP COLUMN; RENAME/OWNER/SET SCHEMA | unreviewed |
+| F16 | `postgresql.alter-foreign-data-wrapper` | HANDLER/VALIDATOR changes; OPTIONS; OWNER/RENAME | Exact routines, option order, target roles and rename occupancy verified. |
+| F16 | `postgresql.alter-foreign-table` | OPTIONS; ADD/DROP COLUMN; RENAME/OWNER/SET SCHEMA | Exact targets, columns, options and namespace actions verified. Wider dependencies and validator behavior remain open. |
 | F17 | `postgresql.alter-text-search-configuration` | ADD/DROP/ALTER MAPPING; RENAME/OWNER/SET SCHEMA | unreviewed |
 | F17 | `postgresql.alter-text-search-dictionary` | option changes; RENAME/OWNER/SET SCHEMA | unreviewed |
 | F18 | `postgresql.alter-publication` | ADD/DROP/SET TABLE; SET TABLES IN SCHEMA; SET publish options; OWNER/RENAME | unreviewed |
@@ -1644,7 +1644,14 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136875330065) passed at t
 | `postgresql.alter-foreign-table` / ADD/DROP COLUMN | T44 verifies exact column names, guarded absence or occupancy, invalid system-column DROP and rename precedence. | Column type resolution, dependent and inherited changes, and multi-action state. |
 | `postgresql.alter-foreign-table` / RENAME/OWNER/SET SCHEMA | T44 verifies source relation kind, destination occupancy, same-schema moves and role lookup after relation resolution. | Caller privileges and additional dependency changes. |
 
-The joint T44 preview passed 89 cases and 2,825 assertions. Verification on the fixed F16 candidate is pending.
+The joint T44 preview passed 89 cases and 2,825 assertions. Delivered at `d6cb07d2f93b81fe8dd26a7529cc864ba01e6057`. All 50 canonical tasks passed with 4,683 cases and
+104,716 assertions. T44 passed 89 cases and 2,825 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44919263042/job/136891517804),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44919263042/job/136891517872),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44919263042/job/136891517612),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44919262993/job/136891517708),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136891611844) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
