@@ -45,6 +45,7 @@ comparisons for the member and scope binding.
 | view_default.go | Observes qualified view relation kind and exact user-column existence. |
 | view_owner.go | Observes view kind and owner-role existence in one catalog read. |
 | create_view_output.go | Observes exact PostgreSQL creation namespace, relation kind and ordered user output columns. |
+| check_literal.go | Observes PostgreSQL assignment cast eligibility for a bounded CHECK predicate. |
 | create_schema.go | Observes the requested PostgreSQL schema and optional owner without returning resolved role identities. |
 | collation_change.go | Resolves the exact source in the database encoding and observes the requested namespace or owner. |
 | collation_refresh.go | Observes the exact qualified collation for the database encoding and keeps provider versions private. |

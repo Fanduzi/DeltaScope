@@ -114,6 +114,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGViewDefaultState` binds the observed relation kind and user column for the exact PostgreSQL view default target.
 - `PGViewNamespaceSource` preserves the exact authored view identity and guard for RENAME and SET SCHEMA.
 - `PGCreateViewOutput` preserves known literal output columns. `PGCreateViewTarget` binds the exact target and ordered existing output.
+- `PGCheckIntegerCoercion` carries whether the observed PostgreSQL catalog permits assignment coercion from int4 to bool.
 - `PGCreateSchemaTarget` retains the exact authored declaration and optional owner role. The provider resolves implicit names privately.
 - `PGCollationChangeState` binds observed namespace or owner facts to the exact collation and authored action.
 - `PGCollationRefreshState` binds the exact qualified collation to its observed encoding eligibility and version presence facts.

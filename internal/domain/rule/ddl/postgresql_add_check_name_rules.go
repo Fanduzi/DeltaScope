@@ -17,7 +17,7 @@ func newPGAddCheckNameRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 func (r pgAddCheckNameRule) ID() string { return ruleIDPGAlterAddCheckNameAvailable }
 
 func (r pgAddCheckNameRule) AppliesTo(s spec.Statement) bool {
-	return pgNamedAddCheck(s) || pgAddCheck(s) && s.DDL.Alter[0].PGCheckHasSubquery
+	return pgAddCheck(s) && (s.DDL.Alter[0].Name != "" || s.DDL.Alter[0].PGCheckHasSubquery || s.DDL.Alter[0].PGCheckLiteral != "")
 }
 
 func pgNamedAddCheck(s spec.Statement) bool {
@@ -43,8 +43,22 @@ func assessPGAddCheckName(s spec.Statement) (reason, missing string) {
 	if !spec.PGOrdinaryTableBound(s) {
 		return "", "target_table.pg_constraint_scope"
 	}
-	if s.DDL.Alter[0].PGCheckHasSubquery {
+	a := s.DDL.Alter[0]
+	if a.PGCheckHasSubquery {
 		return "check_predicate_subquery_inapplicable", ""
+	}
+	switch a.PGCheckLiteral {
+	case "invalid_boolean":
+		return "check_predicate_invalid_boolean", ""
+	case "integer":
+		coercion := s.Metadata.PGCheckIntegerCoercion
+		if coercion == nil || coercion.Allowed {
+			return "", "check.integer_boolean_coercion"
+		}
+		return "check_predicate_boolean_required", ""
+	}
+	if a.Name == "" {
+		return "", ""
 	}
 	member, known := pgConstraintTargetState(s, 0)
 	if !known {
@@ -68,8 +82,13 @@ func (r pgAddCheckNameRule) Evaluate(ctx context.Context, s spec.Statement) ([]r
 		return nil, nil
 	}
 	message := "The PostgreSQL table already has a constraint with the requested CHECK name"
-	if reason == "check_predicate_subquery_inapplicable" {
+	switch reason {
+	case "check_predicate_subquery_inapplicable":
 		message = "PostgreSQL CHECK predicates cannot contain a subquery"
+	case "check_predicate_invalid_boolean":
+		message = "PostgreSQL cannot interpret the CHECK predicate literal as a Boolean"
+	case "check_predicate_boolean_required":
+		message = "The CHECK predicate must have a Boolean result"
 	}
 	return []rule.Finding{{Level: r.level, Message: message,
 		Metadata: map[string]any{

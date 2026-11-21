@@ -1060,9 +1060,14 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		} else if cols := stringValuesFromNodes(constraint.GetKeys()); len(cols) > 0 {
 			options["columns"] = strings.Join(cols, ",")
 		}
-		return spec.Alter{Action: "add_constraint", Name: constraint.GetConname(), Options: options, PGUsingIndexName: constraint.GetIndexname(), PGForeignKey: foreignKey,
-			PGKeyColumns: keyColumns, PGIncludeColumns: includeColumns,
-			PGCheckHasSubquery: constraint.GetContype() == pg_query.ConstrType_CONSTR_CHECK && pgExpressionHasReference(constraint.GetRawExpr(), false)}, true, nil
+		alter := spec.Alter{Action: "add_constraint", Name: constraint.GetConname(), Options: options, PGUsingIndexName: constraint.GetIndexname(), PGForeignKey: foreignKey,
+			PGKeyColumns: keyColumns, PGIncludeColumns: includeColumns}
+		if constraint.GetContype() == pg_query.ConstrType_CONSTR_CHECK {
+			expr := constraint.GetRawExpr()
+			alter.PGCheckHasSubquery = pgExpressionHasReference(expr, false)
+			alter.PGCheckLiteral = pgCheckLiteral(expr)
+		}
+		return alter, true, nil
 	case pg_query.AlterTableType_AT_DropConstraint:
 		return spec.Alter{Action: "drop_constraint", Name: cmd.GetName(), Options: map[string]string{
 			"if_exists": strconv.FormatBool(cmd.GetMissingOk()),
