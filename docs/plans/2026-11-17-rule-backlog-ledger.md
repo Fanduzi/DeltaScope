@@ -1030,7 +1030,7 @@ new default behavior is approved per family before implementation.
 | F04 | MySQL/TiDB index lifecycle | 3 | T09/T10 | unreviewed |
 | F05 | MySQL/TiDB ALTER options/online DDL | 3 | T15 | unreviewed |
 | F06 | TiDB recovery/flashback | 1 | T16 | unreviewed |
-| F07 | PostgreSQL schema/collation | 2 | T35 | unreviewed |
+| F07 | PostgreSQL schema/collation | 2 | T35 | Qualified schema creation and collation checks delivered at `3eba78f6`. Embedded schema elements and wider provider and execution facts remain open. |
 | F08 | PostgreSQL CREATE TABLE | 6 | T36 | D2 delivered; remaining dimensions unreviewed |
 | F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2–D47 bounded ALTER checks delivered; authored and normalized dimensions remain open where catalog or expression facts are incomplete |
 | F10 | PostgreSQL DROP/TRUNCATE | 2 | T38 | Qualified target and RESTRICT dependency slice delivered at `b5cf88ce`. Wider boundaries remain in the dimension review. |
@@ -1078,8 +1078,8 @@ insufficient.
 | F05 | `mysql.alter-table.options` | ORDER BY; CONVERT TO CHARACTER SET; DEFAULT CHARACTER SET; ROW_FORMAT; AUTO_INCREMENT=; FORCE; ENABLE/DISABLE KEYS; COMMENT; ENGINE | unreviewed |
 | F05 | `tidb.alter-table.online-options` | ALGORITHM= (capability assertion, not selection); LOCK=; multiple actions per ALTER | unreviewed |
 | F06 | `tidb.flashback-recover` | FLASHBACK TABLE; FLASHBACK DATABASE; FLASHBACK CLUSTER; RECOVER TABLE | unreviewed |
-| F07 | `postgresql.create-schema` | CREATE SCHEMA; IF NOT EXISTS / AUTHORIZATION; schema elements | unreviewed |
-| F07 | `postgresql.alter-collation` | REFRESH VERSION; RENAME/OWNER/SET SCHEMA | unreviewed |
+| F07 | `postgresql.create-schema` | CREATE SCHEMA; IF NOT EXISTS / AUTHORIZATION; schema elements | Exact namespace and role checks delivered. Embedded schema elements and execution authorization remain open. |
+| F07 | `postgresql.alter-collation` | REFRESH VERSION; RENAME/OWNER/SET SCHEMA | Qualified target checks and bounded provider-version presence checks delivered. Other provider and session facts remain open. |
 | F08 | `postgresql.create-table` | basic columns; IF NOT EXISTS; column defaults; CHECK constraint; PRIMARY KEY / UNIQUE; FOREIGN KEY / REFERENCES; EXCLUDE constraint; table constraint clause; WITH storage parameters; USING access method; ON COMMIT / TABLESPACE; OF composite type; arrays and composite columns; generation-declaration | partial:D2; others unreviewed |
 | F08 | `postgresql.create-table-constraints` | PRIMARY KEY variants; UNIQUE NULLS NOT DISTINCT; UNIQUE USING INDEX; EXCLUDE; NOT NULL named constraint; REFERENCES actions | unreviewed |
 | F08 | `postgresql.create-table-generated-identity` | GENERATED ALWAYS AS IDENTITY; BY DEFAULT AS IDENTITY; sequence options; GENERATED ALWAYS AS expression STORED; generation-declaration | partial:D2; others unreviewed |
@@ -1423,7 +1423,18 @@ The two rows retain the five authored dimensions at the PostgreSQL 17 anchor. Th
 - [Collation refresh targets](../decisions/2026-11-21-postgresql-collation-refresh-target.md)
 - [Collation namespace and owner checks](../decisions/2026-11-21-postgresql-collation-change-target.md)
 
-The joint T35 preview passed 77 cases and 1,608 assertions. Verification on the fixed F07 candidate is pending.
+The joint T35 preview passed 77 cases and 1,608 assertions. Delivered at `3eba78f63e4815863e0752ffa231e43a5d87ba9f`. All 50 canonical tasks passed with 4,146 cases and
+84,219 assertions. T35 passed 77 cases and 1,608 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+The read-only review recorded two additional absent historical Docker Desktop
+containers. The fixed run used the separate validation daemon and its
+before and after container lists were empty. The cause of the Desktop
+absences remains unverified.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44880641963/job/136774959968),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44880641963/job/136774959695),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44880641963/job/136774959924),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44880641893/job/136774959596),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136775035919) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
