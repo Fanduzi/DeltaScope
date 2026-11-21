@@ -1054,6 +1054,15 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 | `ddl.pg.alter_view.namespace.valid` | 检查 PostgreSQL 17 视图和物化视图改名、迁移 schema 的精确源、缺失目标保护及目标名称冲突 | blocker | 是 |
 | `ddl.pg.alter_view.owner.valid` | 检查 PostgreSQL 17 视图及物化视图变更所有者时的对象类型、缺失目标保护和角色存在性 | blocker | 是 |
 | `ddl.pg.alter_view.options.valid` | 检查 PostgreSQL 17 普通视图的 SET/RESET 目标和选项声明。CHECK OPTION 的可更新性需要单独证据。 | blocker | 是 |
+| `ddl.pg.create_table.columns.valid` | 检查 PostgreSQL 17 CREATE TABLE 的重复列名、系统列名冲突及部分限定类型目标。 | blocker | 是 |
+| `ddl.pg.create_table.inherits.valid` | 检查 PostgreSQL 17 INHERITS 的限定父表、重复父表和关系资格。 | blocker | 是 |
+| `ddl.pg.create_table.foreign_key.valid` | 检查 PostgreSQL 17 CREATE TABLE 的外键引用目标、列名、引用键资格和 ON DELETE SET 列归属。 | blocker | 是 |
+| `ddl.pg.create_table.expression.valid` | 检查 PostgreSQL 17 CREATE TABLE 中默认值、CHECK 和生成表达式的部分确定拒绝条件。 | blocker | 是 |
+| `ddl.pg.create_table.keys.valid` | 检查 PostgreSQL 17 直接声明的主键和唯一键，包括精确列名与建表保护条件。 | blocker | 是 |
+| `ddl.pg.create_table.storage.valid` | 检查 PostgreSQL 17 限定 CREATE TABLE 的访问方法、表空间及部分可判定的存储参数。 | blocker | 是 |
+| `ddl.pg.create_table.of.valid` | 检查 PostgreSQL 17 CREATE TABLE OF 的目的地保护、独立复合类型和精确列选项名。 | blocker | 是 |
+| `ddl.pg.create_table.on_commit.valid` | 检查 PostgreSQL 17 CREATE TABLE 的持久性和 ON COMMIT，核对限定 schema 及 IF NOT EXISTS 的先决条件。 | blocker | 是 |
+| `ddl.pg.create_table.like.target.valid` | 检查 PostgreSQL 17 CREATE TABLE LIKE 的源关系类型、目的地保护及复制后的列名冲突。 | blocker | 是 |
 | `ddl.pg.create_view.output.valid` | 检查 PostgreSQL 17 视图创建目标及 OR REPLACE 的常量查询输出兼容性。 | blocker | 是 |
 | `ddl.pg.alter_view.column_default.valid` | 检查 PostgreSQL 17 普通视图的 SET/DROP DEFAULT 目标，并拒绝默认值中的列引用和子查询 | blocker | 是 |
 | `ddl.pg.alter_materialized_view.options.valid` | 检查 PostgreSQL 17 物化视图的 SET 或 RESET 目标、整数 fillfactor，以及已建模的 heap 和 TOAST 参数。 | blocker | 是 |

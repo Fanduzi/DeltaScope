@@ -44,6 +44,10 @@ comparisons for the member and scope binding.
 | partition_constraint.go | Observes exact partition-root columns, partition key membership and bounded default B-tree equality and collation facts. |
 | view_default.go | Observes qualified view relation kind and exact user-column existence. |
 | view_owner.go | Observes view kind and owner-role existence in one catalog read. |
+| create_storage.go | Observes the exact CREATE TABLE destination, access method kind and tablespace facts. |
+| create_typed.go | Reads exact CREATE TABLE OF destination, standalone composite type kind and live attribute names. |
+| create_commit.go | Observes exact PostgreSQL CREATE TABLE schema and destination occupancy. |
+| create_like.go | Observes ordered LIKE and INHERITS source facts and the destination guard in one catalog read. |
 | create_view_output.go | Observes exact PostgreSQL creation namespace, relation kind and ordered user output columns. |
 | check_literal.go | Observes PostgreSQL assignment cast eligibility for a bounded CHECK predicate. |
 | create_schema.go | Observes the requested PostgreSQL schema and optional owner without returning resolved role identities. |

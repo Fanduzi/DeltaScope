@@ -1,0 +1,13 @@
+name: create_like_source_absent
+dialect: postgresql
+category: ddl
+metadata:
+  instance: {version: PostgreSQL 17.7}
+  pg_create_likes:
+    - {schema: app, name: copy, source_schema: app, source_name: missing}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.create_table.like.target.valid]

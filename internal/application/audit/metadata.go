@@ -255,6 +255,24 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 		if err := enrichPGIndexAttachments(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}
+		if err := enrichPGCreateStorage(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
+		if err := enrichPGCreateTyped(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
+		if err := enrichPGCreateDestinations(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
+		if err := enrichPGCreateColumnTypes(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
+		if err := enrichPGCreateForeignKeys(ctx, request, enriched[:freshPrefix], snapshots); err != nil {
+			return nil, err
+		}
+		if err := enrichPGCreateSources(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
 		if err := enrichPGCreateViewTargets(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}

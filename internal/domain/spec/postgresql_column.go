@@ -62,7 +62,7 @@ func findPGColumn(columns, systemColumns []PGColumnState, name string) (*PGColum
 	for namespace, members := range [][]PGColumnState{columns, systemColumns} {
 		for i := range members {
 			m := &members[i]
-			if m.Name == "" || m.System != (namespace == 1) || pgSystemColumnName(m.Name) != (namespace == 1) {
+			if m.Name == "" || m.System != (namespace == 1) || PGSystemColumnName(m.Name) != (namespace == 1) {
 				return nil, false
 			}
 			if m.Name != name {
@@ -74,13 +74,14 @@ func findPGColumn(columns, systemColumns []PGColumnState, name string) (*PGColum
 			found = m
 		}
 	}
-	if found == nil && pgSystemColumnName(name) {
+	if found == nil && PGSystemColumnName(name) {
 		return nil, false // User-directory absence never proves a system attribute absent.
 	}
 	return found, true
 }
 
-func pgSystemColumnName(name string) bool {
+// PGSystemColumnName reports an exact PostgreSQL system attribute name.
+func PGSystemColumnName(name string) bool {
 	switch name {
 	case "ctid", "xmin", "cmin", "xmax", "cmax", "tableoid":
 		return true

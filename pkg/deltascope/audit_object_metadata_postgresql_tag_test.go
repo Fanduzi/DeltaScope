@@ -942,3 +942,174 @@ func TestAuditPGOperatorFamilyChangeThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing ALTER OPERATOR FAMILY rename finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditPGCreateLikeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCreateLike: &spec.PGCreateSources{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, SchemaExists: true, Sources: []spec.PGCreateSource{{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "absent"}}}}}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE TABLE app.mv (LIKE app.absent)`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "pg_create_like" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_table.like.target.valid" && f.Metadata["reason_code"] == "create_like_source_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing CREATE TABLE LIKE source finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGCreateCommitThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCreateDestination: &spec.PGCreateDestinationState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, SchemaExists: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE TABLE app.mv (id integer) ON COMMIT DROP`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "pg_create_destination" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_table.on_commit.valid" && f.Metadata["reason_code"] == "create_commit_temporary_required" {
+			return
+		}
+	}
+	t.Fatalf("missing CREATE TABLE ON COMMIT finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGCreateTypedThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCreateTyped: &spec.PGCreateTypedState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, Type: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "private_type"}}, TargetSchema: true, TypeSchema: true, TypeExists: true, Defined: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE TABLE app.mv OF app.private_type`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "pg_create_typed" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_table.of.valid" && f.Metadata["reason_code"] == "create_typed_type_not_standalone_composite" {
+			return
+		}
+	}
+	t.Fatalf("missing CREATE TABLE OF finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGCreateStorageThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCreateStorage: &spec.PGCreateStorageState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, SchemaExists: true, Method: "btree", MethodKind: "i"}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE TABLE app.mv (id integer) USING btree`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "pg_create_storage" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_table.storage.valid" && f.Metadata["reason_code"] == "create_storage_method_not_table" {
+			return
+		}
+	}
+	t.Fatalf("missing CREATE TABLE storage finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGCreateKeysThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCreateDestination: &spec.PGCreateDestinationState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, SchemaExists: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE TABLE app.mv (id integer, UNIQUE(absent))`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "pg_create_destination" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_table.keys.valid" && f.Metadata["reason_code"] == "create_keys_column_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing CREATE TABLE key finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGCreateExpressionThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCreateDestination: &spec.PGCreateDestinationState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, SchemaExists: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE TABLE app.mv (id integer DEFAULT (SELECT 1))`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "pg_create_destination" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_table.expression.valid" && f.Metadata["reason_code"] == "create_default_disallowed_reference" {
+			return
+		}
+	}
+	t.Fatalf("missing CREATE TABLE expression finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGCreateForeignKeyThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: false, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCreateDestination: &spec.PGCreateDestinationState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, SchemaExists: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE TABLE app.mv (id integer REFERENCES app.t(id))`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "pg_create_destination" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_table.foreign_key.valid" && f.Metadata["reason_code"] == "foreign_key_reference_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing CREATE TABLE foreign-key finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGCreateInheritanceThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCreateInheritance: &spec.PGCreateSources{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, SchemaExists: true, Sources: []spec.PGCreateSource{{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "absent"}}}}}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE TABLE app.mv () INHERITS (app.absent)`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "pg_create_inheritance" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_table.inherits.valid" && f.Metadata["reason_code"] == "create_inheritance_parent_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing CREATE TABLE LIKE source finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGCreateColumnsThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCreateDestination: &spec.PGCreateDestinationState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, SchemaExists: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE TABLE app.mv (ctid integer)`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "pg_create_destination" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_table.columns.valid" && f.Metadata["reason_code"] == "create_column_system_name" {
+			return
+		}
+	}
+	t.Fatalf("missing CREATE TABLE column finding: %+v", result.Statements[0].Findings)
+}

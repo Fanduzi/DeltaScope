@@ -6,6 +6,8 @@ import "strings"
 // Metadata carries optional non-SQL facts for one statement evaluation.
 type Metadata struct {
 	PGCheckIntegerCoercion      *PGCheckIntegerCoercion           `json:"-"`
+	PGCreateColumnTypes         []*PGColumnTypeState              `json:"-"`
+	PGCreateForeignKeys         []PGCreateForeignKeyReference     `json:"-"`
 	PGCollationChange           *PGCollationChangeState           `json:"-"`
 	PGCollationRefresh          *PGCollationRefreshState          `json:"-"`
 	PGCreateSchema              *PGCreateSchemaState              `json:"-"`
@@ -17,6 +19,11 @@ type Metadata struct {
 	PGIndexInclude              *PGIndexIncludeState              `json:"-"`
 	PGIndexOptions              *PGIndexOptionsState              `json:"-"`
 	PGIndexAttachment           *PGIndexAttachmentState           `json:"-"`
+	PGCreateStorage             *PGCreateStorageState             `json:"-"`
+	PGCreateTyped               *PGCreateTypedState               `json:"-"`
+	PGCreateDestination         *PGCreateDestinationState         `json:"-"`
+	PGCreateInheritance         *PGCreateSources                  `json:"-"`
+	PGCreateLike                *PGCreateSources                  `json:"-"`
 	PGDropViewSet               *PGDropViewSetState               `json:"-"`
 	PGCreateViewTarget          *PGCreateViewTarget               `json:"-"`
 	PGMaterializedViewExtension *PGMaterializedViewExtensionState `json:"-"`
@@ -830,6 +837,11 @@ type ObjectSnapshot struct {
 	PGIndexInclude              *PGIndexIncludeState              `json:"-"`
 	PGIndexOptions              *PGIndexOptionsState              `json:"-"`
 	PGIndexAttachment           *PGIndexAttachmentState           `json:"-"`
+	PGCreateStorage             *PGCreateStorageState             `json:"-"`
+	PGCreateTyped               *PGCreateTypedState               `json:"-"`
+	PGCreateDestination         *PGCreateDestinationState         `json:"-"`
+	PGCreateInheritance         *PGCreateSources                  `json:"-"`
+	PGCreateLike                *PGCreateSources                  `json:"-"`
 	PGDropViewSet               *PGDropViewSetState               `json:"-"`
 	PGCreateViewTarget          *PGCreateViewTarget               `json:"-"`
 	PGMaterializedViewExtension *PGMaterializedViewExtensionState `json:"-"`

@@ -13,43 +13,14 @@ func enrichPGForeignKeyReferences(ctx context.Context, request *MetadataRequest,
 		if target == nil || !target.ReferenceQualified() || !spec.PGOrdinaryTableBound(s) || !spec.PG17Observed(s.Metadata.Instance) {
 			continue
 		}
-		schema, name := target.Reference.Schema, target.Reference.Name
-		key := [2]string{schema, name}
-		snapshot, cached := snapshots[key]
-		if !cached {
-			var err error
-			snapshot, err = request.Provider.LoadTableSnapshot(ctx, spec.DialectPostgreSQL, schema, name)
-			if err != nil {
-				return metadataObjectReadError{cause: err}
-			}
-			snapshots[key] = snapshot
-		}
-		if snapshot == nil || snapshot.Schema != schema || snapshot.PGRelation.Name != name ||
-			(snapshot.Table != nil && snapshot.Table.Name != name) {
-			continue
-		}
-		s.Metadata.PGForeignKeyReference = &spec.TableSnapshot{Schema: snapshot.Schema, Exists: snapshot.Exists,
-			PGRelation: snapshot.PGRelation, PGColumns: snapshot.PGColumns.Clone()}
-		if snapshot.PGRelation.Kind != "r" || !snapshot.Exists || snapshot.PGColumns == nil || !snapshot.PGColumns.Ordinary || snapshot.PGColumns.Typed {
-			continue
-		}
-		lookup := spec.ObjectLookupRequest{Type: "foreign_key_reference_keys", Schema: schema, Name: name}
-		object, err := resolveObjectSnapshot(ctx, request, spec.DialectPostgreSQL, &lookup)
+		ref, keys, err := loadPGForeignKeyReference(ctx, request, target.Reference, snapshots)
 		if err != nil {
 			return err
 		}
-		if object == nil || object.PGForeignKeyKeys == nil {
+		s.Metadata.PGForeignKeyReference, s.Metadata.PGForeignKeyKeys = ref, keys
+		if keys == nil {
 			continue
 		}
-		keys := *object.PGForeignKeyKeys
-		if keys.Schema != schema || keys.Table != name {
-			continue
-		}
-		keys.Keys = slices.Clone(keys.Keys)
-		for i := range keys.Keys {
-			keys.Keys[i].Columns = slices.Clone(keys.Keys[i].Columns)
-		}
-		s.Metadata.PGForeignKeyKeys = &keys
 		if len(keys.Keys) == 0 || len(target.ReferencedColumns) > 0 && len(target.ReferencedColumns) != len(target.Columns) {
 			continue
 		}
@@ -68,4 +39,41 @@ func enrichPGForeignKeyReferences(ctx context.Context, request *MetadataRequest,
 		}
 	}
 	return nil
+}
+
+func loadPGForeignKeyReference(ctx context.Context, request *MetadataRequest, target spec.Table, snapshots map[[2]string]*spec.TableSnapshot) (*spec.TableSnapshot, *spec.PGForeignKeyKeys, error) {
+	schema, name := target.Schema, target.Name
+	key := [2]string{schema, name}
+	snapshot, cached := snapshots[key]
+	if !cached {
+		var err error
+		snapshot, err = request.Provider.LoadTableSnapshot(ctx, spec.DialectPostgreSQL, schema, name)
+		if err != nil {
+			return nil, nil, metadataObjectReadError{cause: err}
+		}
+		snapshots[key] = snapshot
+	}
+	if snapshot == nil || snapshot.Schema != schema || snapshot.PGRelation.Name != name ||
+		(snapshot.Table != nil && snapshot.Table.Name != name) {
+		return nil, nil, nil
+	}
+	ref := &spec.TableSnapshot{Schema: snapshot.Schema, Exists: snapshot.Exists,
+		PGRelation: snapshot.PGRelation, PGColumns: snapshot.PGColumns.Clone()}
+	if snapshot.PGRelation.Kind != "r" || !snapshot.Exists || snapshot.PGColumns == nil || !snapshot.PGColumns.Ordinary || snapshot.PGColumns.Typed {
+		return ref, nil, nil
+	}
+	lookup := spec.ObjectLookupRequest{Type: "foreign_key_reference_keys", Schema: schema, Name: name}
+	object, err := resolveObjectSnapshot(ctx, request, spec.DialectPostgreSQL, &lookup)
+	if err != nil || object == nil || object.PGForeignKeyKeys == nil {
+		return ref, nil, err
+	}
+	keys := *object.PGForeignKeyKeys
+	if keys.Schema != schema || keys.Table != name {
+		return ref, nil, nil
+	}
+	keys.Keys = slices.Clone(keys.Keys)
+	for i := range keys.Keys {
+		keys.Keys[i].Columns = slices.Clone(keys.Keys[i].Columns)
+	}
+	return ref, &keys, nil
 }

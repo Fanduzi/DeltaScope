@@ -230,7 +230,37 @@ type corpusPGIndexDestination struct {
 	Tablespace string `yaml:"tablespace"`
 }
 
+type corpusPGCreateLike struct {
+	Schema       string `yaml:"schema"`
+	Name         string `yaml:"name"`
+	SourceSchema string `yaml:"source_schema"`
+	SourceName   string `yaml:"source_name"`
+}
+
+type corpusPGCreateStorage struct {
+	Schema     string `yaml:"schema"`
+	Name       string `yaml:"name"`
+	Method     string `yaml:"method"`
+	MethodKind string `yaml:"method_kind"`
+}
+
+type corpusPGCreateTyped struct {
+	Schema     string `yaml:"schema"`
+	Name       string `yaml:"name"`
+	TypeSchema string `yaml:"type_schema"`
+	TypeName   string `yaml:"type_name"`
+}
+
+type corpusPGCreateCommit struct {
+	Schema string `yaml:"schema"`
+	Name   string `yaml:"name"`
+}
+
 type corpusMetadata struct {
+	PGCreateStorage              []corpusPGCreateStorage                  `yaml:"pg_create_storage,omitempty"`
+	PGCreateTyped                []corpusPGCreateTyped                    `yaml:"pg_create_typed,omitempty"`
+	PGCreateCommits              []corpusPGCreateCommit                   `yaml:"pg_create_commits,omitempty"`
+	PGCreateLikes                []corpusPGCreateLike                     `yaml:"pg_create_likes,omitempty"`
 	PGOperatorFamilies           []corpusPGOperatorFamily                 `yaml:"pg_operator_families,omitempty"`
 	PGIndexIncludes              []corpusPGIndexInclude                   `yaml:"pg_index_includes,omitempty"`
 	PGIndexDestinations          []corpusPGIndexDestination               `yaml:"pg_index_destinations,omitempty"`

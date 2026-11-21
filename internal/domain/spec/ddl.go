@@ -3,6 +3,16 @@ package spec
 
 // DDL contains the structural metadata extracted from a DDL statement.
 type DDL struct {
+	PGCreateColumns        *PGCreateColumns           `json:"-"`
+	PGCreateInheritance    *PGCreateInheritance       `json:"-"`
+	PGCreateForeignKeys    *PGCreateForeignKeys       `json:"-"`
+	PGCreateExpression     *PGCreateExpressionRefusal `json:"-"`
+	PGCreateKeys           *PGCreateKeys              `json:"-"`
+	PGCreateStorage        *PGCreateStorage           `json:"-"`
+	PGCreateTyped          *PGCreateTyped             `json:"-"`
+	PGCreateCommit         *PGCreateCommit            `json:"-"`
+	PGCreateLike           []PGCreateLikeSource       `json:"-"`
+	PGCreateLikeUnbound    bool                       `json:"-"`
 	PGOperatorFamilyChange *PGOperatorFamilyChange    `json:"-"`
 	PGIndexDestination     *PGIndexDestinationTarget  `json:"-"`
 	PGOperatorFamily       *PGOperatorFamilyTarget    `json:"-"`

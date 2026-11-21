@@ -1,0 +1,13 @@
+name: create_table_index_access_method
+dialect: postgresql
+category: ddl
+metadata:
+  instance: {version: PostgreSQL 17.7}
+  pg_create_storage:
+    - {schema: app, name: dst, method: btree, method_kind: i}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.create_table.storage.valid]

@@ -43,6 +43,15 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_column_traversal_test.go | Pins inherited, partition-key and parent-only refusals and stale evidence for DROP and RENAME |
 | postgresql_column_tuning_rules.go | Three approved PG17 statistics/options rules; shared exact user/system target and guard checks drive the existing DROP COLUMN rule and conditional advice. The blocker also checks observed direct PostgreSQL dependencies under RESTRICT |
 | postgresql_column_tuning_rules_test.go | Pins statistics bounds/DEFAULT/clamp, finite options/duplicates/RESET/unknown/privacy, exact DROP guards/catalog/version/freshness and independent forbid behavior |
+| postgresql_create_columns_rules.go | Checks PostgreSQL 17 duplicate and system column names and bounded type eligibility. |
+| postgresql_create_inheritance_rules.go | Checks qualified PostgreSQL 17 INHERITS parent resolution and relation eligibility in native order. |
+| postgresql_create_foreign_key_rules.go | Checks PostgreSQL 17 direct CREATE TABLE foreign keys with exact referenced table, column and key facts. |
+| postgresql_create_expression_rules.go | Checks PostgreSQL 17 expression AST refusals and creation guard precedence. |
+| postgresql_create_key_rules.go | Checks direct PostgreSQL CREATE TABLE primary and unique declarations against exact destination facts. |
+| postgresql_create_storage_rules.go | Checks qualified PostgreSQL 17 CREATE TABLE storage targets and shares bounded heap reloption validation with ALTER TABLE. |
+| postgresql_create_typed_rules.go | Checks PostgreSQL 17 qualified CREATE TABLE OF destination guards, type eligibility and authored column option names. |
+| postgresql_create_commit_rules.go | Checks PostgreSQL 17 qualified creation namespace, guard and ON COMMIT eligibility. |
+| postgresql_create_like_rules.go | Checks PostgreSQL 17 qualified CREATE TABLE LIKE source and destination premises. |
 | postgresql_create_view_output_rules.go | Checks exact PostgreSQL 17 view creation targets and literal replacement output compatibility. |
 | postgresql_view_default_rules.go | Checks ordinary PostgreSQL view default targets and disallowed expression references. |
 | postgresql_materialized_view_extension_rules.go | Checks PostgreSQL 17 materialized-view source and installed extension premises. |

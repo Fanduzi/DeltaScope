@@ -32,11 +32,15 @@ func assessPGTableReloptions(s spec.Statement) (reason, parameter, fact string) 
 		return "", "", "target_table.pg_heap"
 	}
 	a := s.DDL.Alter[0]
-	unknown := len(a.PGTableReloptions) == 0
+	return assessPGTableReloptionDeclarations(a.PGTableReloptions, a.Action == "reset_reloptions")
+}
+
+func assessPGTableReloptionDeclarations(options []spec.PGTableReloption, reset bool) (reason, parameter, fact string) {
+	unknown := len(options) == 0
 	seen := make(map[string]bool, 2)
-	for _, o := range a.PGTableReloptions {
+	for _, o := range options {
 		known := o.Namespace == "" && (o.Name == "fillfactor" || o.Name == "autovacuum_enabled")
-		if a.Action == "reset_reloptions" {
+		if reset {
 			if o.HasValue {
 				if known {
 					parameter = o.Name

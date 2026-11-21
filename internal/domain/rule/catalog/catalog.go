@@ -254,6 +254,24 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 		return "Checks PostgreSQL 17 qualified operator family rename, schema and owner premises."
 	case "ddl.pg.alter_operator_family.member.valid":
 		return "Checks exact PostgreSQL 17 B-tree search operator family member slots."
+	case "ddl.pg.create_table.columns.valid":
+		return "Checks direct PostgreSQL 17 CREATE TABLE column declarations and exact qualified type existence and eligibility."
+	case "ddl.pg.create_table.inherits.valid":
+		return "Checks PostgreSQL 17 CREATE TABLE INHERITS exact parent identities, order and relation kind."
+	case "ddl.pg.create_table.foreign_key.valid":
+		return "Checks direct PostgreSQL 17 CREATE TABLE foreign key targets, member names and candidate referenced keys."
+	case "ddl.pg.create_table.expression.valid":
+		return "Checks PostgreSQL 17 CREATE TABLE defaults, CHECK predicates and generated expressions for bounded AST refusals."
+	case "ddl.pg.create_table.keys.valid":
+		return "Checks direct PostgreSQL 17 CREATE TABLE primary and unique key declarations with exact destination evidence."
+	case "ddl.pg.create_table.storage.valid":
+		return "Checks qualified PostgreSQL 17 CREATE TABLE access methods, tablespaces and bounded storage declarations."
+	case "ddl.pg.create_table.of.valid":
+		return "Checks the exact standalone composite source type and column option names for PostgreSQL 17 CREATE TABLE OF."
+	case "ddl.pg.create_table.on_commit.valid":
+		return "Checks qualified PostgreSQL 17 CREATE TABLE persistence and ON COMMIT premises."
+	case "ddl.pg.create_table.like.target.valid":
+		return "Checks PostgreSQL 17 qualified CREATE TABLE LIKE sources, destination guard and copied column names."
 	case "ddl.pg.create_view.output.valid":
 		return "Checks exact PostgreSQL 17 CREATE VIEW targets and literal output compatibility."
 	case "ddl.pg.alter_view.column_default.valid":
@@ -662,7 +680,7 @@ func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 	switch ruleID {
 	case "ddl.pg.create_view.options.valid":
 		return []MetadataKind{MetadataKindInstance}, true
-	case "ddl.pg.alter.constraint_columns.valid", "ddl.pg.create_view.output.valid",
+	case "ddl.pg.alter.constraint_columns.valid", "ddl.pg.create_view.output.valid", "ddl.pg.create_table.like.target.valid", "ddl.pg.create_table.on_commit.valid", "ddl.pg.create_table.columns.valid", "ddl.pg.create_table.inherits.valid", "ddl.pg.create_table.foreign_key.valid", "ddl.pg.create_table.expression.valid", "ddl.pg.create_table.keys.valid", "ddl.pg.create_table.storage.valid", "ddl.pg.create_table.of.valid",
 		"ddl.pg.refresh_materialized_view.target.valid", "ddl.pg.drop_view.target.valid", "ddl.pg.alter_view.namespace.valid",
 		"ddl.pg.alter_view.owner.valid", "ddl.pg.alter_view.options.valid", "ddl.pg.alter_view.column_default.valid",
 		"ddl.pg.alter_materialized_view.options.valid", "ddl.pg.alter_materialized_view.extension.valid",
@@ -875,6 +893,7 @@ func categoryForPGRule(ruleID string) string {
 		{"create_index", "index"},
 		{"drop_index", "index"},
 		{"alter_index", "index"},
+		{"create_table", "table"},
 		{"table", "table"},
 		{"column", "column"},
 		{"drop_schema", "schema"},

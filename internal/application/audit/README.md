@@ -108,6 +108,12 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | postgresql_view_default_metadata.go | Binds fresh exact PostgreSQL view default column facts. |
 | postgresql_view_owner_metadata.go | Binds fresh exact view OWNER TO source and observed role facts. |
 | postgresql_view_namespace_metadata.go | Binds fresh catalog source and destination facts for qualified view rename and schema moves. |
+| postgresql_create_columns_metadata.go | Binds qualified creation-time column type facts through the existing PostgreSQL directory. |
+| postgresql_create_foreign_key_metadata.go | Loads fresh qualified foreign-key reference directories and candidate keys in AST order. |
+| postgresql_create_storage_metadata.go | Binds fresh PostgreSQL CREATE TABLE storage facts. |
+| postgresql_create_typed_metadata.go | Binds fresh PostgreSQL CREATE TABLE OF facts to the exact destination and source. |
+| postgresql_create_commit_metadata.go | Binds exact PostgreSQL CREATE TABLE destination facts for key and ON COMMIT assessments. |
+| postgresql_create_like_metadata.go | Binds fresh qualified PostgreSQL LIKE sources without publishing an ordered table shape. |
 | postgresql_create_view_output_metadata.go | Binds the fresh qualified PostgreSQL view target and ordered existing columns. |
 | postgresql_check_integer_metadata.go | Binds observed integer-to-Boolean cast eligibility to a fresh qualified ADD CHECK. |
 | postgresql_create_schema_metadata.go | Binds PostgreSQL 17 creation namespace and role facts before earlier DDL can change them. |

@@ -40,7 +40,7 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
 		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
-		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGOperatorFamilies) == 0 && len(tc.Metadata.PGIndexIncludes) == 0 && len(tc.Metadata.PGIndexDestinations) == 0 && len(tc.Metadata.PGIndexOptions) == 0 && len(tc.Metadata.PGIndexAttachments) == 0 && len(tc.Metadata.PGCollationChanges) == 0 && len(tc.Metadata.PGCollationRefreshes) == 0 && len(tc.Metadata.PGCreateSchemas) == 0 && len(tc.Metadata.PGPartitionConstraints) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
+		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGCreateStorage) == 0 && len(tc.Metadata.PGCreateTyped) == 0 && len(tc.Metadata.PGCreateCommits) == 0 && len(tc.Metadata.PGCreateLikes) == 0 && len(tc.Metadata.PGOperatorFamilies) == 0 && len(tc.Metadata.PGIndexIncludes) == 0 && len(tc.Metadata.PGIndexDestinations) == 0 && len(tc.Metadata.PGIndexOptions) == 0 && len(tc.Metadata.PGIndexAttachments) == 0 && len(tc.Metadata.PGCollationChanges) == 0 && len(tc.Metadata.PGCollationRefreshes) == 0 && len(tc.Metadata.PGCreateSchemas) == 0 && len(tc.Metadata.PGPartitionConstraints) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
@@ -49,6 +49,10 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 type corpusFixtureMetadataProvider struct {
 	pgMaterializedViewExtensions []corpusPGMaterializedViewExtensionState
 	pgViewDefaults               []corpusPGViewDefaultState
+	pgCreateStorage              []corpusPGCreateStorage
+	pgCreateTyped                []corpusPGCreateTyped
+	pgCreateCommits              []corpusPGCreateCommit
+	pgCreateLikes                []corpusPGCreateLike
 	pgOperatorFamilies           []corpusPGOperatorFamily
 	pgIndexIncludes              []corpusPGIndexInclude
 	pgIndexDestinations          []corpusPGIndexDestination
@@ -118,6 +122,10 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 		pgDropConstraintReferences:   metadata.PGDropConstraintReferences,
 		pgDestructiveReferences:      metadata.PGDestructiveReferences,
 		pgRefreshStates:              metadata.PGRefreshStates,
+		pgCreateStorage:              metadata.PGCreateStorage,
+		pgCreateTyped:                metadata.PGCreateTyped,
+		pgCreateCommits:              metadata.PGCreateCommits,
+		pgCreateLikes:                metadata.PGCreateLikes,
 		pgOperatorFamilies:           metadata.PGOperatorFamilies,
 		pgIndexIncludes:              metadata.PGIndexIncludes,
 		pgIndexDestinations:          metadata.PGIndexDestinations,
@@ -511,6 +519,55 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 			state := spec.PGViewDefaultState(entry)
 			if state.MatchesViewDefault(&request) {
 				return &spec.ObjectSnapshot{PGViewDefault: &state}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_create_storage" {
+		for _, seed := range p.pgCreateStorage {
+			if seed.Schema == request.Schema && seed.Name == request.Name && seed.Method == request.Qualifiers["method"] {
+				return &spec.ObjectSnapshot{PGCreateStorage: &spec.PGCreateStorageState{
+					Target:       spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.Schema, Name: seed.Name}},
+					SchemaExists: true, Method: seed.Method, MethodKind: seed.MethodKind,
+				}}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_create_typed" {
+		for _, seed := range p.pgCreateTyped {
+			if seed.Schema == request.Schema && seed.Name == request.Name && seed.TypeSchema == request.Qualifiers["type_schema"] && seed.TypeName == request.Qualifiers["type_name"] {
+				return &spec.ObjectSnapshot{PGCreateTyped: &spec.PGCreateTypedState{
+					Target:       spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.Schema, Name: seed.Name}},
+					Type:         spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.TypeSchema, Name: seed.TypeName}},
+					TargetSchema: true, TypeSchema: true, TypeExists: true, Defined: true,
+				}}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_create_destination" {
+		for _, seed := range p.pgCreateCommits {
+			if seed.Schema == request.Schema && seed.Name == request.Name {
+				return &spec.ObjectSnapshot{PGCreateDestination: &spec.PGCreateDestinationState{
+					Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.Schema, Name: seed.Name}}, SchemaExists: true,
+				}}, nil
+			}
+		}
+		return nil, nil
+	}
+	if (request.Type == "pg_create_like" || request.Type == "pg_create_inheritance") && len(request.PGDestructiveTargets) == 1 {
+		for _, seed := range p.pgCreateLikes {
+			target := spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.Schema, Name: seed.Name}}
+			source := spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.SourceSchema, Name: seed.SourceName}}
+			if target.Table.Schema == request.Schema && target.Table.Name == request.Name && request.PGDestructiveTargets[0] == source {
+				state := &spec.PGCreateSources{
+					Target: target, SchemaExists: true, Sources: []spec.PGCreateSource{{Target: source}},
+				}
+				if request.Type == "pg_create_inheritance" {
+					return &spec.ObjectSnapshot{PGCreateInheritance: state}, nil
+				}
+				return &spec.ObjectSnapshot{PGCreateLike: state}, nil
 			}
 		}
 		return nil, nil

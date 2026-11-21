@@ -28,6 +28,15 @@ func extractCreateStmt(statement spec.Statement, stmt *pg_query.CreateStmt) spec
 	}
 
 	for _, item := range stmt.GetTableElts() {
+		if like := item.GetTableLikeClause(); like != nil {
+			relation := like.GetRelation()
+			if source := tableFromRangeVar(relation); source != nil {
+				ddl.PGCreateLike = append(ddl.PGCreateLike, spec.PGCreateLikeSource{
+					Target: spec.PGDestructiveTableTarget{Table: *source, CatalogQualified: relation.GetCatalogname() != ""}, Options: like.GetOptions(),
+				})
+			}
+			continue
+		}
 		if column := item.GetColumnDef(); column != nil {
 			if unsupported := hasUnsupportedColumnConstraint(column); unsupported != nil {
 				return unsupportedStatementWithDetail(statement, unsupported)
@@ -43,6 +52,89 @@ func extractCreateStmt(statement spec.Statement, stmt *pg_query.CreateStmt) spec
 		}
 	}
 
+	if ddl.Table != nil {
+		if source := stmt.GetOfTypename(); source != nil {
+			typed := &spec.PGCreateTyped{
+				Target:      spec.PGDestructiveTableTarget{Table: *ddl.Table, CatalogQualified: stmt.GetRelation().GetCatalogname() != ""},
+				Temporary:   stmt.GetRelation().GetRelpersistence() == "t",
+				IfNotExists: stmt.GetIfNotExists(),
+			}
+			names := source.GetNames()
+			switch len(names) {
+			case 1:
+				typed.Type.Table.Name = stringNodeValue(names[0])
+			case 2:
+				typed.Type.Table = spec.Table{Schema: stringNodeValue(names[0]), Name: stringNodeValue(names[1])}
+			case 3:
+				typed.Type.Table = spec.Table{Schema: stringNodeValue(names[1]), Name: stringNodeValue(names[2])}
+				typed.Type.CatalogQualified = true
+			}
+			ddl.PGCreateTyped = typed
+		}
+		ddl.PGCreateColumns = pgCreateColumns(stmt, ddl, spec.PGDestructiveTableTarget{
+			Table: *ddl.Table, CatalogQualified: stmt.GetRelation().GetCatalogname() != "",
+		})
+		persistence := stmt.GetRelation().GetRelpersistence()
+		if stmt.GetAccessMethod() != "" || stmt.GetTablespacename() != "" || len(stmt.GetOptions()) != 0 {
+			ddl.PGCreateStorage = &spec.PGCreateStorage{
+				Target:           spec.PGDestructiveTableTarget{Table: *ddl.Table, CatalogQualified: stmt.GetRelation().GetCatalogname() != ""},
+				IfNotExists:      stmt.GetIfNotExists(),
+				SessionDependent: persistence == "t" || len(stmt.GetInhRelations()) != 0 || len(ddl.PGCreateLike) != 0 || ddl.PGCreateTyped != nil,
+				Method:           stmt.GetAccessMethod(), Tablespace: stmt.GetTablespacename(), Options: pgTableReloptions(stmt.GetOptions(), false, false),
+			}
+		}
+		if parents := stmt.GetInhRelations(); len(parents) > 0 {
+			decl := &spec.PGCreateInheritance{
+				Target:      spec.PGDestructiveTableTarget{Table: *ddl.Table, CatalogQualified: stmt.GetRelation().GetCatalogname() != ""},
+				IfNotExists: stmt.GetIfNotExists(), Unbound: persistence == "t" || ddl.PGCreateTyped != nil,
+				Parents: make([]spec.PGDestructiveTableTarget, len(parents)),
+			}
+			for i, parent := range parents {
+				if relation := parent.GetRangeVar(); relation != nil {
+					decl.Parents[i] = spec.PGDestructiveTableTarget{Table: spec.Table{Schema: relation.GetSchemaname(), Name: relation.GetRelname()}, CatalogQualified: relation.GetCatalogname() != ""}
+				}
+			}
+			ddl.PGCreateInheritance = decl
+		}
+		var action string
+		switch stmt.GetOncommit() {
+		case pg_query.OnCommitAction_ONCOMMIT_PRESERVE_ROWS:
+			action = "preserve_rows"
+		case pg_query.OnCommitAction_ONCOMMIT_DELETE_ROWS:
+			action = "delete_rows"
+		case pg_query.OnCommitAction_ONCOMMIT_DROP:
+			action = "drop"
+		}
+		if reason := pgCreateExpressionRefusal(stmt.GetTableElts()); reason != "" {
+			ddl.PGCreateExpression = &spec.PGCreateExpressionRefusal{
+				Target:      spec.PGDestructiveTableTarget{Table: *ddl.Table, CatalogQualified: stmt.GetRelation().GetCatalogname() != ""},
+				IfNotExists: stmt.GetIfNotExists(),
+				Unbound:     persistence == "t" || len(stmt.GetInhRelations()) != 0 || len(ddl.PGCreateLike) != 0 || ddl.PGCreateTyped != nil,
+				Reason:      reason,
+			}
+		}
+		if fk := ddl.PGCreateForeignKeys; fk != nil {
+			fk.Target = spec.PGDestructiveTableTarget{Table: *ddl.Table, CatalogQualified: stmt.GetRelation().GetCatalogname() != ""}
+			fk.IfNotExists = stmt.GetIfNotExists()
+			fk.Unbound = persistence == "t" || len(stmt.GetInhRelations()) != 0 || len(ddl.PGCreateLike) != 0 || ddl.PGCreateTyped != nil
+		}
+		if ddl.PGCreateKeys != nil {
+			ddl.PGCreateKeys.Target = spec.PGDestructiveTableTarget{Table: *ddl.Table, CatalogQualified: stmt.GetRelation().GetCatalogname() != ""}
+			ddl.PGCreateKeys.IfNotExists = stmt.GetIfNotExists()
+			ddl.PGCreateKeys.Unbound = persistence == "t" || len(stmt.GetInhRelations()) != 0 || len(ddl.PGCreateLike) != 0 || ddl.PGCreateTyped != nil
+		}
+		if action != "" || persistence == "t" && ddl.Table.Schema != "" {
+			ddl.PGCreateCommit = &spec.PGCreateCommit{
+				Target:      spec.PGDestructiveTableTarget{Table: *ddl.Table, CatalogQualified: stmt.GetRelation().GetCatalogname() != ""},
+				Persistence: persistence, Action: action, IfNotExists: stmt.GetIfNotExists(),
+			}
+		}
+	}
+	if len(ddl.PGCreateLike) > 0 {
+		ddl.Options = map[string]string{"if_not_exists": strconv.FormatBool(stmt.GetIfNotExists())}
+		ddl.PGTableCatalogQualified = stmt.GetRelation().GetCatalogname() != ""
+		ddl.PGCreateLikeUnbound = stmt.GetRelation().GetRelpersistence() == "t" || len(stmt.GetInhRelations()) != 0 || stmt.GetOfTypename() != nil
+	}
 	statement.DDL = ddl
 	return statement
 }
@@ -387,11 +479,39 @@ func extractCreateFunctionStmt(statement spec.Statement, stmt *pg_query.CreateFu
 	return statement
 }
 
+func retainPGCreateForeignKey(ddl *spec.DDL, c *pg_query.Constraint, columns []string) {
+	relation := c.GetPktable()
+	table := tableFromRangeVar(relation)
+	if table == nil {
+		return
+	}
+	if ddl.PGCreateForeignKeys == nil {
+		ddl.PGCreateForeignKeys = &spec.PGCreateForeignKeys{}
+	}
+	ddl.PGCreateForeignKeys.Declarations = append(ddl.PGCreateForeignKeys.Declarations, spec.PGForeignKeySelection{
+		Reference: *table, ReferenceCatalogQualified: relation.GetCatalogname() != "", Columns: columns,
+		ReferencedColumns: stringValuesFromNodes(c.GetPkAttrs()), DeleteSetColumns: stringValuesFromNodes(c.GetFkDelSetCols()),
+	})
+}
+
+func retainPGCreateKey(ddl *spec.DDL, constraint *pg_query.Constraint, keys []string) {
+	if ddl.PGCreateKeys == nil {
+		ddl.PGCreateKeys = &spec.PGCreateKeys{}
+	}
+	ddl.PGCreateKeys.Declarations = append(ddl.PGCreateKeys.Declarations, spec.PGCreateKeyDeclaration{
+		Primary:    constraint.GetContype() == pg_query.ConstrType_CONSTR_PRIMARY,
+		UsingIndex: constraint.GetIndexname() != "", NullsNotDistinct: constraint.GetNullsNotDistinct(),
+		Keys: keys, Include: stringValuesFromNodes(constraint.GetIncluding()),
+	})
+}
+
 func applyTableConstraint(ddl *spec.DDL, constraint *pg_query.Constraint) *spec.UnsupportedDetail {
 	switch constraint.GetContype() {
 	case pg_query.ConstrType_CONSTR_UNIQUE:
+		retainPGCreateKey(ddl, constraint, stringValuesFromNodes(constraint.GetKeys()))
 		ddl.Indexes = append(ddl.Indexes, spec.Index{Name: constraint.GetConname(), Kind: spec.IndexKindUnique, Columns: stringValuesFromNodes(constraint.GetKeys())})
 	case pg_query.ConstrType_CONSTR_FOREIGN:
+		retainPGCreateForeignKey(ddl, constraint, stringValuesFromNodes(constraint.GetFkAttrs()))
 		ddl.Constraints = append(ddl.Constraints, spec.Constraint{
 			Type:              "foreign_key",
 			Name:              constraint.GetConname(),
@@ -401,6 +521,7 @@ func applyTableConstraint(ddl *spec.DDL, constraint *pg_query.Constraint) *spec.
 			ReferencedColumns: stringValuesFromNodes(constraint.GetPkAttrs()),
 		})
 	case pg_query.ConstrType_CONSTR_PRIMARY:
+		retainPGCreateKey(ddl, constraint, stringValuesFromNodes(constraint.GetKeys()))
 		applyPrimaryKey(ddl, constraint.GetConname(), stringValuesFromNodes(constraint.GetKeys()))
 	case pg_query.ConstrType_CONSTR_CHECK:
 		ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: "check", Name: constraint.GetConname(), Columns: columnRefsFromExpr(constraint.GetRawExpr())})
@@ -418,8 +539,10 @@ func applyColumnConstraints(ddl *spec.DDL, column *pg_query.ColumnDef) {
 		}
 		switch constraint.GetContype() {
 		case pg_query.ConstrType_CONSTR_UNIQUE:
+			retainPGCreateKey(ddl, constraint, []string{column.GetColname()})
 			ddl.Indexes = append(ddl.Indexes, spec.Index{Name: constraint.GetConname(), Kind: spec.IndexKindUnique, Columns: []string{column.GetColname()}})
 		case pg_query.ConstrType_CONSTR_FOREIGN:
+			retainPGCreateForeignKey(ddl, constraint, []string{column.GetColname()})
 			ddl.Constraints = append(ddl.Constraints, spec.Constraint{
 				Type:              "foreign_key",
 				Name:              constraint.GetConname(),
@@ -429,6 +552,7 @@ func applyColumnConstraints(ddl *spec.DDL, column *pg_query.ColumnDef) {
 				ReferencedColumns: stringValuesFromNodes(constraint.GetPkAttrs()),
 			})
 		case pg_query.ConstrType_CONSTR_PRIMARY:
+			retainPGCreateKey(ddl, constraint, []string{column.GetColname()})
 			applyPrimaryKey(ddl, constraint.GetConname(), []string{column.GetColname()})
 		case pg_query.ConstrType_CONSTR_CHECK:
 			ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: "check", Name: constraint.GetConname(), Columns: columnRefsFromExpr(constraint.GetRawExpr())})

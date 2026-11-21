@@ -125,6 +125,15 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGOperatorFamilyMember` retains one authored search-operator strategy and its exact operand identities.
 - `PGOperatorFamilyChangeState` binds a PostgreSQL operator family change to its exact schema, name, access method and destination or owner.
 - `PGOperatorFamilyTarget` binds the exact PostgreSQL operator family namespace, name and access method.
+- `PGCreateColumns` captures direct column-name refusals and ordered qualified type targets.
+- `PGCreateInheritance` retains exact parents in declaration order. `PGCreateSources` also binds private inheritance kind and partition facts.
+- `PGCreateForeignKeys` preserves inline and table-level foreign-key declarations. `PGCreateForeignKeyReference` binds each exact remote directory and candidate key set.
+- `PGCreateExpressionRefusal` binds a bounded expression AST refusal to the specific table destination and guard.
+- `PGCreateKeys` preserves each direct primary and unique declaration. `PGCreateDestinationState` supplies exact schema and occupancy facts for key and ON COMMIT rules.
+- `PGCreateStorage` retains explicit method, tablespace and ordered storage options, and binds private metadata to the exact CREATE TABLE request.
+- `PGCreateTyped` retains the exact destination and source, persistence and guard. `PGCreateTypedState` binds both identities and keeps the live attribute names internal.
+- `PGCreateCommit` retains the authored PostgreSQL persistence, ON COMMIT action and guard. The catalog state binds the exact qualified destination.
+- `PGCreateLikeSource` retains each authored PostgreSQL LIKE source and its effective option bits. `PGCreateSources` binds the exact source and destination catalogs.
 - `PGDropViewState` binds the observed kind and direct dependencies to a single PostgreSQL DROP VIEW target. `PGDropViewSetState` binds a refusal or proved absence of a covered refusal to the exact ordered list and modifiers.
 - `PGDestructiveTable` preserves ordered DROP and TRUNCATE targets and private modifiers. `PGDestructiveReferences` binds dependency and ONLY membership observations to those exact targets.
 - `PGViewOptions` preserves each authored CREATE VIEW and ALTER VIEW option name, namespace and bounded value facts in AST order.

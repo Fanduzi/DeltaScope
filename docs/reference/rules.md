@@ -1117,6 +1117,15 @@ These rules guard PostgreSQL view lifecycle operations beyond the base `CREATE V
 | `ddl.pg.alter_view.namespace.valid` | Checks exact PostgreSQL 17 VIEW and MATERIALIZED VIEW rename and schema-move sources, guards and destination collisions | blocker | Yes |
 | `ddl.pg.alter_view.owner.valid` | Checks PostgreSQL 17 ordinary and materialized view owner-change source, guarded absence and observed role existence | blocker | Yes |
 | `ddl.pg.alter_view.options.valid` | Checks ordinary PostgreSQL 17 ALTER VIEW SET/RESET targets and declarations. CHECK OPTION updatability requires separate evidence. | blocker | Yes |
+| `ddl.pg.create_table.columns.valid` | Checks duplicate and system column names, and bounded qualified type targets in PostgreSQL 17 CREATE TABLE. | blocker | Yes |
+| `ddl.pg.create_table.inherits.valid` | Checks qualified PostgreSQL 17 INHERITS parents, repeated parent names and relation eligibility. | blocker | Yes |
+| `ddl.pg.create_table.foreign_key.valid` | Checks PostgreSQL 17 CREATE TABLE foreign-key references, member names, referenced key eligibility and ON DELETE SET membership. | blocker | Yes |
+| `ddl.pg.create_table.expression.valid` | Checks bounded PostgreSQL 17 CREATE TABLE default, CHECK and generated expression refusals. | blocker | Yes |
+| `ddl.pg.create_table.keys.valid` | Checks PostgreSQL 17 direct primary and unique key declarations, including exact members and creation guards. | blocker | Yes |
+| `ddl.pg.create_table.storage.valid` | Checks PostgreSQL 17 qualified CREATE TABLE access methods, tablespaces and bounded storage settings. | blocker | Yes |
+| `ddl.pg.create_table.of.valid` | Checks PostgreSQL 17 CREATE TABLE OF destination guards, standalone composite types and exact column option names. | blocker | Yes |
+| `ddl.pg.create_table.on_commit.valid` | Checks PostgreSQL 17 CREATE TABLE persistence and ON COMMIT, including qualified namespace and absence-guard precedence. | blocker | Yes |
+| `ddl.pg.create_table.like.target.valid` | Checks qualified PostgreSQL 17 CREATE TABLE LIKE source kinds, destination guards and copied column names. | blocker | Yes |
 | `ddl.pg.create_view.output.valid` | Checks qualified PostgreSQL 17 CREATE VIEW targets and literal output compatibility for OR REPLACE. | blocker | Yes |
 | `ddl.pg.alter_view.column_default.valid` | Checks PostgreSQL 17 view SET/DROP DEFAULT targets and rejects raw column references or subqueries in a default | blocker | Yes |
 | `ddl.pg.alter_materialized_view.options.valid` | Checks a qualified PostgreSQL 17 materialized-view SET or RESET, including integer fillfactor and recognized heap and TOAST declarations. | blocker | Yes |

@@ -1020,6 +1020,15 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.alter_view.set_schema.notice` | `ALTER VIEW ... SET SCHEMA` moves the view to a different schema — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.alter_view.namespace.valid` | Checks PostgreSQL 17 view and materialized-view rename and schema-move premises | Gap | ✓ | blocker |
 | `ddl.pg.alter_view.owner.valid` | Checks exact PostgreSQL 17 view OWNER TO targets, guards and role existence | Gap | ✓ | blocker |
+| `ddl.pg.create_table.columns.valid` | Checks exact PostgreSQL column name collisions and qualified type targets | Gap | ✓ | blocker |
+| `ddl.pg.create_table.inherits.valid` | Checks exact PostgreSQL INHERITS parent identities and relation kinds | Gap | ✓ | blocker |
+| `ddl.pg.create_table.foreign_key.valid` | Checks exact PostgreSQL CREATE TABLE foreign-key references and candidate keys | Gap | ✓ | blocker |
+| `ddl.pg.create_table.expression.valid` | Checks bounded PostgreSQL CREATE TABLE expression refusals | Gap for refusal candidates | ✓ | blocker |
+| `ddl.pg.create_table.keys.valid` | Checks direct PostgreSQL primary and unique key declarations | Gap for refusal candidates | ✓ | blocker |
+| `ddl.pg.create_table.storage.valid` | Checks exact PostgreSQL access methods, tablespaces and bounded storage settings | Gap | ✓ | blocker |
+| `ddl.pg.create_table.of.valid` | Checks qualified PostgreSQL 17 CREATE TABLE OF sources and column option names | Gap | ✓ | blocker |
+| `ddl.pg.create_table.on_commit.valid` | Checks PostgreSQL 17 CREATE TABLE persistence and ON COMMIT premises | Gap | ✓ | blocker |
+| `ddl.pg.create_table.like.target.valid` | Checks qualified PostgreSQL 17 CREATE TABLE LIKE sources and copied column names | Gap | ✓ | blocker |
 | `ddl.pg.create_view.output.valid` | Checks exact PostgreSQL 17 view creation targets and literal output compatibility | Gap | ✓ | blocker |
 | `ddl.pg.alter_view.options.valid` | Checks exact PostgreSQL 17 ordinary-view SET/RESET targets and declarations | Gap | ✓ | blocker |
 | `ddl.pg.alter_view.column_default.valid` | Checks exact PostgreSQL 17 ordinary-view column default targets and disallowed references | Gap | ✓ | blocker |

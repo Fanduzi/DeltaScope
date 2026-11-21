@@ -50,6 +50,14 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 			return p.resolveIndexOptions(ctx, req)
 		case "pg_index_attachment":
 			return p.resolveIndexAttachment(ctx, req)
+		case "pg_create_storage":
+			return p.resolveCreateStorage(ctx, req)
+		case "pg_create_typed":
+			return p.resolveCreateTyped(ctx, req)
+		case "pg_create_destination":
+			return p.resolveCreateDestination(ctx, req)
+		case "pg_create_like", "pg_create_inheritance":
+			return p.resolveCreateSources(ctx, req)
 		case "drop_view_set":
 			return p.resolveDropViewSet(ctx, req)
 		case "drop_view_target", "alter_view_options":

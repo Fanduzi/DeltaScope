@@ -2561,6 +2561,37 @@ rules:
     level: warning
     params:
 
+  ddl.pg.create_table.columns.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.create_table.inherits.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.create_table.foreign_key.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.create_table.expression.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.create_table.keys.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.create_table.storage.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.create_table.of.valid:
+    enabled: true
+    level: blocker
+  ddl.pg.create_table.on_commit.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.pg.create_table.like.target.valid:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.pg.create_view.output.valid:
     enabled: true
     level: blocker
