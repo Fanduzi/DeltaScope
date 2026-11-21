@@ -1035,7 +1035,7 @@ new default behavior is approved per family before implementation.
 | F09 | PostgreSQL ALTER TABLE | 5 | T37 | D2–D47 bounded ALTER checks delivered; authored and normalized dimensions remain open where catalog or expression facts are incomplete |
 | F10 | PostgreSQL DROP/TRUNCATE | 2 | T38 | Qualified target and RESTRICT dependency slice delivered at `b5cf88ce`. Wider boundaries remain in the dimension review. |
 | F11 | PostgreSQL indexes/operator families | 4 | T39 | unreviewed |
-| F12 | PostgreSQL views/materialized views | 5 | T40 | unreviewed |
+| F12 | PostgreSQL views/materialized views | 5 | T40 | CREATE options, DROP target and REFRESH checks delivered at `da3efecc`. Remaining dimensions are tracked below. |
 | F13 | PostgreSQL types/operators | 3 | T41 | unreviewed |
 | F14 | PostgreSQL row-security policy | 1 | T42 | unreviewed |
 | F15 | PostgreSQL sequences | 2 | T43 | unreviewed |
@@ -1097,11 +1097,11 @@ insufficient.
 | F11 | `postgresql.alter-index` | RENAME TO; SET TABLESPACE; SET/RESET parameters; ATTACH PARTITION; IF EXISTS | unreviewed |
 | F11 | `postgresql.create-operator-family` | CREATE OPERATOR FAMILY; AS members | unreviewed |
 | F11 | `postgresql.alter-operator-family` | ADD/DROP members; RENAME/OWNER/SET SCHEMA | unreviewed |
-| F12 | `postgresql.create-view` | CREATE VIEW; OR REPLACE / TEMP; column list; WITH options; CHECK OPTION; RECURSIVE | unreviewed |
-| F12 | `postgresql.alter-view` | RENAME/SET SCHEMA/OWNER; SET/RESET options; ALTER COLUMN DEFAULT; IF EXISTS | unreviewed |
-| F12 | `postgresql.drop-view` | DROP VIEW; IF EXISTS CASCADE | unreviewed |
+| F12 | `postgresql.create-view` | CREATE VIEW; OR REPLACE / TEMP; column list; WITH options; CHECK OPTION; RECURSIVE | Option checks delivered. Query and target premises remain open. |
+| F12 | `postgresql.alter-view` | RENAME/SET SCHEMA/OWNER; SET/RESET options; ALTER COLUMN DEFAULT; IF EXISTS | Rename and schema-move notices now match the authored action. Catalog and additional action premises remain open. |
+| F12 | `postgresql.drop-view` | DROP VIEW; IF EXISTS CASCADE | Target, guarded absence and direct RESTRICT checks delivered. Wider dependency and session cases remain open. |
 | F12 | `postgresql.alter-materialized-view` | RENAME/SET SCHEMA/OWNER; SET/RESET options; DEPENDS ON EXTENSION | unreviewed |
-| F12 | `postgresql.refresh-materialized-view` | REFRESH basic; CONCURRENTLY; WITH NO DATA | unreviewed |
+| F12 | `postgresql.refresh-materialized-view` | REFRESH basic; CONCURRENTLY; WITH NO DATA | Target and concurrent refresh prerequisites delivered. Runtime query, privilege and lock outcomes remain open. |
 | F13 | `postgresql.create-type` | ENUM; composite; RANGE; base type; shell type | unreviewed |
 | F13 | `postgresql.alter-type` | ADD VALUE; RENAME VALUE; RENAME/OWNER/SET SCHEMA; composite attributes; SET properties | unreviewed |
 | F13 | `postgresql.alter-operator` | OWNER/SET SCHEMA; SET RESTRICT/JOIN | unreviewed |
@@ -1220,7 +1220,7 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136660256807) passed at t
 
 ## F12 exact dimension review
 
-The five rows below contain the same 18 authored and normalized dimension names as `d8cceea6`. The CREATE option, DROP target and REFRESH findings in this review have preview evidence. Their shipping evidence will use the fixed delivery SHA. Scope outside those checks remains open.
+The five rows below contain the same 18 authored and normalized dimension names as `d8cceea6`. The CREATE option, DROP target and REFRESH findings in this review shipped with fixed-SHA evidence. Scope outside those checks remains open.
 
 | Inventory dimension | Evidence and present scope | Remaining premise |
 | --- | --- | --- |
@@ -1249,6 +1249,15 @@ At preview base `b5cf88ce`, T40 passed 68 cases and 1,482 assertions. All 33 ori
 - [Materialized view refresh prerequisites](../decisions/2026-11-21-postgresql-materialized-view-refresh-prerequisites.md)
 - [DROP VIEW targets and direct dependencies](../decisions/2026-11-21-postgresql-drop-view-targets.md)
 - [T40 cases](../../testdata/ddl-golden/T40.json)
+
+The F12 slice shipped at `da3efecc1bc7c0c3158b521b0090da4c295c2818`. All 50 canonical tasks passed with
+3,972 cases and 78,266 assertions. T40 passed 68 cases with 1,482 assertions.
+The validator, read-only review, isolated cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44849730989/job/136677973201),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44849730989/job/136677972856),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44849730989/job/136677973151),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44849731024/job/136677972934),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/136678070236) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
