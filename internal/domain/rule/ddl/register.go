@@ -929,6 +929,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		// PostgreSQL collation lifecycle rules (PG-only).
 		{ruleID: ruleIDPGCreateCollationNotice, construct: newCreateCollationNoticeRule},
 		{ruleID: ruleIDPGCollationChangeValid, construct: newPGCollationChangeRule},
+		{ruleID: ruleIDPGPolicyChangeValid, construct: newPGPolicyChangeRule},
 		{ruleID: ruleIDPGCollationRefreshValid, construct: newPGCollationRefreshRule},
 		{ruleID: ruleIDPGAlterCollationNotice, construct: newAlterCollationNoticeRule},
 		{ruleID: ruleIDPGDropCollationWarn, construct: newDropCollationWarnRule},

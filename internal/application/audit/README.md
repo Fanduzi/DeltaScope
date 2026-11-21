@@ -122,6 +122,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | postgresql_create_enum_metadata.go | Binds fresh enum type and label facts and qualified range, shell and base type facts. |
 | postgresql_create_schema_metadata.go | Binds PostgreSQL 17 creation namespace and role facts before earlier DDL can change them. |
 | postgresql_collation_change_metadata.go | Binds fresh PostgreSQL collation rename, schema move and owner facts. |
+| postgresql_policy_change_metadata.go | Binds a fresh PostgreSQL policy change to its exact relation, names, roles and column directory. |
 | postgresql_collation_refresh_metadata.go | Binds fresh collation refresh target facts. |
 | postgresql_index_include_metadata.go | Binds fresh qualified CREATE INDEX INCLUDE relation, method and column facts. |
 | postgresql_index_destination_metadata.go | Binds observed source and destination facts to a qualified PostgreSQL index change. |

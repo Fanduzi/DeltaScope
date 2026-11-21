@@ -14,6 +14,7 @@ type Metadata struct {
 	PGCreateColumnTypes         []*PGColumnTypeState              `json:"-"`
 	PGCreateForeignKeys         []PGCreateForeignKeyReference     `json:"-"`
 	PGCollationChange           *PGCollationChangeState           `json:"-"`
+	PGPolicyChange              *PGPolicyChangeState              `json:"-"`
 	PGCollationRefresh          *PGCollationRefreshState          `json:"-"`
 	PGCreateSchema              *PGCreateSchemaState              `json:"-"`
 	PGPartitionConstraint       *PGPartitionConstraintState       `json:"-"`
@@ -836,6 +837,7 @@ type ObjectSnapshot struct {
 	PGEnum                      *PGEnumState                      `json:"-"`
 	PGCheckIntegerCoercion      *PGCheckIntegerCoercion           `json:"-"`
 	PGCollationChange           *PGCollationChangeState           `json:"-"`
+	PGPolicyChange              *PGPolicyChangeState              `json:"-"`
 	PGCollationRefresh          *PGCollationRefreshState          `json:"-"`
 	PGCreateSchema              *PGCreateSchemaState              `json:"-"`
 	PGPartitionConstraint       *PGPartitionConstraintState       `json:"-"`
@@ -920,6 +922,7 @@ type ObjectSnapshot struct {
 // ObjectLookupRequest describes one object to resolve from live metadata.
 type ObjectLookupRequest struct {
 	PGOperatorFamilyMember     *PGOperatorFamilyMember     `json:"-"`
+	PGPolicyRoles              []string                    `json:"-"`
 	PGForeignKeyEqualityTarget *PGForeignKeyEqualityTarget `json:"-"`
 	Schema                     string
 	Type                       string

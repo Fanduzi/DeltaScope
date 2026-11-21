@@ -176,6 +176,13 @@ type corpusPGCollationRefresh struct {
 	Default bool   `yaml:"default"`
 }
 
+type corpusPGPolicy struct {
+	Schema  string `yaml:"schema"`
+	Table   string `yaml:"table"`
+	Name    string `yaml:"name"`
+	Command string `yaml:"command"`
+}
+
 type corpusPGOperatorChange struct {
 	Schema      string `yaml:"schema"`
 	Name        string `yaml:"name"`
@@ -289,6 +296,7 @@ type corpusMetadata struct {
 	PGOperatorChanges            []corpusPGOperatorChange                 `yaml:"pg_operator_changes,omitempty"`
 	PGComposites                 []corpusPGComposite                      `yaml:"pg_composites,omitempty"`
 	PGEnums                      []corpusPGEnum                           `yaml:"pg_enums,omitempty"`
+	PGPolicies                   []corpusPGPolicy                         `yaml:"pg_policies,omitempty"`
 	PGCreateSchemas              []corpusPGCreateSchema                   `yaml:"pg_create_schemas,omitempty"`
 	PGPartitionConstraints       []corpusPGPartitionConstraint            `yaml:"pg_partition_constraints,omitempty"`
 	PGMaterializedViewExtensions []corpusPGMaterializedViewExtensionState `yaml:"pg_materialized_view_extensions,omitempty"`

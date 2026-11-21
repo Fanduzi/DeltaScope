@@ -69,6 +69,10 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 	}
 
 	switch stmt.GetRenameType() {
+	case pg_query.ObjectType_OBJECT_POLICY:
+		statement.DDL = &spec.DDL{Operation: spec.DDLOperationAlterPolicy, ObjectType: "policy", ObjectName: stmt.GetSubname(), Table: tableFromRangeVar(stmt.GetRelation()),
+			PGPolicyChange: pgPolicyChangeDeclaration(stmt.GetRelation(), stmt.GetSubname(), stmt.GetNewname())}
+		return statement
 	case pg_query.ObjectType_OBJECT_TYPE:
 		objectName := ""
 		if stmt.GetRelation() != nil {

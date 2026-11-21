@@ -930,6 +930,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|
 | `ddl.pg.create_policy.notice` | `CREATE POLICY` introduces a new RLS policy — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_policy.target.valid` | Checks exact policy targets, roles, rename collisions and bounded clauses | Gap | ✓ | blocker |
 | `ddl.pg.alter_policy.notice` | `ALTER POLICY` modifies an existing RLS policy — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.drop_policy.warn` | `DROP POLICY` removes an RLS policy — warns that row-level protection is removed | ✓ | ✗ | warning |
 | `ddl.pg.alter.enable_rls.notice` | `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` enables RLS — informational notice | ✓ | ✗ | notice |

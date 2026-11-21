@@ -404,6 +404,7 @@ const (
 	ruleIDPGCreateSchemaNotice      = "ddl.pg.create_schema.notice"
 	// PostgreSQL policy lifecycle rules (PG-only).
 	ruleIDPGCreatePolicyNotice    = "ddl.pg.create_policy.notice"
+	ruleIDPGPolicyChangeValid     = "ddl.pg.alter_policy.target.valid"
 	ruleIDPGAlterPolicyNotice     = "ddl.pg.alter_policy.notice"
 	ruleIDPGDropPolicyWarn        = "ddl.pg.drop_policy.warn"
 	ruleIDPGAlterEnableRLSNotice  = "ddl.pg.alter.enable_rls.notice"

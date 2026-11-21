@@ -3,6 +3,7 @@ package spec
 
 // DDL contains the structural metadata extracted from a DDL statement.
 type DDL struct {
+	PGPolicyChange             *PGPolicyChange             `json:"-"`
 	PGBaseType                 *PGBaseTypeDeclaration      `json:"-"`
 	PGRange                    *PGRangeDeclaration         `json:"-"`
 	PGOperatorEstimatorOptions []PGOperatorEstimatorOption `json:"-"`

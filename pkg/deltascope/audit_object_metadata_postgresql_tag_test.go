@@ -1227,3 +1227,22 @@ func TestAuditPGCreateBaseTypeThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing CREATE TYPE base finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditPGPolicyChangeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGPolicyChange: &spec.PGPolicyChangeState{Table: spec.Table{Schema: "app", Name: "t"}, Name: "read", RelationKind: "r", PolicyCommand: "r", Columns: []string{"private_policy_column"}}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER POLICY read ON app.t WITH CHECK (true)`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "t" || provider.objectCalls[len(provider.objectCalls)-1].Type != "pg_policy_change" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_policy.target.valid" && f.Metadata["reason_code"] == "alter_policy_with_check_inapplicable" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER POLICY clause finding: %+v", result.Statements[0].Findings)
+}

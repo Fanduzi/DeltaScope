@@ -1065,6 +1065,7 @@ These rules guard PostgreSQL Row-Level Security policy and RLS toggle operations
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
 | `ddl.pg.create_policy.notice` | `CREATE POLICY` introduces a new RLS policy — informational notice | notice | No |
+| `ddl.pg.alter_policy.target.valid` | Checks exact PostgreSQL 17 policy targets, roles, rename occupancy and bounded predicate clauses. | blocker | Yes |
 | `ddl.pg.alter_policy.notice` | `ALTER POLICY` modifies an existing RLS policy — informational notice | notice | No |
 | `ddl.pg.drop_policy.warn` | `DROP POLICY` removes an RLS policy — warns that row-level protection is removed | warning | No |
 | `ddl.pg.alter.enable_rls.notice` | `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` enables RLS — informational notice | notice | No |

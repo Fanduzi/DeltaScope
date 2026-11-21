@@ -61,6 +61,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_view_namespace_rules.go | Checks PostgreSQL 17 view and materialized-view rename and schema-move targets and namespace collisions. |
 | postgresql_create_schema_target_rules.go | Checks observed PostgreSQL 17 schema destination and owner facts. |
 | postgresql_collation_change_rules.go | Checks qualified PostgreSQL 17 collation rename, namespace and owner premises. |
+| postgresql_policy_change_rules.go | Checks exact PostgreSQL policy changes and rename occupancy and bounded predicate clauses. |
 | postgresql_collation_refresh_rules.go | Checks qualified PostgreSQL 17 collation refresh targets and supported version presence facts. |
 | postgresql_index_include_rules.go | Checks PostgreSQL 17 CREATE INDEX INCLUDE targets, method support and column eligibility. |
 | postgresql_index_destination_rules.go | Checks PostgreSQL 17 ALTER INDEX rename and tablespace premises. |

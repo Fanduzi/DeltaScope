@@ -1002,6 +1002,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
 | `ddl.pg.create_policy.notice` | `CREATE POLICY` 引入新的 RLS 策略——信息性提示 | notice | 否 |
+| `ddl.pg.alter_policy.target.valid` | 检查 PostgreSQL 17 策略的精确目标、角色、改名占用及部分谓词前提。 | blocker | 是 |
 | `ddl.pg.alter_policy.notice` | `ALTER POLICY` 修改已有 RLS 策略——信息性提示 | notice | 否 |
 | `ddl.pg.drop_policy.warn` | `DROP POLICY` 移除 RLS 策略——警告行级保护被移除 | warning | 否 |
 | `ddl.pg.alter.enable_rls.notice` | `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` 启用 RLS——信息性提示 | notice | 否 |

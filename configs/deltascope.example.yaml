@@ -2031,6 +2031,9 @@ rules:
     level: notice
     params:
 
+  ddl.pg.alter_policy.target.valid:
+    enabled: true
+    level: blocker
   ddl.pg.alter_policy.notice:
     enabled: true
     level: notice
