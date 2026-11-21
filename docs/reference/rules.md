@@ -1680,6 +1680,7 @@ v0.100.0 adds lifecycle audit rules for PostgreSQL text search configuration, di
 | Rule ID | Check Description | Default Level | Metadata Required |
 |---------|-------------------|:-------------:|:-----------------:|
 | `ddl.pg.create_text_search_configuration.notice` | CREATE TEXT SEARCH CONFIGURATION emits an informational notice | notice | No |
+| `ddl.pg.text_search.change.target.valid` | Checks PostgreSQL 17 qualified text search targets, mappings and bounded dictionary options. | blocker | Yes |
 | `ddl.pg.alter_text_search_configuration.notice` | ALTER TEXT SEARCH CONFIGURATION (rename/owner/schema) emits an informational notice | notice | No |
 | `ddl.pg.drop_text_search_configuration.warn` | DROP TEXT SEARCH CONFIGURATION emits a destructure warning | warning | No |
 | `ddl.pg.create_text_search_dictionary.notice` | CREATE TEXT SEARCH DICTIONARY emits an informational notice | notice | No |

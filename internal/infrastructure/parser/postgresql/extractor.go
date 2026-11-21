@@ -78,6 +78,10 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractCompositeTypeStmt(statement, node.CompositeTypeStmt), nil
 	case *pg_query.Node_CreateDomainStmt:
 		return extractCreateDomainStmt(statement, node.CreateDomainStmt), nil
+	case *pg_query.Node_AlterTsconfigurationStmt:
+		return extractAlterTextSearchConfiguration(statement, node.AlterTsconfigurationStmt), nil
+	case *pg_query.Node_AlterTsdictionaryStmt:
+		return extractAlterTextSearchDictionary(statement, node.AlterTsdictionaryStmt), nil
 	case *pg_query.Node_AlterCollationStmt:
 		names := node.AlterCollationStmt.GetCollname()
 		target := &spec.PGColumnCollation{Name: lastStringFromNodes(names)}

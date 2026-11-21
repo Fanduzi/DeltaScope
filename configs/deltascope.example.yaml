@@ -2090,6 +2090,9 @@ rules:
     level: notice
     params:
 
+  ddl.pg.text_search.change.target.valid:
+    enabled: true
+    level: blocker
   ddl.pg.alter_text_search_configuration.notice:
     enabled: true
     level: notice

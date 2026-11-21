@@ -1249,6 +1249,7 @@ The CREATE VIEW option check needs an observed PostgreSQL 17 version. CHECK OPTI
 | `ddl.pg.alter_operator_class.notice` | ALTER OPERATOR CLASS notice | ✓ | ✗ | notice |
 | `ddl.pg.drop_operator_class.warn` | DROP OPERATOR CLASS warning | ✓ | ✗ | warning |
 | `ddl.pg.create_text_search_configuration.notice` | CREATE TEXT SEARCH CONFIGURATION notice | ✓ | ✗ | notice |
+| `ddl.pg.text_search.change.target.valid` | Checks text search object identity, mappings and simple dictionary options | Gap | ✓ | blocker |
 | `ddl.pg.alter_text_search_configuration.notice` | ALTER TEXT SEARCH CONFIGURATION notice | ✓ | ✗ | notice |
 | `ddl.pg.drop_text_search_configuration.warn` | DROP TEXT SEARCH CONFIGURATION warning | ✓ | ✗ | warning |
 | `ddl.pg.create_text_search_dictionary.notice` | CREATE TEXT SEARCH DICTIONARY notice | ✓ | ✗ | notice |

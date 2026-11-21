@@ -36,6 +36,8 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 			return p.resolveForeignTableChange(ctx, req)
 		case "pg_wrapper_change":
 			return p.resolveWrapperChange(ctx, req)
+		case "pg_text_search_change":
+			return p.resolveTextSearchChange(ctx, req)
 		case "pg_collation_change":
 			return p.resolveCollationChange(ctx, req)
 		case "pg_collation_refresh":

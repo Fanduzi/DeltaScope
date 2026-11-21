@@ -1303,3 +1303,22 @@ func TestAuditPGForeignTableChangeThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing foreign table column finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditPGTextSearchChangeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGTextSearchChange: &spec.PGTextSearchChangeState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "dict"}}, Kind: "dictionary", Action: "set_dictionary_options", SourceSchema: true, SourceExists: true, SimpleTemplate: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TEXT SEARCH DICTIONARY app.dict (unknown_option = 1)`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "dict" || provider.objectCalls[len(provider.objectCalls)-1].Type != "pg_text_search_change" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.text_search.change.target.valid" && f.Metadata["reason_code"] == "text_search_dictionary_option_unknown" {
+			return
+		}
+	}
+	t.Fatalf("missing dictionary option finding: %+v", result.Statements[0].Findings)
+}

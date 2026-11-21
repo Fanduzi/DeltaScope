@@ -957,6 +957,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterOperatorClassNotice, construct: newAlterOperatorClassNoticeRule},
 		{ruleID: ruleIDPGDropOperatorClassWarn, construct: newDropOperatorClassWarnRule},
 		{ruleID: ruleIDPGCreateTextSearchConfigurationNotice, construct: newCreateTextSearchConfigurationNoticeRule},
+		{ruleID: ruleIDPGTextSearchChangeValid, construct: newPGTextSearchChangeRule},
 		{ruleID: ruleIDPGAlterTextSearchConfigurationNotice, construct: newAlterTextSearchConfigurationNoticeRule},
 		{ruleID: ruleIDPGDropTextSearchConfigurationWarn, construct: newDropTextSearchConfigurationWarnRule},
 		{ruleID: ruleIDPGCreateTextSearchDictionaryNotice, construct: newCreateTextSearchDictionaryNoticeRule},

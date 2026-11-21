@@ -1002,6 +1002,7 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.text_search.change.target.valid": {Enabled: true, Level: rule.LevelBlocker},
 		"ddl.pg.alter_text_search_configuration.notice": {
 			Enabled: true,
 			Level:   rule.LevelNotice,

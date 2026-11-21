@@ -218,6 +218,11 @@ type corpusPGEnum struct {
 	Labels []string `yaml:"labels"`
 }
 
+type corpusPGTextSearch struct {
+	Schema string `yaml:"schema"`
+	Name   string `yaml:"name"`
+}
+
 type corpusPGCreateSchema struct {
 	Name        string `yaml:"name"`
 	Owner       string `yaml:"owner"`
@@ -317,6 +322,7 @@ type corpusMetadata struct {
 	PGSequenceChanges            []corpusPGSequenceChange                 `yaml:"pg_sequence_changes,omitempty"`
 	PGForeignTables              []corpusPGForeignTable                   `yaml:"pg_foreign_tables,omitempty"`
 	PGWrappers                   []corpusPGWrapper                        `yaml:"pg_wrappers,omitempty"`
+	PGTextSearch                 []corpusPGTextSearch                     `yaml:"pg_text_search,omitempty"`
 	PGCreateSchemas              []corpusPGCreateSchema                   `yaml:"pg_create_schemas,omitempty"`
 	PGPartitionConstraints       []corpusPGPartitionConstraint            `yaml:"pg_partition_constraints,omitempty"`
 	PGMaterializedViewExtensions []corpusPGMaterializedViewExtensionState `yaml:"pg_materialized_view_extensions,omitempty"`

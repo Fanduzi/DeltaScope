@@ -529,6 +529,7 @@ const (
 	ruleIDPGAlterOperatorClassNotice            = "ddl.pg.alter_operator_class.notice"
 	ruleIDPGDropOperatorClassWarn               = "ddl.pg.drop_operator_class.warn"
 	ruleIDPGCreateTextSearchConfigurationNotice = "ddl.pg.create_text_search_configuration.notice"
+	ruleIDPGTextSearchChangeValid               = "ddl.pg.text_search.change.target.valid"
 	ruleIDPGAlterTextSearchConfigurationNotice  = "ddl.pg.alter_text_search_configuration.notice"
 	ruleIDPGDropTextSearchConfigurationWarn     = "ddl.pg.drop_text_search_configuration.warn"
 	ruleIDPGCreateTextSearchDictionaryNotice    = "ddl.pg.create_text_search_dictionary.notice"

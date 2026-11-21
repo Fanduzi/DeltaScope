@@ -18,6 +18,7 @@ type Metadata struct {
 	PGSequenceChange            *PGSequenceChangeState            `json:"-"`
 	PGForeignTableChange        *PGForeignTableChangeState        `json:"-"`
 	PGWrapperChange             *PGWrapperChangeState             `json:"-"`
+	PGTextSearchChange          *PGTextSearchChangeState          `json:"-"`
 	PGCollationRefresh          *PGCollationRefreshState          `json:"-"`
 	PGCreateSchema              *PGCreateSchemaState              `json:"-"`
 	PGPartitionConstraint       *PGPartitionConstraintState       `json:"-"`
@@ -844,6 +845,7 @@ type ObjectSnapshot struct {
 	PGSequenceChange            *PGSequenceChangeState            `json:"-"`
 	PGForeignTableChange        *PGForeignTableChangeState        `json:"-"`
 	PGWrapperChange             *PGWrapperChangeState             `json:"-"`
+	PGTextSearchChange          *PGTextSearchChangeState          `json:"-"`
 	PGCollationRefresh          *PGCollationRefreshState          `json:"-"`
 	PGCreateSchema              *PGCreateSchemaState              `json:"-"`
 	PGPartitionConstraint       *PGPartitionConstraintState       `json:"-"`
@@ -927,6 +929,7 @@ type ObjectSnapshot struct {
 
 // ObjectLookupRequest describes one object to resolve from live metadata.
 type ObjectLookupRequest struct {
+	PGTextSearchDictionaries   []Table                     `json:"-"`
 	PGOperatorFamilyMember     *PGOperatorFamilyMember     `json:"-"`
 	PGPolicyRoles              []string                    `json:"-"`
 	PGWrapperFunctions         []PGWrapperFunction         `json:"-"`

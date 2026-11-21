@@ -60,6 +60,7 @@ comparisons for the member and scope binding.
 | sequence_change.go | Reads PostgreSQL sequence definitions, ownership and destination catalog facts. |
 | foreign_table_change.go | Reads foreign-table target, column, namespace, option names and role facts. |
 | wrapper_change.go | Reads exact wrapper and routine facts and option names. |
+| text_search_change.go | Reads qualified text search target and destination facts, built-in parser token identities and exact dictionary names. |
 | collation_refresh.go | Observes the exact qualified collation for the database encoding and keeps provider versions private. |
 | index_include.go | Observes the qualified relation kind, column directories and bounded access-method identity. |
 | index_destination.go | Observes PostgreSQL index rename occupancy and tablespace destinations. |

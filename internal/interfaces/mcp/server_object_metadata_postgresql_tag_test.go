@@ -2258,3 +2258,38 @@ func TestMCPPGForeignTableChangeTarget(t *testing.T) {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }
+
+type textSearchChangeAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (textSearchChangeAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_text_search_change" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGTextSearchChange: &spec.PGTextSearchChangeState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "dict"}}, Kind: "dictionary", Action: "set_dictionary_options", SourceSchema: true, SourceExists: true, SimpleTemplate: true}}, nil
+}
+
+func TestMCPPGTextSearchChangeTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := textSearchChangeAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER TEXT SEARCH DICTIONARY app.dict (unknown_option = 1)", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"text_search_dictionary_option_unknown"`) || !strings.Contains(string(body), `"ddl.pg.text_search.change.target.valid"`) || strings.Contains(string(body), "PGTextSearchChangeState") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}

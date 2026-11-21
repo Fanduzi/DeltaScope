@@ -1539,6 +1539,7 @@ v0.100.0 新增 PostgreSQL 全文搜索配置、字典、解析器和模板对�
 | 规则 ID | 检查描述 | 默认级别 | 是否需要元数据 |
 |---------|---------|:--------:|:--------------:|
 | `ddl.pg.create_text_search_configuration.notice` | CREATE TEXT SEARCH CONFIGURATION 触发信息通知 | notice | 否 |
+| `ddl.pg.text_search.change.target.valid` | 检查 PostgreSQL 17 限定文本搜索目标、映射和部分词典选项。 | blocker | 是 |
 | `ddl.pg.alter_text_search_configuration.notice` | ALTER TEXT SEARCH CONFIGURATION（重命名/属主/模式）触发信息通知 | notice | 否 |
 | `ddl.pg.drop_text_search_configuration.warn` | DROP TEXT SEARCH CONFIGURATION 触发结构销毁警告 | warning | 否 |
 | `ddl.pg.create_text_search_dictionary.notice` | CREATE TEXT SEARCH DICTIONARY 触发信息通知 | notice | 否 |

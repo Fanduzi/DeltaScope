@@ -126,6 +126,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | postgresql_sequence_change_metadata.go | Binds fresh PostgreSQL sequence definitions, ownership targets and namespace destinations. |
 | postgresql_foreign_table_change_metadata.go | Binds fresh foreign-table relation and action facts. |
 | postgresql_wrapper_change_metadata.go | Binds fresh PostgreSQL foreign-data wrapper facts. |
+| postgresql_text_search_change_metadata.go | Binds fresh PostgreSQL text search catalog facts to the exact authored identity. |
 | postgresql_collation_refresh_metadata.go | Binds fresh collation refresh target facts. |
 | postgresql_index_include_metadata.go | Binds fresh qualified CREATE INDEX INCLUDE relation, method and column facts. |
 | postgresql_index_destination_metadata.go | Binds observed source and destination facts to a qualified PostgreSQL index change. |

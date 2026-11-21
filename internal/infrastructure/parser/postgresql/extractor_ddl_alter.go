@@ -233,19 +233,21 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 	case pg_query.ObjectType_OBJECT_TSCONFIGURATION:
 		objectName := renameObjectCollationName(stmt)
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterTextSearchConfiguration,
-			ObjectName: objectName,
-			ObjectType: "text_search_configuration",
-			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+			PGTextSearchChange: pgTextSearchTarget(stmt.GetObject(), "configuration", "rename", stmt.GetNewname(), spec.PGTableOwnerTarget{}),
+			Operation:          spec.DDLOperationAlterTextSearchConfiguration,
+			ObjectName:         objectName,
+			ObjectType:         "text_search_configuration",
+			Options:            map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_TSDICTIONARY:
 		objectName := renameObjectCollationName(stmt)
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterTextSearchDictionary,
-			ObjectName: objectName,
-			ObjectType: "text_search_dictionary",
-			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+			PGTextSearchChange: pgTextSearchTarget(stmt.GetObject(), "dictionary", "rename", stmt.GetNewname(), spec.PGTableOwnerTarget{}),
+			Operation:          spec.DDLOperationAlterTextSearchDictionary,
+			ObjectName:         objectName,
+			ObjectType:         "text_search_dictionary",
+			Options:            map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_TSPARSER:
@@ -518,9 +520,10 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_TSCONFIGURATION {
 		objectName := alterObjectSchemaObjectName(stmt)
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterTextSearchConfiguration,
-			ObjectName: objectName,
-			ObjectType: "text_search_configuration",
+			PGTextSearchChange: pgTextSearchTarget(stmt.GetObject(), "configuration", "set_schema", stmt.GetNewschema(), spec.PGTableOwnerTarget{}),
+			Operation:          spec.DDLOperationAlterTextSearchConfiguration,
+			ObjectName:         objectName,
+			ObjectType:         "text_search_configuration",
 			Options: map[string]string{
 				"action":     "set_schema",
 				"new_schema": stmt.GetNewschema(),
@@ -531,9 +534,10 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_TSDICTIONARY {
 		objectName := alterObjectSchemaObjectName(stmt)
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterTextSearchDictionary,
-			ObjectName: objectName,
-			ObjectType: "text_search_dictionary",
+			PGTextSearchChange: pgTextSearchTarget(stmt.GetObject(), "dictionary", "set_schema", stmt.GetNewschema(), spec.PGTableOwnerTarget{}),
+			Operation:          spec.DDLOperationAlterTextSearchDictionary,
+			ObjectName:         objectName,
+			ObjectType:         "text_search_dictionary",
 			Options: map[string]string{
 				"action":     "set_schema",
 				"new_schema": stmt.GetNewschema(),
@@ -1847,19 +1851,21 @@ func extractAlterOwnerStmt(statement spec.Statement, stmt *pg_query.AlterOwnerSt
 	case pg_query.ObjectType_OBJECT_TSCONFIGURATION:
 		objectName := alterOwnerObjectName(stmt)
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterTextSearchConfiguration,
-			ObjectName: objectName,
-			ObjectType: "text_search_configuration",
-			Options:    map[string]string{"action": "set_owner", "owner": owner},
+			PGTextSearchChange: pgTextSearchTarget(stmt.GetObject(), "configuration", "set_owner", "", pgRoleSelection(stmt.GetNewowner())),
+			Operation:          spec.DDLOperationAlterTextSearchConfiguration,
+			ObjectName:         objectName,
+			ObjectType:         "text_search_configuration",
+			Options:            map[string]string{"action": "set_owner", "owner": owner},
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_TSDICTIONARY:
 		objectName := alterOwnerObjectName(stmt)
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterTextSearchDictionary,
-			ObjectName: objectName,
-			ObjectType: "text_search_dictionary",
-			Options:    map[string]string{"action": "set_owner", "owner": owner},
+			PGTextSearchChange: pgTextSearchTarget(stmt.GetObject(), "dictionary", "set_owner", "", pgRoleSelection(stmt.GetNewowner())),
+			Operation:          spec.DDLOperationAlterTextSearchDictionary,
+			ObjectName:         objectName,
+			ObjectType:         "text_search_dictionary",
+			Options:            map[string]string{"action": "set_owner", "owner": owner},
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_LARGEOBJECT:

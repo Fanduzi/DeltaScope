@@ -3,6 +3,7 @@ package spec
 
 // DDL contains the structural metadata extracted from a DDL statement.
 type DDL struct {
+	PGTextSearchChange         *PGTextSearchChange         `json:"-"`
 	PGForeignTableChange       *PGForeignTableChange       `json:"-"`
 	PGWrapperChange            *PGWrapperChange            `json:"-"`
 	PGSequenceChange           *PGSequenceChange           `json:"-"`

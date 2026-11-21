@@ -261,6 +261,9 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 		if err := enrichPGPolicyChanges(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}
+		if err := enrichPGTextSearchChanges(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
 		if err := enrichPGCollationRefresh(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}

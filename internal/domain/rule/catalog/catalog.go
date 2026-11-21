@@ -256,6 +256,8 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 		return "Checks qualified PostgreSQL 17 range creation destinations, exact subtypes and bounded declarations."
 	case "ddl.pg.create_type.enum.valid":
 		return "Checks a PostgreSQL 17 enum creation target, repeated labels and the UTF8 label size limit."
+	case "ddl.pg.text_search.change.target.valid":
+		return "Checks qualified PostgreSQL 17 text search configuration and dictionary targets, mappings, owners and namespace changes."
 	case "ddl.pg.create_schema.target.valid":
 		return "Checks PostgreSQL 17 schema creation identity, authored owner and guarded destination premises."
 	case "ddl.pg.alter_collation.refresh.target.valid":
@@ -711,7 +713,7 @@ func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 		"ddl.pg.alter_policy.target.valid",
 		"ddl.pg.alter_operator.change.target.valid", "ddl.pg.alter_type.change.target.valid", "ddl.pg.type.base.valid", "ddl.pg.type.composite.valid",
 		"ddl.pg.alter_type.enum.valid", "ddl.pg.create_type.range.valid", "ddl.pg.create_type.enum.valid",
-		"ddl.pg.create_schema.target.valid", "ddl.pg.alter_collation.refresh.target.valid", "ddl.pg.alter_collation.change.target.valid",
+		"ddl.pg.text_search.change.target.valid", "ddl.pg.create_schema.target.valid", "ddl.pg.alter_collation.refresh.target.valid", "ddl.pg.alter_collation.change.target.valid",
 		"ddl.pg.create_index.include.valid", "ddl.pg.alter_index.options.valid", "ddl.pg.alter_index.attach_partition.valid", "ddl.pg.create_operator_family.target.valid",
 		"ddl.pg.alter_operator_family.member.valid", "ddl.pg.alter_index.destination.valid", "ddl.pg.alter_operator_family.change.target.valid":
 		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true
@@ -1010,6 +1012,7 @@ func categoryForPGRule(ruleID string) string {
 		{"create_conversion", "conversion"},
 		{"alter_conversion", "conversion"},
 		{"drop_conversion", "conversion"},
+		{"text_search.", "text_search"},
 		{"create_text_search_configuration", "text_search"},
 		{"alter_text_search_configuration", "text_search"},
 		{"drop_text_search_configuration", "text_search"},
