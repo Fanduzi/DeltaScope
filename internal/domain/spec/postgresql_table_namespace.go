@@ -4,6 +4,8 @@ package spec
 // or SET SCHEMA, including named companions moved with SET SCHEMA.
 type PGTableNamespace struct {
 	Schema, Table, Action, Destination string
+	SourceKind                         string
+	SourceKindKnown                    bool
 	SchemaExists, SameSchema           bool
 	RelationConflict, RowTypeConflict  bool
 	RowTypeConflictKnown               bool

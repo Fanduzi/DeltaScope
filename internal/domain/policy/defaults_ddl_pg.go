@@ -660,7 +660,10 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
-		"ddl.pg.drop_view.target.valid": {Enabled: true, Level: rule.LevelBlocker},
+		"ddl.pg.alter_view.options.valid":   {Enabled: true, Level: rule.LevelBlocker},
+		"ddl.pg.alter_view.owner.valid":     {Enabled: true, Level: rule.LevelBlocker},
+		"ddl.pg.alter_view.namespace.valid": {Enabled: true, Level: rule.LevelBlocker},
+		"ddl.pg.drop_view.target.valid":     {Enabled: true, Level: rule.LevelBlocker},
 		"ddl.pg.drop_view.cascade.warn": {
 			Enabled: true,
 			Level:   rule.LevelWarning,

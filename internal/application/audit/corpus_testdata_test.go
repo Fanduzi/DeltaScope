@@ -140,6 +140,7 @@ type corpusPGDropViewState struct {
 	Name          string `yaml:"name"`
 	Kind          string `yaml:"kind"`
 	DependentView bool   `yaml:"dependent_view"`
+	CheckOption   bool   `yaml:"check_option,omitempty"`
 }
 
 type corpusMetadata struct {
@@ -406,12 +407,14 @@ type corpusPGBulkTablespace struct {
 }
 
 type corpusPGTableOwner struct {
-	Schema string `yaml:"schema"`
-	Table  string `yaml:"table"`
-	Kind   string `yaml:"kind"`
-	Name   string `yaml:"name,omitempty"`
-	Exists bool   `yaml:"exists"`
-	Same   bool   `yaml:"same,omitempty"`
+	Schema          string `yaml:"schema"`
+	Table           string `yaml:"table"`
+	Kind            string `yaml:"kind"`
+	Name            string `yaml:"name,omitempty"`
+	Exists          bool   `yaml:"exists"`
+	Same            bool   `yaml:"same,omitempty"`
+	SourceKind      string `yaml:"source_kind,omitempty"`
+	SourceKindKnown bool   `yaml:"source_kind_known,omitempty"`
 }
 
 type corpusPGTableNamespace struct {
@@ -419,6 +422,8 @@ type corpusPGTableNamespace struct {
 	Table                  string `yaml:"table"`
 	Action                 string `yaml:"action"`
 	Destination            string `yaml:"destination"`
+	SourceKind             string `yaml:"source_kind,omitempty"`
+	SourceKindKnown        bool   `yaml:"source_kind_known,omitempty"`
 	SchemaExists           bool   `yaml:"schema_exists,omitempty"`
 	SameSchema             bool   `yaml:"same_schema,omitempty"`
 	RelationConflict       bool   `yaml:"relation_conflict,omitempty"`

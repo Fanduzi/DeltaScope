@@ -1,0 +1,14 @@
+name: alter_view_owner_absent_role
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  pg_table_owners:
+    - {schema: app, table: v, kind: named, name: missing_role, exists: false, source_kind: v, source_kind_known: true}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter_view.owner.valid]

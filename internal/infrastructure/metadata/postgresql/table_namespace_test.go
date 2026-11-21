@@ -66,6 +66,40 @@ func TestResolveTableNamespace(t *testing.T) {
 	}
 }
 
+func TestResolveViewNamespaceChecksSourceBeforeDestination(t *testing.T) {
+	for _, tc := range []struct {
+		name, kind string
+		reads      int
+	}{
+		{name: "missing", reads: 1},
+		{name: "wrong kind", kind: "r", reads: 1},
+		{name: "matching materialized view", kind: "m", reads: 2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			source := testQueryResult{columns: []string{"relkind"}}
+			if tc.kind != "" {
+				source.rows = [][]driver.Value{{tc.kind}}
+			}
+			db, log := openTestDB(t, map[string]testQueryResult{
+				"select c.relkind::pg_catalog.text": source,
+				"elem.typarray": {columns: []string{"schema_exists", "same_schema", "relation_conflict", "row_type_conflict", "index_conflict", "sequence_conflict", "array_type_conflict"},
+					rows: [][]driver.Value{{true, false, false, false, true, false, false}}},
+			})
+			defer db.Close()
+			request := spec.ObjectLookupRequest{Type: "view_namespace", Schema: "app", Name: " Destination ",
+				Qualifiers: map[string]string{"table": " Source View ", "action": "set_schema", "kind": "m"}}
+			got, err := NewProvider(db).ResolveObject(context.Background(), spec.DialectPostgreSQL, request)
+			if err != nil || got == nil || got.PGTableNamespace == nil {
+				t.Fatalf("snapshot=%+v err=%v", got, err)
+			}
+			state := got.PGTableNamespace
+			if !state.SourceKindKnown || state.SourceKind != tc.kind || state.IndexConflict != (tc.kind == "m") || len(log.Queries()) != tc.reads {
+				t.Fatalf("state=%+v queries=%v", state, log.Queries())
+			}
+		})
+	}
+}
+
 func TestResolveTableNamespaceWithholdsTemporaryAlias(t *testing.T) {
 	db, log := openTestDB(t, nil)
 	defer db.Close()

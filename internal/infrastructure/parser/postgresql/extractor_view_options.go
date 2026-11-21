@@ -18,6 +18,7 @@ func pgViewOptions(nodes []*pg_query.Node) []spec.PGViewOption {
 		d := node.GetDefElem()
 		option := spec.PGViewOption{Name: d.GetDefname(), Namespace: d.GetDefnamespace()}
 		arg := d.GetArg()
+		option.HasValue = arg != nil
 		switch option.Name {
 		case "security_barrier", "security_invoker":
 			value := pgBooleanReloptionValue(arg)

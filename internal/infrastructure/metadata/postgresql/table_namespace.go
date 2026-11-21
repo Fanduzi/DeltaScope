@@ -25,6 +25,27 @@ func (p *Provider) resolveTableNamespace(ctx context.Context, req spec.ObjectLoo
 	default:
 		return nil, nil
 	}
+	facts := &spec.PGTableNamespace{Schema: req.Schema, Table: table, Action: action, Destination: req.Name}
+	kind := "r"
+	if req.Type == "view_namespace" {
+		kind = req.Qualifiers["kind"]
+		if kind != "v" && kind != "m" {
+			return nil, nil
+		}
+		err := p.db.QueryRowContext(ctx, `
+			select c.relkind::pg_catalog.text from pg_catalog.pg_class c
+			join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) c.relnamespace
+			where n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text
+			  and c.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text
+		`, req.Schema, table).Scan(&facts.SourceKind)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("read view namespace source: %w", err)
+		}
+		facts.SourceKindKnown = true
+		if facts.SourceKind != kind {
+			return &spec.ObjectSnapshot{PGTableNamespace: facts}, nil
+		}
+	}
 	// RenameTypeInternal can displace a defined true array when its element's
 	// typarray identifies it. F_ARRAY_SUBSCRIPT_HANDLER is 6179 on PG17.
 	row := p.db.QueryRowContext(ctx, `
@@ -75,13 +96,12 @@ func (p *Provider) resolveTableNamespace(ctx context.Context, req spec.ObjectLoo
 		  and associated.typnamespace OPERATOR(pg_catalog.=) n.oid
 		where n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text
 		  and c.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text
-		  and c.relkind OPERATOR(pg_catalog.=) 'r' and c.relpersistence OPERATOR(pg_catalog.=) 'p'
+		  and c.relkind OPERATOR(pg_catalog.=) $5::pg_catalog."char" and c.relpersistence OPERATOR(pg_catalog.=) 'p'
 		  and not c.relisshared and not c.relispartition
 		  and c.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
 		  and not exists (select 1 from pg_catalog.pg_inherits h
 		                  where h.inhrelid OPERATOR(pg_catalog.=) c.oid or h.inhparent OPERATOR(pg_catalog.=) c.oid)
-	`, req.Schema, table, req.Name, rename)
-	facts := &spec.PGTableNamespace{Schema: req.Schema, Table: table, Action: action, Destination: req.Name}
+	`, req.Schema, table, req.Name, rename, kind)
 	var conflict, arrayConflict sql.NullBool
 	if err := row.Scan(&facts.SchemaExists, &facts.SameSchema, &facts.RelationConflict, &conflict, &facts.IndexConflict, &facts.OwnedSequenceConflict, &arrayConflict); errors.Is(err, sql.ErrNoRows) {
 		return nil, nil

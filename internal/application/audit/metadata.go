@@ -225,6 +225,12 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 
 	if dialect == spec.DialectPostgreSQL {
 		freshPrefix := invalidateStalePGTargetCatalogs(enriched, failures)
+		if err := enrichPGViewOwners(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
+		if err := enrichPGViewNamespaces(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
 		if err := enrichPGDropViews(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}
@@ -1075,6 +1081,9 @@ func indexStatementSchema(request *MetadataRequest, alter spec.Alter) string {
 func planObjectLookup(schema string, statement spec.Statement) *spec.ObjectLookupRequest {
 	if statement.DDL == nil {
 		return nil
+	}
+	if _, kind := spec.PGViewOwnerSelection(statement); kind != "" {
+		return nil // The exact view-owner read also checks source kind.
 	}
 	ddl := statement.DDL
 	objType := objectTypeForOperation(ddl.Operation, ddl.ObjectType)

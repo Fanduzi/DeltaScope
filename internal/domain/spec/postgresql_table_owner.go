@@ -21,9 +21,11 @@ func (t PGTableOwnerTarget) Valid() bool {
 // PGTableOwnerState records one target lookup in the observed session.
 // A missing observation is represented by a nil state.
 type PGTableOwnerState struct {
-	Schema, Table string
-	Target        PGTableOwnerTarget
-	Exists, Same  bool
+	Schema, Table   string
+	Target          PGTableOwnerTarget
+	Exists, Same    bool
+	SourceKind      string
+	SourceKindKnown bool
 }
 
 // PGTableOwnerSelection returns the modeled target of one OWNER TO action.

@@ -25,16 +25,23 @@ func assessPGCreateViewOptions(s spec.Statement) (reason, fact string) {
 	if !pgConstraintTargetVersionKnown(s) {
 		return "", "instance.version"
 	}
-	seen := make(map[string]bool, len(s.DDL.PGViewOptions))
-	for _, option := range s.DDL.PGViewOptions {
+	return assessPGViewOptionDeclarations(s.DDL.PGViewOptions, s.DDL.Options["check_option"] == "true", false)
+}
+
+func assessPGViewOptionDeclarations(options []spec.PGViewOption, checkOptionClause, alter bool) (reason, fact string) {
+	seen := make(map[string]bool, len(options))
+	for _, option := range options {
 		if option.Name == "" {
 			return "", "view.options"
 		}
-		if option.Namespace != "" {
+		if option.Namespace != "" && (!alter || option.Namespace != "toast") {
 			return "view_option_namespace_unrecognized", ""
 		}
 	}
-	for _, option := range s.DDL.PGViewOptions {
+	for _, option := range options {
+		if option.Namespace != "" {
+			continue
+		}
 		switch option.Name {
 		case "security_barrier", "security_invoker", "check_option":
 		default:
@@ -51,7 +58,7 @@ func assessPGCreateViewOptions(s spec.Statement) (reason, fact string) {
 			return "view_option_invalid_value", ""
 		}
 	}
-	if seen["check_option"] && s.DDL.Options["check_option"] == "true" {
+	if seen["check_option"] && checkOptionClause {
 		return "view_check_option_duplicate", ""
 	}
 	return "", ""

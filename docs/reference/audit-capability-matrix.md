@@ -1016,6 +1016,9 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.drop_view.target.valid` | Checks exact PostgreSQL 17 DROP VIEW targets and direct dependent views under RESTRICT | Gap | ✓ | blocker |
 | `ddl.pg.alter_view.rename.notice` | `ALTER VIEW ... RENAME TO` changes the view name — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.alter_view.set_schema.notice` | `ALTER VIEW ... SET SCHEMA` moves the view to a different schema — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_view.namespace.valid` | Checks PostgreSQL 17 view and materialized-view rename and schema-move premises | Gap | ✓ | blocker |
+| `ddl.pg.alter_view.owner.valid` | Checks exact PostgreSQL 17 view OWNER TO targets, guards and role existence | Gap | ✓ | blocker |
+| `ddl.pg.alter_view.options.valid` | Checks exact PostgreSQL 17 ordinary-view SET/RESET targets and declarations | Gap | ✓ | blocker |
 
 The CREATE VIEW option check needs an observed PostgreSQL 17 version. View query evaluation and updatability require separate evidence.
 

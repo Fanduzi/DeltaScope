@@ -1,0 +1,14 @@
+name: alter_view_namespace_conflict
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  pg_table_namespaces:
+    - {schema: app, table: mv, action: set_schema, destination: destination, source_kind: m, source_kind_known: true, schema_exists: true, row_type_conflict_known: true, array_type_conflict_known: true, index_conflict: true}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter_view.namespace.valid]

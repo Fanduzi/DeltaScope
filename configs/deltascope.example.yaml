@@ -2541,6 +2541,21 @@ rules:
     level: warning
     params:
 
+  ddl.pg.alter_view.options.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.pg.alter_view.owner.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.pg.alter_view.namespace.valid:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.pg.drop_view.target.valid:
     enabled: true
     level: blocker

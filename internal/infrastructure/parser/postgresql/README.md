@@ -8,7 +8,7 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 |------|---------------|
 | parser.go | Parses PostgreSQL SQL text and classifies statements when built with the `postgresql` tag |
 | extractor.go | Defines the PostgreSQL extracted-statement wrapper and extractor that populates normalized spec fields (column `NotNull`, `Default`, constraints) for ALTER TABLE ADD COLUMN statements |
-| extractor_view_options.go | Retains exact PostgreSQL CREATE VIEW option declarations and bounded value facts. |
+| extractor_view_options.go | Retains exact PostgreSQL CREATE VIEW and ALTER VIEW option declarations and bounded value facts. |
 | extractor_table_reloptions.go | Retains private ordered table-option keys, namespaces, argument presence and bounded fillfactor/Boolean facts |
 | parser_table_owner_postgresql_tag_test.go | Verifies exact private role names, session aliases and PUBLIC in ALTER TABLE OWNER TO |
 | parser_bulk_tablespace_postgresql_tag_test.go | Verifies precise endpoints, ordered private role selections and NOWAIT in bulk ALTER TABLE |

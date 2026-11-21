@@ -24,6 +24,12 @@ func extractAlterTableStmt(statement spec.Statement, stmt *pg_query.AlterTableSt
 	if stmt.GetObjtype() == pg_query.ObjectType_OBJECT_FOREIGN_TABLE {
 		return extractAlterForeignTableStmt(statement, stmt)
 	}
+	switch stmt.GetObjtype() {
+	case pg_query.ObjectType_OBJECT_VIEW:
+		return extractAlterViewAction(statement, stmt, spec.DDLOperationAlterView, "view")
+	case pg_query.ObjectType_OBJECT_MATVIEW:
+		return extractAlterViewAction(statement, stmt, spec.DDLOperationAlterMaterializedView, "materialized_view")
+	}
 	if stmt.GetObjtype() != pg_query.ObjectType_OBJECT_TYPE_UNDEFINED && stmt.GetObjtype() != pg_query.ObjectType_OBJECT_TABLE {
 		return unsupportedStatement(statement, "alter_table", "postgresql alter table object type is unsupported in v1")
 	}
@@ -110,10 +116,11 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 			objectName = stmt.GetRelation().GetRelname()
 		}
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterView,
-			ObjectName: objectName,
-			ObjectType: "view",
-			Options:    map[string]string{"action": "rename_view", "new_name": stmt.GetNewname()},
+			Operation:             spec.DDLOperationAlterView,
+			ObjectName:            objectName,
+			PGViewNamespaceSource: pgViewNamespaceSource(stmt.GetRelation(), stmt.GetMissingOk()),
+			ObjectType:            "view",
+			Options:               map[string]string{"action": "rename_view", "new_name": stmt.GetNewname()},
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_SCHEMA:
@@ -131,10 +138,11 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 			objectName = stmt.GetRelation().GetRelname()
 		}
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterMaterializedView,
-			ObjectName: objectName,
-			ObjectType: "materialized_view",
-			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+			Operation:             spec.DDLOperationAlterMaterializedView,
+			ObjectName:            objectName,
+			PGViewNamespaceSource: pgViewNamespaceSource(stmt.GetRelation(), stmt.GetMissingOk()),
+			ObjectType:            "materialized_view",
+			Options:               map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_EVENT_TRIGGER:
@@ -288,6 +296,14 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 	}
 }
 
+func pgViewNamespaceSource(relation *pg_query.RangeVar, guard bool) *spec.PGViewNamespaceSource {
+	if relation == nil {
+		return nil
+	}
+	return &spec.PGViewNamespaceSource{Schema: relation.GetSchemaname(), Name: relation.GetRelname(), IfExists: guard,
+		CatalogQualified: relation.GetCatalogname() != ""}
+}
+
 func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.AlterObjectSchemaStmt) spec.Statement {
 	if stmt == nil {
 		return unsupportedStatement(statement, "alter_table", "postgresql alter object schema statement payload is missing")
@@ -321,9 +337,10 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 			objectName = stmt.GetRelation().GetRelname()
 		}
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterView,
-			ObjectName: objectName,
-			ObjectType: "view",
+			Operation:             spec.DDLOperationAlterView,
+			ObjectName:            objectName,
+			PGViewNamespaceSource: pgViewNamespaceSource(stmt.GetRelation(), stmt.GetMissingOk()),
+			ObjectType:            "view",
 			Options: map[string]string{
 				"action":     "set_schema",
 				"new_schema": stmt.GetNewschema(),
@@ -337,9 +354,10 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 			objectName = stmt.GetRelation().GetRelname()
 		}
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterMaterializedView,
-			ObjectName: objectName,
-			ObjectType: "materialized_view",
+			Operation:             spec.DDLOperationAlterMaterializedView,
+			ObjectName:            objectName,
+			PGViewNamespaceSource: pgViewNamespaceSource(stmt.GetRelation(), stmt.GetMissingOk()),
+			ObjectType:            "materialized_view",
 			Options: map[string]string{
 				"action":     "set_schema",
 				"new_schema": stmt.GetNewschema(),
@@ -839,6 +857,38 @@ func extractAlterTableMoveAllStmt(statement spec.Statement, stmt *pg_query.Alter
 			},
 		}},
 	}
+	return statement
+}
+
+func extractAlterViewAction(statement spec.Statement, stmt *pg_query.AlterTableStmt, operation spec.DDLOperation, kind string) spec.Statement {
+	commands := stmt.GetCmds()
+	table := tableFromRangeVar(stmt.GetRelation())
+	if table == nil || len(commands) != 1 {
+		return unsupportedStatement(statement, "alter_table", "postgresql alter table object type is unsupported in v1")
+	}
+	cmd := commands[0].GetAlterTableCmd()
+	ddl := &spec.DDL{Operation: operation, ObjectType: kind, ObjectName: table.Name, Table: table,
+		PGTableIfExists: stmt.GetMissingOk(), PGTableCatalogQualified: stmt.GetRelation().GetCatalogname() != ""}
+	switch cmd.GetSubtype() {
+	case pg_query.AlterTableType_AT_ChangeOwner:
+		owner := pgRoleSelection(cmd.GetNewowner())
+		if !owner.Valid() {
+			return unsupportedStatement(statement, "alter_table", "postgresql view owner is unsupported in v1")
+		}
+		ddl.Alter = []spec.Alter{{Action: "change_owner", PGTableOwner: owner}}
+	case pg_query.AlterTableType_AT_SetRelOptions, pg_query.AlterTableType_AT_ResetRelOptions:
+		if operation != spec.DDLOperationAlterView || len(cmd.GetDef().GetList().GetItems()) == 0 {
+			return unsupportedStatement(statement, "alter_table", "postgresql alter table object type is unsupported in v1")
+		}
+		ddl.Alter = []spec.Alter{{Action: "set_options"}}
+		if cmd.GetSubtype() == pg_query.AlterTableType_AT_ResetRelOptions {
+			ddl.Alter[0].Action = "reset_options"
+		}
+		ddl.PGViewOptions = pgViewOptions(cmd.GetDef().GetList().GetItems())
+	default:
+		return unsupportedStatement(statement, "alter_table", "postgresql alter table object type is unsupported in v1")
+	}
+	statement.DDL = ddl
 	return statement
 }
 

@@ -581,3 +581,60 @@ func TestAuditPGDropViewThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing DROP VIEW dependency finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditPGViewNamespaceThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGTableNamespace: &spec.PGTableNamespace{Schema: "app", Table: "mv", Action: "rename_table", Destination: "destination", SourceKind: "v", SourceKindKnown: true, RelationConflict: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER VIEW app.mv RENAME TO destination`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "destination" || provider.objectCalls[0].Type != "view_namespace" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_view.namespace.valid" && f.Metadata["reason_code"] == "destination_relation_conflict" {
+			return
+		}
+	}
+	t.Fatalf("missing view namespace collision: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGViewOwnerThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGTableOwner: &spec.PGTableOwnerState{Schema: "app", Table: "mv", Target: spec.PGTableOwnerTarget{Kind: "named", Name: "missing_role"}, SourceKind: "v", SourceKindKnown: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER VIEW app.mv OWNER TO missing_role`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "missing_role" || provider.objectCalls[0].Type != "view_owner" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_view.owner.valid" && f.Metadata["reason_code"] == "owner_role_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing view owner finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGAlterViewOptionsThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGDropViewState: &spec.PGDropViewState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: "app", Name: "mv"}}, Kind: "v"}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER VIEW app.mv RESET (security_invoker=true)`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "mv" || provider.objectCalls[0].Type != "alter_view_options" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_view.options.valid" && f.Metadata["reason_code"] == "view_option_reset_has_value" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER VIEW option finding: %+v", result.Statements[0].Findings)
+}

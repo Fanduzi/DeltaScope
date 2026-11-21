@@ -50,6 +50,10 @@ func assessPGTableNamespace(s spec.Statement) (reason, fact string) {
 	if facts == nil {
 		return "", "target_table.pg_namespace_destination"
 	}
+	return assessPGNamespaceDestination(facts)
+}
+
+func assessPGNamespaceDestination(facts *spec.PGTableNamespace) (reason, fact string) {
 	if facts.Action == "set_schema" {
 		if !facts.SchemaExists {
 			return "destination_schema_absent", ""

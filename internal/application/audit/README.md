@@ -103,7 +103,9 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | postgresql_refresh_materialized_view_metadata.go | Binds private refresh prerequisites to a fresh, exactly qualified PostgreSQL 17 materialized-view target. |
 | postgresql_column_type_metadata.go | Binds one exact PG17 TYPE destination after proving the fresh D14 source-column premise |
 | postgresql_table_namespace_metadata.go | Binds exact private PostgreSQL 17 rename and schema destination observations after target freshness checks |
-| postgresql_drop_view_metadata.go | Binds exact DROP VIEW target and dependency observations before unapplied DDL can change the catalog. |
+| postgresql_view_owner_metadata.go | Binds fresh exact view OWNER TO source and observed role facts. |
+| postgresql_view_namespace_metadata.go | Binds fresh catalog source and destination facts for qualified view rename and schema moves. |
+| postgresql_drop_view_metadata.go | Binds exact DROP VIEW target and dependency observations, plus ordinary ALTER VIEW option state, before unapplied DDL can change the catalog. |
 | postgresql_destructive_table_metadata.go | Binds ordered PostgreSQL 17 DROP/TRUNCATE target identities and private RESTRICT dependency observations. |
 | postgresql_table_persistence_metadata.go | Binds private PG17 persistence transition evidence after exact target freshness checks |
 | postgresql_table_access_method_metadata.go | Binds private PostgreSQL 17 access-method kind and same-method facts after the target freshness check |

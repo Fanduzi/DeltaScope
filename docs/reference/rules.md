@@ -1098,7 +1098,7 @@ These rules guard PostgreSQL function and procedure lifecycle operations. They o
 
 ---
 
-## DDL: PostgreSQL Advanced View Lifecycle Rules (8 rules)
+## DDL: PostgreSQL Advanced View Lifecycle Rules (11 rules)
 
 These rules guard PostgreSQL view lifecycle operations beyond the base `CREATE VIEW` / `DROP VIEW` forms. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
 
@@ -1112,6 +1112,9 @@ These rules guard PostgreSQL view lifecycle operations beyond the base `CREATE V
 | `ddl.pg.drop_view.target.valid` | Checks PostgreSQL 17 DROP VIEW target identity, guarded absence and direct view or materialized-view dependencies under RESTRICT | blocker | Yes |
 | `ddl.pg.alter_view.rename.notice` | `ALTER VIEW ... RENAME TO` changes the view name — informational notice | notice | No |
 | `ddl.pg.alter_view.set_schema.notice` | `ALTER VIEW ... SET SCHEMA` moves the view to a different schema — informational notice | notice | No |
+| `ddl.pg.alter_view.namespace.valid` | Checks exact PostgreSQL 17 VIEW and MATERIALIZED VIEW rename and schema-move sources, guards and destination collisions | blocker | Yes |
+| `ddl.pg.alter_view.owner.valid` | Checks PostgreSQL 17 ordinary and materialized view owner-change source, guarded absence and observed role existence | blocker | Yes |
+| `ddl.pg.alter_view.options.valid` | Checks ordinary PostgreSQL 17 ALTER VIEW SET/RESET targets and declarations. CHECK OPTION updatability requires separate evidence. | blocker | Yes |
 
 The option check uses the observed server version and authored options. View updatability, query results and downstream effects require separate evidence.
 

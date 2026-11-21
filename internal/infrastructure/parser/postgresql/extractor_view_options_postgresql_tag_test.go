@@ -14,9 +14,9 @@ func TestPGViewOptionsPreserveAuthoredOrder(t *testing.T) {
 	s := extractPostgreSQLStatement(t, `CREATE VIEW app.v WITH (security_barrier, security_invoker=' true ', security_invoker='of', check_option='LOCAL') AS SELECT 1`)
 	want := []spec.PGViewOption{
 		{Name: "security_barrier", ValueKnown: true, ValueValid: true},
-		{Name: "security_invoker", ValueKnown: true},
-		{Name: "security_invoker", ValueKnown: true, ValueValid: true},
-		{Name: "check_option", ValueKnown: true, ValueValid: true},
+		{Name: "security_invoker", ValueKnown: true, HasValue: true},
+		{Name: "security_invoker", ValueKnown: true, HasValue: true, ValueValid: true},
+		{Name: "check_option", ValueKnown: true, HasValue: true, ValueValid: true},
 	}
 	if got := s.DDL.PGViewOptions; len(got) != len(want) {
 		t.Fatalf("got %v, want %v", got, want)

@@ -9,6 +9,9 @@ import (
 func enrichPGDropViews(ctx context.Context, request *MetadataRequest, statements []spec.Statement) error {
 	for _, s := range statements {
 		lookup := spec.PGDropViewLookup(s)
+		if lookup == nil {
+			lookup = spec.PGAlterViewOptionsLookup(s)
+		}
 		if lookup == nil || s.Metadata == nil || !spec.PG17Observed(s.Metadata.Instance) {
 			continue
 		}
@@ -16,7 +19,8 @@ func enrichPGDropViews(ctx context.Context, request *MetadataRequest, statements
 		if err != nil {
 			return err
 		}
-		if object != nil && object.PGDropViewState != nil && object.PGDropViewState.Target == *s.DDL.PGDropViewTarget {
+		target := spec.PGDestructiveTableTarget{Table: spec.Table{Schema: lookup.Schema, Name: lookup.Name}}
+		if object != nil && object.PGDropViewState != nil && object.PGDropViewState.Target == target {
 			state := *object.PGDropViewState
 			s.Metadata.PGDropViewState = &state
 		}

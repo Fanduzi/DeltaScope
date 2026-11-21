@@ -1,0 +1,1 @@
+ALTER MATERIALIZED VIEW app.mv SET SCHEMA destination;

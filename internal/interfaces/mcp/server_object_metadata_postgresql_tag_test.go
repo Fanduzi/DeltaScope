@@ -964,3 +964,108 @@ func TestMCPPGDropViewTarget(t *testing.T) {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }
+
+type viewNamespaceAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (viewNamespaceAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "view_namespace" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGTableNamespace: &spec.PGTableNamespace{Schema: req.Schema, Table: req.Qualifiers["table"], Action: req.Qualifiers["action"], Destination: req.Name, SourceKind: "v", SourceKindKnown: true, RelationConflict: true}}, nil
+}
+
+func TestMCPPGViewNamespaceTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := viewNamespaceAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER VIEW app.mv RENAME TO destination", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"destination_relation_conflict"`) || !strings.Contains(string(body), `"ddl.pg.alter_view.namespace.valid"`) || strings.Contains(string(body), "PGTableNamespace") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type viewOwnerAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (viewOwnerAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "view_owner" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGTableOwner: &spec.PGTableOwnerState{Schema: req.Schema, Table: req.Qualifiers["table"], Target: spec.PGTableOwnerTarget{Kind: req.Qualifiers["kind"], Name: req.Name}, SourceKind: "v", SourceKindKnown: true}}, nil
+}
+
+func TestMCPPGViewOwnerTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := viewOwnerAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER VIEW app.mv OWNER TO missing_role", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"owner_role_absent"`) || !strings.Contains(string(body), `"ddl.pg.alter_view.owner.valid"`) || strings.Contains(string(body), "PGTableOwner") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type alterViewOptionsAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (alterViewOptionsAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "alter_view_options" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGDropViewState: &spec.PGDropViewState{Target: spec.PGDestructiveTableTarget{Table: spec.Table{Schema: req.Schema, Name: req.Name}}, Kind: "v"}}, nil
+}
+
+func TestMCPPGAlterViewOptionsTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := alterViewOptionsAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER VIEW app.mv RESET (security_invoker=true)", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"view_option_reset_has_value"`) || !strings.Contains(string(body), `"ddl.pg.alter_view.options.valid"`) || strings.Contains(string(body), "PGDropViewState") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}

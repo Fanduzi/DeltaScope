@@ -476,11 +476,11 @@ func parseCorpusUint(text string) (uint64, bool) {
 // `schema.name`. An unkeyed identity or a nil sequence map is unvouched,
 // never a silent absent; non-sequence lookups stay unavailable.
 func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
-	if request.Type == "drop_view_target" {
+	if request.Type == "drop_view_target" || request.Type == "alter_view_options" {
 		for _, seed := range p.pgDropViewStates {
 			if seed.Schema == request.Schema && seed.Name == request.Name {
 				target := spec.PGDestructiveTableTarget{Table: spec.Table{Schema: seed.Schema, Name: seed.Name}}
-				return &spec.ObjectSnapshot{PGDropViewState: &spec.PGDropViewState{Target: target, Kind: seed.Kind, DependentView: seed.DependentView}}, nil
+				return &spec.ObjectSnapshot{PGDropViewState: &spec.PGDropViewState{Target: target, Kind: seed.Kind, DependentView: seed.DependentView, CheckOption: seed.CheckOption}}, nil
 			}
 		}
 		return nil, nil
@@ -594,16 +594,16 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 		}
 		return nil, nil
 	}
-	if request.Type == "table_owner" {
+	if request.Type == "table_owner" || request.Type == "view_owner" {
 		for _, seed := range p.pgTableOwners {
 			if seed.Schema == request.Schema && seed.Table == request.Qualifiers["table"] && seed.Kind == request.Qualifiers["kind"] && seed.Name == request.Name {
-				facts := &spec.PGTableOwnerState{Schema: seed.Schema, Table: seed.Table, Target: spec.PGTableOwnerTarget{Kind: seed.Kind, Name: seed.Name}, Exists: seed.Exists, Same: seed.Same}
+				facts := &spec.PGTableOwnerState{Schema: seed.Schema, Table: seed.Table, Target: spec.PGTableOwnerTarget{Kind: seed.Kind, Name: seed.Name}, Exists: seed.Exists, Same: seed.Same, SourceKind: seed.SourceKind, SourceKindKnown: seed.SourceKindKnown}
 				return &spec.ObjectSnapshot{PGTableOwner: facts}, nil
 			}
 		}
 		return nil, nil
 	}
-	if request.Type == "table_namespace" {
+	if request.Type == "table_namespace" || request.Type == "view_namespace" {
 		for _, seed := range p.pgTableNamespaces {
 			if seed.Schema == request.Schema && seed.Table == request.Qualifiers["table"] && seed.Action == request.Qualifiers["action"] && seed.Destination == request.Name {
 				facts := spec.PGTableNamespace(seed)

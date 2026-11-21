@@ -6,6 +6,7 @@ type PGDropViewState struct {
 	Target        PGDestructiveTableTarget
 	Kind          string
 	DependentView bool
+	CheckOption   bool
 }
 
 // PGDropViewLookup returns the exact qualified target of a single DROP VIEW.
