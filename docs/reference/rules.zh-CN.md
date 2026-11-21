@@ -783,6 +783,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
+| `ddl.pg.create_schema.target.valid` | 检查 PostgreSQL 17 创建 schema 的名称、属主存在性和缺失保护。 | blocker | 是 |
 | `ddl.pg.create_schema.notice` | `CREATE SCHEMA` 创建新的命名空间——信息性通知 | notice | 否 |
 | `ddl.pg.drop_schema.advisory` | `DROP SCHEMA` 移除 schema，建议审查依赖对象 | notice | 否 |
 | `ddl.pg.drop_schema.cascade.warn` | `DROP SCHEMA ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
@@ -1452,6 +1453,8 @@ v0.100.0 新增 PostgreSQL 排序规则对象生命周期审核规则。这些�
 | 规则 ID | 检查描述 | 默认级别 | 是否需要元数据 |
 |---------|---------|:--------:|:--------------:|
 | `ddl.pg.create_collation.notice` | CREATE COLLATION 触发信息通知 | notice | 否 |
+| `ddl.pg.alter_collation.change.target.valid` | 检查 PostgreSQL 17 排序规则的改名冲突、迁移 schema 和属主。 | blocker | 是 |
+| `ddl.pg.alter_collation.refresh.target.valid` | 检查 PostgreSQL 17 排序规则刷新目标，以及已支持的提供程序和区域设置下的版本存在性。 | blocker | 是 |
 | `ddl.pg.alter_collation.notice` | ALTER COLLATION（重命名/属主/模式）触发信息通知 | notice | 否 |
 | `ddl.pg.drop_collation.warn` | DROP COLLATION 触发结构销毁警告 | warning | 否 |
 

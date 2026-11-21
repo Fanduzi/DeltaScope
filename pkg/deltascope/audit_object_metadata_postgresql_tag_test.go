@@ -752,3 +752,60 @@ func TestAuditPGPartitionConstraintThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing partition-key finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditPGCreateSchemaTargetThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCreateSchema: &spec.PGCreateSchemaState{Target: spec.PGCreateSchemaTarget{Name: "app", Owner: spec.PGTableOwnerTarget{Kind: "named", Name: "absent_role"}}, NameKnown: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE SCHEMA app AUTHORIZATION absent_role`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "app" || provider.objectCalls[len(provider.objectCalls)-1].Type != "pg_create_schema" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_schema.target.valid" && f.Metadata["reason_code"] == "schema_owner_absent" {
+			return
+		}
+	}
+	t.Fatalf("missing CREATE SCHEMA owner finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGCollationRefreshThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCollationRefresh: &spec.PGCollationRefreshState{Target: spec.PGColumnCollation{Schema: "pg_catalog", Name: "default"}, Known: true, Exists: true, Default: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER COLLATION pg_catalog."default" REFRESH VERSION`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "default" || provider.objectCalls[0].Type != "pg_collation_refresh" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_collation.refresh.target.valid" && f.Metadata["reason_code"] == "collation_refresh_database_default" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER COLLATION default-target finding: %+v", result.Statements[0].Findings)
+}
+
+func TestAuditPGCollationChangeThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCollationChange: &spec.PGCollationChangeState{Target: spec.PGCollationChangeTarget{Source: spec.PGColumnCollation{Schema: "app", Name: "source"}, Action: "rename", Destination: "occupied"}, SourceKnown: true, SourceExists: true, DestinationOccupied: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER COLLATION app.source RENAME TO occupied`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "source" || provider.objectCalls[0].Type != "pg_collation_change" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_collation.change.target.valid" && f.Metadata["reason_code"] == "collation_change_destination_occupied" {
+			return
+		}
+	}
+	t.Fatalf("missing ALTER COLLATION namespace collision finding: %+v", result.Statements[0].Findings)
+}

@@ -3,10 +3,13 @@ package spec
 
 // DDL contains the structural metadata extracted from a DDL statement.
 type DDL struct {
-	PGDropViewTargets []PGDestructiveTableTarget `json:"-"`
-	Operation         DDLOperation               `json:"operation,omitempty"`
-	Table             *Table                     `json:"table,omitempty"`
-	View              *ViewDeclaration           `json:"-"`
+	PGCollationChange  *PGCollationChangeTarget   `json:"-"`
+	PGCollationRefresh *PGColumnCollation         `json:"-"`
+	PGCreateSchema     *PGCreateSchemaTarget      `json:"-"`
+	PGDropViewTargets  []PGDestructiveTableTarget `json:"-"`
+	Operation          DDLOperation               `json:"operation,omitempty"`
+	Table              *Table                     `json:"table,omitempty"`
+	View               *ViewDeclaration           `json:"-"`
 	// PGViewOptions retains authored CREATE VIEW options in AST order.
 	PGViewOptions               []PGViewOption      `json:"-"`
 	PGCreateViewOutput          *PGCreateViewOutput `json:"-"`

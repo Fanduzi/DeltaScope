@@ -26,6 +26,12 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 			return p.resolveMaterializedViewExtension(ctx, req)
 		case "materialized_view_options":
 			return p.resolveMaterializedViewOptions(ctx, req)
+		case "pg_collation_change":
+			return p.resolveCollationChange(ctx, req)
+		case "pg_collation_refresh":
+			return p.resolveCollationRefresh(ctx, req)
+		case "pg_create_schema":
+			return p.resolveCreateSchema(ctx, req)
 		case "pg_partition_constraint":
 			return p.resolvePartitionConstraint(ctx, req)
 		case "drop_view_set":

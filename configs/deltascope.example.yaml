@@ -1851,6 +1851,16 @@ rules:
     level: notice
     params:
 
+  ddl.pg.alter_collation.change.target.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.pg.alter_collation.refresh.target.valid:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.pg.alter_collation.notice:
     enabled: true
     level: notice
@@ -2274,6 +2284,11 @@ rules:
   ddl.pg.create_rule.notice:
     enabled: true
     level: notice
+    params:
+
+  ddl.pg.create_schema.target.valid:
+    enabled: true
+    level: blocker
     params:
 
   ddl.pg.create_schema.notice:

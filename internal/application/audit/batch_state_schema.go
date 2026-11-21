@@ -327,6 +327,25 @@ func schemaCreateAttrs(dialect spec.Dialect, version *spec.VersionIdentity, fact
 
 // applyCreateSchema publishes only proven create-arm outcomes.
 func (s *batchState) applyCreateSchema(ctx context.Context, statement spec.Statement) error {
+	if target := statement.DDL.PGCreateSchema; target != nil &&
+		(target.Owner.Kind != "" || strings.HasPrefix(target.Name, "pg_")) {
+		// Catalog checks do not prove CREATE or SET ROLE authorization in the executing session.
+		name := target.Name
+		if name == "" && target.Owner.Kind == "named" {
+			name = target.Owner.Name
+		}
+		if name != "" {
+			s.invalidateSchema(name)
+			return nil
+		}
+		for name, entry := range s.schemaEntries {
+			if entry.state == schemaAbsent {
+				s.invalidateSchema(name)
+			}
+		}
+		s.contaminated = true
+		return nil
+	}
 	name := schemaTargetName(statement.DDL, s.schema)
 	if name == "" {
 		s.contaminated = true

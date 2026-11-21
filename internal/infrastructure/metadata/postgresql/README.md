@@ -45,6 +45,9 @@ comparisons for the member and scope binding.
 | view_default.go | Observes qualified view relation kind and exact user-column existence. |
 | view_owner.go | Observes view kind and owner-role existence in one catalog read. |
 | create_view_output.go | Observes exact PostgreSQL creation namespace, relation kind and ordered user output columns. |
+| create_schema.go | Observes the requested PostgreSQL schema and optional owner without returning resolved role identities. |
+| collation_change.go | Resolves the exact source in the database encoding and observes the requested namespace or owner. |
+| collation_refresh.go | Observes the exact qualified collation for the database encoding and keeps provider versions private. |
 | drop_view.go | Observes exact DROP VIEW relation kind, normal rewrite and row-type column dependencies. |
 | drop_view_set.go | Checks the ordered qualified DROP VIEW list in one catalog read and looks for covered dependencies outside the selection. |
 | destructive_references.go | Observes external foreign keys for the expanded TRUNCATE RESTRICT set and checks ordered partitioned ONLY eligibility and direct foreign-key and rewrite dependencies for DROP RESTRICT over exact target lists. |

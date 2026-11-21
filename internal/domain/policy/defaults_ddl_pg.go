@@ -326,6 +326,7 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.create_schema.target.valid": {Enabled: true, Level: rule.LevelBlocker},
 		"ddl.pg.create_schema.notice": {
 			Enabled: true,
 			Level:   rule.LevelNotice,
@@ -866,6 +867,8 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.alter_collation.change.target.valid":  {Enabled: true, Level: rule.LevelBlocker},
+		"ddl.pg.alter_collation.refresh.target.valid": {Enabled: true, Level: rule.LevelBlocker},
 		"ddl.pg.alter_collation.notice": {
 			Enabled: true,
 			Level:   rule.LevelNotice,

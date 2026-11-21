@@ -50,6 +50,9 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_alter_view_options_rules.go | Checks PostgreSQL 17 ordinary-view SET/RESET targets and option declarations. |
 | postgresql_view_owner_rules.go | Checks PostgreSQL 17 view OWNER TO source, guard and role premises. |
 | postgresql_view_namespace_rules.go | Checks PostgreSQL 17 view and materialized-view rename and schema-move targets and namespace collisions. |
+| postgresql_create_schema_target_rules.go | Checks observed PostgreSQL 17 schema destination and owner facts. |
+| postgresql_collation_change_rules.go | Checks qualified PostgreSQL 17 collation rename, namespace and owner premises. |
+| postgresql_collation_refresh_rules.go | Checks qualified PostgreSQL 17 collation refresh targets and supported version presence facts. |
 | postgresql_drop_view_target_rules.go | Checks qualified PostgreSQL 17 DROP VIEW targets, guarded absence and direct rewrite or row-type column dependencies under RESTRICT. |
 | postgresql_destructive_table_rules.go | Checks exact DROP/TRUNCATE targets and guarded absence, and observes known direct DROP RESTRICT refusals. |
 | postgresql_create_view_options_rules.go | Checks declarations for PostgreSQL 17 CREATE VIEW options, including CHECK OPTION conflicts. |

@@ -1048,3 +1048,81 @@ func TestHTTPPGPartitionConstraintTarget(t *testing.T) {
 		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
 	}
 }
+
+func TestHTTPPGCreateSchemaTargetTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCreateSchema: &spec.PGCreateSchemaState{Target: spec.PGCreateSchemaTarget{Name: "app", Owner: spec.PGTableOwnerTarget{Kind: "named", Name: "absent_role"}}, NameKnown: true}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"CREATE SCHEMA app AUTHORIZATION absent_role","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.create_schema.target.valid"`) || !strings.Contains(body, `"schema_owner_absent"`) || strings.Contains(body, "PGCreateSchema") || len(client.objectCalls) < 1 || client.objectCalls[len(client.objectCalls)-1].Name != "app" || client.objectCalls[len(client.objectCalls)-1].Type != "pg_create_schema" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}
+
+func TestHTTPPGCollationRefreshTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCollationRefresh: &spec.PGCollationRefreshState{Target: spec.PGColumnCollation{Schema: "pg_catalog", Name: "default"}, Known: true, Exists: true, Default: true}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER COLLATION pg_catalog.\"default\" REFRESH VERSION","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter_collation.refresh.target.valid"`) || !strings.Contains(body, `"collation_refresh_database_default"`) || strings.Contains(body, "PGCollationRefresh") || len(client.objectCalls) != 1 || client.objectCalls[0].Name != "default" || client.objectCalls[0].Type != "pg_collation_refresh" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}
+
+func TestHTTPPGCollationChangeTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGCollationChange: &spec.PGCollationChangeState{Target: spec.PGCollationChangeTarget{Source: spec.PGColumnCollation{Schema: "app", Name: "source"}, Action: "rename", Destination: "occupied"}, SourceKnown: true, SourceExists: true, DestinationOccupied: true}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER COLLATION app.source RENAME TO occupied","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter_collation.change.target.valid"`) || !strings.Contains(body, `"collation_change_destination_occupied"`) || strings.Contains(body, "PGCollationChange") || len(client.objectCalls) != 1 || client.objectCalls[0].Name != "source" || client.objectCalls[0].Type != "pg_collation_change" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}

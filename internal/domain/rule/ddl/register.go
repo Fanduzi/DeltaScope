@@ -824,6 +824,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 			return newSchemaEncryptionApplicabilityRule(ruleIDDatabaseEncryptionApplicability, rule.LevelBlocker, cfg)
 		}},
 		// PostgreSQL create schema rule.
+		{ruleID: ruleIDPGCreateSchemaTargetValid, construct: newPGCreateSchemaTargetRule},
 		{ruleID: ruleIDPGCreateSchemaNotice, construct: newCreateSchemaNoticeRule},
 		// PostgreSQL policy lifecycle rules (PG-only).
 		{ruleID: ruleIDPGCreatePolicyNotice, construct: newCreatePolicyNoticeRule},
@@ -904,6 +905,8 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGDropRuleWarn, construct: newDropRuleWarnRule},
 		// PostgreSQL collation lifecycle rules (PG-only).
 		{ruleID: ruleIDPGCreateCollationNotice, construct: newCreateCollationNoticeRule},
+		{ruleID: ruleIDPGCollationChangeValid, construct: newPGCollationChangeRule},
+		{ruleID: ruleIDPGCollationRefreshValid, construct: newPGCollationRefreshRule},
 		{ruleID: ruleIDPGAlterCollationNotice, construct: newAlterCollationNoticeRule},
 		{ruleID: ruleIDPGDropCollationWarn, construct: newDropCollationWarnRule},
 		// PostgreSQL statistics lifecycle rules (PG-only).

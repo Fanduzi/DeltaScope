@@ -40,7 +40,7 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
 		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
-		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGPartitionConstraints) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
+		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGCollationChanges) == 0 && len(tc.Metadata.PGCollationRefreshes) == 0 && len(tc.Metadata.PGCreateSchemas) == 0 && len(tc.Metadata.PGPartitionConstraints) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
@@ -49,6 +49,9 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 type corpusFixtureMetadataProvider struct {
 	pgMaterializedViewExtensions []corpusPGMaterializedViewExtensionState
 	pgViewDefaults               []corpusPGViewDefaultState
+	pgCollationChanges           []corpusPGCollationChange
+	pgCollationRefreshes         []corpusPGCollationRefresh
+	pgCreateSchemas              []corpusPGCreateSchema
 	pgPartitionConstraints       []corpusPGPartitionConstraint
 	pgDropViewStates             []corpusPGDropViewState
 	instance                     *spec.InstanceFacts
@@ -110,6 +113,9 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 		pgDropConstraintReferences:   metadata.PGDropConstraintReferences,
 		pgDestructiveReferences:      metadata.PGDestructiveReferences,
 		pgRefreshStates:              metadata.PGRefreshStates,
+		pgCollationChanges:           metadata.PGCollationChanges,
+		pgCollationRefreshes:         metadata.PGCollationRefreshes,
+		pgCreateSchemas:              metadata.PGCreateSchemas,
 		pgPartitionConstraints:       metadata.PGPartitionConstraints,
 		pgDropViewStates:             metadata.PGDropViewStates,
 		pgMaterializedViewExtensions: metadata.PGMaterializedViewExtensions,
@@ -495,6 +501,38 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 			state := spec.PGViewDefaultState(entry)
 			if state.MatchesViewDefault(&request) {
 				return &spec.ObjectSnapshot{PGViewDefault: &state}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_collation_change" && request.Qualifiers["action"] == "rename" {
+		for _, seed := range p.pgCollationChanges {
+			if seed.Schema == request.Schema && seed.Name == request.Name && seed.Destination == request.Qualifiers["destination"] {
+				return &spec.ObjectSnapshot{PGCollationChange: &spec.PGCollationChangeState{
+					Target:      spec.PGCollationChangeTarget{Source: spec.PGColumnCollation{Schema: seed.Schema, Name: seed.Name}, Action: "rename", Destination: seed.Destination},
+					SourceKnown: true, SourceExists: true, DestinationOccupied: true,
+				}}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_collation_refresh" {
+		for _, seed := range p.pgCollationRefreshes {
+			if seed.Schema == request.Schema && seed.Name == request.Name {
+				return &spec.ObjectSnapshot{PGCollationRefresh: &spec.PGCollationRefreshState{
+					Target: spec.PGColumnCollation{Schema: seed.Schema, Name: seed.Name}, Known: true, Exists: seed.Exists, Default: seed.Default,
+				}}, nil
+			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_create_schema" {
+		for _, seed := range p.pgCreateSchemas {
+			if seed.Name == request.Name && seed.Owner == request.Qualifiers["role_name"] && request.Qualifiers["role_kind"] == "named" {
+				return &spec.ObjectSnapshot{PGCreateSchema: &spec.PGCreateSchemaState{
+					Target:    spec.PGCreateSchemaTarget{Name: seed.Name, Owner: spec.PGTableOwnerTarget{Kind: "named", Name: seed.Owner}},
+					NameKnown: true, Exists: seed.Exists, OwnerExists: seed.OwnerExists,
+				}}, nil
 			}
 		}
 		return nil, nil

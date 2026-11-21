@@ -5,6 +5,9 @@ import "strings"
 
 // Metadata carries optional non-SQL facts for one statement evaluation.
 type Metadata struct {
+	PGCollationChange           *PGCollationChangeState           `json:"-"`
+	PGCollationRefresh          *PGCollationRefreshState          `json:"-"`
+	PGCreateSchema              *PGCreateSchemaState              `json:"-"`
 	PGPartitionConstraint       *PGPartitionConstraintState       `json:"-"`
 	PGDropViewSet               *PGDropViewSetState               `json:"-"`
 	PGCreateViewTarget          *PGCreateViewTarget               `json:"-"`
@@ -807,6 +810,9 @@ const (
 
 // ObjectSnapshot carries the metadata-validated state of one non-table database object.
 type ObjectSnapshot struct {
+	PGCollationChange           *PGCollationChangeState           `json:"-"`
+	PGCollationRefresh          *PGCollationRefreshState          `json:"-"`
+	PGCreateSchema              *PGCreateSchemaState              `json:"-"`
 	PGPartitionConstraint       *PGPartitionConstraintState       `json:"-"`
 	PGDropViewSet               *PGDropViewSetState               `json:"-"`
 	PGCreateViewTarget          *PGCreateViewTarget               `json:"-"`

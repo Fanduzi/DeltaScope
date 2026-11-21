@@ -150,12 +150,17 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 	case pg_query.ObjectType_OBJECT_RULE:
 		return extractRenameRule(statement, stmt)
 	case pg_query.ObjectType_OBJECT_COLLATION:
-		objectName := renameObjectCollationName(stmt)
+		target := pgCollationName(stmt.GetObject())
+		if target.Name == "" {
+			target.Name = renameObjectCollationName(stmt)
+		}
+		objectName := target.Name
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterCollation,
-			ObjectName: objectName,
-			ObjectType: "collation",
-			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+			PGCollationChange: &spec.PGCollationChangeTarget{Source: target, Action: "rename", Destination: stmt.GetNewname(), Owner: spec.PGTableOwnerTarget{}},
+			Operation:         spec.DDLOperationAlterCollation,
+			ObjectName:        objectName,
+			ObjectType:        "collation",
+			Options:           map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_STATISTIC_EXT:
@@ -366,11 +371,16 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 		return statement
 	}
 	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_COLLATION {
-		objectName := alterObjectSchemaObjectName(stmt)
+		target := pgCollationName(stmt.GetObject())
+		if target.Name == "" {
+			target.Name = alterObjectSchemaObjectName(stmt)
+		}
+		objectName := target.Name
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterCollation,
-			ObjectName: objectName,
-			ObjectType: "collation",
+			PGCollationChange: &spec.PGCollationChangeTarget{Source: target, Action: "set_schema", Destination: stmt.GetNewschema(), Owner: spec.PGTableOwnerTarget{}},
+			Operation:         spec.DDLOperationAlterCollation,
+			ObjectName:        objectName,
+			ObjectType:        "collation",
 			Options: map[string]string{
 				"action":     "set_schema",
 				"new_schema": stmt.GetNewschema(),
@@ -1661,12 +1671,17 @@ func extractAlterOwnerStmt(statement spec.Statement, stmt *pg_query.AlterOwnerSt
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_COLLATION:
-		objectName := alterOwnerObjectName(stmt)
+		target := pgCollationName(stmt.GetObject())
+		if target.Name == "" {
+			target.Name = alterOwnerObjectName(stmt)
+		}
+		objectName := target.Name
 		statement.DDL = &spec.DDL{
-			Operation:  spec.DDLOperationAlterCollation,
-			ObjectName: objectName,
-			ObjectType: "collation",
-			Options:    map[string]string{"action": "set_owner", "owner": owner},
+			PGCollationChange: &spec.PGCollationChangeTarget{Source: target, Action: "set_owner", Destination: "", Owner: pgRoleSelection(stmt.GetNewowner())},
+			Operation:         spec.DDLOperationAlterCollation,
+			ObjectName:        objectName,
+			ObjectType:        "collation",
+			Options:           map[string]string{"action": "set_owner", "owner": owner},
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_STATISTIC_EXT:
@@ -1967,6 +1982,15 @@ func extractAlterStatsStmt(statement spec.Statement, stmt *pg_query.AlterStatsSt
 		Options:    map[string]string{"action": "set_statistics_target"},
 	}
 	return statement
+}
+
+func pgCollationName(node *pg_query.Node) spec.PGColumnCollation {
+	parts := node.GetList().GetItems()
+	out := spec.PGColumnCollation{Name: lastStringFromNodes(parts)}
+	if len(parts) == 2 {
+		out.Schema = parts[0].GetString_().GetSval()
+	}
+	return out
 }
 
 func renameObjectCollationName(stmt *pg_query.RenameStmt) string {

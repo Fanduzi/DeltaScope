@@ -234,6 +234,12 @@ func summaryForRule(ruleID string) string {
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	switch ruleID {
+	case "ddl.pg.create_schema.target.valid":
+		return "Checks PostgreSQL 17 schema creation identity, authored owner and guarded destination premises."
+	case "ddl.pg.alter_collation.refresh.target.valid":
+		return "Checks exact PostgreSQL 17 collation refresh target identity in the database encoding."
+	case "ddl.pg.alter_collation.change.target.valid":
+		return "Checks qualified PostgreSQL 17 collation rename, namespace and owner targets."
 	case "ddl.pg.create_view.output.valid":
 		return "Checks exact PostgreSQL 17 CREATE VIEW targets and literal output compatibility."
 	case "ddl.pg.alter_view.column_default.valid":
@@ -645,7 +651,8 @@ func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 	case "ddl.pg.alter.constraint_columns.valid", "ddl.pg.create_view.output.valid",
 		"ddl.pg.refresh_materialized_view.target.valid", "ddl.pg.drop_view.target.valid", "ddl.pg.alter_view.namespace.valid",
 		"ddl.pg.alter_view.owner.valid", "ddl.pg.alter_view.options.valid", "ddl.pg.alter_view.column_default.valid",
-		"ddl.pg.alter_materialized_view.options.valid", "ddl.pg.alter_materialized_view.extension.valid":
+		"ddl.pg.alter_materialized_view.options.valid", "ddl.pg.alter_materialized_view.extension.valid",
+		"ddl.pg.create_schema.target.valid", "ddl.pg.alter_collation.refresh.target.valid", "ddl.pg.alter_collation.change.target.valid":
 		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true
 	case "ddl.pg.alter.column.storage.valid", "ddl.pg.alter.column.compression.valid", "ddl.pg.alter.column.statistics.target.valid", "ddl.pg.alter.column.statistics.clamp.warn", "ddl.pg.alter.column.options.valid", "ddl.alter.drop_column.exists.require", "ddl.pg.alter.drop_column.advisory":
 		return []MetadataKind{MetadataKindTargetTable, MetadataKindInstance}, true

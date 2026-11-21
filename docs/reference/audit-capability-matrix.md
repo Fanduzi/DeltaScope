@@ -644,6 +644,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.create_schema.target.valid` | Checks PostgreSQL 17 schema creation namespace and owner premises | Gap | ✓ | blocker |
 | `ddl.pg.create_schema.notice` | `CREATE SCHEMA` creates a new namespace — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.drop_schema.advisory` | `DROP SCHEMA` removes a schema — advises review of dependent objects | ✓ | ✗ | notice |
 | `ddl.pg.drop_schema.cascade.warn` | `DROP SCHEMA ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
@@ -1198,6 +1199,8 @@ The CREATE VIEW option check needs an observed PostgreSQL 17 version. CHECK OPTI
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|
 | `ddl.pg.create_collation.notice` | CREATE COLLATION notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_collation.change.target.valid` | Checks qualified PostgreSQL 17 collation namespace and owner changes | Gap | ✓ | blocker |
+| `ddl.pg.alter_collation.refresh.target.valid` | Checks exact PostgreSQL 17 collation refresh and version tracking premises | Gap | ✓ | blocker |
 | `ddl.pg.alter_collation.notice` | ALTER COLLATION notice | ✓ | ✗ | notice |
 | `ddl.pg.drop_collation.warn` | DROP COLLATION warning | ✓ | ✗ | warning |
 | `ddl.pg.create_statistics.notice` | CREATE STATISTICS notice | ✓ | ✗ | notice |

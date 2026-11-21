@@ -1,0 +1,1 @@
+ALTER COLLATION pg_catalog."default" REFRESH VERSION;

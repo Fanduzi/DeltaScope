@@ -74,6 +74,15 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractCompositeTypeStmt(statement, node.CompositeTypeStmt), nil
 	case *pg_query.Node_CreateDomainStmt:
 		return extractCreateDomainStmt(statement, node.CreateDomainStmt), nil
+	case *pg_query.Node_AlterCollationStmt:
+		names := node.AlterCollationStmt.GetCollname()
+		target := &spec.PGColumnCollation{Name: lastStringFromNodes(names)}
+		if len(names) == 2 {
+			target.Schema = names[0].GetString_().GetSval()
+		}
+		statement.DDL = &spec.DDL{Operation: spec.DDLOperationAlterCollation, ObjectType: "collation", ObjectName: target.Name,
+			PGCollationRefresh: target, Options: map[string]string{"action": "refresh_version"}}
+		return statement, nil
 	case *pg_query.Node_AlterDomainStmt:
 		return extractAlterDomainStmt(statement, node.AlterDomainStmt), nil
 	case *pg_query.Node_CreateExtensionStmt:

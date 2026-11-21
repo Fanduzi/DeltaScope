@@ -1066,9 +1066,10 @@ func TestPGExtractorSchemaLifecycleUnsupportedBoundaries(t *testing.T) {
 		Name            string
 		SQL             string
 		ExpectedFeature string
+		ExpectedSchema  string
 	}{
-		{Name: "CREATE SCHEMA AUTHORIZATION", SQL: "CREATE SCHEMA AUTHORIZATION app_owner", ExpectedFeature: "create_schema_authorization"},
-		{Name: "CREATE SCHEMA name AUTHORIZATION", SQL: "CREATE SCHEMA app AUTHORIZATION app_owner", ExpectedFeature: "create_schema_authorization"},
+		{Name: "CREATE SCHEMA AUTHORIZATION", SQL: "CREATE SCHEMA AUTHORIZATION app_owner"},
+		{Name: "CREATE SCHEMA name AUTHORIZATION", SQL: "CREATE SCHEMA app AUTHORIZATION app_owner", ExpectedSchema: "app"},
 		{Name: "CREATE SCHEMA nested table", SQL: "CREATE SCHEMA app CREATE TABLE users (id bigint)", ExpectedFeature: "create_schema_nested_objects"},
 	}
 
@@ -1086,6 +1087,13 @@ func TestPGExtractorSchemaLifecycleUnsupportedBoundaries(t *testing.T) {
 			stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
 			if extractErr != nil {
 				t.Fatalf("extract: %v", extractErr)
+			}
+			if tc.ExpectedFeature == "" {
+				want := spec.PGCreateSchemaTarget{Name: tc.ExpectedSchema, Owner: spec.PGTableOwnerTarget{Kind: "named", Name: "app_owner"}}
+				if stmt.Unsupported != nil || stmt.DDL == nil || stmt.DDL.PGCreateSchema == nil || *stmt.DDL.PGCreateSchema != want {
+					t.Fatalf("expected exact schema creation target %+v, got %+v", want, stmt)
+				}
+				return
 			}
 			if stmt.Unsupported == nil {
 				t.Fatal("expected unsupported statement")

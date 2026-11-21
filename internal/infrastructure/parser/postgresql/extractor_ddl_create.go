@@ -90,8 +90,12 @@ func extractCreateSchemaStmt(statement spec.Statement, stmt *pg_query.CreateSche
 	if stmt == nil {
 		return unsupportedStatement(statement, "create_schema", "postgresql create schema statement payload is missing")
 	}
+	target := &spec.PGCreateSchemaTarget{Name: stmt.GetSchemaname()}
 	if stmt.GetAuthrole() != nil {
-		return unsupportedStatement(statement, "create_schema_authorization", "postgresql CREATE SCHEMA AUTHORIZATION is unsupported")
+		target.Owner = pgRoleSelection(stmt.GetAuthrole())
+		if !target.Owner.Valid() {
+			return unsupportedStatement(statement, "create_schema_authorization", "postgresql schema owner is unmodeled")
+		}
 	}
 	if len(stmt.GetSchemaElts()) > 0 {
 		return unsupportedStatement(statement, "create_schema_nested_objects", "postgresql CREATE SCHEMA with nested objects is unsupported")
@@ -101,10 +105,11 @@ func extractCreateSchemaStmt(statement spec.Statement, stmt *pg_query.CreateSche
 		options["if_not_exists"] = "true"
 	}
 	statement.DDL = &spec.DDL{
-		Operation:  spec.DDLOperationCreateSchema,
-		ObjectName: stmt.GetSchemaname(),
-		ObjectType: "schema",
-		Options:    options,
+		PGCreateSchema: target,
+		Operation:      spec.DDLOperationCreateSchema,
+		ObjectName:     stmt.GetSchemaname(),
+		ObjectType:     "schema",
+		Options:        options,
 	}
 	return statement
 }

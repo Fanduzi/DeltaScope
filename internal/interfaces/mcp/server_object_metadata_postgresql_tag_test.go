@@ -1279,3 +1279,108 @@ func TestMCPPGPartitionConstraintTarget(t *testing.T) {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }
+
+type createSchemaTargetAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (createSchemaTargetAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_create_schema" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGCreateSchema: &spec.PGCreateSchemaState{Target: spec.PGCreateSchemaTarget{Name: "app", Owner: spec.PGTableOwnerTarget{Kind: "named", Name: "absent_role"}}, NameKnown: true}}, nil
+}
+
+func TestMCPPGCreateSchemaTargetTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := createSchemaTargetAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "CREATE SCHEMA app AUTHORIZATION absent_role", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"schema_owner_absent"`) || !strings.Contains(string(body), `"ddl.pg.create_schema.target.valid"`) || strings.Contains(string(body), "PGCreateSchema") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type collationRefreshAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (collationRefreshAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_collation_refresh" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGCollationRefresh: &spec.PGCollationRefreshState{Target: spec.PGColumnCollation{Schema: req.Schema, Name: req.Name}, Known: true, Exists: true, Default: true}}, nil
+}
+
+func TestMCPPGCollationRefreshTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := collationRefreshAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER COLLATION pg_catalog.\"default\" REFRESH VERSION", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"collation_refresh_database_default"`) || !strings.Contains(string(body), `"ddl.pg.alter_collation.refresh.target.valid"`) || strings.Contains(string(body), "PGCollationRefresh") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
+type collationChangeAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (collationChangeAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "pg_collation_change" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{PGCollationChange: &spec.PGCollationChangeState{Target: spec.PGCollationChangeTarget{Source: spec.PGColumnCollation{Schema: "app", Name: "source"}, Action: "rename", Destination: "occupied"}, SourceKnown: true, SourceExists: true, DestinationOccupied: true}}, nil
+}
+
+func TestMCPPGCollationChangeTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := collationChangeAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER COLLATION app.source RENAME TO occupied", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"collation_change_destination_occupied"`) || !strings.Contains(string(body), `"ddl.pg.alter_collation.change.target.valid"`) || strings.Contains(string(body), "PGCollationChange") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}

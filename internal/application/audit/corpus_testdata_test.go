@@ -169,7 +169,30 @@ type corpusPGPartitionConstraint struct {
 	Key     string   `yaml:"key"`
 }
 
+type corpusPGCollationRefresh struct {
+	Schema  string `yaml:"schema"`
+	Name    string `yaml:"name"`
+	Exists  bool   `yaml:"exists"`
+	Default bool   `yaml:"default"`
+}
+
+type corpusPGCreateSchema struct {
+	Name        string `yaml:"name"`
+	Owner       string `yaml:"owner"`
+	OwnerExists bool   `yaml:"owner_exists"`
+	Exists      bool   `yaml:"exists"`
+}
+
+type corpusPGCollationChange struct {
+	Schema      string `yaml:"schema"`
+	Name        string `yaml:"name"`
+	Destination string `yaml:"destination"`
+}
+
 type corpusMetadata struct {
+	PGCollationChanges           []corpusPGCollationChange                `yaml:"pg_collation_changes,omitempty"`
+	PGCollationRefreshes         []corpusPGCollationRefresh               `yaml:"pg_collation_refreshes,omitempty"`
+	PGCreateSchemas              []corpusPGCreateSchema                   `yaml:"pg_create_schemas,omitempty"`
 	PGPartitionConstraints       []corpusPGPartitionConstraint            `yaml:"pg_partition_constraints,omitempty"`
 	PGMaterializedViewExtensions []corpusPGMaterializedViewExtensionState `yaml:"pg_materialized_view_extensions,omitempty"`
 	PGViewDefaults               []corpusPGViewDefaultState               `yaml:"pg_view_defaults,omitempty"`

@@ -109,6 +109,9 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | postgresql_view_owner_metadata.go | Binds fresh exact view OWNER TO source and observed role facts. |
 | postgresql_view_namespace_metadata.go | Binds fresh catalog source and destination facts for qualified view rename and schema moves. |
 | postgresql_create_view_output_metadata.go | Binds the fresh qualified PostgreSQL view target and ordered existing columns. |
+| postgresql_create_schema_metadata.go | Binds PostgreSQL 17 creation namespace and role facts before earlier DDL can change them. |
+| postgresql_collation_change_metadata.go | Binds fresh PostgreSQL collation rename, schema move and owner facts. |
+| postgresql_collation_refresh_metadata.go | Binds fresh collation refresh target facts. |
 | postgresql_drop_view_metadata.go | Binds exact DROP VIEW targets and dependency observations for single and ordered targets, and binds ALTER VIEW or ALTER MATERIALIZED VIEW option facts. |
 | postgresql_destructive_table_metadata.go | Binds ordered PostgreSQL 17 DROP/TRUNCATE target identities and private RESTRICT dependency observations. |
 | postgresql_table_persistence_metadata.go | Binds private PG17 persistence transition evidence after exact target freshness checks |

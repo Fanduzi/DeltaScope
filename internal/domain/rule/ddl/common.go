@@ -393,7 +393,8 @@ const (
 	ruleIDDatabaseSystemModifyForbid      = "ddl.database.system.modify.forbid"
 	ruleIDDatabaseEncryptionApplicability = "ddl.database.option.encryption.applicability"
 	// PostgreSQL create schema rule.
-	ruleIDPGCreateSchemaNotice = "ddl.pg.create_schema.notice"
+	ruleIDPGCreateSchemaTargetValid = "ddl.pg.create_schema.target.valid"
+	ruleIDPGCreateSchemaNotice      = "ddl.pg.create_schema.notice"
 	// PostgreSQL policy lifecycle rules (PG-only).
 	ruleIDPGCreatePolicyNotice    = "ddl.pg.create_policy.notice"
 	ruleIDPGAlterPolicyNotice     = "ddl.pg.alter_policy.notice"
@@ -475,6 +476,8 @@ const (
 	ruleIDPGDropRuleWarn     = "ddl.pg.drop_rule.warn"
 
 	ruleIDPGCreateCollationNotice = "ddl.pg.create_collation.notice"
+	ruleIDPGCollationChangeValid  = "ddl.pg.alter_collation.change.target.valid"
+	ruleIDPGCollationRefreshValid = "ddl.pg.alter_collation.refresh.target.valid"
 	ruleIDPGAlterCollationNotice  = "ddl.pg.alter_collation.notice"
 	ruleIDPGDropCollationWarn     = "ddl.pg.drop_collation.warn"
 

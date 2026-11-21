@@ -846,6 +846,7 @@ These rules guard against risky PostgreSQL object lifecycle DDL operations — s
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.create_schema.target.valid` | Checks PostgreSQL 17 schema creation names, owner existence and guarded destinations. | blocker | Yes |
 | `ddl.pg.create_schema.notice` | `CREATE SCHEMA` creates a new namespace — informational notice | notice | No |
 | `ddl.pg.drop_schema.advisory` | `DROP SCHEMA` removes a schema — advises review of dependent objects | notice | No |
 | `ddl.pg.drop_schema.cascade.warn` | `DROP SCHEMA ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
@@ -1593,6 +1594,8 @@ v0.100.0 adds lifecycle audit rules for PostgreSQL collation objects. These rule
 | Rule ID | Check Description | Default Level | Metadata Required |
 |---------|-------------------|:-------------:|:-----------------:|
 | `ddl.pg.create_collation.notice` | CREATE COLLATION emits an informational notice | notice | No |
+| `ddl.pg.alter_collation.change.target.valid` | Checks qualified PostgreSQL 17 collation rename, namespace and owner premises. | blocker | Yes |
+| `ddl.pg.alter_collation.refresh.target.valid` | Checks PostgreSQL 17 collation refresh identity and version presence for supported providers and locales. | blocker | Yes |
 | `ddl.pg.alter_collation.notice` | ALTER COLLATION (rename/owner/schema) emits an informational notice | notice | No |
 | `ddl.pg.drop_collation.warn` | DROP COLLATION emits a destructure warning | warning | No |
 

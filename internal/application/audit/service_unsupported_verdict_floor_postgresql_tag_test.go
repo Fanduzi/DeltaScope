@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
@@ -62,6 +63,9 @@ func TestAuditUnsupportedStatementPreservesSupportedSiblingsAndFloorsPass(t *tes
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "CREATE SCHEMA staging; SELECT 1;",
 		Dialect: spec.DialectPostgreSQL,
+		ConfigPath: writeIsolatedPolicy(t, map[string]policy.RulePolicy{
+			"ddl.pg.create_schema.notice": {Enabled: true, Level: "notice"},
+		}),
 	})
 	if !errors.Is(err, ErrUnsupportedStatement) {
 		t.Fatalf("expected unsupported statement sentinel, got %v", err)
