@@ -1969,7 +1969,14 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137191501388) passed at t
 
 Nineteen selectors bind twelve PostgreSQL 17 subactions across four CREATE TABLE rows. The identity cells point to exact positive or refusal cases with native catalog witnesses. The EXCLUDE and partition cases preserve their explicit unsupported outcomes, and the PostgreSQL 17 table-level named NOT NULL form retains its parser boundary. The selectors reuse the T36 receipt at `10354d2b`, which passed 214 cases and 5,903 assertions. Row and cell classifications retain their earlier values. [T36](../../testdata/ddl-golden/T36.json)
 
-Verification on the fixed F08-EVIDENCE candidate is pending.
+Delivered at `fa051151f86e13ea91d86bf02c07e917abc8fd4f`. All 50 canonical tasks passed with 5,110 cases and
+120,926 assertions. T36 passed 214 cases and 5,903 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/45022063452/job/137206951336),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/45022063452/job/137206951111),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/45022063452/job/137206951258),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/45022063375/job/137206951204),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137207015444) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
