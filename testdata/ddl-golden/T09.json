@@ -427,6 +427,31 @@
             "params": {}
           }
         }
+      },
+      "f04-index-declarations": {
+        "enable": {
+          "ddl.drop_index.foreign_key.warn": {
+            "level": "warning"
+          },
+          "ddl.alter.drop_index.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.alter.add_index.exists.forbid": {
+            "level": "blocker"
+          },
+          "ddl.create_index.columns.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.index.advanced.compatibility.require": {
+            "level": "blocker",
+            "params": {
+              "required": true,
+              "features": [
+                "prefix_length"
+              ]
+            }
+          }
+        }
       }
     }
   },
@@ -13998,6 +14023,4795 @@
           ]
         }
       ]
+    },
+    {
+      "id": "f04-mysql57-local-sole-fk-backup",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX support_key ON f04_mysql57_0.c",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "f04_mysql57_0",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql57_0",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_0'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_0'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql57_0",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql57_0.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql57_0.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql57_0.p(k));CREATE TABLE f04_mysql57_0.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql57_0.p(k));CREATE TABLE f04_mysql57_0.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql57_0.p VALUES (7,11);INSERT INTO f04_mysql57_0.c VALUES (7,11);INSERT INTO f04_mysql57_0.alt VALUES (7,11);INSERT INTO f04_mysql57_0.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX support_key ON f04_mysql57_0.c"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.drop_index.foreign_key.warn",
+            "level": "warning"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "5.7.44"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_0.c",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_0' AND TABLE_NAME='c' AND INDEX_NAME='support_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_0'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX support_key ON f04_mysql57_0.c",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1553"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_0.c",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_0' AND TABLE_NAME='c' AND INDEX_NAME='support_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_0'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql57_0",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_0'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql57-parent-sole-fk-backup",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX ref_key ON f04_mysql57_1.p",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "f04_mysql57_1",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql57_1",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_1'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_1'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql57_1",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql57_1.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql57_1.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql57_1.p(k));CREATE TABLE f04_mysql57_1.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql57_1.p(k));CREATE TABLE f04_mysql57_1.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql57_1.p VALUES (7,11);INSERT INTO f04_mysql57_1.c VALUES (7,11);INSERT INTO f04_mysql57_1.alt VALUES (7,11);INSERT INTO f04_mysql57_1.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX ref_key ON f04_mysql57_1.p"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "mysql",
+          "version": "5.7.44"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_1.p",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_1' AND TABLE_NAME='p' AND INDEX_NAME='ref_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_1'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX ref_key ON f04_mysql57_1.p",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1553"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_1.p",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_1' AND TABLE_NAME='p' AND INDEX_NAME='ref_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_1'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql57_1",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_1'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql57-local-alternate-fk-backup",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX support_key ON f04_mysql57_2.alt",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "f04_mysql57_2",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql57_2",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_2'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_2'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql57_2",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql57_2.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql57_2.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql57_2.p(k));CREATE TABLE f04_mysql57_2.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql57_2.p(k));CREATE TABLE f04_mysql57_2.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql57_2.p VALUES (7,11);INSERT INTO f04_mysql57_2.c VALUES (7,11);INSERT INTO f04_mysql57_2.alt VALUES (7,11);INSERT INTO f04_mysql57_2.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX support_key ON f04_mysql57_2.alt"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "mysql",
+          "version": "5.7.44"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_2.alt",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_2' AND TABLE_NAME='alt' AND INDEX_NAME='support_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_2'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX support_key ON f04_mysql57_2.alt",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_2.alt",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_2' AND TABLE_NAME='alt' AND INDEX_NAME='support_key'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_2'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql57_2",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_2'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql57-drop-missing-index",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX absent ON f04_mysql57_3.free",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "f04_mysql57_3",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql57_3",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_3'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_3'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql57_3",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql57_3.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql57_3.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql57_3.p(k));CREATE TABLE f04_mysql57_3.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql57_3.p(k));CREATE TABLE f04_mysql57_3.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql57_3.p VALUES (7,11);INSERT INTO f04_mysql57_3.c VALUES (7,11);INSERT INTO f04_mysql57_3.alt VALUES (7,11);INSERT INTO f04_mysql57_3.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX absent ON f04_mysql57_3.free"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.drop_index.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "5.7.44"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_3.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_3' AND TABLE_NAME='free' AND INDEX_NAME='absent'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_3'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX absent ON f04_mysql57_3.free",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1091"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_3.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_3' AND TABLE_NAME='free' AND INDEX_NAME='absent'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_3'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql57_3",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_3'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql57-create-index-longer-prefix",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "CREATE INDEX too_long ON f04_mysql57_4.free(label(31))",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "f04_mysql57_4",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql57_4",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_4'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_4'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql57_4",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql57_4.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql57_4.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql57_4.p(k));CREATE TABLE f04_mysql57_4.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql57_4.p(k));CREATE TABLE f04_mysql57_4.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql57_4.p VALUES (7,11);INSERT INTO f04_mysql57_4.c VALUES (7,11);INSERT INTO f04_mysql57_4.alt VALUES (7,11);INSERT INTO f04_mysql57_4.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX too_long ON f04_mysql57_4.free(label(31))"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "5.7.44"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_4.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_4' AND TABLE_NAME='free' AND INDEX_NAME='too_long'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_4'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "CREATE INDEX too_long ON f04_mysql57_4.free(label(31))",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1089"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_4.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_4' AND TABLE_NAME='free' AND INDEX_NAME='too_long'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_4'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql57_4",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_4'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql57-create-index-exact-prefix",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "CREATE INDEX valid_prefix ON f04_mysql57_5.free(label(30))",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "f04_mysql57_5",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql57_5",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_5'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_5'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql57_5",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql57_5.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql57_5.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql57_5.p(k));CREATE TABLE f04_mysql57_5.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql57_5.p(k));CREATE TABLE f04_mysql57_5.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql57_5.p VALUES (7,11);INSERT INTO f04_mysql57_5.c VALUES (7,11);INSERT INTO f04_mysql57_5.alt VALUES (7,11);INSERT INTO f04_mysql57_5.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX valid_prefix ON f04_mysql57_5.free(label(30))"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "mysql",
+          "version": "5.7.44"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_5.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_5' AND TABLE_NAME='free' AND INDEX_NAME='valid_prefix'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_5'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "CREATE INDEX valid_prefix ON f04_mysql57_5.free(label(30))",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_5.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_5' AND TABLE_NAME='free' AND INDEX_NAME='valid_prefix'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_5'",
+          "expect": "2"
+        },
+        {
+          "assert": "native prefix length",
+          "sql": "SELECT SUB_PART FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_5' AND TABLE_NAME='free' AND INDEX_NAME='valid_prefix'",
+          "expect": "NULL"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql57_5",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_5'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql57-create-index-unknown-column",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "CREATE INDEX bad_column ON f04_mysql57_6.free(absent)",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "f04_mysql57_6",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql57_6",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_6'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_6'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql57_6",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql57_6.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql57_6.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql57_6.p(k));CREATE TABLE f04_mysql57_6.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql57_6.p(k));CREATE TABLE f04_mysql57_6.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql57_6.p VALUES (7,11);INSERT INTO f04_mysql57_6.c VALUES (7,11);INSERT INTO f04_mysql57_6.alt VALUES (7,11);INSERT INTO f04_mysql57_6.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX bad_column ON f04_mysql57_6.free(absent)"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.create_index.columns.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "5.7.44"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_6.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_6' AND TABLE_NAME='free' AND INDEX_NAME='bad_column'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_6'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "CREATE INDEX bad_column ON f04_mysql57_6.free(absent)",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1072"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_6.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_6' AND TABLE_NAME='free' AND INDEX_NAME='bad_column'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_6'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql57_6",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_6'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql57-create-unique-index-valid",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "CREATE UNIQUE INDEX uq ON f04_mysql57_7.free(label(5))",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "f04_mysql57_7",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql57_7",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_7'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_7'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql57_7",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql57_7.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql57_7.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql57_7.p(k));CREATE TABLE f04_mysql57_7.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql57_7.p(k));CREATE TABLE f04_mysql57_7.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql57_7.p VALUES (7,11);INSERT INTO f04_mysql57_7.c VALUES (7,11);INSERT INTO f04_mysql57_7.alt VALUES (7,11);INSERT INTO f04_mysql57_7.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE UNIQUE INDEX uq ON f04_mysql57_7.free(label(5))"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "mysql",
+          "version": "5.7.44"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_7.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_7' AND TABLE_NAME='free' AND INDEX_NAME='uq'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_7'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "CREATE UNIQUE INDEX uq ON f04_mysql57_7.free(label(5))",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_7.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_7' AND TABLE_NAME='free' AND INDEX_NAME='uq'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_7'",
+          "expect": "2"
+        },
+        {
+          "assert": "native prefix length",
+          "sql": "SELECT SUB_PART FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_7' AND TABLE_NAME='free' AND INDEX_NAME='uq'",
+          "expect": "5"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql57_7",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_7'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql57-create-duplicate-index-name",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "CREATE INDEX uq ON f04_mysql57_8.free(id)",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "f04_mysql57_8",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql57_8",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_8'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_8'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql57_8",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql57_8.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql57_8.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql57_8.p(k));CREATE TABLE f04_mysql57_8.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql57_8.p(k));CREATE TABLE f04_mysql57_8.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql57_8.p VALUES (7,11);INSERT INTO f04_mysql57_8.c VALUES (7,11);INSERT INTO f04_mysql57_8.alt VALUES (7,11);INSERT INTO f04_mysql57_8.free VALUES (7,'witness');CREATE UNIQUE INDEX uq ON f04_mysql57_8.free(label(5))",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX uq ON f04_mysql57_8.free(id)"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.add_index.exists.forbid",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "5.7.44"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_8.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_8' AND TABLE_NAME='free' AND INDEX_NAME='uq'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_8'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "CREATE INDEX uq ON f04_mysql57_8.free(id)",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1061"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql57_8.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql57_8' AND TABLE_NAME='free' AND INDEX_NAME='uq'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql57_8'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql57_8",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql57_8'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql80-local-sole-fk-backup",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX support_key ON f04_mysql80_0.c",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "f04_mysql80_0",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql80_0",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_0'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_0'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql80_0",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql80_0.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql80_0.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql80_0.p(k));CREATE TABLE f04_mysql80_0.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql80_0.p(k));CREATE TABLE f04_mysql80_0.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql80_0.p VALUES (7,11);INSERT INTO f04_mysql80_0.c VALUES (7,11);INSERT INTO f04_mysql80_0.alt VALUES (7,11);INSERT INTO f04_mysql80_0.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX support_key ON f04_mysql80_0.c"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.drop_index.foreign_key.warn",
+            "level": "warning"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_0.c",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_0' AND TABLE_NAME='c' AND INDEX_NAME='support_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_0'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX support_key ON f04_mysql80_0.c",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1553"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_0.c",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_0' AND TABLE_NAME='c' AND INDEX_NAME='support_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_0'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql80_0",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_0'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql80-parent-sole-fk-backup",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX ref_key ON f04_mysql80_1.p",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "f04_mysql80_1",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql80_1",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_1'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_1'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql80_1",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql80_1.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql80_1.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql80_1.p(k));CREATE TABLE f04_mysql80_1.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql80_1.p(k));CREATE TABLE f04_mysql80_1.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql80_1.p VALUES (7,11);INSERT INTO f04_mysql80_1.c VALUES (7,11);INSERT INTO f04_mysql80_1.alt VALUES (7,11);INSERT INTO f04_mysql80_1.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX ref_key ON f04_mysql80_1.p"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_1.p",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_1' AND TABLE_NAME='p' AND INDEX_NAME='ref_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_1'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX ref_key ON f04_mysql80_1.p",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1553"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_1.p",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_1' AND TABLE_NAME='p' AND INDEX_NAME='ref_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_1'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql80_1",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_1'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql80-local-alternate-fk-backup",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX support_key ON f04_mysql80_2.alt",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "f04_mysql80_2",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql80_2",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_2'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_2'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql80_2",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql80_2.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql80_2.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql80_2.p(k));CREATE TABLE f04_mysql80_2.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql80_2.p(k));CREATE TABLE f04_mysql80_2.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql80_2.p VALUES (7,11);INSERT INTO f04_mysql80_2.c VALUES (7,11);INSERT INTO f04_mysql80_2.alt VALUES (7,11);INSERT INTO f04_mysql80_2.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX support_key ON f04_mysql80_2.alt"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_2.alt",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_2' AND TABLE_NAME='alt' AND INDEX_NAME='support_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_2'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX support_key ON f04_mysql80_2.alt",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_2.alt",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_2' AND TABLE_NAME='alt' AND INDEX_NAME='support_key'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_2'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql80_2",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_2'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql80-drop-missing-index",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX absent ON f04_mysql80_3.free",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "f04_mysql80_3",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql80_3",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_3'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_3'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql80_3",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql80_3.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql80_3.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql80_3.p(k));CREATE TABLE f04_mysql80_3.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql80_3.p(k));CREATE TABLE f04_mysql80_3.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql80_3.p VALUES (7,11);INSERT INTO f04_mysql80_3.c VALUES (7,11);INSERT INTO f04_mysql80_3.alt VALUES (7,11);INSERT INTO f04_mysql80_3.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX absent ON f04_mysql80_3.free"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.drop_index.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_3.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_3' AND TABLE_NAME='free' AND INDEX_NAME='absent'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_3'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX absent ON f04_mysql80_3.free",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1091"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_3.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_3' AND TABLE_NAME='free' AND INDEX_NAME='absent'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_3'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql80_3",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_3'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql80-create-index-longer-prefix",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "CREATE INDEX too_long ON f04_mysql80_4.free(label(31))",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "f04_mysql80_4",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql80_4",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_4'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_4'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql80_4",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql80_4.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql80_4.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql80_4.p(k));CREATE TABLE f04_mysql80_4.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql80_4.p(k));CREATE TABLE f04_mysql80_4.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql80_4.p VALUES (7,11);INSERT INTO f04_mysql80_4.c VALUES (7,11);INSERT INTO f04_mysql80_4.alt VALUES (7,11);INSERT INTO f04_mysql80_4.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX too_long ON f04_mysql80_4.free(label(31))"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_4.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_4' AND TABLE_NAME='free' AND INDEX_NAME='too_long'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_4'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "CREATE INDEX too_long ON f04_mysql80_4.free(label(31))",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1089"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_4.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_4' AND TABLE_NAME='free' AND INDEX_NAME='too_long'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_4'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql80_4",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_4'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql80-create-index-exact-prefix",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "CREATE INDEX valid_prefix ON f04_mysql80_5.free(label(30))",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "f04_mysql80_5",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql80_5",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_5'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_5'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql80_5",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql80_5.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql80_5.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql80_5.p(k));CREATE TABLE f04_mysql80_5.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql80_5.p(k));CREATE TABLE f04_mysql80_5.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql80_5.p VALUES (7,11);INSERT INTO f04_mysql80_5.c VALUES (7,11);INSERT INTO f04_mysql80_5.alt VALUES (7,11);INSERT INTO f04_mysql80_5.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX valid_prefix ON f04_mysql80_5.free(label(30))"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_5.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_5' AND TABLE_NAME='free' AND INDEX_NAME='valid_prefix'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_5'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "CREATE INDEX valid_prefix ON f04_mysql80_5.free(label(30))",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_5.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_5' AND TABLE_NAME='free' AND INDEX_NAME='valid_prefix'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_5'",
+          "expect": "2"
+        },
+        {
+          "assert": "native prefix length",
+          "sql": "SELECT SUB_PART FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_5' AND TABLE_NAME='free' AND INDEX_NAME='valid_prefix'",
+          "expect": "NULL"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql80_5",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_5'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql80-create-index-unknown-column",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "CREATE INDEX bad_column ON f04_mysql80_6.free(absent)",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "f04_mysql80_6",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql80_6",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_6'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_6'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql80_6",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql80_6.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql80_6.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql80_6.p(k));CREATE TABLE f04_mysql80_6.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql80_6.p(k));CREATE TABLE f04_mysql80_6.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql80_6.p VALUES (7,11);INSERT INTO f04_mysql80_6.c VALUES (7,11);INSERT INTO f04_mysql80_6.alt VALUES (7,11);INSERT INTO f04_mysql80_6.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX bad_column ON f04_mysql80_6.free(absent)"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.create_index.columns.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_6.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_6' AND TABLE_NAME='free' AND INDEX_NAME='bad_column'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_6'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "CREATE INDEX bad_column ON f04_mysql80_6.free(absent)",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1072"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_6.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_6' AND TABLE_NAME='free' AND INDEX_NAME='bad_column'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_6'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql80_6",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_6'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql80-create-unique-index-valid",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "CREATE UNIQUE INDEX uq ON f04_mysql80_7.free(label(5))",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "f04_mysql80_7",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql80_7",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_7'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_7'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql80_7",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql80_7.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql80_7.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql80_7.p(k));CREATE TABLE f04_mysql80_7.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql80_7.p(k));CREATE TABLE f04_mysql80_7.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql80_7.p VALUES (7,11);INSERT INTO f04_mysql80_7.c VALUES (7,11);INSERT INTO f04_mysql80_7.alt VALUES (7,11);INSERT INTO f04_mysql80_7.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE UNIQUE INDEX uq ON f04_mysql80_7.free(label(5))"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_7.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_7' AND TABLE_NAME='free' AND INDEX_NAME='uq'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_7'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "CREATE UNIQUE INDEX uq ON f04_mysql80_7.free(label(5))",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_7.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_7' AND TABLE_NAME='free' AND INDEX_NAME='uq'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_7'",
+          "expect": "2"
+        },
+        {
+          "assert": "native prefix length",
+          "sql": "SELECT SUB_PART FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_7' AND TABLE_NAME='free' AND INDEX_NAME='uq'",
+          "expect": "5"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql80_7",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_7'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql80-create-duplicate-index-name",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "CREATE INDEX uq ON f04_mysql80_8.free(id)",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "f04_mysql80_8",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql80_8",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_8'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_8'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql80_8",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql80_8.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql80_8.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql80_8.p(k));CREATE TABLE f04_mysql80_8.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql80_8.p(k));CREATE TABLE f04_mysql80_8.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql80_8.p VALUES (7,11);INSERT INTO f04_mysql80_8.c VALUES (7,11);INSERT INTO f04_mysql80_8.alt VALUES (7,11);INSERT INTO f04_mysql80_8.free VALUES (7,'witness');CREATE UNIQUE INDEX uq ON f04_mysql80_8.free(label(5))",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX uq ON f04_mysql80_8.free(id)"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.add_index.exists.forbid",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_8.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_8' AND TABLE_NAME='free' AND INDEX_NAME='uq'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_8'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "CREATE INDEX uq ON f04_mysql80_8.free(id)",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1061"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql80_8.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql80_8' AND TABLE_NAME='free' AND INDEX_NAME='uq'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql80_8'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql80_8",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql80_8'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql84-local-sole-fk-backup",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX support_key ON f04_mysql84_0.c",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "f04_mysql84_0",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql84_0",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_0'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_0'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql84_0",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql84_0.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql84_0.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql84_0.p(k));CREATE TABLE f04_mysql84_0.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql84_0.p(k));CREATE TABLE f04_mysql84_0.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql84_0.p VALUES (7,11);INSERT INTO f04_mysql84_0.c VALUES (7,11);INSERT INTO f04_mysql84_0.alt VALUES (7,11);INSERT INTO f04_mysql84_0.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX support_key ON f04_mysql84_0.c"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.drop_index.foreign_key.warn",
+            "level": "warning"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.4.10"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_0.c",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_0' AND TABLE_NAME='c' AND INDEX_NAME='support_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_0'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX support_key ON f04_mysql84_0.c",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1553"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_0.c",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_0' AND TABLE_NAME='c' AND INDEX_NAME='support_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_0'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql84_0",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_0'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql84-parent-sole-fk-backup",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX ref_key ON f04_mysql84_1.p",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "f04_mysql84_1",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql84_1",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_1'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_1'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql84_1",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql84_1.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql84_1.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql84_1.p(k));CREATE TABLE f04_mysql84_1.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql84_1.p(k));CREATE TABLE f04_mysql84_1.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql84_1.p VALUES (7,11);INSERT INTO f04_mysql84_1.c VALUES (7,11);INSERT INTO f04_mysql84_1.alt VALUES (7,11);INSERT INTO f04_mysql84_1.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX ref_key ON f04_mysql84_1.p"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "mysql",
+          "version": "8.4.10"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_1.p",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_1' AND TABLE_NAME='p' AND INDEX_NAME='ref_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_1'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX ref_key ON f04_mysql84_1.p",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1553"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_1.p",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_1' AND TABLE_NAME='p' AND INDEX_NAME='ref_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_1'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql84_1",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_1'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql84-local-alternate-fk-backup",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX support_key ON f04_mysql84_2.alt",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "f04_mysql84_2",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql84_2",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_2'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_2'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql84_2",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql84_2.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql84_2.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql84_2.p(k));CREATE TABLE f04_mysql84_2.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql84_2.p(k));CREATE TABLE f04_mysql84_2.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql84_2.p VALUES (7,11);INSERT INTO f04_mysql84_2.c VALUES (7,11);INSERT INTO f04_mysql84_2.alt VALUES (7,11);INSERT INTO f04_mysql84_2.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX support_key ON f04_mysql84_2.alt"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "mysql",
+          "version": "8.4.10"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_2.alt",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_2' AND TABLE_NAME='alt' AND INDEX_NAME='support_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_2'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX support_key ON f04_mysql84_2.alt",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_2.alt",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_2' AND TABLE_NAME='alt' AND INDEX_NAME='support_key'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_2'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql84_2",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_2'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql84-drop-missing-index",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX absent ON f04_mysql84_3.free",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "f04_mysql84_3",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql84_3",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_3'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_3'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql84_3",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql84_3.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql84_3.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql84_3.p(k));CREATE TABLE f04_mysql84_3.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql84_3.p(k));CREATE TABLE f04_mysql84_3.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql84_3.p VALUES (7,11);INSERT INTO f04_mysql84_3.c VALUES (7,11);INSERT INTO f04_mysql84_3.alt VALUES (7,11);INSERT INTO f04_mysql84_3.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX absent ON f04_mysql84_3.free"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.drop_index.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.4.10"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_3.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_3' AND TABLE_NAME='free' AND INDEX_NAME='absent'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_3'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX absent ON f04_mysql84_3.free",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1091"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_3.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_3' AND TABLE_NAME='free' AND INDEX_NAME='absent'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_3'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql84_3",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_3'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql84-create-index-longer-prefix",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "CREATE INDEX too_long ON f04_mysql84_4.free(label(31))",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "f04_mysql84_4",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql84_4",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_4'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_4'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql84_4",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql84_4.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql84_4.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql84_4.p(k));CREATE TABLE f04_mysql84_4.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql84_4.p(k));CREATE TABLE f04_mysql84_4.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql84_4.p VALUES (7,11);INSERT INTO f04_mysql84_4.c VALUES (7,11);INSERT INTO f04_mysql84_4.alt VALUES (7,11);INSERT INTO f04_mysql84_4.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX too_long ON f04_mysql84_4.free(label(31))"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.4.10"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_4.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_4' AND TABLE_NAME='free' AND INDEX_NAME='too_long'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_4'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "CREATE INDEX too_long ON f04_mysql84_4.free(label(31))",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1089"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_4.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_4' AND TABLE_NAME='free' AND INDEX_NAME='too_long'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_4'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql84_4",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_4'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql84-create-index-exact-prefix",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "CREATE INDEX valid_prefix ON f04_mysql84_5.free(label(30))",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "f04_mysql84_5",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql84_5",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_5'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_5'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql84_5",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql84_5.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql84_5.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql84_5.p(k));CREATE TABLE f04_mysql84_5.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql84_5.p(k));CREATE TABLE f04_mysql84_5.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql84_5.p VALUES (7,11);INSERT INTO f04_mysql84_5.c VALUES (7,11);INSERT INTO f04_mysql84_5.alt VALUES (7,11);INSERT INTO f04_mysql84_5.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX valid_prefix ON f04_mysql84_5.free(label(30))"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "mysql",
+          "version": "8.4.10"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_5.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_5' AND TABLE_NAME='free' AND INDEX_NAME='valid_prefix'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_5'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "CREATE INDEX valid_prefix ON f04_mysql84_5.free(label(30))",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_5.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_5' AND TABLE_NAME='free' AND INDEX_NAME='valid_prefix'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_5'",
+          "expect": "2"
+        },
+        {
+          "assert": "native prefix length",
+          "sql": "SELECT SUB_PART FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_5' AND TABLE_NAME='free' AND INDEX_NAME='valid_prefix'",
+          "expect": "NULL"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql84_5",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_5'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql84-create-index-unknown-column",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "CREATE INDEX bad_column ON f04_mysql84_6.free(absent)",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "f04_mysql84_6",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql84_6",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_6'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_6'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql84_6",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql84_6.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql84_6.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql84_6.p(k));CREATE TABLE f04_mysql84_6.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql84_6.p(k));CREATE TABLE f04_mysql84_6.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql84_6.p VALUES (7,11);INSERT INTO f04_mysql84_6.c VALUES (7,11);INSERT INTO f04_mysql84_6.alt VALUES (7,11);INSERT INTO f04_mysql84_6.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX bad_column ON f04_mysql84_6.free(absent)"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.create_index.columns.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.4.10"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_6.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_6' AND TABLE_NAME='free' AND INDEX_NAME='bad_column'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_6'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "CREATE INDEX bad_column ON f04_mysql84_6.free(absent)",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1072"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_6.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_6' AND TABLE_NAME='free' AND INDEX_NAME='bad_column'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_6'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql84_6",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_6'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql84-create-unique-index-valid",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "CREATE UNIQUE INDEX uq ON f04_mysql84_7.free(label(5))",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "f04_mysql84_7",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql84_7",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_7'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_7'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql84_7",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql84_7.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql84_7.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql84_7.p(k));CREATE TABLE f04_mysql84_7.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql84_7.p(k));CREATE TABLE f04_mysql84_7.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql84_7.p VALUES (7,11);INSERT INTO f04_mysql84_7.c VALUES (7,11);INSERT INTO f04_mysql84_7.alt VALUES (7,11);INSERT INTO f04_mysql84_7.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE UNIQUE INDEX uq ON f04_mysql84_7.free(label(5))"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "mysql",
+          "version": "8.4.10"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_7.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_7' AND TABLE_NAME='free' AND INDEX_NAME='uq'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_7'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "CREATE UNIQUE INDEX uq ON f04_mysql84_7.free(label(5))",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_7.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_7' AND TABLE_NAME='free' AND INDEX_NAME='uq'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_7'",
+          "expect": "2"
+        },
+        {
+          "assert": "native prefix length",
+          "sql": "SELECT SUB_PART FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_7' AND TABLE_NAME='free' AND INDEX_NAME='uq'",
+          "expect": "5"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql84_7",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_7'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-mysql84-create-duplicate-index-name",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "policy": "f04-index-declarations",
+      "sql": "CREATE INDEX uq ON f04_mysql84_8.free(id)",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "f04_mysql84_8",
+        "password_env": "T09_MYSQL_PASSWORD"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_mysql84_8",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_8'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_8'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_mysql84_8",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_mysql84_8.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_mysql84_8.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_mysql84_8.p(k));CREATE TABLE f04_mysql84_8.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_mysql84_8.p(k));CREATE TABLE f04_mysql84_8.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_mysql84_8.p VALUES (7,11);INSERT INTO f04_mysql84_8.c VALUES (7,11);INSERT INTO f04_mysql84_8.alt VALUES (7,11);INSERT INTO f04_mysql84_8.free VALUES (7,'witness');CREATE UNIQUE INDEX uq ON f04_mysql84_8.free(label(5))",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX uq ON f04_mysql84_8.free(id)"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.add_index.exists.forbid",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.4.10"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_8.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_8' AND TABLE_NAME='free' AND INDEX_NAME='uq'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_8'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "CREATE INDEX uq ON f04_mysql84_8.free(id)",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1061"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_mysql84_8.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_mysql84_8' AND TABLE_NAME='free' AND INDEX_NAME='uq'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_mysql84_8'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_mysql84_8",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_mysql84_8'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-tidb85-local-sole-fk-backup",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX support_key ON f04_tidb85_0.c",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "f04_tidb85_0"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_tidb85_0",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_tidb85_0'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_tidb85_0'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_tidb85_0",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_tidb85_0.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_tidb85_0.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_tidb85_0.p(k));CREATE TABLE f04_tidb85_0.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_tidb85_0.p(k));CREATE TABLE f04_tidb85_0.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_tidb85_0.p VALUES (7,11);INSERT INTO f04_tidb85_0.c VALUES (7,11);INSERT INTO f04_tidb85_0.alt VALUES (7,11);INSERT INTO f04_tidb85_0.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX support_key ON f04_tidb85_0.c"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.drop_index.foreign_key.warn",
+            "level": "warning"
+          }
+        ],
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_tidb85_0.c",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_tidb85_0' AND TABLE_NAME='c' AND INDEX_NAME='support_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_tidb85_0'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX support_key ON f04_tidb85_0.c",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1553"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_tidb85_0.c",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_tidb85_0' AND TABLE_NAME='c' AND INDEX_NAME='support_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_tidb85_0'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_tidb85_0",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_tidb85_0'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-tidb85-local-alternate-fk-backup",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX support_key ON f04_tidb85_1.alt",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "f04_tidb85_1"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_tidb85_1",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_tidb85_1'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_tidb85_1'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_tidb85_1",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_tidb85_1.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_tidb85_1.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_tidb85_1.p(k));CREATE TABLE f04_tidb85_1.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_tidb85_1.p(k));CREATE TABLE f04_tidb85_1.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_tidb85_1.p VALUES (7,11);INSERT INTO f04_tidb85_1.c VALUES (7,11);INSERT INTO f04_tidb85_1.alt VALUES (7,11);INSERT INTO f04_tidb85_1.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX support_key ON f04_tidb85_1.alt"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_tidb85_1.alt",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_tidb85_1' AND TABLE_NAME='alt' AND INDEX_NAME='support_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_tidb85_1'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX support_key ON f04_tidb85_1.alt",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_tidb85_1.alt",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_tidb85_1' AND TABLE_NAME='alt' AND INDEX_NAME='support_key'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_tidb85_1'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_tidb85_1",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_tidb85_1'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-tidb85-parent-sole-fk-backup",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX ref_key ON f04_tidb85_2.p",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "f04_tidb85_2"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_tidb85_2",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_tidb85_2'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_tidb85_2'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_tidb85_2",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_tidb85_2.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_tidb85_2.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_tidb85_2.p(k));CREATE TABLE f04_tidb85_2.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_tidb85_2.p(k));CREATE TABLE f04_tidb85_2.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_tidb85_2.p VALUES (7,11);INSERT INTO f04_tidb85_2.c VALUES (7,11);INSERT INTO f04_tidb85_2.alt VALUES (7,11);INSERT INTO f04_tidb85_2.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX ref_key ON f04_tidb85_2.p"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_tidb85_2.p",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_tidb85_2' AND TABLE_NAME='p' AND INDEX_NAME='ref_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_tidb85_2'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX ref_key ON f04_tidb85_2.p",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "ERROR 1553"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_tidb85_2.p",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_tidb85_2' AND TABLE_NAME='p' AND INDEX_NAME='ref_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_tidb85_2'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_tidb85_2",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_tidb85_2'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-tidb85-unrelated-member",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX drop_key ON f04_tidb85_3.free",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "f04_tidb85_3"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_tidb85_3",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_tidb85_3'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_tidb85_3'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_tidb85_3",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_tidb85_3.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_tidb85_3.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_tidb85_3.p(k));CREATE TABLE f04_tidb85_3.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_tidb85_3.p(k));CREATE TABLE f04_tidb85_3.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_tidb85_3.p VALUES (7,11);INSERT INTO f04_tidb85_3.c VALUES (7,11);INSERT INTO f04_tidb85_3.alt VALUES (7,11);INSERT INTO f04_tidb85_3.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX drop_key ON f04_tidb85_3.free"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_tidb85_3.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_tidb85_3' AND TABLE_NAME='free' AND INDEX_NAME='drop_key'",
+          "expect": "1"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_tidb85_3'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX drop_key ON f04_tidb85_3.free",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_tidb85_3.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_tidb85_3' AND TABLE_NAME='free' AND INDEX_NAME='drop_key'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_tidb85_3'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_tidb85_3",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_tidb85_3'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "f04-tidb85-guarded-missing-member",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "policy": "f04-index-declarations",
+      "sql": "DROP INDEX IF EXISTS absent ON f04_tidb85_4.free",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "f04_tidb85_4"
+      },
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "fixture": {
+        "cleanup": [
+          {
+            "name": "remove owned namespace",
+            "fixture_key": "schema",
+            "sql": "DROP DATABASE f04_tidb85_4",
+            "verify": {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_tidb85_4'",
+              "expect": "0"
+            }
+          }
+        ]
+      },
+      "setup": [
+        {
+          "name": "prove namespace absent",
+          "fixture_key": "schema",
+          "requires_absence": true,
+          "sql": "SELECT 1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_tidb85_4'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create owned namespace",
+          "fixture_key": "schema",
+          "creates_fixture": true,
+          "sql": "CREATE DATABASE f04_tidb85_4",
+          "expect_rc": 0
+        },
+        {
+          "name": "create local table and constraint witnesses",
+          "sql": "CREATE TABLE f04_tidb85_4.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k));CREATE TABLE f04_tidb85_4.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES f04_tidb85_4.p(k));CREATE TABLE f04_tidb85_4.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES f04_tidb85_4.p(k));CREATE TABLE f04_tidb85_4.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label));INSERT INTO f04_tidb85_4.p VALUES (7,11);INSERT INTO f04_tidb85_4.c VALUES (7,11);INSERT INTO f04_tidb85_4.alt VALUES (7,11);INSERT INTO f04_tidb85_4.free VALUES (7,'witness')",
+          "expect_rc": 0
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "DROP INDEX IF EXISTS absent ON f04_tidb85_4.free"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "unsupported_entries": [],
+        "finding_metadata": [],
+        "finding_entries": [],
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        }
+      },
+      "post_verify": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_tidb85_4.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_tidb85_4' AND TABLE_NAME='free' AND INDEX_NAME='absent'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_tidb85_4'",
+          "expect": "2"
+        }
+      ],
+      "execute": [
+        {
+          "name": "execute native index DDL",
+          "sql": "DROP INDEX IF EXISTS absent ON f04_tidb85_4.free",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "owned table data remain",
+          "sql": "SELECT id FROM f04_tidb85_4.free",
+          "expect": "7"
+        },
+        {
+          "assert": "target index presence before DDL",
+          "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='f04_tidb85_4' AND TABLE_NAME='free' AND INDEX_NAME='absent'",
+          "expect": "0"
+        },
+        {
+          "assert": "fixture foreign keys remain",
+          "sql": "SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='f04_tidb85_4'",
+          "expect": "2"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "remove owned namespace",
+          "fixture_key": "schema",
+          "sql": "DROP DATABASE f04_tidb85_4",
+          "verify": [
+            {
+              "assert": "owned schema absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f04_tidb85_4'",
+              "expect": "0"
+            }
+          ],
+          "drops_fixture": true,
+          "expect_rc": 0
+        }
+      ]
     }
   ],
   "error_cases": [
@@ -14163,6 +18977,38 @@
     "T09.meta.t09-mysql57-drop-ie",
     "T09.meta.t09-mysql80-drop-ie",
     "T09.meta.t09-mysql84-drop-ie",
-    "T09.meta.t09-tidb85-drop-ie"
+    "T09.meta.t09-tidb85-drop-ie",
+    "T09.meta.f04-mysql57-local-sole-fk-backup",
+    "T09.meta.f04-mysql57-parent-sole-fk-backup",
+    "T09.meta.f04-mysql57-local-alternate-fk-backup",
+    "T09.meta.f04-mysql57-drop-missing-index",
+    "T09.meta.f04-mysql57-create-index-longer-prefix",
+    "T09.meta.f04-mysql57-create-index-exact-prefix",
+    "T09.meta.f04-mysql57-create-index-unknown-column",
+    "T09.meta.f04-mysql57-create-unique-index-valid",
+    "T09.meta.f04-mysql57-create-duplicate-index-name",
+    "T09.meta.f04-mysql80-local-sole-fk-backup",
+    "T09.meta.f04-mysql80-parent-sole-fk-backup",
+    "T09.meta.f04-mysql80-local-alternate-fk-backup",
+    "T09.meta.f04-mysql80-drop-missing-index",
+    "T09.meta.f04-mysql80-create-index-longer-prefix",
+    "T09.meta.f04-mysql80-create-index-exact-prefix",
+    "T09.meta.f04-mysql80-create-index-unknown-column",
+    "T09.meta.f04-mysql80-create-unique-index-valid",
+    "T09.meta.f04-mysql80-create-duplicate-index-name",
+    "T09.meta.f04-mysql84-local-sole-fk-backup",
+    "T09.meta.f04-mysql84-parent-sole-fk-backup",
+    "T09.meta.f04-mysql84-local-alternate-fk-backup",
+    "T09.meta.f04-mysql84-drop-missing-index",
+    "T09.meta.f04-mysql84-create-index-longer-prefix",
+    "T09.meta.f04-mysql84-create-index-exact-prefix",
+    "T09.meta.f04-mysql84-create-index-unknown-column",
+    "T09.meta.f04-mysql84-create-unique-index-valid",
+    "T09.meta.f04-mysql84-create-duplicate-index-name",
+    "T09.meta.f04-tidb85-local-sole-fk-backup",
+    "T09.meta.f04-tidb85-local-alternate-fk-backup",
+    "T09.meta.f04-tidb85-parent-sole-fk-backup",
+    "T09.meta.f04-tidb85-unrelated-member",
+    "T09.meta.f04-tidb85-guarded-missing-member"
   ]
 }

@@ -1844,6 +1844,21 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44977093269/job/137069308110),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137069370087) passed at the delivered SHA.
 
+## F04 exact dimension review
+
+| Row and authored dimension | Verified evidence and remaining premise |
+| --- | --- |
+| `mysql.create-index` / `CREATE INDEX` | T09 compares successful standalone creation, duplicate names and missing columns across MySQL 5.7.44, 8.0.46 and 8.4.10. The existing existence rules supply the findings. |
+| `mysql.create-index` / `CREATE UNIQUE INDEX` | T09 checks successful creation of a unique prefix member and its native catalog state. Data-dependent uniqueness and build behavior need separate evidence. |
+| `mysql.create-index` / `key parts` | T09 checks the exact explicit column target. T10 retains expression, visibility and member-kind evidence. |
+| `mysql.create-index` / `prefix lengths` | The existing configurable `prefix_length` feature detects 1089. Native full-width prefixes produce a NULL `SUB_PART` and shorter prefixes retain their length. |
+| `mysql.drop-index` / `DROP INDEX name ON table` | T09 compares 1091, 1553 and success with an alternate supporting index. The new warning requires a positive dependency from ordered pre-state. A parent-only observation leaves inbound dependencies unproved. |
+| `tidb.drop-index` / `DROP INDEX name ON table` | T09 compares sole and alternate FK support, an unrelated index, and guarded absence. `DROP INDEX IF EXISTS` no longer triggers the missing-index blocker. |
+
+The three parent rows move to `mixed_coverage`. The warning uses the same dependency classifier as ordered state and keeps the underlying constraint identities private. [T09](../../testdata/ddl-golden/T09.json) · [Decision record](../decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md)
+
+Isolated preview T09 passed 157 cases and 4,440 assertions. Verification on the fixed F04 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

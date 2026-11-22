@@ -2328,31 +2328,132 @@ rows:
     subactions: ["CREATE INDEX", "CREATE UNIQUE INDEX", "key parts", "prefix lengths"]
     sql_shape: "CREATE INDEX idx ON t (a, b, c)"
     prerequisites: "table and column identity"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:testdata/sql-corpus/mysql/ddl/findings", "missing: CREATE-vs-ALTER index parity fixtures"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:testdata/sql-corpus/mysql/ddl/findings", "missing: CREATE-vs-ALTER index parity fixtures"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:testdata/sql-corpus/mysql/ddl/findings", "missing: CREATE-vs-ALTER index parity fixtures"]
+    subaction_status:
+      - subaction_id: "CREATE INDEX"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#CREATE INDEX", "file:testdata/ddl-golden/T09.json#f04-mysql57-create-index-exact-prefix", "file:testdata/ddl-golden/T09.json#f04-mysql57-create-duplicate-index-name"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#CREATE INDEX", "file:testdata/ddl-golden/T09.json#f04-mysql80-create-index-exact-prefix", "file:testdata/ddl-golden/T09.json#f04-mysql80-create-duplicate-index-name"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#CREATE INDEX", "file:testdata/ddl-golden/T09.json#f04-mysql84-create-index-exact-prefix", "file:testdata/ddl-golden/T09.json#f04-mysql84-create-duplicate-index-name"]
+      - subaction_id: "CREATE UNIQUE INDEX"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#CREATE UNIQUE INDEX", "file:testdata/ddl-golden/T09.json#f04-mysql57-create-unique-index-valid"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#CREATE UNIQUE INDEX", "file:testdata/ddl-golden/T09.json#f04-mysql80-create-unique-index-valid"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#CREATE UNIQUE INDEX", "file:testdata/ddl-golden/T09.json#f04-mysql84-create-unique-index-valid"]
+      - subaction_id: "key parts"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#key parts", "file:testdata/ddl-golden/T09.json#f04-mysql57-create-index-unknown-column", "file:testdata/ddl-golden/T09.json#f04-mysql57-create-index-exact-prefix"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#key parts", "file:testdata/ddl-golden/T09.json#f04-mysql80-create-index-unknown-column", "file:testdata/ddl-golden/T09.json#f04-mysql80-create-index-exact-prefix"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#key parts", "file:testdata/ddl-golden/T09.json#f04-mysql84-create-index-unknown-column", "file:testdata/ddl-golden/T09.json#f04-mysql84-create-index-exact-prefix"]
+      - subaction_id: "prefix lengths"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#prefix lengths", "file:testdata/ddl-golden/T09.json#f04-mysql57-create-index-longer-prefix", "file:testdata/ddl-golden/T09.json#f04-mysql57-create-index-exact-prefix", "file:testdata/ddl-golden/T09.json#f04-mysql57-create-unique-index-valid"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#prefix lengths", "file:testdata/ddl-golden/T09.json#f04-mysql80-create-index-longer-prefix", "file:testdata/ddl-golden/T09.json#f04-mysql80-create-index-exact-prefix", "file:testdata/ddl-golden/T09.json#f04-mysql80-create-unique-index-valid"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#prefix lengths", "file:testdata/ddl-golden/T09.json#f04-mysql84-create-index-longer-prefix", "file:testdata/ddl-golden/T09.json#f04-mysql84-create-index-exact-prefix", "file:testdata/ddl-golden/T09.json#f04-mysql84-create-unique-index-valid"]
 
     status_evidence: "2026-09-22 CLI probe: only ddl.create_index.notice; ALTER-path add_index rules (columns.max_count, prefix, duplicate, redundant) have no CREATE-path parity (spec's parity gap)"
     targets: "index identity, target table, key parts, uniqueness, prefix"
@@ -2451,16 +2552,16 @@ rows:
     subactions: ["DROP INDEX name ON table"]
     sql_shape: "DROP INDEX idx ON t"
     prerequisites: "none"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.drop-index.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
@@ -2471,7 +2572,7 @@ rows:
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.drop-index.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
@@ -2482,12 +2583,38 @@ rows:
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.drop-index.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - "missing: owner adds parity fixtures"
+    subaction_status:
+      - subaction_id: "DROP INDEX name ON table"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#DROP INDEX name ON table", "file:testdata/ddl-golden/T09.json#f04-mysql57-local-sole-fk-backup", "file:testdata/ddl-golden/T09.json#f04-mysql57-parent-sole-fk-backup", "file:testdata/ddl-golden/T09.json#f04-mysql57-local-alternate-fk-backup", "file:testdata/ddl-golden/T09.json#f04-mysql57-drop-missing-index"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#DROP INDEX name ON table", "file:testdata/ddl-golden/T09.json#f04-mysql80-local-sole-fk-backup", "file:testdata/ddl-golden/T09.json#f04-mysql80-parent-sole-fk-backup", "file:testdata/ddl-golden/T09.json#f04-mysql80-local-alternate-fk-backup", "file:testdata/ddl-golden/T09.json#f04-mysql80-drop-missing-index"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#DROP INDEX name ON table", "file:testdata/ddl-golden/T09.json#f04-mysql84-local-sole-fk-backup", "file:testdata/ddl-golden/T09.json#f04-mysql84-parent-sole-fk-backup", "file:testdata/ddl-golden/T09.json#f04-mysql84-local-alternate-fk-backup", "file:testdata/ddl-golden/T09.json#f04-mysql84-drop-missing-index"]
 
     status_evidence: "2026-09-22 CLI probe: only ddl.drop_index.notice fires. 2026-09-25 T03 rework (#82): parsed ALGORITHM=/LOCK= clauses on DROP INDEX record drop_index.option.lock_algorithm unaudited evidence. 2026-09-26 T03 rework (#82): parsed DROP HYPO INDEX records drop_index.option.hypo_index vendor-boundary evidence"
     targets: "index identity, host table, dependent-constraint effects"
@@ -5636,21 +5763,33 @@ rows:
     subactions: ["DROP INDEX name ON table"]
     sql_shape: "DROP INDEX idx ON t"
     prerequisites: "none"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: tidb85
         version_range: 8.5
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/tidb.drop-index.probes.txt
           - file:testdata/sql-corpus/tidb/ddl/findings/lifecycle_notice_rules.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - "missing: owner adds fixtures"
+    subaction_status:
+      - subaction_id: "DROP INDEX name ON table"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: tidb85
+            version_range: "8.5"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md#DROP INDEX name ON table", "file:testdata/ddl-golden/T09.json#f04-tidb85-local-sole-fk-backup", "file:testdata/ddl-golden/T09.json#f04-tidb85-parent-sole-fk-backup", "file:testdata/ddl-golden/T09.json#f04-tidb85-local-alternate-fk-backup", "file:testdata/ddl-golden/T09.json#f04-tidb85-unrelated-member", "file:testdata/ddl-golden/T09.json#f04-tidb85-guarded-missing-member"]
 
     status_evidence: "2026-09-22 CLI probe: only ddl.drop_index.notice fires. 2026-09-25 T03 rework (#82): parsed ALGORITHM=/LOCK= clauses on DROP INDEX record drop_index.option.lock_algorithm unaudited evidence. 2026-09-26 T03 rework (#82): parsed DROP HYPO INDEX records drop_index.option.hypo_index unaudited evidence"
     targets: "index identity, host table"
