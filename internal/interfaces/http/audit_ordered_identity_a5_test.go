@@ -183,3 +183,22 @@ func TestHandlerT05A5EmptySQLBadRequest(t *testing.T) {
 		t.Fatalf("expected bad_request, got %#v", payload["error"])
 	}
 }
+
+func TestRepeatedAddColumnThroughHTTP(t *testing.T) {
+	handler, err := NewHandler("", "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, body := postT04BAudit(t, handler, `{"sql":"ALTER TABLE t ADD (n INT, n INT)","dialect":"mysql"}`)
+	if status != http.StatusOK || body["verdict"] != "reject" {
+		t.Fatalf("status=%d body=%v", status, body)
+	}
+	statements := body["statements"].([]any)
+	for _, item := range statements[0].(map[string]any)["findings"].([]any) {
+		finding := item.(map[string]any)
+		if finding["rule_id"] == "ddl.alter.add_column.exists.forbid" && finding["metadata"].(map[string]any)["reason_code"] == "repeated_add_column" {
+			return
+		}
+	}
+	t.Fatal("missing repeated ADD finding")
+}

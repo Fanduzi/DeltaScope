@@ -1,0 +1,1 @@
+ALTER TABLE t ADD (n INT, n INT);

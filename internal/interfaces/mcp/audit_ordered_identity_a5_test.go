@@ -169,3 +169,29 @@ func TestAuditSQLT05A5UnknownDialectIsError(t *testing.T) {
 		t.Fatalf("expected bad_request, got %#v", body["code"])
 	}
 }
+
+func TestRepeatedAddColumnThroughMCP(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER TABLE t ADD (n INT, n INT)", "dialect": "tidb",
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body := requireAuditStructuredMap(t, result)
+	if body["verdict"] != "reject" {
+		t.Fatalf("body=%v", body)
+	}
+	statements := body["statements"].([]any)
+	for _, item := range statements[0].(map[string]any)["findings"].([]any) {
+		finding := item.(map[string]any)
+		if finding["rule_id"] == "ddl.alter.add_column.exists.forbid" && finding["metadata"].(map[string]any)["reason_code"] == "repeated_add_column" {
+			return
+		}
+	}
+	t.Fatal("missing repeated ADD finding")
+}

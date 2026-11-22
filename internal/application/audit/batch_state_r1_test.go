@@ -219,9 +219,8 @@ func TestBatchStateR1DropDatabaseInvalidatesSchemaScope(t *testing.T) {
 	}
 }
 
-// C3: the frozen success template is the single plain ADD COLUMN — a
-// multi-action ALTER (even all-adds) must invalidate rather than fabricate.
-func TestBatchStateR1MultiActionAlterInvalidates(t *testing.T) {
+// A proven duplicate ADD rejects the whole statement and preserves the input shape.
+func TestBatchStateR1DuplicateAddPreservesPreState(t *testing.T) {
 	t.Parallel()
 	provider := &t05AbsentProvider{}
 	result, err := AuditSQL(context.Background(), Request{
@@ -234,12 +233,15 @@ func TestBatchStateR1MultiActionAlterInvalidates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("audit: %v", err)
 	}
-	if len(result.Statements[2].Findings) != 0 {
-		t.Fatalf("statement 2 must not read a fabricated column, got %+v", result.Statements[2].Findings)
+	dups := t05FindingsByRule(result, 1, "ddl.alter.add_column.exists.forbid")
+	if len(dups) != 1 || dups[0].Metadata["reason_code"] != "repeated_add_column" {
+		t.Fatalf("duplicate addition must be detected, got %+v", dups)
 	}
-	gaps := t05GapsByRule(result, 2, t05RuleCreateIndexColumns)
-	if len(gaps) != 1 || gaps[0].ReasonCode != "unknown_table_state" {
-		t.Fatalf("statement 2 must report unknown_table_state after the multi-action ALTER, got %+v", result.Statements[2].EvidenceGaps)
+	if findings := t05FindingsByRule(result, 2, t05RuleCreateIndexColumns); len(findings) != 1 || findings[0].Metadata["column"] != "c" {
+		t.Fatalf("index must see the column is still absent, got %+v", findings)
+	}
+	if gaps := t05GapsByRule(result, 2, t05RuleCreateIndexColumns); len(gaps) != 0 {
+		t.Fatalf("exact pre-state must remain known, got %+v", gaps)
 	}
 }
 

@@ -607,6 +607,10 @@ MySQL 8.x metadata-aware INSTANT ADD COLUMN checks cover observed MyISAM, InnoDB
 
 ---
 
+## DDL: MySQL and TiDB ADD COLUMN Lists
+
+MySQL and TiDB ADD-only ALTER statements with repeated column names produce `ddl.alter.add_column.exists.forbid`. This declaration check runs offline. With a known pre-state, the ordered audit preserves that state after the verified refusal.
+
 ## DDL: PostgreSQL Migration-Safety
 
 These rules guard against common PostgreSQL migration patterns that can cause table rewrites, long-held locks, or production incidents. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects. v0.120.0 enriches selected rules with bounded semantic metadata (index shape, default classification, USING presence); metadata is additive and does not emit raw SQL text.

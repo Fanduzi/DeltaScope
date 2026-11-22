@@ -153,3 +153,16 @@ func TestAuditT05A5ProviderError(t *testing.T) {
 		t.Fatalf("provider error = %v, want the sentinel", err)
 	}
 }
+
+func TestRepeatedAddColumnThroughSDK(t *testing.T) {
+	result, err := Audit(context.Background(), Request{SQL: "ALTER TABLE t ADD (n INT, n INT)", Dialect: DialectMySQL})
+	if err != nil || result.Verdict != VerdictReject {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	for _, item := range result.Statements[0].Findings {
+		if item.RuleID == "ddl.alter.add_column.exists.forbid" && item.Metadata["reason_code"] == "repeated_add_column" {
+			return
+		}
+	}
+	t.Fatal("missing repeated ADD finding")
+}

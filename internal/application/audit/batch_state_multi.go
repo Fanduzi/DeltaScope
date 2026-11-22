@@ -47,6 +47,9 @@ func (s *batchState) prepareMultiAction(statement spec.Statement, targets []spec
 	if entry == nil || entry.state == tableUnknown || entry.state == tableAbsent {
 		return invalidate(primary)
 	}
+	if spec.RepeatedAlterAddColumn(ddl) != "" {
+		return modifyPublication{replaceKey: primary, replace: entry}
+	}
 	if entry.shape == nil || entry.shape.Columns == nil {
 		return invalidate(primary)
 	}

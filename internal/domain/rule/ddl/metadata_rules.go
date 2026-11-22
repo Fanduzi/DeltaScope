@@ -244,6 +244,13 @@ func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.S
 		return evaluatePGColumnIdentity(ctx, statement, action, r.ruleID, r.level)
 	}
 	snapshot, ok := targetTableSnapshot(statement)
+	if name := r.repeatedAddColumn(statement); name != "" {
+		return []rule.Finding{{
+			Level: r.level, Message: fmt.Sprintf("column %q is declared more than once in ALTER TABLE", name),
+			Suggestion: "keep a single ADD declaration for the column",
+			Metadata:   map[string]any{"table": metadataTargetTableName(statement, snapshot), "action": "add_columns", "name": name, "reason_code": "repeated_add_column"},
+		}}, nil
+	}
 	// A present table with nil Columns means the column shape was not
 	// provided — column-member existence checks must skip rather than
 	// fabricate absent members. Index members are not gated on Columns: a
@@ -320,6 +327,13 @@ func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.S
 	return findings, nil
 }
 
+func (r alterObjectExistenceRule) repeatedAddColumn(statement spec.Statement) string {
+	if r.ruleID != ruleIDAlterAddColumnExistsForbid || !orderedGapDialect(statement.Dialect) || statement.Unsupported != nil {
+		return ""
+	}
+	return spec.RepeatedAlterAddColumn(statement.DDL)
+}
+
 // EvidenceGaps reports missing member-existence evidence for every rule in
 // this shared class on the ordered-state path. The knowledge premise mirrors
 // Evaluate exactly: a rule that skips because its member collection is
@@ -336,7 +350,7 @@ func (r alterObjectExistenceRule) EvidenceGaps(statement spec.Statement) []rule.
 		}
 		return nil
 	}
-	if !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) {
+	if !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) || r.repeatedAddColumn(statement) != "" {
 		return nil
 	}
 	snapshot, ok := targetTableSnapshot(statement)

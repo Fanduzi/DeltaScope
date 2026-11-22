@@ -466,7 +466,7 @@ On MySQL and TiDB, one ordinary single-action `DROP COLUMN` removes that column 
 |---------|-------------|:-------------:|:-----------------:|
 | `ddl.table.exists.alter.require` | ALTER TABLE target must exist | blocker | **Yes** |
 | `ddl.table.exists.create.forbid` | CREATE TABLE target must not already exist | blocker | **Yes** |
-| `ddl.alter.add_column.exists.forbid` | ADD COLUMN must not already exist | blocker | **Yes** |
+| `ddl.alter.add_column.exists.forbid` | ADD COLUMN must not already exist or repeat a name in an ADD-only MySQL or TiDB ALTER | blocker | **Yes** |
 | `ddl.alter.drop_column.exists.require` | Checks DROP COLUMN target existence and direct PostgreSQL RESTRICT dependencies | blocker | **Yes** |
 | `ddl.alter.modify_column.exists.require` | MODIFY COLUMN target must exist | blocker | **Yes** |
 | `ddl.alter.change_column.exists.require` | CHANGE COLUMN source must exist | blocker | **Yes** |
