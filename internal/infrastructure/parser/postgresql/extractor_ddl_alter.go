@@ -1164,10 +1164,12 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			alter.PGCheckHasSubquery = pgExpressionHasReference(expr, false)
 			alter.PGCheckLiteral = pgCheckLiteral(expr)
 			fields := expr.GetNullTest().GetArg().GetColumnRef().GetFields()
-			if len(fields) == 1 || len(fields) == 2 {
+			if len(fields) >= 1 && len(fields) <= 4 {
+				wholeRow := len(fields) > 1 && fields[len(fields)-1].GetAStar() != nil
 				names := stringValuesFromNodes(fields)
-				if len(names) == len(fields) {
+				if wholeRow && len(names) == len(fields)-1 || !wholeRow && len(names) == len(fields) {
 					alter.PGCheckNullTest = names
+					alter.PGCheckNullTestWholeRow = wholeRow
 				}
 			}
 		}

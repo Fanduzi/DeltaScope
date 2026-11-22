@@ -121,7 +121,8 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGBaseTypeDeclaration` preserves shell, base type and property actions and their ordered options.
 - `PGRangeDeclaration` preserves ordered options and the first qualified subtype. Range target and subtype facts come from the existing type catalog queries.
 - `PGCreateEnum` and `PGAlterEnum` retain exact authored labels. `PGEnumState` binds type and private label facts to their exact target.
-- `PGCheckIntegerCoercion` carries whether the observed PostgreSQL catalog permits assignment coercion from int4 to bool. `PGCheckNullTest` preserves exact one- or two-part identifiers from a simple column null test.
+- `PGCheckQualifiedReference` holds the observed current database and whether a missing qualified member could resolve through a whole-row function or cast.
+- `PGCheckIntegerCoercion` carries whether the observed PostgreSQL catalog permits assignment coercion from the observed int4, int8 or numeric source to bool. `PGCheckNullTest` preserves exact identifiers and whole-row intent from a qualified null test.
 - `PGCreateSchemaTarget` retains the exact authored declaration and optional owner role. The provider resolves implicit names privately.
 - `PGCollationChangeState` binds observed namespace or owner facts to the exact collation and authored action.
 - `PGPolicyChange` preserves policy identity, role order and bounded predicate facts. `PGPolicyChangeState` supplies exact relation and policy catalog evidence.

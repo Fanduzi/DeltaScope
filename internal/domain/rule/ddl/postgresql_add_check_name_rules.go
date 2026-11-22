@@ -51,27 +51,15 @@ func assessPGAddCheckName(s spec.Statement) (reason, missing string) {
 	switch a.PGCheckLiteral {
 	case "invalid_boolean":
 		return "check_predicate_invalid_boolean", ""
-	case "integer":
+	case "integer", "bigint", "numeric":
 		coercion := s.Metadata.PGCheckIntegerCoercion
-		if coercion == nil || coercion.Allowed {
-			return "", "check.integer_boolean_coercion"
+		if coercion == nil || coercion.Source != a.PGCheckLiteral || coercion.Allowed {
+			return "", "check." + a.PGCheckLiteral + "_boolean_coercion"
 		}
 		return "check_predicate_boolean_required", ""
 	}
-	if parts := a.PGCheckNullTest; len(parts) != 0 {
-		if len(parts) == 2 && parts[0] != s.DDL.Table.Name {
-			return "check_predicate_qualifier_absent", ""
-		}
-		name := parts[len(parts)-1]
-		member, known := s.Metadata.TargetTable.PGColumns.FindColumn(name)
-		switch {
-		case !known:
-			return "", "target_table.pg_columns"
-		case member != nil && member.System && name != "tableoid":
-			return "check_predicate_system_column", ""
-		case member == nil && (len(parts) == 2 || name != s.DDL.Table.Name):
-			return "check_predicate_column_absent", ""
-		}
+	if reason, missing := assessPGCheckNullReference(s, a); reason != "" || missing != "" {
+		return reason, missing
 	}
 	if a.Name == "" {
 		return "", ""
@@ -84,6 +72,52 @@ func assessPGAddCheckName(s spec.Statement) (reason, missing string) {
 		return "constraint_name_occupied", ""
 	}
 	return "", ""
+}
+
+func assessPGCheckNullReference(s spec.Statement, a spec.Alter) (reason, missing string) {
+	parts := a.PGCheckNullTest
+	if len(parts) == 0 {
+		return "", ""
+	}
+	qualifiers := parts
+	name := ""
+	if !a.PGCheckNullTestWholeRow {
+		name = parts[len(parts)-1]
+		qualifiers = parts[:len(parts)-1]
+	}
+	facts := s.Metadata.PGCheckQualifiedReference
+	if len(qualifiers) == 3 {
+		if facts == nil || facts.Database == "" || facts.Member != name {
+			return "", "check.database_identity"
+		}
+		if facts.Database != qualifiers[0] {
+			return "check_predicate_cross_database", ""
+		}
+		qualifiers = qualifiers[1:]
+	}
+	if len(qualifiers) > 0 && qualifiers[len(qualifiers)-1] != s.DDL.Table.Name ||
+		len(qualifiers) == 2 && qualifiers[0] != s.DDL.Table.Schema {
+		return "check_predicate_qualifier_absent", ""
+	}
+	if a.PGCheckNullTestWholeRow {
+		return "", ""
+	}
+	member, known := s.Metadata.TargetTable.PGColumns.FindColumn(name)
+	switch {
+	case !known:
+		return "", "target_table.pg_columns"
+	case member != nil && member.System && name != "tableoid":
+		return "check_predicate_system_column", ""
+	case member != nil:
+		return "", ""
+	case len(qualifiers) != 0:
+		if facts == nil || facts.Member != name || facts.FallbackPossible {
+			return "", "check.whole_row_function_or_cast"
+		}
+	case name == s.DDL.Table.Name:
+		return "", ""
+	}
+	return "check_predicate_column_absent", ""
 }
 
 func (r pgAddCheckNameRule) Evaluate(ctx context.Context, s spec.Statement) ([]rule.Finding, error) {
@@ -106,7 +140,9 @@ func (r pgAddCheckNameRule) Evaluate(ctx context.Context, s spec.Statement) ([]r
 	case "check_predicate_boolean_required":
 		message = "The CHECK predicate must have a Boolean result"
 	case "check_predicate_qualifier_absent":
-		message = "The CHECK predicate qualifier does not name the target table"
+		message = "The CHECK predicate qualifier does not name the target schema and table"
+	case "check_predicate_cross_database":
+		message = "PostgreSQL does not allow a CHECK reference to another database"
 	case "check_predicate_column_absent":
 		message = "The CHECK predicate references a column that does not exist"
 	case "check_predicate_system_column":

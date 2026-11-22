@@ -49,7 +49,8 @@ comparisons for the member and scope binding.
 | create_commit.go | Observes exact PostgreSQL CREATE TABLE schema and destination occupancy. |
 | create_like.go | Observes ordered LIKE and INHERITS source facts and the destination guard in one catalog read. |
 | create_view_output.go | Observes exact PostgreSQL creation namespace, relation kind and ordered user output columns. |
-| check_literal.go | Observes PostgreSQL assignment cast eligibility for a bounded CHECK predicate. |
+| check_qualified_reference.go | Observes the current database and whether a routine or type name permits whole-row fallback. |
+| check_literal.go | Observes PostgreSQL assignment cast eligibility for the exact numeric source type of a bounded CHECK predicate. |
 | operator_change.go | Resolves exact PostgreSQL operator operand types, namespace occupancy, owner existence and qualified estimator signatures. |
 | type_change.go | Observes source and destination type and relation identities and associated array names. |
 | composite_type.go | Observes namespace, type or relation occupancy and an exact composite attribute directory. |

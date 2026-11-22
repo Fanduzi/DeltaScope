@@ -1,0 +1,18 @@
+name: check_literal_numeric_boolean
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  pg_check_numeric_casts: {numeric: false}
+  tables:
+    t:
+      exists: true
+      pg_relation: {name: t, kind: r}
+      pg_columns: {ordinary: true, columns: []}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.add_check.name.available]

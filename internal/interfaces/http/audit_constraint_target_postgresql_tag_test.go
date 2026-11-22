@@ -11,6 +11,8 @@ import (
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 type pgConstraintTargetHTTPProvider struct {
@@ -28,6 +30,13 @@ func (p pgConstraintTargetHTTPProvider) LoadTableSnapshot(_ context.Context, _ d
 	return &deltascope.TableSnapshot{Schema: schema, Exists: true, Table: &deltascope.Table{Name: table}, PGConstraints: p.members, PGRelation: deltascope.PGRelationState{Name: table, Kind: kind}, PGColumns: &deltascope.PGColumnCatalog{Ordinary: true, Columns: []deltascope.PGColumnState{{Name: "id"}}}}, nil
 }
 
+func (pgConstraintTargetHTTPProvider) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type == "pg_check_integer_coercion" && req.Name == "bigint" {
+		return &spec.ObjectSnapshot{PGCheckIntegerCoercion: &spec.PGCheckIntegerCoercion{Source: "bigint"}}, nil
+	}
+	return nil, nil
+}
+
 func TestHandlerPGConstraintTarget(t *testing.T) {
 	for _, tc := range []struct {
 		sql, id, verdict string
@@ -36,7 +45,9 @@ func TestHandlerPGConstraintTarget(t *testing.T) {
 		{`ALTER TABLE app.t ADD CONSTRAINT " Exact Check " CHECK (1 > 0) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", []deltascope.PGConstraintState{{Name: " Exact Check ", Type: "c", Validated: true}}},
 		{`ALTER TABLE app.t ADD CHECK (id > (SELECT 0)) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD CHECK (" Exact Missing " IS NULL) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
+		{`ALTER TABLE app.t ADD CHECK (other.t.id IS NULL) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD CHECK ('invalid') NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
+		{`ALTER TABLE app.t ADD CHECK (2147483648) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD UNIQUE (id, id)`, "ddl.pg.alter.constraint_columns.valid", "reject", nil},
 		{`ALTER TABLE app.t ADD FOREIGN KEY (id) REFERENCES app.t ("Missing") NOT VALID`, "ddl.pg.alter.add_foreign_key.targets.valid", "reject", []deltascope.PGConstraintState{}},
 		{"ALTER TABLE ONLY app.t VALIDATE CONSTRAINT c", "ddl.pg.alter.validate_constraint.target.require", "reject", []deltascope.PGConstraintState{{Name: "c", Type: "c", CheckValidationChildrenKnown: true, CheckValidationHasChildren: true}}},

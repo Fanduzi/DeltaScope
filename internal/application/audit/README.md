@@ -132,6 +132,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | postgresql_grant_metadata.go | Binds fresh PostgreSQL object, role identity and column facts to GRANT and REVOKE. |
 | mysql_routine_target_metadata.go | Binds visible MySQL routine identities before earlier statements can invalidate the catalog observation. |
 | mysql_stored_object_metadata.go | Binds visible trigger and event facts before earlier DDL can invalidate them. |
+| postgresql_check_qualified_metadata.go | Binds current PostgreSQL database and fallback evidence to scoped CHECK references. |
 | postgresql_collation_refresh_metadata.go | Binds fresh collation refresh target facts. |
 | postgresql_index_include_metadata.go | Binds fresh qualified CREATE INDEX INCLUDE relation, method and column facts. |
 | postgresql_index_destination_metadata.go | Binds observed source and destination facts to a qualified PostgreSQL index change. |

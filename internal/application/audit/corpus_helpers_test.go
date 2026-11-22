@@ -40,7 +40,7 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
 		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
-		len(tc.Metadata.MySQLStoredObjects) == 0 && len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGCreateStorage) == 0 && len(tc.Metadata.PGCreateTyped) == 0 && len(tc.Metadata.PGCreateCommits) == 0 && len(tc.Metadata.PGCreateLikes) == 0 && len(tc.Metadata.PGOperatorFamilies) == 0 && len(tc.Metadata.PGIndexIncludes) == 0 && len(tc.Metadata.PGReplicationTargets) == 0 && len(tc.Metadata.PGLanguages) == 0 && len(tc.Metadata.PGGrants) == 0 && len(tc.Metadata.PGIndexDestinations) == 0 && len(tc.Metadata.PGIndexOptions) == 0 && len(tc.Metadata.PGIndexAttachments) == 0 && len(tc.Metadata.PGOperatorChanges) == 0 && len(tc.Metadata.PGComposites) == 0 && len(tc.Metadata.PGEnums) == 0 && len(tc.Metadata.PGCollationChanges) == 0 && len(tc.Metadata.PGCollationRefreshes) == 0 && len(tc.Metadata.PGPolicies) == 0 && len(tc.Metadata.PGSequenceChanges) == 0 && len(tc.Metadata.PGForeignTables) == 0 && len(tc.Metadata.PGWrappers) == 0 && len(tc.Metadata.PGTextSearch) == 0 && len(tc.Metadata.PGCreateSchemas) == 0 && len(tc.Metadata.PGPartitionConstraints) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
+		len(tc.Metadata.MySQLStoredObjects) == 0 && len(tc.Metadata.PGCheckNumericCasts) == 0 && len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGCreateStorage) == 0 && len(tc.Metadata.PGCreateTyped) == 0 && len(tc.Metadata.PGCreateCommits) == 0 && len(tc.Metadata.PGCreateLikes) == 0 && len(tc.Metadata.PGOperatorFamilies) == 0 && len(tc.Metadata.PGIndexIncludes) == 0 && len(tc.Metadata.PGReplicationTargets) == 0 && len(tc.Metadata.PGLanguages) == 0 && len(tc.Metadata.PGGrants) == 0 && len(tc.Metadata.PGIndexDestinations) == 0 && len(tc.Metadata.PGIndexOptions) == 0 && len(tc.Metadata.PGIndexAttachments) == 0 && len(tc.Metadata.PGOperatorChanges) == 0 && len(tc.Metadata.PGComposites) == 0 && len(tc.Metadata.PGEnums) == 0 && len(tc.Metadata.PGCollationChanges) == 0 && len(tc.Metadata.PGCollationRefreshes) == 0 && len(tc.Metadata.PGPolicies) == 0 && len(tc.Metadata.PGSequenceChanges) == 0 && len(tc.Metadata.PGForeignTables) == 0 && len(tc.Metadata.PGWrappers) == 0 && len(tc.Metadata.PGTextSearch) == 0 && len(tc.Metadata.PGCreateSchemas) == 0 && len(tc.Metadata.PGPartitionConstraints) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
@@ -48,6 +48,7 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 
 type corpusFixtureMetadataProvider struct {
 	mysqlStoredObjects           []corpusMySQLStoredObject
+	pgCheckNumericCasts          map[string]bool
 	pgMaterializedViewExtensions []corpusPGMaterializedViewExtensionState
 	pgViewDefaults               []corpusPGViewDefaultState
 	pgCreateStorage              []corpusPGCreateStorage
@@ -126,6 +127,7 @@ type corpusFixtureMetadataProvider struct {
 
 func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataProvider {
 	provider := &corpusFixtureMetadataProvider{
+		pgCheckNumericCasts:          metadata.PGCheckNumericCasts,
 		tables:                       make(map[string]*spec.TableSnapshot, len(metadata.Tables)),
 		indexOwners:                  make(map[string]string, len(metadata.IndexOwners)),
 		pgTableOwners:                metadata.PGTableOwners,
@@ -536,6 +538,12 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 				target := spec.MySQLStoredObjectTarget{Kind: seed.Kind, Name: spec.Table{Schema: seed.Schema, Name: seed.Name}}
 				return &spec.ObjectSnapshot{MySQLStoredObject: &spec.MySQLStoredObjectState{Target: target, SourceSeen: true}}, nil
 			}
+		}
+		return nil, nil
+	}
+	if request.Type == "pg_check_integer_coercion" {
+		if allowed, known := p.pgCheckNumericCasts[request.Name]; known {
+			return &spec.ObjectSnapshot{PGCheckIntegerCoercion: &spec.PGCheckIntegerCoercion{Source: request.Name, Allowed: allowed}}, nil
 		}
 		return nil, nil
 	}

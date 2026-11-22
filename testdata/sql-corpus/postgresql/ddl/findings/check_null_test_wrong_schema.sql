@@ -1,0 +1,1 @@
+ALTER TABLE app.t ADD CHECK (other.t.id IS NULL) NOT VALID;

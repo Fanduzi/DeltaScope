@@ -26,8 +26,10 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, req 
 			return p.resolveMaterializedViewExtension(ctx, req)
 		case "materialized_view_options":
 			return p.resolveMaterializedViewOptions(ctx, req)
+		case "pg_check_qualified_reference":
+			return p.resolveCheckQualifiedReference(ctx, req.Name)
 		case "pg_check_integer_coercion":
-			return p.resolveCheckIntegerCoercion(ctx)
+			return p.resolveCheckIntegerCoercion(ctx, req.Name)
 		case "pg_policy_change":
 			return p.resolvePolicyChange(ctx, req)
 		case "pg_sequence_change":

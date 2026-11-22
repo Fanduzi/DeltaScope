@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 func TestAuditPGConstraintTargetContract(t *testing.T) {
@@ -17,7 +19,9 @@ func TestAuditPGConstraintTargetContract(t *testing.T) {
 		{`ALTER TABLE app.t ADD CONSTRAINT " Exact Check " CHECK (1 > 0) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", []PGConstraintState{{Name: " Exact Check ", Type: "c", Validated: true}}},
 		{`ALTER TABLE app.t ADD CHECK (id > (SELECT 0)) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD CHECK (" Exact Missing " IS NULL) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
+		{`ALTER TABLE app.t ADD CHECK (other.t.id IS NULL) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD CHECK ('invalid') NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
+		{`ALTER TABLE app.t ADD CHECK (2147483648) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD UNIQUE (id, id)`, "ddl.pg.alter.constraint_columns.valid", "reject", nil},
 		{`ALTER TABLE app.t ADD FOREIGN KEY (id) REFERENCES app.t ("Missing") NOT VALID`, "ddl.pg.alter.add_foreign_key.targets.valid", "reject", []PGConstraintState{}},
 		{"ALTER TABLE ONLY app.t VALIDATE CONSTRAINT c", "ddl.pg.alter.validate_constraint.target.require", "reject", []PGConstraintState{{Name: "c", Type: "c", CheckValidationChildrenKnown: true, CheckValidationHasChildren: true}}},
@@ -34,7 +38,9 @@ func TestAuditPGConstraintTargetContract(t *testing.T) {
 			kind = "p"
 		}
 		p := &fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"}, snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"}, PGConstraints: tc.members, PGRelation: PGRelationState{Name: "t", Kind: kind}, PGColumns: &PGColumnCatalog{Ordinary: true, Columns: []PGColumnState{{Name: "id"}}}, Options: map[string]string{"private": "private_catalog_payload"}}}
-		r, err := Audit(context.Background(), Request{SQL: tc.sql, Dialect: DialectPostgreSQL, Schema: "app", MetadataProvider: p})
+		provider := &fakeMetadataProviderWithObjects{fakeMetadataProvider: *p,
+			objectSnapshot: &spec.ObjectSnapshot{PGCheckIntegerCoercion: &spec.PGCheckIntegerCoercion{Source: "bigint"}}}
+		r, err := Audit(context.Background(), Request{SQL: tc.sql, Dialect: DialectPostgreSQL, Schema: "app", MetadataProvider: provider})
 		if err != nil || string(r.Verdict) != tc.verdict {
 			t.Fatalf("result=%+v err=%v", r, err)
 		}

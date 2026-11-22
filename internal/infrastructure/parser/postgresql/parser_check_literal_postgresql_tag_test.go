@@ -17,7 +17,16 @@ func TestPGCheckLiteralClassification(t *testing.T) {
 		{"'o'", "invalid_boolean"},
 		{"NULL", ""},
 		{"FALSE", ""},
-		{"1.5", ""},
+		{"1.5", "numeric"},
+		{"1e2", "numeric"},
+		{"1e1000000", ""},
+		{"-2147483648", "integer"},
+		{"2147483648", "bigint"},
+		{"-2147483649", "bigint"},
+		{"9223372036854775808", "numeric"},
+		{"0x80000000", "bigint"},
+		{"2_147_483_648", "bigint"},
+		{"0002147483648", "bigint"},
 		{"id", ""},
 	} {
 		t.Run(tc.predicate, func(t *testing.T) {

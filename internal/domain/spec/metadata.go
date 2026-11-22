@@ -5,6 +5,7 @@ import "strings"
 
 // Metadata carries optional non-SQL facts for one statement evaluation.
 type Metadata struct {
+	PGCheckQualifiedReference     *PGCheckQualifiedReference        `json:"-"`
 	DropIndexForeignKeyDependency bool                              `json:"-"`
 	PGRangeSubtype                *PGColumnTypeState                `json:"-"`
 	PGOperatorChange              *PGOperatorChangeState            `json:"-"`
@@ -846,6 +847,7 @@ type ObjectSnapshot struct {
 	PGTypeChange                *PGTypeChangeState                `json:"-"`
 	PGComposite                 *PGCompositeState                 `json:"-"`
 	PGEnum                      *PGEnumState                      `json:"-"`
+	PGCheckQualifiedReference   *PGCheckQualifiedReference        `json:"-"`
 	PGCheckIntegerCoercion      *PGCheckIntegerCoercion           `json:"-"`
 	PGCollationChange           *PGCollationChangeState           `json:"-"`
 	PGPolicyChange              *PGPolicyChangeState              `json:"-"`

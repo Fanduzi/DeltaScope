@@ -329,6 +329,7 @@ type corpusMySQLStoredObject struct {
 
 type corpusMetadata struct {
 	MySQLStoredObjects           []corpusMySQLStoredObject                `yaml:"mysql_stored_objects,omitempty"`
+	PGCheckNumericCasts          map[string]bool                          `yaml:"pg_check_numeric_casts,omitempty"`
 	PGCreateStorage              []corpusPGCreateStorage                  `yaml:"pg_create_storage,omitempty"`
 	PGCreateTyped                []corpusPGCreateTyped                    `yaml:"pg_create_typed,omitempty"`
 	PGCreateCommits              []corpusPGCreateCommit                   `yaml:"pg_create_commits,omitempty"`

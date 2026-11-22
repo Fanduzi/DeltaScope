@@ -11,6 +11,15 @@ import (
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
+type pgConstraintTargetMCPClient struct{ *mcpMetadataAuditTestClient }
+
+func (pgConstraintTargetMCPClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type == "pg_check_integer_coercion" && req.Name == "bigint" {
+		return &spec.ObjectSnapshot{PGCheckIntegerCoercion: &spec.PGCheckIntegerCoercion{Source: "bigint"}}, nil
+	}
+	return nil, nil
+}
+
 func TestAuditSQLPGConstraintTarget(t *testing.T) {
 	previous := prepareMetadataAudit
 	t.Cleanup(func() { prepareMetadataAudit = previous })
@@ -21,7 +30,9 @@ func TestAuditSQLPGConstraintTarget(t *testing.T) {
 		{`ALTER TABLE app.t ADD CONSTRAINT " Exact Check " CHECK (1 > 0) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", []spec.PGConstraintState{{Name: " Exact Check ", Type: "c", Validated: true}}},
 		{`ALTER TABLE app.t ADD CHECK (id > (SELECT 0)) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD CHECK (" Exact Missing " IS NULL) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
+		{`ALTER TABLE app.t ADD CHECK (other.t.id IS NULL) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD CHECK ('invalid') NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
+		{`ALTER TABLE app.t ADD CHECK (2147483648) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD UNIQUE (id, id)`, "ddl.pg.alter.constraint_columns.valid", "reject", nil},
 		{`ALTER TABLE app.t ADD FOREIGN KEY (id) REFERENCES app.t ("Missing") NOT VALID`, "ddl.pg.alter.add_foreign_key.targets.valid", "reject", []spec.PGConstraintState{}},
 		{"ALTER TABLE ONLY app.t VALIDATE CONSTRAINT c", "ddl.pg.alter.validate_constraint.target.require", "reject", []spec.PGConstraintState{{Name: "c", Type: "c", CheckValidationChildrenKnown: true, CheckValidationHasChildren: true}}},
@@ -39,7 +50,7 @@ func TestAuditSQLPGConstraintTarget(t *testing.T) {
 		}
 		client := &mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL, snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: tc.members, PGRelation: spec.PGRelationState{Name: "t", Kind: kind}, PGColumns: &spec.PGColumnCatalog{Ordinary: true, Columns: []spec.PGColumnState{{Name: "id"}}}}}
 		prepareMetadataAudit = func(context.Context, auditmeta.Request) (*auditmeta.PreparedAudit, error) {
-			return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app", DialectSource: "request", SchemaSource: "request"}, nil
+			return &auditmeta.PreparedAudit{Client: pgConstraintTargetMCPClient{client}, Dialect: spec.DialectPostgreSQL, Schema: "app", DialectSource: "request", SchemaSource: "request"}, nil
 		}
 		session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
 		if err != nil {

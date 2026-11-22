@@ -26,10 +26,13 @@ func TestPGAddCheckName(t *testing.T) {
 		{name: "known empty", entries: []spec.PGConstraintState{}},
 		{name: "subquery precedes exact collision", entries: []spec.PGConstraintState{{Name: " Exact Check ", Type: "c"}}, subquery: true, occupied: true},
 		{name: "unnamed subquery", subquery: true, occupied: true, change: func(s *spec.Statement) { s.DDL.Alter[0].Name = "" }},
-		{name: "integer before name collision", literal: "integer", coercion: &spec.PGCheckIntegerCoercion{}, reason: "check_predicate_boolean_required", occupied: true,
+		{name: "integer before name collision", literal: "integer", coercion: &spec.PGCheckIntegerCoercion{Source: "integer"}, reason: "check_predicate_boolean_required", occupied: true,
 			entries: []spec.PGConstraintState{{Name: " Exact Check ", Type: "c"}}},
+		{name: "bigint cast not allowed", literal: "bigint", coercion: &spec.PGCheckIntegerCoercion{Source: "bigint"}, reason: "check_predicate_boolean_required", occupied: true},
+		{name: "numeric cast possible", literal: "numeric", coercion: &spec.PGCheckIntegerCoercion{Source: "numeric", Allowed: true}, gap: "check.numeric_boolean_coercion"},
+		{name: "misbound cast witness", literal: "numeric", coercion: &spec.PGCheckIntegerCoercion{Source: "bigint"}, gap: "check.numeric_boolean_coercion"},
 		{name: "integer cast unknown", literal: "integer", gap: "check.integer_boolean_coercion"},
-		{name: "assignment cast needs result evidence", literal: "integer", coercion: &spec.PGCheckIntegerCoercion{Allowed: true}, gap: "check.integer_boolean_coercion"},
+		{name: "assignment cast needs result evidence", literal: "integer", coercion: &spec.PGCheckIntegerCoercion{Source: "integer", Allowed: true}, gap: "check.integer_boolean_coercion"},
 		{name: "malformed Boolean string", literal: "invalid_boolean", reason: "check_predicate_invalid_boolean", occupied: true, change: func(s *spec.Statement) { s.DDL.Alter[0].Name = "" }},
 		{name: "known absent exact column", nullTest: []string{" exact Flag "}, columns: []spec.PGColumnState{{Name: " Exact Flag "}}, reason: "check_predicate_column_absent", occupied: true},
 		{name: "unknown column catalog", nullTest: []string{"missing"}, gap: "target_table.pg_columns"},
@@ -38,6 +41,12 @@ func TestPGAddCheckName(t *testing.T) {
 			s.Metadata.TargetTable.PGColumns.SystemColumns = []spec.PGColumnState{{Name: "ctid", System: true}}
 		}},
 		{name: "mismatched qualifier", nullTest: []string{"other", "id"}, reason: "check_predicate_qualifier_absent", occupied: true},
+		{name: "mismatched schema", nullTest: []string{"other", "t", "id"}, reason: "check_predicate_qualifier_absent", occupied: true},
+		{name: "local database unobserved", nullTest: []string{"postgres", "app", "t", "id"}, gap: "check.database_identity"},
+		{name: "whole-row fallback unobserved", nullTest: []string{"app", "t", "missing"}, columns: []spec.PGColumnState{}, gap: "check.whole_row_function_or_cast"},
+		{name: "whole-row fallback possible", nullTest: []string{"t", "label"}, columns: []spec.PGColumnState{}, gap: "check.whole_row_function_or_cast", change: func(s *spec.Statement) {
+			s.Metadata.PGCheckQualifiedReference = &spec.PGCheckQualifiedReference{Database: "postgres", Member: "label", FallbackPossible: true}
+		}},
 		{name: "missing directory", gap: "target_table.pg_constraints"},
 		{name: "ambiguous names", gap: "target_table.pg_constraints", entries: []spec.PGConstraintState{{Name: " Exact Check ", Type: "c"}, {Name: " Exact Check ", Type: "p"}}},
 		{name: "stale binding", gap: "target_table.pg_constraint_scope", change: func(s *spec.Statement) { s.Metadata.TargetTable.PGRelation = spec.PGRelationState{} }},

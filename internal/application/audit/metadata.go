@@ -225,6 +225,9 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 
 	if dialect == spec.DialectPostgreSQL {
 		freshPrefix := invalidateStalePGTargetCatalogs(enriched, failures)
+		if err := enrichPGCheckQualifiedReferences(ctx, request, enriched[:freshPrefix]); err != nil {
+			return nil, err
+		}
 		if err := enrichPGCheckIntegers(ctx, request, enriched[:freshPrefix]); err != nil {
 			return nil, err
 		}
