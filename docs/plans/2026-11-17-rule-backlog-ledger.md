@@ -1025,7 +1025,7 @@ new default behavior is approved per family before implementation.
 | ID | Family | Rows | Canonical ownership | Initial state |
 | --- | --- | ---: | --- | --- |
 | F01 | MySQL stored routines | 5 | T27/T28 | Stored routine target and guard checks delivered at `a2f73b0c`. Runtime effects and unmodeled bodies retain evidence boundaries. |
-| F02 | MySQL trigger/event lifecycle | 5 | T29/T30 | unreviewed |
+| F02 | MySQL trigger/event lifecycle | 5 | T29/T30 | Qualified trigger and event checks delivered at `d49b805c`. Invocation and scheduler effects retain boundaries. |
 | F03 | MySQL/TiDB columns/generated/multi-action | 6 | T03/T05/T07/T08 | unreviewed |
 | F04 | MySQL/TiDB index lifecycle | 3 | T09/T10 | unreviewed |
 | F05 | MySQL/TiDB ALTER options/online DDL | 3 | T15 | Bounded ALTER option and INSTANT table premises delivered at `07f4aca5`. |
@@ -1060,11 +1060,11 @@ insufficient.
 | F01 | `mysql.alter-procedure-function` | ALTER PROCEDURE; ALTER FUNCTION; SQL SECURITY; COMMENT | Visible exact identities, SECURITY and native COMMENT controls verified. Catalog visibility gaps remain. |
 | F01 | `mysql.drop-procedure-function` | DROP PROCEDURE; DROP FUNCTION; IF EXISTS | Qualified identity, kind and guarded absence verified. Catalog misses and dependencies require additional facts. |
 | F01 | `mysql.stored-body-analysis` | static body SQL; DECLARE/local binding; control flow; PREPARE/EXECUTE dynamic SQL | Existing static body and binding coverage verified with explicit dynamic and unsupported-member boundaries. |
-| F02 | `mysql.create-trigger` | BEFORE/AFTER INSERT/UPDATE/DELETE; FOR EACH ROW; FOLLOWS/PRECEDES; OLD/NEW bindings | unreviewed |
-| F02 | `mysql.drop-trigger` | DROP TRIGGER; IF EXISTS | unreviewed |
-| F02 | `mysql.create-event` | ON SCHEDULE AT/EVERY; ON COMPLETION; ENABLE/DISABLE; DO body | unreviewed |
-| F02 | `mysql.alter-event` | ALTER EVENT ... ON SCHEDULE/RENAME/ENABLE/DISABLE/DO | unreviewed |
-| F02 | `mysql.drop-event` | DROP EVENT; IF EXISTS | unreviewed |
+| F02 | `mysql.create-trigger` | BEFORE/AFTER INSERT/UPDATE/DELETE; FOR EACH ROW; FOLLOWS/PRECEDES; OLD/NEW bindings | Visible conflicts and ordering groups verified. Guarded CREATE retains a parser boundary on MySQL 8.x. |
+| F02 | `mysql.drop-trigger` | DROP TRIGGER; IF EXISTS | Exact visible identity and guarded absence verified with version-specific case controls. |
+| F02 | `mysql.create-event` | ON SCHEDULE AT/EVERY; ON COMPLETION; ENABLE/DISABLE; DO body | Visible identity conflicts and native schedule controls verified. Clock and body execution remain outside audit. |
+| F02 | `mysql.alter-event` | ALTER EVENT ... ON SCHEDULE/RENAME/ENABLE/DISABLE/DO | Visible destination conflict and same-identity rename verified. Unseen names retain evidence gaps. |
+| F02 | `mysql.drop-event` | DROP EVENT; IF EXISTS | Visible identity and guarded absence verified. Scheduler and execution privileges require separate facts. |
 | F03 | `mysql.create-table-generated-column` | GENERATED ALWAYS AS (expr); VIRTUAL; STORED; expression DEFAULT (8.0.13+); INVISIBLE column (8.0.23+) | unreviewed |
 | F03 | `mysql.alter-table.add-column` | ADD COLUMN; ADD COLUMN FIRST/AFTER; ADD (col, col, ...) | unreviewed |
 | F03 | `mysql.alter-table.drop-column` | DROP COLUMN | unreviewed |
@@ -1835,7 +1835,14 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137052905453) passed at t
 
 The DROP rows move to `mixed_coverage`. See [decision record](../decisions/2026-11-21-mysql-trigger-event-identities.md), [T29](../../testdata/ddl-golden/T29.json), and [T30](../../testdata/ddl-golden/T30.json).
 
-Isolated preview T29 passed 57 cases and 1,298 assertions, T30 passed 61 cases and 1,416 assertions. Verification on the fixed F02 candidate is pending.
+Isolated preview T29 passed 57 cases and 1,298 assertions, T30 passed 61 cases and 1,416 assertions. Delivered at `d49b805c2fd64382a5fd4df9f4aae8238ea9f0e9`. All 50 canonical tasks passed with 4,995 cases and
+117,200 assertions. T29 passed 57 cases and 1,298 assertions, T30 passed 61 cases and 1,416 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44977093432/job/137069308262),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44977093432/job/137069308357),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44977093432/job/137069308049),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44977093269/job/137069308110),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137069370087) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
