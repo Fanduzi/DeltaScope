@@ -110,6 +110,7 @@
  },
  "policy": {
   "profiles": {
+   "f02-stored-object-target": {"enable": {"ddl.mysql.stored_object.target.valid": {"level": "blocker"}}},
    "t29-where": {
     "enable": {
      "dml.where.require": {
@@ -806,6 +807,5397 @@
  ],
  "metadata_cases": [
   {
+   "id": "f02-mysql57-create-trigger-duplicate",
+   "sql": "CREATE TRIGGER f02_trigger_mysql57_0.bi BEFORE INSERT ON f02_trigger_mysql57_0.t FOR EACH ROW SET NEW.v=2",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_trigger_mysql57_0",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql57_0",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_0'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "trigger",
+       "reason_code": "trigger_name_occupied"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_0'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql57_0",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql57_0.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql57_0.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql57_0.bi BEFORE INSERT ON f02_trigger_mysql57_0.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql57_0.ai AFTER INSERT ON f02_trigger_mysql57_0.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql57_0.other_bi BEFORE INSERT ON f02_trigger_mysql57_0.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_0.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_0.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_0'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_0' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_0.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_0.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_0'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_0' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql57_0.bi BEFORE INSERT ON f02_trigger_mysql57_0.t FOR EACH ROW SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1359 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_0.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_0.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_0'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_0' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql57_0",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_0'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-create-trigger-guard",
+   "sql": "CREATE TRIGGER IF NOT EXISTS f02_trigger_mysql57_1.bi BEFORE INSERT ON f02_trigger_mysql57_1.t FOR EACH ROW SET NEW.v=2",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_trigger_mysql57_1",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql57_1",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_1'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete"
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_1'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql57_1",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql57_1.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql57_1.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql57_1.bi BEFORE INSERT ON f02_trigger_mysql57_1.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql57_1.ai AFTER INSERT ON f02_trigger_mysql57_1.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql57_1.other_bi BEFORE INSERT ON f02_trigger_mysql57_1.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_1.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_1.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_1'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_1' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_1.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_1.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_1'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_1' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER IF NOT EXISTS f02_trigger_mysql57_1.bi BEFORE INSERT ON f02_trigger_mysql57_1.t FOR EACH ROW SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1064 (42000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_1.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_1.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_1'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_1' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql57_1",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_1'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-create-trigger-table-missing",
+   "sql": "CREATE TRIGGER f02_trigger_mysql57_2.missing_table BEFORE INSERT ON f02_trigger_mysql57_2.absent FOR EACH ROW SET NEW.v=2",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_trigger_mysql57_2",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql57_2",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_2'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_2'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql57_2",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql57_2.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql57_2.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql57_2.bi BEFORE INSERT ON f02_trigger_mysql57_2.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql57_2.ai AFTER INSERT ON f02_trigger_mysql57_2.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql57_2.other_bi BEFORE INSERT ON f02_trigger_mysql57_2.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_2.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_2.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_2'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_2' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_2.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_2.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_2'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_2' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql57_2.missing_table BEFORE INSERT ON f02_trigger_mysql57_2.absent FOR EACH ROW SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1146 (42S02)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_2.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_2.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_2'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_2' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql57_2",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_2'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-trigger-order-missing",
+   "sql": "CREATE TRIGGER f02_trigger_mysql57_3.no_sibling BEFORE INSERT ON f02_trigger_mysql57_3.t FOR EACH ROW FOLLOWS missing SET NEW.v=2",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_trigger_mysql57_3",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql57_3",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_3'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "trigger.ordering_sibling"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_3'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql57_3",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql57_3.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql57_3.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql57_3.bi BEFORE INSERT ON f02_trigger_mysql57_3.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql57_3.ai AFTER INSERT ON f02_trigger_mysql57_3.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql57_3.other_bi BEFORE INSERT ON f02_trigger_mysql57_3.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_3.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_3.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_3'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_3' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_3.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_3.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_3'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_3' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql57_3.no_sibling BEFORE INSERT ON f02_trigger_mysql57_3.t FOR EACH ROW FOLLOWS missing SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 3011 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_3.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_3.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_3'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_3' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql57_3",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_3'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-trigger-order-other-table",
+   "sql": "CREATE TRIGGER f02_trigger_mysql57_4.wrong_table BEFORE INSERT ON f02_trigger_mysql57_4.t FOR EACH ROW FOLLOWS other_bi SET NEW.v=2",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_trigger_mysql57_4",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql57_4",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_4'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "trigger",
+       "reason_code": "trigger_order_group_mismatch"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_4'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql57_4",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql57_4.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql57_4.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql57_4.bi BEFORE INSERT ON f02_trigger_mysql57_4.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql57_4.ai AFTER INSERT ON f02_trigger_mysql57_4.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql57_4.other_bi BEFORE INSERT ON f02_trigger_mysql57_4.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_4.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_4.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_4'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_4' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_4.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_4.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_4'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_4' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql57_4.wrong_table BEFORE INSERT ON f02_trigger_mysql57_4.t FOR EACH ROW FOLLOWS other_bi SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 3011 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_4.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_4.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_4'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_4' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql57_4",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_4'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-trigger-order-other-timing",
+   "sql": "CREATE TRIGGER f02_trigger_mysql57_5.wrong_timing BEFORE INSERT ON f02_trigger_mysql57_5.t FOR EACH ROW FOLLOWS ai SET NEW.v=2",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_trigger_mysql57_5",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql57_5",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_5'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "trigger",
+       "reason_code": "trigger_order_group_mismatch"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_5'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql57_5",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql57_5.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql57_5.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql57_5.bi BEFORE INSERT ON f02_trigger_mysql57_5.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql57_5.ai AFTER INSERT ON f02_trigger_mysql57_5.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql57_5.other_bi BEFORE INSERT ON f02_trigger_mysql57_5.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_5.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_5.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_5'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_5' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_5.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_5.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_5'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_5' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql57_5.wrong_timing BEFORE INSERT ON f02_trigger_mysql57_5.t FOR EACH ROW FOLLOWS ai SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 3011 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_5.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_5.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_5'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_5' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql57_5",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_5'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-trigger-order-success",
+   "sql": "CREATE TRIGGER f02_trigger_mysql57_6.good BEFORE INSERT ON f02_trigger_mysql57_6.t FOR EACH ROW PRECEDES bi SET NEW.v=2",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_trigger_mysql57_6",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql57_6",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_6'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_6'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql57_6",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql57_6.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql57_6.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql57_6.bi BEFORE INSERT ON f02_trigger_mysql57_6.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql57_6.ai AFTER INSERT ON f02_trigger_mysql57_6.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql57_6.other_bi BEFORE INSERT ON f02_trigger_mysql57_6.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_6.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_6.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_6'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_6' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_6.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_6.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_6'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_6' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql57_6.good BEFORE INSERT ON f02_trigger_mysql57_6.t FOR EACH ROW PRECEDES bi SET NEW.v=2",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_6.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_6.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "new trigger exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_6'",
+     "expect": "4"
+    },
+    {
+     "assert": "original trigger follows new sibling",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_6' AND TRIGGER_NAME='bi'",
+     "expect": "2"
+    },
+    {
+     "assert": "new trigger precedes original sibling",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_6' AND TRIGGER_NAME='good'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql57_6",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_6'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-trigger-drop-missing",
+   "sql": "DROP TRIGGER f02_trigger_mysql57_7.absent",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_trigger_mysql57_7",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql57_7",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_7'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_7'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql57_7",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql57_7.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql57_7.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql57_7.bi BEFORE INSERT ON f02_trigger_mysql57_7.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql57_7.ai AFTER INSERT ON f02_trigger_mysql57_7.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql57_7.other_bi BEFORE INSERT ON f02_trigger_mysql57_7.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_7.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_7.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_7'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_7' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_7.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_7.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_7'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_7' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "DROP TRIGGER f02_trigger_mysql57_7.absent",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1360 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_7.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_7.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_7'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_7' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql57_7",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_7'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-trigger-drop-guarded-missing",
+   "sql": "DROP TRIGGER IF EXISTS f02_trigger_mysql57_8.absent",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_trigger_mysql57_8",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql57_8",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_8'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_8'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql57_8",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql57_8.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql57_8.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql57_8.bi BEFORE INSERT ON f02_trigger_mysql57_8.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql57_8.ai AFTER INSERT ON f02_trigger_mysql57_8.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql57_8.other_bi BEFORE INSERT ON f02_trigger_mysql57_8.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_8.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_8.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_8'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_8' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_8.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_8.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_8'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_8' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "DROP TRIGGER IF EXISTS f02_trigger_mysql57_8.absent",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_8.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_8.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_8'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_8' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql57_8",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_8'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-trigger-drop-case-variant",
+   "sql": "DROP TRIGGER f02_trigger_mysql57_9.GOOD",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_trigger_mysql57_9",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql57_9",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_9'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_9'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql57_9",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql57_9.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql57_9.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql57_9.bi BEFORE INSERT ON f02_trigger_mysql57_9.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql57_9.ai AFTER INSERT ON f02_trigger_mysql57_9.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql57_9.other_bi BEFORE INSERT ON f02_trigger_mysql57_9.other_t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql57_9.good BEFORE INSERT ON f02_trigger_mysql57_9.t FOR EACH ROW PRECEDES bi SET NEW.v=2",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_9.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_9.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_9'",
+       "expect": "4"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_9' AND TRIGGER_NAME='bi'",
+       "expect": "2"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_9.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_9.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_9'",
+     "expect": "4"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_9' AND TRIGGER_NAME='bi'",
+     "expect": "2"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "DROP TRIGGER f02_trigger_mysql57_9.GOOD",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1360 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_9.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql57_9.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_9'",
+     "expect": "4"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql57_9' AND TRIGGER_NAME='bi'",
+     "expect": "2"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql57_9",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql57_9'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-create-trigger-duplicate",
+   "sql": "CREATE TRIGGER f02_trigger_mysql80_10.bi BEFORE INSERT ON f02_trigger_mysql80_10.t FOR EACH ROW SET NEW.v=2",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_trigger_mysql80_10",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql80_10",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_10'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "trigger",
+       "reason_code": "trigger_name_occupied"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_10'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql80_10",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql80_10.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql80_10.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql80_10.bi BEFORE INSERT ON f02_trigger_mysql80_10.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql80_10.ai AFTER INSERT ON f02_trigger_mysql80_10.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql80_10.other_bi BEFORE INSERT ON f02_trigger_mysql80_10.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_10.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_10.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_10'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_10' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_10.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_10.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_10'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_10' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql80_10.bi BEFORE INSERT ON f02_trigger_mysql80_10.t FOR EACH ROW SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1359 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_10.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_10.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_10'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_10' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql80_10",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_10'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-create-trigger-guard",
+   "sql": "CREATE TRIGGER IF NOT EXISTS f02_trigger_mysql80_11.bi BEFORE INSERT ON f02_trigger_mysql80_11.t FOR EACH ROW SET NEW.v=2",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_trigger_mysql80_11",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql80_11",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_11'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete"
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_11'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql80_11",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql80_11.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql80_11.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql80_11.bi BEFORE INSERT ON f02_trigger_mysql80_11.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql80_11.ai AFTER INSERT ON f02_trigger_mysql80_11.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql80_11.other_bi BEFORE INSERT ON f02_trigger_mysql80_11.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_11.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_11.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_11'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_11' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_11.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_11.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_11'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_11' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER IF NOT EXISTS f02_trigger_mysql80_11.bi BEFORE INSERT ON f02_trigger_mysql80_11.t FOR EACH ROW SET NEW.v=2",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_11.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_11.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_11'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_11' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql80_11",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_11'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-create-trigger-table-missing",
+   "sql": "CREATE TRIGGER f02_trigger_mysql80_12.missing_table BEFORE INSERT ON f02_trigger_mysql80_12.absent FOR EACH ROW SET NEW.v=2",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_trigger_mysql80_12",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql80_12",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_12'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_12'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql80_12",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql80_12.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql80_12.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql80_12.bi BEFORE INSERT ON f02_trigger_mysql80_12.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql80_12.ai AFTER INSERT ON f02_trigger_mysql80_12.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql80_12.other_bi BEFORE INSERT ON f02_trigger_mysql80_12.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_12.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_12.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_12'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_12' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_12.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_12.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_12'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_12' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql80_12.missing_table BEFORE INSERT ON f02_trigger_mysql80_12.absent FOR EACH ROW SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1146 (42S02)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_12.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_12.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_12'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_12' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql80_12",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_12'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-trigger-order-missing",
+   "sql": "CREATE TRIGGER f02_trigger_mysql80_13.no_sibling BEFORE INSERT ON f02_trigger_mysql80_13.t FOR EACH ROW FOLLOWS missing SET NEW.v=2",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_trigger_mysql80_13",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql80_13",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_13'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "trigger.ordering_sibling"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_13'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql80_13",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql80_13.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql80_13.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql80_13.bi BEFORE INSERT ON f02_trigger_mysql80_13.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql80_13.ai AFTER INSERT ON f02_trigger_mysql80_13.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql80_13.other_bi BEFORE INSERT ON f02_trigger_mysql80_13.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_13.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_13.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_13'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_13' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_13.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_13.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_13'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_13' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql80_13.no_sibling BEFORE INSERT ON f02_trigger_mysql80_13.t FOR EACH ROW FOLLOWS missing SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 3011 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_13.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_13.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_13'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_13' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql80_13",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_13'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-trigger-order-other-table",
+   "sql": "CREATE TRIGGER f02_trigger_mysql80_14.wrong_table BEFORE INSERT ON f02_trigger_mysql80_14.t FOR EACH ROW FOLLOWS other_bi SET NEW.v=2",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_trigger_mysql80_14",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql80_14",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_14'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "trigger",
+       "reason_code": "trigger_order_group_mismatch"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_14'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql80_14",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql80_14.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql80_14.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql80_14.bi BEFORE INSERT ON f02_trigger_mysql80_14.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql80_14.ai AFTER INSERT ON f02_trigger_mysql80_14.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql80_14.other_bi BEFORE INSERT ON f02_trigger_mysql80_14.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_14.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_14.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_14'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_14' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_14.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_14.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_14'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_14' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql80_14.wrong_table BEFORE INSERT ON f02_trigger_mysql80_14.t FOR EACH ROW FOLLOWS other_bi SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 3011 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_14.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_14.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_14'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_14' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql80_14",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_14'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-trigger-order-other-timing",
+   "sql": "CREATE TRIGGER f02_trigger_mysql80_15.wrong_timing BEFORE INSERT ON f02_trigger_mysql80_15.t FOR EACH ROW FOLLOWS ai SET NEW.v=2",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_trigger_mysql80_15",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql80_15",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_15'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "trigger",
+       "reason_code": "trigger_order_group_mismatch"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_15'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql80_15",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql80_15.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql80_15.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql80_15.bi BEFORE INSERT ON f02_trigger_mysql80_15.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql80_15.ai AFTER INSERT ON f02_trigger_mysql80_15.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql80_15.other_bi BEFORE INSERT ON f02_trigger_mysql80_15.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_15.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_15.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_15'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_15' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_15.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_15.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_15'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_15' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql80_15.wrong_timing BEFORE INSERT ON f02_trigger_mysql80_15.t FOR EACH ROW FOLLOWS ai SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 3011 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_15.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_15.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_15'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_15' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql80_15",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_15'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-trigger-order-success",
+   "sql": "CREATE TRIGGER f02_trigger_mysql80_16.good BEFORE INSERT ON f02_trigger_mysql80_16.t FOR EACH ROW PRECEDES bi SET NEW.v=2",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_trigger_mysql80_16",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql80_16",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_16'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_16'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql80_16",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql80_16.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql80_16.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql80_16.bi BEFORE INSERT ON f02_trigger_mysql80_16.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql80_16.ai AFTER INSERT ON f02_trigger_mysql80_16.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql80_16.other_bi BEFORE INSERT ON f02_trigger_mysql80_16.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_16.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_16.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_16'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_16' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_16.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_16.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_16'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_16' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql80_16.good BEFORE INSERT ON f02_trigger_mysql80_16.t FOR EACH ROW PRECEDES bi SET NEW.v=2",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_16.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_16.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "new trigger exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_16'",
+     "expect": "4"
+    },
+    {
+     "assert": "original trigger follows new sibling",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_16' AND TRIGGER_NAME='bi'",
+     "expect": "2"
+    },
+    {
+     "assert": "new trigger precedes original sibling",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_16' AND TRIGGER_NAME='good'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql80_16",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_16'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-trigger-drop-missing",
+   "sql": "DROP TRIGGER f02_trigger_mysql80_17.absent",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_trigger_mysql80_17",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql80_17",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_17'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_17'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql80_17",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql80_17.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql80_17.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql80_17.bi BEFORE INSERT ON f02_trigger_mysql80_17.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql80_17.ai AFTER INSERT ON f02_trigger_mysql80_17.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql80_17.other_bi BEFORE INSERT ON f02_trigger_mysql80_17.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_17.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_17.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_17'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_17' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_17.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_17.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_17'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_17' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "DROP TRIGGER f02_trigger_mysql80_17.absent",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1360 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_17.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_17.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_17'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_17' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql80_17",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_17'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-trigger-drop-guarded-missing",
+   "sql": "DROP TRIGGER IF EXISTS f02_trigger_mysql80_18.absent",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_trigger_mysql80_18",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql80_18",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_18'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_18'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql80_18",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql80_18.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql80_18.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql80_18.bi BEFORE INSERT ON f02_trigger_mysql80_18.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql80_18.ai AFTER INSERT ON f02_trigger_mysql80_18.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql80_18.other_bi BEFORE INSERT ON f02_trigger_mysql80_18.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_18.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_18.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_18'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_18' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_18.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_18.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_18'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_18' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "DROP TRIGGER IF EXISTS f02_trigger_mysql80_18.absent",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_18.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_18.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_18'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_18' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql80_18",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_18'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-trigger-drop-case-variant",
+   "sql": "DROP TRIGGER f02_trigger_mysql80_19.GOOD",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_trigger_mysql80_19",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql80_19",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_19'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_19'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql80_19",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql80_19.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql80_19.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql80_19.bi BEFORE INSERT ON f02_trigger_mysql80_19.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql80_19.ai AFTER INSERT ON f02_trigger_mysql80_19.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql80_19.other_bi BEFORE INSERT ON f02_trigger_mysql80_19.other_t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql80_19.good BEFORE INSERT ON f02_trigger_mysql80_19.t FOR EACH ROW PRECEDES bi SET NEW.v=2",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_19.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_19.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_19'",
+       "expect": "4"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_19' AND TRIGGER_NAME='bi'",
+       "expect": "2"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_19.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_19.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_19'",
+     "expect": "4"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_19' AND TRIGGER_NAME='bi'",
+     "expect": "2"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "DROP TRIGGER f02_trigger_mysql80_19.GOOD",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_19.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql80_19.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "case-insensitive drop removed one trigger",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_19'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering restored",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql80_19' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql80_19",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql80_19'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-create-trigger-duplicate",
+   "sql": "CREATE TRIGGER f02_trigger_mysql84_20.bi BEFORE INSERT ON f02_trigger_mysql84_20.t FOR EACH ROW SET NEW.v=2",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_trigger_mysql84_20",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql84_20",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_20'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "trigger",
+       "reason_code": "trigger_name_occupied"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_20'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql84_20",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql84_20.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql84_20.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql84_20.bi BEFORE INSERT ON f02_trigger_mysql84_20.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql84_20.ai AFTER INSERT ON f02_trigger_mysql84_20.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql84_20.other_bi BEFORE INSERT ON f02_trigger_mysql84_20.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_20.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_20.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_20'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_20' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_20.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_20.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_20'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_20' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql84_20.bi BEFORE INSERT ON f02_trigger_mysql84_20.t FOR EACH ROW SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1359 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_20.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_20.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_20'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_20' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql84_20",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_20'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-create-trigger-guard",
+   "sql": "CREATE TRIGGER IF NOT EXISTS f02_trigger_mysql84_21.bi BEFORE INSERT ON f02_trigger_mysql84_21.t FOR EACH ROW SET NEW.v=2",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_trigger_mysql84_21",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql84_21",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_21'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete"
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_21'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql84_21",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql84_21.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql84_21.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql84_21.bi BEFORE INSERT ON f02_trigger_mysql84_21.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql84_21.ai AFTER INSERT ON f02_trigger_mysql84_21.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql84_21.other_bi BEFORE INSERT ON f02_trigger_mysql84_21.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_21.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_21.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_21'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_21' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_21.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_21.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_21'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_21' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER IF NOT EXISTS f02_trigger_mysql84_21.bi BEFORE INSERT ON f02_trigger_mysql84_21.t FOR EACH ROW SET NEW.v=2",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_21.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_21.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_21'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_21' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql84_21",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_21'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-create-trigger-table-missing",
+   "sql": "CREATE TRIGGER f02_trigger_mysql84_22.missing_table BEFORE INSERT ON f02_trigger_mysql84_22.absent FOR EACH ROW SET NEW.v=2",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_trigger_mysql84_22",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql84_22",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_22'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_22'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql84_22",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql84_22.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql84_22.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql84_22.bi BEFORE INSERT ON f02_trigger_mysql84_22.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql84_22.ai AFTER INSERT ON f02_trigger_mysql84_22.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql84_22.other_bi BEFORE INSERT ON f02_trigger_mysql84_22.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_22.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_22.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_22'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_22' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_22.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_22.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_22'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_22' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql84_22.missing_table BEFORE INSERT ON f02_trigger_mysql84_22.absent FOR EACH ROW SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1146 (42S02)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_22.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_22.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_22'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_22' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql84_22",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_22'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-trigger-order-missing",
+   "sql": "CREATE TRIGGER f02_trigger_mysql84_23.no_sibling BEFORE INSERT ON f02_trigger_mysql84_23.t FOR EACH ROW FOLLOWS missing SET NEW.v=2",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_trigger_mysql84_23",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql84_23",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_23'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "trigger.ordering_sibling"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_23'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql84_23",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql84_23.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql84_23.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql84_23.bi BEFORE INSERT ON f02_trigger_mysql84_23.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql84_23.ai AFTER INSERT ON f02_trigger_mysql84_23.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql84_23.other_bi BEFORE INSERT ON f02_trigger_mysql84_23.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_23.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_23.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_23'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_23' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_23.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_23.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_23'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_23' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql84_23.no_sibling BEFORE INSERT ON f02_trigger_mysql84_23.t FOR EACH ROW FOLLOWS missing SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 3011 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_23.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_23.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_23'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_23' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql84_23",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_23'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-trigger-order-other-table",
+   "sql": "CREATE TRIGGER f02_trigger_mysql84_24.wrong_table BEFORE INSERT ON f02_trigger_mysql84_24.t FOR EACH ROW FOLLOWS other_bi SET NEW.v=2",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_trigger_mysql84_24",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql84_24",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_24'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "trigger",
+       "reason_code": "trigger_order_group_mismatch"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_24'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql84_24",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql84_24.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql84_24.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql84_24.bi BEFORE INSERT ON f02_trigger_mysql84_24.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql84_24.ai AFTER INSERT ON f02_trigger_mysql84_24.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql84_24.other_bi BEFORE INSERT ON f02_trigger_mysql84_24.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_24.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_24.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_24'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_24' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_24.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_24.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_24'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_24' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql84_24.wrong_table BEFORE INSERT ON f02_trigger_mysql84_24.t FOR EACH ROW FOLLOWS other_bi SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 3011 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_24.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_24.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_24'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_24' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql84_24",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_24'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-trigger-order-other-timing",
+   "sql": "CREATE TRIGGER f02_trigger_mysql84_25.wrong_timing BEFORE INSERT ON f02_trigger_mysql84_25.t FOR EACH ROW FOLLOWS ai SET NEW.v=2",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_trigger_mysql84_25",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql84_25",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_25'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "trigger",
+       "reason_code": "trigger_order_group_mismatch"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_25'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql84_25",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql84_25.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql84_25.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql84_25.bi BEFORE INSERT ON f02_trigger_mysql84_25.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql84_25.ai AFTER INSERT ON f02_trigger_mysql84_25.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql84_25.other_bi BEFORE INSERT ON f02_trigger_mysql84_25.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_25.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_25.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_25'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_25' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_25.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_25.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_25'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_25' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql84_25.wrong_timing BEFORE INSERT ON f02_trigger_mysql84_25.t FOR EACH ROW FOLLOWS ai SET NEW.v=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 3011 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_25.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_25.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_25'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_25' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql84_25",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_25'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-trigger-order-success",
+   "sql": "CREATE TRIGGER f02_trigger_mysql84_26.good BEFORE INSERT ON f02_trigger_mysql84_26.t FOR EACH ROW PRECEDES bi SET NEW.v=2",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_trigger_mysql84_26",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql84_26",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_26'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_26'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql84_26",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql84_26.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql84_26.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql84_26.bi BEFORE INSERT ON f02_trigger_mysql84_26.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql84_26.ai AFTER INSERT ON f02_trigger_mysql84_26.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql84_26.other_bi BEFORE INSERT ON f02_trigger_mysql84_26.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_26.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_26.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_26'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_26' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_26.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_26.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_26'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_26' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE TRIGGER f02_trigger_mysql84_26.good BEFORE INSERT ON f02_trigger_mysql84_26.t FOR EACH ROW PRECEDES bi SET NEW.v=2",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_26.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_26.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "new trigger exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_26'",
+     "expect": "4"
+    },
+    {
+     "assert": "original trigger follows new sibling",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_26' AND TRIGGER_NAME='bi'",
+     "expect": "2"
+    },
+    {
+     "assert": "new trigger precedes original sibling",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_26' AND TRIGGER_NAME='good'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql84_26",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_26'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-trigger-drop-missing",
+   "sql": "DROP TRIGGER f02_trigger_mysql84_27.absent",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_trigger_mysql84_27",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql84_27",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_27'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_27'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql84_27",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql84_27.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql84_27.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql84_27.bi BEFORE INSERT ON f02_trigger_mysql84_27.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql84_27.ai AFTER INSERT ON f02_trigger_mysql84_27.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql84_27.other_bi BEFORE INSERT ON f02_trigger_mysql84_27.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_27.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_27.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_27'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_27' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_27.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_27.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_27'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_27' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "DROP TRIGGER f02_trigger_mysql84_27.absent",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1360 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_27.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_27.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_27'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_27' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql84_27",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_27'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-trigger-drop-guarded-missing",
+   "sql": "DROP TRIGGER IF EXISTS f02_trigger_mysql84_28.absent",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_trigger_mysql84_28",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql84_28",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_28'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_28'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql84_28",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql84_28.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql84_28.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql84_28.bi BEFORE INSERT ON f02_trigger_mysql84_28.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql84_28.ai AFTER INSERT ON f02_trigger_mysql84_28.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql84_28.other_bi BEFORE INSERT ON f02_trigger_mysql84_28.other_t FOR EACH ROW SET NEW.v=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_28.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_28.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_28'",
+       "expect": "3"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_28' AND TRIGGER_NAME='bi'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_28.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_28.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_28'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_28' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "DROP TRIGGER IF EXISTS f02_trigger_mysql84_28.absent",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_28.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_28.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_28'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_28' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql84_28",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_28'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-trigger-drop-case-variant",
+   "sql": "DROP TRIGGER f02_trigger_mysql84_29.GOOD",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_trigger_mysql84_29",
+    "password_env": "DS_T29_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_trigger_mysql84_29",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_29'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_29'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_trigger_mysql84_29",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_trigger_mysql84_29.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_trigger_mysql84_29.other_t (id INT PRIMARY KEY, v INT);CREATE TRIGGER f02_trigger_mysql84_29.bi BEFORE INSERT ON f02_trigger_mysql84_29.t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql84_29.ai AFTER INSERT ON f02_trigger_mysql84_29.t FOR EACH ROW SET @after=1;CREATE TRIGGER f02_trigger_mysql84_29.other_bi BEFORE INSERT ON f02_trigger_mysql84_29.other_t FOR EACH ROW SET NEW.v=1;CREATE TRIGGER f02_trigger_mysql84_29.good BEFORE INSERT ON f02_trigger_mysql84_29.t FOR EACH ROW PRECEDES bi SET NEW.v=2",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_29.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_29.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "trigger count",
+       "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_29'",
+       "expect": "4"
+      },
+      {
+       "assert": "original ordering",
+       "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_29' AND TRIGGER_NAME='bi'",
+       "expect": "2"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_29.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_29.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "trigger count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_29'",
+     "expect": "4"
+    },
+    {
+     "assert": "original ordering",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_29' AND TRIGGER_NAME='bi'",
+     "expect": "2"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "DROP TRIGGER f02_trigger_mysql84_29.GOOD",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_29.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_trigger_mysql84_29.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "case-insensitive drop removed one trigger",
+     "sql": "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_29'",
+     "expect": "3"
+    },
+    {
+     "assert": "original ordering restored",
+     "sql": "SELECT ACTION_ORDER FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA='f02_trigger_mysql84_29' AND TRIGGER_NAME='bi'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_trigger_mysql84_29",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_trigger_mysql84_29'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
    "id": "mysql57-trigger-lifecycle",
    "anchor": "mysql57",
    "dialect": "mysql",
@@ -1086,6 +6478,36 @@
   }
  ],
  "required_case_ids": [
+  "T29.meta.f02-mysql57-create-trigger-duplicate",
+  "T29.meta.f02-mysql57-create-trigger-guard",
+  "T29.meta.f02-mysql57-create-trigger-table-missing",
+  "T29.meta.f02-mysql57-trigger-order-missing",
+  "T29.meta.f02-mysql57-trigger-order-other-table",
+  "T29.meta.f02-mysql57-trigger-order-other-timing",
+  "T29.meta.f02-mysql57-trigger-order-success",
+  "T29.meta.f02-mysql57-trigger-drop-missing",
+  "T29.meta.f02-mysql57-trigger-drop-guarded-missing",
+  "T29.meta.f02-mysql57-trigger-drop-case-variant",
+  "T29.meta.f02-mysql80-create-trigger-duplicate",
+  "T29.meta.f02-mysql80-create-trigger-guard",
+  "T29.meta.f02-mysql80-create-trigger-table-missing",
+  "T29.meta.f02-mysql80-trigger-order-missing",
+  "T29.meta.f02-mysql80-trigger-order-other-table",
+  "T29.meta.f02-mysql80-trigger-order-other-timing",
+  "T29.meta.f02-mysql80-trigger-order-success",
+  "T29.meta.f02-mysql80-trigger-drop-missing",
+  "T29.meta.f02-mysql80-trigger-drop-guarded-missing",
+  "T29.meta.f02-mysql80-trigger-drop-case-variant",
+  "T29.meta.f02-mysql84-create-trigger-duplicate",
+  "T29.meta.f02-mysql84-create-trigger-guard",
+  "T29.meta.f02-mysql84-create-trigger-table-missing",
+  "T29.meta.f02-mysql84-trigger-order-missing",
+  "T29.meta.f02-mysql84-trigger-order-other-table",
+  "T29.meta.f02-mysql84-trigger-order-other-timing",
+  "T29.meta.f02-mysql84-trigger-order-success",
+  "T29.meta.f02-mysql84-trigger-drop-missing",
+  "T29.meta.f02-mysql84-trigger-drop-guarded-missing",
+  "T29.meta.f02-mysql84-trigger-drop-case-variant",
   "T29.cli.mysql-body-blocker",
   "T29.cli.mysql-safe-body",
   "T29.cli.mysql-compound-body",

@@ -11,8 +11,8 @@
   ],
   "status_counts": {
     "semantically_checked": 163,
-    "generic_notice": 11,
-    "mixed_coverage": 52,
+    "generic_notice": 9,
+    "mixed_coverage": 54,
     "explicit_unsupported": 41,
     "vendor_not_supported": 11,
     "parser_unsupported": 8,
@@ -4054,15 +4054,213 @@
             "gate:T29"
           ]
         }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "BEFORE/AFTER INSERT/UPDATE/DELETE",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#BEFORE/AFTER INSERT/UPDATE/DELETE",
+                "file:testdata/ddl-golden/T29.json#f02-mysql57-create-trigger-duplicate",
+                "file:testdata/ddl-golden/T29.json#f02-mysql57-create-trigger-table-missing"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#BEFORE/AFTER INSERT/UPDATE/DELETE",
+                "file:testdata/ddl-golden/T29.json#f02-mysql80-create-trigger-duplicate",
+                "file:testdata/ddl-golden/T29.json#f02-mysql80-create-trigger-table-missing"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#BEFORE/AFTER INSERT/UPDATE/DELETE",
+                "file:testdata/ddl-golden/T29.json#f02-mysql84-create-trigger-duplicate",
+                "file:testdata/ddl-golden/T29.json#f02-mysql84-create-trigger-table-missing"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "FOR EACH ROW",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#FOR EACH ROW",
+                "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-order-success",
+                "file:testdata/ddl-golden/T29.json#f02-mysql57-create-trigger-guard"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#FOR EACH ROW",
+                "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-order-success",
+                "file:testdata/ddl-golden/T29.json#f02-mysql80-create-trigger-guard"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#FOR EACH ROW",
+                "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-order-success",
+                "file:testdata/ddl-golden/T29.json#f02-mysql84-create-trigger-guard"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "FOLLOWS/PRECEDES",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#FOLLOWS/PRECEDES",
+                "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-order-missing",
+                "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-order-other-table",
+                "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-order-other-timing",
+                "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-order-success"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#FOLLOWS/PRECEDES",
+                "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-order-missing",
+                "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-order-other-table",
+                "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-order-other-timing",
+                "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-order-success"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#FOLLOWS/PRECEDES",
+                "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-order-missing",
+                "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-order-other-table",
+                "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-order-other-timing",
+                "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-order-success"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "OLD/NEW bindings",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#OLD/NEW bindings",
+                "file:testdata/ddl-golden/T29.json#mysql-oldnew-legal",
+                "file:testdata/ddl-golden/T29.json#mysql-old-on-insert",
+                "file:testdata/ddl-golden/T29.json#mysql-new-on-delete",
+                "file:testdata/ddl-golden/T29.json#mysql-old-new-sibling-blocker"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#OLD/NEW bindings",
+                "file:testdata/ddl-golden/T29.json#mysql-oldnew-legal",
+                "file:testdata/ddl-golden/T29.json#mysql-old-on-insert",
+                "file:testdata/ddl-golden/T29.json#mysql-new-on-delete",
+                "file:testdata/ddl-golden/T29.json#mysql-old-new-sibling-blocker"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#OLD/NEW bindings",
+                "file:testdata/ddl-golden/T29.json#mysql-oldnew-legal",
+                "file:testdata/ddl-golden/T29.json#mysql-old-on-insert",
+                "file:testdata/ddl-golden/T29.json#mysql-new-on-delete",
+                "file:testdata/ddl-golden/T29.json#mysql-old-new-sibling-blocker"
+              ]
+            }
+          ]
+        }
       ]
     },
     {
       "id": "mysql.drop-trigger",
       "product": "mysql",
       "owner": "T29",
-      "status": "generic_notice",
+      "status": "mixed_coverage",
       "parser_status": "recognized",
-      "audit_status": "notice_only",
+      "audit_status": "mixed",
       "applicability": [
         {
           "anchor": "mysql57",
@@ -4070,7 +4268,7 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/mysql.drop-trigger.probes.txt",
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
@@ -4085,7 +4283,7 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/mysql.drop-trigger.probes.txt",
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
@@ -4100,13 +4298,104 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/mysql.drop-trigger.probes.txt",
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml",
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:internal/application/audit/trigger_t29_test.go",
             "gate:T29"
+          ]
+        }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "DROP TRIGGER",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DROP TRIGGER",
+                "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-drop-missing",
+                "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-drop-case-variant"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DROP TRIGGER",
+                "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-drop-missing",
+                "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-drop-case-variant"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DROP TRIGGER",
+                "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-drop-missing",
+                "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-drop-case-variant"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "IF EXISTS",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#IF EXISTS",
+                "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-drop-guarded-missing"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#IF EXISTS",
+                "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-drop-guarded-missing"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#IF EXISTS",
+                "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-drop-guarded-missing"
+              ]
+            }
           ]
         }
       ]
@@ -4167,6 +4456,186 @@
             "gate:T30"
           ]
         }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "ON SCHEDULE AT/EVERY",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ON SCHEDULE AT/EVERY",
+                "file:testdata/ddl-golden/T30.json#f02-mysql57-event-create-bad-interval",
+                "file:testdata/ddl-golden/T30.json#f02-mysql57-event-create-at-past"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ON SCHEDULE AT/EVERY",
+                "file:testdata/ddl-golden/T30.json#f02-mysql80-event-create-bad-interval",
+                "file:testdata/ddl-golden/T30.json#f02-mysql80-event-create-at-past"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ON SCHEDULE AT/EVERY",
+                "file:testdata/ddl-golden/T30.json#f02-mysql84-event-create-bad-interval",
+                "file:testdata/ddl-golden/T30.json#f02-mysql84-event-create-at-past"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "ON COMPLETION",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ON COMPLETION",
+                "file:testdata/ddl-golden/T30.json#f02-mysql57-event-create-at-past"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ON COMPLETION",
+                "file:testdata/ddl-golden/T30.json#f02-mysql80-event-create-at-past"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ON COMPLETION",
+                "file:testdata/ddl-golden/T30.json#f02-mysql84-event-create-at-past"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "ENABLE/DISABLE",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ENABLE/DISABLE",
+                "file:testdata/ddl-golden/T30.json#f02-mysql57-event-create-at-past",
+                "file:testdata/ddl-golden/T30.json#f02-mysql57-event-create-guard"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ENABLE/DISABLE",
+                "file:testdata/ddl-golden/T30.json#f02-mysql80-event-create-at-past",
+                "file:testdata/ddl-golden/T30.json#f02-mysql80-event-create-guard"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ENABLE/DISABLE",
+                "file:testdata/ddl-golden/T30.json#f02-mysql84-event-create-at-past",
+                "file:testdata/ddl-golden/T30.json#f02-mysql84-event-create-guard"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "DO body",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DO body",
+                "file:testdata/ddl-golden/T30.json#f02-mysql57-event-create-duplicate"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DO body",
+                "file:testdata/ddl-golden/T30.json#f02-mysql80-event-create-duplicate"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DO body",
+                "file:testdata/ddl-golden/T30.json#f02-mysql84-event-create-duplicate"
+              ]
+            }
+          ]
+        }
       ]
     },
     {
@@ -4225,15 +4694,72 @@
             "gate:T30"
           ]
         }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "ALTER EVENT ... ON SCHEDULE/RENAME/ENABLE/DISABLE/DO",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ALTER EVENT ... ON SCHEDULE/RENAME/ENABLE/DISABLE/DO",
+                "file:testdata/ddl-golden/T30.json#f02-mysql57-event-alter-missing",
+                "file:testdata/ddl-golden/T30.json#f02-mysql57-event-rename-occupied",
+                "file:testdata/ddl-golden/T30.json#f02-mysql57-event-rename-self",
+                "file:testdata/ddl-golden/T30.json#f02-mysql57-event-rename-case-variant",
+                "file:testdata/ddl-golden/T30.json#f02-mysql57-event-rename-success"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ALTER EVENT ... ON SCHEDULE/RENAME/ENABLE/DISABLE/DO",
+                "file:testdata/ddl-golden/T30.json#f02-mysql80-event-alter-missing",
+                "file:testdata/ddl-golden/T30.json#f02-mysql80-event-rename-occupied",
+                "file:testdata/ddl-golden/T30.json#f02-mysql80-event-rename-self",
+                "file:testdata/ddl-golden/T30.json#f02-mysql80-event-rename-case-variant",
+                "file:testdata/ddl-golden/T30.json#f02-mysql80-event-rename-success"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ALTER EVENT ... ON SCHEDULE/RENAME/ENABLE/DISABLE/DO",
+                "file:testdata/ddl-golden/T30.json#f02-mysql84-event-alter-missing",
+                "file:testdata/ddl-golden/T30.json#f02-mysql84-event-rename-occupied",
+                "file:testdata/ddl-golden/T30.json#f02-mysql84-event-rename-self",
+                "file:testdata/ddl-golden/T30.json#f02-mysql84-event-rename-case-variant",
+                "file:testdata/ddl-golden/T30.json#f02-mysql84-event-rename-success"
+              ]
+            }
+          ]
+        }
       ]
     },
     {
       "id": "mysql.drop-event",
       "product": "mysql",
       "owner": "T30",
-      "status": "generic_notice",
+      "status": "mixed_coverage",
       "parser_status": "recognized",
-      "audit_status": "notice_only",
+      "audit_status": "mixed",
       "applicability": [
         {
           "anchor": "mysql57",
@@ -4241,7 +4767,7 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/mysql.drop-event.probes.txt",
             "file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml",
@@ -4257,7 +4783,7 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/mysql.drop-event.probes.txt",
             "file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml",
@@ -4273,7 +4799,7 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:testdata/ddl-inventory/evidence/mysql.drop-event.probes.txt",
             "file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml",
@@ -4281,6 +4807,94 @@
             "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
             "file:internal/application/audit/event_t30_test.go",
             "gate:T30"
+          ]
+        }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "DROP EVENT",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DROP EVENT",
+                "file:testdata/ddl-golden/T30.json#f02-mysql57-event-drop-missing"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DROP EVENT",
+                "file:testdata/ddl-golden/T30.json#f02-mysql80-event-drop-missing"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DROP EVENT",
+                "file:testdata/ddl-golden/T30.json#f02-mysql84-event-drop-missing"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "IF EXISTS",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#IF EXISTS",
+                "file:testdata/ddl-golden/T30.json#f02-mysql57-event-drop-guarded-missing"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#IF EXISTS",
+                "file:testdata/ddl-golden/T30.json#f02-mysql80-event-drop-guarded-missing"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#IF EXISTS",
+                "file:testdata/ddl-golden/T30.json#f02-mysql84-event-drop-guarded-missing"
+              ]
+            }
           ]
         }
       ]

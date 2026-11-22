@@ -112,6 +112,7 @@
  },
  "policy": {
   "profiles": {
+   "f02-stored-object-target": {"enable": {"ddl.mysql.stored_object.target.valid": {"level": "blocker"}}},
    "t30-where": {
     "enable": {
      "dml.where.require": {
@@ -796,6 +797,5997 @@
  ],
  "metadata_cases": [
   {
+   "id": "f02-mysql57-event-create-duplicate",
+   "sql": "CREATE EVENT f02_event_mysql57_0.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=2",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_event_mysql57_0",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql57_0",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_0'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "event",
+       "reason_code": "event_name_occupied"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_0'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql57_0",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql57_0.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql57_0.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql57_0.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql57_0.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_0.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_0.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_0' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_0' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_0.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_0.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_0' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_0' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE EVENT f02_event_mysql57_0.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1537 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_0.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_0.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_0' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_0' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql57_0",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_0'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-event-create-guard",
+   "sql": "CREATE EVENT IF NOT EXISTS f02_event_mysql57_1.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=2",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_event_mysql57_1",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql57_1",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_1'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_1'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql57_1",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql57_1.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql57_1.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql57_1.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql57_1.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_1.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_1.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_1' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_1' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_1.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_1.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_1' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_1' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE EVENT IF NOT EXISTS f02_event_mysql57_1.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=2",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_1.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_1.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_1' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_1' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql57_1",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_1'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-event-create-bad-interval",
+   "sql": "CREATE EVENT f02_event_mysql57_2.bad_interval ON SCHEDULE EVERY 0 DAY DISABLE DO SET @witness=2",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_event_mysql57_2",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql57_2",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_2'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_2'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql57_2",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql57_2.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql57_2.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql57_2.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql57_2.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_2.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_2.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_2' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_2' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_2.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_2.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_2' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_2' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE EVENT f02_event_mysql57_2.bad_interval ON SCHEDULE EVERY 0 DAY DISABLE DO SET @witness=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1542 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_2.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_2.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_2' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_2' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql57_2",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_2'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-event-create-at-past",
+   "sql": "CREATE EVENT f02_event_mysql57_3.past_e ON SCHEDULE AT '2000-01-01 00:00:00' ON COMPLETION PRESERVE DISABLE DO SET @witness=2",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_event_mysql57_3",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql57_3",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_3'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_3'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql57_3",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql57_3.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql57_3.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql57_3.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql57_3.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_3.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_3.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_3' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_3' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_3.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_3.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_3' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_3' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE EVENT f02_event_mysql57_3.past_e ON SCHEDULE AT '2000-01-01 00:00:00' ON COMPLETION PRESERVE DISABLE DO SET @witness=2",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_3.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_3.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "all events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_3' AND STATUS='DISABLED'",
+     "expect": "3"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_3' AND EVENT_NAME='e'",
+     "expect": "1"
+    },
+    {
+     "assert": "preserved one-time event",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_3' AND EVENT_NAME='past_e' AND EVENT_TYPE='ONE TIME' AND ON_COMPLETION='PRESERVE'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql57_3",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_3'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-event-alter-missing",
+   "sql": "ALTER EVENT f02_event_mysql57_4.absent DISABLE",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_event_mysql57_4",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql57_4",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_4'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_4'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql57_4",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql57_4.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql57_4.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql57_4.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql57_4.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_4.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_4.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_4' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_4' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_4.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_4.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_4' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_4' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "ALTER EVENT f02_event_mysql57_4.absent DISABLE",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1539 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_4.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_4.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_4' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_4' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql57_4",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_4'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-event-rename-occupied",
+   "sql": "ALTER EVENT f02_event_mysql57_5.e RENAME TO f02_event_mysql57_5.occupied",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_event_mysql57_5",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql57_5",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_5'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "event",
+       "reason_code": "event_destination_occupied"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_5'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql57_5",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql57_5.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql57_5.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql57_5.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql57_5.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_5.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_5.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_5' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_5' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_5.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_5.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_5' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_5' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "ALTER EVENT f02_event_mysql57_5.e RENAME TO f02_event_mysql57_5.occupied",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1537 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_5.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_5.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_5' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_5' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql57_5",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_5'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-event-rename-self",
+   "sql": "ALTER EVENT f02_event_mysql57_6.e RENAME TO f02_event_mysql57_6.e",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_event_mysql57_6",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql57_6",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_6'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "event",
+       "reason_code": "event_rename_same_identity"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_6'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql57_6",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql57_6.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql57_6.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql57_6.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql57_6.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_6.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_6.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_6' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_6' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_6.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_6.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_6' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_6' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "ALTER EVENT f02_event_mysql57_6.e RENAME TO f02_event_mysql57_6.e",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1551 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_6.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_6.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_6' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_6' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql57_6",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_6'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-event-rename-case-variant",
+   "sql": "ALTER EVENT f02_event_mysql57_7.e RENAME TO f02_event_mysql57_7.E",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_event_mysql57_7",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql57_7",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_7'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "event",
+       "reason_code": "event_rename_same_identity"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_7'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql57_7",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql57_7.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql57_7.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql57_7.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql57_7.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_7.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_7.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_7' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_7' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_7.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_7.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_7' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_7' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "ALTER EVENT f02_event_mysql57_7.e RENAME TO f02_event_mysql57_7.E",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1551 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_7.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_7.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_7' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_7' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql57_7",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_7'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-event-rename-success",
+   "sql": "ALTER EVENT f02_event_mysql57_8.e RENAME TO f02_event_mysql57_8.renamed",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_event_mysql57_8",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql57_8",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_8'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "event.destination_presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_8'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql57_8",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql57_8.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql57_8.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql57_8.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql57_8.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_8.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_8.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_8' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_8' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_8.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_8.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_8' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_8' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "ALTER EVENT f02_event_mysql57_8.e RENAME TO f02_event_mysql57_8.renamed",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_8.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_8.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_8' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_8' AND EVENT_NAME='e'",
+     "expect": "0"
+    },
+    {
+     "assert": "scheduled event retained under new name",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_8' AND EVENT_NAME='renamed' AND INTERVAL_FIELD='DAY' AND INTERVAL_VALUE='1' AND STATUS='DISABLED'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql57_8",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_8'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-event-drop-missing",
+   "sql": "DROP EVENT f02_event_mysql57_9.absent",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_event_mysql57_9",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql57_9",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_9'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_9'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql57_9",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql57_9.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql57_9.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql57_9.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql57_9.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_9.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_9.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_9' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_9' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_9.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_9.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_9' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_9' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "DROP EVENT f02_event_mysql57_9.absent",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1539 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_9.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_9.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_9' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_9' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql57_9",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_9'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql57-event-drop-guarded-missing",
+   "sql": "DROP EVENT IF EXISTS f02_event_mysql57_10.absent",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "f02_event_mysql57_10",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql57_10",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_10'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "rule_summary_loaded": 1
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_10'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql57_10",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql57_10.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql57_10.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql57_10.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql57_10.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_10.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql57_10.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_10' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_10' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_10.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_10.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_10' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_10' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "DROP EVENT IF EXISTS f02_event_mysql57_10.absent",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_10.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql57_10.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_10' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql57_10' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql57_10",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql57_10'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-event-create-duplicate",
+   "sql": "CREATE EVENT f02_event_mysql80_11.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=2",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_event_mysql80_11",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql80_11",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_11'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "event",
+       "reason_code": "event_name_occupied"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_11'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql80_11",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql80_11.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql80_11.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql80_11.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql80_11.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_11.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_11.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_11' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_11' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_11.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_11.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_11' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_11' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE EVENT f02_event_mysql80_11.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1537 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_11.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_11.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_11' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_11' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql80_11",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_11'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-event-create-guard",
+   "sql": "CREATE EVENT IF NOT EXISTS f02_event_mysql80_12.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=2",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_event_mysql80_12",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql80_12",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_12'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_12'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql80_12",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql80_12.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql80_12.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql80_12.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql80_12.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_12.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_12.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_12' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_12' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_12.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_12.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_12' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_12' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE EVENT IF NOT EXISTS f02_event_mysql80_12.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=2",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_12.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_12.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_12' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_12' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql80_12",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_12'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-event-create-bad-interval",
+   "sql": "CREATE EVENT f02_event_mysql80_13.bad_interval ON SCHEDULE EVERY 0 DAY DISABLE DO SET @witness=2",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_event_mysql80_13",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql80_13",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_13'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_13'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql80_13",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql80_13.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql80_13.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql80_13.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql80_13.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_13.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_13.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_13' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_13' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_13.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_13.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_13' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_13' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE EVENT f02_event_mysql80_13.bad_interval ON SCHEDULE EVERY 0 DAY DISABLE DO SET @witness=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1542 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_13.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_13.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_13' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_13' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql80_13",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_13'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-event-create-at-past",
+   "sql": "CREATE EVENT f02_event_mysql80_14.past_e ON SCHEDULE AT '2000-01-01 00:00:00' ON COMPLETION PRESERVE DISABLE DO SET @witness=2",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_event_mysql80_14",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql80_14",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_14'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_14'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql80_14",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql80_14.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql80_14.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql80_14.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql80_14.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_14.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_14.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_14' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_14' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_14.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_14.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_14' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_14' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE EVENT f02_event_mysql80_14.past_e ON SCHEDULE AT '2000-01-01 00:00:00' ON COMPLETION PRESERVE DISABLE DO SET @witness=2",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_14.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_14.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "all events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_14' AND STATUS='DISABLED'",
+     "expect": "3"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_14' AND EVENT_NAME='e'",
+     "expect": "1"
+    },
+    {
+     "assert": "preserved one-time event",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_14' AND EVENT_NAME='past_e' AND EVENT_TYPE='ONE TIME' AND ON_COMPLETION='PRESERVE'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql80_14",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_14'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-event-alter-missing",
+   "sql": "ALTER EVENT f02_event_mysql80_15.absent DISABLE",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_event_mysql80_15",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql80_15",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_15'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_15'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql80_15",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql80_15.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql80_15.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql80_15.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql80_15.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_15.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_15.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_15' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_15' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_15.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_15.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_15' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_15' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "ALTER EVENT f02_event_mysql80_15.absent DISABLE",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1539 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_15.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_15.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_15' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_15' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql80_15",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_15'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-event-rename-occupied",
+   "sql": "ALTER EVENT f02_event_mysql80_16.e RENAME TO f02_event_mysql80_16.occupied",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_event_mysql80_16",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql80_16",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_16'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "event",
+       "reason_code": "event_destination_occupied"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_16'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql80_16",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql80_16.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql80_16.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql80_16.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql80_16.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_16.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_16.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_16' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_16' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_16.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_16.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_16' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_16' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "ALTER EVENT f02_event_mysql80_16.e RENAME TO f02_event_mysql80_16.occupied",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1537 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_16.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_16.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_16' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_16' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql80_16",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_16'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-event-rename-self",
+   "sql": "ALTER EVENT f02_event_mysql80_17.e RENAME TO f02_event_mysql80_17.e",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_event_mysql80_17",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql80_17",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_17'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "event",
+       "reason_code": "event_rename_same_identity"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_17'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql80_17",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql80_17.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql80_17.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql80_17.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql80_17.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_17.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_17.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_17' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_17' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_17.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_17.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_17' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_17' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "ALTER EVENT f02_event_mysql80_17.e RENAME TO f02_event_mysql80_17.e",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1551 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_17.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_17.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_17' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_17' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql80_17",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_17'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-event-rename-case-variant",
+   "sql": "ALTER EVENT f02_event_mysql80_18.e RENAME TO f02_event_mysql80_18.E",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_event_mysql80_18",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql80_18",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_18'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "event",
+       "reason_code": "event_rename_same_identity"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_18'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql80_18",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql80_18.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql80_18.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql80_18.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql80_18.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_18.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_18.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_18' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_18' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_18.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_18.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_18' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_18' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "ALTER EVENT f02_event_mysql80_18.e RENAME TO f02_event_mysql80_18.E",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1551 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_18.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_18.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_18' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_18' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql80_18",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_18'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-event-rename-success",
+   "sql": "ALTER EVENT f02_event_mysql80_19.e RENAME TO f02_event_mysql80_19.renamed",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_event_mysql80_19",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql80_19",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_19'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "event.destination_presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_19'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql80_19",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql80_19.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql80_19.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql80_19.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql80_19.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_19.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_19.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_19' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_19' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_19.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_19.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_19' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_19' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "ALTER EVENT f02_event_mysql80_19.e RENAME TO f02_event_mysql80_19.renamed",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_19.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_19.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_19' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_19' AND EVENT_NAME='e'",
+     "expect": "0"
+    },
+    {
+     "assert": "scheduled event retained under new name",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_19' AND EVENT_NAME='renamed' AND INTERVAL_FIELD='DAY' AND INTERVAL_VALUE='1' AND STATUS='DISABLED'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql80_19",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_19'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-event-drop-missing",
+   "sql": "DROP EVENT f02_event_mysql80_20.absent",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_event_mysql80_20",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql80_20",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_20'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_20'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql80_20",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql80_20.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql80_20.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql80_20.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql80_20.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_20.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_20.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_20' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_20' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_20.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_20.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_20' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_20' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "DROP EVENT f02_event_mysql80_20.absent",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1539 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_20.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_20.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_20' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_20' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql80_20",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_20'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql80-event-drop-guarded-missing",
+   "sql": "DROP EVENT IF EXISTS f02_event_mysql80_21.absent",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "f02_event_mysql80_21",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql80_21",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_21'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "rule_summary_loaded": 1
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_21'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql80_21",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql80_21.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql80_21.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql80_21.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql80_21.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_21.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql80_21.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_21' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_21' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_21.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_21.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_21' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_21' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "DROP EVENT IF EXISTS f02_event_mysql80_21.absent",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_21.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql80_21.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_21' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql80_21' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql80_21",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql80_21'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-event-create-duplicate",
+   "sql": "CREATE EVENT f02_event_mysql84_22.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=2",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_event_mysql84_22",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql84_22",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_22'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "event",
+       "reason_code": "event_name_occupied"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_22'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql84_22",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql84_22.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql84_22.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql84_22.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql84_22.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_22.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_22.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_22' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_22' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_22.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_22.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_22' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_22' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE EVENT f02_event_mysql84_22.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1537 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_22.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_22.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_22' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_22' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql84_22",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_22'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-event-create-guard",
+   "sql": "CREATE EVENT IF NOT EXISTS f02_event_mysql84_23.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=2",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_event_mysql84_23",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql84_23",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_23'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_23'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql84_23",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql84_23.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql84_23.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql84_23.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql84_23.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_23.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_23.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_23' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_23' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_23.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_23.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_23' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_23' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE EVENT IF NOT EXISTS f02_event_mysql84_23.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=2",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_23.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_23.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_23' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_23' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql84_23",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_23'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-event-create-bad-interval",
+   "sql": "CREATE EVENT f02_event_mysql84_24.bad_interval ON SCHEDULE EVERY 0 DAY DISABLE DO SET @witness=2",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_event_mysql84_24",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql84_24",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_24'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_24'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql84_24",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql84_24.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql84_24.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql84_24.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql84_24.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_24.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_24.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_24' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_24' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_24.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_24.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_24' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_24' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE EVENT f02_event_mysql84_24.bad_interval ON SCHEDULE EVERY 0 DAY DISABLE DO SET @witness=2",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1542 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_24.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_24.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_24' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_24' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql84_24",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_24'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-event-create-at-past",
+   "sql": "CREATE EVENT f02_event_mysql84_25.past_e ON SCHEDULE AT '2000-01-01 00:00:00' ON COMPLETION PRESERVE DISABLE DO SET @witness=2",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_event_mysql84_25",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql84_25",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_25'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_25'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql84_25",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql84_25.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql84_25.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql84_25.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql84_25.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_25.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_25.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_25' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_25' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_25.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_25.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_25' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_25' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "CREATE EVENT f02_event_mysql84_25.past_e ON SCHEDULE AT '2000-01-01 00:00:00' ON COMPLETION PRESERVE DISABLE DO SET @witness=2",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_25.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_25.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "all events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_25' AND STATUS='DISABLED'",
+     "expect": "3"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_25' AND EVENT_NAME='e'",
+     "expect": "1"
+    },
+    {
+     "assert": "preserved one-time event",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_25' AND EVENT_NAME='past_e' AND EVENT_TYPE='ONE TIME' AND ON_COMPLETION='PRESERVE'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql84_25",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_25'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-event-alter-missing",
+   "sql": "ALTER EVENT f02_event_mysql84_26.absent DISABLE",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_event_mysql84_26",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql84_26",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_26'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_26'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql84_26",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql84_26.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql84_26.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql84_26.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql84_26.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_26.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_26.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_26' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_26' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_26.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_26.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_26' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_26' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "ALTER EVENT f02_event_mysql84_26.absent DISABLE",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1539 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_26.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_26.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_26' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_26' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql84_26",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_26'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-event-rename-occupied",
+   "sql": "ALTER EVENT f02_event_mysql84_27.e RENAME TO f02_event_mysql84_27.occupied",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_event_mysql84_27",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql84_27",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_27'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "event",
+       "reason_code": "event_destination_occupied"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_27'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql84_27",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql84_27.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql84_27.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql84_27.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql84_27.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_27.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_27.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_27' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_27' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_27.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_27.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_27' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_27' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "ALTER EVENT f02_event_mysql84_27.e RENAME TO f02_event_mysql84_27.occupied",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1537 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_27.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_27.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_27' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_27' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql84_27",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_27'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-event-rename-self",
+   "sql": "ALTER EVENT f02_event_mysql84_28.e RENAME TO f02_event_mysql84_28.e",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_event_mysql84_28",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql84_28",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_28'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "event",
+       "reason_code": "event_rename_same_identity"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_28'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql84_28",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql84_28.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql84_28.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql84_28.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql84_28.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_28.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_28.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_28' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_28' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_28.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_28.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_28' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_28' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "ALTER EVENT f02_event_mysql84_28.e RENAME TO f02_event_mysql84_28.e",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1551 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_28.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_28.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_28' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_28' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql84_28",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_28'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-event-rename-case-variant",
+   "sql": "ALTER EVENT f02_event_mysql84_29.e RENAME TO f02_event_mysql84_29.E",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_event_mysql84_29",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql84_29",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_29'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "metadata": {
+       "object_type": "event",
+       "reason_code": "event_rename_same_identity"
+      }
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_29'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql84_29",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql84_29.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql84_29.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql84_29.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql84_29.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_29.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_29.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_29' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_29' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_29.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_29.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_29' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_29' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "ALTER EVENT f02_event_mysql84_29.e RENAME TO f02_event_mysql84_29.E",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1551 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_29.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_29.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_29' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_29' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql84_29",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_29'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-event-rename-success",
+   "sql": "ALTER EVENT f02_event_mysql84_30.e RENAME TO f02_event_mysql84_30.renamed",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_event_mysql84_30",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql84_30",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_30'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "event.destination_presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_30'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql84_30",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql84_30.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql84_30.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql84_30.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql84_30.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_30.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_30.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_30' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_30' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_30.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_30.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_30' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_30' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "ALTER EVENT f02_event_mysql84_30.e RENAME TO f02_event_mysql84_30.renamed",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_30.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_30.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_30' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_30' AND EVENT_NAME='e'",
+     "expect": "0"
+    },
+    {
+     "assert": "scheduled event retained under new name",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_30' AND EVENT_NAME='renamed' AND INTERVAL_FIELD='DAY' AND INTERVAL_VALUE='1' AND STATUS='DISABLED'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql84_30",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_30'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-event-drop-missing",
+   "sql": "DROP EVENT f02_event_mysql84_31.absent",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_event_mysql84_31",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql84_31",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_31'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.stored_object.target.valid",
+      "reason_code": "unproven_mysql_stored_object",
+      "required_facts": [
+       "stored_object.presence"
+      ]
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_31'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql84_31",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql84_31.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql84_31.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql84_31.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql84_31.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_31.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_31.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_31' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_31' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_31.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_31.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_31' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_31' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "DROP EVENT f02_event_mysql84_31.absent",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1539 (HY000)"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_31.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_31.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_31' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_31' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql84_31",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_31'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "f02-mysql84-event-drop-guarded-missing",
+   "sql": "DROP EVENT IF EXISTS f02_event_mysql84_32.absent",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "policy": "f02-stored-object-target",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "f02_event_mysql84_32",
+    "password_env": "DS_T30_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned schema",
+      "fixture_key": "schema",
+      "sql": "DROP DATABASE f02_event_mysql84_32",
+      "verify": {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_32'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "rule_summary_loaded": 1
+   },
+   "setup": [
+    {
+     "name": "prove fixture absent",
+     "fixture_key": "schema",
+     "requires_absence": true,
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_32'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "claim fixture",
+     "fixture_key": "schema",
+     "creates_fixture": true,
+     "sql": "CREATE DATABASE f02_event_mysql84_32",
+     "expect_rc": 0
+    },
+    {
+     "name": "create owned witness definitions",
+     "sql": "CREATE TABLE f02_event_mysql84_32.t (id INT PRIMARY KEY, v INT);CREATE TABLE f02_event_mysql84_32.other_t (id INT PRIMARY KEY, v INT);CREATE EVENT f02_event_mysql84_32.e ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1;CREATE EVENT f02_event_mysql84_32.occupied ON SCHEDULE EVERY 1 DAY DISABLE DO SET @witness=1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "original table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_32.t",
+       "expect": "0"
+      },
+      {
+       "assert": "second table stays empty",
+       "sql": "SELECT COUNT(*) FROM f02_event_mysql84_32.other_t",
+       "expect": "0"
+      },
+      {
+       "assert": "both events remain disabled",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_32' AND STATUS='DISABLED'",
+       "expect": "2"
+      },
+      {
+       "assert": "original event identity",
+       "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_32' AND EVENT_NAME='e'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_32.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_32.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_32' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_32' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "execute": [
+    {
+     "name": "execute native statement",
+     "sql": "DROP EVENT IF EXISTS f02_event_mysql84_32.absent",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "original table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_32.t",
+     "expect": "0"
+    },
+    {
+     "assert": "second table stays empty",
+     "sql": "SELECT COUNT(*) FROM f02_event_mysql84_32.other_t",
+     "expect": "0"
+    },
+    {
+     "assert": "both events remain disabled",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_32' AND STATUS='DISABLED'",
+     "expect": "2"
+    },
+    {
+     "assert": "original event identity",
+     "sql": "SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA='f02_event_mysql84_32' AND EVENT_NAME='e'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "remove owned schema",
+     "fixture_key": "schema",
+     "sql": "DROP DATABASE f02_event_mysql84_32",
+     "verify": [
+      {
+       "assert": "owned schema absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='f02_event_mysql84_32'",
+       "expect": "0"
+      }
+     ],
+     "drops_fixture": true,
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
    "id": "mysql57-event-lifecycle",
    "anchor": "mysql57",
    "dialect": "mysql",
@@ -1091,6 +7083,39 @@
   }
  ],
  "required_case_ids": [
+  "T30.meta.f02-mysql57-event-create-duplicate",
+  "T30.meta.f02-mysql57-event-create-guard",
+  "T30.meta.f02-mysql57-event-create-bad-interval",
+  "T30.meta.f02-mysql57-event-create-at-past",
+  "T30.meta.f02-mysql57-event-alter-missing",
+  "T30.meta.f02-mysql57-event-rename-occupied",
+  "T30.meta.f02-mysql57-event-rename-self",
+  "T30.meta.f02-mysql57-event-rename-case-variant",
+  "T30.meta.f02-mysql57-event-rename-success",
+  "T30.meta.f02-mysql57-event-drop-missing",
+  "T30.meta.f02-mysql57-event-drop-guarded-missing",
+  "T30.meta.f02-mysql80-event-create-duplicate",
+  "T30.meta.f02-mysql80-event-create-guard",
+  "T30.meta.f02-mysql80-event-create-bad-interval",
+  "T30.meta.f02-mysql80-event-create-at-past",
+  "T30.meta.f02-mysql80-event-alter-missing",
+  "T30.meta.f02-mysql80-event-rename-occupied",
+  "T30.meta.f02-mysql80-event-rename-self",
+  "T30.meta.f02-mysql80-event-rename-case-variant",
+  "T30.meta.f02-mysql80-event-rename-success",
+  "T30.meta.f02-mysql80-event-drop-missing",
+  "T30.meta.f02-mysql80-event-drop-guarded-missing",
+  "T30.meta.f02-mysql84-event-create-duplicate",
+  "T30.meta.f02-mysql84-event-create-guard",
+  "T30.meta.f02-mysql84-event-create-bad-interval",
+  "T30.meta.f02-mysql84-event-create-at-past",
+  "T30.meta.f02-mysql84-event-alter-missing",
+  "T30.meta.f02-mysql84-event-rename-occupied",
+  "T30.meta.f02-mysql84-event-rename-self",
+  "T30.meta.f02-mysql84-event-rename-case-variant",
+  "T30.meta.f02-mysql84-event-rename-success",
+  "T30.meta.f02-mysql84-event-drop-missing",
+  "T30.meta.f02-mysql84-event-drop-guarded-missing",
   "T30.cli.mysql-golden-path",
   "T30.cli.mysql-safe-body",
   "T30.cli.mysql-enabled-every-warn",

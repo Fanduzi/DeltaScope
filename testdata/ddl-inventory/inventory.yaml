@@ -3555,6 +3555,107 @@ rows:
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:internal/application/audit/trigger_t29_test.go
           - gate:T29
+    subaction_status:
+      - subaction_id: "BEFORE/AFTER INSERT/UPDATE/DELETE"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#BEFORE/AFTER INSERT/UPDATE/DELETE", "file:testdata/ddl-golden/T29.json#f02-mysql57-create-trigger-duplicate", "file:testdata/ddl-golden/T29.json#f02-mysql57-create-trigger-table-missing"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#BEFORE/AFTER INSERT/UPDATE/DELETE", "file:testdata/ddl-golden/T29.json#f02-mysql80-create-trigger-duplicate", "file:testdata/ddl-golden/T29.json#f02-mysql80-create-trigger-table-missing"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#BEFORE/AFTER INSERT/UPDATE/DELETE", "file:testdata/ddl-golden/T29.json#f02-mysql84-create-trigger-duplicate", "file:testdata/ddl-golden/T29.json#f02-mysql84-create-trigger-table-missing"]
+      - subaction_id: "FOR EACH ROW"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#FOR EACH ROW", "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-order-success", "file:testdata/ddl-golden/T29.json#f02-mysql57-create-trigger-guard"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#FOR EACH ROW", "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-order-success", "file:testdata/ddl-golden/T29.json#f02-mysql80-create-trigger-guard"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#FOR EACH ROW", "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-order-success", "file:testdata/ddl-golden/T29.json#f02-mysql84-create-trigger-guard"]
+      - subaction_id: "FOLLOWS/PRECEDES"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#FOLLOWS/PRECEDES", "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-order-missing", "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-order-other-table", "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-order-other-timing", "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-order-success"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#FOLLOWS/PRECEDES", "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-order-missing", "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-order-other-table", "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-order-other-timing", "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-order-success"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#FOLLOWS/PRECEDES", "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-order-missing", "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-order-other-table", "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-order-other-timing", "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-order-success"]
+      - subaction_id: "OLD/NEW bindings"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#OLD/NEW bindings", "file:testdata/ddl-golden/T29.json#mysql-oldnew-legal", "file:testdata/ddl-golden/T29.json#mysql-old-on-insert", "file:testdata/ddl-golden/T29.json#mysql-new-on-delete", "file:testdata/ddl-golden/T29.json#mysql-old-new-sibling-blocker"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#OLD/NEW bindings", "file:testdata/ddl-golden/T29.json#mysql-oldnew-legal", "file:testdata/ddl-golden/T29.json#mysql-old-on-insert", "file:testdata/ddl-golden/T29.json#mysql-new-on-delete", "file:testdata/ddl-golden/T29.json#mysql-old-new-sibling-blocker"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#OLD/NEW bindings", "file:testdata/ddl-golden/T29.json#mysql-oldnew-legal", "file:testdata/ddl-golden/T29.json#mysql-old-on-insert", "file:testdata/ddl-golden/T29.json#mysql-new-on-delete", "file:testdata/ddl-golden/T29.json#mysql-old-new-sibling-blocker"]
 
     status_evidence: "2026-11-15 T29 (#108): CREATE TRIGGER claimed — DEFINER, timing (BEFORE/AFTER), event (INSERT/UPDATE/DELETE), target, FOR EACH ROW, and FOLLOWS/PRECEDES ordering are modeled in the declaration; the body audits through the shared routine-member machinery with trigger-scoped evidence and metadata (trigger/trigger_member). OLD.<col>/NEW.<col> resolve against the event, not table names: event-legal uses bind to the trigger target and audit normally, illegal uses (OLD on INSERT, NEW on DELETE) produce trigger.body.old_new bounded evidence instead of fabricated missing-table findings. Audited members and explicit boundaries coexist, so the cell stays mixed. Golden: T29.json 25 cases/258 assertions on mysql57/80/84 + tidb85 vendor boundary"
     targets: "trigger identity, timing, event, ordering, OLD/NEW bindings, body targets distinct from trigger target"
@@ -3571,16 +3672,16 @@ rows:
     subactions: ["DROP TRIGGER", "IF EXISTS"]
     sql_shape: "DROP TRIGGER tr"
     prerequisites: "none"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.drop-trigger.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
@@ -3592,7 +3693,7 @@ rows:
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.drop-trigger.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
@@ -3604,13 +3705,64 @@ rows:
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.drop-trigger.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:internal/application/audit/trigger_t29_test.go
           - gate:T29
+    subaction_status:
+      - subaction_id: "DROP TRIGGER"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DROP TRIGGER", "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-drop-missing", "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-drop-case-variant"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DROP TRIGGER", "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-drop-missing", "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-drop-case-variant"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DROP TRIGGER", "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-drop-missing", "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-drop-case-variant"]
+      - subaction_id: "IF EXISTS"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#IF EXISTS", "file:testdata/ddl-golden/T29.json#f02-mysql57-trigger-drop-guarded-missing"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#IF EXISTS", "file:testdata/ddl-golden/T29.json#f02-mysql80-trigger-drop-guarded-missing"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#IF EXISTS", "file:testdata/ddl-golden/T29.json#f02-mysql84-trigger-drop-guarded-missing"]
 
     status_evidence: "2026-11-15 T29 (#108): DROP TRIGGER claimed — ddl.drop_trigger.notice fires and IF EXISTS is modeled; lifecycle is symmetric with CREATE TRIGGER on all three MySQL anchors. Golden: T29.json mysql-drop-lifecycle"
     targets: "trigger identity, IF EXISTS"
@@ -3670,6 +3822,107 @@ rows:
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:internal/application/audit/event_t30_test.go
           - gate:T30
+    subaction_status:
+      - subaction_id: "ON SCHEDULE AT/EVERY"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ON SCHEDULE AT/EVERY", "file:testdata/ddl-golden/T30.json#f02-mysql57-event-create-bad-interval", "file:testdata/ddl-golden/T30.json#f02-mysql57-event-create-at-past"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ON SCHEDULE AT/EVERY", "file:testdata/ddl-golden/T30.json#f02-mysql80-event-create-bad-interval", "file:testdata/ddl-golden/T30.json#f02-mysql80-event-create-at-past"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ON SCHEDULE AT/EVERY", "file:testdata/ddl-golden/T30.json#f02-mysql84-event-create-bad-interval", "file:testdata/ddl-golden/T30.json#f02-mysql84-event-create-at-past"]
+      - subaction_id: "ON COMPLETION"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ON COMPLETION", "file:testdata/ddl-golden/T30.json#f02-mysql57-event-create-at-past"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ON COMPLETION", "file:testdata/ddl-golden/T30.json#f02-mysql80-event-create-at-past"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ON COMPLETION", "file:testdata/ddl-golden/T30.json#f02-mysql84-event-create-at-past"]
+      - subaction_id: "ENABLE/DISABLE"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ENABLE/DISABLE", "file:testdata/ddl-golden/T30.json#f02-mysql57-event-create-at-past", "file:testdata/ddl-golden/T30.json#f02-mysql57-event-create-guard"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ENABLE/DISABLE", "file:testdata/ddl-golden/T30.json#f02-mysql80-event-create-at-past", "file:testdata/ddl-golden/T30.json#f02-mysql80-event-create-guard"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ENABLE/DISABLE", "file:testdata/ddl-golden/T30.json#f02-mysql84-event-create-at-past", "file:testdata/ddl-golden/T30.json#f02-mysql84-event-create-guard"]
+      - subaction_id: "DO body"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DO body", "file:testdata/ddl-golden/T30.json#f02-mysql57-event-create-duplicate"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DO body", "file:testdata/ddl-golden/T30.json#f02-mysql80-event-create-duplicate"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DO body", "file:testdata/ddl-golden/T30.json#f02-mysql84-event-create-duplicate"]
 
     status_evidence: "2026-11-15 T30 (#109): CREATE EVENT claimed — DEFINER (shape only), ON SCHEDULE AT/EVERY with interval and STARTS/ENDS bounds, ON COMPLETION PRESERVE/NOT PRESERVE, ENABLE/DISABLE/DISABLE ON SLAVE, and the DO body are modeled in the declaration; the body audits through the shared routine-member machinery with event-scoped evidence and metadata (event/event_member). A DISABLED body still audits — disabled means not-scheduled, never not-analysed. ENABLED schedules emit ddl.event.enabled_execution.warn with schedule shape metadata; scheduler execution is never predicted or awaited. Audited members and explicit boundaries coexist, so the cell stays mixed. Golden: T30.json 16 cli cases + 3 anchor receipts"
     targets: "event identity, schedule shape, completion policy, enablement, static body members"
@@ -3728,6 +3981,32 @@ rows:
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:internal/application/audit/event_t30_test.go
           - gate:T30
+    subaction_status:
+      - subaction_id: "ALTER EVENT ... ON SCHEDULE/RENAME/ENABLE/DISABLE/DO"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ALTER EVENT ... ON SCHEDULE/RENAME/ENABLE/DISABLE/DO", "file:testdata/ddl-golden/T30.json#f02-mysql57-event-alter-missing", "file:testdata/ddl-golden/T30.json#f02-mysql57-event-rename-occupied", "file:testdata/ddl-golden/T30.json#f02-mysql57-event-rename-self", "file:testdata/ddl-golden/T30.json#f02-mysql57-event-rename-case-variant", "file:testdata/ddl-golden/T30.json#f02-mysql57-event-rename-success"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ALTER EVENT ... ON SCHEDULE/RENAME/ENABLE/DISABLE/DO", "file:testdata/ddl-golden/T30.json#f02-mysql80-event-alter-missing", "file:testdata/ddl-golden/T30.json#f02-mysql80-event-rename-occupied", "file:testdata/ddl-golden/T30.json#f02-mysql80-event-rename-self", "file:testdata/ddl-golden/T30.json#f02-mysql80-event-rename-case-variant", "file:testdata/ddl-golden/T30.json#f02-mysql80-event-rename-success"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#ALTER EVENT ... ON SCHEDULE/RENAME/ENABLE/DISABLE/DO", "file:testdata/ddl-golden/T30.json#f02-mysql84-event-alter-missing", "file:testdata/ddl-golden/T30.json#f02-mysql84-event-rename-occupied", "file:testdata/ddl-golden/T30.json#f02-mysql84-event-rename-self", "file:testdata/ddl-golden/T30.json#f02-mysql84-event-rename-case-variant", "file:testdata/ddl-golden/T30.json#f02-mysql84-event-rename-success"]
 
     status_evidence: "2026-11-15 T30 (#109): ALTER EVENT claimed — schedule re-definition, ENABLE/DISABLE/DISABLE ON SLAVE, and body replacement parse; ENABLE (and DISABLE ON SLAVE, which still executes on the primary) emits ddl.event.enabled_execution.warn while an ALTER that authors no status clause owes the explicit missing_event_state evidence gap rather than a guessed warning. Golden: T30.json mysql-alter-* cases"
     targets: "event identity, schedule/state transitions, enabled-state evidence gaps, new body if present"
@@ -3743,16 +4022,16 @@ rows:
     subactions: ["DROP EVENT", "IF EXISTS"]
     sql_shape: "DROP EVENT ev"
     prerequisites: "none"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.drop-event.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml
@@ -3765,7 +4044,7 @@ rows:
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.drop-event.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml
@@ -3778,7 +4057,7 @@ rows:
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.drop-event.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/event_lifecycle_analysis.expected.yaml
@@ -3786,6 +4065,57 @@ rows:
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - file:internal/application/audit/event_t30_test.go
           - gate:T30
+    subaction_status:
+      - subaction_id: "DROP EVENT"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DROP EVENT", "file:testdata/ddl-golden/T30.json#f02-mysql57-event-drop-missing"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DROP EVENT", "file:testdata/ddl-golden/T30.json#f02-mysql80-event-drop-missing"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#DROP EVENT", "file:testdata/ddl-golden/T30.json#f02-mysql84-event-drop-missing"]
+      - subaction_id: "IF EXISTS"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#IF EXISTS", "file:testdata/ddl-golden/T30.json#f02-mysql57-event-drop-guarded-missing"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#IF EXISTS", "file:testdata/ddl-golden/T30.json#f02-mysql80-event-drop-guarded-missing"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-trigger-event-identities.md#IF EXISTS", "file:testdata/ddl-golden/T30.json#f02-mysql84-event-drop-guarded-missing"]
 
     status_evidence: "2026-11-15 T30 (#109): DROP EVENT claimed — ddl.drop_event.notice fires and IF EXISTS is modeled; lifecycle is symmetric with CREATE EVENT on all three MySQL anchors. Golden: T30.json mysql-drop-lifecycle"
     targets: "event identity, IF EXISTS"

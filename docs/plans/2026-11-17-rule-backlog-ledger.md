@@ -1821,6 +1821,22 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44971740266/job/137052831864),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137052905453) passed at the delivered SHA.
 
+## F02 exact dimension review
+
+| Row and authored cell | Verified evidence and remaining premise |
+| --- | --- |
+| `mysql.create-trigger` / BEFORE/AFTER INSERT/UPDATE/DELETE, FOR EACH ROW | The parser retains timing, event, target and row form. T29 adds native duplicate, missing-table and legal sibling controls. The guarded CREATE form is native on the two MySQL 8.x anchors and retains a parser boundary in DeltaScope. |
+| `mysql.create-trigger` / FOLLOWS/PRECEDES | T29 compares exact sibling grouping, successful placement, wrong table, wrong timing and missing sibling. Unobserved sibling evidence stays a gap. |
+| `mysql.create-trigger` / OLD/NEW bindings | Existing T29 verifies OLD on INSERT and NEW on DELETE boundaries and retains valid pseudo-column references. Runtime values and body effects require separate evidence. |
+| `mysql.drop-trigger` / DROP TRIGGER and IF EXISTS | T29 distinguishes an absent target from guarded absence and records case-variant behavior for each MySQL version. The provider supplies positive visibility evidence only. |
+| `mysql.create-event` / AT/EVERY, ON COMPLETION, ENABLE/DISABLE and DO | T30 preserves bounded declarations and body analysis, checks duplicate identity, observes one-time preserve versus invalid interval, and leaves the fixture disabled. Evaluation of scheduler expressions requires additional facts. |
+| `mysql.alter-event` / ON SCHEDULE/RENAME/ENABLE/DISABLE/DO | Existing schedule, status and body controls remain. Added native cases show missing, occupied, same-name, case-only and successful rename. Catalog absence stays a gap. |
+| `mysql.drop-event` / DROP EVENT and IF EXISTS | T30 verifies absent rejection and guarded absence. Executing-session privileges and scheduler effects remain separate. |
+
+The DROP rows move to `mixed_coverage`. See [decision record](../decisions/2026-11-21-mysql-trigger-event-identities.md), [T29](../../testdata/ddl-golden/T29.json), and [T30](../../testdata/ddl-golden/T30.json).
+
+Isolated preview T29 passed 57 cases and 1,298 assertions, T30 passed 61 cases and 1,416 assertions. Verification on the fixed F02 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
