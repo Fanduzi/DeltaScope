@@ -1982,7 +1982,14 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137207015444) passed at t
 
 The existing `create-schema-schema-elements` case now binds directly to the PostgreSQL 17 nested schema elements cell. The case preserves the adapter unsupported outcome and the prior native comparison remains in the F07 review. The inventory and cell classifications retain their values. [T35](../../testdata/ddl-golden/T35.json)
 
-Verification on the fixed F07-EVIDENCE candidate is pending.
+Delivered at `8308e30f339010f021e5a2104da5f2d3c4487946`. All 50 canonical tasks passed with 5,110 cases and
+120,926 assertions. T35 passed 77 cases and 1,608 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/45027551733/job/137223774759),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/45027551733/job/137223774684),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/45027551733/job/137223774806),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/45027551723/job/137223774747),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137223871615) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
