@@ -1024,7 +1024,7 @@ new default behavior is approved per family before implementation.
 
 | ID | Family | Rows | Canonical ownership | Initial state |
 | --- | --- | ---: | --- | --- |
-| F01 | MySQL stored routines | 5 | T27/T28 | D1 delivered; remaining dimensions unreviewed |
+| F01 | MySQL stored routines | 5 | T27/T28 | Stored routine target and guard checks delivered at `a2f73b0c`. Runtime effects and unmodeled bodies retain evidence boundaries. |
 | F02 | MySQL trigger/event lifecycle | 5 | T29/T30 | unreviewed |
 | F03 | MySQL/TiDB columns/generated/multi-action | 6 | T03/T05/T07/T08 | unreviewed |
 | F04 | MySQL/TiDB index lifecycle | 3 | T09/T10 | unreviewed |
@@ -1055,11 +1055,11 @@ insufficient.
 <!-- BEGIN ORIGINAL 63 ROWS -->
 | Family | Row ID | Authored dimensions at d8cceea6 | Disposition |
 | --- | --- | --- | --- |
-| F01 | `mysql.create-procedure` | CREATE PROCEDURE ... BEGIN..END; parameters; SQL SECURITY; DETERMINISTIC; body statements | partial:D1; others unreviewed |
-| F01 | `mysql.create-function` | CREATE FUNCTION ... RETURNS ... BEGIN..END; DETERMINISTIC; SQL SECURITY | partial:D1; others unreviewed |
-| F01 | `mysql.alter-procedure-function` | ALTER PROCEDURE; ALTER FUNCTION; SQL SECURITY; COMMENT | partial:D1; others unreviewed |
-| F01 | `mysql.drop-procedure-function` | DROP PROCEDURE; DROP FUNCTION; IF EXISTS | unreviewed |
-| F01 | `mysql.stored-body-analysis` | static body SQL; DECLARE/local binding; control flow; PREPARE/EXECUTE dynamic SQL | unreviewed |
+| F01 | `mysql.create-procedure` | CREATE PROCEDURE ... BEGIN..END; parameters; SQL SECURITY; DETERMINISTIC; body statements | Qualified occupancy and versioned guard verified. Parameter and body evidence is bound to T27/T28. |
+| F01 | `mysql.create-function` | CREATE FUNCTION ... RETURNS ... BEGIN..END; DETERMINISTIC; SQL SECURITY | Qualified occupancy and versioned guard verified. The original RETURN and loadable-function boundaries remain. |
+| F01 | `mysql.alter-procedure-function` | ALTER PROCEDURE; ALTER FUNCTION; SQL SECURITY; COMMENT | Visible exact identities, SECURITY and native COMMENT controls verified. Catalog visibility gaps remain. |
+| F01 | `mysql.drop-procedure-function` | DROP PROCEDURE; DROP FUNCTION; IF EXISTS | Qualified identity, kind and guarded absence verified. Catalog misses and dependencies require additional facts. |
+| F01 | `mysql.stored-body-analysis` | static body SQL; DECLARE/local binding; control flow; PREPARE/EXECUTE dynamic SQL | Existing static body and binding coverage verified with explicit dynamic and unsupported-member boundaries. |
 | F02 | `mysql.create-trigger` | BEFORE/AFTER INSERT/UPDATE/DELETE; FOR EACH ROW; FOLLOWS/PRECEDES; OLD/NEW bindings | unreviewed |
 | F02 | `mysql.drop-trigger` | DROP TRIGGER; IF EXISTS | unreviewed |
 | F02 | `mysql.create-event` | ON SCHEDULE AT/EVERY; ON COMPLETION; ENABLE/DISABLE; DO body | unreviewed |
@@ -1812,7 +1812,14 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137035314703) passed at t
 
 The DROP parent row moves to `mixed_coverage`. Existing SQL SECURITY findings and unknown-body boundaries are retained. [Decision record](../decisions/2026-11-21-mysql-routine-targets.md) · [T27](../../testdata/ddl-golden/T27.json) · [T28](../../testdata/ddl-golden/T28.json)
 
-Isolated preview T27 passed 99 cases and 2,286 assertions. Verification on the fixed F01 candidate is pending.
+Isolated preview T27 passed 99 cases and 2,286 assertions. Delivered at `a2f73b0ce445031ac59d1e8840127b5a78246887`. All 50 canonical tasks passed with 4,932 cases and
+115,077 assertions. T27 passed 99 cases and 2,286 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44971740396/job/137052832407),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44971740396/job/137052832198),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44971740396/job/137052832395),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44971740266/job/137052831864),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137052905453) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
