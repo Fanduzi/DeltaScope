@@ -1891,6 +1891,25 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44989397560/job/137106924556),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137106999998) passed at the delivered SHA.
 
+## F09 qualified CHECK and numeric constants (D52–D53)
+
+`ADD CHECK` and `ADD CHECK NOT VALID` on a fresh qualified ordinary table
+now check simple column and whole-row null tests with exact schema, relation
+and observed current-database qualifiers. PostgreSQL can resolve a missing
+qualified field through a whole-row function or cast. Audit blocks the missing
+column only when neither catalog name exists. A possible fallback keeps a gap.
+
+The direct numeric controls distinguish `integer`, `bigint` and `numeric`,
+including the signed boundary, radix syntax, digit separators, and bounded
+decimal and exponent syntax. The catalog observation binds the exact source
+type. Explicit-only Boolean casts still refuse. Assignment and implicit casts
+retain a gap for the result. General expressions, inheritance and data effects
+retain their earlier boundaries.
+
+[T37](../../testdata/ddl-golden/T37.json) · [Qualified references](../decisions/2026-11-21-postgresql-check-qualified-reference.md) · [Numeric constants](../decisions/2026-11-21-postgresql-check-numeric-constants.md)
+
+Isolated preview T37 passed 650 cases and 19,523 assertions. Verification on the fixed D52-D53 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

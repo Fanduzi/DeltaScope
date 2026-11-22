@@ -11081,7 +11081,40 @@
                 "file:testdata/ddl-golden/T37.json#pg-check-null-test-wrong-table-qualifier",
                 "file:testdata/ddl-golden/T37.json#pg-check-null-test-same-table-missing-column",
                 "file:testdata/ddl-golden/T37.json#pg-check-null-test-tableoid-is-allowed",
-                "file:testdata/ddl-golden/T37.json#pg-check-null-test-guarded-absent-target"
+                "file:testdata/ddl-golden/T37.json#pg-check-null-test-guarded-absent-target",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-int4-lower-limit",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-int8-positive",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-int8-upper-limit",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-integer-above-int8",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-integer-below-int8",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-fractional-decimal",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-negative-fractional-decimal",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-scientific-notation",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-radix-integer",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-digit-separators",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-leading-zeroes",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-true-control",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-explicit-boolean-cast-control",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-guarded-absence",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-explicit-only-cast-still-refuses",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-assignment-numeric-cast-leaves-gap",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-implicit-bigint-cast-leaves-gap",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-same-schema-and-table",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-same-schema-missing-column",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-wrong-schema-existing-relation",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-wrong-schema-absent-relation",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-wrong-table",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-valid-schema-qualified-star",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-wrong-schema-qualified-star",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-wrong-two-part-star",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-allowed-qualified-system-column",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-quoted-correct-qualified-column",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-quoted-incorrect-schema-case",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-guarded-absent-table",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-qualified-three-part-function-fallback",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-qualified-two-part-function-fallback",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-matching-database-qualifier",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-wrong-database-qualifier"
               ]
             }
           ]
@@ -11116,7 +11149,13 @@
                 "file:testdata/sql-corpus/postgresql/ddl/findings/check_null_test_missing_column.expected.yaml#ddl.pg.alter.add_check.name.available",
                 "file:testdata/ddl-golden/T37.json#pg-check-null-test-missing-exact-quoted-column-in-null-test",
                 "file:testdata/ddl-golden/T37.json#pg-check-null-test-ctid-is-refused",
-                "file:testdata/ddl-golden/T37.json#pg-check-null-test-refusal-before-named-collision"
+                "file:testdata/ddl-golden/T37.json#pg-check-null-test-refusal-before-named-collision",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/check_null_test_wrong_schema.expected.yaml#ddl.pg.alter.add_check.name.available",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/check_literal_numeric_boolean.expected.yaml#ddl.pg.alter.add_check.name.available",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-int8-negative",
+                "file:testdata/ddl-golden/T37.json#pg-check-numeric-duplicate-name-precedence",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-refused-qualified-system-column",
+                "file:testdata/ddl-golden/T37.json#pg-check-qualified-named-predicate-before-collision"
               ]
             }
           ]
