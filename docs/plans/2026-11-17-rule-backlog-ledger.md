@@ -1991,6 +1991,12 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/45027551723/job/137223774747),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137223871615) passed at the delivered SHA.
 
+## F11 exact T39 evidence bindings
+
+Eight CREATE INDEX cells now point directly to their existing PostgreSQL 17 normalization and audit controls. The retained `AS members` form links the exact parser refusal. Index eligibility, method behavior and expression semantics retain their earlier boundaries. The inventory and cell classifications retain their values. [T39](../../testdata/ddl-golden/T39.json)
+
+Verification on the fixed F11-EVIDENCE candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

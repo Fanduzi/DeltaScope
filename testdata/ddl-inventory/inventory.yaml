@@ -9268,7 +9268,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.create-index-basic.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.create-index-basic.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#create-index-create-index-basic]
       - subaction_id: UNIQUE
         parser_status: recognized
         audit_status: audited
@@ -9279,7 +9279,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.unique.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.unique.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#create-index-unique]
       - subaction_id: CONCURRENTLY
         parser_status: recognized
         audit_status: notice_only
@@ -9290,7 +9290,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.concurrently.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.concurrently.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#create-index-concurrently]
       - subaction_id: USING method
         parser_status: recognized
         audit_status: audited
@@ -9301,7 +9301,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.using-method.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.using-method.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#create-index-using-method]
       - subaction_id: expression index
         parser_status: recognized
         audit_status: audited
@@ -9312,7 +9312,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.expression-index.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.expression-index.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#create-index-expression-index]
       - subaction_id: partial WHERE
         parser_status: recognized
         audit_status: audited
@@ -9323,7 +9323,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.partial-where.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.partial-where.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#create-index-partial-where]
       - subaction_id: INCLUDE / NULLS DISTINCT
         parser_status: partial
         audit_status: mixed
@@ -9345,7 +9345,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.opclass-parameters.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.opclass-parameters.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#create-index-opclass-parameters]
       - subaction_id: WITH/TABLESPACE
         parser_status: recognized
         audit_status: audited
@@ -9356,7 +9356,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: audited
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.with-tablespace.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-index.with-tablespace.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#create-index-with-tablespace]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.create-index.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
@@ -9780,7 +9780,7 @@ rows:
             product_scope: registered
             parser_status: unrecognized
             audit_status: not_applicable
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-operator-family.as-members.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-operator-family.as-members.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T39.json#create-operator-family-as-members]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.create-operator-family.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]

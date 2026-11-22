@@ -12436,7 +12436,8 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-index.create-index-basic.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T39.json#create-index-create-index-basic"
               ]
             }
           ]
@@ -12455,7 +12456,8 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-index.unique.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T39.json#create-index-unique"
               ]
             }
           ]
@@ -12474,7 +12476,8 @@
               "audit_status": "notice_only",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-index.concurrently.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T39.json#create-index-concurrently"
               ]
             }
           ]
@@ -12493,7 +12496,8 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-index.using-method.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T39.json#create-index-using-method"
               ]
             }
           ]
@@ -12512,7 +12516,8 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-index.expression-index.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T39.json#create-index-expression-index"
               ]
             }
           ]
@@ -12531,7 +12536,8 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-index.partial-where.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T39.json#create-index-partial-where"
               ]
             }
           ]
@@ -12581,7 +12587,8 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-index.opclass-parameters.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T39.json#create-index-opclass-parameters"
               ]
             }
           ]
@@ -12600,7 +12607,8 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-index.with-tablespace.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T39.json#create-index-with-tablespace"
               ]
             }
           ]
@@ -13202,7 +13210,8 @@
               "audit_status": "not_applicable",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-operator-family.as-members.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T39.json#create-operator-family-as-members"
               ]
             }
           ]
