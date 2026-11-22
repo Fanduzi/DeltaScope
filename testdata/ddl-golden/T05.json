@@ -14,6 +14,7 @@
    }
   },
   "profiles": {
+   "f03-add-list-identity": {"enable": {"ddl.alter.add_column.exists.forbid": {"level": "blocker"}}},
    "t04b-key-length-isolated": {
     "enable": {
      "ddl.index.key_length.max_bytes.require": {
@@ -5409,6 +5410,2766 @@
   }
  ],
  "metadata_cases": [
+  {
+   "id": "f03-mysql57-grouped-duplicate",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE golden.f03_mysql57_grouped_duplicate ADD (n INT, n INT)",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_grouped_duplicate'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_mysql57_grouped_duplicate (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_mysql57_grouped_duplicate VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    },
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "metadata": {
+       "reason_code": "repeated_add_column"
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql57_grouped_duplicate",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_grouped_duplicate'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_mysql57_grouped_duplicate ADD (n INT, n INT)",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1060"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql57_grouped_duplicate",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_grouped_duplicate'",
+     "expect": "id,v"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_mysql57_grouped_duplicate",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_grouped_duplicate'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_mysql57_grouped_duplicate",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_grouped_duplicate'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-mysql57-grouped-distinct",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE golden.f03_mysql57_grouped_distinct ADD (n INT, m INT)",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_grouped_distinct'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_mysql57_grouped_distinct (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_mysql57_grouped_distinct VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql57_grouped_distinct",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_grouped_distinct'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_mysql57_grouped_distinct ADD (n INT, m INT)",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql57_grouped_distinct",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_grouped_distinct'",
+     "expect": "id,v,n,m"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_mysql57_grouped_distinct",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_grouped_distinct'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_mysql57_grouped_distinct",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_grouped_distinct'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-mysql57-position-first",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE golden.f03_mysql57_position_first ADD COLUMN n INT FIRST",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_position_first'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_mysql57_position_first (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_mysql57_position_first VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql57_position_first",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_position_first'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_mysql57_position_first ADD COLUMN n INT FIRST",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql57_position_first",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_position_first'",
+     "expect": "n,id,v"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_mysql57_position_first",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_position_first'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_mysql57_position_first",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_position_first'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-mysql57-position-after",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE golden.f03_mysql57_position_after ADD COLUMN n INT AFTER id",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_position_after'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_mysql57_position_after (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_mysql57_position_after VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql57_position_after",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_position_after'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_mysql57_position_after ADD COLUMN n INT AFTER id",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql57_position_after",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_position_after'",
+     "expect": "id,n,v"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_mysql57_position_after",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_position_after'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_mysql57_position_after",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_position_after'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-mysql57-position-after-add",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE golden.f03_mysql57_position_after_add ADD COLUMN n INT, ADD COLUMN m INT AFTER n",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_position_after_add'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_mysql57_position_after_add (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_mysql57_position_after_add VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql57_position_after_add",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_position_after_add'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_mysql57_position_after_add ADD COLUMN n INT, ADD COLUMN m INT AFTER n",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql57_position_after_add",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_position_after_add'",
+     "expect": "id,v,n,m"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_mysql57_position_after_add",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_position_after_add'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_mysql57_position_after_add",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql57_position_after_add'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-mysql80-grouped-duplicate",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE golden.f03_mysql80_grouped_duplicate ADD (n INT, n INT)",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_grouped_duplicate'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_mysql80_grouped_duplicate (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_mysql80_grouped_duplicate VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "metadata": {
+       "reason_code": "repeated_add_column"
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql80_grouped_duplicate",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_grouped_duplicate'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_mysql80_grouped_duplicate ADD (n INT, n INT)",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1060"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql80_grouped_duplicate",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_grouped_duplicate'",
+     "expect": "id,v"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_mysql80_grouped_duplicate",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_grouped_duplicate'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_mysql80_grouped_duplicate",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_grouped_duplicate'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-mysql80-grouped-distinct",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE golden.f03_mysql80_grouped_distinct ADD (n INT, m INT)",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_grouped_distinct'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_mysql80_grouped_distinct (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_mysql80_grouped_distinct VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql80_grouped_distinct",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_grouped_distinct'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_mysql80_grouped_distinct ADD (n INT, m INT)",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql80_grouped_distinct",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_grouped_distinct'",
+     "expect": "id,v,n,m"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_mysql80_grouped_distinct",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_grouped_distinct'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_mysql80_grouped_distinct",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_grouped_distinct'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-mysql80-position-first",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE golden.f03_mysql80_position_first ADD COLUMN n INT FIRST",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_position_first'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_mysql80_position_first (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_mysql80_position_first VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql80_position_first",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_position_first'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_mysql80_position_first ADD COLUMN n INT FIRST",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql80_position_first",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_position_first'",
+     "expect": "n,id,v"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_mysql80_position_first",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_position_first'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_mysql80_position_first",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_position_first'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-mysql80-position-after",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE golden.f03_mysql80_position_after ADD COLUMN n INT AFTER id",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_position_after'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_mysql80_position_after (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_mysql80_position_after VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql80_position_after",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_position_after'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_mysql80_position_after ADD COLUMN n INT AFTER id",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql80_position_after",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_position_after'",
+     "expect": "id,n,v"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_mysql80_position_after",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_position_after'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_mysql80_position_after",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_position_after'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-mysql80-position-after-add",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE golden.f03_mysql80_position_after_add ADD COLUMN n INT, ADD COLUMN m INT AFTER n",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_position_after_add'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_mysql80_position_after_add (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_mysql80_position_after_add VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql80_position_after_add",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_position_after_add'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_mysql80_position_after_add ADD COLUMN n INT, ADD COLUMN m INT AFTER n",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql80_position_after_add",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_position_after_add'",
+     "expect": "id,v,n,m"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_mysql80_position_after_add",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_position_after_add'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_mysql80_position_after_add",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql80_position_after_add'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-mysql84-grouped-duplicate",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE golden.f03_mysql84_grouped_duplicate ADD (n INT, n INT)",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_grouped_duplicate'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_mysql84_grouped_duplicate (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_mysql84_grouped_duplicate VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    },
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "metadata": {
+       "reason_code": "repeated_add_column"
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql84_grouped_duplicate",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_grouped_duplicate'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_mysql84_grouped_duplicate ADD (n INT, n INT)",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1060"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql84_grouped_duplicate",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_grouped_duplicate'",
+     "expect": "id,v"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_mysql84_grouped_duplicate",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_grouped_duplicate'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_mysql84_grouped_duplicate",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_grouped_duplicate'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-mysql84-grouped-distinct",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE golden.f03_mysql84_grouped_distinct ADD (n INT, m INT)",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_grouped_distinct'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_mysql84_grouped_distinct (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_mysql84_grouped_distinct VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql84_grouped_distinct",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_grouped_distinct'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_mysql84_grouped_distinct ADD (n INT, m INT)",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql84_grouped_distinct",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_grouped_distinct'",
+     "expect": "id,v,n,m"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_mysql84_grouped_distinct",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_grouped_distinct'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_mysql84_grouped_distinct",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_grouped_distinct'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-mysql84-position-first",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE golden.f03_mysql84_position_first ADD COLUMN n INT FIRST",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_position_first'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_mysql84_position_first (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_mysql84_position_first VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql84_position_first",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_position_first'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_mysql84_position_first ADD COLUMN n INT FIRST",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql84_position_first",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_position_first'",
+     "expect": "n,id,v"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_mysql84_position_first",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_position_first'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_mysql84_position_first",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_position_first'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-mysql84-position-after",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE golden.f03_mysql84_position_after ADD COLUMN n INT AFTER id",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_position_after'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_mysql84_position_after (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_mysql84_position_after VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql84_position_after",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_position_after'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_mysql84_position_after ADD COLUMN n INT AFTER id",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql84_position_after",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_position_after'",
+     "expect": "id,n,v"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_mysql84_position_after",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_position_after'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_mysql84_position_after",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_position_after'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-mysql84-position-after-add",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE golden.f03_mysql84_position_after_add ADD COLUMN n INT, ADD COLUMN m INT AFTER n",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password_source": "ephemeral-run-secret"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_position_after_add'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_mysql84_position_after_add (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_mysql84_position_after_add VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql84_position_after_add",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_position_after_add'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_mysql84_position_after_add ADD COLUMN n INT, ADD COLUMN m INT AFTER n",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_mysql84_position_after_add",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_position_after_add'",
+     "expect": "id,v,n,m"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_mysql84_position_after_add",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_position_after_add'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_mysql84_position_after_add",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_mysql84_position_after_add'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-tidb85-grouped-duplicate",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE golden.f03_tidb85_grouped_duplicate ADD (n INT, n INT)",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_grouped_duplicate'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_tidb85_grouped_duplicate (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_tidb85_grouped_duplicate VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    },
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "metadata": {
+       "reason_code": "repeated_add_column"
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_tidb85_grouped_duplicate",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_grouped_duplicate'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_tidb85_grouped_duplicate ADD (n INT, n INT)",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 8200"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_tidb85_grouped_duplicate",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_grouped_duplicate'",
+     "expect": "id,v"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_tidb85_grouped_duplicate",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_grouped_duplicate'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_tidb85_grouped_duplicate",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_grouped_duplicate'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-tidb85-grouped-distinct",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE golden.f03_tidb85_grouped_distinct ADD (n INT, m INT)",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_grouped_distinct'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_tidb85_grouped_distinct (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_tidb85_grouped_distinct VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_tidb85_grouped_distinct",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_grouped_distinct'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_tidb85_grouped_distinct ADD (n INT, m INT)",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_tidb85_grouped_distinct",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_grouped_distinct'",
+     "expect": "id,v,n,m"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_tidb85_grouped_distinct",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_grouped_distinct'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_tidb85_grouped_distinct",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_grouped_distinct'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-tidb85-position-first",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE golden.f03_tidb85_position_first ADD COLUMN n INT FIRST",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_position_first'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_tidb85_position_first (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_tidb85_position_first VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_tidb85_position_first",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_position_first'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_tidb85_position_first ADD COLUMN n INT FIRST",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_tidb85_position_first",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_position_first'",
+     "expect": "n,id,v"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_tidb85_position_first",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_position_first'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_tidb85_position_first",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_position_first'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-tidb85-separate-case-duplicate",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE golden.f03_tidb85_separate_case_duplicate ADD COLUMN N INT, ADD COLUMN n INT",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_separate_case_duplicate'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_tidb85_separate_case_duplicate (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_tidb85_separate_case_duplicate VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    },
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "metadata": {
+       "reason_code": "repeated_add_column"
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_tidb85_separate_case_duplicate",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_separate_case_duplicate'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_tidb85_separate_case_duplicate ADD COLUMN N INT, ADD COLUMN n INT",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 8200"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_tidb85_separate_case_duplicate",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_separate_case_duplicate'",
+     "expect": "id,v"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_tidb85_separate_case_duplicate",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_separate_case_duplicate'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_tidb85_separate_case_duplicate",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_separate_case_duplicate'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-tidb85-guarded-second-duplicate",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE golden.f03_tidb85_guarded_second_duplicate ADD COLUMN n INT, ADD COLUMN IF NOT EXISTS n INT",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_guarded_second_duplicate'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_tidb85_guarded_second_duplicate (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_tidb85_guarded_second_duplicate VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    },
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "metadata": {
+       "reason_code": "repeated_add_column"
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_tidb85_guarded_second_duplicate",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_guarded_second_duplicate'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_tidb85_guarded_second_duplicate ADD COLUMN n INT, ADD COLUMN IF NOT EXISTS n INT",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 8200"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_tidb85_guarded_second_duplicate",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_guarded_second_duplicate'",
+     "expect": "id,v"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_tidb85_guarded_second_duplicate",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_guarded_second_duplicate'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_tidb85_guarded_second_duplicate",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_guarded_second_duplicate'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "f03-tidb85-guarded-first-duplicate",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE golden.f03_tidb85_guarded_first_duplicate ADD COLUMN IF NOT EXISTS n INT, ADD COLUMN n INT",
+   "policy": "f03-add-list-identity",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "setup": [
+    {
+     "name": "verify fixture absence",
+     "sql": "SELECT 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_guarded_first_duplicate'",
+       "expect": "0"
+      }
+     ],
+     "fixture_key": "table",
+     "requires_absence": true
+    },
+    {
+     "name": "create owned table",
+     "sql": "CREATE TABLE golden.f03_tidb85_guarded_first_duplicate (id INT PRIMARY KEY,v INT)",
+     "expect_rc": 0,
+     "fixture_key": "table",
+     "creates_fixture": true
+    },
+    {
+     "name": "insert fixture row",
+     "sql": "INSERT INTO golden.f03_tidb85_guarded_first_duplicate VALUES (7,11)",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    },
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "metadata": {
+       "reason_code": "repeated_add_column"
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_tidb85_guarded_first_duplicate",
+     "expect": "7"
+    },
+    {
+     "assert": "before ALTER the original column order is unchanged",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_guarded_first_duplicate'",
+     "expect": "id,v"
+    }
+   ],
+   "execute": [
+    {
+     "name": "run native ALTER",
+     "sql": "ALTER TABLE golden.f03_tidb85_guarded_first_duplicate ADD COLUMN IF NOT EXISTS n INT, ADD COLUMN n INT",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 8200"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "fixture row remains",
+     "sql": "SELECT id FROM golden.f03_tidb85_guarded_first_duplicate",
+     "expect": "7"
+    },
+    {
+     "assert": "native column order",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_guarded_first_duplicate'",
+     "expect": "id,v"
+    }
+   ],
+   "fixture": {
+    "cleanup": [
+     {
+      "name": "remove owned table",
+      "sql": "DROP TABLE golden.f03_tidb85_guarded_first_duplicate",
+      "fixture_key": "table",
+      "verify": {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_guarded_first_duplicate'",
+       "expect": "0"
+      }
+     }
+    ]
+   },
+   "teardown": [
+    {
+     "name": "remove owned table",
+     "sql": "DROP TABLE golden.f03_tidb85_guarded_first_duplicate",
+     "fixture_key": "table",
+     "expect_rc": 0,
+     "drops_fixture": true,
+     "verify": [
+      {
+       "assert": "owned table absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='f03_tidb85_guarded_first_duplicate'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
   {
    "id": "t05-mysql57-first-path",
    "anchor": "mysql57",
@@ -20668,6 +23429,27 @@
   }
  ],
  "required_case_ids": [
+  "T05.meta.f03-mysql57-grouped-duplicate",
+  "T05.meta.f03-mysql57-grouped-distinct",
+  "T05.meta.f03-mysql57-position-first",
+  "T05.meta.f03-mysql57-position-after",
+  "T05.meta.f03-mysql57-position-after-add",
+  "T05.meta.f03-mysql80-grouped-duplicate",
+  "T05.meta.f03-mysql80-grouped-distinct",
+  "T05.meta.f03-mysql80-position-first",
+  "T05.meta.f03-mysql80-position-after",
+  "T05.meta.f03-mysql80-position-after-add",
+  "T05.meta.f03-mysql84-grouped-duplicate",
+  "T05.meta.f03-mysql84-grouped-distinct",
+  "T05.meta.f03-mysql84-position-first",
+  "T05.meta.f03-mysql84-position-after",
+  "T05.meta.f03-mysql84-position-after-add",
+  "T05.meta.f03-tidb85-grouped-duplicate",
+  "T05.meta.f03-tidb85-grouped-distinct",
+  "T05.meta.f03-tidb85-position-first",
+  "T05.meta.f03-tidb85-separate-case-duplicate",
+  "T05.meta.f03-tidb85-guarded-second-duplicate",
+  "T05.meta.f03-tidb85-guarded-first-duplicate",
   "T05.db.mysql57.ddl",
   "T05.db.mysql57.syntax_negative",
   "T05.db.mysql80.ddl",

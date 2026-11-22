@@ -745,16 +745,16 @@ rows:
     subactions: ["GENERATED ALWAYS AS (expr)", "VIRTUAL", "STORED", "expression DEFAULT (8.0.13+)", "INVISIBLE column (8.0.23+)"]
     sql_shape: "CREATE TABLE tg (a INT, b INT GENERATED ALWAYS AS (a+1) STORED)"
     prerequisites: "InnoDB"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml
@@ -765,7 +765,7 @@ rows:
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml
@@ -776,12 +776,138 @@ rows:
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence:
           - file:testdata/ddl-inventory/evidence/mysql.create-table-generated-column.probes.txt
           - file:testdata/sql-corpus/mysql/ddl/findings/rule_coverage_offline.expected.yaml
           - file:internal/application/audit/catalogdata/ddl-coverage-catalog.json
           - "missing: owner adds generated-column-specific dependency/expression/version-boundary fixtures"
+    subaction_status:
+      - subaction_id: "GENERATED ALWAYS AS (expr)"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#GENERATED ALWAYS AS (expr)", "file:testdata/ddl-golden/T07.json#t07-mysql57-g01-stored-dependent-drop", "file:testdata/ddl-golden/T07.json#t07-mysql57-g06-quoted-identifier"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#GENERATED ALWAYS AS (expr)", "file:testdata/ddl-golden/T07.json#t07-mysql80-g01-stored-dependent-drop", "file:testdata/ddl-golden/T07.json#t07-mysql80-g06-quoted-identifier"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#GENERATED ALWAYS AS (expr)", "file:testdata/ddl-golden/T07.json#t07-mysql84-g01-stored-dependent-drop", "file:testdata/ddl-golden/T07.json#t07-mysql84-g06-quoted-identifier"]
+      - subaction_id: "VIRTUAL"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#VIRTUAL", "file:testdata/ddl-golden/T07.json#t07-mysql57-g03-virtual-transitive"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#VIRTUAL", "file:testdata/ddl-golden/T07.json#t07-mysql80-g03-virtual-transitive"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#VIRTUAL", "file:testdata/ddl-golden/T07.json#t07-mysql84-g03-virtual-transitive"]
+      - subaction_id: "STORED"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#STORED", "file:testdata/ddl-golden/T07.json#t07-mysql57-g01-stored-dependent-drop"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#STORED", "file:testdata/ddl-golden/T07.json#t07-mysql80-g01-stored-dependent-drop"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#STORED", "file:testdata/ddl-golden/T07.json#t07-mysql84-g01-stored-dependent-drop"]
+      - subaction_id: "expression DEFAULT (8.0.13+)"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#expression DEFAULT (8.0.13+)", "file:testdata/ddl-golden/T07.json#t07-mysql57-d03-constant-expression", "file:testdata/ddl-golden/T07.json#t07-mysql57-d04-column-expression"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#expression DEFAULT (8.0.13+)", "file:testdata/ddl-golden/T07.json#t07-mysql80-d03-constant-expression", "file:testdata/ddl-golden/T07.json#t07-mysql80-d04-column-expression"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#expression DEFAULT (8.0.13+)", "file:testdata/ddl-golden/T07.json#t07-mysql84-d03-constant-expression", "file:testdata/ddl-golden/T07.json#t07-mysql84-d04-column-expression"]
+      - subaction_id: "INVISIBLE column (8.0.23+)"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#INVISIBLE column (8.0.23+)", "file:testdata/ddl-golden/T07.json#t07-mysql57-v01-create-invisible"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#INVISIBLE column (8.0.23+)", "file:testdata/ddl-golden/T07.json#t07-mysql80-v01-create-invisible"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#INVISIBLE column (8.0.23+)", "file:testdata/ddl-golden/T07.json#t07-mysql84-v01-create-invisible"]
 
     status_evidence: "2026-11-13 R5 correction (reviewer-ordered): parses on all anchors; generic CREATE TABLE rules fire (charset.allowlist, engine.allowlist, primary_key.require, column.default.require) but none govern generated-column semantics — no expression-safety, STORED/VIRTUAL distinction, or dependency-edge check exists, so the row is conservatively notice_only, not audited; CREATE TABLE with INVISIBLE column is parser_error; T07 owns generated-column semantic coverage (#86)"
     targets: "generated column identity, expression dependency edges (b depends on a), storage kind, invisibility"
@@ -1045,31 +1171,107 @@ rows:
     subactions: ["ADD COLUMN", "ADD COLUMN FIRST/AFTER", "ADD (col, col, ...)"]
     sql_shape: "ALTER TABLE t ADD COLUMN c INT"
     prerequisites: "prior column state for position/duplicate checks"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: position and existence assertions"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: position and existence assertions"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: position and existence assertions"]
+    subaction_status:
+      - subaction_id: "ADD COLUMN"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#ADD COLUMN", "file:testdata/ddl-golden/T05.json#t05-mysql57-first-path"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#ADD COLUMN", "file:testdata/ddl-golden/T05.json#t05-mysql80-first-path"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#ADD COLUMN", "file:testdata/ddl-golden/T05.json#t05-mysql84-first-path"]
+      - subaction_id: "ADD COLUMN FIRST/AFTER"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#ADD COLUMN FIRST/AFTER", "file:testdata/ddl-golden/T05.json#f03-mysql57-position-first", "file:testdata/ddl-golden/T05.json#f03-mysql57-position-after", "file:testdata/ddl-golden/T08.json#t08-mysql57-pos-add-after-missing"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#ADD COLUMN FIRST/AFTER", "file:testdata/ddl-golden/T05.json#f03-mysql80-position-first", "file:testdata/ddl-golden/T05.json#f03-mysql80-position-after", "file:testdata/ddl-golden/T08.json#t08-mysql80-pos-add-after-missing"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#ADD COLUMN FIRST/AFTER", "file:testdata/ddl-golden/T05.json#f03-mysql84-position-first", "file:testdata/ddl-golden/T05.json#f03-mysql84-position-after", "file:testdata/ddl-golden/T08.json#t08-mysql84-pos-add-after-missing"]
+      - subaction_id: "ADD (col, col, ...)"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#ADD (col, col, ...)", "file:testdata/ddl-golden/T05.json#f03-mysql57-grouped-duplicate", "file:testdata/ddl-golden/T05.json#f03-mysql57-grouped-distinct"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#ADD (col, col, ...)", "file:testdata/ddl-golden/T05.json#f03-mysql80-grouped-duplicate", "file:testdata/ddl-golden/T05.json#f03-mysql80-grouped-distinct"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#ADD (col, col, ...)", "file:testdata/ddl-golden/T05.json#f03-mysql84-grouped-duplicate", "file:testdata/ddl-golden/T05.json#f03-mysql84-grouped-distinct"]
 
     status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_column.notice fires offline; exists/duplicate rules need metadata facts 2026-09-24 T03 rework (#82): parsed FIRST/AFTER position clause records alter_table.add_columns.column_position evidence; column options (AUTO_RANDOM vendor boundary, inline UNIQUE/CHECK/REFERENCES unaudited) record alter_table.add_columns.column.<name>"
     targets: "table, new column, position, type/attributes"
@@ -1086,31 +1288,57 @@ rows:
     subactions: ["DROP COLUMN"]
     sql_shape: "ALTER TABLE t DROP COLUMN c"
     prerequisites: "column existence and dependents"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: dependency-risk assertions"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: dependency-risk assertions"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: dependency-risk assertions"]
+    subaction_status:
+      - subaction_id: "DROP COLUMN"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#DROP COLUMN", "file:testdata/ddl-golden/T07.json#t07-mysql57-g01-stored-dependent-drop", "file:testdata/ddl-golden/T07.json#t07-mysql57-g15-drop-generated-leaf"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#DROP COLUMN", "file:testdata/ddl-golden/T07.json#t07-mysql80-g01-stored-dependent-drop", "file:testdata/ddl-golden/T07.json#t07-mysql80-g15-drop-generated-leaf"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#DROP COLUMN", "file:testdata/ddl-golden/T07.json#t07-mysql84-g01-stored-dependent-drop", "file:testdata/ddl-golden/T07.json#t07-mysql84-g15-drop-generated-leaf"]
 
     status_evidence: "2026-09-22 CLI probe: only ddl.alter.drop_column.notice fires; dependent-object risk unchecked"
     targets: "table, dropped column, dependent index/constraint/generated edges"
@@ -1127,31 +1355,132 @@ rows:
     subactions: ["MODIFY COLUMN", "type change", "NULL/NOT NULL transitions", "FIRST/AFTER"]
     sql_shape: "ALTER TABLE t MODIFY COLUMN c VARCHAR(20)"
     prerequisites: "old column definition for compatibility/narrowing"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:scripts/test_cli_metadata_e2e.sh", "file:testdata/ddl-golden/T04.json", "file:internal/domain/rule/catalog/catalog.go", "file:internal/domain/rule/ddl/common.go"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:scripts/test_cli_metadata_e2e.sh", "file:testdata/ddl-golden/T04.json", "file:internal/domain/rule/catalog/catalog.go", "file:internal/domain/rule/ddl/common.go"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:scripts/test_cli_metadata_e2e.sh", "file:testdata/ddl-golden/T04.json", "file:internal/domain/rule/catalog/catalog.go", "file:internal/domain/rule/ddl/common.go"]
+    subaction_status:
+      - subaction_id: "MODIFY COLUMN"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#MODIFY COLUMN", "file:testdata/ddl-golden/T08.json#t08-mysql57-pos-modify-first"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#MODIFY COLUMN", "file:testdata/ddl-golden/T08.json#t08-mysql80-pos-modify-first"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#MODIFY COLUMN", "file:testdata/ddl-golden/T08.json#t08-mysql84-pos-modify-first"]
+      - subaction_id: "type change"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#type change", "file:testdata/ddl-golden/T05.json#t05-a4-mysql57-narrow", "file:testdata/ddl-golden/T05.json#t05-a4-mysql57-wide"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#type change", "file:testdata/ddl-golden/T05.json#t05-a4-mysql80-narrow", "file:testdata/ddl-golden/T05.json#t05-a4-mysql80-wide"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#type change", "file:testdata/ddl-golden/T05.json#t05-a4-mysql84-narrow", "file:testdata/ddl-golden/T05.json#t05-a4-mysql84-wide"]
+      - subaction_id: "NULL/NOT NULL transitions"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#NULL/NOT NULL transitions", "file:testdata/ddl-golden/T08.json#t08-mysql57-modify-notnull", "file:testdata/ddl-golden/T08.json#t08-mysql57-modify-null"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#NULL/NOT NULL transitions", "file:testdata/ddl-golden/T08.json#t08-mysql80-modify-notnull"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#NULL/NOT NULL transitions", "file:testdata/ddl-golden/T08.json#t08-mysql84-modify-notnull", "file:testdata/ddl-golden/T08.json#t08-mysql84-modify-null"]
+      - subaction_id: "FIRST/AFTER"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#FIRST/AFTER", "file:testdata/ddl-golden/T08.json#t08-mysql57-pos-modify-first"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#FIRST/AFTER", "file:testdata/ddl-golden/T08.json#t08-mysql80-pos-modify-first"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#FIRST/AFTER", "file:testdata/ddl-golden/T08.json#t08-mysql84-pos-modify-first"]
 
     status_evidence: "2026-09-22 CLI probe (offline): only ddl.alter.modify_column.notice; modify_column.compatibility.require and nullability-transition rules exist but need metadata facts (verified in metadata e2e). T04 (#83): offline runs without prior-column facts now emit a named ddl.alter.modify_column.compatibility.require evidence gap (reason missing_source_column, required_facts [source_column.definition]) driving coverage=unverified and a review floor with warning-equivalent threshold weight; the disabled-rule control stays complete/pass with zero gaps, and anchored mysql84 metadata cases prove the complete pass/reject arms against real VARCHAR(10)/VARCHAR(200) fixtures (Golden T04.json: 163/163)."
     targets: "table, column, old vs new definition, nullability transition"
@@ -1400,31 +1729,57 @@ rows:
     subactions: ["comma-separated action lists"]
     sql_shape: "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN b, RENAME TO t9"
     prerequisites: "every action normalized, not only the first"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
+    subaction_status:
+      - subaction_id: "comma-separated action lists"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#comma-separated action lists", "file:testdata/ddl-golden/T05.json#f03-mysql57-position-after-add", "file:testdata/ddl-golden/T08.json#t08-mysql57-multi-add2"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#comma-separated action lists", "file:testdata/ddl-golden/T05.json#f03-mysql80-position-after-add", "file:testdata/ddl-golden/T08.json#t08-mysql80-multi-add2"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#comma-separated action lists", "file:testdata/ddl-golden/T05.json#f03-mysql84-position-after-add", "file:testdata/ddl-golden/T08.json#t08-mysql84-multi-add2"]
 
     status_evidence: "2026-09-22 CLI probe: parser accepts action lists; per-action findings fire individually (add_column.notice + rename_table.forbid); completeness contract for omitted/unhandled actions is T03 scope"
     targets: "every action in order with original positions"
@@ -5425,17 +5780,51 @@ rows:
     subactions: ["ADD/DROP/MODIFY/CHANGE/RENAME COLUMN", "FIRST/AFTER", "TiDB same-object modification limits"]
     sql_shape: "ALTER TABLE t MODIFY COLUMN c VARCHAR(20)"
     prerequisites: "TiDB type-change rules differ (limited widening)"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: tidb85
         version_range: 8.5
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+    subaction_status:
+      - subaction_id: "ADD/DROP/MODIFY/CHANGE/RENAME COLUMN"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: tidb85
+            version_range: "8.5"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#ADD/DROP/MODIFY/CHANGE/RENAME COLUMN", "file:testdata/ddl-golden/T05.json#t05-tidb85-first-path", "file:testdata/ddl-golden/T07.json#t07-tidb85-g15-drop-generated-leaf", "file:testdata/ddl-golden/T08.json#t08-tidb85-pos-modify-first", "file:testdata/ddl-golden/T05.json#t05-a5-tidb85-change-rebind", "file:testdata/ddl-golden/T05.json#t05-a5-tidb85-rename-rebind"]
+      - subaction_id: "FIRST/AFTER"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: tidb85
+            version_range: "8.5"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#FIRST/AFTER", "file:testdata/ddl-golden/T05.json#f03-tidb85-position-first", "file:testdata/ddl-golden/T08.json#t08-tidb85-multi-add2-after-sibling"]
+      - subaction_id: "TiDB same-object modification limits"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: tidb85
+            version_range: "8.5"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-tidb-repeated-add-column.md#TiDB same-object modification limits", "file:testdata/ddl-golden/T05.json#f03-tidb85-separate-case-duplicate", "file:testdata/ddl-golden/T05.json#f03-tidb85-guarded-first-duplicate", "file:testdata/ddl-golden/T05.json#f03-tidb85-guarded-second-duplicate", "file:testdata/ddl-golden/T08.json#t08-tidb85-multi-same-obj", "file:testdata/ddl-golden/T08.json#t08-tidb85-multi-drop-add-same"]
 
     status_evidence: "2026-09-22 CLI probe: ADD/DROP/MODIFY emit only notices; CHANGE/RENAME COLUMN emit forbids — same asymmetry as MySQL"
     targets: "column transitions under TiDB semantics"

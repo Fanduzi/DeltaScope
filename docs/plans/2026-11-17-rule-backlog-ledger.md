@@ -1866,6 +1866,24 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44983193879/job/137087988257),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137088054325) passed at the delivered SHA.
 
+## F03 exact dimension review
+
+| Row and authored dimension | Verified evidence and remaining premise |
+| --- | --- |
+| `mysql.create-table-generated-column` / GENERATED ALWAYS AS (expr), VIRTUAL, STORED | T07 verifies bounded expression references, both storage kinds, and stored and virtual dependencies across the MySQL anchors. Arbitrary expression evaluation needs separate evidence. |
+| `mysql.create-table-generated-column` / expression DEFAULT (8.0.13+) and INVISIBLE column (8.0.23+) | T07 compares versioned acceptance and native catalog effects. The declaration rule does not evaluate default expressions on business data. |
+| `mysql.alter-table.add-column` / ADD COLUMN and ADD COLUMN FIRST/AFTER | T05 verifies first-path and ordered additions. T08 compares missing and existing AFTER targets. |
+| `mysql.alter-table.add-column` / ADD (col, col, ...) | T05 compares valid grouped actions and repeated names. Native MySQL rejects a repeat with 1060. The ordered state keeps the original shape. |
+| `mysql.alter-table.drop-column` / DROP COLUMN | T07 compares a generated leaf with a still-referenced base column. Broader dependencies require additional catalog facts. |
+| `mysql.alter-table.modify-column` / MODIFY COLUMN, type change, NULL/NOT NULL transitions, FIRST/AFTER | T05 and T08 bind source type, nullability and position. Native outcome can depend on values and SQL mode. |
+| `mysql.alter-table.multi-action` / comma-separated action lists | T05 and T08 compare supported sequences and atomically refused actions. A declaration with insufficient facts keeps its existing evidence gap. |
+| `tidb.alter-table.columns` / ADD/DROP/MODIFY/CHANGE/RENAME COLUMN and FIRST/AFTER | T05, T07 and T08 compare the existing transitions. TiDB checks the tested AFTER references against the original table. |
+| `tidb.alter-table.columns` / TiDB same-object modification limits | T05 reports repeated ADD declarations, including case variants and guarded forms. T08 verifies refusal for repeated MODIFY and DROP followed by ADD on the same identity. Other action combinations need their own evidence. |
+
+The six parent rows move to `mixed_coverage`. The existing blocker now covers repeated names in ADD-only lists. [Decision record](../decisions/2026-11-21-mysql-tidb-repeated-add-column.md) · [T05](../../testdata/ddl-golden/T05.json) · [T07](../../testdata/ddl-golden/T07.json) · [T08](../../testdata/ddl-golden/T08.json)
+
+Isolated preview T05 passed 268 cases and 5,512 assertions. Verification on the fixed F03 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
