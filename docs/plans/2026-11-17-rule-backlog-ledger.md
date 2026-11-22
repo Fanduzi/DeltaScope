@@ -1978,6 +1978,12 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/45022063375/job/137206951204),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137207015444) passed at the delivered SHA.
 
+## F07 exact T35 evidence bindings
+
+The existing `create-schema-schema-elements` case now binds directly to the PostgreSQL 17 nested schema elements cell. The case preserves the adapter unsupported outcome and the prior native comparison remains in the F07 review. The inventory and cell classifications retain their values. [T35](../../testdata/ddl-golden/T35.json)
+
+Verification on the fixed F07-EVIDENCE candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

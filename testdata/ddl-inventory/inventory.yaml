@@ -7084,7 +7084,7 @@ rows:
             product_scope: registered
             parser_status: partial
             audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-schema.schema-elements.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-schema.schema-elements.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T35.json#create-schema-schema-elements]
     acceptance:
       dimensions: official inventory denominator + observed per-shape classification evidence
       refs: [file:testdata/ddl-inventory/evidence/postgresql.create-schema.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]

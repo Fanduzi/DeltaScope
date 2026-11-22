@@ -8487,7 +8487,8 @@
               "audit_status": "explicit_unsupported",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-schema.schema-elements.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T35.json#create-schema-schema-elements"
               ]
             }
           ]
