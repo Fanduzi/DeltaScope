@@ -7618,7 +7618,7 @@ rows:
             product_scope: registered
             parser_status: partial
             audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.exclude-constraint.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.exclude-constraint.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-table-exclude-constraint]
       - subaction_id: table constraint clause
         parser_status: recognized
         audit_status: notice_only
@@ -7629,7 +7629,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.table-constraint-clause.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table.table-constraint-clause.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-table-table-constraint-clause]
       - subaction_id: WITH storage parameters
         parser_status: recognized
         audit_status: mixed
@@ -7760,7 +7760,7 @@ rows:
             product_scope: registered
             parser_status: partial
             audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.exclude.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.exclude.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-table-constraints-exclude]
       - subaction_id: NOT NULL named constraint
         parser_status: unrecognized
         audit_status: not_applicable
@@ -7771,7 +7771,7 @@ rows:
             product_scope: registered
             parser_status: unrecognized
             audit_status: not_applicable
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.not-null-named-constraint.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.not-null-named-constraint.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-table-constraints-not-null-named-constraint]
       - subaction_id: REFERENCES actions
         parser_status: recognized
         audit_status: mixed
@@ -7841,7 +7841,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.generated-always-as-identity.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.generated-always-as-identity.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-table-generated-identity-generated-always-as-identity, file:testdata/ddl-golden/T36.json#pg-generation-positive, file:testdata/ddl-golden/T36.json#pg-generation-negative]
       - subaction_id: BY DEFAULT AS IDENTITY
         parser_status: recognized
         audit_status: notice_only
@@ -7852,7 +7852,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.by-default-as-identity.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.by-default-as-identity.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-table-generated-identity-by-default-as-identity, file:testdata/ddl-golden/T36.json#pg-generation-positive, file:testdata/ddl-golden/T36.json#generation-identity-cycle]
       - subaction_id: sequence options
         parser_status: recognized
         audit_status: notice_only
@@ -7863,7 +7863,7 @@ rows:
             product_scope: registered
             parser_status: recognized
             audit_status: notice_only
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.sequence-options.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.sequence-options.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-table-generated-identity-sequence-options, file:testdata/ddl-golden/T36.json#pg-generation-positive, file:testdata/ddl-golden/T36.json#pg-generation-negative, file:testdata/ddl-golden/T36.json#generation-identity-descending]
       - subaction_id: GENERATED ALWAYS AS expression STORED
         parser_status: recognized
         audit_status: mixed
@@ -7917,7 +7917,7 @@ rows:
             product_scope: registered
             parser_status: partial
             audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-by-range.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-by-range.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-table-partitioning-partition-by-range]
       - subaction_id: PARTITION BY LIST
         parser_status: partial
         audit_status: explicit_unsupported
@@ -7928,7 +7928,7 @@ rows:
             product_scope: registered
             parser_status: partial
             audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-by-list.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-by-list.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-table-partitioning-partition-by-list]
       - subaction_id: PARTITION BY HASH
         parser_status: partial
         audit_status: explicit_unsupported
@@ -7939,7 +7939,7 @@ rows:
             product_scope: registered
             parser_status: partial
             audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-by-hash.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-by-hash.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-table-partitioning-partition-by-hash]
       - subaction_id: PARTITION OF
         parser_status: partial
         audit_status: explicit_unsupported
@@ -7950,7 +7950,7 @@ rows:
             product_scope: registered
             parser_status: partial
             audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-of.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-of.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-table-partitioning-partition-of]
       - subaction_id: PARTITION OF DEFAULT
         parser_status: partial
         audit_status: explicit_unsupported
@@ -7961,7 +7961,7 @@ rows:
             product_scope: registered
             parser_status: partial
             audit_status: explicit_unsupported
-            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-of-default.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json]
+            evidence: [file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-of-default.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T36.json#create-table-partitioning-partition-of-default]
       - subaction_id: INHERITS
         parser_status: recognized
         audit_status: mixed

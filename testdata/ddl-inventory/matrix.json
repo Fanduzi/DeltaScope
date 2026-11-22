@@ -9257,7 +9257,8 @@
               "audit_status": "explicit_unsupported",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-table.exclude-constraint.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T36.json#create-table-exclude-constraint"
               ]
             }
           ]
@@ -9276,7 +9277,8 @@
               "audit_status": "notice_only",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-table.table-constraint-clause.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T36.json#create-table-table-constraint-clause"
               ]
             }
           ]
@@ -9533,7 +9535,8 @@
               "audit_status": "explicit_unsupported",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.exclude.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T36.json#create-table-constraints-exclude"
               ]
             }
           ]
@@ -9552,7 +9555,8 @@
               "audit_status": "not_applicable",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-table-constraints.not-null-named-constraint.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T36.json#create-table-constraints-not-null-named-constraint"
               ]
             }
           ]
@@ -9641,7 +9645,10 @@
               "audit_status": "notice_only",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.generated-always-as-identity.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T36.json#create-table-generated-identity-generated-always-as-identity",
+                "file:testdata/ddl-golden/T36.json#pg-generation-positive",
+                "file:testdata/ddl-golden/T36.json#pg-generation-negative"
               ]
             }
           ]
@@ -9660,7 +9667,10 @@
               "audit_status": "notice_only",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.by-default-as-identity.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T36.json#create-table-generated-identity-by-default-as-identity",
+                "file:testdata/ddl-golden/T36.json#pg-generation-positive",
+                "file:testdata/ddl-golden/T36.json#generation-identity-cycle"
               ]
             }
           ]
@@ -9679,7 +9689,11 @@
               "audit_status": "notice_only",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-table-generated-identity.sequence-options.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T36.json#create-table-generated-identity-sequence-options",
+                "file:testdata/ddl-golden/T36.json#pg-generation-positive",
+                "file:testdata/ddl-golden/T36.json#pg-generation-negative",
+                "file:testdata/ddl-golden/T36.json#generation-identity-descending"
               ]
             }
           ]
@@ -9747,7 +9761,8 @@
               "audit_status": "explicit_unsupported",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-by-range.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T36.json#create-table-partitioning-partition-by-range"
               ]
             }
           ]
@@ -9766,7 +9781,8 @@
               "audit_status": "explicit_unsupported",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-by-list.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T36.json#create-table-partitioning-partition-by-list"
               ]
             }
           ]
@@ -9785,7 +9801,8 @@
               "audit_status": "explicit_unsupported",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-by-hash.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T36.json#create-table-partitioning-partition-by-hash"
               ]
             }
           ]
@@ -9804,7 +9821,8 @@
               "audit_status": "explicit_unsupported",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-of.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T36.json#create-table-partitioning-partition-of"
               ]
             }
           ]
@@ -9823,7 +9841,8 @@
               "audit_status": "explicit_unsupported",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-table-partitioning.partition-of-default.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T36.json#create-table-partitioning-partition-of-default"
               ]
             }
           ]
