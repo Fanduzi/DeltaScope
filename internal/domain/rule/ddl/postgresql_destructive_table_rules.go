@@ -92,7 +92,7 @@ func (r tableOperationExistenceRule) evaluatePGDestructiveTable(ctx context.Cont
 		if position, _ := pgDropReferenceResult(s); position > 0 {
 			target := s.DDL.PGDestructiveTable.Targets[position-1].Table
 			findings = append(findings, rule.Finding{RuleID: r.ruleID, Level: r.level,
-				Message:    "A PostgreSQL view, materialized view or foreign key depends on the selected DROP TABLE target",
+				Message:    "A PostgreSQL view, materialized view, foreign key or column type depends on the selected DROP TABLE target",
 				Suggestion: "Review the dependent objects before dropping the table with RESTRICT",
 				Metadata: map[string]any{"table": target.Name, "schema": target.Schema, "operation": string(s.DDL.Operation),
 					"reason_code": "drop_table_has_direct_dependency", "exists": true},

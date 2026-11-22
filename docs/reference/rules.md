@@ -531,7 +531,7 @@ On MySQL/TiDB, the enabled DROP existence rule emits one `unknown_table_state` g
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
 | `ddl.table.drop.forbid` | DROP TABLE is forbidden | blocker | No |
-| `ddl.table.drop.exists.require` | Checks DROP TABLE target existence and PostgreSQL relation kind. PostgreSQL IF EXISTS guards an absent member. An exact PostgreSQL 17 ordinary-table set under RESTRICT checks direct foreign-key and view dependencies. | blocker | **Yes** |
+| `ddl.table.drop.exists.require` | Checks DROP TABLE target existence and PostgreSQL relation kind. PostgreSQL IF EXISTS guards an absent member. An exact PostgreSQL 17 ordinary-table set under RESTRICT checks direct foreign-key, view and row-type column dependencies. | blocker | **Yes** |
 | `ddl.table.drop.adaptive_hash.warn` | DROP TABLE warns when adaptive hash index is active | warning | **Yes** |
 | `ddl.table.drop.rows.max_count` | DROP TABLE warns when table has too many rows | warning | **Yes** |
 | `ddl.table.truncate.forbid` | TRUNCATE TABLE is forbidden | blocker | No |

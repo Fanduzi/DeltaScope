@@ -90,7 +90,7 @@ func (p *Provider) resolveDestructiveReferences(ctx context.Context, req spec.Ob
 		    select * from pg_catalog.jsonb_to_recordset($1::pg_catalog.jsonb)
 		        as target(schema_name pg_catalog.text, relation_name pg_catalog.text, position pg_catalog.int4)
 		), bound as (
-		    select a.position, c.oid,
+		    select a.position, c.oid, c.reltype,
 		           case when c.oid is null then $2::pg_catalog.bool
 		                else c.relkind OPERATOR(pg_catalog.=) 'r' and c.relpersistence OPERATOR(pg_catalog.=) 'p'
 		                     and not c.relispartition and not c.relisshared
@@ -117,6 +117,17 @@ func (p *Provider) resolveDestructiveReferences(ctx context.Context, req spec.Ob
 		                     and d.objsubid OPERATOR(pg_catalog.=) 0
 		                     and d.deptype OPERATOR(pg_catalog.=) 'n'
 		                     and v.relkind OPERATOR(pg_catalog.=) any(array['v','m']::pg_catalog."char"[]))
+		        or exists (select 1 from pg_catalog.pg_type row_type
+		                   join pg_catalog.pg_depend d on d.refobjid OPERATOR(pg_catalog.=) any(array[row_type.oid, row_type.typarray])
+		                   join pg_catalog.pg_attribute a on a.attrelid OPERATOR(pg_catalog.=) d.objid
+		                     and a.attnum OPERATOR(pg_catalog.=) d.objsubid
+		                     and a.attnum OPERATOR(pg_catalog.>) 0 and not a.attisdropped
+		                   where row_type.oid OPERATOR(pg_catalog.=) b.reltype
+		                     and d.refclassid OPERATOR(pg_catalog.=) 'pg_catalog.pg_type'::pg_catalog.regclass
+		                     and d.refobjsubid OPERATOR(pg_catalog.=) 0
+		                     and d.classid OPERATOR(pg_catalog.=) 'pg_catalog.pg_class'::pg_catalog.regclass
+		                     and d.deptype OPERATOR(pg_catalog.=) 'n'
+		                     and not exists (select 1 from bound member where member.oid OPERATOR(pg_catalog.=) d.objid))
 		    )
 		)
 		select case when (select pg_catalog.count(*) OPERATOR(pg_catalog.>) 0 and pg_catalog.bool_and(eligible) from bound)
