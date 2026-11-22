@@ -2398,3 +2398,38 @@ func TestMCPPGGrantDeclarationTarget(t *testing.T) {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }
+
+type storedObjectChangeAuditClient struct{ *mcpMetadataAuditTestClient }
+
+func (storedObjectChangeAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type != "mysql_stored_object" {
+		return nil, nil
+	}
+	return &spec.ObjectSnapshot{MySQLStoredObject: &spec.MySQLStoredObjectState{Target: spec.MySQLStoredObjectTarget{Kind: "event", Name: spec.Table{Schema: "app", Name: "fixture_event"}}, SourceSeen: true}}, nil
+}
+
+func TestMCPMySQLStoredObjectTarget(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := storedObjectChangeAuditClient{&mcpMetadataAuditTestClient{version: "8.0.46", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectMySQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "CREATE EVENT app.fixture_event ON SCHEDULE EVERY 1 DAY DISABLE DO SET @audit_marker=1", "dialect": "mysql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"event_name_occupied"`) || !strings.Contains(string(body), `"ddl.mysql.stored_object.target.valid"`) || strings.Contains(string(body), "MySQLStoredObjectState") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}

@@ -40,13 +40,14 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
 		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
-		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGCreateStorage) == 0 && len(tc.Metadata.PGCreateTyped) == 0 && len(tc.Metadata.PGCreateCommits) == 0 && len(tc.Metadata.PGCreateLikes) == 0 && len(tc.Metadata.PGOperatorFamilies) == 0 && len(tc.Metadata.PGIndexIncludes) == 0 && len(tc.Metadata.PGReplicationTargets) == 0 && len(tc.Metadata.PGLanguages) == 0 && len(tc.Metadata.PGGrants) == 0 && len(tc.Metadata.PGIndexDestinations) == 0 && len(tc.Metadata.PGIndexOptions) == 0 && len(tc.Metadata.PGIndexAttachments) == 0 && len(tc.Metadata.PGOperatorChanges) == 0 && len(tc.Metadata.PGComposites) == 0 && len(tc.Metadata.PGEnums) == 0 && len(tc.Metadata.PGCollationChanges) == 0 && len(tc.Metadata.PGCollationRefreshes) == 0 && len(tc.Metadata.PGPolicies) == 0 && len(tc.Metadata.PGSequenceChanges) == 0 && len(tc.Metadata.PGForeignTables) == 0 && len(tc.Metadata.PGWrappers) == 0 && len(tc.Metadata.PGTextSearch) == 0 && len(tc.Metadata.PGCreateSchemas) == 0 && len(tc.Metadata.PGPartitionConstraints) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
+		len(tc.Metadata.MySQLStoredObjects) == 0 && len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 && len(tc.Metadata.PGReplicaIndexes) == 0 && len(tc.Metadata.PGTableTablespaces) == 0 && len(tc.Metadata.PGTableAccessMethods) == 0 && len(tc.Metadata.PGTablePersistences) == 0 && len(tc.Metadata.PGTableNamespaces) == 0 && len(tc.Metadata.PGTableOwners) == 0 && len(tc.Metadata.PGBulkTablespaces) == 0 && len(tc.Metadata.PGColumnTypes) == 0 && len(tc.Metadata.PGConstraintIndexes) == 0 && len(tc.Metadata.PGForeignKeyDirectories) == 0 && len(tc.Metadata.PGDropConstraintReferences) == 0 && len(tc.Metadata.PGDropColumnDependencies) == 0 && len(tc.Metadata.PGColumnTraversals) == 0 && len(tc.Metadata.PGDestructiveReferences) == 0 && len(tc.Metadata.PGRefreshStates) == 0 && len(tc.Metadata.PGCreateStorage) == 0 && len(tc.Metadata.PGCreateTyped) == 0 && len(tc.Metadata.PGCreateCommits) == 0 && len(tc.Metadata.PGCreateLikes) == 0 && len(tc.Metadata.PGOperatorFamilies) == 0 && len(tc.Metadata.PGIndexIncludes) == 0 && len(tc.Metadata.PGReplicationTargets) == 0 && len(tc.Metadata.PGLanguages) == 0 && len(tc.Metadata.PGGrants) == 0 && len(tc.Metadata.PGIndexDestinations) == 0 && len(tc.Metadata.PGIndexOptions) == 0 && len(tc.Metadata.PGIndexAttachments) == 0 && len(tc.Metadata.PGOperatorChanges) == 0 && len(tc.Metadata.PGComposites) == 0 && len(tc.Metadata.PGEnums) == 0 && len(tc.Metadata.PGCollationChanges) == 0 && len(tc.Metadata.PGCollationRefreshes) == 0 && len(tc.Metadata.PGPolicies) == 0 && len(tc.Metadata.PGSequenceChanges) == 0 && len(tc.Metadata.PGForeignTables) == 0 && len(tc.Metadata.PGWrappers) == 0 && len(tc.Metadata.PGTextSearch) == 0 && len(tc.Metadata.PGCreateSchemas) == 0 && len(tc.Metadata.PGPartitionConstraints) == 0 && len(tc.Metadata.PGDropViewStates) == 0 && len(tc.Metadata.PGMaterializedViewExtensions) == 0 && len(tc.Metadata.PGViewDefaults) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
 }
 
 type corpusFixtureMetadataProvider struct {
+	mysqlStoredObjects           []corpusMySQLStoredObject
 	pgMaterializedViewExtensions []corpusPGMaterializedViewExtensionState
 	pgViewDefaults               []corpusPGViewDefaultState
 	pgCreateStorage              []corpusPGCreateStorage
@@ -155,6 +156,7 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 		pgForeignTables:              metadata.PGForeignTables,
 		pgWrappers:                   metadata.PGWrappers,
 		pgTextSearch:                 metadata.PGTextSearch,
+		mysqlStoredObjects:           metadata.MySQLStoredObjects,
 		pgCreateSchemas:              metadata.PGCreateSchemas,
 		pgPartitionConstraints:       metadata.PGPartitionConstraints,
 		pgDropViewStates:             metadata.PGDropViewStates,
@@ -528,6 +530,15 @@ func parseCorpusUint(text string) (uint64, bool) {
 // `schema.name`. An unkeyed identity or a nil sequence map is unvouched,
 // never a silent absent; non-sequence lookups stay unavailable.
 func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if request.Type == "mysql_stored_object" {
+		for _, seed := range p.mysqlStoredObjects {
+			if request.Schema == seed.Schema && request.Name == seed.Name && request.Qualifiers["kind"] == seed.Kind {
+				target := spec.MySQLStoredObjectTarget{Kind: seed.Kind, Name: spec.Table{Schema: seed.Schema, Name: seed.Name}}
+				return &spec.ObjectSnapshot{MySQLStoredObject: &spec.MySQLStoredObjectState{Target: target, SourceSeen: true}}, nil
+			}
+		}
+		return nil, nil
+	}
 	if request.Type == "materialized_view_extension" {
 		for _, seed := range p.pgMaterializedViewExtensions {
 			if seed.Schema == request.Schema && seed.View == request.Name && seed.Extension == request.Qualifiers["extension"] {

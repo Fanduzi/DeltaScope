@@ -578,6 +578,7 @@ const (
 	ruleIDDropFunctionNotice               = "ddl.drop_function.notice"
 	ruleIDCreateTriggerNotice              = "ddl.create_trigger.notice"
 	ruleIDDropTriggerNotice                = "ddl.drop_trigger.notice"
+	ruleIDMySQLStoredObjectValid           = "ddl.mysql.stored_object.target.valid"
 	ruleIDCreateTriggerOrderVersionRequire = "ddl.create_trigger.ordering.version.require"
 
 	ruleIDCreateEventNotice                 = "ddl.create_event.notice"

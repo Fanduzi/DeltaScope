@@ -1906,3 +1906,29 @@ func TestHTTPPGGrantDeclarationTarget(t *testing.T) {
 		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
 	}
 }
+
+func TestHTTPMySQLStoredObjectTarget(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "mysql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "8.0.46", detectDialect: spec.DialectMySQL,
+		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+		objectSnapshot: &spec.ObjectSnapshot{MySQLStoredObject: &spec.MySQLStoredObjectState{Target: spec.MySQLStoredObjectTarget{Kind: "event", Name: spec.Table{Schema: "app", Name: "fixture_event"}}, SourceSeen: true}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectMySQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"CREATE EVENT app.fixture_event ON SCHEDULE EVERY 1 DAY DISABLE DO SET @audit_marker=1","dialect":"mysql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.mysql.stored_object.target.valid"`) || !strings.Contains(body, `"event_name_occupied"`) || strings.Contains(body, "MySQLStoredObjectState") || len(client.objectCalls) < 1 || client.objectCalls[len(client.objectCalls)-1].Name != "fixture_event" || client.objectCalls[len(client.objectCalls)-1].Type != "mysql_stored_object" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}

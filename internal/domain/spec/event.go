@@ -50,18 +50,19 @@ const (
 // stays nonserialized like RoutineDeclaration bodies; Definer keeps the
 // clause shape only (never the account payload).
 type EventDeclaration struct {
-	Kind            EventKind      `json:"-"`
-	Name            Table          `json:"-"`
-	Definer         string         `json:"-"` // clause shape only, never the account
-	Schedule        *EventSchedule `json:"-"`
-	OnCompletion    *bool          `json:"-"` // nil=unauthored, true=PRESERVE, false=NOT PRESERVE
-	Status          EventStatus    `json:"-"`
-	StatusSet       bool           `json:"-"` // ENABLE/DISABLE/DISABLE ON SLAVE authored
-	CommentDeclared bool           `json:"-"` // COMMENT clause authored; text never stored
-	RenameTo        *Table         `json:"-"` // ALTER EVENT ... RENAME TO
-	IfExists        bool           `json:"-"` // DROP EVENT IF EXISTS
-	IfNotExists     bool           `json:"-"` // CREATE EVENT IF NOT EXISTS
-	Body            *RoutineBody   `json:"-"`
+	CatalogName, CatalogRenameTo Table          `json:"-"`
+	Kind                         EventKind      `json:"-"`
+	Name                         Table          `json:"-"`
+	Definer                      string         `json:"-"` // clause shape only, never the account
+	Schedule                     *EventSchedule `json:"-"`
+	OnCompletion                 *bool          `json:"-"` // nil=unauthored, true=PRESERVE, false=NOT PRESERVE
+	Status                       EventStatus    `json:"-"`
+	StatusSet                    bool           `json:"-"` // ENABLE/DISABLE/DISABLE ON SLAVE authored
+	CommentDeclared              bool           `json:"-"` // COMMENT clause authored; text never stored
+	RenameTo                     *Table         `json:"-"` // ALTER EVENT ... RENAME TO
+	IfExists                     bool           `json:"-"` // DROP EVENT IF EXISTS
+	IfNotExists                  bool           `json:"-"` // CREATE EVENT IF NOT EXISTS
+	Body                         *RoutineBody   `json:"-"`
 }
 
 // EffectiveEnabled reports whether the event is scheduled to execute

@@ -765,6 +765,10 @@ Maintainer notes: [decision](../decisions/2026-11-16-postgresql-generated-identi
 
 ---
 
+### MySQL trigger and event identities
+
+`ddl.mysql.stored_object.target.valid` checks visible qualified trigger and event conflicts, trigger ordering groups, and event rename targets.
+
 ## DDL: MySQL Stored-Routine Rules
 
 | Rule ID | Description | Default Level | Metadata Required |

@@ -702,6 +702,10 @@ provider 错误或选项数值载荷。
 
 ---
 
+### MySQL 触发器和事件目标
+
+`ddl.mysql.stored_object.target.valid` 根据目录中可见的限定对象检查名称冲突、触发器排序组及事件改名目标。
+
 ## DDL：MySQL 存储例程规则
 
 | 规则 ID | 描述 | 默认级别 | 需要元数据 |

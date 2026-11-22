@@ -43,8 +43,9 @@ const (
 // TriggerOrder records the optional MySQL 5.7.2+ execution ordering
 // clause relative to another trigger on the same table.
 type TriggerOrder struct {
-	Kind TriggerOrderKind `json:"-"`
-	Name string           `json:"-"` // sibling trigger name
+	CatalogName string           `json:"-"`
+	Kind        TriggerOrderKind `json:"-"`
+	Name        string           `json:"-"` // sibling trigger name
 }
 
 // TriggerKind is the lifecycle operation the declaration carries.
@@ -59,17 +60,18 @@ const (
 // Body stays nonserialized like RoutineDeclaration bodies; Definer
 // keeps the clause shape only (never the account payload).
 type TriggerDeclaration struct {
-	Kind       TriggerKind   `json:"-"`
-	Name       Table         `json:"-"`
-	Definer    string        `json:"-"` // clause shape only, never the account
-	Timing     TriggerTiming `json:"-"`
-	Event      TriggerEvent  `json:"-"`
-	Target     Table         `json:"-"` // table the trigger binds to
-	Order      *TriggerOrder `json:"-"`
-	IfExists   bool          `json:"-"` // DROP TRIGGER IF EXISTS
-	UsesOld    bool          `json:"-"` // body references OLD.<col>
-	UsesNew    bool          `json:"-"` // body references NEW.<col>
-	OldColumns []string      `json:"-"` // sorted unique OLD.<col> column dependencies
-	NewColumns []string      `json:"-"` // sorted unique NEW.<col> column dependencies
-	Body       *RoutineBody  `json:"-"`
+	CatalogName, CatalogTable Table         `json:"-"`
+	Kind                      TriggerKind   `json:"-"`
+	Name                      Table         `json:"-"`
+	Definer                   string        `json:"-"` // clause shape only, never the account
+	Timing                    TriggerTiming `json:"-"`
+	Event                     TriggerEvent  `json:"-"`
+	Target                    Table         `json:"-"` // table the trigger binds to
+	Order                     *TriggerOrder `json:"-"`
+	IfExists                  bool          `json:"-"` // DROP TRIGGER IF EXISTS
+	UsesOld                   bool          `json:"-"` // body references OLD.<col>
+	UsesNew                   bool          `json:"-"` // body references NEW.<col>
+	OldColumns                []string      `json:"-"` // sorted unique OLD.<col> column dependencies
+	NewColumns                []string      `json:"-"` // sorted unique NEW.<col> column dependencies
+	Body                      *RoutineBody  `json:"-"`
 }

@@ -984,6 +984,9 @@ rules:
     level: notice
     params:
 
+  ddl.mysql.stored_object.target.valid:
+    enabled: true
+    level: blocker
   ddl.create_trigger.ordering.version.require:
     enabled: true
     level: blocker

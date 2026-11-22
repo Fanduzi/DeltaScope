@@ -87,6 +87,7 @@ func parseMySQLCreateTrigger(sqlText string, toks []sqlTok) (ast.StmtNode, []err
 		return nil, nil, false
 	}
 	decl.Name.Schema, decl.Name.Name = nameSchema, nameIdent
+	decl.CatalogName = storedObjectCatalogIdentity(sqlText, toks, i, nameNext)
 	i = nameNext
 	// Timing + event.
 	if i >= len(toks) {
@@ -128,6 +129,7 @@ func parseMySQLCreateTrigger(sqlText string, toks []sqlTok) (ast.StmtNode, []err
 		return nil, nil, false
 	}
 	decl.Target.Schema, decl.Target.Name = targetSchema, targetName
+	decl.CatalogTable = storedObjectCatalogIdentity(sqlText, toks, i, targetNext)
 	i = targetNext
 	if i+2 >= len(toks) || !toks[i].wordIs(sqlText, "for") || !toks[i+1].wordIs(sqlText, "each") || !toks[i+2].wordIs(sqlText, "row") {
 		return nil, nil, false
@@ -137,7 +139,7 @@ func parseMySQLCreateTrigger(sqlText string, toks []sqlTok) (ast.StmtNode, []err
 	if i+1 < len(toks) && (toks[i].wordIs(sqlText, "follows") || toks[i].wordIs(sqlText, "precedes")) {
 		kind := strings.ToLower(toks[i].text(sqlText))
 		if sib := routineNameToken(sqlText, toks[i+1]); sib != "" {
-			decl.Order = &spec.TriggerOrder{Kind: spec.TriggerOrderKind(kind), Name: sib}
+			decl.Order = &spec.TriggerOrder{Kind: spec.TriggerOrderKind(kind), Name: sib, CatalogName: toks[i+1].decodedIdentifier(sqlText)}
 			i += 2
 		}
 	}
@@ -191,6 +193,7 @@ func parseMySQLDropTrigger(sqlText string, toks []sqlTok) (ast.StmtNode, []error
 		return nil, nil, false
 	}
 	decl.Name.Schema, decl.Name.Name = nameSchema, nameIdent
+	decl.CatalogName = storedObjectCatalogIdentity(sqlText, toks, i, nameNext)
 	i = nameNext
 	if i != len(toks) {
 		return nil, nil, false
@@ -223,6 +226,13 @@ func triggerQualifiedName(sqlText string, toks []sqlTok, i int) (schema, name st
 		}
 	}
 	return schema, name, next, true
+}
+
+func storedObjectCatalogIdentity(sqlText string, toks []sqlTok, start, end int) spec.Table {
+	if end-start == 3 {
+		return spec.Table{Schema: toks[start].decodedIdentifier(sqlText), Name: toks[start+2].decodedIdentifier(sqlText)}
+	}
+	return spec.Table{Name: toks[start].decodedIdentifier(sqlText)}
 }
 
 // eachTriggerBodyMember visits every member of a trigger body: flat

@@ -321,7 +321,14 @@ type corpusPGCreateCommit struct {
 	Name   string `yaml:"name"`
 }
 
+type corpusMySQLStoredObject struct {
+	Kind   string `yaml:"kind"`
+	Schema string `yaml:"schema"`
+	Name   string `yaml:"name"`
+}
+
 type corpusMetadata struct {
+	MySQLStoredObjects           []corpusMySQLStoredObject                `yaml:"mysql_stored_objects,omitempty"`
 	PGCreateStorage              []corpusPGCreateStorage                  `yaml:"pg_create_storage,omitempty"`
 	PGCreateTyped                []corpusPGCreateTyped                    `yaml:"pg_create_typed,omitempty"`
 	PGCreateCommits              []corpusPGCreateCommit                   `yaml:"pg_create_commits,omitempty"`

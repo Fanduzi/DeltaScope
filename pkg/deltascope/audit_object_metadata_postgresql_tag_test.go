@@ -1379,3 +1379,22 @@ func TestAuditPGGrantDeclarationThroughSDK(t *testing.T) {
 	}
 	t.Fatalf("missing missing column finding: %+v", result.Statements[0].Findings)
 }
+
+func TestAuditMySQLStoredObjectThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "8.0.46"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+		objectSnapshot: &spec.ObjectSnapshot{MySQLStoredObject: &spec.MySQLStoredObjectState{Target: spec.MySQLStoredObjectTarget{Kind: "event", Name: spec.Table{Schema: "app", Name: "fixture_event"}}, SourceSeen: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `CREATE EVENT app.fixture_event ON SCHEDULE EVERY 1 DAY DISABLE DO SET @audit_marker=1`, Dialect: DialectMySQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) < 1 || provider.objectCalls[len(provider.objectCalls)-1].Name != "fixture_event" || provider.objectCalls[len(provider.objectCalls)-1].Type != "mysql_stored_object" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.mysql.stored_object.target.valid" && f.Metadata["reason_code"] == "event_name_occupied" {
+			return
+		}
+	}
+	t.Fatalf("missing event conflict finding: %+v", result.Statements[0].Findings)
+}

@@ -263,6 +263,8 @@ Behavior change approved: eligible ADD COLUMN audits can now reject/review. Orde
 
 Maintainer notes: [decision](../decisions/2026-11-16-postgresql-generated-identity-governance.md).
 
+MySQL trigger and event catalog checks cover visible duplicate names, trigger ordering groups and event rename targets. Catalog misses retain evidence gaps.
+
 ### MySQL stored-routine security context
 
 | Rule ID | MySQL | TiDB | PostgreSQL | Metadata |

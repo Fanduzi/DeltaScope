@@ -198,6 +198,7 @@ func parseEventClauses(sqlText string, toks []sqlTok, i int, decl *spec.EventDec
 				return -1
 			}
 			decl.RenameTo = &spec.Table{Schema: schema, Name: name}
+			decl.CatalogRenameTo = storedObjectCatalogIdentity(sqlText, toks, i+2, next)
 			i = next
 		case toks[i].wordIs(sqlText, "enable"):
 			if phase >= evPhaseStatus {
@@ -315,6 +316,7 @@ func parseMySQLCreateEvent(sqlText string, toks []sqlTok) (ast.StmtNode, []error
 		return nil, nil, false
 	}
 	decl.Name.Schema, decl.Name.Name = schema, name
+	decl.CatalogName = storedObjectCatalogIdentity(sqlText, toks, i, next)
 	i = next
 	// ON SCHEDULE is required for CREATE EVENT.
 	if i+1 >= len(toks) || !toks[i].wordIs(sqlText, "on") || !toks[i+1].wordIs(sqlText, "schedule") {
@@ -349,6 +351,7 @@ func parseMySQLAlterEvent(sqlText string, toks []sqlTok) (ast.StmtNode, []error,
 		return nil, nil, false
 	}
 	decl.Name.Schema, decl.Name.Name = schema, name
+	decl.CatalogName = storedObjectCatalogIdentity(sqlText, toks, i, next)
 	i = next
 	i = parseEventClauses(sqlText, toks, i, decl, true, -1)
 	if i < 0 {
@@ -387,6 +390,7 @@ func parseMySQLDropEvent(sqlText string, toks []sqlTok) (ast.StmtNode, []error, 
 		return nil, nil, false
 	}
 	decl.Name.Schema, decl.Name.Name = schema, name
+	decl.CatalogName = storedObjectCatalogIdentity(sqlText, toks, i, next)
 	i = next
 	if i != len(toks) {
 		return nil, nil, false

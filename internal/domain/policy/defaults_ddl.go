@@ -753,6 +753,7 @@ func ddlCoreRules() map[string]RulePolicy {
 		"ddl.alter_function.notice":                   {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.drop_function.notice":                    {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.create_trigger.notice":                   {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
+		"ddl.mysql.stored_object.target.valid":        {Enabled: true, Level: rule.LevelBlocker},
 		"ddl.create_trigger.ordering.version.require": {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.drop_trigger.notice":                     {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.create_event.notice":                     {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},

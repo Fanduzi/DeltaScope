@@ -988,6 +988,12 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 	// per-statement check, yet the batch's whole-effect stays
 	// unknowable — consume it so a next call's bind reads the honest
 	// contaminated flag (T26-SERVER-ALTER-EXECUTION-01 R2-C, AM-8.1).
+	if dialect == spec.DialectMySQL && request != nil && request.Provider != nil {
+		if err := enrichMySQLStoredObjects(ctx, request, enriched, failures); err != nil {
+			return nil, err
+		}
+	}
+
 	if len(failures) > 0 {
 		state.contaminated = true
 	}

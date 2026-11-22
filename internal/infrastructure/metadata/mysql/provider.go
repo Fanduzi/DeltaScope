@@ -1822,6 +1822,11 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, requ
 			return p.loadMySQLRoutineTarget(ctx, request, snapshot)
 		}
 		return snapshot, nil
+	case "mysql_stored_object":
+		if dialect == spec.DialectMySQL {
+			return p.loadMySQLStoredObject(ctx, request, snapshot)
+		}
+		return snapshot, nil
 	case "mysql_server":
 		if dialect != spec.DialectMySQL {
 			// The mysql.servers catalog is a MySQL surface — never emit

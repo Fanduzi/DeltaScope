@@ -1006,6 +1006,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		// T29: trigger lifecycle notices.
 		{ruleID: ruleIDCreateTriggerNotice, construct: newMySQLTiDBCreateTriggerNoticeRule},
 		{ruleID: ruleIDDropTriggerNotice, construct: newMySQLTiDBDropTriggerNoticeRule},
+		{ruleID: ruleIDMySQLStoredObjectValid, construct: newMySQLStoredObjectRule},
 		{ruleID: ruleIDCreateTriggerOrderVersionRequire, construct: newTriggerOrderVersionRule},
 		{ruleID: ruleIDCreateEventNotice, construct: newMySQLTiDBCreateEventNoticeRule},
 		{ruleID: ruleIDAlterEventNotice, construct: newMySQLTiDBAlterEventNoticeRule},
