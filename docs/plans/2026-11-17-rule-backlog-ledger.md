@@ -1995,7 +1995,14 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137223871615) passed at t
 
 Eight CREATE INDEX cells now point directly to their existing PostgreSQL 17 normalization and audit controls. The retained `AS members` form links the exact parser refusal. Index eligibility, method behavior and expression semantics retain their earlier boundaries. The inventory and cell classifications retain their values. [T39](../../testdata/ddl-golden/T39.json)
 
-Verification on the fixed F11-EVIDENCE candidate is pending.
+Delivered at `98c056e5cc82133abc4dfaaa682a143f23ea2cd8`. All 50 canonical tasks passed with 5,110 cases and
+120,926 assertions. T39 passed 162 cases and 4,005 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/45033067511/job/137240722940),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/45033067511/job/137240722866),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/45033067511/job/137240722648),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/45033067563/job/137240722365),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137240831279) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
