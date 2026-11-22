@@ -2184,6 +2184,1243 @@
  ],
  "metadata_cases": [
    {
+     "id": "pg-destructive-row-type-external",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-direct-references",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pglife_row_type_external"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pglife_row_type_external CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_external'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP TABLE pglife_row_type_external.row_source RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_external'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pglife_row_type_external",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned relations and capture identities",
+         "sql": "CREATE TABLE pglife_row_type_external.a(id int GENERATED ALWAYS AS IDENTITY); INSERT INTO pglife_row_type_external.a VALUES(DEFAULT),(DEFAULT); CREATE TABLE pglife_row_type_external.b(id int); INSERT INTO pglife_row_type_external.b VALUES(42); CREATE TABLE pglife_row_type_external.c(id int); INSERT INTO pglife_row_type_external.c VALUES(17); CREATE TABLE pglife_row_type_external.part(id int) PARTITION BY RANGE (id); CREATE TABLE pglife_row_type_external.child PARTITION OF pglife_row_type_external.part DEFAULT; INSERT INTO pglife_row_type_external.part VALUES(12); CREATE VIEW pglife_row_type_external.v AS SELECT id FROM pglife_row_type_external.c; CREATE MATERIALIZED VIEW pglife_row_type_external.mv AS SELECT id FROM pglife_row_type_external.c; CREATE SEQUENCE pglife_row_type_external.guard START 7; CREATE TABLE pglife_row_type_external.row_source(id int);\nCREATE TABLE pglife_row_type_external.private_consumer(id int, payload pglife_row_type_external.row_source);\nINSERT INTO pglife_row_type_external.private_consumer(id) VALUES (7);\nCREATE TABLE pglife_row_type_external.array_source(id int);\nCREATE TABLE pglife_row_type_external.private_array_consumer(payload pglife_row_type_external.array_source[]);\nCREATE TABLE pglife_row_type_external.cleared_source(id int);\nCREATE TABLE pglife_row_type_external.private_cleared_consumer(id int,payload pglife_row_type_external.cleared_source);\nALTER TABLE pglife_row_type_external.private_cleared_consumer DROP COLUMN payload;\nCREATE TABLE pglife_row_type_external.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_external'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.table.drop.exists.require",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDestructiveTableRelations",
+         "PGDestructiveTable",
+         "PGDestructiveReferences",
+         "BlockedPosition",
+         "private_consumer",
+         "private_array_consumer"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.table.drop.exists.require",
+           "metadata": {
+             "reason_code": "drop_table_has_direct_dependency",
+             "table": "row_source",
+             "exists": true
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves catalog identities",
+         "sql": "SELECT count(*) FROM ((TABLE pglife_row_type_external.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_external'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_external'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pglife_row_type_external.receipt)) d",
+         "expect": "0"
+       },
+       {
+         "assert": "audit preserves row and sequence state",
+         "sql": "SELECT (SELECT sum(id) FROM pglife_row_type_external.a)=3 AND (SELECT sum(id) FROM pglife_row_type_external.b)=42 AND (SELECT sum(id) FROM pglife_row_type_external.part)=12 AND (SELECT last_value=2 AND is_called FROM pglife_row_type_external.a_id_seq)",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_external.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 2BP01",
+         "sql": "\\set VERBOSITY verbose\nDROP TABLE pglife_row_type_external.row_source RESTRICT",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  2BP01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "audit preserves catalog identities",
+         "sql": "SELECT count(*) FROM ((TABLE pglife_row_type_external.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_external'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_external'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pglife_row_type_external.receipt)) d",
+         "expect": "0"
+       },
+       {
+         "assert": "audit preserves row and sequence state",
+         "sql": "SELECT (SELECT sum(id) FROM pglife_row_type_external.a)=3 AND (SELECT sum(id) FROM pglife_row_type_external.b)=42 AND (SELECT sum(id) FROM pglife_row_type_external.part)=12 AND (SELECT last_value=2 AND is_called FROM pglife_row_type_external.a_id_seq)",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_external.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pglife_row_type_external CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_external'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-destructive-row-type-guarded-external",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-direct-references",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pglife_row_type_guarded_external"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pglife_row_type_guarded_external CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_guarded_external'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP TABLE IF EXISTS pglife_row_type_guarded_external.missing, pglife_row_type_guarded_external.row_source",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_guarded_external'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pglife_row_type_guarded_external",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned relations and capture identities",
+         "sql": "CREATE TABLE pglife_row_type_guarded_external.a(id int GENERATED ALWAYS AS IDENTITY); INSERT INTO pglife_row_type_guarded_external.a VALUES(DEFAULT),(DEFAULT); CREATE TABLE pglife_row_type_guarded_external.b(id int); INSERT INTO pglife_row_type_guarded_external.b VALUES(42); CREATE TABLE pglife_row_type_guarded_external.c(id int); INSERT INTO pglife_row_type_guarded_external.c VALUES(17); CREATE TABLE pglife_row_type_guarded_external.part(id int) PARTITION BY RANGE (id); CREATE TABLE pglife_row_type_guarded_external.child PARTITION OF pglife_row_type_guarded_external.part DEFAULT; INSERT INTO pglife_row_type_guarded_external.part VALUES(12); CREATE VIEW pglife_row_type_guarded_external.v AS SELECT id FROM pglife_row_type_guarded_external.c; CREATE MATERIALIZED VIEW pglife_row_type_guarded_external.mv AS SELECT id FROM pglife_row_type_guarded_external.c; CREATE SEQUENCE pglife_row_type_guarded_external.guard START 7; CREATE TABLE pglife_row_type_guarded_external.row_source(id int);\nCREATE TABLE pglife_row_type_guarded_external.private_consumer(id int, payload pglife_row_type_guarded_external.row_source);\nINSERT INTO pglife_row_type_guarded_external.private_consumer(id) VALUES (7);\nCREATE TABLE pglife_row_type_guarded_external.array_source(id int);\nCREATE TABLE pglife_row_type_guarded_external.private_array_consumer(payload pglife_row_type_guarded_external.array_source[]);\nCREATE TABLE pglife_row_type_guarded_external.cleared_source(id int);\nCREATE TABLE pglife_row_type_guarded_external.private_cleared_consumer(id int,payload pglife_row_type_guarded_external.cleared_source);\nALTER TABLE pglife_row_type_guarded_external.private_cleared_consumer DROP COLUMN payload;\nCREATE TABLE pglife_row_type_guarded_external.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_guarded_external'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.table.drop.exists.require",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDestructiveTableRelations",
+         "PGDestructiveTable",
+         "PGDestructiveReferences",
+         "BlockedPosition",
+         "private_consumer",
+         "private_array_consumer"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.table.drop.exists.require",
+           "metadata": {
+             "reason_code": "drop_table_has_direct_dependency",
+             "table": "row_source",
+             "exists": true
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves catalog identities",
+         "sql": "SELECT count(*) FROM ((TABLE pglife_row_type_guarded_external.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_guarded_external'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_guarded_external'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pglife_row_type_guarded_external.receipt)) d",
+         "expect": "0"
+       },
+       {
+         "assert": "audit preserves row and sequence state",
+         "sql": "SELECT (SELECT sum(id) FROM pglife_row_type_guarded_external.a)=3 AND (SELECT sum(id) FROM pglife_row_type_guarded_external.b)=42 AND (SELECT sum(id) FROM pglife_row_type_guarded_external.part)=12 AND (SELECT last_value=2 AND is_called FROM pglife_row_type_guarded_external.a_id_seq)",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_guarded_external.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 2BP01",
+         "sql": "\\set VERBOSITY verbose\nDROP TABLE IF EXISTS pglife_row_type_guarded_external.missing, pglife_row_type_guarded_external.row_source",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  2BP01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "audit preserves catalog identities",
+         "sql": "SELECT count(*) FROM ((TABLE pglife_row_type_guarded_external.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_guarded_external'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_guarded_external'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pglife_row_type_guarded_external.receipt)) d",
+         "expect": "0"
+       },
+       {
+         "assert": "audit preserves row and sequence state",
+         "sql": "SELECT (SELECT sum(id) FROM pglife_row_type_guarded_external.a)=3 AND (SELECT sum(id) FROM pglife_row_type_guarded_external.b)=42 AND (SELECT sum(id) FROM pglife_row_type_guarded_external.part)=12 AND (SELECT last_value=2 AND is_called FROM pglife_row_type_guarded_external.a_id_seq)",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_guarded_external.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pglife_row_type_guarded_external CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_guarded_external'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-destructive-row-type-selected-source-first",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-direct-references",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pglife_row_type_selected_source_first"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pglife_row_type_selected_source_first CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_selected_source_first'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP TABLE pglife_row_type_selected_source_first.row_source, pglife_row_type_selected_source_first.private_consumer RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_selected_source_first'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pglife_row_type_selected_source_first",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned relations and capture identities",
+         "sql": "CREATE TABLE pglife_row_type_selected_source_first.a(id int GENERATED ALWAYS AS IDENTITY); INSERT INTO pglife_row_type_selected_source_first.a VALUES(DEFAULT),(DEFAULT); CREATE TABLE pglife_row_type_selected_source_first.b(id int); INSERT INTO pglife_row_type_selected_source_first.b VALUES(42); CREATE TABLE pglife_row_type_selected_source_first.c(id int); INSERT INTO pglife_row_type_selected_source_first.c VALUES(17); CREATE TABLE pglife_row_type_selected_source_first.part(id int) PARTITION BY RANGE (id); CREATE TABLE pglife_row_type_selected_source_first.child PARTITION OF pglife_row_type_selected_source_first.part DEFAULT; INSERT INTO pglife_row_type_selected_source_first.part VALUES(12); CREATE VIEW pglife_row_type_selected_source_first.v AS SELECT id FROM pglife_row_type_selected_source_first.c; CREATE MATERIALIZED VIEW pglife_row_type_selected_source_first.mv AS SELECT id FROM pglife_row_type_selected_source_first.c; CREATE SEQUENCE pglife_row_type_selected_source_first.guard START 7; CREATE TABLE pglife_row_type_selected_source_first.row_source(id int);\nCREATE TABLE pglife_row_type_selected_source_first.private_consumer(id int, payload pglife_row_type_selected_source_first.row_source);\nINSERT INTO pglife_row_type_selected_source_first.private_consumer(id) VALUES (7);\nCREATE TABLE pglife_row_type_selected_source_first.array_source(id int);\nCREATE TABLE pglife_row_type_selected_source_first.private_array_consumer(payload pglife_row_type_selected_source_first.array_source[]);\nCREATE TABLE pglife_row_type_selected_source_first.cleared_source(id int);\nCREATE TABLE pglife_row_type_selected_source_first.private_cleared_consumer(id int,payload pglife_row_type_selected_source_first.cleared_source);\nALTER TABLE pglife_row_type_selected_source_first.private_cleared_consumer DROP COLUMN payload;\nCREATE TABLE pglife_row_type_selected_source_first.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_selected_source_first'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDestructiveTableRelations",
+         "PGDestructiveTable",
+         "PGDestructiveReferences",
+         "BlockedPosition"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves catalog identities",
+         "sql": "SELECT count(*) FROM ((TABLE pglife_row_type_selected_source_first.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_selected_source_first'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_selected_source_first'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pglife_row_type_selected_source_first.receipt)) d",
+         "expect": "0"
+       },
+       {
+         "assert": "audit preserves row and sequence state",
+         "sql": "SELECT (SELECT sum(id) FROM pglife_row_type_selected_source_first.a)=3 AND (SELECT sum(id) FROM pglife_row_type_selected_source_first.b)=42 AND (SELECT sum(id) FROM pglife_row_type_selected_source_first.part)=12 AND (SELECT last_value=2 AND is_called FROM pglife_row_type_selected_source_first.a_id_seq)",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_selected_source_first.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native operation",
+         "sql": "DROP TABLE pglife_row_type_selected_source_first.row_source, pglife_row_type_selected_source_first.private_consumer RESTRICT",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "selected tables are absent",
+         "sql": "SELECT to_regclass('pglife_row_type_selected_source_first.row_source') IS NULL AND to_regclass('pglife_row_type_selected_source_first.private_consumer') IS NULL",
+         "expect": "t"
+       },
+       {
+         "assert": "unrelated table keeps its row",
+         "sql": "SELECT id FROM pglife_row_type_selected_source_first.c",
+         "expect": "17"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_selected_source_first.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pglife_row_type_selected_source_first CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_selected_source_first'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-destructive-row-type-selected-consumer-first",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-direct-references",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pglife_row_type_selected_consumer_first"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pglife_row_type_selected_consumer_first CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_selected_consumer_first'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP TABLE pglife_row_type_selected_consumer_first.private_consumer, pglife_row_type_selected_consumer_first.row_source RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_selected_consumer_first'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pglife_row_type_selected_consumer_first",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned relations and capture identities",
+         "sql": "CREATE TABLE pglife_row_type_selected_consumer_first.a(id int GENERATED ALWAYS AS IDENTITY); INSERT INTO pglife_row_type_selected_consumer_first.a VALUES(DEFAULT),(DEFAULT); CREATE TABLE pglife_row_type_selected_consumer_first.b(id int); INSERT INTO pglife_row_type_selected_consumer_first.b VALUES(42); CREATE TABLE pglife_row_type_selected_consumer_first.c(id int); INSERT INTO pglife_row_type_selected_consumer_first.c VALUES(17); CREATE TABLE pglife_row_type_selected_consumer_first.part(id int) PARTITION BY RANGE (id); CREATE TABLE pglife_row_type_selected_consumer_first.child PARTITION OF pglife_row_type_selected_consumer_first.part DEFAULT; INSERT INTO pglife_row_type_selected_consumer_first.part VALUES(12); CREATE VIEW pglife_row_type_selected_consumer_first.v AS SELECT id FROM pglife_row_type_selected_consumer_first.c; CREATE MATERIALIZED VIEW pglife_row_type_selected_consumer_first.mv AS SELECT id FROM pglife_row_type_selected_consumer_first.c; CREATE SEQUENCE pglife_row_type_selected_consumer_first.guard START 7; CREATE TABLE pglife_row_type_selected_consumer_first.row_source(id int);\nCREATE TABLE pglife_row_type_selected_consumer_first.private_consumer(id int, payload pglife_row_type_selected_consumer_first.row_source);\nINSERT INTO pglife_row_type_selected_consumer_first.private_consumer(id) VALUES (7);\nCREATE TABLE pglife_row_type_selected_consumer_first.array_source(id int);\nCREATE TABLE pglife_row_type_selected_consumer_first.private_array_consumer(payload pglife_row_type_selected_consumer_first.array_source[]);\nCREATE TABLE pglife_row_type_selected_consumer_first.cleared_source(id int);\nCREATE TABLE pglife_row_type_selected_consumer_first.private_cleared_consumer(id int,payload pglife_row_type_selected_consumer_first.cleared_source);\nALTER TABLE pglife_row_type_selected_consumer_first.private_cleared_consumer DROP COLUMN payload;\nCREATE TABLE pglife_row_type_selected_consumer_first.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_selected_consumer_first'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDestructiveTableRelations",
+         "PGDestructiveTable",
+         "PGDestructiveReferences",
+         "BlockedPosition"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves catalog identities",
+         "sql": "SELECT count(*) FROM ((TABLE pglife_row_type_selected_consumer_first.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_selected_consumer_first'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_selected_consumer_first'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pglife_row_type_selected_consumer_first.receipt)) d",
+         "expect": "0"
+       },
+       {
+         "assert": "audit preserves row and sequence state",
+         "sql": "SELECT (SELECT sum(id) FROM pglife_row_type_selected_consumer_first.a)=3 AND (SELECT sum(id) FROM pglife_row_type_selected_consumer_first.b)=42 AND (SELECT sum(id) FROM pglife_row_type_selected_consumer_first.part)=12 AND (SELECT last_value=2 AND is_called FROM pglife_row_type_selected_consumer_first.a_id_seq)",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_selected_consumer_first.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native operation",
+         "sql": "DROP TABLE pglife_row_type_selected_consumer_first.private_consumer, pglife_row_type_selected_consumer_first.row_source RESTRICT",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "selected tables are absent",
+         "sql": "SELECT to_regclass('pglife_row_type_selected_consumer_first.row_source') IS NULL AND to_regclass('pglife_row_type_selected_consumer_first.private_consumer') IS NULL",
+         "expect": "t"
+       },
+       {
+         "assert": "unrelated table keeps its row",
+         "sql": "SELECT id FROM pglife_row_type_selected_consumer_first.c",
+         "expect": "17"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_selected_consumer_first.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pglife_row_type_selected_consumer_first CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_selected_consumer_first'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-destructive-row-type-cascade",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-direct-references",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pglife_row_type_cascade"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pglife_row_type_cascade CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_cascade'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP TABLE pglife_row_type_cascade.row_source CASCADE",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_cascade'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pglife_row_type_cascade",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned relations and capture identities",
+         "sql": "CREATE TABLE pglife_row_type_cascade.a(id int GENERATED ALWAYS AS IDENTITY); INSERT INTO pglife_row_type_cascade.a VALUES(DEFAULT),(DEFAULT); CREATE TABLE pglife_row_type_cascade.b(id int); INSERT INTO pglife_row_type_cascade.b VALUES(42); CREATE TABLE pglife_row_type_cascade.c(id int); INSERT INTO pglife_row_type_cascade.c VALUES(17); CREATE TABLE pglife_row_type_cascade.part(id int) PARTITION BY RANGE (id); CREATE TABLE pglife_row_type_cascade.child PARTITION OF pglife_row_type_cascade.part DEFAULT; INSERT INTO pglife_row_type_cascade.part VALUES(12); CREATE VIEW pglife_row_type_cascade.v AS SELECT id FROM pglife_row_type_cascade.c; CREATE MATERIALIZED VIEW pglife_row_type_cascade.mv AS SELECT id FROM pglife_row_type_cascade.c; CREATE SEQUENCE pglife_row_type_cascade.guard START 7; CREATE TABLE pglife_row_type_cascade.row_source(id int);\nCREATE TABLE pglife_row_type_cascade.private_consumer(id int, payload pglife_row_type_cascade.row_source);\nINSERT INTO pglife_row_type_cascade.private_consumer(id) VALUES (7);\nCREATE TABLE pglife_row_type_cascade.array_source(id int);\nCREATE TABLE pglife_row_type_cascade.private_array_consumer(payload pglife_row_type_cascade.array_source[]);\nCREATE TABLE pglife_row_type_cascade.cleared_source(id int);\nCREATE TABLE pglife_row_type_cascade.private_cleared_consumer(id int,payload pglife_row_type_cascade.cleared_source);\nALTER TABLE pglife_row_type_cascade.private_cleared_consumer DROP COLUMN payload;\nCREATE TABLE pglife_row_type_cascade.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_cascade'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDestructiveTableRelations",
+         "PGDestructiveTable",
+         "PGDestructiveReferences",
+         "BlockedPosition",
+         "private_consumer",
+         "private_array_consumer"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves catalog identities",
+         "sql": "SELECT count(*) FROM ((TABLE pglife_row_type_cascade.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_cascade'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_cascade'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pglife_row_type_cascade.receipt)) d",
+         "expect": "0"
+       },
+       {
+         "assert": "audit preserves row and sequence state",
+         "sql": "SELECT (SELECT sum(id) FROM pglife_row_type_cascade.a)=3 AND (SELECT sum(id) FROM pglife_row_type_cascade.b)=42 AND (SELECT sum(id) FROM pglife_row_type_cascade.part)=12 AND (SELECT last_value=2 AND is_called FROM pglife_row_type_cascade.a_id_seq)",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_cascade.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native operation",
+         "sql": "DROP TABLE pglife_row_type_cascade.row_source CASCADE",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native cascade removes the column",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pglife_row_type_cascade.private_consumer'::regclass AND attnum>0 AND NOT attisdropped AND attname='payload'",
+         "expect": "0"
+       },
+       {
+         "assert": "consumer row remains",
+         "sql": "SELECT id FROM pglife_row_type_cascade.private_consumer",
+         "expect": "7"
+       },
+       {
+         "assert": "unrelated table keeps its row",
+         "sql": "SELECT id FROM pglife_row_type_cascade.c",
+         "expect": "17"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_cascade.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pglife_row_type_cascade CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_cascade'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-destructive-row-type-array-external",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-direct-references",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pglife_row_type_array_external"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pglife_row_type_array_external CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_array_external'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP TABLE pglife_row_type_array_external.array_source",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_array_external'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pglife_row_type_array_external",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned relations and capture identities",
+         "sql": "CREATE TABLE pglife_row_type_array_external.a(id int GENERATED ALWAYS AS IDENTITY); INSERT INTO pglife_row_type_array_external.a VALUES(DEFAULT),(DEFAULT); CREATE TABLE pglife_row_type_array_external.b(id int); INSERT INTO pglife_row_type_array_external.b VALUES(42); CREATE TABLE pglife_row_type_array_external.c(id int); INSERT INTO pglife_row_type_array_external.c VALUES(17); CREATE TABLE pglife_row_type_array_external.part(id int) PARTITION BY RANGE (id); CREATE TABLE pglife_row_type_array_external.child PARTITION OF pglife_row_type_array_external.part DEFAULT; INSERT INTO pglife_row_type_array_external.part VALUES(12); CREATE VIEW pglife_row_type_array_external.v AS SELECT id FROM pglife_row_type_array_external.c; CREATE MATERIALIZED VIEW pglife_row_type_array_external.mv AS SELECT id FROM pglife_row_type_array_external.c; CREATE SEQUENCE pglife_row_type_array_external.guard START 7; CREATE TABLE pglife_row_type_array_external.row_source(id int);\nCREATE TABLE pglife_row_type_array_external.private_consumer(id int, payload pglife_row_type_array_external.row_source);\nINSERT INTO pglife_row_type_array_external.private_consumer(id) VALUES (7);\nCREATE TABLE pglife_row_type_array_external.array_source(id int);\nCREATE TABLE pglife_row_type_array_external.private_array_consumer(payload pglife_row_type_array_external.array_source[]);\nCREATE TABLE pglife_row_type_array_external.cleared_source(id int);\nCREATE TABLE pglife_row_type_array_external.private_cleared_consumer(id int,payload pglife_row_type_array_external.cleared_source);\nALTER TABLE pglife_row_type_array_external.private_cleared_consumer DROP COLUMN payload;\nCREATE TABLE pglife_row_type_array_external.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_array_external'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.table.drop.exists.require",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDestructiveTableRelations",
+         "PGDestructiveTable",
+         "PGDestructiveReferences",
+         "BlockedPosition",
+         "private_consumer",
+         "private_array_consumer"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.table.drop.exists.require",
+           "metadata": {
+             "reason_code": "drop_table_has_direct_dependency",
+             "table": "array_source",
+             "exists": true
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves catalog identities",
+         "sql": "SELECT count(*) FROM ((TABLE pglife_row_type_array_external.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_array_external'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_array_external'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pglife_row_type_array_external.receipt)) d",
+         "expect": "0"
+       },
+       {
+         "assert": "audit preserves row and sequence state",
+         "sql": "SELECT (SELECT sum(id) FROM pglife_row_type_array_external.a)=3 AND (SELECT sum(id) FROM pglife_row_type_array_external.b)=42 AND (SELECT sum(id) FROM pglife_row_type_array_external.part)=12 AND (SELECT last_value=2 AND is_called FROM pglife_row_type_array_external.a_id_seq)",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_array_external.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 2BP01",
+         "sql": "\\set VERBOSITY verbose\nDROP TABLE pglife_row_type_array_external.array_source",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  2BP01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "audit preserves catalog identities",
+         "sql": "SELECT count(*) FROM ((TABLE pglife_row_type_array_external.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_array_external'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_array_external'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pglife_row_type_array_external.receipt)) d",
+         "expect": "0"
+       },
+       {
+         "assert": "audit preserves row and sequence state",
+         "sql": "SELECT (SELECT sum(id) FROM pglife_row_type_array_external.a)=3 AND (SELECT sum(id) FROM pglife_row_type_array_external.b)=42 AND (SELECT sum(id) FROM pglife_row_type_array_external.part)=12 AND (SELECT last_value=2 AND is_called FROM pglife_row_type_array_external.a_id_seq)",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_array_external.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pglife_row_type_array_external CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_array_external'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-destructive-row-type-dropped-column",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-direct-references",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pglife_row_type_dropped_column"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pglife_row_type_dropped_column CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_dropped_column'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP TABLE pglife_row_type_dropped_column.cleared_source",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_dropped_column'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pglife_row_type_dropped_column",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned relations and capture identities",
+         "sql": "CREATE TABLE pglife_row_type_dropped_column.a(id int GENERATED ALWAYS AS IDENTITY); INSERT INTO pglife_row_type_dropped_column.a VALUES(DEFAULT),(DEFAULT); CREATE TABLE pglife_row_type_dropped_column.b(id int); INSERT INTO pglife_row_type_dropped_column.b VALUES(42); CREATE TABLE pglife_row_type_dropped_column.c(id int); INSERT INTO pglife_row_type_dropped_column.c VALUES(17); CREATE TABLE pglife_row_type_dropped_column.part(id int) PARTITION BY RANGE (id); CREATE TABLE pglife_row_type_dropped_column.child PARTITION OF pglife_row_type_dropped_column.part DEFAULT; INSERT INTO pglife_row_type_dropped_column.part VALUES(12); CREATE VIEW pglife_row_type_dropped_column.v AS SELECT id FROM pglife_row_type_dropped_column.c; CREATE MATERIALIZED VIEW pglife_row_type_dropped_column.mv AS SELECT id FROM pglife_row_type_dropped_column.c; CREATE SEQUENCE pglife_row_type_dropped_column.guard START 7; CREATE TABLE pglife_row_type_dropped_column.row_source(id int);\nCREATE TABLE pglife_row_type_dropped_column.private_consumer(id int, payload pglife_row_type_dropped_column.row_source);\nINSERT INTO pglife_row_type_dropped_column.private_consumer(id) VALUES (7);\nCREATE TABLE pglife_row_type_dropped_column.array_source(id int);\nCREATE TABLE pglife_row_type_dropped_column.private_array_consumer(payload pglife_row_type_dropped_column.array_source[]);\nCREATE TABLE pglife_row_type_dropped_column.cleared_source(id int);\nCREATE TABLE pglife_row_type_dropped_column.private_cleared_consumer(id int,payload pglife_row_type_dropped_column.cleared_source);\nALTER TABLE pglife_row_type_dropped_column.private_cleared_consumer DROP COLUMN payload;\nCREATE TABLE pglife_row_type_dropped_column.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_dropped_column'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDestructiveTableRelations",
+         "PGDestructiveTable",
+         "PGDestructiveReferences",
+         "BlockedPosition",
+         "private_consumer",
+         "private_array_consumer"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves catalog identities",
+         "sql": "SELECT count(*) FROM ((TABLE pglife_row_type_dropped_column.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_dropped_column'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_dropped_column'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pglife_row_type_dropped_column.receipt)) d",
+         "expect": "0"
+       },
+       {
+         "assert": "audit preserves row and sequence state",
+         "sql": "SELECT (SELECT sum(id) FROM pglife_row_type_dropped_column.a)=3 AND (SELECT sum(id) FROM pglife_row_type_dropped_column.b)=42 AND (SELECT sum(id) FROM pglife_row_type_dropped_column.part)=12 AND (SELECT last_value=2 AND is_called FROM pglife_row_type_dropped_column.a_id_seq)",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_dropped_column.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native operation",
+         "sql": "DROP TABLE pglife_row_type_dropped_column.cleared_source",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "former source removed",
+         "sql": "SELECT to_regclass('pglife_row_type_dropped_column.cleared_source') IS NULL",
+         "expect": "t"
+       },
+       {
+         "assert": "unrelated table keeps its row",
+         "sql": "SELECT id FROM pglife_row_type_dropped_column.c",
+         "expect": "17"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_dropped_column.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pglife_row_type_dropped_column CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_dropped_column'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-destructive-row-type-missing-before-dependency",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-direct-references",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pglife_row_type_missing_before_dependency"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pglife_row_type_missing_before_dependency CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_missing_before_dependency'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP TABLE pglife_row_type_missing_before_dependency.row_source, pglife_row_type_missing_before_dependency.missing",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_missing_before_dependency'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pglife_row_type_missing_before_dependency",
+         "expect_rc": 0
+       },
+       {
+         "name": "create owned relations and capture identities",
+         "sql": "CREATE TABLE pglife_row_type_missing_before_dependency.a(id int GENERATED ALWAYS AS IDENTITY); INSERT INTO pglife_row_type_missing_before_dependency.a VALUES(DEFAULT),(DEFAULT); CREATE TABLE pglife_row_type_missing_before_dependency.b(id int); INSERT INTO pglife_row_type_missing_before_dependency.b VALUES(42); CREATE TABLE pglife_row_type_missing_before_dependency.c(id int); INSERT INTO pglife_row_type_missing_before_dependency.c VALUES(17); CREATE TABLE pglife_row_type_missing_before_dependency.part(id int) PARTITION BY RANGE (id); CREATE TABLE pglife_row_type_missing_before_dependency.child PARTITION OF pglife_row_type_missing_before_dependency.part DEFAULT; INSERT INTO pglife_row_type_missing_before_dependency.part VALUES(12); CREATE VIEW pglife_row_type_missing_before_dependency.v AS SELECT id FROM pglife_row_type_missing_before_dependency.c; CREATE MATERIALIZED VIEW pglife_row_type_missing_before_dependency.mv AS SELECT id FROM pglife_row_type_missing_before_dependency.c; CREATE SEQUENCE pglife_row_type_missing_before_dependency.guard START 7; CREATE TABLE pglife_row_type_missing_before_dependency.row_source(id int);\nCREATE TABLE pglife_row_type_missing_before_dependency.private_consumer(id int, payload pglife_row_type_missing_before_dependency.row_source);\nINSERT INTO pglife_row_type_missing_before_dependency.private_consumer(id) VALUES (7);\nCREATE TABLE pglife_row_type_missing_before_dependency.array_source(id int);\nCREATE TABLE pglife_row_type_missing_before_dependency.private_array_consumer(payload pglife_row_type_missing_before_dependency.array_source[]);\nCREATE TABLE pglife_row_type_missing_before_dependency.cleared_source(id int);\nCREATE TABLE pglife_row_type_missing_before_dependency.private_cleared_consumer(id int,payload pglife_row_type_missing_before_dependency.cleared_source);\nALTER TABLE pglife_row_type_missing_before_dependency.private_cleared_consumer DROP COLUMN payload;\nCREATE TABLE pglife_row_type_missing_before_dependency.receipt AS SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_missing_before_dependency'::regnamespace AND c.relname<>'receipt'",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.table.drop.exists.require",
+           "level": "blocker"
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDestructiveTableRelations",
+         "PGDestructiveTable",
+         "PGDestructiveReferences",
+         "BlockedPosition",
+         "private_consumer",
+         "private_array_consumer"
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.table.drop.exists.require",
+           "metadata": {
+             "reason_code": "relation_absent",
+             "table": "missing",
+             "exists": false
+           }
+         }
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves catalog identities",
+         "sql": "SELECT count(*) FROM ((TABLE pglife_row_type_missing_before_dependency.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_missing_before_dependency'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_missing_before_dependency'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pglife_row_type_missing_before_dependency.receipt)) d",
+         "expect": "0"
+       },
+       {
+         "assert": "audit preserves row and sequence state",
+         "sql": "SELECT (SELECT sum(id) FROM pglife_row_type_missing_before_dependency.a)=3 AND (SELECT sum(id) FROM pglife_row_type_missing_before_dependency.b)=42 AND (SELECT sum(id) FROM pglife_row_type_missing_before_dependency.part)=12 AND (SELECT last_value=2 AND is_called FROM pglife_row_type_missing_before_dependency.a_id_seq)",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_missing_before_dependency.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native refusal 42P01",
+         "sql": "\\set VERBOSITY verbose\nDROP TABLE pglife_row_type_missing_before_dependency.row_source, pglife_row_type_missing_before_dependency.missing",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "audit preserves catalog identities",
+         "sql": "SELECT count(*) FROM ((TABLE pglife_row_type_missing_before_dependency.receipt EXCEPT (SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_missing_before_dependency'::regnamespace AND c.relname<>'receipt')) UNION ALL ((SELECT c.oid,c.relname,c.relkind,c.relfilenode FROM pg_catalog.pg_class c WHERE c.relnamespace='pglife_row_type_missing_before_dependency'::regnamespace AND c.relname<>'receipt') EXCEPT TABLE pglife_row_type_missing_before_dependency.receipt)) d",
+         "expect": "0"
+       },
+       {
+         "assert": "audit preserves row and sequence state",
+         "sql": "SELECT (SELECT sum(id) FROM pglife_row_type_missing_before_dependency.a)=3 AND (SELECT sum(id) FROM pglife_row_type_missing_before_dependency.b)=42 AND (SELECT sum(id) FROM pglife_row_type_missing_before_dependency.part)=12 AND (SELECT last_value=2 AND is_called FROM pglife_row_type_missing_before_dependency.a_id_seq)",
+         "expect": "t"
+       },
+       {
+         "assert": "keeps independent guard sequence",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pglife_row_type_missing_before_dependency.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pglife_row_type_missing_before_dependency CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pglife_row_type_missing_before_dependency'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
      "id": "pg-destructive-truncate-tree-recursive-fk",
      "anchor": "postgres17",
      "dialect": "postgresql",
@@ -9072,6 +10309,14 @@
   }
  ],
  "required_case_ids": [
+  "T38.meta.pg-destructive-row-type-external",
+  "T38.meta.pg-destructive-row-type-guarded-external",
+  "T38.meta.pg-destructive-row-type-selected-source-first",
+  "T38.meta.pg-destructive-row-type-selected-consumer-first",
+  "T38.meta.pg-destructive-row-type-cascade",
+  "T38.meta.pg-destructive-row-type-array-external",
+  "T38.meta.pg-destructive-row-type-dropped-column",
+  "T38.meta.pg-destructive-row-type-missing-before-dependency",
   "T38.meta.pg-destructive-truncate-tree-recursive-fk",
   "T38.meta.pg-destructive-truncate-tree-only-parent",
   "T38.meta.pg-destructive-truncate-tree-recursive-partial",

@@ -12071,7 +12071,11 @@
                 "file:testdata/ddl-golden/T38.json#pg-destructive-drop-direct-reference-fk",
                 "file:testdata/ddl-golden/T38.json#pg-destructive-drop-direct-reference-cascade",
                 "file:testdata/ddl-golden/T38.json#pg-destructive-drop-direct-reference-self",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_table_direct_references.expected.yaml#ddl.table.drop.exists.require"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_table_direct_references.expected.yaml#ddl.table.drop.exists.require",
+                "file:testdata/ddl-golden/T38.json#pg-destructive-row-type-external",
+                "file:testdata/ddl-golden/T38.json#pg-destructive-row-type-cascade",
+                "file:testdata/ddl-golden/T38.json#pg-destructive-row-type-array-external",
+                "file:testdata/ddl-golden/T38.json#pg-destructive-row-type-dropped-column"
               ]
             }
           ]
@@ -12100,7 +12104,11 @@
                 "file:testdata/ddl-golden/T38.json#pg-destructive-drop-direct-reference-unvalidated-fk",
                 "file:testdata/ddl-golden/T38.json#pg-destructive-drop-direct-reference-all-members",
                 "file:testdata/ddl-golden/T38.json#pg-destructive-drop-direct-reference-view-with-guard",
-                "file:testdata/ddl-golden/T38.json#pg-destructive-drop-direct-reference-missing"
+                "file:testdata/ddl-golden/T38.json#pg-destructive-drop-direct-reference-missing",
+                "file:testdata/ddl-golden/T38.json#pg-destructive-row-type-guarded-external",
+                "file:testdata/ddl-golden/T38.json#pg-destructive-row-type-selected-source-first",
+                "file:testdata/ddl-golden/T38.json#pg-destructive-row-type-selected-consumer-first",
+                "file:testdata/ddl-golden/T38.json#pg-destructive-row-type-missing-before-dependency"
               ]
             }
           ]

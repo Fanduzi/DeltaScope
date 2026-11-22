@@ -1917,6 +1917,14 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44996146997/job/137127506254),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137127582785) passed at the delivered SHA.
 
+## F10 DROP TABLE row-type dependencies
+
+T38 compares external columns whose type is a selected table’s composite row or its generated array, and verifies that RESTRICT refuses while a dependent outside the selection survives. Selecting the dependent table in the same DROP succeeds in either order. CASCADE removes the dependent column while the table and its fixture row remain. The controls preserve the distinction between a missing DROP target, an ignored absent target under IF EXISTS, and a deleted column that carries no live dependency.
+
+The existing finding now includes these direct normal dependency edges. Partition and inheritance targets, general dependency closure and execution permissions require further facts. [T38](../../testdata/ddl-golden/T38.json) · [Decision record](../decisions/2026-11-21-postgresql-drop-table-row-type.md)
+
+Isolated preview T38 passed 70 cases and 2,046 assertions. Verification on the fixed F10-ROW-TYPE candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
