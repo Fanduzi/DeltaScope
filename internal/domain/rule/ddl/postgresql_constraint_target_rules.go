@@ -118,7 +118,8 @@ func (r pgConstraintTargetRule) assess(s spec.Statement, index int) (*spec.PGCon
 			return member, "constraint_validate_requires_child_traversal", ""
 		}
 	}
-	if r.id == ruleIDPGAlterDropConstraintTargetRequire && len(s.DDL.Alter) == 1 && member.Type == "c" {
+	if r.id == ruleIDPGAlterDropConstraintTargetRequire && len(s.DDL.Alter) == 1 &&
+		(member.Type == "c" || member.Type == "f" && member.InheritanceKnown && member.Inherited) {
 		table, relation := s.DDL.Table, s.Metadata.TargetTable.PGRelation
 		if !s.DDL.PGTableCatalogQualified && table.Schema != "" && table.Schema != "pg_temp" &&
 			(relation.Kind == "" || relation.Kind == "r" || relation.Kind == "p") {
@@ -128,7 +129,7 @@ func (r pgConstraintTargetRule) assess(s spec.Statement, index int) (*spec.PGCon
 			if member.Inherited {
 				return member, "constraint_inherited", ""
 			}
-			if relation.Kind == "p" && s.DDL.PGTableOnly {
+			if member.Type == "c" && relation.Kind == "p" && s.DDL.PGTableOnly {
 				if !member.PartitionCheckHasChildrenKnown {
 					return member, "", "constraint.pg_partition_children"
 				}
@@ -205,6 +206,9 @@ func (r pgConstraintTargetRule) Evaluate(ctx context.Context, s spec.Statement) 
 			suggestion = "Review validation for the parent and its child tables"
 		case "constraint_inherited":
 			message = "PostgreSQL cannot drop an inherited check constraint directly"
+			if member.Type == "f" {
+				message = "PostgreSQL cannot drop an inherited foreign key directly"
+			}
 			suggestion = "Review the constraint on the parent table before changing it"
 		case "constraint_partition_parent_only":
 			message = "PostgreSQL cannot drop this check constraint from only the partitioned parent while partitions exist"

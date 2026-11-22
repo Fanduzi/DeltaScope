@@ -14,7 +14,8 @@ func (p *Provider) loadPGConstraintStates(ctx context.Context, snapshot *spec.Ta
 		       pc.contype OPERATOR(pg_catalog.=) 'f' and tbl.relispartition
 		         and tbl.relpersistence OPERATOR(pg_catalog.=) 'p'
 		         and pc.conparentid OPERATOR(pg_catalog.<>) 0::pg_catalog.oid,
-		       case when pc.contype OPERATOR(pg_catalog.=) 'c'
+		       case when (pc.contype OPERATOR(pg_catalog.=) 'c' or
+		                  (pc.contype OPERATOR(pg_catalog.=) 'f' and tbl.relispartition))
 		                  and tbl.relkind OPERATOR(pg_catalog.=) any(array['r','p']::pg_catalog."char"[])
 		                  and tbl.relpersistence OPERATOR(pg_catalog.=) 'p'
 		                  and tbl.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid

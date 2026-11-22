@@ -55,6 +55,7 @@ func TestHandlerPGConstraintTarget(t *testing.T) {
 		{"ALTER TABLE app.t ALTER CONSTRAINT c DEFERRABLE", "ddl.pg.alter.constraint_deferrability.target.require", "reject", []deltascope.PGConstraintState{}},
 		{"ALTER TABLE app.t ALTER CONSTRAINT c DEFERRABLE", "ddl.pg.alter.constraint_deferrability.target.require", "reject", []deltascope.PGConstraintState{{Name: "c", Type: "f", Validated: true, DerivedForeignKey: true}}},
 		{"ALTER TABLE app.t DROP CONSTRAINT IF EXISTS c CASCADE", "ddl.pg.alter.drop_constraint.target.require", "reject", []deltascope.PGConstraintState{{Name: "c", Type: "c", Validated: true, InheritanceKnown: true, Inherited: true}}},
+		{"ALTER TABLE app.t DROP CONSTRAINT IF EXISTS fk CASCADE", "ddl.pg.alter.drop_constraint.target.require", "reject", []deltascope.PGConstraintState{{Name: "fk", Type: "f", Validated: true, InheritanceKnown: true, Inherited: true}}},
 		{"ALTER TABLE ONLY app.t DROP CONSTRAINT c CASCADE", "ddl.pg.alter.drop_constraint.target.require", "reject", []deltascope.PGConstraintState{{Name: "c", Type: "c", Validated: true, InheritanceKnown: true, PartitionCheckHasChildrenKnown: true, PartitionCheckHasChildren: true}}},
 		{"ALTER TABLE app.t DROP CONSTRAINT c", "ddl.pg.alter.drop_constraint.target.require", "reject", []deltascope.PGConstraintState{}},
 		{"ALTER TABLE app.t DROP CONSTRAINT IF EXISTS c", "", "pass", []deltascope.PGConstraintState{}},

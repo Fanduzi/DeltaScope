@@ -13,7 +13,7 @@ import (
 func TestLoadPGConstraintStates(t *testing.T) {
 	for _, empty := range []bool{false, true} {
 		t.Run(map[bool]string{false: "complete", true: "empty"}[empty], func(t *testing.T) {
-			rows := [][]driver.Value{{"ck", "c", false, false, true, nil, false}, {"CK", "u", true, false, nil, nil, nil}, {"fk", "f", false, true, nil, nil, nil}, {"pk", "p", true, false, nil, nil, nil}, {"ck", "c", false, false, false, true, true}}
+			rows := [][]driver.Value{{"ck", "c", false, false, true, nil, false}, {"CK", "u", true, false, nil, nil, nil}, {"fk", "f", false, true, true, nil, nil}, {"pk", "p", true, false, nil, nil, nil}, {"ck", "c", false, false, false, true, true}}
 			if empty {
 				rows = nil
 			}
@@ -30,6 +30,9 @@ func TestLoadPGConstraintStates(t *testing.T) {
 				first, foreignKey, last := s.PGConstraints[0], s.PGConstraints[2], s.PGConstraints[4]
 				if !foreignKey.DerivedForeignKey || first.DerivedForeignKey {
 					t.Fatalf("incorrect derived foreign-key observation: %+v", s.PGConstraints)
+				}
+				if !foreignKey.InheritanceKnown || !foreignKey.Inherited {
+					t.Fatalf("incorrect partition FK inheritance observation: %+v", foreignKey)
 				}
 				if !first.CheckValidationChildrenKnown || first.CheckValidationHasChildren || foreignKey.CheckValidationChildrenKnown || !last.CheckValidationChildrenKnown || !last.CheckValidationHasChildren {
 					t.Fatalf("incorrect validation traversal observations: %+v", s.PGConstraints)

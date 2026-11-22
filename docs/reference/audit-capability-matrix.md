@@ -126,7 +126,7 @@ Other F09 dimensions remain open; this table is not whole-row support proof.
 |---------|---------------------------------------------|--------------|----------|
 | `ddl.pg.alter.validate_constraint.target.require` | Missing or wrong-kind target and parent-only CHECK validation traversal blocker | Not applicable | Required |
 | `ddl.pg.alter.constraint_deferrability.target.require` | Missing/non-FK target and partition-derived FK blocker | Not applicable | Required |
-| `ddl.pg.alter.drop_constraint.target.require` | Exact DROP target, direct foreign-key dependency under RESTRICT, CHECK inheritance, and partition-parent ONLY checks | Not applicable | Required |
+| `ddl.pg.alter.drop_constraint.target.require` | Exact DROP target, direct foreign-key dependency under RESTRICT, CHECK and partition foreign-key inheritance, and partition-parent ONLY checks | Not applicable | Required |
 
 Approved default-on blockers. Exact table/schema/constraint identity, complete fresh directory and observed PG17 scope are required; unknown/ambiguous/stale facts remain `unproven_constraint_target` gaps with unverified/review, never guessed absence. Prior related DDL and preceding ALTER actions withhold old facts without enabling PG ordered execution. Known already-validated VALIDATE and absent guarded DROP suppress their existing no-op notices; unknown advice stays conditional. FK/PK forbids and validation follow-up remain independent.
 
