@@ -99,6 +99,14 @@ func (r pgConstraintTargetRule) assess(s spec.Statement, index int) (*spec.PGCon
 	if r.id == ruleIDPGAlterValidateConstraintTargetRequire && member.Type != "c" && member.Type != "f" || r.id == ruleIDPGAlterConstraintDeferrabilityTargetRequire && member.Type != "f" {
 		return member, "constraint_kind_mismatch", ""
 	}
+	if r.id == ruleIDPGAlterConstraintDeferrabilityTargetRequire && len(s.DDL.Alter) == 1 && member.DerivedForeignKey {
+		table, relation := s.DDL.Table, s.Metadata.TargetTable.PGRelation
+		if !s.DDL.PGTableCatalogQualified && table.Schema != "" && table.Schema != "pg_temp" &&
+			relation.Name == table.Name && (relation.Kind == "r" || relation.Kind == "p") {
+			return member, "constraint_deferrability_derived_foreign_key", ""
+		}
+		return member, "", "constraint.pg_derived_foreign_key_target"
+	}
 	if r.id == ruleIDPGAlterValidateConstraintTargetRequire && member.Type == "c" && !member.Validated &&
 		len(s.DDL.Alter) == 1 && s.DDL.PGTableOnly {
 		table, relation := s.DDL.Table, s.Metadata.TargetTable.PGRelation
@@ -189,6 +197,9 @@ func (r pgConstraintTargetRule) Evaluate(ctx context.Context, s spec.Statement) 
 		switch reason {
 		case "constraint_kind_mismatch":
 			message = "PostgreSQL constraint target has an unsupported kind for this action"
+		case "constraint_deferrability_derived_foreign_key":
+			message = "PostgreSQL cannot alter deferrability directly on a derived foreign key"
+			suggestion = "Review the parent foreign-key constraint before changing deferrability"
 		case "constraint_validate_requires_child_traversal":
 			message = "PostgreSQL requires validating this check constraint on the child tables"
 			suggestion = "Review validation for the parent and its child tables"

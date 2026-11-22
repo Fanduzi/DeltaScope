@@ -1,0 +1,18 @@
+name: constraint_deferrability_derived_foreign_key
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance:
+    version: PostgreSQL 17.7
+  tables:
+    leaf:
+      exists: true
+      pg_relation: {name: leaf, kind: r}
+      pg_constraints: [{name: fk, type: f, validated: true, derived_foreign_key: true}]
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.constraint_deferrability.target.require]

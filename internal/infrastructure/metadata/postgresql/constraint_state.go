@@ -11,6 +11,9 @@ import (
 func (p *Provider) loadPGConstraintStates(ctx context.Context, snapshot *spec.TableSnapshot) error {
 	rows, err := p.db.QueryContext(ctx, `
 		select pc.conname, pc.contype::pg_catalog.text, pc.convalidated,
+		       pc.contype OPERATOR(pg_catalog.=) 'f' and tbl.relispartition
+		         and tbl.relpersistence OPERATOR(pg_catalog.=) 'p'
+		         and pc.conparentid OPERATOR(pg_catalog.<>) 0::pg_catalog.oid,
 		       case when pc.contype OPERATOR(pg_catalog.=) 'c'
 		                  and tbl.relkind OPERATOR(pg_catalog.=) any(array['r','p']::pg_catalog."char"[])
 		                  and tbl.relpersistence OPERATOR(pg_catalog.=) 'p'
@@ -48,7 +51,7 @@ func (p *Provider) loadPGConstraintStates(ctx context.Context, snapshot *spec.Ta
 	for rows.Next() {
 		var state spec.PGConstraintState
 		var inherited, children, validationChildren sql.NullBool
-		if err := rows.Scan(&state.Name, &state.Type, &state.Validated, &inherited, &children, &validationChildren); err != nil {
+		if err := rows.Scan(&state.Name, &state.Type, &state.Validated, &state.DerivedForeignKey, &inherited, &children, &validationChildren); err != nil {
 			return fmt.Errorf("scan constraint state: %w", err)
 		}
 		state.InheritanceKnown, state.Inherited = inherited.Valid, inherited.Bool

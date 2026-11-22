@@ -1201,7 +1201,7 @@ func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusT
 				out.PGConstraints = nil
 				break
 			}
-			state := spec.PGConstraintState{Name: member.Name, Type: member.Type, Validated: *member.Validated}
+			state := spec.PGConstraintState{Name: member.Name, Type: member.Type, Validated: *member.Validated, DerivedForeignKey: member.DerivedForeignKey}
 			if member.Inherited != nil {
 				state.InheritanceKnown, state.Inherited = true, *member.Inherited
 			}

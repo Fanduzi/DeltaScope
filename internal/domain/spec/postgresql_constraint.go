@@ -6,6 +6,8 @@ type PGConstraintState struct {
 	Name      string
 	Type      string // pg_constraint.contype, not a declaration's assumed kind
 	Validated bool
+	// DerivedForeignKey is a positive observation of a partition-derived FK.
+	DerivedForeignKey bool `json:"-"`
 	// InheritanceKnown marks a persistent ordinary or partitioned CHECK observation.
 	InheritanceKnown bool `json:"-"`
 	Inherited        bool `json:"-"`

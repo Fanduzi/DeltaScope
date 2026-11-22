@@ -583,7 +583,7 @@ These rules guard against MySQL and TiDB database/schema lifecycle DDL operation
 | Rule ID | Bounded check | Default Level | Metadata Required |
 |---------|---------------|:-------------:|:-----------------:|
 | `ddl.pg.alter.validate_constraint.target.require` | Existing FK/CHECK target for VALIDATE. An unvalidated CHECK with attached children can require traversal. | blocker | Yes |
-| `ddl.pg.alter.constraint_deferrability.target.require` | Existing FK target for ALTER CONSTRAINT deferrability | blocker | Yes |
+| `ddl.pg.alter.constraint_deferrability.target.require` | Existing FK target and direct partition-derived FK refusal for ALTER CONSTRAINT deferrability | blocker | Yes |
 | `ddl.pg.alter.drop_constraint.target.require` | Checks exact DROP targets, direct foreign-key dependencies on primary or unique constraints under RESTRICT, inherited CHECKs, and CHECKs on partitioned parents targeted with ONLY. IF EXISTS guards absence. | blocker | Yes |
 
 All three default-enabled behaviors are explicitly approved. They require a fresh complete constraint directory bound to the exact table/schema and an observed stable PostgreSQL 17 server banner. Decoded identifiers are case-sensitive; duplicate/unowned bindings are not last-wins. Missing, ambiguous, stale or out-of-scope facts owe `unproven_constraint_target` gaps (`target_table.pg_constraints`, `instance.version` or `constraint.if_exists`) rather than invented absence. Evidence gaps use the existing **unverified/review** protocol; syntax/parser boundaries remain incomplete. Caller `target_version` does not replace the server observation or widen the MySQL/TiDB-only public version-identity contract.

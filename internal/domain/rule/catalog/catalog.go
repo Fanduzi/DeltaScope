@@ -394,7 +394,7 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 		return "Checks PostgreSQL 17 FK and CHECK targets for VALIDATE and checks parent-only requests on an unvalidated CHECK with attached children. Missing applicable observations remain evidence gaps. Existing row validity has separate prerequisites."
 	}
 	if ruleID == "ddl.pg.alter.constraint_deferrability.target.require" {
-		return "Requires a proven existing PostgreSQL FK target for ALTER CONSTRAINT deferrability. Missing/wrong-kind targets block; quoted names bind exactly and unknown/stale facts remain evidence gaps."
+		return "Requires a proven existing PostgreSQL FK target for ALTER CONSTRAINT deferrability. Missing and wrong-kind targets block. A fresh qualified partition-derived FK also blocks. Quoted names bind exactly and unknown or stale targets remain evidence gaps."
 	}
 	if ruleID == "ddl.pg.alter.drop_constraint.target.require" {
 		return "Checks exact PostgreSQL 17 DROP CONSTRAINT targets, direct foreign-key blockers for RESTRICT, inherited CHECKs, and ONLY drops of CHECKs on partitioned parents with children. IF EXISTS guards absence. Unknown applicable facts remain evidence gaps."

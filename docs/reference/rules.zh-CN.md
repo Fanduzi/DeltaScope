@@ -550,7 +550,7 @@ PostgreSQL `ALTER TABLE IF EXISTS` 的既有存在性规则在已证明限定名
 | 规则 ID | 限定检查 | 默认级别 | 需要元数据 |
 |---------|----------|:--------:|:----------:|
 | `ddl.pg.alter.validate_constraint.target.require` | 检查 VALIDATE 的目标是否为已存在的 FK 或 CHECK，以及未验证 CHECK 是否需要遍历子表。 | blocker | 是 |
-| `ddl.pg.alter.constraint_deferrability.target.require` | ALTER CONSTRAINT deferrability 的目标存在且为 FK | blocker | 是 |
+| `ddl.pg.alter.constraint_deferrability.target.require` | 检查 ALTER CONSTRAINT deferrability 的外键目标，并拒绝直接修改已证实的分区派生外键 | blocker | 是 |
 | `ddl.pg.alter.drop_constraint.target.require` | 检查精确 DROP 目标、RESTRICT 下主键或唯一约束的直接外键依赖、继承的 CHECK，以及对分区父表使用 ONLY 时的 CHECK。IF EXISTS 保护目标缺失的情况。 | blocker | 是 |
 
 三条默认行为均已获明确批准。检查依赖精确绑定表/schema 的完整、新鲜约束目录，以及真实观测的稳定 PostgreSQL 17 版本。解码后的标识符区分大小写，重复或归属不明的记录不采用 last-wins。缺失、歧义、过期或超出作用域的事实保留 `unproven_constraint_target` 缺口（`target_table.pg_constraints`、`instance.version` 或 `constraint.if_exists`），不猜测目标不存在。事实缺口沿用 **unverified/review** 协议；语法和 parser 边界仍是 incomplete。调用者的 `target_version` 不能替代服务器观测，也不扩展仅面向 MySQL/TiDB 的公共版本身份协议。

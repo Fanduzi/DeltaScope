@@ -322,6 +322,30 @@ func TestPGDropPartitionCheckOnly(t *testing.T) {
 	}
 }
 
+func TestPGDerivedForeignKeyDeferrability(t *testing.T) {
+	r := pgConstraintTargetRule{id: ruleIDPGAlterConstraintDeferrabilityTargetRequire, level: rule.LevelBlocker}
+	for _, tc := range []struct {
+		name, relationKind, reason, gap string
+		derived, catalogQualified       bool
+	}{
+		{name: "partition leaf", derived: true, relationKind: "r", reason: "constraint_deferrability_derived_foreign_key"},
+		{name: "partitioned intermediate", derived: true, relationKind: "p", reason: "constraint_deferrability_derived_foreign_key"},
+		{name: "local foreign key", relationKind: "r"},
+		{name: "stale relation", derived: true, gap: "constraint.pg_derived_foreign_key_target"},
+		{name: "catalog-qualified relation", derived: true, catalogQualified: true, relationKind: "r", gap: "constraint.pg_derived_foreign_key_target"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := pgTargetStatement("alter_constraint_deferrable", []spec.PGConstraintState{{Name: "c", Type: "f", DerivedForeignKey: tc.derived}})
+			s.DDL.PGTableCatalogQualified = tc.catalogQualified
+			s.Metadata.TargetTable.PGRelation.Kind = tc.relationKind
+			_, reason, gap := r.assess(s, 0)
+			if reason != tc.reason || gap != tc.gap {
+				t.Fatalf("reason=%q gap=%q", reason, gap)
+			}
+		})
+	}
+}
+
 func TestPGValidateCheckOnlyTraversal(t *testing.T) {
 	r := pgConstraintTargetRule{id: ruleIDPGAlterValidateConstraintTargetRequire, level: rule.LevelBlocker}
 	for _, tc := range []struct {

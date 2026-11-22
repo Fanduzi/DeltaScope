@@ -38,6 +38,7 @@ func TestAuditSQLPGConstraintTarget(t *testing.T) {
 		{"ALTER TABLE ONLY app.t VALIDATE CONSTRAINT c", "ddl.pg.alter.validate_constraint.target.require", "reject", []spec.PGConstraintState{{Name: "c", Type: "c", CheckValidationChildrenKnown: true, CheckValidationHasChildren: true}}},
 		{"ALTER TABLE app.t VALIDATE CONSTRAINT c", "ddl.pg.alter.validate_constraint.target.require", "reject", []spec.PGConstraintState{}},
 		{"ALTER TABLE app.t ALTER CONSTRAINT c DEFERRABLE", "ddl.pg.alter.constraint_deferrability.target.require", "reject", []spec.PGConstraintState{}},
+		{"ALTER TABLE app.t ALTER CONSTRAINT c DEFERRABLE", "ddl.pg.alter.constraint_deferrability.target.require", "reject", []spec.PGConstraintState{{Name: "c", Type: "f", Validated: true, DerivedForeignKey: true}}},
 		{"ALTER TABLE app.t DROP CONSTRAINT IF EXISTS c CASCADE", "ddl.pg.alter.drop_constraint.target.require", "reject", []spec.PGConstraintState{{Name: "c", Type: "c", Validated: true, InheritanceKnown: true, Inherited: true}}},
 		{"ALTER TABLE ONLY app.t DROP CONSTRAINT c CASCADE", "ddl.pg.alter.drop_constraint.target.require", "reject", []spec.PGConstraintState{{Name: "c", Type: "c", Validated: true, InheritanceKnown: true, PartitionCheckHasChildrenKnown: true, PartitionCheckHasChildren: true}}},
 		{"ALTER TABLE app.t DROP CONSTRAINT c", "ddl.pg.alter.drop_constraint.target.require", "reject", []spec.PGConstraintState{}},

@@ -806,6 +806,7 @@ type corpusPGIdentitySequenceState struct {
 }
 
 type corpusPGConstraint struct {
+	DerivedForeignKey  bool   `yaml:"derived_foreign_key,omitempty"`
 	Name               string `yaml:"name"`
 	Type               string `yaml:"type"`
 	Inherited          *bool  `yaml:"inherited,omitempty"`
