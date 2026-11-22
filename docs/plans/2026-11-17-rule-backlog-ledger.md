@@ -1791,6 +1791,29 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44966064804/job/137035257889),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137035314703) passed at the delivered SHA.
 
+## F01 exact dimension review
+
+| Row and authored cell | Verified evidence and remaining premise |
+| --- | --- |
+| `mysql.create-procedure` / CREATE PROCEDURE ... BEGIN..END | T27 retains compound-body controls. The new qualified identity cases compare a duplicate, guarded duplicate and missing schema against the native server. A catalog miss remains a gap. |
+| `mysql.create-procedure` / parameters | T27 verifies modeled names and parameter shape. Default charset and conversion behavior require additional declaration facts. |
+| `mysql.create-procedure` / SQL SECURITY | D1 and the three native T27 catalog cases cover authored and default security modes. |
+| `mysql.create-procedure` / DETERMINISTIC | The parser preserves explicit true and false and keeps omission absent. MySQL 5.7.44, 8.0.46 and 8.4.10 record `YES`, `NO` and `NO` for the three declarations. Runtime determinism remains outside static audit. |
+| `mysql.create-procedure` / body statements | T27 compares bounded static SQL and malformed declaration members. Runtime statements and unmodeled members retain their boundaries. |
+| `mysql.create-function` / CREATE FUNCTION ... RETURNS ... BEGIN..END | T27 verifies qualified stored function identity separately from procedure and loadable-function identity. RETURN retains its explicit body boundary. |
+| `mysql.create-function` / DETERMINISTIC | The qualified function control verifies the catalog declaration. Binary logging and runtime determinism need separate facts. |
+| `mysql.create-function` / SQL SECURITY | Existing D1 warnings and T27 native catalog evidence remain in force. |
+| `mysql.alter-procedure-function` / ALTER PROCEDURE and ALTER FUNCTION | Qualified identity includes the kind. T27 compares visible targets, missing targets and wrong-kind targets. Missing visibility cannot prove absence. |
+| `mysql.alter-procedure-function` / SQL SECURITY and COMMENT | Existing security warnings retain their authoring semantics. Native controls verify the updated comment and INVOKER state. The audit records the comment declaration without reading its payload. |
+| `mysql.drop-procedure-function` / DROP PROCEDURE and DROP FUNCTION | Native controls verify target-kind distinction and shared names. Audit checks a visible qualified identity and leaves an unobserved target as an evidence gap. |
+| `mysql.drop-procedure-function` / IF EXISTS | T27 verifies the absent guarded no-op and case behavior at each anchor. |
+| `mysql.stored-body-analysis` / static body SQL, DECLARE/local binding, control flow | Existing T27/T28 cases cover bounded static SQL, declarations and modeled branch analysis. Calls and runtime values require separate evidence. |
+| `mysql.stored-body-analysis` / PREPARE/EXECUTE dynamic SQL | T28 compares statically known literals, expression sources and the dynamic boundary. No body is invoked to establish coverage. |
+
+The DROP parent row moves to `mixed_coverage`. Existing SQL SECURITY findings and unknown-body boundaries are retained. [Decision record](../decisions/2026-11-21-mysql-routine-targets.md) · [T27](../../testdata/ddl-golden/T27.json) · [T28](../../testdata/ddl-golden/T28.json)
+
+Isolated preview T27 passed 99 cases and 2,286 assertions. Verification on the fixed F01 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

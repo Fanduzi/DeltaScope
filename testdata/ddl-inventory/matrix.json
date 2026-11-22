@@ -11,8 +11,8 @@
   ],
   "status_counts": {
     "semantically_checked": 163,
-    "generic_notice": 12,
-    "mixed_coverage": 51,
+    "generic_notice": 11,
+    "mixed_coverage": 52,
     "explicit_unsupported": 41,
     "vendor_not_supported": 11,
     "parser_unsupported": 8,
@@ -2882,6 +2882,193 @@
               ]
             }
           ]
+        },
+        {
+          "subaction_id": "CREATE PROCEDURE ... BEGIN..END",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#CREATE PROCEDURE ... BEGIN..END",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-create-existing-procedure",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-create-if-not-exists-procedure",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-create-missing-schema",
+                "file:testdata/ddl-golden/T27.json#mysql-body-where-clean"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#CREATE PROCEDURE ... BEGIN..END",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-create-existing-procedure",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-create-if-not-exists-procedure",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-create-missing-schema",
+                "file:testdata/ddl-golden/T27.json#mysql-body-where-clean"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#CREATE PROCEDURE ... BEGIN..END",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-create-existing-procedure",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-create-if-not-exists-procedure",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-create-missing-schema",
+                "file:testdata/ddl-golden/T27.json#mysql-body-where-clean"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "parameters",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#parameters",
+                "file:testdata/ddl-golden/T27.json#mysql-params-modeled"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#parameters",
+                "file:testdata/ddl-golden/T27.json#mysql-params-modeled"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#parameters",
+                "file:testdata/ddl-golden/T27.json#mysql-params-modeled"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "DETERMINISTIC",
+          "parser_status": "recognized",
+          "audit_status": "silent",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "silent",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#DETERMINISTIC",
+                "file:internal/infrastructure/parser/tidb/mysql_routine_declaration_test.go#TestMySQLProcedureDeterminismDeclaration"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "silent",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#DETERMINISTIC",
+                "file:internal/infrastructure/parser/tidb/mysql_routine_declaration_test.go#TestMySQLProcedureDeterminismDeclaration"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "silent",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#DETERMINISTIC",
+                "file:internal/infrastructure/parser/tidb/mysql_routine_declaration_test.go#TestMySQLProcedureDeterminismDeclaration"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "body statements",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#body statements",
+                "file:testdata/ddl-golden/T27.json#mysql-body-where-clean",
+                "file:testdata/ddl-golden/T27.json#mysql-body-blocker",
+                "file:testdata/ddl-golden/T27.json#mysql-declare-gap"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#body statements",
+                "file:testdata/ddl-golden/T27.json#mysql-body-where-clean",
+                "file:testdata/ddl-golden/T27.json#mysql-body-blocker",
+                "file:testdata/ddl-golden/T27.json#mysql-declare-gap"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#body statements",
+                "file:testdata/ddl-golden/T27.json#mysql-body-where-clean",
+                "file:testdata/ddl-golden/T27.json#mysql-body-blocker",
+                "file:testdata/ddl-golden/T27.json#mysql-declare-gap"
+              ]
+            }
+          ]
         }
       ]
     },
@@ -3000,6 +3187,101 @@
                 "file:testdata/ddl-golden/T27.json#mysql-security-create-function-default",
                 "file:testdata/ddl-golden/T27.json#mysql-security-create-function-invoker",
                 "file:testdata/sql-corpus/mysql/ddl/findings/routine_security_partial.expected.yaml#ddl.routine.security.definer.warn"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "CREATE FUNCTION ... RETURNS ... BEGIN..END",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#CREATE FUNCTION ... RETURNS ... BEGIN..END",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-create-existing-function",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-create-if-not-exists-function",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-create-same-name-other-type",
+                "file:testdata/ddl-golden/T27.json#mysql-function-return-gap"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#CREATE FUNCTION ... RETURNS ... BEGIN..END",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-create-existing-function",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-create-if-not-exists-function",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-create-same-name-other-type",
+                "file:testdata/ddl-golden/T27.json#mysql-function-return-gap"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#CREATE FUNCTION ... RETURNS ... BEGIN..END",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-create-existing-function",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-create-if-not-exists-function",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-create-same-name-other-type",
+                "file:testdata/ddl-golden/T27.json#mysql-function-return-gap"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "DETERMINISTIC",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#DETERMINISTIC",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-create-same-name-other-type"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#DETERMINISTIC",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-create-same-name-other-type"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#DETERMINISTIC",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-create-same-name-other-type"
               ]
             }
           ]
@@ -3127,6 +3409,144 @@
               ]
             }
           ]
+        },
+        {
+          "subaction_id": "ALTER PROCEDURE",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#ALTER PROCEDURE",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-alter-existing-procedure",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-alter-wrong-kind"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#ALTER PROCEDURE",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-alter-existing-procedure",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-alter-wrong-kind"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#ALTER PROCEDURE",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-alter-existing-procedure",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-alter-wrong-kind"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "ALTER FUNCTION",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#ALTER FUNCTION",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-alter-existing-function",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-alter-absent"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#ALTER FUNCTION",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-alter-existing-function",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-alter-absent"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#ALTER FUNCTION",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-alter-existing-function",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-alter-absent"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "COMMENT",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#COMMENT",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-alter-existing-procedure",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-alter-existing-function"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#COMMENT",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-alter-existing-procedure",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-alter-existing-function"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#COMMENT",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-alter-existing-procedure",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-alter-existing-function"
+              ]
+            }
+          ]
         }
       ]
     },
@@ -3134,9 +3554,9 @@
       "id": "mysql.drop-procedure-function",
       "product": "mysql",
       "owner": "T27",
-      "status": "generic_notice",
+      "status": "mixed_coverage",
       "parser_status": "recognized",
-      "audit_status": "notice_only",
+      "audit_status": "mixed",
       "applicability": [
         {
           "anchor": "mysql57",
@@ -3144,7 +3564,7 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
             "gate:T27",
@@ -3157,7 +3577,7 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
             "gate:T27",
@@ -3170,11 +3590,154 @@
           "official_presence": "documented",
           "product_scope": "registered",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "evidence": [
             "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
             "gate:T27",
             "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml"
+          ]
+        }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "DROP PROCEDURE",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#DROP PROCEDURE",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-drop-wrong-kind",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-drop-casefold",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-drop-shared-procedure"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#DROP PROCEDURE",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-drop-wrong-kind",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-drop-casefold",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-drop-shared-procedure"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#DROP PROCEDURE",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-drop-wrong-kind",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-drop-casefold",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-drop-shared-procedure"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "DROP FUNCTION",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#DROP FUNCTION",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-drop-absent",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-drop-exact-function"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#DROP FUNCTION",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-drop-absent",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-drop-exact-function"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#DROP FUNCTION",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-drop-absent",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-drop-exact-function"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "IF EXISTS",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#IF EXISTS",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-drop-guarded-absent",
+                "file:testdata/ddl-golden/T27.json#f01-mysql57-drop-casefold"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#IF EXISTS",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-drop-guarded-absent",
+                "file:testdata/ddl-golden/T27.json#f01-mysql80-drop-casefold"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#IF EXISTS",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-drop-guarded-absent",
+                "file:testdata/ddl-golden/T27.json#f01-mysql84-drop-casefold"
+              ]
+            }
           ]
         }
       ]
@@ -3239,6 +3802,198 @@
             "file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml",
             "gate:T27",
             "gate:T28"
+          ]
+        }
+      ],
+      "subaction_status": [
+        {
+          "subaction_id": "static body SQL",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#static body SQL",
+                "file:testdata/ddl-golden/T28.json#mysql-static-safe",
+                "file:testdata/ddl-golden/T28.json#mysql-static-dangerous"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#static body SQL",
+                "file:testdata/ddl-golden/T28.json#mysql-static-safe",
+                "file:testdata/ddl-golden/T28.json#mysql-static-dangerous"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#static body SQL",
+                "file:testdata/ddl-golden/T28.json#mysql-static-safe",
+                "file:testdata/ddl-golden/T28.json#mysql-static-dangerous"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "DECLARE/local binding",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#DECLARE/local binding",
+                "file:testdata/ddl-golden/T28.json#mysql-shadowing",
+                "file:testdata/ddl-golden/T28.json#mysql-cursor-declare"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#DECLARE/local binding",
+                "file:testdata/ddl-golden/T28.json#mysql-shadowing",
+                "file:testdata/ddl-golden/T28.json#mysql-cursor-declare"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#DECLARE/local binding",
+                "file:testdata/ddl-golden/T28.json#mysql-shadowing",
+                "file:testdata/ddl-golden/T28.json#mysql-cursor-declare"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "control flow",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#control flow",
+                "file:testdata/ddl-golden/T28.json#mysql-if-blocker",
+                "file:testdata/ddl-golden/T28.json#mysql-loop-merge",
+                "file:testdata/ddl-golden/T28.json#mysql-case-blocker"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#control flow",
+                "file:testdata/ddl-golden/T28.json#mysql-if-blocker",
+                "file:testdata/ddl-golden/T28.json#mysql-loop-merge",
+                "file:testdata/ddl-golden/T28.json#mysql-case-blocker"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#control flow",
+                "file:testdata/ddl-golden/T28.json#mysql-if-blocker",
+                "file:testdata/ddl-golden/T28.json#mysql-loop-merge",
+                "file:testdata/ddl-golden/T28.json#mysql-case-blocker"
+              ]
+            }
+          ]
+        },
+        {
+          "subaction_id": "PREPARE/EXECUTE dynamic SQL",
+          "parser_status": "recognized",
+          "audit_status": "mixed",
+          "applicability": [
+            {
+              "anchor": "mysql57",
+              "version_range": "5.7",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#PREPARE/EXECUTE dynamic SQL",
+                "file:testdata/ddl-golden/T28.json#mysql-literal-prepare",
+                "file:testdata/ddl-golden/T28.json#mysql-expr-prepare",
+                "file:testdata/ddl-golden/T28.json#mysql-dynamic-prepare"
+              ]
+            },
+            {
+              "anchor": "mysql80",
+              "version_range": "8.0",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#PREPARE/EXECUTE dynamic SQL",
+                "file:testdata/ddl-golden/T28.json#mysql-literal-prepare",
+                "file:testdata/ddl-golden/T28.json#mysql-expr-prepare",
+                "file:testdata/ddl-golden/T28.json#mysql-dynamic-prepare"
+              ]
+            },
+            {
+              "anchor": "mysql84",
+              "version_range": "8.4",
+              "official_presence": "documented",
+              "product_scope": "registered",
+              "parser_status": "recognized",
+              "audit_status": "mixed",
+              "evidence": [
+                "file:docs/decisions/2026-11-21-mysql-routine-targets.md#PREPARE/EXECUTE dynamic SQL",
+                "file:testdata/ddl-golden/T28.json#mysql-literal-prepare",
+                "file:testdata/ddl-golden/T28.json#mysql-expr-prepare",
+                "file:testdata/ddl-golden/T28.json#mysql-dynamic-prepare"
+              ]
+            }
           ]
         }
       ]

@@ -2764,6 +2764,106 @@ rows:
               - file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-default
               - file:testdata/ddl-golden/T27.json#mysql-security-create-procedure-invoker
               - file:testdata/sql-corpus/mysql/ddl/findings/routine_security_create_definer.expected.yaml#ddl.routine.security.definer.warn
+      - subaction_id: "CREATE PROCEDURE ... BEGIN..END"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#CREATE PROCEDURE ... BEGIN..END", "file:testdata/ddl-golden/T27.json#f01-mysql57-create-existing-procedure", "file:testdata/ddl-golden/T27.json#f01-mysql57-create-if-not-exists-procedure", "file:testdata/ddl-golden/T27.json#f01-mysql57-create-missing-schema", "file:testdata/ddl-golden/T27.json#mysql-body-where-clean"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#CREATE PROCEDURE ... BEGIN..END", "file:testdata/ddl-golden/T27.json#f01-mysql80-create-existing-procedure", "file:testdata/ddl-golden/T27.json#f01-mysql80-create-if-not-exists-procedure", "file:testdata/ddl-golden/T27.json#f01-mysql80-create-missing-schema", "file:testdata/ddl-golden/T27.json#mysql-body-where-clean"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#CREATE PROCEDURE ... BEGIN..END", "file:testdata/ddl-golden/T27.json#f01-mysql84-create-existing-procedure", "file:testdata/ddl-golden/T27.json#f01-mysql84-create-if-not-exists-procedure", "file:testdata/ddl-golden/T27.json#f01-mysql84-create-missing-schema", "file:testdata/ddl-golden/T27.json#mysql-body-where-clean"]
+      - subaction_id: "parameters"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#parameters", "file:testdata/ddl-golden/T27.json#mysql-params-modeled"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#parameters", "file:testdata/ddl-golden/T27.json#mysql-params-modeled"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#parameters", "file:testdata/ddl-golden/T27.json#mysql-params-modeled"]
+      - subaction_id: "DETERMINISTIC"
+        parser_status: recognized
+        audit_status: silent
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: silent
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#DETERMINISTIC", "file:internal/infrastructure/parser/tidb/mysql_routine_declaration_test.go#TestMySQLProcedureDeterminismDeclaration"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: silent
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#DETERMINISTIC", "file:internal/infrastructure/parser/tidb/mysql_routine_declaration_test.go#TestMySQLProcedureDeterminismDeclaration"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: silent
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#DETERMINISTIC", "file:internal/infrastructure/parser/tidb/mysql_routine_declaration_test.go#TestMySQLProcedureDeterminismDeclaration"]
+      - subaction_id: "body statements"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#body statements", "file:testdata/ddl-golden/T27.json#mysql-body-where-clean", "file:testdata/ddl-golden/T27.json#mysql-body-blocker", "file:testdata/ddl-golden/T27.json#mysql-declare-gap"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#body statements", "file:testdata/ddl-golden/T27.json#mysql-body-where-clean", "file:testdata/ddl-golden/T27.json#mysql-body-blocker", "file:testdata/ddl-golden/T27.json#mysql-declare-gap"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#body statements", "file:testdata/ddl-golden/T27.json#mysql-body-where-clean", "file:testdata/ddl-golden/T27.json#mysql-body-blocker", "file:testdata/ddl-golden/T27.json#mysql-declare-gap"]
 
     status_evidence: "2026-11-16 routine security: ddl.routine.security.definer.warn reviews explicit/default CREATE DEFINER; INVOKER is silent. T27 t27-sql-security cases and mysql57/mysql80/mysql84-routine-security independently read ROUTINES.SECURITY_TYPE and prove audit non-mutation/no body execution. T28 mysql-security-dynamic-retention retains dynamic boundaries. Only the sql-security subaction is audited; body/other-characteristic boundaries keep the row mixed. Historical evidence: 2026-09-22 CLI probe: CREATE PROCEDURE parses; only ddl.create_procedure.notice. 2026-09-24 T03 (#82): body-bearing forms record create_procedure.body incomplete evidence; params record create_procedure.option.params. 2026-11-24 T27 (#106): BEGIN..END bodies now audit statically-bounded members through the shared statement machinery (dml.where.require fires at preserved member line/column, e.g. body DELETE blocker at 1:28 in the T27 golden path); parameter lists, IF/WHILE/LOOP/REPEAT/CASE compound members, DECLARE members, and dynamic EXECUTE stayed explicit unsupported evidence — cell mixed because audited members and explicit boundaries coexist. DELIMITER wrappers are stripped client-side with offsets preserved; definitions never execute body SQL or mutate prospective state. Golden: T27.json 30 cases/336 assertions on mysql57/80/84 + tidb85 vendor boundary. 2026-11-15 T28 (#107): compound members graduate — IF/CASE branch bodies, WHILE/LOOP/REPEAT loop bodies, nested BEGIN blocks, DECLARE (variable/condition/handler/cursor), SET assignments, and PREPARE sources are modeled members; inner SQL audits through the shared path (branch merges keep only unanimous bindings, loop bodies never prove a binding survives, handler members audit in isolation). Parameter lists carry direction/name/type (the create_procedure.option.params gap is retired). Statically proven PREPARE literals audit without execution; dynamic/unresolvable sources, EXECUTE, RETURN, malformed members, and depth/size overflows stay bounded evidence (routine.body.prepare/execute_prepared/routine.body.return/routine.body.declaration/routine.body.depth/routine.body.size/routine.body.parse); ddl.routine.variable_shadowing.warn flags parameter/local name collisions. Golden: T28.json 29 cases/347 assertions on mysql57/80/84 + tidb85 vendor boundary"
     targets: "routine identity, static body statements with original locations, security attributes"
@@ -2874,6 +2974,56 @@ rows:
               - file:testdata/ddl-golden/T27.json#mysql-security-create-function-default
               - file:testdata/ddl-golden/T27.json#mysql-security-create-function-invoker
               - file:testdata/sql-corpus/mysql/ddl/findings/routine_security_partial.expected.yaml#ddl.routine.security.definer.warn
+      - subaction_id: "CREATE FUNCTION ... RETURNS ... BEGIN..END"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#CREATE FUNCTION ... RETURNS ... BEGIN..END", "file:testdata/ddl-golden/T27.json#f01-mysql57-create-existing-function", "file:testdata/ddl-golden/T27.json#f01-mysql57-create-if-not-exists-function", "file:testdata/ddl-golden/T27.json#f01-mysql57-create-same-name-other-type", "file:testdata/ddl-golden/T27.json#mysql-function-return-gap"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#CREATE FUNCTION ... RETURNS ... BEGIN..END", "file:testdata/ddl-golden/T27.json#f01-mysql80-create-existing-function", "file:testdata/ddl-golden/T27.json#f01-mysql80-create-if-not-exists-function", "file:testdata/ddl-golden/T27.json#f01-mysql80-create-same-name-other-type", "file:testdata/ddl-golden/T27.json#mysql-function-return-gap"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#CREATE FUNCTION ... RETURNS ... BEGIN..END", "file:testdata/ddl-golden/T27.json#f01-mysql84-create-existing-function", "file:testdata/ddl-golden/T27.json#f01-mysql84-create-if-not-exists-function", "file:testdata/ddl-golden/T27.json#f01-mysql84-create-same-name-other-type", "file:testdata/ddl-golden/T27.json#mysql-function-return-gap"]
+      - subaction_id: "DETERMINISTIC"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#DETERMINISTIC", "file:testdata/ddl-golden/T27.json#f01-mysql57-create-same-name-other-type"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#DETERMINISTIC", "file:testdata/ddl-golden/T27.json#f01-mysql80-create-same-name-other-type"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#DETERMINISTIC", "file:testdata/ddl-golden/T27.json#f01-mysql84-create-same-name-other-type"]
 
     status_evidence: "2026-11-16 routine security: ddl.routine.security.definer.warn reviews explicit/default CREATE DEFINER; INVOKER and SONAME controls emit no new finding. T27 mysql57/mysql80/mysql84-routine-security prove native SECURITY_TYPE with root-owned DETERMINISTIC NO SQL definitions and recorded binary-logging preconditions; RETURN evidence remains incomplete alongside the warning. Only sql-security gains audited cells; the row remains mixed. Historical evidence: 2026-09-22 CLI probe: parser_error on vendor-valid CREATE FUNCTION. 2026-11-24 T27 (#106): CREATE FUNCTION recognized — ddl.create_function.notice fires, SONAME UDF forms audit complete, BEGIN..END bodies audit like procedures, RETURN members record routine.body.return explicit boundary — cell mixed because audited forms and explicit member boundaries coexist; 2026-11-15 T28 (#107): function bodies gain the same control-flow/declaration/SET/PREPARE modeling as procedures — the create_function.option.params gap is retired (parameters modeled); RETURN members keep the routine.body.return boundary"
     targets: "routine identity, security mode, return type, body statements"
@@ -2987,6 +3137,81 @@ rows:
               - file:testdata/ddl-golden/T27.json#mysql-security-alter-procedure-omitted
               - file:testdata/ddl-golden/T27.json#mysql-security-alter-function-omitted
               - file:testdata/sql-corpus/mysql/ddl/findings/routine_security_alter_definer.expected.yaml#ddl.routine.security.definer.warn
+      - subaction_id: "ALTER PROCEDURE"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#ALTER PROCEDURE", "file:testdata/ddl-golden/T27.json#f01-mysql57-alter-existing-procedure", "file:testdata/ddl-golden/T27.json#f01-mysql57-alter-wrong-kind"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#ALTER PROCEDURE", "file:testdata/ddl-golden/T27.json#f01-mysql80-alter-existing-procedure", "file:testdata/ddl-golden/T27.json#f01-mysql80-alter-wrong-kind"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#ALTER PROCEDURE", "file:testdata/ddl-golden/T27.json#f01-mysql84-alter-existing-procedure", "file:testdata/ddl-golden/T27.json#f01-mysql84-alter-wrong-kind"]
+      - subaction_id: "ALTER FUNCTION"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#ALTER FUNCTION", "file:testdata/ddl-golden/T27.json#f01-mysql57-alter-existing-function", "file:testdata/ddl-golden/T27.json#f01-mysql57-alter-absent"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#ALTER FUNCTION", "file:testdata/ddl-golden/T27.json#f01-mysql80-alter-existing-function", "file:testdata/ddl-golden/T27.json#f01-mysql80-alter-absent"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#ALTER FUNCTION", "file:testdata/ddl-golden/T27.json#f01-mysql84-alter-existing-function", "file:testdata/ddl-golden/T27.json#f01-mysql84-alter-absent"]
+      - subaction_id: "COMMENT"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#COMMENT", "file:testdata/ddl-golden/T27.json#f01-mysql57-alter-existing-procedure", "file:testdata/ddl-golden/T27.json#f01-mysql57-alter-existing-function"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#COMMENT", "file:testdata/ddl-golden/T27.json#f01-mysql80-alter-existing-procedure", "file:testdata/ddl-golden/T27.json#f01-mysql80-alter-existing-function"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#COMMENT", "file:testdata/ddl-golden/T27.json#f01-mysql84-alter-existing-procedure", "file:testdata/ddl-golden/T27.json#f01-mysql84-alter-existing-function"]
 
     status_evidence: "2026-11-16 routine security: ddl.routine.security.definer.warn reviews only explicit ALTER SQL SECURITY DEFINER, on both routine kinds. INVOKER and omission controls are silent; T27 mysql57/mysql80/mysql84-routine-security prove native mode changes and COMMENT preserving existing DEFINER without inferring it in the audit. The sql-security cells are audited; COMMENT/general lifecycle attributes remain notice-only, so the parent changes generic_notice to mixed_coverage, never semantically_checked. Historical evidence: 2026-09-22 CLI probe: parser_error on both ALTER forms. 2026-11-24 T27 (#106): ALTER PROCEDURE and ALTER FUNCTION recognized — characteristic-only attribute changes (COMMENT, SQL SECURITY, LANGUAGE, DETERMINISTIC, CONTAINS SQL/NO SQL/READS SQL DATA/MODIFIES SQL DATA) parse and emit ddl.alter_procedure.notice / ddl.alter_function.notice; DEFINER forms rejected with parser_error because MySQL 8.4 dropped DEFINER support and older anchors keep it an upgrade-candidate boundary"
     targets: "routine identity, attribute changes"
@@ -3003,31 +3228,107 @@ rows:
     subactions: ["DROP PROCEDURE", "DROP FUNCTION", "IF EXISTS"]
     sql_shape: "DROP PROCEDURE p"
     prerequisites: "none"
-    status: generic_notice
+    status: mixed_coverage
     parser_status: recognized
-    audit_status: notice_only
+    audit_status: mixed
     applicability:
       - anchor: mysql57
         version_range: 5.7
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "gate:T27", "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml"]
       - anchor: mysql80
         version_range: 8.0
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "gate:T27", "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml"]
       - anchor: mysql84
         version_range: 8.4
         official_presence: documented
         product_scope: registered
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         evidence: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "gate:T27", "file:testdata/sql-corpus/mysql/ddl/findings/lifecycle_notice_rules.expected.yaml"]
+    subaction_status:
+      - subaction_id: "DROP PROCEDURE"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#DROP PROCEDURE", "file:testdata/ddl-golden/T27.json#f01-mysql57-drop-wrong-kind", "file:testdata/ddl-golden/T27.json#f01-mysql57-drop-casefold", "file:testdata/ddl-golden/T27.json#f01-mysql57-drop-shared-procedure"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#DROP PROCEDURE", "file:testdata/ddl-golden/T27.json#f01-mysql80-drop-wrong-kind", "file:testdata/ddl-golden/T27.json#f01-mysql80-drop-casefold", "file:testdata/ddl-golden/T27.json#f01-mysql80-drop-shared-procedure"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#DROP PROCEDURE", "file:testdata/ddl-golden/T27.json#f01-mysql84-drop-wrong-kind", "file:testdata/ddl-golden/T27.json#f01-mysql84-drop-casefold", "file:testdata/ddl-golden/T27.json#f01-mysql84-drop-shared-procedure"]
+      - subaction_id: "DROP FUNCTION"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#DROP FUNCTION", "file:testdata/ddl-golden/T27.json#f01-mysql57-drop-absent", "file:testdata/ddl-golden/T27.json#f01-mysql57-drop-exact-function"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#DROP FUNCTION", "file:testdata/ddl-golden/T27.json#f01-mysql80-drop-absent", "file:testdata/ddl-golden/T27.json#f01-mysql80-drop-exact-function"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#DROP FUNCTION", "file:testdata/ddl-golden/T27.json#f01-mysql84-drop-absent", "file:testdata/ddl-golden/T27.json#f01-mysql84-drop-exact-function"]
+      - subaction_id: "IF EXISTS"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#IF EXISTS", "file:testdata/ddl-golden/T27.json#f01-mysql57-drop-guarded-absent", "file:testdata/ddl-golden/T27.json#f01-mysql57-drop-casefold"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#IF EXISTS", "file:testdata/ddl-golden/T27.json#f01-mysql80-drop-guarded-absent", "file:testdata/ddl-golden/T27.json#f01-mysql80-drop-casefold"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#IF EXISTS", "file:testdata/ddl-golden/T27.json#f01-mysql84-drop-guarded-absent", "file:testdata/ddl-golden/T27.json#f01-mysql84-drop-casefold"]
 
     status_evidence: "2026-09-22 CLI probe: DROP PROCEDURE yields drop_procedure.notice; DROP FUNCTION was parser_error. 2026-11-24 T27 (#106): DROP FUNCTION recognized — ddl.drop_function.notice fires; lifecycle is now symmetric across CREATE/ALTER/DROP PROCEDURE/FUNCTION on all three MySQL anchors"
     targets: "routine identity, IF EXISTS, drop parity"
@@ -3093,6 +3394,107 @@ rows:
           - file:testdata/sql-corpus/mysql/ddl/findings/routine_body_analysis.expected.yaml
           - gate:T27
           - gate:T28
+    subaction_status:
+      - subaction_id: "static body SQL"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#static body SQL", "file:testdata/ddl-golden/T28.json#mysql-static-safe", "file:testdata/ddl-golden/T28.json#mysql-static-dangerous"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#static body SQL", "file:testdata/ddl-golden/T28.json#mysql-static-safe", "file:testdata/ddl-golden/T28.json#mysql-static-dangerous"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#static body SQL", "file:testdata/ddl-golden/T28.json#mysql-static-safe", "file:testdata/ddl-golden/T28.json#mysql-static-dangerous"]
+      - subaction_id: "DECLARE/local binding"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#DECLARE/local binding", "file:testdata/ddl-golden/T28.json#mysql-shadowing", "file:testdata/ddl-golden/T28.json#mysql-cursor-declare"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#DECLARE/local binding", "file:testdata/ddl-golden/T28.json#mysql-shadowing", "file:testdata/ddl-golden/T28.json#mysql-cursor-declare"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#DECLARE/local binding", "file:testdata/ddl-golden/T28.json#mysql-shadowing", "file:testdata/ddl-golden/T28.json#mysql-cursor-declare"]
+      - subaction_id: "control flow"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#control flow", "file:testdata/ddl-golden/T28.json#mysql-if-blocker", "file:testdata/ddl-golden/T28.json#mysql-loop-merge", "file:testdata/ddl-golden/T28.json#mysql-case-blocker"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#control flow", "file:testdata/ddl-golden/T28.json#mysql-if-blocker", "file:testdata/ddl-golden/T28.json#mysql-loop-merge", "file:testdata/ddl-golden/T28.json#mysql-case-blocker"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#control flow", "file:testdata/ddl-golden/T28.json#mysql-if-blocker", "file:testdata/ddl-golden/T28.json#mysql-loop-merge", "file:testdata/ddl-golden/T28.json#mysql-case-blocker"]
+      - subaction_id: "PREPARE/EXECUTE dynamic SQL"
+        parser_status: recognized
+        audit_status: mixed
+        applicability:
+          - anchor: mysql57
+            version_range: "5.7"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#PREPARE/EXECUTE dynamic SQL", "file:testdata/ddl-golden/T28.json#mysql-literal-prepare", "file:testdata/ddl-golden/T28.json#mysql-expr-prepare", "file:testdata/ddl-golden/T28.json#mysql-dynamic-prepare"]
+          - anchor: mysql80
+            version_range: "8.0"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#PREPARE/EXECUTE dynamic SQL", "file:testdata/ddl-golden/T28.json#mysql-literal-prepare", "file:testdata/ddl-golden/T28.json#mysql-expr-prepare", "file:testdata/ddl-golden/T28.json#mysql-dynamic-prepare"]
+          - anchor: mysql84
+            version_range: "8.4"
+            official_presence: documented
+            product_scope: registered
+            parser_status: recognized
+            audit_status: mixed
+            evidence: ["file:docs/decisions/2026-11-21-mysql-routine-targets.md#PREPARE/EXECUTE dynamic SQL", "file:testdata/ddl-golden/T28.json#mysql-literal-prepare", "file:testdata/ddl-golden/T28.json#mysql-expr-prepare", "file:testdata/ddl-golden/T28.json#mysql-dynamic-prepare"]
 
     status_evidence: "2026-11-24 T27 (#106): static body statements graduated — DML/SET members audit through shared rule machinery with preserved source locations; compound, DECLARE, RETURN, and EXECUTE members emit explicit bounded evidence rather than silent pass. 2026-11-15 T28 (#107): stored-body analysis deepened — control flow (IF/CASE arms, WHILE/LOOP/REPEAT bodies, labeled and nested BEGIN blocks), declarations (variables, conditions, handlers with executable members, cursors with FOR SELECT), SET literal bindings, and PREPARE sources are modeled AST members audited through the shared statement machinery. Binding facts merge conservatively: an IF without ELSE keeps the pre-branch path, loop bodies run zero-or-more times so changed names degrade to bound-but-dynamic, handler members audit in an isolated env, and caller-supplied parameters are never static. Statically proven PREPARE literals audit their parsed text (findings point at the PREPARE member); dynamic sources, EXECUTE, RETURN, malformed members, and routine-body depth/member-count overflows emit explicit bounded evidence — never a silent pass, panic, or fabricated execution count. ddl.routine.variable_shadowing.warn reports local variables that reuse parameter names. Golden: T28.json 29 cases/347 assertions (dynamic golden path review/incomplete with routine.body.prepare+execute_prepared, static safe pass, static dangerous reject, depth/size limits bounded, T28_RUNTIME_SECRET never serialized) on mysql57/80/84 + tidb85 vendor boundary"
     targets: "static effects vs explicit dynamic/incomplete boundary, no execution simulation"
