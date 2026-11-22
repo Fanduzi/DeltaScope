@@ -1028,7 +1028,7 @@ new default behavior is approved per family before implementation.
 | F02 | MySQL trigger/event lifecycle | 5 | T29/T30 | unreviewed |
 | F03 | MySQL/TiDB columns/generated/multi-action | 6 | T03/T05/T07/T08 | unreviewed |
 | F04 | MySQL/TiDB index lifecycle | 3 | T09/T10 | unreviewed |
-| F05 | MySQL/TiDB ALTER options/online DDL | 3 | T15 | unreviewed |
+| F05 | MySQL/TiDB ALTER options/online DDL | 3 | T15 | Bounded ALTER option and INSTANT table premises delivered at `07f4aca5`. |
 | F06 | TiDB recovery/flashback | 1 | T16 | Exact TiDB 8.5 recovery boundaries verified and delivered at `0b485f88`. |
 | F07 | PostgreSQL schema/collation | 2 | T35 | Qualified schema creation and collation checks delivered at `3eba78f6`. Embedded schema elements and wider provider and execution facts remain open. |
 | F08 | PostgreSQL CREATE TABLE | 6 | T36 | Qualified declaration checks delivered at `10354d2b` alongside D2. The exact dimension review lists remaining catalog, parser and execution premises. |
@@ -1074,9 +1074,9 @@ insufficient.
 | F04 | `mysql.create-index` | CREATE INDEX; CREATE UNIQUE INDEX; key parts; prefix lengths | unreviewed |
 | F04 | `mysql.drop-index` | DROP INDEX name ON table | unreviewed |
 | F04 | `tidb.drop-index` | DROP INDEX name ON table | unreviewed |
-| F05 | `mysql.alter-table.online-ddl` | ALGORITHM=INSTANT/INPLACE/COPY/DEFAULT; LOCK=NONE/SHARED/EXCLUSIVE/DEFAULT | unreviewed |
-| F05 | `mysql.alter-table.options` | ORDER BY; CONVERT TO CHARACTER SET; DEFAULT CHARACTER SET; ROW_FORMAT; AUTO_INCREMENT=; FORCE; ENABLE/DISABLE KEYS; COMMENT; ENGINE | unreviewed |
-| F05 | `tidb.alter-table.online-options` | ALGORITHM= (capability assertion, not selection); LOCK=; multiple actions per ALTER | unreviewed |
+| F05 | `mysql.alter-table.online-ddl` | ALGORITHM=INSTANT/INPLACE/COPY/DEFAULT; LOCK=NONE/SHARED/EXCLUSIVE/DEFAULT | Native versioned modifier and table-premise checks verified. Record and row-version limits still need evidence. |
+| F05 | `mysql.alter-table.options` | ORDER BY; CONVERT TO CHARACTER SET; DEFAULT CHARACTER SET; ROW_FORMAT; AUTO_INCREMENT=; FORCE; ENABLE/DISABLE KEYS; COMMENT; ENGINE | Existing and added canonical controls verify authored option effects. Runtime work depends on engine state. |
+| F05 | `tidb.alter-table.online-options` | ALGORITHM= (capability assertion, not selection); LOCK=; multiple actions per ALTER | Native modifiers and tested multi-action effects verified. Other combinations require their own evidence. |
 | F06 | `tidb.flashback-recover` | FLASHBACK TABLE; FLASHBACK DATABASE; FLASHBACK CLUSTER; RECOVER TABLE | Native fixtures verify table/database and job-based effects. Valid cluster forms parse and stay explicitly unsupported. Bare syntax still fails parse. |
 | F07 | `postgresql.create-schema` | CREATE SCHEMA; IF NOT EXISTS / AUTHORIZATION; schema elements | Exact namespace and role checks delivered. Embedded schema elements and execution authorization remain open. |
 | F07 | `postgresql.alter-collation` | REFRESH VERSION; RENAME/OWNER/SET SCHEMA | Qualified target checks and bounded provider-version presence checks delivered. Other provider and session facts remain open. |
@@ -1782,7 +1782,14 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137019318257) passed at t
 
 The MySQL and TiDB modifier parent rows move to `mixed_coverage`. The MySQL table-option row remains `mixed_coverage`. [T15](../../testdata/ddl-golden/T15.json) · [Decision record](../decisions/2026-11-21-mysql-instant-add-table-prerequisites.md)
 
-The joint T15 preview passed 94 cases and 1,778 assertions. Verification on the fixed F05 candidate is pending.
+The joint T15 preview passed 94 cases and 1,778 assertions. Delivered at `07f4aca5b779009468fc16dc403ec1c926d87d56`. All 50 canonical tasks passed with 4,884 cases and
+113,418 assertions. T15 passed 94 cases and 1,778 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44966064784/job/137035257871),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44966064784/job/137035257676),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44966064784/job/137035257938),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44966064804/job/137035257889),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137035314703) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
