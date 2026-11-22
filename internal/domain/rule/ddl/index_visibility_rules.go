@@ -239,10 +239,21 @@ func newAlterIndexExistsRule(cfg policy.RulePolicy) (rule.StatementRule, error) 
 func (r indexExistenceRule) ID() string { return r.inner.ruleID }
 
 func (r indexExistenceRule) AppliesTo(statement spec.Statement) bool {
+	if statement.Dialect == spec.DialectTiDB && statement.DDL != nil &&
+		statement.DDL.Operation == spec.DDLOperationDropIndex && r.inner.ruleID == ruleIDAlterDropIndexExistsRequire {
+		for _, alter := range statement.DDL.Alter {
+			if alter.Action == "drop_index" && alter.Options["if_exists"] == "true" {
+				return false
+			}
+		}
+	}
 	return r.inner.AppliesTo(statement)
 }
 
 func (r indexExistenceRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
 	return r.inner.Evaluate(ctx, statement)
 }
 
@@ -258,6 +269,9 @@ func (r indexExistenceRule) Evaluate(ctx context.Context, statement spec.Stateme
 // for an all-`primary` target list it provably could not consult. A
 // non-`primary` target keeps its own gap.
 func (r indexExistenceRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if !r.AppliesTo(statement) {
+		return nil
+	}
 	gaps := r.inner.EvidenceGaps(statement)
 	if statement.Dialect != spec.DialectMySQL && statement.Dialect != spec.DialectTiDB {
 		return gaps

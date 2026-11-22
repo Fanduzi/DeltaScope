@@ -729,6 +729,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 |---------|------|:--------:|:--------------:|
 | `ddl.rename_table.notice` | `RENAME TABLE` 重命名表 | notice | 否 |
 | `ddl.create_index.notice` | 独立 `CREATE INDEX` 创建新索引 | notice | 否 |
+| `ddl.drop_index.foreign_key.warn` | 独立 DROP INDEX 的目标是已证外键唯一可用的索引时告警。 | warning | 是 |
 | `ddl.drop_index.notice` | 独立 `DROP INDEX` 删除索引 | notice | 否 |
 | `ddl.alter_database.notice` | `ALTER DATABASE` 修改数据库级别设置 | notice | 否 |
 | `ddl.create_procedure.notice` | `CREATE PROCEDURE` 定义存储过程 | notice | 否 |

@@ -995,6 +995,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		// MySQL/TiDB lifecycle notice rules.
 		{ruleID: ruleIDRenameTableNotice, construct: newRenameTableNoticeRule},
 		{ruleID: ruleIDCreateIndexNotice, construct: newCreateIndexNoticeRule},
+		{ruleID: ruleIDDropIndexForeignKeyWarn, construct: newDropIndexForeignKeyWarnRule},
 		{ruleID: ruleIDDropIndexNotice, construct: newDropIndexNoticeRule},
 		{ruleID: ruleIDAlterDatabaseNotice, construct: newAlterDatabaseNoticeRule},
 		{ruleID: ruleIDCreateProcedureNotice, construct: newMySQLTiDBCreateProcedureNoticeRule},

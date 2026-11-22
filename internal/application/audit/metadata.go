@@ -971,6 +971,8 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			enriched[i].Metadata.AlterInstance = &adjudication
 		}
 
+		state.bindDropIndexForeignKeyDependency(enriched[i])
+
 		if state.afterBindObserve != nil {
 			state.afterBindObserve(i, &enriched[i])
 		}

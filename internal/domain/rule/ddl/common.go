@@ -568,6 +568,7 @@ const (
 	// MySQL/TiDB lifecycle notice rules.
 	ruleIDRenameTableNotice                = "ddl.rename_table.notice"
 	ruleIDCreateIndexNotice                = "ddl.create_index.notice"
+	ruleIDDropIndexForeignKeyWarn          = "ddl.drop_index.foreign_key.warn"
 	ruleIDDropIndexNotice                  = "ddl.drop_index.notice"
 	ruleIDAlterDatabaseNotice              = "ddl.alter_database.notice"
 	ruleIDCreateProcedureNotice            = "ddl.create_procedure.notice"

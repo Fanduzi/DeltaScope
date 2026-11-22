@@ -6,6 +6,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -122,4 +123,38 @@ func (c *mcpMetadataAuditTestClient) LoadPlanEstimate(context.Context, spec.Stat
 		Source:         spec.ImpactSourcePlan,
 		ReasonCodes:    []string{"planner_estimate"},
 	}, nil
+}
+
+func TestMySQLDropIndexDependencyThroughMCP(t *testing.T) {
+	client := &mcpMetadataAuditTestClient{version: "8.0.46", detectDialect: spec.DialectMySQL, snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Schema: "app", Name: "child"},
+		Columns:     []spec.Column{{Name: "column_id", Type: "int"}},
+		Indexes:     []spec.Index{{Name: "idx_child", Kind: spec.IndexKindSecondary, Columns: []string{"column_id"}}},
+		Constraints: []spec.Constraint{{Type: "foreign_key", Name: "private_fk", Columns: []string{"column_id"}, ReferencedTable: "parent", ReferencedColumns: []string{"id"}}},
+	}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(context.Context, auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectMySQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "DROP INDEX idx_child ON app.child", "dialect": "mysql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body := requireAuditStructuredMap(t, result)
+	statements := body["statements"].([]any)
+	for _, item := range statements[0].(map[string]any)["findings"].([]any) {
+		if item.(map[string]any)["rule_id"] == "ddl.drop_index.foreign_key.warn" {
+			return
+		}
+	}
+	t.Fatal("missing FK index warning")
 }

@@ -1,0 +1,22 @@
+name: drop_index_foreign_key_dependency
+dialect: mysql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: "8.0.46"}
+  tables:
+    child:
+      exists: true
+      options: {engine: InnoDB}
+      columns:
+        - {name: k, type: int}
+      indexes:
+        - {name: support_key, kind: secondary, columns: [k]}
+      constraints:
+        - {type: foreign_key, name: fk_child, columns: [k], referenced_schema: app, referenced_table: parent, referenced_columns: [k]}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.drop_index.foreign_key.warn]

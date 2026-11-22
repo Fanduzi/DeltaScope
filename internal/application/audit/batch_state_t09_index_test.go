@@ -83,6 +83,24 @@ func TestT09AddIndexVisibleToLaterCreateIndex(t *testing.T) {
 	}
 }
 
+func TestT09StandaloneDropReportsDependencyFromOrderedState(t *testing.T) {
+	t.Parallel()
+	parent := t09Table("p", spec.Index{Name: "uq_a", Kind: spec.IndexKindUnique, Columns: []string{"a"}})
+	parent.Constraints = []spec.Constraint{}
+	child := t09Table("c", spec.Index{Name: "idx_a", Kind: spec.IndexKindSecondary, Columns: []string{"a"}})
+	child.Constraints = []spec.Constraint{{Name: "fk_c", Type: "foreign_key", Columns: []string{"a"}, ReferencedTable: "p", ReferencedColumns: []string{"a"}}}
+	provider := &t09Provider{tables: map[string]*spec.TableSnapshot{"p": parent, "c": child}}
+	const warning = "ddl.drop_index.foreign_key.warn"
+	result := t09Audit(t, spec.DialectMySQL,
+		"DROP INDEX idx_a ON c; DROP INDEX uq_a ON p;",
+		provider, map[string]string{warning: ""})
+	for i := range result.Statements {
+		if findings := t05FindingsByRule(result, i, warning); len(findings) != 1 {
+			t.Fatalf("statement %d: got %+v, want one dependency warning", i, findings)
+		}
+	}
+}
+
 // DROP INDEX removes the published index; a later re-add of the freed name
 // stays silent.
 func TestT09AddDropReaddIndexChain(t *testing.T) {

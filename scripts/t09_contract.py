@@ -1,6 +1,7 @@
 import copy
 import hashlib
 import json
+import re
 from pathlib import Path
 
 IDX_COLS = 'ddl.index.columns.max_count'
@@ -38,8 +39,8 @@ ALL4 = tuple(VERSIONS)
 MYSQL3 = ('mysql57', 'mysql80', 'mysql84')
 VISIBLE = ('mysql80', 'mysql84', 'tidb85')  # anchors exposing STATISTICS.IS_VISIBLE
 
-FROZEN_REQUIRED_CASES = 125
-FROZEN_IDS_SHA256 = '1f7c3ea3dd95c217d1c894cddd537db73606d6dd9fc81d41f2280f5d81ffc805'
+FROZEN_REQUIRED_CASES = 157
+FROZEN_IDS_SHA256 = 'c154156aaf0f341e4f2f00c71aea33992a5c8993924590e2a157a6b0cf02937f'
 
 FIXTURE_DEFS = {
     't9': 'CREATE TABLE t9 (a INT, b INT, c INT, d INT, e INT, f INT, g INT, h INT, i INT);',
@@ -103,6 +104,11 @@ def profiles():
             PK_EXISTS: on('blocker'), COLS_EXISTS: on('blocker'), TBL_EXISTS: on('blocker')},
         't09-forbid': {DROP_FORBID: on('blocker', forbid=True), REN_FORBID: on('blocker', forbid=True)},
         't09-notice': {CI_NOTICE: on('notice'), DI_NOTICE: on('notice'), AC_NOTICE: on('notice')},
+    }
+    raw['f04-index-declarations'] = {
+        'ddl.drop_index.foreign_key.warn': {'level': 'warning'},
+        DROP_EXISTS: {'level': 'blocker'}, ADD_EXISTS: {'level': 'blocker'}, COLS_EXISTS: {'level': 'blocker'},
+        'ddl.index.advanced.compatibility.require': {'level': 'blocker', 'params': {'required': True, 'features': ['prefix_length']}},
     }
     return {name: {'enable': rules} for name, rules in raw.items()}
 
@@ -728,6 +734,90 @@ def error_cases():
     ]
 
 
+def dependency_cases():
+    profile = 'f04-index-declarations'
+    foreign = 'ddl.drop_index.foreign_key.warn'
+    exists = 'ddl.alter.drop_index.exists.require'
+    add_exists = 'ddl.alter.add_index.exists.forbid'
+    columns = 'ddl.create_index.columns.exists.require'
+    advanced = 'ddl.index.advanced.compatibility.require'
+    levels = {foreign: 'warning', exists: 'blocker', add_exists: 'blocker', columns: 'blocker', advanced: 'blocker'}
+    meta = []
+
+
+    def check(label, sql, value):
+        return {'assert': label, 'sql': sql, 'expect': str(value)}
+
+
+    mysql_cases = (
+        ('local sole FK backup','DROP INDEX support_key ON {ns}.c','1553'),
+        ('parent sole FK backup','DROP INDEX ref_key ON {ns}.p','1553'),
+        ('local alternate FK backup','DROP INDEX support_key ON {ns}.alt',''),
+        ('drop missing index','DROP INDEX absent ON {ns}.free','1091'),
+        ('create index longer prefix','CREATE INDEX too_long ON {ns}.free(label(31))','1089'),
+        ('create index exact prefix','CREATE INDEX valid_prefix ON {ns}.free(label(30))',''),
+        ('create index unknown column','CREATE INDEX bad_column ON {ns}.free(absent)','1072'),
+        ('create unique index valid','CREATE UNIQUE INDEX uq ON {ns}.free(label(5))',''),
+        ('create duplicate index name','CREATE INDEX uq ON {ns}.free(id)','1061'),
+    )
+    tidb_cases = (mysql_cases[0],mysql_cases[2],mysql_cases[1],
+        ('unrelated member','DROP INDEX drop_key ON {ns}.free',''),
+        ('guarded missing member','DROP INDEX IF EXISTS absent ON {ns}.free',''),
+    )
+    for anchor in ALL4:
+        dialect = DIALECTS[anchor]
+        version = VERSIONS[anchor].removeprefix('v')
+        port = PORTS[anchor]
+        for i, (label, statement, error) in enumerate(mysql_cases if dialect == 'mysql' else tidb_cases):
+            ns = f'f04_{anchor}_{i}'
+            sql = statement.format(ns=ns)
+            absent = check('owned schema absent',f"SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='{ns}'",0)
+            setup = [dict(name='prove namespace absent',fixture_key='schema',requires_absence=True,sql='SELECT 1',expect_rc=0,verify=[absent]),
+                     dict(name='create owned namespace',fixture_key='schema',creates_fixture=True,sql=f'CREATE DATABASE {ns}',expect_rc=0)]
+            definitions = [f'CREATE TABLE {ns}.p (id INT PRIMARY KEY,k INT,UNIQUE INDEX ref_key(k))',
+                           f'CREATE TABLE {ns}.c (id INT PRIMARY KEY,k INT,INDEX support_key(k),CONSTRAINT fk_c FOREIGN KEY(k) REFERENCES {ns}.p(k))',
+                           f'CREATE TABLE {ns}.alt (id INT PRIMARY KEY,k INT,INDEX support_key(k),INDEX spare_key(k,id),CONSTRAINT fk_alt FOREIGN KEY(k) REFERENCES {ns}.p(k))',
+                           f'CREATE TABLE {ns}.free (id INT PRIMARY KEY,label VARCHAR(30),INDEX drop_key(label))',
+                           f'INSERT INTO {ns}.p VALUES (7,11)', f'INSERT INTO {ns}.c VALUES (7,11)', f'INSERT INTO {ns}.alt VALUES (7,11)', f"INSERT INTO {ns}.free VALUES (7,'witness')"]
+            if label == 'create duplicate index name':
+                definitions.append(f'CREATE UNIQUE INDEX uq ON {ns}.free(label(5))')
+            setup.append(dict(name='create local table and constraint witnesses',sql=';'.join(definitions),expect_rc=0))
+            cleanup = dict(name='remove owned namespace',fixture_key='schema',sql=f'DROP DATABASE {ns}',verify=absent)
+            bound_table = sql.split(f'ON {ns}.',1)[1].split('(',1)[0].strip()
+            match = re.search(r'INDEX (?:IF EXISTS )?(\w+) ON ',sql)
+            assert match
+            index_name = match[1]
+            member = f"information_schema.STATISTICS WHERE TABLE_SCHEMA='{ns}' AND TABLE_NAME='{bound_table}' AND INDEX_NAME='{index_name}'"
+            before_count = int(label in ('local sole FK backup','parent sole FK backup','local alternate FK backup','create duplicate index name','unrelated member'))
+            checks = [check('owned table data remain',f'SELECT id FROM {ns}.{bound_table}',7),
+                      check('target index presence before DDL',f'SELECT COUNT(*) FROM {member}',before_count),
+                      check('fixture foreign keys remain',f"SELECT COUNT(*) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='{ns}'",2)]
+            structure = [c.copy() for c in checks]
+            native = dict(name='execute native index DDL',sql=sql,expect_rc=int(bool(error)))
+            if error:
+                native['stderr_contains'] = [f'ERROR {error}']
+            elif label in ('local alternate FK backup','unrelated member'):
+                structure[1]['expect'] = '0'
+            elif label in ('create index exact prefix','create unique index valid'):
+                structure[1]['expect'] = '1'
+                structure.append(check('native prefix length',f'SELECT SUB_PART FROM {member}','NULL' if label=='create index exact prefix' else '5'))
+            rule = {'local sole FK backup':foreign,'drop missing index':exists,'create index longer prefix':advanced,
+                    'create index unknown column':columns,'create duplicate index name':add_exists}.get(label)
+            expect = dict(exit=0,verdict='review' if rule==foreign else 'reject' if rule else 'pass',statements=1,findings=int(rule is not None),
+                          diagnostics=0,unsupported=0,coverage='complete',statement_coverage=['complete'],statement_sql=[sql],
+                          statement_indices=[0],evidence_gaps=0,evidence_gap_entries=[],unsupported_entries=[],finding_metadata=[],
+                          finding_entries=[dict(index=0,rule_id=rule,level=levels[rule])] if rule else [],version={'product':dialect,'version':version})
+            connect = dict(host='127.0.0.1',port=port,user='root',schema=ns)
+            if dialect == 'mysql':
+                connect['password_env'] = 'T09_MYSQL_PASSWORD'
+            cid = f'f04-{anchor}-'+re.sub(r'[^a-z0-9]+','-',label.lower()).strip('-')
+            meta.append(dict(id=cid,anchor=anchor,dialect=dialect,policy=profile,sql=sql,connect=connect,args=['--fail-on','none'],fixture={'cleanup':[cleanup]},
+                             setup=setup,expect=expect,post_verify=checks,execute=[native],structure=structure,
+                             teardown=[dict(cleanup,drops_fixture=True,expect_rc=0,verify=[absent])]))
+    assert len(meta) == 32
+    return meta
+
+
 def manifest():
     baseline = json.loads((Path(__file__).resolve().parents[1] / 'testdata/ddl-golden/T07.json').read_text())
     anchors = copy.deepcopy(baseline['anchors'])
@@ -736,7 +826,7 @@ def manifest():
             anchor['exec_password_env'] = 'T09_MYSQL_PASSWORD'
         else:
             anchor.pop('exec_password_env', None)
-    metas = metadata_cases()
+    metas = metadata_cases() + dependency_cases()
     clis = cli_cases()
     errs = error_cases()
     ids = [f'T09.db.{anchor}.{suffix}' for anchor in VERSIONS for suffix in ('ddl', 'syntax_negative')]
@@ -810,7 +900,7 @@ def t09_artifact_failures(artifact, data):
     if errors:
         return errors
     spec_by_id = {}
-    for spec in metadata_cases():
+    for spec in metadata_cases() + dependency_cases():
         spec_by_id['T09.meta.' + spec['id']] = spec
     for spec in cli_cases():
         spec_by_id['T09.cli.' + spec['id']] = spec

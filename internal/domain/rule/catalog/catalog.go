@@ -805,6 +805,8 @@ func FormatYAMLScalar(value any) string {
 // All other rules (including most DML rules) apply to common dialect scope.
 func dialectsForRule(ruleID string) []string {
 	switch {
+	case ruleID == "ddl.drop_index.foreign_key.warn":
+		return []string{"mysql", "tidb"}
 	case ruleID == "ddl.mysql.stored_object.target.valid":
 		return []string{"mysql"}
 	case ruleID == "ddl.routine.target.valid" || ruleID == "ddl.routine.security.definer.warn":
@@ -1111,6 +1113,7 @@ const unknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_column.explicit_
 var metadataAwareRuleIDs = map[string]bool{
 	"ddl.routine.target.valid":                             true,
 	"ddl.mysql.stored_object.target.valid":                 true,
+	"ddl.drop_index.foreign_key.warn":                      true,
 	"ddl.pg.alter.move_all_tablespace.target.valid":        true,
 	"ddl.pg.alter.owner.target.valid":                      true,
 	"ddl.pg.alter.rename_table.target.valid":               true,

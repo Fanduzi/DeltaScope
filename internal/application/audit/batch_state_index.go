@@ -299,6 +299,30 @@ func (s *batchState) publishPrimaryKeyDrop(key batchTableKey, entry *batchTableE
 	s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 }
 
+// bindDropIndexForeignKeyDependency publishes positive evidence from the ordered pre-state.
+func (s *batchState) bindDropIndexForeignKeyDependency(statement spec.Statement) {
+	d := statement.DDL
+	if statement.Metadata == nil || statement.Unsupported != nil || d == nil || d.Operation != spec.DDLOperationDropIndex ||
+		!fullyAuditedStatement(s.dialect, statement) {
+		return
+	}
+	targets := d.TableTargets()
+	name := indexDropTargetName(indexSubjectAlter(d, "drop_index"))
+	if len(targets) != 1 || name == "" || strings.EqualFold(name, "primary") {
+		return
+	}
+	key := s.keyFor(s.schema, targets[0])
+	entry := s.entries[key]
+	if !indexSetKnown(entry) || s.resolveEntryNameBinding(entry, name) != spec.IndexNameBindsMember {
+		return
+	}
+	position, matches := provenIndexMatch(entry.shape.Indexes, name)
+	if matches == 1 {
+		needed, _ := s.foreignKeyMemberDependency(key, entry.shape, position)
+		statement.Metadata.DropIndexForeignKeyDependency = needed
+	}
+}
+
 // applyStandaloneDropIndex publishes the DROP INDEX operation's bounded
 // post-state through the same template the ALTER-side drop uses.
 func (s *batchState) applyStandaloneDropIndex(statement spec.Statement) {

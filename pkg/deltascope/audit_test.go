@@ -1089,3 +1089,22 @@ func ptrInt64(value int64) *int64 {
 func ptrFloat64(value float64) *float64 {
 	return &value
 }
+
+func TestMySQLDropIndexDependencyThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProvider{instance: &InstanceFacts{Version: "8.0.46"}, snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Schema: "app", Name: "child"},
+		Columns:     []spec.Column{{Name: "column_id", Type: "int"}},
+		Indexes:     []spec.Index{{Name: "idx_child", Kind: spec.IndexKindSecondary, Columns: []string{"column_id"}}},
+		Constraints: []spec.Constraint{{Type: "foreign_key", Name: "private_fk", Columns: []string{"column_id"}, ReferencedTable: "parent", ReferencedColumns: []string{"id"}}},
+	}}
+	result, err := Audit(context.Background(), Request{SQL: "DROP INDEX idx_child ON app.child", Dialect: DialectMySQL, Schema: "app", MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReview {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.drop_index.foreign_key.warn" && len(f.Metadata) == 0 && !strings.Contains(f.Message, "private_fk") {
+			return
+		}
+	}
+	t.Fatal("missing bounded FK index warning")
+}

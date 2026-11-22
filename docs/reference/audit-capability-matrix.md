@@ -566,6 +566,7 @@ MySQL 8.x metadata-aware INSTANT ADD COLUMN checks cover observed MyISAM, InnoDB
 |---------|-------------------|:-------:|:--------:|---------------|
 | `ddl.rename_table.notice` | `RENAME TABLE` renames a table | ✓ | ✗ | notice |
 | `ddl.create_index.notice` | Standalone `CREATE INDEX` creates a new index | ✓ | ✗ | notice |
+| `ddl.drop_index.foreign_key.warn` | Warns on a proven foreign key index dependency | ✗ | ✓ | warning |
 | `ddl.drop_index.notice` | Standalone `DROP INDEX` removes an index | ✓ | ✗ | notice |
 | `ddl.alter_database.notice` | `ALTER DATABASE` changes database-level settings | ✓ | ✗ | notice |
 | `ddl.create_procedure.notice` | `CREATE PROCEDURE` defines a stored procedure | ✓ | ✗ | notice |

@@ -412,6 +412,7 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"ddl.database.option.encryption.applicability",
 		"ddl.rename_table.notice",
 		"ddl.create_index.notice",
+		"ddl.drop_index.foreign_key.warn",
 		"ddl.drop_index.notice",
 		"ddl.alter_database.notice",
 		"ddl.create_procedure.notice",

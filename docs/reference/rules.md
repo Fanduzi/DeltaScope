@@ -792,6 +792,7 @@ These rules promote previously normalized-silent MySQL and TiDB DDL forms to fin
 |---------|-------------|:-------------:|:-----------------:|
 | `ddl.rename_table.notice` | `RENAME TABLE` renames a table | notice | No |
 | `ddl.create_index.notice` | Standalone `CREATE INDEX` creates a new index | notice | No |
+| `ddl.drop_index.foreign_key.warn` | Warns when a proven foreign key depends on the standalone DROP INDEX target. | warning | Yes |
 | `ddl.drop_index.notice` | Standalone `DROP INDEX` removes an index | notice | No |
 | `ddl.alter_database.notice` | `ALTER DATABASE` changes database-level settings | notice | No |
 | `ddl.create_procedure.notice` | `CREATE PROCEDURE` defines a stored procedure | notice | No |

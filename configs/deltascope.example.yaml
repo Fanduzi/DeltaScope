@@ -934,6 +934,9 @@ rules:
     params:
       required: true
 
+  ddl.drop_index.foreign_key.warn:
+    enabled: true
+    level: warning
   ddl.drop_index.notice:
     enabled: true
     level: notice

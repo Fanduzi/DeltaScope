@@ -486,3 +486,33 @@ func TestMapRegistryAuthorizeErrorMapsAllCases(t *testing.T) {
 		})
 	}
 }
+
+func TestMySQLDropIndexDependencyThroughHTTP(t *testing.T) {
+	client := &metadataAuditTestClient{version: "8.0.46", detectDialect: spec.DialectMySQL, snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Schema: "app", Name: "child"},
+		Columns:     []spec.Column{{Name: "column_id", Type: "int"}},
+		Indexes:     []spec.Index{{Name: "idx_child", Kind: spec.IndexKindSecondary, Columns: []string{"column_id"}}},
+		Constraints: []spec.Constraint{{Type: "foreign_key", Name: "private_fk", Columns: []string{"column_id"}, ReferencedTable: "parent", ReferencedColumns: []string{"id"}}},
+	}}
+	registry := newTestRegistryAuthDisabled(t, "fixture", []string{"audit"})
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(context.Context, auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectMySQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	handler, err := NewHandler("", "test", WithRegistry(registry))
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, body := postT04BAudit(t, handler, `{"sql":"DROP INDEX idx_child ON app.child","dialect":"mysql","schema":"app","connection_id":"fixture"}`)
+	if status != 200 || body["verdict"] != "review" {
+		t.Fatalf("status=%d body=%v", status, body)
+	}
+	statements := body["statements"].([]any)
+	for _, item := range statements[0].(map[string]any)["findings"].([]any) {
+		if item.(map[string]any)["rule_id"] == "ddl.drop_index.foreign_key.warn" {
+			return
+		}
+	}
+	t.Fatal("missing FK index warning")
+}

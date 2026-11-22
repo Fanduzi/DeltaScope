@@ -744,6 +744,7 @@ func ddlCoreRules() map[string]RulePolicy {
 		// MySQL/TiDB lifecycle notice rules.
 		"ddl.rename_table.notice":                     {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.create_index.notice":                     {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
+		"ddl.drop_index.foreign_key.warn":             {Enabled: true, Level: rule.LevelWarning},
 		"ddl.drop_index.notice":                       {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.alter_database.notice":                   {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.create_procedure.notice":                 {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
