@@ -6,6 +6,7 @@
  "description": "ALTER TABLE subaction deep-matrix acceptance on postgresql17 (#120): native exec chains covering add/drop/alter/rename/constraint/set-owner/cluster/replica-identity/attach-detach/enable-disable subactions.",
  "policy": {
   "profiles": {
+   "pg-derived-fk-deferrability": {"enable": {"ddl.pg.alter.constraint_deferrability.target.require": {"level": "blocker"}}},
    "pg-check-null-test": {"enable": {"ddl.pg.alter.add_check.name.available": {"level": "blocker"}}},"pg-check-literal": {"enable": {"ddl.pg.alter.add_check.name.available": {"level": "blocker"}}},
    "pg-constraint-columns": {"enable": {"ddl.pg.alter.constraint_columns.valid": {"level": "blocker"}}},
    "pg-column-type-descendants": {"enable": {"ddl.pg.alter.column_type.destination.valid": {"level": "blocker"}}},
@@ -4950,6 +4951,1757 @@
   }
  ],
  "metadata_cases": [
+   {
+     "id": "pg-fk-deferrability-derived-leaf",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-derived-fk-deferrability",
+     "sql": "ALTER TABLE pgfkdef_1_child.leaf ALTER CONSTRAINT fk DEFERRABLE INITIALLY DEFERRED",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgfkdef_1"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_1_child",
+           "sql": "DROP SCHEMA pgfkdef_1_child CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_1_child'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_1",
+           "sql": "DROP SCHEMA pgfkdef_1 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_1'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_1",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_1'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_1",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_1",
+         "expect_rc": 0
+       },
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_1_child",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_1_child'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_1_child",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_1_child",
+         "expect_rc": 0
+       },
+       {
+         "name": "create root and child with direct and derived foreign keys",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgfkdef_1.pk(id int PRIMARY KEY);\nINSERT INTO pgfkdef_1.pk VALUES (7);\nCREATE TABLE pgfkdef_1.hidden_root(id int, CONSTRAINT fk FOREIGN KEY (id) REFERENCES pgfkdef_1.pk) PARTITION BY RANGE (id);\nCREATE TABLE pgfkdef_1_child.leaf PARTITION OF pgfkdef_1.hidden_root FOR VALUES FROM (0) TO (99);\nALTER TABLE pgfkdef_1_child.leaf ADD CONSTRAINT local_fk FOREIGN KEY (id) REFERENCES pgfkdef_1.pk;\nALTER TABLE pgfkdef_1_child.leaf ADD CONSTRAINT ck CHECK (id >= 0);\nCREATE TABLE pgfkdef_1.ordinary(id int, CONSTRAINT pointing FOREIGN KEY (id) REFERENCES pgfkdef_1.pk);\nINSERT INTO pgfkdef_1.hidden_root VALUES (7);\nCREATE SEQUENCE pgfkdef_1.guard START 7;"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "evidence_gaps": 0,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_deferrability.target.require",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_deferrability.target.require",
+           "metadata": {
+             "reason_code": "constraint_deferrability_derived_foreign_key"
+           }
+         }
+       ],
+       "serialized_not_contains": [
+         "DerivedForeignKey",
+         "conparentid",
+         "hidden_root"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_1'::regnamespace,'pgfkdef_1_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_1.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_1.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native ALTER CONSTRAINT",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkdef_1_child.leaf ALTER CONSTRAINT fk DEFERRABLE INITIALLY DEFERRED",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  XX000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_1'::regnamespace,'pgfkdef_1_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_1.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_1.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_1_child",
+         "sql": "DROP SCHEMA pgfkdef_1_child CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_1_child'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_1",
+         "sql": "DROP SCHEMA pgfkdef_1 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_1'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-fk-deferrability-derived-leaf-same-flags",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-derived-fk-deferrability",
+     "sql": "ALTER TABLE pgfkdef_2_child.leaf ALTER CONSTRAINT fk NOT DEFERRABLE INITIALLY IMMEDIATE",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgfkdef_2"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_2_child",
+           "sql": "DROP SCHEMA pgfkdef_2_child CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_2_child'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_2",
+           "sql": "DROP SCHEMA pgfkdef_2 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_2'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_2",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_2'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_2",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_2",
+         "expect_rc": 0
+       },
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_2_child",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_2_child'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_2_child",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_2_child",
+         "expect_rc": 0
+       },
+       {
+         "name": "create root and child with direct and derived foreign keys",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgfkdef_2.pk(id int PRIMARY KEY);\nINSERT INTO pgfkdef_2.pk VALUES (7);\nCREATE TABLE pgfkdef_2.hidden_root(id int, CONSTRAINT fk FOREIGN KEY (id) REFERENCES pgfkdef_2.pk) PARTITION BY RANGE (id);\nCREATE TABLE pgfkdef_2_child.leaf PARTITION OF pgfkdef_2.hidden_root FOR VALUES FROM (0) TO (99);\nALTER TABLE pgfkdef_2_child.leaf ADD CONSTRAINT local_fk FOREIGN KEY (id) REFERENCES pgfkdef_2.pk;\nALTER TABLE pgfkdef_2_child.leaf ADD CONSTRAINT ck CHECK (id >= 0);\nCREATE TABLE pgfkdef_2.ordinary(id int, CONSTRAINT pointing FOREIGN KEY (id) REFERENCES pgfkdef_2.pk);\nINSERT INTO pgfkdef_2.hidden_root VALUES (7);\nCREATE SEQUENCE pgfkdef_2.guard START 7;"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "evidence_gaps": 0,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_deferrability.target.require",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_deferrability.target.require",
+           "metadata": {
+             "reason_code": "constraint_deferrability_derived_foreign_key"
+           }
+         }
+       ],
+       "serialized_not_contains": [
+         "DerivedForeignKey",
+         "conparentid",
+         "hidden_root"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_2'::regnamespace,'pgfkdef_2_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_2.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_2.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native ALTER CONSTRAINT",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkdef_2_child.leaf ALTER CONSTRAINT fk NOT DEFERRABLE INITIALLY IMMEDIATE",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  XX000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_2'::regnamespace,'pgfkdef_2_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_2.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_2.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_2_child",
+         "sql": "DROP SCHEMA pgfkdef_2_child CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_2_child'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_2",
+         "sql": "DROP SCHEMA pgfkdef_2 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_2'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-fk-deferrability-derived-leaf-only",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-derived-fk-deferrability",
+     "sql": "ALTER TABLE ONLY pgfkdef_3_child.leaf ALTER CONSTRAINT fk DEFERRABLE",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgfkdef_3"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_3_child",
+           "sql": "DROP SCHEMA pgfkdef_3_child CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_3_child'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_3",
+           "sql": "DROP SCHEMA pgfkdef_3 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_3'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_3",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_3'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_3",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_3",
+         "expect_rc": 0
+       },
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_3_child",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_3_child'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_3_child",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_3_child",
+         "expect_rc": 0
+       },
+       {
+         "name": "create root and child with direct and derived foreign keys",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgfkdef_3.pk(id int PRIMARY KEY);\nINSERT INTO pgfkdef_3.pk VALUES (7);\nCREATE TABLE pgfkdef_3.hidden_root(id int, CONSTRAINT fk FOREIGN KEY (id) REFERENCES pgfkdef_3.pk) PARTITION BY RANGE (id);\nCREATE TABLE pgfkdef_3_child.leaf PARTITION OF pgfkdef_3.hidden_root FOR VALUES FROM (0) TO (99);\nALTER TABLE pgfkdef_3_child.leaf ADD CONSTRAINT local_fk FOREIGN KEY (id) REFERENCES pgfkdef_3.pk;\nALTER TABLE pgfkdef_3_child.leaf ADD CONSTRAINT ck CHECK (id >= 0);\nCREATE TABLE pgfkdef_3.ordinary(id int, CONSTRAINT pointing FOREIGN KEY (id) REFERENCES pgfkdef_3.pk);\nINSERT INTO pgfkdef_3.hidden_root VALUES (7);\nCREATE SEQUENCE pgfkdef_3.guard START 7;"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "evidence_gaps": 0,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_deferrability.target.require",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_deferrability.target.require",
+           "metadata": {
+             "reason_code": "constraint_deferrability_derived_foreign_key"
+           }
+         }
+       ],
+       "serialized_not_contains": [
+         "DerivedForeignKey",
+         "conparentid",
+         "hidden_root"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_3'::regnamespace,'pgfkdef_3_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_3.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_3.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native ALTER CONSTRAINT",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE ONLY pgfkdef_3_child.leaf ALTER CONSTRAINT fk DEFERRABLE",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  XX000:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_3'::regnamespace,'pgfkdef_3_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_3.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_3.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_3_child",
+         "sql": "DROP SCHEMA pgfkdef_3_child CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_3_child'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_3",
+         "sql": "DROP SCHEMA pgfkdef_3 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_3'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-fk-deferrability-local-leaf",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-derived-fk-deferrability",
+     "sql": "ALTER TABLE pgfkdef_4_child.leaf ALTER CONSTRAINT local_fk DEFERRABLE INITIALLY DEFERRED",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgfkdef_4"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_4_child",
+           "sql": "DROP SCHEMA pgfkdef_4_child CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_4_child'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_4",
+           "sql": "DROP SCHEMA pgfkdef_4 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_4'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_4",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_4'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_4",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_4",
+         "expect_rc": 0
+       },
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_4_child",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_4_child'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_4_child",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_4_child",
+         "expect_rc": 0
+       },
+       {
+         "name": "create root and child with direct and derived foreign keys",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgfkdef_4.pk(id int PRIMARY KEY);\nINSERT INTO pgfkdef_4.pk VALUES (7);\nCREATE TABLE pgfkdef_4.hidden_root(id int, CONSTRAINT fk FOREIGN KEY (id) REFERENCES pgfkdef_4.pk) PARTITION BY RANGE (id);\nCREATE TABLE pgfkdef_4_child.leaf PARTITION OF pgfkdef_4.hidden_root FOR VALUES FROM (0) TO (99);\nALTER TABLE pgfkdef_4_child.leaf ADD CONSTRAINT local_fk FOREIGN KEY (id) REFERENCES pgfkdef_4.pk;\nALTER TABLE pgfkdef_4_child.leaf ADD CONSTRAINT ck CHECK (id >= 0);\nCREATE TABLE pgfkdef_4.ordinary(id int, CONSTRAINT pointing FOREIGN KEY (id) REFERENCES pgfkdef_4.pk);\nINSERT INTO pgfkdef_4.hidden_root VALUES (7);\nCREATE SEQUENCE pgfkdef_4.guard START 7;"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "evidence_gaps": 0,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "serialized_not_contains": [
+         "DerivedForeignKey",
+         "conparentid"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_4'::regnamespace,'pgfkdef_4_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_4.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_4.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native ALTER CONSTRAINT",
+         "sql": "ALTER TABLE pgfkdef_4_child.leaf ALTER CONSTRAINT local_fk DEFERRABLE INITIALLY DEFERRED",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_4'::regnamespace,'pgfkdef_4_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:true:true,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_4.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_4.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_4_child",
+         "sql": "DROP SCHEMA pgfkdef_4_child CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_4_child'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_4",
+         "sql": "DROP SCHEMA pgfkdef_4 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_4'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-fk-deferrability-root",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-derived-fk-deferrability",
+     "sql": "ALTER TABLE pgfkdef_5.hidden_root ALTER CONSTRAINT fk DEFERRABLE INITIALLY DEFERRED",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgfkdef_5"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_5_child",
+           "sql": "DROP SCHEMA pgfkdef_5_child CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_5_child'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_5",
+           "sql": "DROP SCHEMA pgfkdef_5 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_5'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_5",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_5'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_5",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_5",
+         "expect_rc": 0
+       },
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_5_child",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_5_child'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_5_child",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_5_child",
+         "expect_rc": 0
+       },
+       {
+         "name": "create root and child with direct and derived foreign keys",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgfkdef_5.pk(id int PRIMARY KEY);\nINSERT INTO pgfkdef_5.pk VALUES (7);\nCREATE TABLE pgfkdef_5.hidden_root(id int, CONSTRAINT fk FOREIGN KEY (id) REFERENCES pgfkdef_5.pk) PARTITION BY RANGE (id);\nCREATE TABLE pgfkdef_5_child.leaf PARTITION OF pgfkdef_5.hidden_root FOR VALUES FROM (0) TO (99);\nALTER TABLE pgfkdef_5_child.leaf ADD CONSTRAINT local_fk FOREIGN KEY (id) REFERENCES pgfkdef_5.pk;\nALTER TABLE pgfkdef_5_child.leaf ADD CONSTRAINT ck CHECK (id >= 0);\nCREATE TABLE pgfkdef_5.ordinary(id int, CONSTRAINT pointing FOREIGN KEY (id) REFERENCES pgfkdef_5.pk);\nINSERT INTO pgfkdef_5.hidden_root VALUES (7);\nCREATE SEQUENCE pgfkdef_5.guard START 7;"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "evidence_gaps": 0,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "serialized_not_contains": [
+         "DerivedForeignKey",
+         "conparentid"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_5'::regnamespace,'pgfkdef_5_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_5.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_5.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native ALTER CONSTRAINT",
+         "sql": "ALTER TABLE pgfkdef_5.hidden_root ALTER CONSTRAINT fk DEFERRABLE INITIALLY DEFERRED",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_5'::regnamespace,'pgfkdef_5_child'::regnamespace)",
+         "expect": "false:true:true,true:true:true,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_5.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_5.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_5_child",
+         "sql": "DROP SCHEMA pgfkdef_5_child CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_5_child'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_5",
+         "sql": "DROP SCHEMA pgfkdef_5 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_5'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-fk-deferrability-root-only",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-derived-fk-deferrability",
+     "sql": "ALTER TABLE ONLY pgfkdef_6.hidden_root ALTER CONSTRAINT fk DEFERRABLE INITIALLY DEFERRED",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgfkdef_6"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_6_child",
+           "sql": "DROP SCHEMA pgfkdef_6_child CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_6_child'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_6",
+           "sql": "DROP SCHEMA pgfkdef_6 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_6'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_6",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_6'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_6",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_6",
+         "expect_rc": 0
+       },
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_6_child",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_6_child'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_6_child",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_6_child",
+         "expect_rc": 0
+       },
+       {
+         "name": "create root and child with direct and derived foreign keys",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgfkdef_6.pk(id int PRIMARY KEY);\nINSERT INTO pgfkdef_6.pk VALUES (7);\nCREATE TABLE pgfkdef_6.hidden_root(id int, CONSTRAINT fk FOREIGN KEY (id) REFERENCES pgfkdef_6.pk) PARTITION BY RANGE (id);\nCREATE TABLE pgfkdef_6_child.leaf PARTITION OF pgfkdef_6.hidden_root FOR VALUES FROM (0) TO (99);\nALTER TABLE pgfkdef_6_child.leaf ADD CONSTRAINT local_fk FOREIGN KEY (id) REFERENCES pgfkdef_6.pk;\nALTER TABLE pgfkdef_6_child.leaf ADD CONSTRAINT ck CHECK (id >= 0);\nCREATE TABLE pgfkdef_6.ordinary(id int, CONSTRAINT pointing FOREIGN KEY (id) REFERENCES pgfkdef_6.pk);\nINSERT INTO pgfkdef_6.hidden_root VALUES (7);\nCREATE SEQUENCE pgfkdef_6.guard START 7;"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "evidence_gaps": 0,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "serialized_not_contains": [
+         "DerivedForeignKey",
+         "conparentid"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_6'::regnamespace,'pgfkdef_6_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_6.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_6.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native ALTER CONSTRAINT",
+         "sql": "ALTER TABLE ONLY pgfkdef_6.hidden_root ALTER CONSTRAINT fk DEFERRABLE INITIALLY DEFERRED",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_6'::regnamespace,'pgfkdef_6_child'::regnamespace)",
+         "expect": "false:true:true,true:true:true,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_6.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_6.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_6_child",
+         "sql": "DROP SCHEMA pgfkdef_6_child CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_6_child'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_6",
+         "sql": "DROP SCHEMA pgfkdef_6 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_6'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-fk-deferrability-wrong-kind",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-derived-fk-deferrability",
+     "sql": "ALTER TABLE pgfkdef_7_child.leaf ALTER CONSTRAINT ck DEFERRABLE",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgfkdef_7"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_7_child",
+           "sql": "DROP SCHEMA pgfkdef_7_child CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_7_child'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_7",
+           "sql": "DROP SCHEMA pgfkdef_7 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_7'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_7",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_7'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_7",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_7",
+         "expect_rc": 0
+       },
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_7_child",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_7_child'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_7_child",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_7_child",
+         "expect_rc": 0
+       },
+       {
+         "name": "create root and child with direct and derived foreign keys",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgfkdef_7.pk(id int PRIMARY KEY);\nINSERT INTO pgfkdef_7.pk VALUES (7);\nCREATE TABLE pgfkdef_7.hidden_root(id int, CONSTRAINT fk FOREIGN KEY (id) REFERENCES pgfkdef_7.pk) PARTITION BY RANGE (id);\nCREATE TABLE pgfkdef_7_child.leaf PARTITION OF pgfkdef_7.hidden_root FOR VALUES FROM (0) TO (99);\nALTER TABLE pgfkdef_7_child.leaf ADD CONSTRAINT local_fk FOREIGN KEY (id) REFERENCES pgfkdef_7.pk;\nALTER TABLE pgfkdef_7_child.leaf ADD CONSTRAINT ck CHECK (id >= 0);\nCREATE TABLE pgfkdef_7.ordinary(id int, CONSTRAINT pointing FOREIGN KEY (id) REFERENCES pgfkdef_7.pk);\nINSERT INTO pgfkdef_7.hidden_root VALUES (7);\nCREATE SEQUENCE pgfkdef_7.guard START 7;"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "evidence_gaps": 0,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_deferrability.target.require",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_deferrability.target.require",
+           "metadata": {
+             "reason_code": "constraint_kind_mismatch"
+           }
+         }
+       ],
+       "serialized_not_contains": [
+         "DerivedForeignKey",
+         "conparentid",
+         "hidden_root"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_7'::regnamespace,'pgfkdef_7_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_7.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_7.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native ALTER CONSTRAINT",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkdef_7_child.leaf ALTER CONSTRAINT ck DEFERRABLE",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42809:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_7'::regnamespace,'pgfkdef_7_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_7.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_7.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_7_child",
+         "sql": "DROP SCHEMA pgfkdef_7_child CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_7_child'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_7",
+         "sql": "DROP SCHEMA pgfkdef_7 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_7'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-fk-deferrability-missing",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-derived-fk-deferrability",
+     "sql": "ALTER TABLE pgfkdef_8_child.leaf ALTER CONSTRAINT absent DEFERRABLE",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgfkdef_8"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_8_child",
+           "sql": "DROP SCHEMA pgfkdef_8_child CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_8_child'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_8",
+           "sql": "DROP SCHEMA pgfkdef_8 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_8'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_8",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_8'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_8",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_8",
+         "expect_rc": 0
+       },
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_8_child",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_8_child'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_8_child",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_8_child",
+         "expect_rc": 0
+       },
+       {
+         "name": "create root and child with direct and derived foreign keys",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgfkdef_8.pk(id int PRIMARY KEY);\nINSERT INTO pgfkdef_8.pk VALUES (7);\nCREATE TABLE pgfkdef_8.hidden_root(id int, CONSTRAINT fk FOREIGN KEY (id) REFERENCES pgfkdef_8.pk) PARTITION BY RANGE (id);\nCREATE TABLE pgfkdef_8_child.leaf PARTITION OF pgfkdef_8.hidden_root FOR VALUES FROM (0) TO (99);\nALTER TABLE pgfkdef_8_child.leaf ADD CONSTRAINT local_fk FOREIGN KEY (id) REFERENCES pgfkdef_8.pk;\nALTER TABLE pgfkdef_8_child.leaf ADD CONSTRAINT ck CHECK (id >= 0);\nCREATE TABLE pgfkdef_8.ordinary(id int, CONSTRAINT pointing FOREIGN KEY (id) REFERENCES pgfkdef_8.pk);\nINSERT INTO pgfkdef_8.hidden_root VALUES (7);\nCREATE SEQUENCE pgfkdef_8.guard START 7;"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "evidence_gaps": 0,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_deferrability.target.require",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.alter.constraint_deferrability.target.require",
+           "metadata": {
+             "reason_code": "constraint_absent"
+           }
+         }
+       ],
+       "serialized_not_contains": [
+         "DerivedForeignKey",
+         "conparentid",
+         "hidden_root"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_8'::regnamespace,'pgfkdef_8_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_8.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_8.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native ALTER CONSTRAINT",
+         "sql": "\\set VERBOSITY verbose\nALTER TABLE pgfkdef_8_child.leaf ALTER CONSTRAINT absent DEFERRABLE",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42704:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_8'::regnamespace,'pgfkdef_8_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_8.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_8.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_8_child",
+         "sql": "DROP SCHEMA pgfkdef_8_child CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_8_child'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_8",
+         "sql": "DROP SCHEMA pgfkdef_8 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_8'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-fk-deferrability-independent-ordinary",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-derived-fk-deferrability",
+     "sql": "ALTER TABLE pgfkdef_9.ordinary ALTER CONSTRAINT pointing DEFERRABLE INITIALLY DEFERRED",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgfkdef_9"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_9_child",
+           "sql": "DROP SCHEMA pgfkdef_9_child CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_9_child'",
+             "expect": "0"
+           }
+         },
+         {
+           "name": "remove owned schema",
+           "fixture_key": "pgfkdef_9",
+           "sql": "DROP SCHEMA pgfkdef_9 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_9'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_9",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_9'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_9",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_9",
+         "expect_rc": 0
+       },
+       {
+         "name": "prove schema absent",
+         "fixture_key": "pgfkdef_9_child",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_9_child'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "pgfkdef_9_child",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgfkdef_9_child",
+         "expect_rc": 0
+       },
+       {
+         "name": "create root and child with direct and derived foreign keys",
+         "expect_rc": 0,
+         "sql": "CREATE TABLE pgfkdef_9.pk(id int PRIMARY KEY);\nINSERT INTO pgfkdef_9.pk VALUES (7);\nCREATE TABLE pgfkdef_9.hidden_root(id int, CONSTRAINT fk FOREIGN KEY (id) REFERENCES pgfkdef_9.pk) PARTITION BY RANGE (id);\nCREATE TABLE pgfkdef_9_child.leaf PARTITION OF pgfkdef_9.hidden_root FOR VALUES FROM (0) TO (99);\nALTER TABLE pgfkdef_9_child.leaf ADD CONSTRAINT local_fk FOREIGN KEY (id) REFERENCES pgfkdef_9.pk;\nALTER TABLE pgfkdef_9_child.leaf ADD CONSTRAINT ck CHECK (id >= 0);\nCREATE TABLE pgfkdef_9.ordinary(id int, CONSTRAINT pointing FOREIGN KEY (id) REFERENCES pgfkdef_9.pk);\nINSERT INTO pgfkdef_9.hidden_root VALUES (7);\nCREATE SEQUENCE pgfkdef_9.guard START 7;"
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "evidence_gaps": 0,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "serialized_not_contains": [
+         "DerivedForeignKey",
+         "conparentid"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "audit preserves foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_9'::regnamespace,'pgfkdef_9_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:false:false,false:false:false"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_9.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_9.guard",
+         "expect": "7:false"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native ALTER CONSTRAINT",
+         "sql": "ALTER TABLE pgfkdef_9.ordinary ALTER CONSTRAINT pointing DEFERRABLE INITIALLY DEFERRED",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "native foreign-key flags",
+         "sql": "SELECT string_agg((c.conparentid <> 0)::text || ':' || c.condeferrable::text || ':' || c.condeferred::text,\n',' ORDER BY r.relname, c.conname) FROM pg_catalog.pg_constraint c\nJOIN pg_catalog.pg_class r ON r.oid=c.conrelid\nWHERE c.contype='f' AND c.connamespace IN ('pgfkdef_9'::regnamespace,'pgfkdef_9_child'::regnamespace)",
+         "expect": "false:false:false,true:false:false,false:false:false,false:true:true"
+       },
+       {
+         "assert": "witness row remains",
+         "sql": "SELECT id FROM pgfkdef_9.hidden_root",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text || ':' || is_called::text FROM pgfkdef_9.guard",
+         "expect": "7:false"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_9_child",
+         "sql": "DROP SCHEMA pgfkdef_9_child CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_9_child'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       },
+       {
+         "name": "remove owned schema",
+         "fixture_key": "pgfkdef_9",
+         "sql": "DROP SCHEMA pgfkdef_9 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname = 'pgfkdef_9'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
    {
      "id": "pg-check-numeric-int4-lower-limit",
      "anchor": "postgres17",
@@ -44125,6 +45877,15 @@
   }
  ],
  "required_case_ids": [
+  "T37.meta.pg-fk-deferrability-derived-leaf",
+  "T37.meta.pg-fk-deferrability-derived-leaf-same-flags",
+  "T37.meta.pg-fk-deferrability-derived-leaf-only",
+  "T37.meta.pg-fk-deferrability-local-leaf",
+  "T37.meta.pg-fk-deferrability-root",
+  "T37.meta.pg-fk-deferrability-root-only",
+  "T37.meta.pg-fk-deferrability-wrong-kind",
+  "T37.meta.pg-fk-deferrability-missing",
+  "T37.meta.pg-fk-deferrability-independent-ordinary",
   "T37.meta.pg-check-numeric-int4-lower-limit",
   "T37.meta.pg-check-numeric-int8-positive",
   "T37.meta.pg-check-numeric-int8-negative",

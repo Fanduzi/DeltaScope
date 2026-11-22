@@ -1950,6 +1950,14 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/45011808292/job/137175555724),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137175629084) passed at the delivered SHA.
 
+## F09 deferrability on partition-derived foreign keys (D54)
+
+For a single ALTER CONSTRAINT on an exact qualified PostgreSQL 17 target, the existing blocker now checks a positively observed partition-derived foreign key. Native controls reproduce the refusal with changed flags, identical flags and ONLY. The same fixture verifies the local foreign key, the partition root and an unrelated ordinary foreign key. The parent relation and linkage stay private.
+
+Native ONLY on the root in this fixture still propagates to the derived constraint. The audit checks the directly addressed constraint. Wider propagation, trigger effects and execution prerequisites require separate evidence. [T37](../../testdata/ddl-golden/T37.json) · [Decision](../decisions/2026-11-22-postgresql-derived-fk-deferrability.md)
+
+Isolated D54 T37 passed 622 cases and 18,503 assertions. Verification on the fixed D54 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
