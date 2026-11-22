@@ -2004,6 +2004,16 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/45033067563/job/137240722365),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137240831279) passed at the delivered SHA.
 
+## F09 direct DROP CONSTRAINT on a partition-inherited FK (D55)
+
+The existing target rule now refuses a direct DROP of an exact qualified partition foreign key when the PostgreSQL 17 catalog proves a positive inheritance count. The native controls distinguish the derived key from local, root and unrelated keys. `ONLY` and `IF EXISTS … CASCADE` preserve the direct refusal. A missing constraint guarded by `IF EXISTS` succeeds.
+
+The catalog query and output contract preserve the earlier CHECK check. The finding exposes the authored target and kind. General cascade effects and execution prerequisites need their own evidence.
+
+The inventory also links the existing T37 PostgreSQL 17 parser refusals for ALTER CONSTRAINT NOT ENFORCED, table-level NOT NULL NOT VALID, and ALTER CONSTRAINT INHERIT. The parser-upgrade census separately records the NO INHERIT refusal. These entries retain their PostgreSQL 17 classification and #149 follow-up. [T37](../../testdata/ddl-golden/T37.json) · [Parser-upgrade census](../decisions/2026-06-02-v0.250.0-parser-upgrade-candidate-evidence-pack.md) · [Decision](../decisions/2026-11-22-postgresql-drop-inherited-foreign-key.md)
+
+Isolated D55 T37 passed 621 cases and 18,463 assertions. Verification on the fixed D55 candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

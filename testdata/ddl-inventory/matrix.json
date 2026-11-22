@@ -11227,7 +11227,14 @@
                 "file:testdata/ddl-golden/T37.json#pg-drop-inherited-check-parent-recursive",
                 "file:testdata/ddl-golden/T37.json#pg-drop-inherited-check-stale",
                 "file:testdata/sql-corpus/postgresql/ddl/findings/drop_constraint_inherited_check.expected.yaml#ddl.pg.alter.drop_constraint.target.require",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_constraint_partition_only.expected.yaml#ddl.pg.alter.drop_constraint.target.require"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_constraint_partition_only.expected.yaml#ddl.pg.alter.drop_constraint.target.require",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-fk-derived-leaf-restrict",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-fk-derived-leaf-only",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-fk-local-leaf",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-fk-root",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-fk-root-only",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-fk-absent-guard",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-fk-independent-ordinary"
               ]
             }
           ]
@@ -11253,7 +11260,9 @@
                 "file:testdata/sql-corpus/postgresql/ddl/findings/constraint_target_invalid.expected.yaml#ddl.pg.alter.drop_constraint.target.require",
                 "file:testdata/ddl-golden/T37.json#pg-drop-check-only-cascade",
                 "file:testdata/ddl-golden/T37.json#pg-drop-check-only-primary-control",
-                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-check-cascade"
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-check-cascade",
+                "file:testdata/ddl-golden/T37.json#pg-drop-inherited-fk-derived-leaf-guarded-cascade",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_constraint_inherited_fk.expected.yaml#ddl.pg.alter.drop_constraint.target.require"
               ]
             }
           ]
@@ -11341,7 +11350,8 @@
               "audit_status": "not_applicable",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.alter-constraint-not-enforced.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#alter-table-constraints-alter-constraint-not-enforced"
               ]
             }
           ]
@@ -11360,7 +11370,8 @@
               "audit_status": "not_applicable",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.not-null-not-valid.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#alter-table-constraints-not-null-not-valid"
               ]
             }
           ]
@@ -11379,7 +11390,8 @@
               "audit_status": "not_applicable",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.alter-constraint-inherit-no-inherit.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T37.json#alter-table-constraints-alter-constraint-inherit-no-inherit"
               ]
             }
           ]
