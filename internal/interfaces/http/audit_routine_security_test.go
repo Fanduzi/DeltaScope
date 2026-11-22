@@ -8,6 +8,24 @@ import (
 	"testing"
 )
 
+func TestHandlerMySQLRoutineGuardVersion(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, payload := postT04BAudit(t, handler, `{"sql":"CREATE PROCEDURE IF NOT EXISTS app.p() SQL SECURITY INVOKER SELECT 1","dialect":"mysql","target_version":"5.7.44"}`)
+	if code != http.StatusOK || payload["verdict"] != "reject" {
+		t.Fatalf("status=%d payload=%+v", code, payload)
+	}
+	stmts := payload["statements"].([]any)
+	for _, item := range stmts[0].(map[string]any)["findings"].([]any) {
+		if item.(map[string]any)["rule_id"] == "ddl.routine.target.valid" {
+			return
+		}
+	}
+	t.Fatal("missing stored routine version finding")
+}
+
 func TestHandlerRoutineSecurityWarningParity(t *testing.T) {
 	handler, err := NewHandler("", "test-build")
 	if err != nil {

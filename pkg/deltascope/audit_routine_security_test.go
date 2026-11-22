@@ -8,6 +8,22 @@ import (
 	"testing"
 )
 
+func TestAuditMySQLRoutineGuardVersion(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "CREATE PROCEDURE IF NOT EXISTS app.p() SQL SECURITY INVOKER SELECT 1",
+		Dialect: DialectMySQL, TargetVersion: "5.7.44",
+	})
+	if err != nil || result.Verdict != VerdictReject {
+		t.Fatalf("expected rejection, result=%+v error=%v", result, err)
+	}
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.routine.target.valid" && finding.Metadata["reason_code"] == "routine_create_guard_unavailable" {
+			return
+		}
+	}
+	t.Fatal("missing stored routine version finding")
+}
+
 func TestAuditRoutineSecurityRetainsPartialResultAndPrivacy(t *testing.T) {
 	for _, sql := range []string{
 		"CREATE DEFINER='account_sentinel'@'host_sentinel' PROCEDURE p() SQL SECURITY DEFINER COMMENT 'comment_sentinel' SET @body_sentinel=1",

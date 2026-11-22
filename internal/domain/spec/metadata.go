@@ -27,6 +27,7 @@ type Metadata struct {
 	PGSubscriptionChange        *PGSubscriptionChangeState        `json:"-"`
 	PGLanguage                  *PGLanguageState                  `json:"-"`
 	PGGrant                     *PGGrantState                     `json:"-"`
+	MySQLRoutine                *MySQLRoutineTarget               `json:"-"`
 	PGIndexDestination          *PGIndexDestinationState          `json:"-"`
 	PGOperatorFamilyMember      *PGOperatorFamilyMemberState      `json:"-"`
 	PGOperatorFamily            *PGOperatorFamilyState            `json:"-"`
@@ -858,6 +859,7 @@ type ObjectSnapshot struct {
 	PGSubscriptionChange        *PGSubscriptionChangeState        `json:"-"`
 	PGLanguage                  *PGLanguageState                  `json:"-"`
 	PGGrant                     *PGGrantState                     `json:"-"`
+	MySQLRoutine                *MySQLRoutineTarget               `json:"-"`
 	PGIndexDestination          *PGIndexDestinationState          `json:"-"`
 	PGOperatorFamilyMember      *PGOperatorFamilyMemberState      `json:"-"`
 	PGOperatorFamily            *PGOperatorFamilyState            `json:"-"`

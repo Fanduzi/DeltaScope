@@ -233,6 +233,9 @@ func summaryForRule(ruleID string) string {
 }
 
 func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
+	if ruleID == "ddl.routine.target.valid" {
+		return "Checks MySQL stored routine guard availability and observed qualified routine identity."
+	}
 	switch ruleID {
 	case "ddl.pg.alter_foreign_table.target.valid":
 		return "Checks qualified PostgreSQL 17 foreign table targets, column guards, options, owner and namespace changes."
@@ -709,6 +712,9 @@ func metadataNotesForRule(ruleID string) *MetadataNotes {
 }
 
 func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
+	if ruleID == "ddl.routine.target.valid" {
+		return []MetadataKind{MetadataKindSchema, MetadataKindInstance}, true
+	}
 	switch ruleID {
 	case "ddl.pg.create_view.options.valid":
 		return []MetadataKind{MetadataKindInstance}, true
@@ -799,7 +805,7 @@ func FormatYAMLScalar(value any) string {
 // All other rules (including most DML rules) apply to common dialect scope.
 func dialectsForRule(ruleID string) []string {
 	switch {
-	case ruleID == "ddl.routine.security.definer.warn":
+	case ruleID == "ddl.routine.target.valid" || ruleID == "ddl.routine.security.definer.warn":
 		return []string{"mysql"}
 	case ruleID == "ddl.view.target.valid", ruleID == "ddl.view.source.valid",
 		ruleID == "ddl.view.security.definer.warn":
@@ -856,6 +862,9 @@ func categoryForRule(ruleID string) string {
 
 // categoryForDDLRule maps non-PG DDL rule IDs to categories.
 func categoryForDDLRule(ruleID string) string {
+	if ruleID == "ddl.routine.target.valid" {
+		return "procedure"
+	}
 	rest := ruleID[len("ddl."):]
 
 	// Compound verb_noun patterns where the second segment is a verb+noun.
@@ -1095,6 +1104,7 @@ func sourceForRule() string {
 const unknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
 
 var metadataAwareRuleIDs = map[string]bool{
+	"ddl.routine.target.valid":                             true,
 	"ddl.pg.alter.move_all_tablespace.target.valid":        true,
 	"ddl.pg.alter.owner.target.valid":                      true,
 	"ddl.pg.alter.rename_table.target.valid":               true,

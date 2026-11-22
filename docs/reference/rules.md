@@ -765,10 +765,11 @@ Maintainer notes: [decision](../decisions/2026-11-16-postgresql-generated-identi
 
 ---
 
-## DDL: MySQL Stored-Routine Security (1 rule)
+## DDL: MySQL Stored-Routine Rules
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
+| `ddl.routine.target.valid` | Checks qualified stored routine occupancy and the version prerequisite for CREATE IF NOT EXISTS. | blocker | Yes |
 | `ddl.routine.security.definer.warn` | Stored `CREATE PROCEDURE` / `CREATE FUNCTION` with explicit or default DEFINER security, and `ALTER PROCEDURE` / `ALTER FUNCTION` with explicit `SQL SECURITY DEFINER`, require review | warning | No |
 
 Enabled by default, MySQL only. Omitted CREATE security uses MySQL's documented DEFINER default; omitted ALTER security makes no claim about the existing mode. Explicit INVOKER emits no finding from this rule, not a safety certificate. A `DEFINER=account` clause is not an independent trigger: with INVOKER it is silent; with omitted CREATE security the default still warns. SONAME/loadable functions, DROP, TiDB vendor boundaries and PostgreSQL are outside this rule.

@@ -131,11 +131,15 @@ func (t sqlTok) wordIs(sqlText, word string) bool {
 // identText returns the identifier's bare name lowercased: backticks are
 // stripped and doubled backticks unescaped, matching ColumnName.Name.L.
 func (t sqlTok) identText(sqlText string) string {
+	return strings.ToLower(t.decodedIdentifier(sqlText))
+}
+
+func (t sqlTok) decodedIdentifier(sqlText string) string {
 	raw := t.text(sqlText)
 	if t.kind == tokQIdent {
-		raw = strings.ReplaceAll(raw[1:len(raw)-1], "``", "`")
+		return strings.ReplaceAll(raw[1:len(raw)-1], "``", "`")
 	}
-	return strings.ToLower(raw)
+	return raw
 }
 
 // defaultExprSite marks one `DEFAULT (<expr>)` occurrence in a column-option

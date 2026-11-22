@@ -67,7 +67,7 @@ func corpusRuleDialectTargets(ruleID string) []string {
 		return []string{"mysql"}
 	case "ddl.alter_procedure.notice", "ddl.create_function.notice",
 		"ddl.alter_function.notice", "ddl.drop_function.notice",
-		"ddl.routine.variable_shadowing.warn", "ddl.routine.security.definer.warn":
+		"ddl.routine.variable_shadowing.warn", "ddl.routine.security.definer.warn", "ddl.routine.target.valid":
 		// All TiDB stored-routine operations are vendor boundaries, so the
 		// routine lifecycle notices and body analysis rules can only fire
 		// under MySQL (T27/#106, T28/#107).

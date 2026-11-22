@@ -992,6 +992,11 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 		state.contaminated = true
 	}
 
+	if dialect == spec.DialectMySQL {
+		if err := enrichMySQLRoutineTargets(ctx, request, enriched, failures); err != nil {
+			return nil, err
+		}
+	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}

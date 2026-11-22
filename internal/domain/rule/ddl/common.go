@@ -595,6 +595,7 @@ const (
 	ruleIDPGAlterIdentityOptionsValid       = "ddl.pg.alter.identity.sequence_options.valid"
 	ruleIDPGAlterIdentityRestartWarn        = "ddl.pg.alter.identity.restart.warn"
 	ruleIDPGAlterIdentityCycleWarn          = "ddl.pg.alter.identity.cycle.warn"
+	ruleIDMySQLRoutineTargetValid           = "ddl.routine.target.valid"
 	ruleIDRoutineSecurityDefinerWarn        = "ddl.routine.security.definer.warn"
 	ruleIDRoutineVariableShadowingWarn      = "ddl.routine.variable_shadowing.warn"
 	ruleIDCreateUserNotice                  = "ddl.create_user.notice"

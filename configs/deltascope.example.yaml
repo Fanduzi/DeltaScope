@@ -1074,6 +1074,9 @@ rules:
     enabled: true
     level: warning
   # MySQL stored routines: CREATE defaults to DEFINER; ALTER warns only when authored.
+  ddl.routine.target.valid:
+    enabled: true
+    level: blocker
   ddl.routine.security.definer.warn:
     enabled: true
     level: warning

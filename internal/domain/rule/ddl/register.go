@@ -1022,6 +1022,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterIdentityCycleWarn, construct: newPGAlterIdentityCycleRule},
 		{ruleID: ruleIDPGGenerationDeclarationValid, construct: newPGGenerationDeclarationRule},
 		{ruleID: ruleIDPGIdentityCycleWarn, construct: newPGIdentityCycleRule},
+		{ruleID: ruleIDMySQLRoutineTargetValid, construct: newMySQLRoutineTargetRule},
 		{ruleID: ruleIDRoutineSecurityDefinerWarn, construct: newMySQLRoutineSecurityDefinerRule},
 		// T28: routine-body variable shadowing analysis.
 		{ruleID: ruleIDRoutineVariableShadowingWarn, construct: newMySQLTiDBRoutineVariableShadowingRule},

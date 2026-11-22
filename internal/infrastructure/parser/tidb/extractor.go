@@ -1922,14 +1922,16 @@ func extractCreateProcedure(stmt *ast.ProcedureInfo) *spec.DDL {
 }
 
 func extractDropProcedure(stmt *ast.DropProcedureStmt) *spec.DDL {
-	name := ""
+	decl := &spec.RoutineDeclaration{Kind: spec.RoutineKindProcedure, IfExists: stmt.IfExists}
 	if stmt.ProcedureName != nil {
-		name = stmt.ProcedureName.Name.L
+		decl.Name = spec.Table{Schema: stmt.ProcedureName.Schema.O, Name: stmt.ProcedureName.Name.O}
+		decl.CatalogTarget = decl.Name
 	}
 	return &spec.DDL{
 		Operation:  spec.DDLOperationDropProcedure,
-		ObjectName: name,
+		ObjectName: strings.ToLower(decl.Name.Name),
 		ObjectType: "procedure",
+		Routine:    decl,
 	}
 }
 

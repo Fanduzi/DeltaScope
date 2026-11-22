@@ -144,6 +144,7 @@ func parseMySQLCreateRoutine(sqlText string, toks []sqlTok, decl *spec.RoutineDe
 	i++
 	// Optional IF NOT EXISTS.
 	if i+2 < len(toks) && toks[i].wordIs(sqlText, "if") && toks[i+1].wordIs(sqlText, "not") && toks[i+2].wordIs(sqlText, "exists") {
+		decl.IfNotExists = true
 		i += 3
 	}
 	// Name: word|qident|str [, '.', name].
@@ -160,6 +161,7 @@ func parseMySQLCreateRoutine(sqlText string, toks []sqlTok, decl *spec.RoutineDe
 		if toks[i+1].kind != tokPunct {
 			if next := routineNameToken(sqlText, toks[i+1]); next != "" {
 				decl.Name.Schema = name
+				decl.CatalogTarget = spec.Table{Schema: toks[i-1].decodedIdentifier(sqlText), Name: toks[i+1].decodedIdentifier(sqlText)}
 				decl.Name.Name = next
 				i += 2
 			}
@@ -277,6 +279,7 @@ func parseMySQLAlterRoutine(sqlText string, toks []sqlTok) (ast.StmtNode, []erro
 	if i+1 < len(toks) && toks[i].kind == tokPunct && toks[i].text(sqlText) == "." {
 		if next := routineNameToken(sqlText, toks[i+1]); next != "" {
 			decl.Name.Schema = name
+			decl.CatalogTarget = spec.Table{Schema: toks[i-1].decodedIdentifier(sqlText), Name: toks[i+1].decodedIdentifier(sqlText)}
 			decl.Name.Name = next
 			i += 2
 		}
@@ -304,13 +307,14 @@ func parseMySQLDropRoutine(sqlText string, toks []sqlTok) (ast.StmtNode, []error
 		return nil, nil, false
 	}
 	i++
+	decl := &spec.RoutineDeclaration{Kind: spec.RoutineKindFunction}
 	if i+1 < len(toks) && toks[i].wordIs(sqlText, "if") && toks[i+1].wordIs(sqlText, "exists") {
+		decl.IfExists = true
 		i += 2
 	}
 	if i >= len(toks) || toks[i].kind == tokPunct {
 		return nil, nil, false
 	}
-	decl := &spec.RoutineDeclaration{Kind: spec.RoutineKindFunction}
 	name := routineNameToken(sqlText, toks[i])
 	if name == "" {
 		return nil, nil, false
@@ -320,6 +324,7 @@ func parseMySQLDropRoutine(sqlText string, toks []sqlTok) (ast.StmtNode, []error
 	if i+1 < len(toks) && toks[i].kind == tokPunct && toks[i].text(sqlText) == "." {
 		if next := routineNameToken(sqlText, toks[i+1]); next != "" {
 			decl.Name.Schema = name
+			decl.CatalogTarget = spec.Table{Schema: toks[i-1].decodedIdentifier(sqlText), Name: toks[i+1].decodedIdentifier(sqlText)}
 			decl.Name.Name = next
 			i += 2
 		}

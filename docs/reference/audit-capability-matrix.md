@@ -267,6 +267,7 @@ Maintainer notes: [decision](../decisions/2026-11-16-postgresql-generated-identi
 
 | Rule ID | MySQL | TiDB | PostgreSQL | Metadata |
 |---------|-------|------|------------|----------|
+| `ddl.routine.target.valid` | Qualified routine occupancy and CREATE guard version checks | Vendor boundary | Nonapplicable |
 | `ddl.routine.security.definer.warn` | Default-on warning for CREATE explicit/default DEFINER and ALTER explicit DEFINER | Vendor boundary; no finding | Not applicable; existing PG rules unchanged | Not required |
 
 Explicit INVOKER and ALTER omission are silent. Account clauses alone do not select a security mode. New finding fields carry only routine/kind/operation/security/provenance and optional schema; no account privileges or body payloads are resolved. Unknown/repeated security characteristics owe `unproven_routine_security` (`routine.sql_security`) rather than a last-wins interpretation. Existing body incompleteness remains visible alongside the warning. Otherwise-pass audits intentionally become review; this does not complete whole routine inventory rows. See [decision](../decisions/2026-11-16-mysql-routine-security-definer-warn.md).

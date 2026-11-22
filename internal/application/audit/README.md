@@ -130,6 +130,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | postgresql_publication_change_metadata.go and postgresql_subscription_change_metadata.go | Bind current-database replication facts to fresh catalog requests. |
 | postgresql_language_metadata.go | Binds fresh local language and callback premises to explicit PostgreSQL declarations. |
 | postgresql_grant_metadata.go | Binds fresh PostgreSQL object, role identity and column facts to GRANT and REVOKE. |
+| mysql_routine_target_metadata.go | Binds visible MySQL routine identities before earlier statements can invalidate the catalog observation. |
 | postgresql_collation_refresh_metadata.go | Binds fresh collation refresh target facts. |
 | postgresql_index_include_metadata.go | Binds fresh qualified CREATE INDEX INCLUDE relation, method and column facts. |
 | postgresql_index_destination_metadata.go | Binds observed source and destination facts to a qualified PostgreSQL index change. |

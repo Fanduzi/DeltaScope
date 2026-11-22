@@ -172,7 +172,9 @@ type RoutineBody struct {
 // definition. Fields record definitional facts only — the model never
 // predicts runtime branches or applies body effects to outer state.
 type RoutineDeclaration struct {
-	Kind RoutineKind `json:"kind"`
+	CatalogTarget         Table       `json:"-"`
+	IfExists, IfNotExists bool        `json:"-"`
+	Kind                  RoutineKind `json:"kind"`
 	// Name is the routine identity exactly as authored (schema.qualifier
 	// preserved in Schema when written).
 	Name Table `json:"name"`

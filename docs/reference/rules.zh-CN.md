@@ -702,10 +702,11 @@ provider 错误或选项数值载荷。
 
 ---
 
-## DDL：MySQL 存储例程安全上下文（1 条规则）
+## DDL：MySQL 存储例程规则
 
 | 规则 ID | 描述 | 默认级别 | 需要元数据 |
 |---------|------|:--------:|:----------:|
+| `ddl.routine.target.valid` | 检查限定存储例程名称是否已被同类例程占用，以及 CREATE IF NOT EXISTS 的版本前提。 | blocker | 是 |
 | `ddl.routine.security.definer.warn` | `CREATE PROCEDURE` / `CREATE FUNCTION` 显式或默认使用 DEFINER，以及 `ALTER PROCEDURE` / `ALTER FUNCTION` 显式指定 `SQL SECURITY DEFINER` 时提示复核 | warning | 否 |
 
 默认启用，仅适用于 MySQL。CREATE 未写安全模式时采用 MySQL 文档规定的 DEFINER 默认值；ALTER 未写该选项时不推断既有模式。显式 INVOKER 不触发本规则，但不代表代码安全。`DEFINER=account` 本身不是触发条件：配合 INVOKER 时静默；CREATE 省略模式时仍因默认模式告警。SONAME 可加载函数、DROP、TiDB 厂商边界和 PostgreSQL 不适用。

@@ -7,6 +7,33 @@ import (
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
+func TestAuditSQLMySQLRoutineGuardVersion(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test-version"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql", Arguments: map[string]any{
+			"sql": "CREATE PROCEDURE IF NOT EXISTS app.p() SQL SECURITY INVOKER SELECT 1", "dialect": "mysql", "target_version": "5.7.44",
+		},
+	})
+	if err != nil || result.IsError {
+		t.Fatalf("expected audit result, result=%+v error=%v", result, err)
+	}
+	body := requireAuditStructuredMap(t, result)
+	if body["verdict"] != "reject" {
+		t.Fatalf("verdict=%v", body["verdict"])
+	}
+	stmts := body["statements"].([]any)
+	for _, item := range stmts[0].(map[string]any)["findings"].([]any) {
+		if item.(map[string]any)["rule_id"] == "ddl.routine.target.valid" {
+			return
+		}
+	}
+	t.Fatal("missing stored routine version finding")
+}
+
 func TestAuditSQLRoutineSecurityWarningParity(t *testing.T) {
 	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test-version"}))
 	if err != nil {

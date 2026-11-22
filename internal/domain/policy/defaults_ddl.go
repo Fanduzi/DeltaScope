@@ -761,6 +761,7 @@ func ddlCoreRules() map[string]RulePolicy {
 		"ddl.event.enabled_execution.warn":            {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
 		"ddl.pg.column.generation.declaration.valid":  {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.pg.column.identity.cycle.warn":           {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
+		"ddl.routine.target.valid":                    {Enabled: true, Level: rule.LevelBlocker},
 		"ddl.routine.security.definer.warn":           {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
 		"ddl.routine.variable_shadowing.warn":         {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
 		"ddl.create_user.notice":                      {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
