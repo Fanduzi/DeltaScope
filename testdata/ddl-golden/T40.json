@@ -3028,6 +3028,1374 @@
  ],
  "metadata_cases": [
    {
+     "id": "pg-drop-view-array-single-external-row-type-array",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_array_1"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_array_1 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_1'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_array_1.source RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_1'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_array_1",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_array_1.t(id int); INSERT INTO pgview_array_1.t VALUES(7);\nCREATE VIEW pgview_array_1.source AS SELECT 1 AS id;\nCREATE TABLE pgview_array_1.private_array_table(id int,payload pgview_array_1.source[]);\nINSERT INTO pgview_array_1.private_array_table(id) VALUES (7);\nCREATE VIEW pgview_array_1.typed_consumer AS SELECT NULL::pgview_array_1.source[] AS payload;\nCREATE VIEW pgview_array_1.local_source AS SELECT 9 AS id;\nCREATE VIEW pgview_array_1.local_consumer AS SELECT NULL::pgview_array_1.local_source[] AS payload;\nCREATE VIEW pgview_array_1.free AS SELECT 2 AS id;\nCREATE VIEW pgview_array_1.cleared AS SELECT 3 AS id;\nCREATE TABLE pgview_array_1.cleared_consumer(id int,payload pgview_array_1.cleared[]);\nALTER TABLE pgview_array_1.cleared_consumer DROP COLUMN payload;\nCREATE SEQUENCE pgview_array_1.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "metadata": {
+             "reason_code": "drop_view_has_row_type_dependency"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "DependentColumn"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_1'::regnamespace AND relkind IN ('v','m')",
+         "expect": "6"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_1.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_1.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_1.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "audit preserves dependent column",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_1.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "1"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "\\set VERBOSITY verbose\nDROP VIEW pgview_array_1.source RESTRICT",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  2BP01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_1'::regnamespace AND relkind IN ('v','m')",
+         "expect": "6"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_1.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_1.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_1.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "native column state",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_1.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "1"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_array_1 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_1'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-array-guard-and-external-row-type-array",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_array_2"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_array_2 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_2'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW IF EXISTS pgview_array_2.absent, pgview_array_2.source",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_2'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_array_2",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_array_2.t(id int); INSERT INTO pgview_array_2.t VALUES(7);\nCREATE VIEW pgview_array_2.source AS SELECT 1 AS id;\nCREATE TABLE pgview_array_2.private_array_table(id int,payload pgview_array_2.source[]);\nINSERT INTO pgview_array_2.private_array_table(id) VALUES (7);\nCREATE VIEW pgview_array_2.typed_consumer AS SELECT NULL::pgview_array_2.source[] AS payload;\nCREATE VIEW pgview_array_2.local_source AS SELECT 9 AS id;\nCREATE VIEW pgview_array_2.local_consumer AS SELECT NULL::pgview_array_2.local_source[] AS payload;\nCREATE VIEW pgview_array_2.free AS SELECT 2 AS id;\nCREATE VIEW pgview_array_2.cleared AS SELECT 3 AS id;\nCREATE TABLE pgview_array_2.cleared_consumer(id int,payload pgview_array_2.cleared[]);\nALTER TABLE pgview_array_2.cleared_consumer DROP COLUMN payload;\nCREATE SEQUENCE pgview_array_2.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "metadata": {
+             "reason_code": "drop_view_has_row_type_dependency"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "DependentColumn"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_2'::regnamespace AND relkind IN ('v','m')",
+         "expect": "6"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_2.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_2.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_2.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "audit preserves dependent column",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_2.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "1"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "\\set VERBOSITY verbose\nDROP VIEW IF EXISTS pgview_array_2.absent, pgview_array_2.source",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  2BP01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_2'::regnamespace AND relkind IN ('v','m')",
+         "expect": "6"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_2.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_2.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_2.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "native column state",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_2.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "1"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_array_2 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_2'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-array-selected-typed-view-leaves-table-dependent",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_array_3"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_array_3 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_3'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_array_3.source, pgview_array_3.typed_consumer RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_3'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_array_3",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_array_3.t(id int); INSERT INTO pgview_array_3.t VALUES(7);\nCREATE VIEW pgview_array_3.source AS SELECT 1 AS id;\nCREATE TABLE pgview_array_3.private_array_table(id int,payload pgview_array_3.source[]);\nINSERT INTO pgview_array_3.private_array_table(id) VALUES (7);\nCREATE VIEW pgview_array_3.typed_consumer AS SELECT NULL::pgview_array_3.source[] AS payload;\nCREATE VIEW pgview_array_3.local_source AS SELECT 9 AS id;\nCREATE VIEW pgview_array_3.local_consumer AS SELECT NULL::pgview_array_3.local_source[] AS payload;\nCREATE VIEW pgview_array_3.free AS SELECT 2 AS id;\nCREATE VIEW pgview_array_3.cleared AS SELECT 3 AS id;\nCREATE TABLE pgview_array_3.cleared_consumer(id int,payload pgview_array_3.cleared[]);\nALTER TABLE pgview_array_3.cleared_consumer DROP COLUMN payload;\nCREATE SEQUENCE pgview_array_3.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "metadata": {
+             "reason_code": "drop_view_has_row_type_dependency"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "DependentColumn"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_3'::regnamespace AND relkind IN ('v','m')",
+         "expect": "6"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_3.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_3.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_3.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "audit preserves dependent column",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_3.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "1"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "\\set VERBOSITY verbose\nDROP VIEW pgview_array_3.source, pgview_array_3.typed_consumer RESTRICT",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  2BP01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_3'::regnamespace AND relkind IN ('v','m')",
+         "expect": "6"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_3.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_3.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_3.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "native column state",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_3.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "1"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_array_3 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_3'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-array-cascade-removes-array-column",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_array_4"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_array_4 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_4'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_array_4.source CASCADE",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_4'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_array_4",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_array_4.t(id int); INSERT INTO pgview_array_4.t VALUES(7);\nCREATE VIEW pgview_array_4.source AS SELECT 1 AS id;\nCREATE TABLE pgview_array_4.private_array_table(id int,payload pgview_array_4.source[]);\nINSERT INTO pgview_array_4.private_array_table(id) VALUES (7);\nCREATE VIEW pgview_array_4.typed_consumer AS SELECT NULL::pgview_array_4.source[] AS payload;\nCREATE VIEW pgview_array_4.local_source AS SELECT 9 AS id;\nCREATE VIEW pgview_array_4.local_consumer AS SELECT NULL::pgview_array_4.local_source[] AS payload;\nCREATE VIEW pgview_array_4.free AS SELECT 2 AS id;\nCREATE VIEW pgview_array_4.cleared AS SELECT 3 AS id;\nCREATE TABLE pgview_array_4.cleared_consumer(id int,payload pgview_array_4.cleared[]);\nALTER TABLE pgview_array_4.cleared_consumer DROP COLUMN payload;\nCREATE SEQUENCE pgview_array_4.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "DependentColumn"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_4'::regnamespace AND relkind IN ('v','m')",
+         "expect": "6"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_4.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_4.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_4.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "audit preserves dependent column",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_4.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "1"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "DROP VIEW pgview_array_4.source CASCADE",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_4'::regnamespace AND relkind IN ('v','m')",
+         "expect": "4"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_4.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_4.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_4.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "native column state",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_4.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "0"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_array_4 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_4'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-array-dropped-attribute-ignored",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_array_5"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_array_5 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_5'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_array_5.cleared RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_5'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_array_5",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_array_5.t(id int); INSERT INTO pgview_array_5.t VALUES(7);\nCREATE VIEW pgview_array_5.source AS SELECT 1 AS id;\nCREATE TABLE pgview_array_5.private_array_table(id int,payload pgview_array_5.source[]);\nINSERT INTO pgview_array_5.private_array_table(id) VALUES (7);\nCREATE VIEW pgview_array_5.typed_consumer AS SELECT NULL::pgview_array_5.source[] AS payload;\nCREATE VIEW pgview_array_5.local_source AS SELECT 9 AS id;\nCREATE VIEW pgview_array_5.local_consumer AS SELECT NULL::pgview_array_5.local_source[] AS payload;\nCREATE VIEW pgview_array_5.free AS SELECT 2 AS id;\nCREATE VIEW pgview_array_5.cleared AS SELECT 3 AS id;\nCREATE TABLE pgview_array_5.cleared_consumer(id int,payload pgview_array_5.cleared[]);\nALTER TABLE pgview_array_5.cleared_consumer DROP COLUMN payload;\nCREATE SEQUENCE pgview_array_5.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "DependentColumn"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_5'::regnamespace AND relkind IN ('v','m')",
+         "expect": "6"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_5.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_5.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_5.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "audit preserves dependent column",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_5.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "1"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "DROP VIEW pgview_array_5.cleared RESTRICT",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_5'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_5.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_5.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_5.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "native column state",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_5.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "1"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_array_5 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_5'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-array-selected-array-consumer",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_array_6"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_array_6 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_6'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_array_6.local_source, pgview_array_6.local_consumer RESTRICT",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_6'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_array_6",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_array_6.t(id int); INSERT INTO pgview_array_6.t VALUES(7);\nCREATE VIEW pgview_array_6.source AS SELECT 1 AS id;\nCREATE TABLE pgview_array_6.private_array_table(id int,payload pgview_array_6.source[]);\nINSERT INTO pgview_array_6.private_array_table(id) VALUES (7);\nCREATE VIEW pgview_array_6.typed_consumer AS SELECT NULL::pgview_array_6.source[] AS payload;\nCREATE VIEW pgview_array_6.local_source AS SELECT 9 AS id;\nCREATE VIEW pgview_array_6.local_consumer AS SELECT NULL::pgview_array_6.local_source[] AS payload;\nCREATE VIEW pgview_array_6.free AS SELECT 2 AS id;\nCREATE VIEW pgview_array_6.cleared AS SELECT 3 AS id;\nCREATE TABLE pgview_array_6.cleared_consumer(id int,payload pgview_array_6.cleared[]);\nALTER TABLE pgview_array_6.cleared_consumer DROP COLUMN payload;\nCREATE SEQUENCE pgview_array_6.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "DependentColumn"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_6'::regnamespace AND relkind IN ('v','m')",
+         "expect": "6"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_6.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_6.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_6.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "audit preserves dependent column",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_6.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "1"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "DROP VIEW pgview_array_6.local_source, pgview_array_6.local_consumer RESTRICT",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_6'::regnamespace AND relkind IN ('v','m')",
+         "expect": "4"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_6.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_6.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_6.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "native column state",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_6.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "1"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_array_6 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_6'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-array-unrelated-view",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_array_7"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_array_7 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_7'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_array_7.free",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_7'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_array_7",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_array_7.t(id int); INSERT INTO pgview_array_7.t VALUES(7);\nCREATE VIEW pgview_array_7.source AS SELECT 1 AS id;\nCREATE TABLE pgview_array_7.private_array_table(id int,payload pgview_array_7.source[]);\nINSERT INTO pgview_array_7.private_array_table(id) VALUES (7);\nCREATE VIEW pgview_array_7.typed_consumer AS SELECT NULL::pgview_array_7.source[] AS payload;\nCREATE VIEW pgview_array_7.local_source AS SELECT 9 AS id;\nCREATE VIEW pgview_array_7.local_consumer AS SELECT NULL::pgview_array_7.local_source[] AS payload;\nCREATE VIEW pgview_array_7.free AS SELECT 2 AS id;\nCREATE VIEW pgview_array_7.cleared AS SELECT 3 AS id;\nCREATE TABLE pgview_array_7.cleared_consumer(id int,payload pgview_array_7.cleared[]);\nALTER TABLE pgview_array_7.cleared_consumer DROP COLUMN payload;\nCREATE SEQUENCE pgview_array_7.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "pass",
+       "statements": 1,
+       "findings": 0,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [],
+       "finding_metadata": [],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "DependentColumn"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_7'::regnamespace AND relkind IN ('v','m')",
+         "expect": "6"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_7.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_7.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_7.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "audit preserves dependent column",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_7.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "1"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "DROP VIEW pgview_array_7.free",
+         "expect_rc": 0
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_7'::regnamespace AND relkind IN ('v','m')",
+         "expect": "5"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_7.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_7.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_7.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "native column state",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_7.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "1"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_array_7 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_7'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
+     "id": "pg-drop-view-array-later-missing-before-dependency",
+     "anchor": "postgres17",
+     "dialect": "postgresql",
+     "policy": "pg-drop-view-target",
+     "connect": {
+       "host": "127.0.0.1",
+       "port": 25432,
+       "user": "postgres",
+       "database": "postgres",
+       "schema": "pgview_array_8"
+     },
+     "fixture": {
+       "cleanup": [
+         {
+           "name": "remove owned schema",
+           "fixture_key": "schema",
+           "sql": "DROP SCHEMA pgview_array_8 CASCADE",
+           "verify": {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_8'",
+             "expect": "0"
+           }
+         }
+       ]
+     },
+     "sql": "DROP VIEW pgview_array_8.source, pgview_array_8.absent",
+     "args": [
+       "--fail-on",
+       "none"
+     ],
+     "setup": [
+       {
+         "name": "prove schema absent",
+         "fixture_key": "schema",
+         "requires_absence": true,
+         "sql": "SELECT 1",
+         "expect_rc": 0,
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_8'",
+             "expect": "0"
+           }
+         ]
+       },
+       {
+         "name": "claim schema",
+         "fixture_key": "schema",
+         "creates_fixture": true,
+         "sql": "CREATE SCHEMA pgview_array_8",
+         "expect_rc": 0
+       },
+       {
+         "name": "seed scoped relations and an independent sequence",
+         "sql": "CREATE TABLE pgview_array_8.t(id int); INSERT INTO pgview_array_8.t VALUES(7);\nCREATE VIEW pgview_array_8.source AS SELECT 1 AS id;\nCREATE TABLE pgview_array_8.private_array_table(id int,payload pgview_array_8.source[]);\nINSERT INTO pgview_array_8.private_array_table(id) VALUES (7);\nCREATE VIEW pgview_array_8.typed_consumer AS SELECT NULL::pgview_array_8.source[] AS payload;\nCREATE VIEW pgview_array_8.local_source AS SELECT 9 AS id;\nCREATE VIEW pgview_array_8.local_consumer AS SELECT NULL::pgview_array_8.local_source[] AS payload;\nCREATE VIEW pgview_array_8.free AS SELECT 2 AS id;\nCREATE VIEW pgview_array_8.cleared AS SELECT 3 AS id;\nCREATE TABLE pgview_array_8.cleared_consumer(id int,payload pgview_array_8.cleared[]);\nALTER TABLE pgview_array_8.cleared_consumer DROP COLUMN payload;\nCREATE SEQUENCE pgview_array_8.guard START 7;",
+         "expect_rc": 0
+       }
+     ],
+     "expect": {
+       "exit": 0,
+       "verdict": "reject",
+       "statements": 1,
+       "findings": 1,
+       "diagnostics": 0,
+       "unsupported": 0,
+       "coverage": "complete",
+       "statement_coverage": [
+         "complete"
+       ],
+       "statement_indices": [
+         0
+       ],
+       "rule_summary_loaded": 1,
+       "finding_entries": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "level": "blocker"
+         }
+       ],
+       "finding_metadata": [
+         {
+           "index": 0,
+           "rule_id": "ddl.pg.drop_view.target.valid",
+           "metadata": {
+             "reason_code": "drop_view_absent"
+           }
+         }
+       ],
+       "evidence_gaps": 0,
+       "evidence_gap_entries": [],
+       "serialized_not_contains": [
+         "PGDropViewState",
+         "DependentView",
+         "DependentColumn"
+       ]
+     },
+     "post_verify": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_8'::regnamespace AND relkind IN ('v','m')",
+         "expect": "6"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_8.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_8.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_8.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "audit preserves dependent column",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_8.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "1"
+       }
+     ],
+     "execute": [
+       {
+         "name": "native checks target and dependency",
+         "sql": "\\set VERBOSITY verbose\nDROP VIEW pgview_array_8.source, pgview_array_8.absent",
+         "expect_rc": 3,
+         "via": "stdin",
+         "stderr_contains": [
+           "ERROR:  42P01:"
+         ]
+       }
+     ],
+     "structure": [
+       {
+         "assert": "exact view and materialized view count",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_class WHERE relnamespace='pgview_array_8'::regnamespace AND relkind IN ('v','m')",
+         "expect": "6"
+       },
+       {
+         "assert": "original row unchanged",
+         "sql": "SELECT id FROM pgview_array_8.t",
+         "expect": "7"
+       },
+       {
+         "assert": "independent sequence unchanged",
+         "sql": "SELECT last_value::text||':'||is_called::text FROM pgview_array_8.guard",
+         "expect": "7:false"
+       },
+       {
+         "assert": "consumer row preserved",
+         "sql": "SELECT id FROM pgview_array_8.private_array_table",
+         "expect": "7"
+       },
+       {
+         "assert": "native column state",
+         "sql": "SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid='pgview_array_8.private_array_table'::regclass AND attname='payload' AND NOT attisdropped",
+         "expect": "1"
+       }
+     ],
+     "teardown": [
+       {
+         "name": "remove owned schema",
+         "fixture_key": "schema",
+         "sql": "DROP SCHEMA pgview_array_8 CASCADE",
+         "verify": [
+           {
+             "assert": "owned schema absent",
+             "sql": "SELECT count(*) FROM pg_catalog.pg_namespace WHERE nspname='pgview_array_8'",
+             "expect": "0"
+           }
+         ],
+         "drops_fixture": true,
+         "expect_rc": 0
+       }
+     ]
+   },
+   {
      "id": "pg-drop-view-set-both-selected-under-restrict",
      "anchor": "postgres17",
      "dialect": "postgresql",
@@ -25877,6 +27245,14 @@
   }
  ],
  "required_case_ids": [
+  "T40.meta.pg-drop-view-array-single-external-row-type-array",
+  "T40.meta.pg-drop-view-array-guard-and-external-row-type-array",
+  "T40.meta.pg-drop-view-array-selected-typed-view-leaves-table-dependent",
+  "T40.meta.pg-drop-view-array-cascade-removes-array-column",
+  "T40.meta.pg-drop-view-array-dropped-attribute-ignored",
+  "T40.meta.pg-drop-view-array-selected-array-consumer",
+  "T40.meta.pg-drop-view-array-unrelated-view",
+  "T40.meta.pg-drop-view-array-later-missing-before-dependency",
   "T40.cli.drop-view-set-offline",
   "T40.meta.pg-drop-view-set-both-selected-under-restrict",
   "T40.meta.pg-drop-view-set-reverse-dependency-order",

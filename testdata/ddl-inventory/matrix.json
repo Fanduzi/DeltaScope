@@ -13729,7 +13729,8 @@
               "audit_status": "notice_only",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.create-view.recursive.probes.txt",
-                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json"
+                "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
+                "file:testdata/ddl-golden/T40.json#create-view-recursive"
               ]
             }
           ]
@@ -13935,7 +13936,13 @@
                 "file:testdata/ddl-golden/T40.json#pg-drop-view-set-duplicate-authored-target",
                 "file:testdata/ddl-golden/T40.json#pg-drop-view-set-composite-type-outside-dependency",
                 "file:testdata/ddl-golden/T40.json#pg-drop-view-set-row-type-outside-selected-list",
-                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_view_row_type_dependency.expected.yaml#ddl.pg.drop_view.target.valid"
+                "file:testdata/sql-corpus/postgresql/ddl/findings/drop_view_row_type_dependency.expected.yaml#ddl.pg.drop_view.target.valid",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-array-single-external-row-type-array",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-array-selected-typed-view-leaves-table-dependent",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-array-dropped-attribute-ignored",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-array-selected-array-consumer",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-array-unrelated-view",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-array-later-missing-before-dependency"
               ]
             }
           ]
@@ -13963,7 +13970,9 @@
                 "file:testdata/ddl-golden/T40.json#pg-drop-view-set-guarded-absence-and-both-selected",
                 "file:testdata/ddl-golden/T40.json#pg-drop-view-set-wrong-kind-before-dependency",
                 "file:testdata/ddl-golden/T40.json#pg-drop-view-set-cascade-outside-selection",
-                "file:testdata/ddl-golden/T40.json#pg-drop-view-set-composite-type-cascade"
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-set-composite-type-cascade",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-array-guard-and-external-row-type-array",
+                "file:testdata/ddl-golden/T40.json#pg-drop-view-array-cascade-removes-array-column"
               ]
             }
           ]

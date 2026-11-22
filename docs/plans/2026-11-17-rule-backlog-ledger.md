@@ -1932,6 +1932,17 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/45006663515/job/137159660683),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137159762532) passed at the delivered SHA.
 
+## F12 DROP VIEW row-type array dependencies
+
+T40 compares qualified single and multi-target DROP VIEW with ordinary columns that directly use the generated array type of a selected view. A live dependent column outside the DROP set blocks RESTRICT. A selected dependent view is excluded from the external dependency check. IF EXISTS preserves the absent-target guard and a later missing target without a guard still fails first.
+
+The PostgreSQL 17 RECURSIVE cell also links the existing T40 parse and audit
+control. Recursive self-binding and query execution remain open.
+
+The CASCADE case verifies that PostgreSQL removes the dependent column and keeps the consumer table and row. The audit preserves the existing reason code and leaves general dependency closure and execution prerequisites open. [T40](../../testdata/ddl-golden/T40.json) · [Decision record](../decisions/2026-11-21-postgresql-drop-view-row-type-arrays.md)
+
+Isolated preview T40 passed 187 cases and 5,650 assertions. Verification on the fixed F12-VIEW-ARRAY candidate is pending.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
