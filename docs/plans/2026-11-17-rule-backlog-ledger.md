@@ -1091,7 +1091,7 @@ insufficient.
 | F09 | `postgresql.alter-table.constraints` | ADD PRIMARY KEY; ADD UNIQUE; ADD FOREIGN KEY; ADD CHECK; ADD CHECK NOT VALID; DROP CONSTRAINT; DROP CONSTRAINT CASCADE; VALIDATE CONSTRAINT; ALTER CONSTRAINT DEFERRABLE; ALTER CONSTRAINT NOT ENFORCED; NOT NULL NOT VALID; ALTER CONSTRAINT INHERIT/NO INHERIT | partial:D3 PK/FK migration risk and UNIQUE reuse correction; D4 bounded targets delivered; D19 exact CHECK name checks delivered; D21 USING INDEX prerequisites delivered; D22 FK target checks delivered; D23 referenced key checks delivered; D24 direct FK dependencies and D25–D26 CHECK inheritance, D31 bounded default operator classes and D32 ON DELETE SET column checks, D37 scalar FK equality and D38 CHECK validation traversal, D41 default operator class resolution and D42 bounded FK domain/enum/array comparisons and D46 CHECK subquery checks delivered; remaining dimensions open Qualified CHECK references, whole-row fallback evidence and bounded numeric constants delivered through `c5f74b71`. The other constraint decisions and explicit parser boundaries remain in the F09 review. |
 | F09 | `postgresql.alter-table.options` | SET/RESET storage parameters; SET TABLESPACE; ALL IN TABLESPACE SET TABLESPACE; SET ACCESS METHOD; SET LOGGED/UNLOGGED; REPLICA IDENTITY; SET WITHOUT OIDS dead form | partial:D9 bounded attachment delivered; D10 bounded heap declarations delivered; D11 single-table tablespace delivered; D12 ordinary-table methods delivered; D13 persistence delivered; D17 bulk tablespace prerequisites and D29 SET WITHOUT OIDS target evidence delivered; other dimensions open |
 | F09 | `postgresql.alter-table.rename-owner` | RENAME TO; SET SCHEMA; OWNER TO | partial:D15 primary destination checks delivered; D16 owner checks and D28 attached SET SCHEMA names delivered; wider dependent moves and permissions remain open |
-| F10 | `postgresql.drop-table` | DROP TABLE; IF EXISTS / multi-target | Qualified targets, guarded absence and direct RESTRICT references checked. Wider dependency classes, relation shapes and session binding remain open. |
+| F10 | `postgresql.drop-table` | DROP TABLE; IF EXISTS / multi-target | Qualified targets, guarded absence and direct RESTRICT references checked. Wider dependency classes, relation shapes and session binding remain open. Direct external row-type and array column dependencies delivered through `ce8a8478`. Same-set targets and CASCADE effects have native controls. |
 | F10 | `postgresql.truncate-table` | TRUNCATE basic; RESTART/CONTINUE IDENTITY; ONLY / CASCADE | Qualified ordering, `ONLY` and RESTRICT references checked. Native fixtures verify bounded identity and CASCADE outcomes. Remaining facts are recorded below. |
 | F11 | `postgresql.create-index` | CREATE INDEX basic; UNIQUE; CONCURRENTLY; USING method; expression index; partial WHERE; INCLUDE / NULLS DISTINCT; opclass/parameters; WITH/TABLESPACE | Qualified INCLUDE and NULLS checks add native evidence. General key and method eligibility remain open. |
 | F11 | `postgresql.alter-index` | RENAME TO; SET TABLESPACE; SET/RESET parameters; ATTACH PARTITION; IF EXISTS | Rename, tablespace, bounded storage options and exact attachment checked. Complex predicates and expression matching remain open. |
@@ -1923,7 +1923,14 @@ T38 compares external columns whose type is a selected table’s composite row o
 
 The existing finding now includes these direct normal dependency edges. Partition and inheritance targets, general dependency closure and execution permissions require further facts. [T38](../../testdata/ddl-golden/T38.json) · [Decision record](../decisions/2026-11-21-postgresql-drop-table-row-type.md)
 
-Isolated preview T38 passed 70 cases and 2,046 assertions. Verification on the fixed F10-ROW-TYPE candidate is pending.
+Isolated preview T38 passed 70 cases and 2,046 assertions. Delivered at `ce8a8478ef1431dad5fa1caf1dd9b9f912d16e53`. All 50 canonical tasks passed with 5,093 cases and
+120,309 assertions. T38 passed 70 cases and 2,046 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/45006663519/job/137159660978),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/45006663519/job/137159660590),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/45006663519/job/137159660841),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/45006663515/job/137159660683),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137159762532) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
