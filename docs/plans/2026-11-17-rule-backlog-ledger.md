@@ -1099,7 +1099,7 @@ insufficient.
 | F11 | `postgresql.alter-operator-family` | ADD/DROP members; RENAME/OWNER/SET SCHEMA | Qualified identity, changes and bounded B-tree search members checked. Other member kinds and access methods remain open. |
 | F12 | `postgresql.create-view` | CREATE VIEW; OR REPLACE / TEMP; column list; WITH options; CHECK OPTION; RECURSIVE | Options, qualified targets and source-free literal outputs have delivered checks. Broader query and session semantics remain open. |
 | F12 | `postgresql.alter-view` | RENAME/SET SCHEMA/OWNER; SET/RESET options; ALTER COLUMN DEFAULT; IF EXISTS | Qualified RENAME, SET SCHEMA, OWNER, SET/RESET options and column defaults delivered in the documented scope. Wider definition and execution facts remain open. |
-| F12 | `postgresql.drop-view` | DROP VIEW; IF EXISTS CASCADE | Ordered qualified targets, guarded absence and direct rewrite and row-type column dependencies delivered. Broader cascades and session cases remain open. |
+| F12 | `postgresql.drop-view` | DROP VIEW; IF EXISTS CASCADE | Ordered qualified targets, guarded absence and direct rewrite and row-type column dependencies delivered. Broader cascades and session cases remain open. Generated row-type array column dependencies delivered through `00911608` for qualified single and multi-target scopes. |
 | F12 | `postgresql.alter-materialized-view` | RENAME/SET SCHEMA/OWNER; SET/RESET options; DEPENDS ON EXTENSION | Qualified rename, schema-move, owner, selected storage options and installed extension checks delivered. Other options and drop-time effects remain open. |
 | F12 | `postgresql.refresh-materialized-view` | REFRESH basic; CONCURRENTLY; WITH NO DATA | Target and concurrent refresh prerequisites delivered. Runtime query, privilege and lock outcomes remain open. |
 | F13 | `postgresql.create-type` | ENUM; composite; RANGE; base type; shell type | Qualified enum, composite, range, shell and bounded base declarations verified. Additional I/O, subtype and privilege checks remain open. |
@@ -1941,7 +1941,14 @@ control. Recursive self-binding and query execution remain open.
 
 The CASCADE case verifies that PostgreSQL removes the dependent column and keeps the consumer table and row. The audit preserves the existing reason code and leaves general dependency closure and execution prerequisites open. [T40](../../testdata/ddl-golden/T40.json) · [Decision record](../decisions/2026-11-21-postgresql-drop-view-row-type-arrays.md)
 
-Isolated preview T40 passed 187 cases and 5,650 assertions. Verification on the fixed F12-VIEW-ARRAY candidate is pending.
+Isolated preview T40 passed 187 cases and 5,650 assertions. Delivered at `00911608e4ec93087207538d78fabc391bad3578`. All 50 canonical tasks passed with 5,101 cases and
+120,605 assertions. T40 passed 187 cases and 5,650 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/45011808279/job/137175555381),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/45011808279/job/137175555435),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/45011808279/job/137175555249),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/45011808292/job/137175555724),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137175629084) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
