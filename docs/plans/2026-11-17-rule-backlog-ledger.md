@@ -1026,7 +1026,7 @@ new default behavior is approved per family before implementation.
 | --- | --- | ---: | --- | --- |
 | F01 | MySQL stored routines | 5 | T27/T28 | Stored routine target and guard checks delivered at `a2f73b0c`. Runtime effects and unmodeled bodies retain evidence boundaries. |
 | F02 | MySQL trigger/event lifecycle | 5 | T29/T30 | Qualified trigger and event checks delivered at `d49b805c`. Invocation and scheduler effects retain boundaries. |
-| F03 | MySQL/TiDB columns/generated/multi-action | 6 | T03/T05/T07/T08 | unreviewed |
+| F03 | MySQL/TiDB columns/generated/multi-action | 6 | T03/T05/T07/T08 | Repeated ADD declarations and the bounded column evidence delivered at `cec48651`. Expression and execution limits remain recorded. |
 | F04 | MySQL/TiDB index lifecycle | 3 | T09/T10 | Standalone index scope delivered at `3b0cd01b`. Positive foreign key dependency evidence and TiDB guarded drops are covered. |
 | F05 | MySQL/TiDB ALTER options/online DDL | 3 | T15 | Bounded ALTER option and INSTANT table premises delivered at `07f4aca5`. |
 | F06 | TiDB recovery/flashback | 1 | T16 | Exact TiDB 8.5 recovery boundaries verified and delivered at `0b485f88`. |
@@ -1065,12 +1065,12 @@ insufficient.
 | F02 | `mysql.create-event` | ON SCHEDULE AT/EVERY; ON COMPLETION; ENABLE/DISABLE; DO body | Visible identity conflicts and native schedule controls verified. Clock and body execution remain outside audit. |
 | F02 | `mysql.alter-event` | ALTER EVENT ... ON SCHEDULE/RENAME/ENABLE/DISABLE/DO | Visible destination conflict and same-identity rename verified. Unseen names retain evidence gaps. |
 | F02 | `mysql.drop-event` | DROP EVENT; IF EXISTS | Visible identity and guarded absence verified. Scheduler and execution privileges require separate facts. |
-| F03 | `mysql.create-table-generated-column` | GENERATED ALWAYS AS (expr); VIRTUAL; STORED; expression DEFAULT (8.0.13+); INVISIBLE column (8.0.23+) | unreviewed |
-| F03 | `mysql.alter-table.add-column` | ADD COLUMN; ADD COLUMN FIRST/AFTER; ADD (col, col, ...) | unreviewed |
-| F03 | `mysql.alter-table.drop-column` | DROP COLUMN | unreviewed |
-| F03 | `mysql.alter-table.modify-column` | MODIFY COLUMN; type change; NULL/NOT NULL transitions; FIRST/AFTER | unreviewed |
-| F03 | `mysql.alter-table.multi-action` | comma-separated action lists | unreviewed |
-| F03 | `tidb.alter-table.columns` | ADD/DROP/MODIFY/CHANGE/RENAME COLUMN; FIRST/AFTER; TiDB same-object modification limits | unreviewed |
+| F03 | `mysql.create-table-generated-column` | GENERATED ALWAYS AS (expr); VIRTUAL; STORED; expression DEFAULT (8.0.13+); INVISIBLE column (8.0.23+) | Existing T07 native and catalog evidence binds generated storage, default expressions and invisible columns. |
+| F03 | `mysql.alter-table.add-column` | ADD COLUMN; ADD COLUMN FIRST/AFTER; ADD (col, col, ...) | Exact ordinal effects and grouped ADD comparisons verified. Repeated names preserve the input state. |
+| F03 | `mysql.alter-table.drop-column` | DROP COLUMN | Generated column source and dependent leaf effects verified. Other dependency facts remain scoped. |
+| F03 | `mysql.alter-table.modify-column` | MODIFY COLUMN; type change; NULL/NOT NULL transitions; FIRST/AFTER | Existing native type, NULL and position comparisons bound. Data-dependent behavior remains separate. |
+| F03 | `mysql.alter-table.multi-action` | comma-separated action lists | Bounded ordered ADD and MODIFY controls verified. Unmodeled mixed actions retain their existing gaps. |
+| F03 | `tidb.alter-table.columns` | ADD/DROP/MODIFY/CHANGE/RENAME COLUMN; FIRST/AFTER; TiDB same-object modification limits | Native same-name, guarded and case-variant repeats verified. Existing position and identity controls remain in force. |
 | F04 | `mysql.create-index` | CREATE INDEX; CREATE UNIQUE INDEX; key parts; prefix lengths | Standalone name, key-part and prefix checks verified against native results. Data-dependent uniqueness and index build outcomes remain open. |
 | F04 | `mysql.drop-index` | DROP INDEX name ON table | Native missing-index and sole foreign key backing-index refusals verified. Parent-only inbound directory evidence remains open. |
 | F04 | `tidb.drop-index` | DROP INDEX name ON table | Native sole and alternate foreign key support, unrelated indices and guarded absence verified. The shared existence rule honors the standalone guard. |
@@ -1882,7 +1882,14 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137088054325) passed at t
 
 The six parent rows move to `mixed_coverage`. The existing blocker now covers repeated names in ADD-only lists. [Decision record](../decisions/2026-11-21-mysql-tidb-repeated-add-column.md) · [T05](../../testdata/ddl-golden/T05.json) · [T07](../../testdata/ddl-golden/T07.json) · [T08](../../testdata/ddl-golden/T08.json)
 
-Isolated preview T05 passed 268 cases and 5,512 assertions. Verification on the fixed F03 candidate is pending.
+Isolated preview T05 passed 268 cases and 5,512 assertions. Delivered at `cec48651b9ec8cb47d985c215e6ce9eea94da90e`. All 50 canonical tasks passed with 5,048 cases and
+118,683 assertions. T05 passed 268 cases and 5,512 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44989397565/job/137106924695),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44989397565/job/137106924721),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44989397565/job/137106924560),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44989397560/job/137106924556),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137106999998) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
