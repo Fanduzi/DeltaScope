@@ -1036,7 +1036,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.create_view.check_option.notice` | `CREATE VIEW ... WITH CHECK OPTION` enforces check option — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.create_view.options.valid` | Checks PostgreSQL 17 CREATE VIEW option names, duplicates, Boolean and CHECK OPTION values | Gap | ✓ | blocker |
 | `ddl.pg.drop_view.cascade.warn` | `DROP VIEW ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
-| `ddl.pg.drop_view.target.valid` | Checks ordered PostgreSQL 17 DROP VIEW targets and direct rewrite or row-type column dependencies under RESTRICT | Gap | ✓ | blocker |
+| `ddl.pg.drop_view.target.valid` | Checks ordered PostgreSQL 17 DROP VIEW targets and direct rewrite, row-type and row-type array column dependencies under RESTRICT | Gap | ✓ | blocker |
 | `ddl.pg.alter_view.rename.notice` | `ALTER VIEW ... RENAME TO` changes the view name — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.alter_view.set_schema.notice` | `ALTER VIEW ... SET SCHEMA` moves the view to a different schema — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.alter_view.namespace.valid` | Checks PostgreSQL 17 view and materialized-view rename and schema-move premises | Gap | ✓ | blocker |

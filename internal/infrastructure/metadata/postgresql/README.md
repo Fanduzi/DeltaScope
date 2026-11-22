@@ -74,7 +74,7 @@ comparisons for the member and scope binding.
 | operator_family_change.go | Observes exact operator family namespace and role facts for PostgreSQL. |
 | operator_family.go | Observes the exact PostgreSQL schema, access method kind and operator family identity. |
 | drop_view.go | Observes exact DROP VIEW relation kind, normal rewrite and row-type column dependencies. |
-| drop_view_set.go | Checks the ordered qualified DROP VIEW list in one catalog read and looks for covered dependencies outside the selection. |
+| drop_view_set.go | Checks the ordered qualified DROP VIEW list in one catalog read and looks for covered dependencies outside the selection. Checks normal dependencies on view row types and their generated arrays. |
 | destructive_references.go | Observes external foreign keys for the expanded TRUNCATE RESTRICT set and checks ordered partitioned ONLY eligibility and direct foreign-key and rewrite dependencies for DROP RESTRICT over exact target lists. Also checks external live columns using a selected ordinary table’s row type or its generated array under DROP RESTRICT. |
 | refresh_materialized_view.go | Reads relation kind, population and usable unique B-tree eligibility over all index attributes. |
 | resolve_object.go | Resolves non-table database object metadata from PostgreSQL catalogs with schema-qualified ambiguity detection and privacy-safe attribute projection |

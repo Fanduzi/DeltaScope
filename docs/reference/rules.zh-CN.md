@@ -1069,7 +1069,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 | `ddl.pg.create_view.check_option.notice` | `CREATE VIEW ... WITH CHECK OPTION` 对通过视图的插入/更新强制检查选项——信息性提示 | notice | 否 |
 | `ddl.pg.create_view.options.valid` | 检查 PostgreSQL 17 视图选项声明，并拒绝常量查询上的 CHECK OPTION | blocker | 是 |
 | `ddl.pg.drop_view.cascade.warn` | `DROP VIEW ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
-| `ddl.pg.drop_view.target.valid` | 按顺序检查 PostgreSQL 17 DROP VIEW 的目标和缺失保护，以及 RESTRICT 下的直接重写依赖和行类型列依赖 | blocker | 是 |
+| `ddl.pg.drop_view.target.valid` | 按顺序检查 PostgreSQL 17 DROP VIEW 的目标和缺失保护，以及 RESTRICT 下的直接重写依赖和行类型及其数组的列依赖 | blocker | 是 |
 | `ddl.pg.alter_view.rename.notice` | `ALTER VIEW ... RENAME TO` 变更视图名称——信息性提示 | notice | 否 |
 | `ddl.pg.alter_view.set_schema.notice` | `ALTER VIEW ... SET SCHEMA` 将视图移至不同 schema——信息性提示 | notice | 否 |
 | `ddl.pg.alter_view.namespace.valid` | 检查 PostgreSQL 17 视图和物化视图改名、迁移 schema 的精确源、缺失目标保护及目标名称冲突 | blocker | 是 |

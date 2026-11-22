@@ -60,11 +60,13 @@ func (p *Provider) resolveDropViewSet(ctx context.Context, req spec.ObjectLookup
 		    select 3 as phase, b.position, 'drop_view_has_row_type_dependency'
 		    from bound b
 		    where not $3::pg_catalog.bool and b.relkind OPERATOR(pg_catalog.=) 'v' and exists (
-		        select 1 from pg_catalog.pg_depend d
+		        select 1 from pg_catalog.pg_type row_type
+		        join pg_catalog.pg_depend d on d.refobjid OPERATOR(pg_catalog.=) any(array[row_type.oid, row_type.typarray])
 		        join pg_catalog.pg_attribute a on a.attrelid OPERATOR(pg_catalog.=) d.objid
 		          and a.attnum OPERATOR(pg_catalog.=) d.objsubid and a.attnum OPERATOR(pg_catalog.>) 0 and not a.attisdropped
-		        where d.refclassid OPERATOR(pg_catalog.=) 'pg_catalog.pg_type'::pg_catalog.regclass
-		          and d.refobjid OPERATOR(pg_catalog.=) b.reltype and d.refobjsubid OPERATOR(pg_catalog.=) 0
+		        where row_type.oid OPERATOR(pg_catalog.=) b.reltype
+		          and d.refclassid OPERATOR(pg_catalog.=) 'pg_catalog.pg_type'::pg_catalog.regclass
+		          and d.refobjsubid OPERATOR(pg_catalog.=) 0
 		          and d.classid OPERATOR(pg_catalog.=) 'pg_catalog.pg_class'::pg_catalog.regclass and d.deptype OPERATOR(pg_catalog.=) 'n'
 		          and not exists (select 1 from bound member where member.oid OPERATOR(pg_catalog.=) d.objid)
 		    )

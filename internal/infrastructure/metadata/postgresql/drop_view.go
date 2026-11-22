@@ -29,11 +29,13 @@ func (p *Provider) resolveDropView(ctx context.Context, req spec.ObjectLookupReq
 		    select 1 from pg_catalog.unnest(c.reloptions) as options(entry)
 		    where pg_catalog.split_part(entry, '=', 1) OPERATOR(pg_catalog.=) 'check_option'
 		), $3::pg_catalog.bool and exists (
-		    select 1 from pg_catalog.pg_depend d
+		    select 1 from pg_catalog.pg_type row_type
+		    join pg_catalog.pg_depend d on d.refobjid OPERATOR(pg_catalog.=) any(array[row_type.oid, row_type.typarray])
 		    join pg_catalog.pg_attribute a on a.attrelid OPERATOR(pg_catalog.=) d.objid
 		      and a.attnum OPERATOR(pg_catalog.=) d.objsubid and a.attnum OPERATOR(pg_catalog.>) 0 and not a.attisdropped
-		    where d.refclassid OPERATOR(pg_catalog.=) 'pg_catalog.pg_type'::pg_catalog.regclass
-		      and d.refobjid OPERATOR(pg_catalog.=) c.reltype and d.refobjsubid OPERATOR(pg_catalog.=) 0
+		    where row_type.oid OPERATOR(pg_catalog.=) c.reltype
+		      and d.refclassid OPERATOR(pg_catalog.=) 'pg_catalog.pg_type'::pg_catalog.regclass
+		      and d.refobjsubid OPERATOR(pg_catalog.=) 0
 		      and d.classid OPERATOR(pg_catalog.=) 'pg_catalog.pg_class'::pg_catalog.regclass
 		      and d.objid OPERATOR(pg_catalog.<>) c.oid and d.deptype OPERATOR(pg_catalog.=) 'n'
 		)

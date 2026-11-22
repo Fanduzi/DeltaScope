@@ -1132,7 +1132,7 @@ These rules guard PostgreSQL view lifecycle operations beyond the base `CREATE V
 | `ddl.pg.create_view.check_option.notice` | `CREATE VIEW ... WITH CHECK OPTION` enforces check option on inserts/updates through the view — informational notice | notice | No |
 | `ddl.pg.create_view.options.valid` | Checks PostgreSQL 17 view option declarations and refuses CHECK OPTION on a source-free literal query | blocker | Yes |
 | `ddl.pg.drop_view.cascade.warn` | `DROP VIEW ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
-| `ddl.pg.drop_view.target.valid` | Checks ordered PostgreSQL 17 DROP VIEW targets, guarded absence, and direct rewrite and row-type column dependencies under RESTRICT | blocker | Yes |
+| `ddl.pg.drop_view.target.valid` | Checks ordered PostgreSQL 17 DROP VIEW targets, guarded absence, and direct rewrite and row-type or row-type array column dependencies under RESTRICT | blocker | Yes |
 | `ddl.pg.alter_view.rename.notice` | `ALTER VIEW ... RENAME TO` changes the view name — informational notice | notice | No |
 | `ddl.pg.alter_view.set_schema.notice` | `ALTER VIEW ... SET SCHEMA` moves the view to a different schema — informational notice | notice | No |
 | `ddl.pg.alter_view.namespace.valid` | Checks exact PostgreSQL 17 VIEW and MATERIALIZED VIEW rename and schema-move sources, guards and destination collisions | blocker | Yes |
