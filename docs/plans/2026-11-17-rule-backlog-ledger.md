@@ -1027,7 +1027,7 @@ new default behavior is approved per family before implementation.
 | F01 | MySQL stored routines | 5 | T27/T28 | Stored routine target and guard checks delivered at `a2f73b0c`. Runtime effects and unmodeled bodies retain evidence boundaries. |
 | F02 | MySQL trigger/event lifecycle | 5 | T29/T30 | Qualified trigger and event checks delivered at `d49b805c`. Invocation and scheduler effects retain boundaries. |
 | F03 | MySQL/TiDB columns/generated/multi-action | 6 | T03/T05/T07/T08 | unreviewed |
-| F04 | MySQL/TiDB index lifecycle | 3 | T09/T10 | unreviewed |
+| F04 | MySQL/TiDB index lifecycle | 3 | T09/T10 | Standalone index scope delivered at `3b0cd01b`. Positive foreign key dependency evidence and TiDB guarded drops are covered. |
 | F05 | MySQL/TiDB ALTER options/online DDL | 3 | T15 | Bounded ALTER option and INSTANT table premises delivered at `07f4aca5`. |
 | F06 | TiDB recovery/flashback | 1 | T16 | Exact TiDB 8.5 recovery boundaries verified and delivered at `0b485f88`. |
 | F07 | PostgreSQL schema/collation | 2 | T35 | Qualified schema creation and collation checks delivered at `3eba78f6`. Embedded schema elements and wider provider and execution facts remain open. |
@@ -1071,9 +1071,9 @@ insufficient.
 | F03 | `mysql.alter-table.modify-column` | MODIFY COLUMN; type change; NULL/NOT NULL transitions; FIRST/AFTER | unreviewed |
 | F03 | `mysql.alter-table.multi-action` | comma-separated action lists | unreviewed |
 | F03 | `tidb.alter-table.columns` | ADD/DROP/MODIFY/CHANGE/RENAME COLUMN; FIRST/AFTER; TiDB same-object modification limits | unreviewed |
-| F04 | `mysql.create-index` | CREATE INDEX; CREATE UNIQUE INDEX; key parts; prefix lengths | unreviewed |
-| F04 | `mysql.drop-index` | DROP INDEX name ON table | unreviewed |
-| F04 | `tidb.drop-index` | DROP INDEX name ON table | unreviewed |
+| F04 | `mysql.create-index` | CREATE INDEX; CREATE UNIQUE INDEX; key parts; prefix lengths | Standalone name, key-part and prefix checks verified against native results. Data-dependent uniqueness and index build outcomes remain open. |
+| F04 | `mysql.drop-index` | DROP INDEX name ON table | Native missing-index and sole foreign key backing-index refusals verified. Parent-only inbound directory evidence remains open. |
+| F04 | `tidb.drop-index` | DROP INDEX name ON table | Native sole and alternate foreign key support, unrelated indices and guarded absence verified. The shared existence rule honors the standalone guard. |
 | F05 | `mysql.alter-table.online-ddl` | ALGORITHM=INSTANT/INPLACE/COPY/DEFAULT; LOCK=NONE/SHARED/EXCLUSIVE/DEFAULT | Native versioned modifier and table-premise checks verified. Record and row-version limits still need evidence. |
 | F05 | `mysql.alter-table.options` | ORDER BY; CONVERT TO CHARACTER SET; DEFAULT CHARACTER SET; ROW_FORMAT; AUTO_INCREMENT=; FORCE; ENABLE/DISABLE KEYS; COMMENT; ENGINE | Existing and added canonical controls verify authored option effects. Runtime work depends on engine state. |
 | F05 | `tidb.alter-table.online-options` | ALGORITHM= (capability assertion, not selection); LOCK=; multiple actions per ALTER | Native modifiers and tested multi-action effects verified. Other combinations require their own evidence. |
@@ -1857,7 +1857,14 @@ and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137069370087) passed at t
 
 The three parent rows move to `mixed_coverage`. The warning uses the same dependency classifier as ordered state and keeps the underlying constraint identities private. [T09](../../testdata/ddl-golden/T09.json) · [Decision record](../decisions/2026-11-21-mysql-tidb-drop-index-dependencies.md)
 
-Isolated preview T09 passed 157 cases and 4,440 assertions. Verification on the fixed F04 candidate is pending.
+Isolated preview T09 passed 157 cases and 4,440 assertions. Delivered at `3b0cd01b0bd0d6f0b482aa485f31b1d5b9521865`. All 50 canonical tasks passed with 5,027 cases and
+118,186 assertions. T09 passed 157 cases and 4,440 assertions. The validator,
+read-only review, owned resource cleanup and merged-root gates passed.
+[Go tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44983193844/job/137087988059),
+[PostgreSQL tests](https://github.com/Fanduzi/DeltaScope/actions/runs/44983193844/job/137087988329),
+[Lint](https://github.com/Fanduzi/DeltaScope/actions/runs/44983193844/job/137087988418),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/44983193879/job/137087988257),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137088054325) passed at the delivered SHA.
 
 ## Evidence required for each dimension review
 
