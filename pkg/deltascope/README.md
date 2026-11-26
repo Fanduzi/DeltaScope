@@ -105,6 +105,9 @@ Stable public package surface for library consumers.
   excluded from JSON. `SystemColumns` separately carries real negative-attnum members with
   `System` true; missing system facts never establish absence or guarded no-op.
   `TypeStorage` is actual `pg_type.typstorage`, not the current column strategy.
+  For the bounded SET DEFAULT check, set `BuiltinBool` only for an observed
+  built-in `pg_catalog.bool` column and use `TypeWidth: 32` only for built-in
+  `pg_catalog.int4`. Domains do not qualify. `BuiltinBool` is excluded from JSON.
   Exact names and `Ordinary` scope are required. Set `Typed` for tables created
   with `CREATE TABLE … OF`; D8 target rules leave those tables unverified. Sequence parameters are
   stable definition facts, never current/next issuance values. SDK and application
