@@ -20,6 +20,7 @@ func TestAuditPGColumnGenerationContract(t *testing.T) {
 	}{
 		{"ALTER TABLE app.t ALTER COLUMN id SET DEFAULT (SELECT 2)", "ddl.pg.alter.column.generation.transition.valid", "reject", PGColumnState{Name: "id"}, false},
 		{"ALTER TABLE app.t ALTER COLUMN id SET DEFAULT 1", "ddl.pg.alter.column.generation.transition.valid", "reject", PGColumnState{Name: "id", TypeWidth: -1, BuiltinBool: true}, false},
+		{"ALTER TABLE app.t ALTER COLUMN id SET DEFAULT $1", "ddl.pg.alter.column.generation.transition.valid", "reject", PGColumnState{Name: "id"}, false},
 		{"ALTER TABLE app.t ALTER COLUMN id DROP NOT NULL", "ddl.pg.alter.column.generation.transition.valid", "reject", PGColumnState{Name: "id", TypeWidth: 32, NotNull: true, ReplicaIdentityKeyKnown: true, ReplicaIdentityKey: true}, false},
 		{"ALTER TABLE app.t ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY", "ddl.pg.alter.column.generation.transition.valid", "reject", PGColumnState{Name: "id", Identity: "d", TypeWidth: 64, NotNull: true}, false},
 		{"ALTER TABLE app.t ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY(CACHE 0)", "ddl.pg.alter.identity.sequence_options.valid", "reject", PGColumnState{Name: "id", TypeWidth: 64, NotNull: true}, false},
@@ -40,13 +41,16 @@ func TestAuditPGColumnGenerationContract(t *testing.T) {
 		for _, f := range r.Statements[0].Findings {
 			if f.RuleID == tc.id {
 				found = true
+				if tc.sql == "ALTER TABLE app.t ALTER COLUMN id SET DEFAULT $1" && f.Metadata["reason_code"] != "default_parameter_inapplicable" {
+					t.Fatalf("finding=%+v", f)
+				}
 				if tc.member.BuiltinBool && f.Metadata["reason_code"] != "default_literal_type_mismatch" {
 					t.Fatalf("finding=%+v", f)
 				}
 			}
 			if strings.HasPrefix(f.RuleID, "ddl.pg.alter.identity.") || f.RuleID == "ddl.pg.alter.column.generation.transition.valid" {
 				b, _ := json.Marshal(f)
-				if strings.Contains(string(b), "IdentitySequence") || strings.Contains(string(b), "PGColumns") || strings.Contains(string(b), "BuiltinBool") || strings.Contains(string(b), "DefaultLiteralType") {
+				if strings.Contains(string(b), "IdentitySequence") || strings.Contains(string(b), "PGColumns") || strings.Contains(string(b), "BuiltinBool") || strings.Contains(string(b), "DefaultLiteralType") || strings.Contains(string(b), "DefaultHasParameter") || strings.Contains(string(b), "$1") {
 					t.Fatal("private facts leaked")
 				}
 			}

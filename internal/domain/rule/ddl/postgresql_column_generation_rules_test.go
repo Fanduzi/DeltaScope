@@ -120,6 +120,30 @@ func TestPGSetDefaultReferenceTargetPrecedence(t *testing.T) {
 	}
 }
 
+func TestPGSetDefaultParameterScope(t *testing.T) {
+	r := pgColumnGenerationRule{id: ruleIDPGColumnGenerationTransitionValid, level: rule.LevelBlocker}
+	for _, tc := range []struct {
+		name, reason, gap string
+		change            func(*spec.Statement)
+	}{
+		{"qualified ordinary", "default_parameter_inapplicable", "", func(*spec.Statement) {}},
+		{"unqualified", "", "", func(s *spec.Statement) { s.DDL.Table.Schema = "" }},
+		{"multi-action", "", "", func(s *spec.Statement) { s.DDL.Alter = append(s.DDL.Alter, spec.Alter{Action: "drop_default"}) }},
+		{"nonordinary", "", "target_table.pg_columns", func(s *spec.Statement) { s.Metadata.TargetTable.PGColumns.Ordinary = false }},
+		{"generated first", "generation_default_conflict", "", func(s *spec.Statement) { s.Metadata.TargetTable.PGColumns.Columns[0].Generated = "s" }},
+		{"reference first", "default_expression_reference_inapplicable", "", func(s *spec.Statement) { s.DDL.Alter[0].PGColumnTransition.DefaultHasDisallowedReference = true }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := pgGenerationTransitionStatement("set_default", &spec.PGColumnState{})
+			s.DDL.Alter[0].PGColumnTransition.DefaultHasParameter = true
+			tc.change(&s)
+			if reason, gap := r.assess(s, 0); reason != tc.reason || gap != tc.gap {
+				t.Fatalf("reason=%q gap=%q; want reason=%q gap=%q", reason, gap, tc.reason, tc.gap)
+			}
+		})
+	}
+}
+
 func TestPGSetDefaultLiteralAssignment(t *testing.T) {
 	r := pgColumnGenerationRule{id: ruleIDPGColumnGenerationTransitionValid, level: rule.LevelBlocker}
 	for _, tc := range []struct {

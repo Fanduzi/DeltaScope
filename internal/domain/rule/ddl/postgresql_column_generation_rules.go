@@ -167,9 +167,13 @@ func pgColumnTransitionTarget(s spec.Statement, index int) (*spec.PGColumnState,
 			if f.DefaultHasDisallowedReference {
 				return c, "default_expression_reference_inapplicable", ""
 			}
-			if len(s.DDL.Alter) == 1 && spec.PGOrdinaryTableBound(s) &&
-				(f.DefaultLiteralType == "bool" && c.TypeWidth == 32 || f.DefaultLiteralType == "int4" && c.BuiltinBool) {
-				return c, "default_literal_type_mismatch", ""
+			if len(s.DDL.Alter) == 1 && spec.PGOrdinaryTableBound(s) {
+				if f.DefaultHasParameter {
+					return c, "default_parameter_inapplicable", ""
+				}
+				if f.DefaultLiteralType == "bool" && c.TypeWidth == 32 || f.DefaultLiteralType == "int4" && c.BuiltinBool {
+					return c, "default_literal_type_mismatch", ""
+				}
 			}
 		}
 	case "drop_not_null":
@@ -277,6 +281,9 @@ func (r pgColumnGenerationRule) Evaluate(ctx context.Context, s spec.Statement) 
 			message = "A PostgreSQL descendant partition still allows NULL in this column"
 		case "drop_expression_inherited_column":
 			message = "PostgreSQL cannot drop a generation expression from an inherited column directly"
+		case "default_parameter_inapplicable":
+			message = "PostgreSQL cannot bind a parameter in this column default"
+			suggestion = "Use a default expression that does not require a statement parameter"
 		case "default_literal_type_mismatch":
 			message = "PostgreSQL cannot assign this default literal type to the column"
 			suggestion = "Use a default expression of the column's type"

@@ -78,6 +78,27 @@ func TestPGSetDefaultReferenceFacts(t *testing.T) {
 	}
 }
 
+func TestPGSetDefaultParameterFacts(t *testing.T) {
+	for _, tc := range []struct {
+		expression string
+		parameter  bool
+	}{
+		{"$1", true}, {"COALESCE(2, $1)", true}, {"'$1'", false},
+		{"pg_catalog.abs($1)", false}, {"COALESCE(2, $1 + 1)", false},
+	} {
+		t.Run(tc.expression, func(t *testing.T) {
+			a := extractPostgreSQLStatement(t, "ALTER TABLE app.t ALTER COLUMN id SET DEFAULT "+tc.expression).DDL.Alter[0]
+			if a.PGColumnTransition == nil || a.PGColumnTransition.DefaultHasParameter != tc.parameter {
+				t.Fatalf("unexpected SET DEFAULT facts: %+v", a.PGColumnTransition)
+			}
+			encoded, err := json.Marshal(a)
+			if err != nil || bytes.Contains(encoded, []byte("DefaultHasParameter")) || bytes.Contains(encoded, []byte("$1")) {
+				t.Fatalf("unexpected public ALTER action: %s (%v)", encoded, err)
+			}
+		})
+	}
+}
+
 func TestPGColumnTransitionInt64AndUnknown(t *testing.T) {
 	s := extractPostgreSQLStatement(t, "ALTER TABLE t ALTER COLUMN id RESTART WITH 2147483648 SET INCREMENT -9223372036854775808 SET MAXVALUE 9223372036854775807")
 	f := s.DDL.Alter[0].PGColumnTransition

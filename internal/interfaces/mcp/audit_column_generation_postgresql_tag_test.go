@@ -24,6 +24,7 @@ func TestAuditSQLPGColumnGeneration(t *testing.T) {
 	}{
 		{"SET DEFAULT (SELECT 2)", "ddl.pg.alter.column.generation.transition.valid", "reject", spec.PGColumnState{Name: "id"}, false},
 		{"SET DEFAULT 1", "ddl.pg.alter.column.generation.transition.valid", "reject", spec.PGColumnState{Name: "id", TypeWidth: -1, BuiltinBool: true}, false},
+		{"SET DEFAULT $1", "ddl.pg.alter.column.generation.transition.valid", "reject", spec.PGColumnState{Name: "id"}, false},
 		{"DROP NOT NULL", "ddl.pg.alter.column.generation.transition.valid", "reject", spec.PGColumnState{Name: "id", TypeWidth: 32, NotNull: true, ReplicaIdentityKeyKnown: true, ReplicaIdentityKey: true}, false},
 		{"ADD GENERATED ALWAYS AS IDENTITY", "ddl.pg.alter.column.generation.transition.valid", "reject", identity, false},
 		{"ADD GENERATED ALWAYS AS IDENTITY(CACHE 0)", "ddl.pg.alter.identity.sequence_options.valid", "reject", spec.PGColumnState{Name: "id", TypeWidth: 64, NotNull: true}, false},
@@ -65,7 +66,11 @@ func TestAuditSQLPGColumnGeneration(t *testing.T) {
 			finding := f.(map[string]any)
 			if finding["rule_id"] == tc.id {
 				found = true
-				if metadata, _ := finding["metadata"].(map[string]any); tc.member.BuiltinBool && metadata["reason_code"] != "default_literal_type_mismatch" {
+				metadata, _ := finding["metadata"].(map[string]any)
+				if tc.suffix == "SET DEFAULT $1" && metadata["reason_code"] != "default_parameter_inapplicable" {
+					t.Fatal(body)
+				}
+				if tc.member.BuiltinBool && metadata["reason_code"] != "default_literal_type_mismatch" {
 					t.Fatal(body)
 				}
 			}

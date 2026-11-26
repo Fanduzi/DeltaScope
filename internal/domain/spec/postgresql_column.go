@@ -10,6 +10,7 @@ type PGColumnTransition struct {
 	Unmodeled                     bool
 	DefaultHasDisallowedReference bool   // Raw column reference or subquery in SET DEFAULT.
 	DefaultLiteralType            string `json:"-"` // bool or int4 for a direct parser constant.
+	DefaultHasParameter           bool   `json:"-"` // Direct parameter or direct COALESCE argument.
 }
 
 // PGIdentitySequenceState contains only dependency-bound stable catalog facts.

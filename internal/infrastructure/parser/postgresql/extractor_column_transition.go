@@ -32,6 +32,13 @@ func pgColumnTransitionFromCmd(cmd *pg_query.AlterTableCmd) *spec.PGColumnTransi
 	case pg_query.AlterTableType_AT_ColumnDefault:
 		if expression := cmd.GetDef(); expression != nil {
 			facts.DefaultHasDisallowedReference = pgExpressionHasReference(expression, true)
+			facts.DefaultHasParameter = expression.GetParamRef() != nil
+			for _, arg := range expression.GetCoalesceExpr().GetArgs() {
+				if arg.GetParamRef() != nil {
+					facts.DefaultHasParameter = true
+					break
+				}
+			}
 			constant := expression.GetAConst()
 			switch {
 			case constant.GetBoolval() != nil:

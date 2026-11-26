@@ -34,3 +34,19 @@ PostgreSQL 17.7 refused both cross-type assignments with `42804`. `cookDefault` 
 - [PostgreSQL 17.7 `cookDefault`](https://github.com/postgres/postgres/blob/REL_17_7/src/backend/catalog/heap.c)
 - [PostgreSQL 17.7 built-in cast definitions](https://github.com/postgres/postgres/blob/REL_17_7/src/include/catalog/pg_cast.dat)
 - [T37 native and audit controls](../../testdata/ddl-golden/T37.json)
+
+## Positional parameters in SET DEFAULT
+
+PostgreSQL 17.7 cooks an ALTER COLUMN default in a fresh parser state without
+parameter bindings. A bare parameter or a direct COALESCE argument fails with
+`42P02`; quoted text containing the same characters remains a string literal.
+The existing default-on rule adds `default_parameter_inapplicable` only for
+those two AST shapes in single-action SET DEFAULT on a fresh qualified ordinary
+non-typed table. The pre-existing target, identity, generation and illegal
+reference checks retain precedence. The parser retains only a private boolean;
+no parameter number or expression is added to the finding. This does not
+analyze parameter occurrences in other expressions or broaden relation scope.
+
+- [PostgreSQL 17.7 default cooking](https://github.com/postgres/postgres/blob/REL_17_7/src/backend/catalog/heap.c)
+- [PostgreSQL 17.7 parameter transformation](https://github.com/postgres/postgres/blob/REL_17_7/src/backend/parser/parse_expr.c)
+- [T37 parameter refusals, quoted text, generated and subquery controls](../../testdata/ddl-golden/T37.json)
