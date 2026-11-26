@@ -2021,6 +2021,43 @@ read-only review, owned resource cleanup and merged-root gates passed.
 [TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/45041021524/job/137265268673),
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/137265404042) passed at the delivered SHA.
 
+## F09 direct bool/int4 SET DEFAULT assignment
+
+For `postgresql.alter-table.column-attributes` → `SET/DROP DEFAULT` →
+`postgres17`, the existing default-on rule adds two refusals: direct `bool → int4`
+and `int4 → bool` literals in single-action `SET DEFAULT` against an observed
+qualified ordinary column. PostgreSQL 17.7 refused both with `42804`; same-type,
+accepted unknown-text and explicit-cast controls stayed silent. The finding
+adds `default_literal_type_mismatch`, not catalog IDs or literal contents.
+Other coercions, dependencies, relation kinds and ordered action effects remain
+open. The inventory adds seven evidence links without changing classifications
+or denominators. See the [decision](../decisions/2026-11-21-postgresql-set-default-expression-references.md#direct-boolean-and-int4-literal-assignment)
+and the [T37 controls](../../testdata/ddl-golden/T37.json).
+
+`milestone/pg-alter-default-assignment` fast-forwarded from
+`0101f8c09a42680d8da0bc687b8f7eaaf32046ef` to
+`7d76a83789650be50b8c63bf345f97b33e47593c`; the same range was pushed to
+`origin/main`. The implementation is `9a6d4389`; the follow-up adds SDK, HTTP
+and MCP assertions. The final candidate passed build, unit and lint gates
+with and without PostgreSQL tags, vet, tidy, formatting, diff, inventory,
+corpus, coverage catalog and decision-record checks. In the isolated worktree,
+`make ddl-golden TASK=all ARTIFACT_DIR="$receipt/full"` ran 50 tasks, 5,124 cases
+and 121,403 assertions with no failures or skips. The command
+`python3 scripts/ddl_golden.py validate --artifact "$receipt/full/all/artifact.json"`
+validated the aggregate. T37
+passed 673 cases and 20,321 assertions. Read-only review confirmed the SHA,
+CLI hash, scope and evidence bindings. The merged-tree checks passed with a
+fresh lint cache after the shared cache reported paths from a removed preview.
+The protected checkout was unchanged; isolated resources were cleaned up and
+its VM stopped. Receipts: `/private/tmp/ds-r2-opclass.CUubqR/f09-default-assignment-7d76a837/`.
+
+At that implementation SHA, [Go](https://github.com/Fanduzi/DeltaScope/actions/runs/45873004650/job/140092946220),
+[PostgreSQL](https://github.com/Fanduzi/DeltaScope/actions/runs/45873004650/job/140092946260),
+[lint](https://github.com/Fanduzi/DeltaScope/actions/runs/45873004650/job/140092945804),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/45873004655/job/140092945521),
+and [Pages](https://github.com/Fanduzi/DeltaScope/runs/140093067017) succeeded.
+This documentation records those results, not a new Golden run. F09 remains open.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
