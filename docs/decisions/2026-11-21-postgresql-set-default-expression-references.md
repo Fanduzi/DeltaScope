@@ -23,4 +23,14 @@ evidence.
 - [PostgreSQL 17.7 expression transformation](https://github.com/postgres/postgres/blob/REL_17_7/src/backend/parser/parse_expr.c)
 - [PostgreSQL 17.7 type modifier handling](https://github.com/postgres/postgres/blob/REL_17_7/src/backend/parser/parse_type.c)
 
-The joint T37 preview passed 535 cases with 15,589 assertions.
+The joint D40 T37 preview passed 535 cases with 15,589 assertions.
+
+## Direct Boolean and int4 literal assignment
+
+On a single SET DEFAULT action for a fresh qualified persistent ordinary non-typed table, the existing default-on blocker also rejects a direct Boolean parser constant assigned to a built-in int4 column, or a direct int4 parser constant assigned to a built-in bool column. Existing target, identity, generation and reference checks take precedence. The parser keeps the literal's kind, not the value; the catalog keeps a Boolean type flag and the existing integer width. The finding adds only `default_literal_type_mismatch` and retains the existing authored column identity. No public catalog OIDs or default text are added.
+
+PostgreSQL 17.7 refused both cross-type assignments with `42804`. `cookDefault` uses `COERCION_ASSIGNMENT`; the built-in casts between bool and int4 are explicit-only. Same-type literals, unknown text accepted by bool input, and an explicit cast are native acceptance controls. This does not validate explicit conversions, text, NULL, other types, domain or function behavior, runtime evaluation, or multi-action ALTER. The existing coverage of those cases is unchanged.
+
+- [PostgreSQL 17.7 `cookDefault`](https://github.com/postgres/postgres/blob/REL_17_7/src/backend/catalog/heap.c)
+- [PostgreSQL 17.7 built-in cast definitions](https://github.com/postgres/postgres/blob/REL_17_7/src/include/catalog/pg_cast.dat)
+- [T37 native and audit controls](../../testdata/ddl-golden/T37.json)

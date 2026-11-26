@@ -162,7 +162,7 @@ Normalized statement specifications used as the stable input for rule evaluation
   `TableSnapshot.PGRelation`, `DDL.PGTableIfExists`, `DDL.PGTableCatalogQualified`
   and `Alter.PGAddColumnIfNotExists` are internal evidence excluded from JSON.
 - `Alter.PGCheckHasSubquery` records a private AST fact for PostgreSQL ADD CHECK predicates.
-- `PGColumnTransition` (including a private SET DEFAULT reference flag), `PGColumnCatalog`, `PGColumnState`, `PGIdentitySequenceState`
+- `PGColumnTransition` (private SET DEFAULT reference and direct literal type facts), `PGColumnCatalog`, `PGColumnState` (including private built-in Boolean identity), `PGIdentitySequenceState`
   The private catalog carries an observed `Typed` marker for D8 ADD/RENAME scope.
   Internal authored/cached evidence; `PGColumnCatalog.FindColumn` proves exact-name
   binding or user absence only for a complete ordinary-table user directory;

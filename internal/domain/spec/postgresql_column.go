@@ -8,7 +8,8 @@ type PGColumnTransition struct {
 	ModeCount                     int
 	Options                       []SequenceOption // source order, never last-wins
 	Unmodeled                     bool
-	DefaultHasDisallowedReference bool // Raw column reference or subquery in SET DEFAULT.
+	DefaultHasDisallowedReference bool   // Raw column reference or subquery in SET DEFAULT.
+	DefaultLiteralType            string `json:"-"` // bool or int4 for a direct parser constant.
 }
 
 // PGIdentitySequenceState contains only dependency-bound stable catalog facts.
@@ -26,6 +27,7 @@ type PGColumnState struct {
 	Identity    string // pg_attribute.attidentity: empty, a, d
 	Generated   string // pg_attribute.attgenerated: empty, s on PG17
 	TypeWidth   int
+	BuiltinBool bool   `json:"-"`
 	TypeStorage string // observed pg_type.typstorage: p/e/m/x; empty is unknown
 	System      bool   // observed negative pg_attribute.attnum, not a name inference
 	NotNull     bool

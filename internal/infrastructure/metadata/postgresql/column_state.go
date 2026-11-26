@@ -61,7 +61,8 @@ func (p *Provider) loadPGColumnCatalog(ctx context.Context, snapshot *spec.Table
 			return fmt.Errorf("incomplete column generation member")
 		}
 		state := spec.PGColumnState{Name: name.String, Identity: identity.String, Generated: generated.String,
-			TypeWidth: pgCatalogIntegerWidth(typeOID.Int64), TypeStorage: typeStorage.String, System: attributeNumber.Int64 < 0,
+			TypeWidth: pgCatalogIntegerWidth(typeOID.Int64), BuiltinBool: typeOID.Int64 == 16,
+			TypeStorage: typeStorage.String, System: attributeNumber.Int64 < 0,
 			NotNull: notNull.Bool, HasDefault: hasDefault.Bool, PrimaryKey: pk,
 			ReplicaIdentityKey: replicaKey.Bool, ReplicaIdentityKeyKnown: replicaKey.Valid}
 		if seqType.Valid && start.Valid && increment.Valid && min.Valid && max.Valid && cache.Valid && cycle.Valid {

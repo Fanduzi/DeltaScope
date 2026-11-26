@@ -120,6 +120,32 @@ func TestPGSetDefaultReferenceTargetPrecedence(t *testing.T) {
 	}
 }
 
+func TestPGSetDefaultLiteralAssignment(t *testing.T) {
+	r := pgColumnGenerationRule{id: ruleIDPGColumnGenerationTransitionValid, level: rule.LevelBlocker}
+	for _, tc := range []struct {
+		name, literal string
+		column        spec.PGColumnState
+		mismatch      bool
+	}{
+		{"bool to int4", "bool", spec.PGColumnState{TypeWidth: 32}, true},
+		{"int4 to bool", "int4", spec.PGColumnState{TypeWidth: -1, BuiltinBool: true}, true},
+		{"bool identity", "bool", spec.PGColumnState{TypeWidth: -1, BuiltinBool: true}, false},
+		{"integer identity", "int4", spec.PGColumnState{TypeWidth: 32}, false},
+		{"non-int4 integer outside slice", "bool", spec.PGColumnState{TypeWidth: 64}, false},
+		{"unknown type outside slice", "int4", spec.PGColumnState{}, false},
+		{"expression outside slice", "", spec.PGColumnState{TypeWidth: 32}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := pgGenerationTransitionStatement("set_default", &tc.column)
+			s.DDL.Alter[0].PGColumnTransition.DefaultLiteralType = tc.literal
+			findings, err := r.Evaluate(context.Background(), s)
+			if err != nil || (len(findings) == 1) != tc.mismatch || len(findings) == 1 && findings[0].Metadata["reason_code"] != "default_literal_type_mismatch" {
+				t.Fatalf("findings=%+v error=%v", findings, err)
+			}
+		})
+	}
+}
+
 func TestPGDropNotNullReplicaIdentityKey(t *testing.T) {
 	r := pgColumnGenerationRule{id: ruleIDPGColumnGenerationTransitionValid, level: rule.LevelBlocker}
 	for _, tc := range []struct {
