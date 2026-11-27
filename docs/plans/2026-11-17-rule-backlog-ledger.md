@@ -2092,6 +2092,38 @@ Receipts: `/private/tmp/ds-r2-opclass.CUubqR/f09-default-parameter-84b07774/`.
 that implementation SHA. This entry records that run; it is not fresh Golden
 evidence for the documentation commit. F09 remains open.
 
+## F09 validated CHECK evidence for SET NOT NULL
+
+`milestone/pg-alter-default-assignment` fast-forwarded `main` from
+`900eecabc9c3fa4bd4a718c0dbf5648e26635433` to
+`7206bfbeb84f38a680cba9b75191cea94aa09d7b`; the same range was pushed to
+`origin/main`. For `postgresql.alter-table.column-attributes` →
+`SET/DROP NOT NULL` → `postgres17`, the exact validated same-column CHECK
+closes only `column.nullability_data` for single-action SET NOT NULL on a
+nullable built-in `int4` column of a fresh qualified ordinary table without
+inheritance. Policy findings are unchanged. Other predicates, types and
+relation shapes are not proved by this check. The catalog returns one
+boolean, not the predicate or row data. The inventory adds five evidence
+links without changing classifications or denominators. See the
+[decision](../decisions/2026-11-21-postgresql-partition-nullability.md#ordinary-table-set-not-null).
+
+Build, unit and lint checks (default and PostgreSQL-tagged), vet, tidy,
+formatting, diff, inventory, corpus, coverage catalog and decision gates passed.
+In the isolated checkout, `make ddl-golden TASK=T37 ARTIFACT_DIR="$receipt/targeted"`
+passed 682 cases and 20,599 assertions. `make ddl-golden TASK=all ARTIFACT_DIR="$receipt/full"`
+passed 50 tasks, 5,133 cases and 121,681 assertions, without failures or skips.
+`python3 scripts/ddl_golden.py validate --artifact "$receipt/full/all/artifact.json"`
+validated the aggregate. Read-only review matched the SHA and CLI hash across
+all artifacts. Merged-tree gates passed before push; the protected checkout
+was unchanged and the isolated VM stopped after fixture cleanup.
+Receipts: `/private/tmp/ds-r2-opclass.CUubqR/f09-set-not-null-7206bfbe/`.
+
+[Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/45927756817),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/45927756796), and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/140273111910) passed at the
+implementation SHA. This entry records that verification, not a fresh Golden
+run for the documentation commit. F09 remains open.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
