@@ -2154,6 +2154,39 @@ Receipts: `/private/tmp/ds-r2-opclass.CUubqR/f09-partitioned-fk-8ffce325/`.
 implementation SHA. This entry records that verification, not a new Golden
 run for the documentation commit. F09 remains open.
 
+## F09 partitioned-table destination refusals
+
+`milestone/pg-alter-default-assignment` shipped the range
+`a50562ea2014df4ff1a30e60691a52b8255c126e..c6167508f92be8e9cd6f00ed19623d67c4b462a8`
+by fast-forwarding `main` and pushing normally to `origin/main`. Both main
+refs and the remote matched the tested SHA; the dedicated worktree was
+clean and the protected checkout was unchanged.
+
+The [decision record](../decisions/2026-11-27-postgresql-partitioned-table-destinations.md)
+bounds six refusals to single actions on fresh, schema-qualified persistent
+partitioned tables: missing/index access method, missing/`pg_global`
+tablespace, and missing named owner/`PUBLIC`. Ordinary-table behavior is
+unchanged. Valid destinations and the ordinary leaf control retain evidence
+gaps. Eleven T37 cases and three corpus fixtures add 14 selectors to the
+three exact PostgreSQL 17 cells; neither classifications nor denominators
+changed.
+
+Default and PostgreSQL-tagged build, test and lint, vet, tidy, formatting,
+diff, inventory, corpus, coverage catalog and decision gates passed on the
+candidate and merged tree. `make ddl-golden TASK=T37 ARTIFACT_DIR="$receipt/targeted"`
+passed 696 cases and 21,068 assertions. `make ddl-golden TASK=all ARTIFACT_DIR="$receipt/full"`
+passed all 50 tasks, 5,147 cases and 122,150 assertions with no failures or
+skips. `python3 scripts/ddl_golden.py validate --artifact "$receipt/full/all/artifact.json"`
+passed. Read-only review verified scope, private fact handling, and the exact
+SHA and CLI hash across artifacts. Fixture cleanup passed and the isolated
+VM stopped. Receipts: `/private/tmp/ds-r2-opclass.CUubqR/f09-partition-destinations-c6167508/`.
+
+[Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/46002838128),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/46002838091), and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/140518709679) passed at the
+implementation SHA. These are implementation results, not a Golden run for
+this documentation entry. F09 remains open.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
