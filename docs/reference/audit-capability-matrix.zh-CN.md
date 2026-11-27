@@ -187,6 +187,10 @@ TiDB 使用同一审计批次内先前语句派生的状态。表存在性（`ex
 
 对目录已确认、显式限定 schema 的持久分区根，单动作 `RENAME TO` 可检查关系名和行类型名冲突。未发现冲突时仍保留证据缺口；不覆盖叶分区或分区表的 `SET SCHEMA`。
 
+### PostgreSQL 17 分区根 SET UNLOGGED
+
+对目录已确认、显式限定 schema 的持久分区根，单动作 `SET UNLOGGED` 可检查直接 publication 成员关系及来自另一持久表的入向外键。其余分区表持久性结果仍未验证。
+
 ### CHECK 约束生命周期（#91）
 
 MySQL/TiDB 的 CHECK 生命周期由共享 arm 判定治理：MySQL 8.0.16+ 存储并执行

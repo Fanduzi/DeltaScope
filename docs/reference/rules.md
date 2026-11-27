@@ -1478,6 +1478,12 @@ request checks outbound foreign keys to nonpermanent tables. Unknown scope
 or dependencies yield `unproven_table_persistence`. Existing notices explain
 that a proven request for the current persistence leaves files in place.
 
+On a confirmed schema-qualified persistent PostgreSQL 17 partition root,
+a single `SET UNLOGGED` also rejects direct publication membership or an
+inbound foreign key from another persistent table. Without either proof, the
+audit retains an evidence gap. The extension does not cover `SET LOGGED`
+or leaf partitions.
+
 ### PostgreSQL ordinary-table access method destinations
 
 `ddl.pg.alter.access_method.target.valid` is a default blocker for a fresh,

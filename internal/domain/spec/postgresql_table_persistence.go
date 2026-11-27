@@ -8,6 +8,7 @@ type PGTablePersistence struct {
 	DirectPublication      bool
 	ForeignKeyConflict     bool
 	ForeignKeyUnknown      bool
+	PartitionRoot          bool `json:"-"`
 }
 
 // PGTablePersistenceTarget identifies a single authored persistence action.

@@ -657,6 +657,7 @@ type corpusPGTablePersistence struct {
 	DirectPublication  bool   `yaml:"direct_publication,omitempty"`
 	ForeignKeyConflict bool   `yaml:"foreign_key_conflict,omitempty"`
 	ForeignKeyUnknown  bool   `yaml:"foreign_key_unknown,omitempty"`
+	PartitionRoot      bool   `yaml:"partition_root,omitempty"`
 }
 
 type corpusPGTableAccessMethod struct {

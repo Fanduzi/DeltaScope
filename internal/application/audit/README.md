@@ -141,7 +141,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | postgresql_operator_family_metadata.go | Binds fresh PostgreSQL operator family creation, member, namespace and owner facts. |
 | postgresql_drop_view_metadata.go | Binds exact DROP VIEW targets and dependency observations for single and ordered targets, and binds ALTER VIEW or ALTER MATERIALIZED VIEW option facts. |
 | postgresql_destructive_table_metadata.go | Binds ordered PostgreSQL 17 DROP/TRUNCATE target identities and private RESTRICT dependency observations. |
-| postgresql_table_persistence_metadata.go | Binds private PG17 persistence transition evidence after exact target freshness checks |
+| postgresql_table_persistence_metadata.go | Binds private PG17 persistence evidence after exact target freshness checks, including partition-root SET UNLOGGED refusals |
 | postgresql_table_access_method_metadata.go | Binds private PostgreSQL 17 access-method facts after target freshness checks, including named destinations for partitioned tables |
 | postgresql_table_tablespace_metadata.go | Binds private PostgreSQL 17 tablespace facts after target freshness checks for ordinary and partitioned tables |
 | postgresql_column_traversal_metadata.go | Binds private PostgreSQL column traversal facts, including recursive rename destinations and partition identity refusals |

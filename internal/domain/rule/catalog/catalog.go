@@ -354,7 +354,7 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	case "ddl.pg.alter.column_type.source.valid":
 		return "Checks exact PostgreSQL 17 TYPE or TYPE USING sources. Missing ordinary user columns, system columns, generated columns with USING, inherited source columns and direct partition keys can block."
 	case "ddl.pg.alter.persistence.transition.valid":
-		return "Checks PG17 ordinary-table LOGGED and UNLOGGED transitions for direct publication membership and direction-specific foreign keys. A proven same-persistence request leaves the files in place."
+		return "Checks PG17 ordinary-table persistence transitions and refuses SET UNLOGGED on qualified persistent partition roots with direct publication membership or inbound foreign keys from other persistent tables. A proven ordinary same-persistence request leaves the files in place."
 	case "ddl.pg.alter.access_method.target.valid":
 		return "Checks the access method destination for a fresh, exactly bound PostgreSQL 17 ordinary table. An absent named method or an index method also blocks on a qualified persistent partitioned table. Bare DEFAULT uses the effective setting for ordinary tables only."
 	case "ddl.pg.alter.tablespace.target.valid":

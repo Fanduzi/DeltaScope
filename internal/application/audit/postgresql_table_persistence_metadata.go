@@ -9,13 +9,17 @@ import (
 func enrichPGTablePersistence(ctx context.Context, request *MetadataRequest, statements []spec.Statement) error {
 	for _, s := range statements {
 		action := spec.PGTablePersistenceTarget(s)
-		if action == "" || !spec.PGExactTableBound(s) || !spec.PG17Observed(s.Metadata.Instance) {
+		partitionRoot := action == "set_unlogged" && spec.PGPartitionedTableBound(s)
+		if action == "" || !spec.PGExactTableBound(s) && !partitionRoot || !spec.PG17Observed(s.Metadata.Instance) {
 			continue
 		}
 		table := s.DDL.Table
 		lookup := spec.ObjectLookupRequest{
 			Schema: table.Schema, Name: table.Name, Type: "table_persistence",
 			Qualifiers: map[string]string{"action": action},
+		}
+		if partitionRoot {
+			lookup.Qualifiers["kind"] = "p"
 		}
 		object, err := resolveObjectSnapshot(ctx, request, spec.DialectPostgreSQL, &lookup)
 		if err != nil {

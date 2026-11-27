@@ -252,6 +252,18 @@ func TestHTTPTablePersistence(t *testing.T) {
 	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter.persistence.transition.valid"`) || !strings.Contains(body, `"persistence_direct_publication"`) || strings.Contains(body, "PGTablePersistence") || len(client.objectCalls) != 1 {
 		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
 	}
+	client.snapshot.PGRelation.Kind = "p"
+	client.snapshot.PGColumns.Ordinary = false
+	client.objectSnapshot.PGTablePersistence.PartitionRoot = true
+	req = httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER TABLE app.t SET UNLOGGED","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body = rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"persistence_direct_publication"`) || strings.Contains(body, "PartitionRoot") || len(client.objectCalls) != 2 || client.objectCalls[1].Qualifiers["kind"] != "p" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
 }
 
 func TestHTTPColumnTypeSource(t *testing.T) {

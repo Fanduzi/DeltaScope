@@ -14,12 +14,14 @@ import (
 func TestResolveTablePersistence(t *testing.T) {
 	failure := errors.New("read unavailable")
 	for _, tc := range []struct {
-		name, action string
-		row          []driver.Value
-		want         spec.PGTablePersistence
-		err          error
+		name, action, kind string
+		row                []driver.Value
+		want               spec.PGTablePersistence
+		err                error
 	}{
 		{name: "out of scope", action: "set_logged"},
+		{name: "partition root publication", action: "set_unlogged", kind: "p", row: []driver.Value{"p", true, false, false}, want: spec.PGTablePersistence{Current: "p", PartitionRoot: true, DirectPublication: true}},
+		{name: "partition root logged out of scope", action: "set_logged", kind: "p"},
 		{name: "same persistence", action: "set_logged", row: []driver.Value{"p", false, false, false}, want: spec.PGTablePersistence{Current: "p", Logged: true}},
 		{name: "publication and inbound", action: "set_unlogged", row: []driver.Value{"p", true, true, false}, want: spec.PGTablePersistence{Current: "p", DirectPublication: true, ForeignKeyConflict: true}},
 		{name: "outbound", action: "set_logged", row: []driver.Value{"u", false, true, false}, want: spec.PGTablePersistence{Current: "u", Logged: true, ForeignKeyConflict: true}},
@@ -33,7 +35,7 @@ func TestResolveTablePersistence(t *testing.T) {
 			}
 			db, log := openTestDB(t, map[string]testQueryResult{"pg_catalog.pg_publication_rel": result})
 			defer db.Close()
-			req := spec.ObjectLookupRequest{Schema: " app ", Name: " Exact Table ", Type: "table_persistence", Qualifiers: map[string]string{"action": tc.action}}
+			req := spec.ObjectLookupRequest{Schema: " app ", Name: " Exact Table ", Type: "table_persistence", Qualifiers: map[string]string{"action": tc.action, "kind": tc.kind}}
 			got, err := NewProvider(db).ResolveObject(context.Background(), spec.DialectPostgreSQL, req)
 			if !errors.Is(err, tc.err) || (got != nil) != (tc.row != nil) {
 				t.Fatalf("observation=%+v err=%v", got, err)

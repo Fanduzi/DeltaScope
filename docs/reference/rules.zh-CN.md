@@ -1361,6 +1361,8 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 `ddl.pg.alter.persistence.transition.valid` 默认级别为 blocker，适用于已观测 PostgreSQL 17 上精确限定名、目录新鲜的普通非类型表。从永久表切到 UNLOGGED 时检查直接 publication 与来自其他永久表的入站外键。从 unlogged 切到 LOGGED 时检查指向非永久表的出站外键。证据不足时报告 `unproven_table_persistence`。已证明持久性相同时，既有 notice 说明本次请求不重写文件。
 
+对目录已确认、显式限定 schema 的 PostgreSQL 17 持久分区根，单动作 `SET UNLOGGED` 也会因直接 publication 成员关系或来自另一持久表的入向外键而被拒绝。未证明这两类拒绝时仍保留证据缺口。本次不扩大到 `SET LOGGED` 或叶分区。
+
 ### PostgreSQL 普通表访问方法目标
 
 `ddl.pg.alter.access_method.target.valid` 默认级别为 blocker。适用于已观测 PostgreSQL 17、限定名精确且目录新鲜的普通持久非类型表，排除共享及 mapped 关系。已证明目标访问方法缺失或属于索引方法时报告拒绝。裸 `DEFAULT` 读取当前有效设置，引号名称按原样匹配。证据不足时报告 `unproven_table_access_method`。既有 warning 会注明已证明的同方法选择保留原表文件。

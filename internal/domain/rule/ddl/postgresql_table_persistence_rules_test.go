@@ -11,12 +11,33 @@ import (
 )
 
 func TestPGTablePersistenceAssessment(t *testing.T) {
+	root := func(s *spec.Statement, f *spec.PGTablePersistence) {
+		s.Metadata.TargetTable.PGRelation.Kind = "p"
+		f.PartitionRoot = true
+	}
 	for _, tc := range []struct {
 		name, reason, gap string
 		change            func(*spec.Statement, *spec.PGTablePersistence)
 		noRewrite         bool
 	}{
 		{name: "legal change"},
+		{name: "partition root publication takes precedence", reason: "persistence_direct_publication", change: func(s *spec.Statement, f *spec.PGTablePersistence) {
+			root(s, f)
+			f.DirectPublication, f.ForeignKeyConflict = true, true
+		}},
+		{name: "partition root inbound", reason: "persistence_inbound_foreign_key", change: func(s *spec.Statement, f *spec.PGTablePersistence) {
+			root(s, f)
+			f.ForeignKeyConflict = true
+		}},
+		{name: "partition root without a refusal remains a gap", gap: "target_table.pg_persistence", change: root},
+		{name: "partition root rejects an ordinary-table witness", gap: "target_table.pg_persistence", change: func(s *spec.Statement, f *spec.PGTablePersistence) {
+			s.Metadata.TargetTable.PGRelation.Kind = "p"
+			f.DirectPublication = true
+		}},
+		{name: "partition root SET LOGGED unchanged", gap: "target_table.pg_persistence", change: func(s *spec.Statement, f *spec.PGTablePersistence) {
+			root(s, f)
+			s.DDL.Alter[0].Action, f.Logged = "set_logged", true
+		}},
 		{name: "direct publication before foreign key", reason: "persistence_direct_publication", change: func(_ *spec.Statement, f *spec.PGTablePersistence) {
 			f.DirectPublication, f.ForeignKeyConflict = true, true
 		}},

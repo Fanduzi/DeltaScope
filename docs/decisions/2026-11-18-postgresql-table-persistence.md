@@ -97,6 +97,22 @@ paths and the milestone changed 40.
 Final artifact: `/tmp/ddl-golden-pg-table-persistence-final-33f87fd7/all/artifact.json`.
 These results belong to the shipped D13 SHA. Other F09 dimensions stay open.
 
+## Partition-root SET UNLOGGED refusals
+
+Extend the existing blocker to a single `SET UNLOGGED` on a fresh,
+schema-qualified persistent partition root. PostgreSQL 17.7 refuses direct
+publication membership (`55000`) before checking inbound foreign keys from
+other persistent tables (`42P16`). The existing reason codes are unchanged.
+One catalog query rechecks root status and persistence and keeps the proof
+private. The rule does not treat a schema or all-tables publication as a
+direct entry.
+
+The [T37 controls](../../testdata/ddl-golden/T37.json) compare both refusals
+with native success for schema/all-tables publication and `SET LOGGED`. Those
+successes retain audit gaps; ordinary-table advice and leaf behavior are
+unchanged. No claim is made about descendant effects or execution. Only the
+PostgreSQL 17 `SET LOGGED/UNLOGGED` evidence cell changes.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

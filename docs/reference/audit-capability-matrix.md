@@ -199,6 +199,11 @@ ordinary permanent and unlogged tables. It excludes shared, mapped, typed
 and inherited or partitioned relations. Current-persistence requests are
 physical no-ops in this scope. Uncertain facts remain gaps.
 
+On a fresh, schema-qualified persistent PostgreSQL 17 partition root, the
+same blocker detects two single-action `SET UNLOGGED` refusals: direct
+publication membership and inbound foreign keys from other persistent tables.
+Other partitioned persistence outcomes remain unverified.
+
 ### PostgreSQL ordinary-table access method destinations
 
 `ddl.pg.alter.access_method.target.valid` checks PG17 method existence and kind

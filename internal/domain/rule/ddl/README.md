@@ -113,7 +113,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_add_check_name_rules.go | Checks exact names of single named PostgreSQL 17 ADD CHECK declarations against the fresh table constraint directory Checks exact column binding for simple null tests. |
 | postgresql_column_type_destination_rules.go | Checks PostgreSQL 17 type identity, bounded built-in modifiers, qualified collations and scalar assignment cast prerequisites |
 | postgresql_column_type_source_rules.go | Checks exact PG17 source-column preconditions for TYPE and TYPE USING |
-| postgresql_table_persistence_rules.go | Checks PG17 ordinary-table persistence transitions and corrects same-persistence advice |
+| postgresql_table_persistence_rules.go | Checks PG17 ordinary-table persistence transitions and bounded partition-root SET UNLOGGED refusals; preserves ordinary same-persistence advice |
 | postgresql_table_access_method_rules.go | Checks PG17 access method destinations, with same-method evidence for ordinary tables and refusal-only checks for partitioned tables |
 | postgresql_table_tablespace_rules.go | Checks PG17 tablespace destinations, with same-space evidence for ordinary tables and refusal-only checks for partitioned tables |
 | postgresql_table_reloptions_rules.go | Checks bounded PostgreSQL 17 heap table SET/RESET declarations using fresh exact catalog and private AST facts |

@@ -233,7 +233,7 @@ func TestMCPTableAccessMethod(t *testing.T) {
 type tablePersistenceAuditClient struct{ *mcpMetadataAuditTestClient }
 
 func (tablePersistenceAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
-	return &spec.ObjectSnapshot{PGTablePersistence: &spec.PGTablePersistence{Schema: req.Schema, Table: req.Name, Current: "p", ForeignKeyConflict: true}}, nil
+	return &spec.ObjectSnapshot{PGTablePersistence: &spec.PGTablePersistence{Schema: req.Schema, Table: req.Name, Current: "p", ForeignKeyConflict: true, PartitionRoot: req.Qualifiers["kind"] == "p"}}, nil
 }
 
 func TestMCPTablePersistence(t *testing.T) {
@@ -243,7 +243,7 @@ func TestMCPTablePersistence(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = session.Close() })
 	client := tablePersistenceAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
-		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "p"}}}}
 	previous := prepareMetadataAudit
 	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
 		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
@@ -257,7 +257,7 @@ func TestMCPTablePersistence(t *testing.T) {
 		t.Fatalf("result=%+v err=%v", result, err)
 	}
 	body, err := json.Marshal(result.StructuredContent)
-	if err != nil || !strings.Contains(string(body), `"persistence_inbound_foreign_key"`) || !strings.Contains(string(body), `"ddl.pg.alter.persistence.transition.valid"`) || strings.Contains(string(body), "PGTablePersistence") {
+	if err != nil || !strings.Contains(string(body), `"persistence_inbound_foreign_key"`) || !strings.Contains(string(body), `"ddl.pg.alter.persistence.transition.valid"`) || strings.Contains(string(body), "PGTablePersistence") || strings.Contains(string(body), "PartitionRoot") {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }

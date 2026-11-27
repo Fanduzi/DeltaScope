@@ -23,12 +23,16 @@ func (r pgTablePersistenceRule) AppliesTo(s spec.Statement) bool {
 
 func boundPGTablePersistence(s spec.Statement) *spec.PGTablePersistence {
 	action := spec.PGTablePersistenceTarget(s)
-	if action == "" || !spec.PGExactTableBound(s) || !spec.PG17Observed(s.Metadata.Instance) {
+	partitionRoot := action == "set_unlogged" && spec.PGPartitionedTableBound(s)
+	if action == "" || !spec.PGExactTableBound(s) && !partitionRoot || !spec.PG17Observed(s.Metadata.Instance) {
 		return nil
 	}
 	facts, table := s.Metadata.PGTablePersistence, s.DDL.Table
 	if facts == nil || facts.Schema != table.Schema || facts.Table != table.Name || facts.Logged != (action == "set_logged") ||
 		(facts.Current != "p" && facts.Current != "u") {
+		return nil
+	}
+	if facts.PartitionRoot != partitionRoot || partitionRoot && (facts.Current != "p" || !facts.DirectPublication && !facts.ForeignKeyConflict) {
 		return nil
 	}
 	return facts

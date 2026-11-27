@@ -21,6 +21,10 @@ func (p *Provider) resolveTablePersistence(ctx context.Context, req spec.ObjectL
 	if req.Schema == "" || req.Schema == "pg_temp" || req.Name == "" {
 		return nil, nil
 	}
+	partitionRoot := req.Qualifiers["kind"] == "p"
+	if partitionRoot && toLogged {
+		return nil, nil
+	}
 	// Match ATPrepChangePersistence: same-persistence requests bypass
 	// dependencies, and only direct publication entries affect UNLOGGED.
 	row := p.db.QueryRowContext(ctx, `
@@ -46,15 +50,17 @@ func (p *Provider) resolveTablePersistence(ctx context.Context, req spec.ObjectL
 		) fk on true
 		where n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text
 		  and c.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text
-		  and c.relkind OPERATOR(pg_catalog.=) 'r'
-		  and c.relpersistence OPERATOR(pg_catalog.=) any(array['p','u']::pg_catalog."char"[])
 		  and not c.relisshared and not c.relispartition
-		  and c.relfilenode OPERATOR(pg_catalog.<>) 0::pg_catalog.oid
 		  and c.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
-		  and not exists (select 1 from pg_catalog.pg_inherits h
-		                  where h.inhrelid OPERATOR(pg_catalog.=) c.oid or h.inhparent OPERATOR(pg_catalog.=) c.oid)
-	`, req.Schema, req.Name, toLogged)
-	facts := &spec.PGTablePersistence{Schema: req.Schema, Table: req.Name, Logged: toLogged}
+		  and (($4::pg_catalog.bool and c.relkind OPERATOR(pg_catalog.=) 'p'
+		        and c.relpersistence OPERATOR(pg_catalog.=) 'p')
+		    or (not $4::pg_catalog.bool and c.relkind OPERATOR(pg_catalog.=) 'r'
+		        and c.relpersistence OPERATOR(pg_catalog.=) any(array['p','u']::pg_catalog."char"[])
+		        and c.relfilenode OPERATOR(pg_catalog.<>) 0::pg_catalog.oid
+		        and not exists (select 1 from pg_catalog.pg_inherits h
+		                        where h.inhrelid OPERATOR(pg_catalog.=) c.oid or h.inhparent OPERATOR(pg_catalog.=) c.oid)))
+	`, req.Schema, req.Name, toLogged, partitionRoot)
+	facts := &spec.PGTablePersistence{Schema: req.Schema, Table: req.Name, Logged: toLogged, PartitionRoot: partitionRoot}
 	if err := row.Scan(&facts.Current, &facts.DirectPublication, &facts.ForeignKeyConflict, &facts.ForeignKeyUnknown); errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {

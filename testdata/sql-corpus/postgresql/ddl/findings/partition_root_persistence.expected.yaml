@@ -1,0 +1,18 @@
+name: partition_root_persistence
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    direct_root: {exists: true, pg_relation: {name: direct_root, kind: p}}
+    referenced_root: {exists: true, pg_relation: {name: referenced_root, kind: p}}
+  pg_table_persistences:
+    - {schema: app, table: direct_root, current: p, partition_root: true, direct_publication: true}
+    - {schema: app, table: referenced_root, current: p, partition_root: true, foreign_key_conflict: true}
+expect:
+  parse_ok: true
+  statements: {count: 2}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.persistence.transition.valid, ddl.pg.alter.set_unlogged.notice]
