@@ -102,7 +102,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | postgresql_bulk_tablespace_metadata.go | Binds the exact PG17 bulk request to endpoint and ordered role observations before the batch freshness cutoff |
 | postgresql_refresh_materialized_view_metadata.go | Binds private refresh prerequisites to a fresh, exactly qualified PostgreSQL 17 materialized-view target. |
 | postgresql_column_type_metadata.go | Binds one exact PG17 TYPE destination after proving the fresh D14 source-column premise |
-| postgresql_table_namespace_metadata.go | Binds exact private PostgreSQL 17 rename and schema destination observations after target freshness checks |
+| postgresql_table_namespace_metadata.go | Binds private PostgreSQL 17 rename and schema destination observations after freshness checks, including qualified partition-root rename targets |
 | postgresql_materialized_view_extension_metadata.go | Binds fresh source and extension existence facts. |
 | postgresql_partition_constraint_metadata.go | Binds fresh PostgreSQL partition-root column and comparison facts for direct primary and unique constraints. |
 | postgresql_view_default_metadata.go | Binds fresh exact PostgreSQL view default column facts. |

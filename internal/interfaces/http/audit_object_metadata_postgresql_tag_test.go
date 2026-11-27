@@ -303,6 +303,19 @@ func TestHTTPTableNamespace(t *testing.T) {
 	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter.set_schema.target.valid"`) || !strings.Contains(body, `"destination_schema_absent"`) || strings.Contains(body, "PGTableNamespace") || len(client.objectCalls) != 1 {
 		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
 	}
+
+	client.snapshot.PGRelation.Kind = "p"
+	client.snapshot.PGColumns.Ordinary = false
+	client.objectSnapshot.PGTableNamespace = &spec.PGTableNamespace{Schema: "app", Table: "t", Action: "rename_table", Destination: "taken", SourceKind: "p", SourceKindKnown: true, RelationConflict: true}
+	req = httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER TABLE app.t RENAME TO taken","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body = rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter.rename_table.target.valid"`) || !strings.Contains(body, `"destination_relation_conflict"`) || strings.Contains(body, "SourceKind") || len(client.objectCalls) != 2 || client.objectCalls[1].Qualifiers["kind"] != "p" {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
 }
 
 func TestHTTPTableOwner(t *testing.T) {

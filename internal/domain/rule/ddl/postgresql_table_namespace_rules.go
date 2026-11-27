@@ -29,11 +29,16 @@ func (r pgTableNamespaceRule) AppliesTo(s spec.Statement) bool {
 
 func boundPGTableNamespace(s spec.Statement) *spec.PGTableNamespace {
 	action, destination := spec.PGTableNamespaceTarget(s)
-	if destination == "" || !spec.PGOrdinaryTableBound(s) || !spec.PG17Observed(s.Metadata.Instance) {
+	partitionRename := action == "rename_table" && spec.PGPartitionedTableBound(s)
+	if destination == "" || !spec.PGOrdinaryTableBound(s) && !partitionRename || !spec.PG17Observed(s.Metadata.Instance) {
 		return nil
 	}
 	facts, table := s.Metadata.PGTableNamespace, s.DDL.Table
 	if facts == nil || facts.Schema != table.Schema || facts.Table != table.Name || facts.Action != action || facts.Destination != destination {
+		return nil
+	}
+	conflict := facts.RelationConflict || facts.RowTypeConflictKnown && facts.RowTypeConflict
+	if partitionRename && (!facts.SourceKindKnown || facts.SourceKind != "p" || !conflict) {
 		return nil
 	}
 	return facts

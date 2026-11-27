@@ -27,6 +27,9 @@ func (p *Provider) resolveTableNamespace(ctx context.Context, req spec.ObjectLoo
 	}
 	facts := &spec.PGTableNamespace{Schema: req.Schema, Table: table, Action: action, Destination: req.Name}
 	kind := "r"
+	if req.Type == "table_namespace" && rename && req.Qualifiers["kind"] == "p" {
+		kind = "p"
+	}
 	if req.Type == "view_namespace" {
 		kind = req.Qualifiers["kind"]
 		if kind != "v" && kind != "m" {
@@ -99,14 +102,18 @@ func (p *Provider) resolveTableNamespace(ctx context.Context, req spec.ObjectLoo
 		  and c.relkind OPERATOR(pg_catalog.=) $5::pg_catalog."char" and c.relpersistence OPERATOR(pg_catalog.=) 'p'
 		  and not c.relisshared and not c.relispartition
 		  and c.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
-		  and not exists (select 1 from pg_catalog.pg_inherits h
-		                  where h.inhrelid OPERATOR(pg_catalog.=) c.oid or h.inhparent OPERATOR(pg_catalog.=) c.oid)
+		  and (c.relkind OPERATOR(pg_catalog.=) 'p' or not exists (
+		      select 1 from pg_catalog.pg_inherits h
+		      where h.inhrelid OPERATOR(pg_catalog.=) c.oid or h.inhparent OPERATOR(pg_catalog.=) c.oid))
 	`, req.Schema, table, req.Name, rename, kind)
 	var conflict, arrayConflict sql.NullBool
 	if err := row.Scan(&facts.SchemaExists, &facts.SameSchema, &facts.RelationConflict, &conflict, &facts.IndexConflict, &facts.OwnedSequenceConflict, &arrayConflict); errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	} else if err != nil {
 		return nil, fmt.Errorf("read table namespace destination: %w", err)
+	}
+	if kind == "p" {
+		facts.SourceKind, facts.SourceKindKnown = kind, true
 	}
 	facts.RowTypeConflict, facts.RowTypeConflictKnown = conflict.Bool, conflict.Valid
 	facts.ArrayTypeConflict, facts.ArrayTypeConflictKnown = arrayConflict.Bool, arrayConflict.Valid

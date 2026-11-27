@@ -9,13 +9,17 @@ import (
 func enrichPGTableNamespaces(ctx context.Context, request *MetadataRequest, statements []spec.Statement) error {
 	for _, s := range statements {
 		action, name := spec.PGTableNamespaceTarget(s)
-		if name == "" || !spec.PGOrdinaryTableBound(s) || !spec.PG17Observed(s.Metadata.Instance) {
+		partitionRename := action == "rename_table" && spec.PGPartitionedTableBound(s)
+		if name == "" || !spec.PGOrdinaryTableBound(s) && !partitionRename || !spec.PG17Observed(s.Metadata.Instance) {
 			continue
 		}
 		table := s.DDL.Table
 		lookup := spec.ObjectLookupRequest{
 			Schema: table.Schema, Name: name, Type: "table_namespace",
 			Qualifiers: map[string]string{"table": table.Name, "action": action},
+		}
+		if partitionRename {
+			lookup.Qualifiers["kind"] = "p"
 		}
 		object, err := resolveObjectSnapshot(ctx, request, spec.DialectPostgreSQL, &lookup)
 		if err != nil {

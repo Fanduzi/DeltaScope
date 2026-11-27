@@ -14,12 +14,13 @@ import (
 func TestResolveTableNamespace(t *testing.T) {
 	failure := errors.New("read unavailable")
 	for _, tc := range []struct {
-		name, action string
-		row          []driver.Value
-		want         spec.PGTableNamespace
-		err          error
+		name, action, kind string
+		row                []driver.Value
+		want               spec.PGTableNamespace
+		err                error
 	}{
 		{name: "outside table scope", action: "rename_table"},
+		{name: "partition root collision", action: "rename_table", kind: "p", row: []driver.Value{true, true, true, false}, want: spec.PGTableNamespace{SourceKindKnown: true, SourceKind: "p", SchemaExists: true, SameSchema: true, RelationConflict: true, RowTypeConflictKnown: true}},
 		{name: "occupied relation", action: "rename_table", row: []driver.Value{true, true, true, false}, want: spec.PGTableNamespace{SchemaExists: true, SameSchema: true, RelationConflict: true, RowTypeConflictKnown: true}},
 		{name: "occupied type", action: "rename_table", row: []driver.Value{true, true, false, true}, want: spec.PGTableNamespace{SchemaExists: true, SameSchema: true, RowTypeConflict: true, RowTypeConflictKnown: true}},
 		{name: "relocatable array", action: "rename_table", row: []driver.Value{true, true, false, false}, want: spec.PGTableNamespace{SchemaExists: true, SameSchema: true, RowTypeConflictKnown: true}},
@@ -39,7 +40,7 @@ func TestResolveTableNamespace(t *testing.T) {
 			}
 			db, log := openTestDB(t, map[string]testQueryResult{"elem.typarray": result})
 			defer db.Close()
-			req := spec.ObjectLookupRequest{Schema: "app", Name: " Exact Destination ", Type: "table_namespace", Qualifiers: map[string]string{"table": "t", "action": tc.action}}
+			req := spec.ObjectLookupRequest{Schema: "app", Name: " Exact Destination ", Type: "table_namespace", Qualifiers: map[string]string{"table": "t", "action": tc.action, "kind": tc.kind}}
 			got, err := NewProvider(db).ResolveObject(context.Background(), spec.DialectPostgreSQL, req)
 			if !errors.Is(err, tc.err) || (got != nil) != (tc.row != nil) {
 				t.Fatalf("observation=%+v err=%v", got, err)

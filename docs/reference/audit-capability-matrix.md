@@ -168,7 +168,11 @@ Target checks use exact inherited attribute, direct partition-key and attached-c
 
 The existing ALTER target blocker uses the observed PostgreSQL 17 catalog for exact target kind and guarded absence. A missing applicable fact yields `unproven_alter_table_relation`. The operation has no OID-column effect.
 
-### PostgreSQL ordinary-table rename and schema destinations
+### PostgreSQL table rename and schema destinations
+
+The rename rule also checks relation and row-type name collisions on a fresh,
+schema-qualified persistent PostgreSQL 17 partition root in a single action.
+Non-colliding partition-root destinations remain unverified.
 
 The PG17 default rename- and schema-target blockers use exact, fresh ordinary
 persistent non-typed table bindings. They check direct relation and row-type

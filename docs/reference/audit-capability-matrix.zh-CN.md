@@ -183,6 +183,10 @@ TiDB 使用同一审计批次内先前语句派生的状态。表存在性（`ex
 | `ddl.alter.index.rename.exists` | 待重命名的索引在当前 Schema 中不存在 | ✗ | ✓ | blocker |
 | `ddl.alter.primary_key.drop.exists` | 待删除的主键在表上不存在 | ✗ | ✓ | blocker |
 
+### PostgreSQL 17 分区根改名
+
+对目录已确认、显式限定 schema 的持久分区根，单动作 `RENAME TO` 可检查关系名和行类型名冲突。未发现冲突时仍保留证据缺口；不覆盖叶分区或分区表的 `SET SCHEMA`。
+
 ### CHECK 约束生命周期（#91）
 
 MySQL/TiDB 的 CHECK 生命周期由共享 arm 判定治理：MySQL 8.0.16+ 存储并执行

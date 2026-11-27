@@ -291,7 +291,11 @@ func TestMCPColumnTypeSource(t *testing.T) {
 type tableNamespaceAuditClient struct{ *mcpMetadataAuditTestClient }
 
 func (tableNamespaceAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
-	return &spec.ObjectSnapshot{PGTableNamespace: &spec.PGTableNamespace{Schema: req.Schema, Table: req.Qualifiers["table"], Action: "set_schema", Destination: req.Name}}, nil
+	facts := &spec.PGTableNamespace{Schema: req.Schema, Table: req.Qualifiers["table"], Action: req.Qualifiers["action"], Destination: req.Name}
+	if facts.Action == "rename_table" && req.Qualifiers["kind"] == "p" {
+		facts.SourceKind, facts.SourceKindKnown, facts.RelationConflict = "p", true, true
+	}
+	return &spec.ObjectSnapshot{PGTableNamespace: facts}, nil
 }
 
 func TestMCPTableNamespace(t *testing.T) {
@@ -316,6 +320,20 @@ func TestMCPTableNamespace(t *testing.T) {
 	}
 	body, err := json.Marshal(result.StructuredContent)
 	if err != nil || !strings.Contains(string(body), `"destination_schema_absent"`) || !strings.Contains(string(body), `"ddl.pg.alter.set_schema.target.valid"`) || strings.Contains(string(body), "PGTableNamespace") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+
+	client.snapshot.PGRelation.Kind = "p"
+	client.snapshot.PGColumns.Ordinary = false
+	result, err = session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": "ALTER TABLE app.t RENAME TO taken", "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err = json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"destination_relation_conflict"`) || !strings.Contains(string(body), `"ddl.pg.alter.rename_table.target.valid"`) || strings.Contains(string(body), "SourceKind") {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }

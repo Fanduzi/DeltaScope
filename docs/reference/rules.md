@@ -1453,6 +1453,11 @@ notice identifies an observed same-schema request. Missing applicable facts
 yield `unproven_table_namespace_destination`. Execution permissions and
 locks require separate evidence.
 
+For a single `RENAME TO` on a confirmed schema-qualified persistent PostgreSQL
+17 partition root, the existing rename blocker also detects relation and row-type
+name collisions. Free names and displaceable array names still leave an evidence
+gap. Leaf partitions and partitioned `SET SCHEMA` are not covered by this check.
+
 ### PostgreSQL ALTER COLUMN TYPE source checks
 
 `ddl.pg.alter.column_type.source.valid` defaults to blocker for a fresh,

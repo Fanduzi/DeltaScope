@@ -13,12 +13,34 @@ import (
 
 func TestPGTableNamespaceDestination(t *testing.T) {
 	const destinationFact = "target_table.pg_namespace_destination"
+	partition := func(s *spec.Statement, f *spec.PGTableNamespace) {
+		s.Metadata.TargetTable.PGRelation.Kind = "p"
+		s.Metadata.TargetTable.PGColumns.Ordinary = false
+		f.SourceKind, f.SourceKindKnown = "p", true
+	}
 	for _, tc := range []struct {
 		name, action, reason, gap string
 		change                    func(*spec.Statement, *spec.PGTableNamespace)
 		same                      bool
 	}{
 		{name: "rename available"},
+		{name: "partition rename relation conflict", reason: "destination_relation_conflict", change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+			partition(s, f)
+			f.RelationConflict = true
+		}},
+		{name: "partition rename row type conflict", reason: "destination_row_type_conflict", change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+			partition(s, f)
+			f.RowTypeConflict = true
+		}},
+		{name: "partition rename available retains gap", gap: destinationFact, change: partition},
+		{name: "partition rename stale source kind", gap: destinationFact, change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+			partition(s, f)
+			f.RelationConflict, f.SourceKind = true, "r"
+		}},
+		{name: "partition schema move unchanged", action: "set_schema", gap: destinationFact, change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+			partition(s, f)
+			f.RelationConflict = true
+		}},
 		{name: "rename relation conflict including self", reason: "destination_relation_conflict", change: func(_ *spec.Statement, f *spec.PGTableNamespace) { f.RelationConflict = true }},
 		{name: "rename type conflict", reason: "destination_row_type_conflict", change: func(_ *spec.Statement, f *spec.PGTableNamespace) { f.RowTypeConflict = true }},
 		{name: "rename array ownership unknown", gap: destinationFact, change: func(_ *spec.Statement, f *spec.PGTableNamespace) { f.RowTypeConflictKnown = false }},
