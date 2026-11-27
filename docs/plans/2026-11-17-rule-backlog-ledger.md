@@ -2058,6 +2058,40 @@ At that implementation SHA, [Go](https://github.com/Fanduzi/DeltaScope/actions/r
 and [Pages](https://github.com/Fanduzi/DeltaScope/runs/140093067017) succeeded.
 This documentation records those results, not a new Golden run. F09 remains open.
 
+## F09 positional parameters in SET DEFAULT
+
+Delivered at `84b077743da4ce5179c2e2890faf603357775ba1` from base
+`20b18009e2bca29b489a981cb5249cbfd07e6809` by fast-forward on
+`milestone/pg-alter-default-assignment`, then pushed to `origin/main`.
+For `postgresql.alter-table.column-attributes` → `SET/DROP DEFAULT` →
+`postgres17`, the existing rule adds `default_parameter_inapplicable` for
+a bare positional parameter or a direct COALESCE argument in a single-action
+SET DEFAULT on a verified qualified ordinary table. PostgreSQL 17.7 refused
+both with `42P02`. Quoted text remains valid; existing generated-column and
+subquery refusals keep their precedence. Findings omit the parameter number
+and expression. Other expression shapes and relation kinds remain open.
+See the [decision](../decisions/2026-11-21-postgresql-set-default-expression-references.md#positional-parameters-in-set-default)
+and the [T37 controls](../../testdata/ddl-golden/T37.json). Six evidence links
+were added without changing inventory classifications or denominators.
+
+Build, test and lint (default and PostgreSQL-tagged), vet, tidy, formatting,
+diff, inventory, corpus, coverage catalog and decision gates passed. In the
+isolated checkout, `make ddl-golden TASK=T37 ARTIFACT_DIR="$receipt/targeted"`
+passed 678 cases and 20,487 assertions.
+`make ddl-golden TASK=all ARTIFACT_DIR="$receipt/full"` passed all 50 tasks,
+5,129 cases and 121,569 assertions, with no failures or skips.
+`python3 scripts/ddl_golden.py validate --artifact "$receipt/full/all/artifact.json"`
+validated the aggregate. Read-only review matched every artifact to the
+candidate and CLI hash. Merged-tree gates passed before pushing; the protected
+checkout was unchanged and the isolated VM stopped after fixture cleanup.
+Receipts: `/private/tmp/ds-r2-opclass.CUubqR/f09-default-parameter-84b07774/`.
+
+[Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/45914973560),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/45914973597), and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/140231981711) succeeded at
+that implementation SHA. This entry records that run; it is not fresh Golden
+evidence for the documentation commit. F09 remains open.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
