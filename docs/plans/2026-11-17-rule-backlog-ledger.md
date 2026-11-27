@@ -2244,6 +2244,35 @@ checkout clean, and isolated fixtures removed. Receipts:
 `f844d4cc`. The Golden results belong to that implementation SHA, not to
 this ledger-only entry. F09 remains open.
 
+## F09 partition-root SET UNLOGGED refusals
+
+`milestone/pg-alter-default-assignment` fast-forwarded and pushed
+`4daaecd0f91773a47382e3106503e3875327dd2e..bc5938e6242b50ebd5603e260226f7986ae00972`.
+The [decision](../decisions/2026-11-18-postgresql-table-persistence.md#partition-root-set-unlogged-refusals)
+covers two single-action refusals on confirmed schema-qualified persistent
+partition roots: direct publication membership (`55000`) and an inbound
+foreign key from another persistent table (`42P16`). Without either proof,
+the gap remains. Leaf partitions, `SET LOGGED` and ordinary-table behavior
+are unchanged. Four T37 cases and one corpus fixture add five selectors to
+one PostgreSQL 17 cell without reclassification.
+
+Default and PostgreSQL-tagged build, test and lint, vet, tidy, formatting,
+diff, inventory, corpus, coverage catalog and decision gates passed on the
+candidate and merged checkout. `make ddl-golden TASK=T37 ARTIFACT_DIR="$receipt/targeted"`
+passed 717 cases and 21,770 assertions. `make ddl-golden TASK=all ARTIFACT_DIR="$receipt/full"`
+passed all 50 tasks, 5,168 cases and 122,852 assertions without failures or skips.
+`python3 scripts/ddl_golden.py validate --artifact "$receipt/full/all/artifact.json"`
+passed. Read-only review verified the exact SHA, CLI hash, private facts and
+scope. The dedicated checkout was clean, the protected checkout was unchanged,
+and the isolated fixtures were removed. Receipts:
+`/private/tmp/ds-r2-opclass.CUubqR/f09-partition-persistence-bc5938e6/`.
+
+[Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/46082149373),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/46082149489), and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/140783409853) passed at
+`bc5938e6`. The Golden results belong to that implementation SHA, not to
+this ledger-only entry. F09 remains open.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
