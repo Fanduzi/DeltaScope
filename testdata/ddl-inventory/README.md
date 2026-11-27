@@ -157,6 +157,14 @@ attachment prerequisites for the verified table scope. Runtime usability
 remains separate, including assignment of an invalid index. The original
 row and child classifications and denominators are preserved.
 
+## PostgreSQL table rename destination
+
+`RENAME TO` under `postgresql.alter-table.rename-owner` is mixed at the
+PostgreSQL 17 anchor. The existing D15 T37 cases verify relation and row-type
+name conflicts on qualified ordinary tables and retain offline and stale
+metadata gaps. Only the subaction classification changed; the parent stays
+`mixed_coverage`. See the [decision](../../docs/decisions/2026-11-18-postgresql-table-namespace-destination.md#inventory-correction).
+
 ## PostgreSQL column identity and existence guards
 
 D8 binds the original ADD COLUMN, ADD COLUMN IF NOT EXISTS, RENAME COLUMN and

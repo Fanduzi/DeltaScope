@@ -8968,14 +8968,14 @@ rows:
     subaction_status:
       - subaction_id: RENAME TO
         parser_status: recognized
-        audit_status: notice_only
+        audit_status: mixed
         applicability:
           - anchor: postgresql17
             version_range: "17"
             official_presence: documented
             product_scope: registered
             parser_status: recognized
-            audit_status: notice_only
+            audit_status: mixed
             evidence: [file:testdata/ddl-inventory/evidence/postgresql.alter-table.rename-owner.rename-to.probes.txt, file:internal/application/audit/catalogdata/ddl-coverage-catalog.json, file:testdata/ddl-golden/T37.json#table-namespace-destination-offline, file:testdata/ddl-golden/T37.json#table-namespace-destination-disabled, file:testdata/ddl-golden/T37.json#pg-table-namespace-rename-relation, file:testdata/ddl-golden/T37.json#pg-table-namespace-rename-type, file:testdata/ddl-golden/T37.json#pg-table-namespace-rename-array, file:testdata/ddl-golden/T37.json#pg-table-namespace-rename-exact, file:testdata/ddl-golden/T37.json#pg-table-namespace-freshness, file:testdata/ddl-golden/T37.json#pg-table-namespace-guard-absent, file:testdata/sql-corpus/postgresql/ddl/findings/table_namespace_rename.expected.yaml#ddl.pg.alter.rename_table.target.valid]
       - subaction_id: SET SCHEMA
         parser_status: recognized

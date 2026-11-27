@@ -11994,7 +11994,7 @@
         {
           "subaction_id": "RENAME TO",
           "parser_status": "recognized",
-          "audit_status": "notice_only",
+          "audit_status": "mixed",
           "applicability": [
             {
               "anchor": "postgresql17",
@@ -12002,7 +12002,7 @@
               "official_presence": "documented",
               "product_scope": "registered",
               "parser_status": "recognized",
-              "audit_status": "notice_only",
+              "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.rename-owner.rename-to.probes.txt",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",

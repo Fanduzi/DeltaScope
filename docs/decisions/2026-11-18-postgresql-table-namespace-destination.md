@@ -99,6 +99,15 @@ the milestone changed 41.
 Final artifact: `/tmp/ddl-golden-pg-table-namespace-destination-final-a303a8b4/all/artifact.json`.
 Dependent moves and other F09 dimensions remain open.
 
+## Inventory correction
+
+The PostgreSQL 17 `RENAME TO` subaction is `mixed`, not `notice_only`.
+`pg-table-namespace-rename-relation` and `pg-table-namespace-rename-type`
+prove destination refusals beyond the generic rename policy. Offline and
+stale metadata remain gaps, and broader relation kinds and authorization
+are not covered by D15. The parent stays `mixed_coverage`; this correction
+changes neither audit behavior nor the inventory denominator.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)
