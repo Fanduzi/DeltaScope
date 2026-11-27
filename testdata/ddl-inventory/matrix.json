@@ -10698,6 +10698,7 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.add-drop-identity.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-partition-identity-add-leaf",
                 "file:testdata/ddl-golden/T37.json#pg-partition-identity-add-only-empty-root",
                 "file:testdata/ddl-golden/T37.json#pg-partition-identity-drop-guard-plain-leaf",
                 "file:testdata/ddl-golden/T37.json#pg-partition-identity-drop-guard-missing-column",
