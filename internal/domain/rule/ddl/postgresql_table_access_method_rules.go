@@ -23,7 +23,7 @@ func (r pgTableAccessMethodRule) AppliesTo(s spec.Statement) bool {
 
 func boundPGTableAccessMethod(s spec.Statement) *spec.PGTableAccessMethod {
 	name, useDefault := spec.PGTableAccessMethodTarget(s)
-	if name == "" || !(spec.PGOrdinaryTableBound(s) || !useDefault && spec.PGPartitionedTableBound(s)) || !spec.PG17Observed(s.Metadata.Instance) {
+	if name == "" || !spec.PGOrdinaryTableBound(s) && (useDefault || !spec.PGPartitionedTableBound(s)) || !spec.PG17Observed(s.Metadata.Instance) {
 		return nil
 	}
 	facts, table := s.Metadata.PGTableAccessMethod, s.DDL.Table

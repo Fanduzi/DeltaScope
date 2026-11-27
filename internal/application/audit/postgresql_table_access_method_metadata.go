@@ -10,7 +10,7 @@ import (
 func enrichPGTableAccessMethods(ctx context.Context, request *MetadataRequest, statements []spec.Statement) error {
 	for _, s := range statements {
 		name, useDefault := spec.PGTableAccessMethodTarget(s)
-		if name == "" || !(spec.PGOrdinaryTableBound(s) || !useDefault && spec.PGPartitionedTableBound(s)) || !spec.PG17Observed(s.Metadata.Instance) {
+		if name == "" || !spec.PGOrdinaryTableBound(s) && (useDefault || !spec.PGPartitionedTableBound(s)) || !spec.PG17Observed(s.Metadata.Instance) {
 			continue
 		}
 		table := s.DDL.Table

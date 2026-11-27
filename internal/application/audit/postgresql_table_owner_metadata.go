@@ -9,7 +9,8 @@ import (
 func enrichPGTableOwners(ctx context.Context, request *MetadataRequest, statements []spec.Statement) error {
 	for _, s := range statements {
 		target := spec.PGTableOwnerSelection(s)
-		if target.Kind == "" || !(spec.PGOrdinaryTableBound(s) || spec.PGPartitionedTableBound(s) && (target.Kind == "named" || target.Kind == "public")) || !spec.PG17Observed(s.Metadata.Instance) {
+		bound := spec.PGOrdinaryTableBound(s) || spec.PGPartitionedTableBound(s) && (target.Kind == "named" || target.Kind == "public")
+		if target.Kind == "" || !bound || !spec.PG17Observed(s.Metadata.Instance) {
 			continue
 		}
 		table := s.DDL.Table

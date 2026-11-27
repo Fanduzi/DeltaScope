@@ -9,7 +9,7 @@ import (
 func enrichPGTableTablespaces(ctx context.Context, request *MetadataRequest, statements []spec.Statement) error {
 	for _, s := range statements {
 		name := spec.PGTableTablespaceTarget(s)
-		if name == "" || !(spec.PGOrdinaryTableBound(s) || spec.PGPartitionedTableBound(s)) || !spec.PG17Observed(s.Metadata.Instance) {
+		if name == "" || !spec.PGOrdinaryTableBound(s) && !spec.PGPartitionedTableBound(s) || !spec.PG17Observed(s.Metadata.Instance) {
 			continue
 		}
 		table := s.DDL.Table

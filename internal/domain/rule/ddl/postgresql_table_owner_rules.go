@@ -22,7 +22,7 @@ func (r pgTableOwnerRule) AppliesTo(s spec.Statement) bool {
 
 func boundPGTableOwner(s spec.Statement) *spec.PGTableOwnerState {
 	target := spec.PGTableOwnerSelection(s)
-	if target.Kind == "" || !(spec.PGOrdinaryTableBound(s) || spec.PGPartitionedTableBound(s)) || !spec.PG17Observed(s.Metadata.Instance) {
+	if target.Kind == "" || !spec.PGOrdinaryTableBound(s) && !spec.PGPartitionedTableBound(s) || !spec.PG17Observed(s.Metadata.Instance) {
 		return nil
 	}
 	facts, table := s.Metadata.PGTableOwner, s.DDL.Table
