@@ -411,6 +411,21 @@ func TestAuditConstraintDefaultOpclassThroughSDK(t *testing.T) {
 	t.Fatalf("missing index attachment finding: %+v", result.Statements[0].Findings)
 }
 
+func TestAuditPartitionedForeignKeyNotValid(t *testing.T) {
+	provider := &fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+		snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"}, PGRelation: PGRelationState{Name: "t", Kind: "p"}}}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t ADD FOREIGN KEY (id) REFERENCES app.parent(id) NOT VALID`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(result.Statements) != 1 || len(result.Statements[0].EvidenceGaps) != 0 {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.add_foreign_key.targets.valid" && f.Metadata["reason_code"] == "partitioned_foreign_key_not_valid" {
+			return
+		}
+	}
+	t.Fatalf("missing partitioned FK finding: %+v", result.Statements[0].Findings)
+}
+
 func TestAuditForeignKeyDeleteSetColumnsThroughSDK(t *testing.T) {
 	provider := &fakeMetadataProviderWithObjects{
 		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},

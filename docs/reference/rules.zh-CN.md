@@ -775,7 +775,7 @@ finding 仅携带例程名称、种类、操作、`security=definer`、`security
 | `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | 添加带有 volatile 默认值的 `NOT NULL` 列可能触发全表重写。发现包含：`not_null`、`has_default`、`default_kind`（`literal`、`null`、`function_call`、`expression`、`unknown`）。元数据不输出默认表达式文本或函数名。 | warning | 否 |
 | `ddl.pg.alter.constraint_using_index.valid` | 检查 PostgreSQL 17 普通表上 `PRIMARY KEY` 或 `UNIQUE USING INDEX` 的精确目录前提。根据精确类型和二进制兼容类型核对键列的默认操作符类，涵盖 PostgreSQL 17 多态默认类。缺少适用事实时报告 `unproven_constraint_using_index`。 | blocker | 否 |
 | `ddl.pg.alter.constraint_columns.valid` | 在 PostgreSQL 17 普通表上检查主键或唯一约束的键列及 INCLUDE 列。重复键列、缺失列和已观测系统列会阻断。 也检查限定分区根表上的分区键列及已证实的相等性和排序规则兼容性。 | blocker | 是 |
-| `ddl.pg.alter.add_foreign_key.targets.valid` | 在 PostgreSQL 17 普通持久表上检查两侧身份、被引用键资格和列数。省略引用列时使用目录中实际观测到的主键。规则还按实际选中的引用键检查已建模的标量、域、枚举及数组相等比较和隐式转换。`ON DELETE SET NULL` 或 `SET DEFAULT` 中的列清单必须属于声明的外键。 | blocker | 否 |
+| `ddl.pg.alter.add_foreign_key.targets.valid` | 在 PostgreSQL 17 普通持久表上检查两侧身份、被引用键资格和列数。省略引用列时使用目录中实际观测到的主键。规则还按实际选中的引用键检查已建模的标量、域、枚举及数组相等比较和隐式转换。`ON DELETE SET NULL` 或 `SET DEFAULT` 中的列清单必须属于声明的外键。PostgreSQL 17 上，也拒绝对已确认的限定名分区表执行单动作 `ADD FOREIGN KEY … NOT VALID`。 | blocker | 否 |
 | `ddl.pg.alter.add_check.name.available` | 检查 PostgreSQL 17 单动作 ADD CHECK 的简单列及整行空值测试，包括精确限定名、子查询、已支持的字面量布尔转换和精确名称冲突。数值常量需要已观测的转换目录事实。适用于 NOT VALID。 | blocker | 否 |
 | `ddl.pg.alter.add_check.not_valid.require` | `ADD CHECK` 约束应使用 `NOT VALID` 以避免持 `ACCESS EXCLUSIVE` 锁的全表扫描 | warning | 否 |
 | `ddl.pg.alter.set_data_type.rewrite.warn` | 更改列类型可能需要全表重写（取决于类型转换）。发现包含：`has_using`（是否存在 USING 子句）。元数据不输出 USING 表达式 SQL 文本。 | warning | 否 |

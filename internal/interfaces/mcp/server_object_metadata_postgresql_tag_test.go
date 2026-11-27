@@ -668,6 +668,33 @@ func TestMCPConstraintDefaultOpclass(t *testing.T) {
 	}
 }
 
+func TestMCPPartitionedForeignKeyNotValid(t *testing.T) {
+	ctx := context.Background()
+	session, err := connectClientSession(ctx, NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := &mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "p"}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(context.Context, auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(ctx, &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": `ALTER TABLE app.t ADD FOREIGN KEY (id) REFERENCES app.parent(id) NOT VALID`, "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"partitioned_foreign_key_not_valid"`) || strings.Contains(string(body), `"unproven_foreign_key_targets"`) {
+		t.Fatalf("response=%s err=%v", body, err)
+	}
+}
+
 func TestMCPForeignKeyDeleteSetColumns(t *testing.T) {
 	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
 	if err != nil {

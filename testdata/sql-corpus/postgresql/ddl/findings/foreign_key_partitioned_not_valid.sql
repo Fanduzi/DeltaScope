@@ -1,0 +1,1 @@
+ALTER TABLE app.child ADD FOREIGN KEY (id) REFERENCES app.parent(id) NOT VALID;

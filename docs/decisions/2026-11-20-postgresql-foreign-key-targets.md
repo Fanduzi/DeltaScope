@@ -70,6 +70,22 @@ protected container identities matched. An additional container from the
 starting snapshot was absent at review, and the cause remains unknown. All
 50 cleanup receipts refer to the dedicated Golden project.
 
+## Partitioned source with NOT VALID
+
+PostgreSQL 17.7 rejects a single `ADD FOREIGN KEY … NOT VALID` on a
+partitioned source table (`42809`). The existing blocker now reports
+`partitioned_foreign_key_not_valid` when a fresh catalog observation binds
+an explicitly schema-qualified source to `relkind = p`. This refusal does
+not need a referenced-key lookup. The finding includes only the authored
+source identity, action and reason. It does not expose catalog identifiers.
+
+Native controls distinguish a partitioned source from an ordinary leaf
+partition and distinguish `NOT VALID` from an initially validated foreign
+key. The ordinary source and the qualified `IF EXISTS` miss retain their
+existing behavior. General foreign-key checks on partitioned sources remain
+unverified. The [T37 cases](../../testdata/ddl-golden/T37.json) bind only the
+PostgreSQL 17 `ADD FOREIGN KEY` cell; no inventory classification changes.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

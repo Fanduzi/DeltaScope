@@ -26,8 +26,14 @@ func assessPGForeignKeyTargets(s spec.Statement) (reason, fact, column string) {
 	if !pgConstraintTargetVersionKnown(s) {
 		return "", "instance.version", ""
 	}
-	if exists, known := pgAlterRelation(s); s.DDL.PGTableIfExists && known && !exists {
-		return "", "", ""
+	if exists, known := pgAlterRelation(s); known {
+		if s.DDL.PGTableIfExists && !exists {
+			return "", "", ""
+		}
+		if exists && s.DDL.Table.Schema != "" && s.Metadata.TargetTable.Exists &&
+			s.Metadata.TargetTable.PGRelation.Kind == "p" && s.DDL.Alter[0].Options["not_valid"] == "true" {
+			return "partitioned_foreign_key_not_valid", "", ""
+		}
 	}
 	if !spec.PGOrdinaryTableBound(s) {
 		return "", "target_table.pg_columns", ""
@@ -204,6 +210,8 @@ func (r pgForeignKeyTargetRule) Evaluate(ctx context.Context, s spec.Statement) 
 
 func pgForeignKeyTargetMessage(reason string) string {
 	switch reason {
+	case "partitioned_foreign_key_not_valid":
+		return "PostgreSQL 17 cannot add a NOT VALID foreign key to a partitioned table"
 	case "foreign_key_reference_absent":
 		return "The PostgreSQL foreign key's referenced table does not exist"
 	case "foreign_key_reference_wrong_kind":

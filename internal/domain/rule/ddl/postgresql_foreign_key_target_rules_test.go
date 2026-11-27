@@ -9,6 +9,36 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
+func TestPGPartitionedForeignKeyNotValid(t *testing.T) {
+	for _, tc := range []struct {
+		name, reason, gap string
+		change            func(*spec.Statement)
+	}{
+		{name: "partitioned", reason: "partitioned_foreign_key_not_valid"},
+		{name: "no NOT VALID", gap: "target_table.pg_columns", change: func(s *spec.Statement) { delete(s.DDL.Alter[0].Options, "not_valid") }},
+		{name: "leaf", gap: "target_table.pg_columns", change: func(s *spec.Statement) { s.Metadata.TargetTable.PGRelation.Kind = "r" }},
+		{name: "unqualified", gap: "target_table.pg_columns", change: func(s *spec.Statement) { s.DDL.Table.Schema = "" }},
+		{name: "stale", gap: "target_table.pg_columns", change: func(s *spec.Statement) { s.Metadata.TargetTable.PGRelation = spec.PGRelationState{} }},
+		{name: "guarded absent", change: func(s *spec.Statement) {
+			s.DDL.PGTableIfExists = true
+			s.Metadata.TargetTable.Exists = false
+			s.Metadata.TargetTable.PGRelation.Kind = ""
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := spec.Statement{DDL: &spec.DDL{Table: &spec.Table{Schema: "app", Name: "t"}, Alter: []spec.Alter{{Options: map[string]string{"not_valid": "true"}}}},
+				Metadata: &spec.Metadata{Schema: "app", Instance: &spec.InstanceFacts{Version: "PostgreSQL 17.7"},
+					TargetTable: &spec.TableSnapshot{Schema: "app", Table: &spec.Table{Name: "t"}, Exists: true, PGRelation: spec.PGRelationState{Name: "t", Kind: "p"}}}}
+			if tc.change != nil {
+				tc.change(&s)
+			}
+			if reason, gap, column := assessPGForeignKeyTargets(s); reason != tc.reason || gap != tc.gap || column != "" {
+				t.Fatalf("reason=%q gap=%q column=%q; want %q %q empty", reason, gap, column, tc.reason, tc.gap)
+			}
+		})
+	}
+}
+
 func TestPGForeignKeyTargets(t *testing.T) {
 	for _, tc := range []struct {
 		name, reason, fact, column string
