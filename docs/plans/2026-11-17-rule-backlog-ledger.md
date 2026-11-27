@@ -2187,6 +2187,35 @@ VM stopped. Receipts: `/private/tmp/ds-r2-opclass.CUubqR/f09-partition-destinati
 implementation SHA. These are implementation results, not a Golden run for
 this documentation entry. F09 remains open.
 
+## F09 partition identity target refusals
+
+`milestone/pg-alter-default-assignment` fast-forwarded and pushed
+`e936f4966c64b4b24afe23cde052d2e112d29824..597afd6ce479d67ebfd24755f3d7f355cf8bdc88`.
+The [decision](../decisions/2026-11-27-postgresql-partition-identity-transitions.md)
+bounds the existing blocker to single identity actions on confirmed qualified
+persistent ordinary leaf partitions or `ONLY` on persistent partition roots.
+PostgreSQL 17.7 refuses those actions with `42P16`. Recursive root operations,
+stale batch observations and sequence runtime state are not certified.
+The 13 new T37 controls and corpus fixture add 17 selectors to four exact
+PostgreSQL 17 cells without changing classifications or denominators.
+
+Default and PostgreSQL-tagged build, test and lint, vet, tidy, formatting,
+diff, inventory, corpus, coverage catalog and decision gates passed on the
+candidate and merged checkout. `make ddl-golden TASK=T37 ARTIFACT_DIR="$receipt/targeted"`
+passed 709 cases and 21,462 assertions. `make ddl-golden TASK=all ARTIFACT_DIR="$receipt/full"`
+passed all 50 tasks, 5,160 cases and 122,544 assertions, with no failures or skips.
+`python3 scripts/ddl_golden.py validate --artifact "$receipt/full/all/artifact.json"`
+passed. Read-only review confirmed the approved scope, private fact handling,
+CLI hash and exact HEAD across artifacts. The dedicated checkout was clean,
+the protected checkout was unchanged, and isolated fixtures were removed.
+Receipts: `/private/tmp/ds-r2-opclass.CUubqR/f09-partition-identity-597afd6c/`.
+
+[Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/46026370056),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/46026370234), and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/140598828406) passed at
+`597afd6c`. These are implementation results, not a Golden run for this
+ledger-only entry. F09 remains open.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
