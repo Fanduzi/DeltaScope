@@ -793,6 +793,44 @@ func TestMCPForeignKeyScalarEquality(t *testing.T) {
 	}
 }
 
+type setNotNullCheckClient struct {
+	*mcpMetadataAuditTestClient
+	proved bool
+}
+
+func (c *setNotNullCheckClient) ResolveObject(_ context.Context, _ spec.Dialect, _ spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	return &spec.ObjectSnapshot{PGColumnTraversal: &spec.PGColumnTraversal{Schema: "app", Table: "t", Column: "id", ColumnExists: true, ValidatedNotNullCheck: c.proved}}, nil
+}
+
+func TestMCPSetNotNullValidatedCheck(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := &setNotNullCheckClient{mcpMetadataAuditTestClient: &mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true, Columns: []spec.PGColumnState{{Name: "id", TypeWidth: 32}}}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	for _, proved := range []bool{false, true} {
+		client.proved = proved
+		result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+			"sql": `ALTER TABLE app.t ALTER COLUMN id SET NOT NULL`, "dialect": "postgresql",
+			"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+		}})
+		if err != nil || result.IsError {
+			t.Fatalf("result=%+v err=%v", result, err)
+		}
+		body, err := json.Marshal(result.StructuredContent)
+		if err != nil || !strings.Contains(string(body), `"verdict":"reject"`) || strings.Contains(string(body), "column.nullability_data") == proved || strings.Contains(string(body), "ValidatedNotNullCheck") {
+			t.Fatalf("proved=%v response=%s err=%v", proved, body, err)
+		}
+	}
+}
+
 type partitionDropNotNullClient struct{ *mcpMetadataAuditTestClient }
 
 func (partitionDropNotNullClient) ResolveObject(_ context.Context, _ spec.Dialect, _ spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {

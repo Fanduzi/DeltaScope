@@ -487,6 +487,23 @@ func TestAuditForeignKeyScalarEqualityThroughSDK(t *testing.T) {
 	t.Fatalf("missing referenced unique key finding: %+v", result.Statements[0].Findings)
 }
 
+func TestAuditSetNotNullValidatedCheckThroughSDK(t *testing.T) {
+	fact := &spec.PGColumnTraversal{Schema: "app", Table: "t", Column: "id", ColumnExists: true}
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true, Columns: []PGColumnState{{Name: "id", TypeWidth: 32}}}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGColumnTraversal: fact},
+	}
+	for _, proved := range []bool{false, true} {
+		fact.ValidatedNotNullCheck = proved
+		result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t ALTER COLUMN id SET NOT NULL`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+		if err != nil || result.Verdict != VerdictReject || len(result.Statements) != 1 || (len(result.Statements[0].EvidenceGaps) == 0) != proved {
+			t.Fatalf("proved=%v result=%+v err=%v", proved, result, err)
+		}
+	}
+}
+
 func TestAuditPartitionDropNotNullThroughSDK(t *testing.T) {
 	provider := &fakeMetadataProviderWithObjects{
 		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},

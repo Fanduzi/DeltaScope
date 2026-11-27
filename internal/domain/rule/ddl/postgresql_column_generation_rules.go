@@ -192,7 +192,9 @@ func pgColumnTransitionTarget(s spec.Statement, index int) (*spec.PGColumnState,
 		}
 	case "set_not_null":
 		if !c.NotNull {
-			return c, "", "column.nullability_data"
+			if facts := spec.BoundPGColumnTraversal(s); c.TypeWidth != 32 || !spec.PGOrdinaryTableBound(s) || facts == nil || !facts.ColumnExists || !facts.ValidatedNotNullCheck {
+				return c, "", "column.nullability_data"
+			}
 		}
 	}
 	return c, "", ""

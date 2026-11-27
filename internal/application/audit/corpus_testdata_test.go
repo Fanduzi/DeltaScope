@@ -129,6 +129,7 @@ type corpusPGColumnTraversal struct {
 	ColumnExists             bool   `yaml:"column_exists,omitempty"`
 	AttachedChildren         bool   `yaml:"attached_children,omitempty"`
 	ParentNotNull            bool   `yaml:"parent_not_null,omitempty"`
+	ValidatedNotNullCheck    bool   `yaml:"validated_not_null_check,omitempty"`
 	RenameDestination        string `yaml:"rename_destination,omitempty"`
 	RenameDescendantsKnown   bool   `yaml:"rename_descendants_known,omitempty"`
 	RenameDescendantConflict bool   `yaml:"rename_descendant_conflict,omitempty"`

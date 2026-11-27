@@ -663,7 +663,7 @@ CASCADE 仅被保留，不证明依赖/权限合法或执行成功。
 
 | 规则 | 限定检查 | 默认级别 |
 | --- | --- | --- |
-| `ddl.pg.alter.column.generation.transition.valid` | ADD/SET/DROP IDENTITY、DROP EXPRESSION 及 DEFAULT/NOT NULL 的生成属性和主键前置条件，以及 SET DEFAULT 中的非法列引用或子查询；限定名普通表的单动作 SET DEFAULT 还检查 bool/int4 直接字面量交叉赋值，以及用作整个表达式或 COALESCE 直接实参的位置参数、DROP NOT NULL 的现行 replica identity 键列保护和 PostgreSQL 17 分区 NOT NULL 遍历条件 | blocker |
+| `ddl.pg.alter.column.generation.transition.valid` | ADD/SET/DROP IDENTITY、DROP EXPRESSION 及 DEFAULT/NOT NULL 的生成属性和主键前置条件，以及 SET DEFAULT 中的非法列引用或子查询；限定名普通表的单动作 SET DEFAULT 还检查 bool/int4 直接字面量交叉赋值，以及用作整个表达式或 COALESCE 直接实参的位置参数、DROP NOT NULL 的现行 replica identity 键列保护和 PostgreSQL 17 分区 NOT NULL 遍历条件。限定名普通表的单动作 SET NOT NULL 可用已验证的同列 `IS NOT NULL` CHECK 证明 `int4` 列的非空条件，无需扫描用户数据 | blocker |
 | `ddl.pg.alter.identity.sequence_options.valid` | 重复 mode/options，以及非法 increment/cache/类型/边界/START/RESTART | blocker |
 | `ddl.pg.alter.identity.restart.warn` | 显式 RESTART 的值重用及并发发号阻塞风险 | warning |
 | `ddl.pg.alter.identity.cycle.warn` | ADD IDENTITY 或 SET options 中的显式 CYCLE | warning |

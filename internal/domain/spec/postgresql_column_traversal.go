@@ -6,6 +6,7 @@ type PGColumnTraversal struct {
 	Inherited, DirectPartitionKey, AttachedChildren, StoredGenerated         bool
 	Partition, ColumnExists, System                                          bool
 	ParentNotNull, NullableDescendant                                        bool
+	ValidatedNotNullCheck                                                    bool `json:"-"`
 	RenameDestination                                                        string
 	RenameDescendantsKnown, RenameDescendantConflict, TypeDescendantConflict bool
 	RenameDestinationKind                                                    int // -1 system column, 0 absent, 1 user column.
@@ -19,7 +20,7 @@ func PGColumnRenameDestination(a Alter) string {
 	return ""
 }
 
-// PGColumnTraversalTarget bounds lookups to the nonordinary shapes for this check.
+// PGColumnTraversalTarget binds a traversal or nullability-proof lookup.
 func PGColumnTraversalTarget(s Statement) string {
 	if s.Dialect != DialectPostgreSQL || s.Kind != KindDDL || s.Unsupported != nil || s.DDL == nil ||
 		s.DDL.Operation != DDLOperationAlterTable || len(s.DDL.Alter) != 1 || s.DDL.PGTableCatalogQualified ||
@@ -29,10 +30,18 @@ func PGColumnTraversalTarget(s Statement) string {
 	table, snapshot := s.DDL.Table, s.Metadata.TargetTable
 	if table.Schema == "" || table.Schema == "pg_temp" || table.Schema != s.Metadata.Schema || table.Schema != snapshot.Schema ||
 		!snapshot.Exists || snapshot.Table == nil || snapshot.Table.Name != table.Name || snapshot.PGRelation.Name != table.Name ||
-		(snapshot.PGRelation.Kind != "r" && snapshot.PGRelation.Kind != "p") || snapshot.PGColumns == nil || snapshot.PGColumns.Typed || snapshot.PGColumns.Ordinary {
+		(snapshot.PGRelation.Kind != "r" && snapshot.PGRelation.Kind != "p") || snapshot.PGColumns == nil || snapshot.PGColumns.Typed {
 		return ""
 	}
 	a := s.DDL.Alter[0]
+	if snapshot.PGColumns.Ordinary {
+		if a.Action == "set_not_null" && PGOrdinaryTableBound(s) {
+			if c, known := snapshot.PGColumns.FindColumn(a.Name); known && c != nil && !c.System && !c.NotNull && c.TypeWidth == 32 {
+				return a.Name
+			}
+		}
+		return ""
+	}
 	switch a.Action {
 	case "drop_column", "rename_column", "set_data_type", "drop_expression", "add_column", "drop_not_null", "set_not_null":
 		return a.Name

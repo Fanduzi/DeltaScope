@@ -1,0 +1,22 @@
+name: column_set_not_null_validated_check
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    t:
+      exists: true
+      pg_relation: {name: t, kind: r}
+      pg_columns:
+        ordinary: true
+        columns: [{name: id, identity: '', generated: '', type_width: 32, not_null: false, has_default: false, primary_key: false}]
+  pg_column_traversals:
+    - {schema: app, table: t, column: id, column_exists: true, validated_not_null_check: true}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.alter.set_not_null.forbid, ddl.alter.set_not_null.explicit_nullability_change.forbid]
+    exclude: [ddl.pg.alter.column.generation.transition.valid]

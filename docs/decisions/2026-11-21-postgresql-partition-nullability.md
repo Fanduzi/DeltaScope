@@ -25,3 +25,25 @@ file identities, payload and an independent sequence intact.
 - [PostgreSQL 17.7 ALTER TABLE nullability implementation](https://github.com/postgres/postgres/blob/REL_17_7/src/backend/commands/tablecmds.c)
 
 The combined preview passed 505/505 T37 cases with 14,539 assertions. Nine selectors attach to the PostgreSQL 17 SET/DROP NOT NULL cell.
+
+## Ordinary-table SET NOT NULL
+
+For a fresh schema-qualified, non-typed persistent ordinary table with no
+inheritance, a single SET NOT NULL on a nullable built-in `int4` column can
+use a validated CHECK whose entire predicate is that exact column's
+`IS NOT NULL` test. PostgreSQL 17.7 skips its table scan in this case. The
+catalog query requires the exact relation and attribute number, CHECK kind,
+and validated state. It compares the server-deparsed predicate to an exactly
+quoted identifier and null test inside PostgreSQL and returns only a boolean.
+The audit does not scan user rows or retain or report the constraint name,
+predicate or catalog IDs.
+
+The boolean discharges only `column.nullability_data`; independent policy
+findings are unchanged. NOT VALID, a CHECK on another column, different
+predicates, and missing or stale proof are not sufficient. PostgreSQL 17.7
+refused NULL rows with `23502` in the first two controls; a comparison CHECK
+with non-NULL rows succeeded natively but did not prove the premise from
+catalog metadata alone. Other types and multi-action ALTER remain open.
+
+- [T37 native and audit controls](../../testdata/ddl-golden/T37.json)
+- [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html#SQL-ALTERTABLE-DESC-SET-DROP-NOT-NULL)

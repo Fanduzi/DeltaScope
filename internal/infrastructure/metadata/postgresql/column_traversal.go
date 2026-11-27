@@ -72,7 +72,20 @@ func (p *Provider) resolveColumnTraversal(ctx context.Context, req spec.ObjectLo
                    left join pg_catalog.pg_attribute target on target.attrelid OPERATOR(pg_catalog.=) d.oid
                     and target.attname OPERATOR(pg_catalog.=) $7::pg_catalog.text and target.attnum OPERATOR(pg_catalog.<>) 0 and not target.attisdropped
                    where d.oid OPERATOR(pg_catalog.<>) c.oid
-               ) end
+               ) end,
+               case when $5::pg_catalog.text OPERATOR(pg_catalog.=) 'set_not_null'
+                    and c.relkind OPERATOR(pg_catalog.=) 'r' and not c.relispartition and not c.relisshared
+                    and a.attnum OPERATOR(pg_catalog.>) 0 and not a.attnotnull
+                    and a.atttypid OPERATOR(pg_catalog.=) 'pg_catalog.int4'::pg_catalog.regtype
+                    and not exists (select 1 from pg_catalog.pg_inherits h
+                        where h.inhrelid OPERATOR(pg_catalog.=) c.oid or h.inhparent OPERATOR(pg_catalog.=) c.oid)
+               then exists (
+                   select 1 from pg_catalog.pg_constraint ck
+                   where ck.conrelid OPERATOR(pg_catalog.=) c.oid and ck.contype OPERATOR(pg_catalog.=) 'c'
+                     and ck.convalidated and ck.conkey OPERATOR(pg_catalog.=) array[a.attnum]
+                     and pg_catalog.pg_get_expr(ck.conbin, ck.conrelid, true) collate pg_catalog."C"
+                         OPERATOR(pg_catalog.=) pg_catalog.format('%I IS NOT NULL', a.attname)
+               ) else false end
         from pg_catalog.pg_namespace n
         join pg_catalog.pg_class c on c.relnamespace OPERATOR(pg_catalog.=) n.oid
         left join pg_catalog.pg_attribute a on a.attrelid OPERATOR(pg_catalog.=) c.oid
@@ -90,7 +103,7 @@ func (p *Provider) resolveColumnTraversal(ctx context.Context, req spec.ObjectLo
           and c.relpersistence OPERATOR(pg_catalog.=) 'p'
           and c.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
     `, req.Schema, table, req.Name, req.Qualifiers["action"] == "add_column", req.Qualifiers["action"], req.Qualifiers["only"] == "true", facts.RenameDestination).Scan(
-		&facts.Inherited, &facts.DirectPartitionKey, &facts.AttachedChildren, &facts.Partition, &facts.ColumnExists, &facts.System, &facts.StoredGenerated, &facts.ParentNotNull, &facts.NullableDescendant, &facts.RenameDestinationKind, &descendantConflict)
+		&facts.Inherited, &facts.DirectPartitionKey, &facts.AttachedChildren, &facts.Partition, &facts.ColumnExists, &facts.System, &facts.StoredGenerated, &facts.ParentNotNull, &facts.NullableDescendant, &facts.RenameDestinationKind, &descendantConflict, &facts.ValidatedNotNullCheck)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}

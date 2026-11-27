@@ -93,6 +93,35 @@ func TestPGColumnGenerationTargetArms(t *testing.T) {
 	}
 }
 
+func TestPGSetNotNullValidatedCheck(t *testing.T) {
+	r := pgColumnGenerationRule{id: ruleIDPGColumnGenerationTransitionValid, level: rule.LevelBlocker}
+	for _, tc := range []struct {
+		name   string
+		change func(*spec.Statement)
+	}{
+		{"exact", nil},
+		{"unproven", func(s *spec.Statement) { s.Metadata.PGColumnTraversal.ValidatedNotNullCheck = false }},
+		{"wrong column", func(s *spec.Statement) { s.Metadata.PGColumnTraversal.Column = "ID" }},
+		{"unqualified", func(s *spec.Statement) { s.DDL.Table.Schema = "" }},
+		{"stale", func(s *spec.Statement) { s.Metadata.TargetTable.PGRelation = spec.PGRelationState{} }},
+		{"wide integer", func(s *spec.Statement) { s.Metadata.TargetTable.PGColumns.Columns[0].TypeWidth = 64 }},
+		{"multi-action", func(s *spec.Statement) { s.DDL.Alter = append(s.DDL.Alter, spec.Alter{Action: "drop_constraint"}) }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := pgGenerationTransitionStatement("set_not_null", &spec.PGColumnState{TypeWidth: 32})
+			s.Metadata.PGColumnTraversal = &spec.PGColumnTraversal{Schema: "app", Table: "t", Column: "id", ColumnExists: true, ValidatedNotNullCheck: true}
+			want := ""
+			if tc.change != nil {
+				tc.change(&s)
+				want = "column.nullability_data"
+			}
+			if reason, gap := r.assess(s, 0); reason != "" || gap != want {
+				t.Fatalf("reason=%q gap=%q; want gap=%q", reason, gap, want)
+			}
+		})
+	}
+}
+
 func TestPGSetDefaultReferenceTargetPrecedence(t *testing.T) {
 	for _, tc := range []struct {
 		name, action, reason, missing string

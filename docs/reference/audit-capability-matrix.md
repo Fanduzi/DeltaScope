@@ -102,7 +102,7 @@ Broader F09 storage/options/RID/rename/owner/state dimensions remain open.
 
 | Rule | PostgreSQL | MySQL/TiDB | Metadata |
 | --- | --- | --- | --- |
-| `ddl.pg.alter.column.generation.transition.valid` | Proven generation, identity, default and nullability preconditions, including disallowed SET DEFAULT references, direct bool/int4 cross-type defaults and bounded positional parameter refusals on qualified ordinary tables, and live replica identity key slots for DROP NOT NULL | Not applicable | Required |
+| `ddl.pg.alter.column.generation.transition.valid` | Proven generation, identity, default and nullability preconditions, including disallowed SET DEFAULT references, direct bool/int4 cross-type defaults and bounded positional parameter refusals on qualified ordinary tables, live replica identity key slots for DROP NOT NULL, and validated same-column `IS NOT NULL` CHECK evidence for bounded `int4` SET NOT NULL | Not applicable | Required |
 | `ddl.pg.alter.identity.sequence_options.valid` | Proven duplicate/invalid option or stable-definition conflict blocker | Not applicable | Required; observed PG17 alone permits intrinsic refusals |
 | `ddl.pg.alter.identity.restart.warn` | Explicit RESTART value-reuse/blocking warning | Not applicable | Required |
 | `ddl.pg.alter.identity.cycle.warn` | Explicit ADD IDENTITY / SET CYCLE reuse warning | Not applicable | Required |
