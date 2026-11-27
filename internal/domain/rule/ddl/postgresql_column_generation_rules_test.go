@@ -93,6 +93,53 @@ func TestPGColumnGenerationTargetArms(t *testing.T) {
 	}
 }
 
+func TestPGPartitionIdentityTransition(t *testing.T) {
+	transition := pgColumnGenerationRule{id: ruleIDPGColumnGenerationTransitionValid, level: rule.LevelBlocker}
+	options := pgColumnGenerationRule{id: ruleIDPGAlterIdentityOptionsValid, level: rule.LevelBlocker}
+	for _, tc := range []struct {
+		name, action, kind string
+		only, proof        bool
+		change             func(*spec.Statement)
+	}{
+		{"leaf add", "add_identity", "r", false, true, nil},
+		{"leaf guarded drop", "drop_identity", "r", false, true, func(s *spec.Statement) { s.DDL.Alter[0].PGColumnTransition.IfExists = true }},
+		{"root only drop", "drop_identity", "p", true, true, nil},
+		{"root only mode", "set_generated", "p", true, true, func(s *spec.Statement) {
+			s.DDL.Alter[0].PGColumnTransition.Mode, s.DDL.Alter[0].PGColumnTransition.ModeCount = "a", 1
+		}},
+		{"leaf restart", "set_generated", "r", false, true, func(s *spec.Statement) {
+			s.DDL.Alter[0].PGColumnTransition.Options = []spec.SequenceOption{{Kind: spec.SequenceOptionRestart}}
+		}},
+		{"recursive root", "add_identity", "p", false, true, nil},
+		{"unproved relation shape", "add_identity", "r", false, false, nil},
+		{"unmodeled options", "add_identity", "r", false, true, func(s *spec.Statement) { s.DDL.Alter[0].PGColumnTransition.Unmodeled = true }},
+		{"stale fact", "add_identity", "r", false, true, func(s *spec.Statement) { s.Metadata.PGColumnTraversal.Column = "other" }},
+		{"unqualified", "add_identity", "r", false, true, func(s *spec.Statement) { s.DDL.Table.Schema = "" }},
+		{"multiple actions", "add_identity", "r", false, true, func(s *spec.Statement) { s.DDL.Alter = append(s.DDL.Alter, s.DDL.Alter[0]) }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := pgGenerationTransitionStatement(tc.action, nil)
+			s.Metadata.TargetTable.PGRelation.Kind = tc.kind
+			s.Metadata.TargetTable.PGColumns.Ordinary = false
+			s.Metadata.PGColumnTraversal = &spec.PGColumnTraversal{Schema: "app", Table: "t", Column: "id", IdentityChangeBlocked: tc.proof}
+			s.DDL.PGTableOnly = tc.only
+			if tc.change != nil {
+				tc.change(&s)
+			}
+			reason, missing := transition.assess(s, 0)
+			wantBlocked := tc.name == "leaf add" || tc.name == "leaf guarded drop" || tc.name == "root only drop" || tc.name == "root only mode" || tc.name == "leaf restart"
+			if (reason == "identity_partition_target_inapplicable") != wantBlocked || (missing != "") == wantBlocked {
+				t.Fatalf("reason=%q missing=%q", reason, missing)
+			}
+			if wantBlocked && options.matches(s.DDL.Alter[0]) {
+				if reason, missing := options.assess(s, 0); reason != "" || missing != "" {
+					t.Fatalf("options: reason=%q missing=%q", reason, missing)
+				}
+			}
+		})
+	}
+}
+
 func TestPGSetNotNullValidatedCheck(t *testing.T) {
 	r := pgColumnGenerationRule{id: ruleIDPGColumnGenerationTransitionValid, level: rule.LevelBlocker}
 	for _, tc := range []struct {

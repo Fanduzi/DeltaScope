@@ -10661,6 +10661,10 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.set-generated-drop-expression.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-partition-identity-mode-leaf",
+                "file:testdata/ddl-golden/T37.json#pg-partition-identity-mode-only-root",
+                "file:testdata/ddl-golden/T37.json#pg-partition-identity-mode-root",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/partition_identity_transition.expected.yaml#ddl.pg.alter.column.generation.transition.valid",
                 "file:testdata/ddl-golden/T37.json#pg-column-format-system-targets",
                 "file:internal/domain/rule/ddl/postgresql_system_column_rules_test.go#TestPGSystemTargetNeverAbsentOrGuardedNoop",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
@@ -10694,6 +10698,12 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.add-drop-identity.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-partition-identity-add-only-empty-root",
+                "file:testdata/ddl-golden/T37.json#pg-partition-identity-drop-guard-plain-leaf",
+                "file:testdata/ddl-golden/T37.json#pg-partition-identity-drop-guard-missing-column",
+                "file:testdata/ddl-golden/T37.json#pg-partition-identity-drop-root",
+                "file:testdata/ddl-golden/T37.json#pg-partition-identity-guard-absent",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/partition_identity_transition.expected.yaml#ddl.pg.alter.column.generation.transition.valid",
                 "file:testdata/ddl-golden/T37.json#pg-column-format-system-targets",
                 "file:testdata/sql-corpus/postgresql/ddl/findings/column_format_system.expected.yaml#ddl.pg.alter.column.generation.transition.valid",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
@@ -10722,6 +10732,9 @@
               "audit_status": "mixed",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.identity-options.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-partition-identity-options-leaf",
+                "file:testdata/ddl-golden/T37.json#pg-partition-identity-options-only-root",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/partition_identity_transition.expected.yaml#ddl.pg.alter.column.generation.transition.valid",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json#identity options",
                 "file:testdata/ddl-golden/T37.json#pg-column-generation-options",
@@ -10749,6 +10762,9 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.column-attributes.restart.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-partition-identity-restart-leaf",
+                "file:testdata/ddl-golden/T37.json#pg-partition-identity-restart-only-root",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/partition_identity_transition.expected.yaml#ddl.pg.alter.column.generation.transition.valid",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json#RESTART",
                 "file:testdata/ddl-golden/T37.json#pg-column-generation-restart-cycle",

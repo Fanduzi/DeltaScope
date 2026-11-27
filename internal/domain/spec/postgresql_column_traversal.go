@@ -6,7 +6,7 @@ type PGColumnTraversal struct {
 	Inherited, DirectPartitionKey, AttachedChildren, StoredGenerated         bool
 	Partition, ColumnExists, System                                          bool
 	ParentNotNull, NullableDescendant                                        bool
-	ValidatedNotNullCheck                                                    bool `json:"-"`
+	ValidatedNotNullCheck, IdentityChangeBlocked                             bool `json:"-"`
 	RenameDestination                                                        string
 	RenameDescendantsKnown, RenameDescendantConflict, TypeDescendantConflict bool
 	RenameDestinationKind                                                    int // -1 system column, 0 absent, 1 user column.
@@ -45,9 +45,12 @@ func PGColumnTraversalTarget(s Statement) string {
 	switch a.Action {
 	case "drop_column", "rename_column", "set_data_type", "drop_expression", "add_column", "drop_not_null", "set_not_null":
 		return a.Name
-	default:
-		return ""
+	case "add_identity", "drop_identity", "set_generated":
+		if f := a.PGColumnTransition; f != nil && !f.Unmodeled && (snapshot.PGRelation.Kind == "r" || s.DDL.PGTableOnly) {
+			return a.Name
+		}
 	}
+	return ""
 }
 
 // BoundPGColumnTraversal returns the observation for the exact current target.

@@ -865,6 +865,41 @@ func TestMCPSetNotNullValidatedCheck(t *testing.T) {
 	}
 }
 
+type partitionIdentityClient struct{ *mcpMetadataAuditTestClient }
+
+func (partitionIdentityClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type == "column_traversal" && req.Qualifiers["action"] == "add_identity" {
+		return &spec.ObjectSnapshot{PGColumnTraversal: &spec.PGColumnTraversal{Schema: req.Schema, Table: req.Qualifiers["table"], Column: req.Name, IdentityChangeBlocked: true}}, nil
+	}
+	return nil, nil
+}
+
+func TestMCPPartitionIdentity(t *testing.T) {
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	client := partitionIdentityClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{}}}}
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
+		"sql": `ALTER TABLE app.t ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY`, "dialect": "postgresql",
+		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
+	}})
+	if err != nil || result.IsError {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	body, err := json.Marshal(result.StructuredContent)
+	if err != nil || !strings.Contains(string(body), `"identity_partition_target_inapplicable"`) || strings.Contains(string(body), "IdentityChangeBlocked") {
+		t.Fatalf("unexpected response: %s %v", body, err)
+	}
+}
+
 type partitionDropNotNullClient struct{ *mcpMetadataAuditTestClient }
 
 func (partitionDropNotNullClient) ResolveObject(_ context.Context, _ spec.Dialect, _ spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {

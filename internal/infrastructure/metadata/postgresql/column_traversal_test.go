@@ -18,6 +18,7 @@ func TestResolvePGColumnTraversal(t *testing.T) {
 		want         *spec.PGColumnTraversal
 	}{
 		{name: "unobserved attribute"},
+		{name: "partition blocks identity change before column lookup", action: "drop_identity", only: true, rows: [][]driver.Value{{false, false, false, false, false, false, false, false, false, int64(0), nil}}, want: &spec.PGColumnTraversal{IdentityChangeBlocked: true}},
 		{name: "validated exact null test", action: "set_not_null", rows: [][]driver.Value{{false, false, false, false, true, false, false, false, false, int64(0), nil}}, want: &spec.PGColumnTraversal{ColumnExists: true, ValidatedNotNullCheck: true}},
 		{name: "recursive rename collision", action: "rename_column", rows: [][]driver.Value{{false, false, true, false, true, false, false, false, false, int64(0), true}}, want: &spec.PGColumnTraversal{AttachedChildren: true, ColumnExists: true, RenameDestination: " Exact Destination ", RenameDescendantsKnown: true, RenameDescendantConflict: true}},
 		{name: "recursive rename catalog is clear", action: "rename_column", rows: [][]driver.Value{{false, false, true, false, true, false, false, false, false, int64(0), false}}, want: &spec.PGColumnTraversal{AttachedChildren: true, ColumnExists: true, RenameDestination: " Exact Destination ", RenameDescendantsKnown: true}},
@@ -29,9 +30,9 @@ func TestResolvePGColumnTraversal(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			for i := range tc.rows {
-				tc.rows[i] = append(tc.rows[i], tc.want.ValidatedNotNullCheck)
+				tc.rows[i] = append(tc.rows[i], tc.want.ValidatedNotNullCheck, tc.want.IdentityChangeBlocked)
 			}
-			db, log := openTestDB(t, map[string]testQueryResult{"a.attinhcount": {columns: []string{"inherited", "partition_key", "children", "partition", "present", "system", "generated", "parent_not_null", "nullable_descendant", "rename_destination_kind", "rename_conflict", "validated_not_null_check"}, rows: tc.rows}})
+			db, log := openTestDB(t, map[string]testQueryResult{"a.attinhcount": {columns: []string{"inherited", "partition_key", "children", "partition", "present", "system", "generated", "parent_not_null", "nullable_descendant", "rename_destination_kind", "rename_conflict", "validated_not_null_check", "identity_change_blocked"}, rows: tc.rows}})
 			defer db.Close()
 			req := spec.ObjectLookupRequest{Type: "column_traversal", Schema: " Exact Schema ", Name: " Exact Column ", Qualifiers: map[string]string{"table": " Exact Table ", "action": tc.action}}
 			if tc.action == "rename_column" {
@@ -57,7 +58,7 @@ func TestResolvePGColumnTraversal(t *testing.T) {
 				t.Fatalf("fact=%+v want=%+v", result.PGColumnTraversal, want)
 			}
 			encoded, err := json.Marshal(result)
-			if err != nil || strings.Contains(string(encoded), "PGColumnTraversal") || strings.Contains(string(encoded), "ValidatedNotNullCheck") || strings.Contains(string(encoded), req.Name) {
+			if err != nil || strings.Contains(string(encoded), "PGColumnTraversal") || strings.Contains(string(encoded), "ValidatedNotNullCheck") || strings.Contains(string(encoded), "IdentityChangeBlocked") || strings.Contains(string(encoded), req.Name) {
 				t.Fatalf("private result=%s err=%v", encoded, err)
 			}
 		})

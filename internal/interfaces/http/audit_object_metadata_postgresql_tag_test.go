@@ -745,6 +745,31 @@ func TestHTTPSetNotNullValidatedCheck(t *testing.T) {
 	}
 }
 
+func TestHTTPPartitionIdentity(t *testing.T) {
+	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
+	h, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
+		snapshot:       &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "p"}, PGColumns: &spec.PGColumnCatalog{}},
+		objectSnapshot: &spec.ObjectSnapshot{PGColumnTraversal: &spec.PGColumnTraversal{Schema: "app", Table: "t", Column: "id", IdentityChangeBlocked: true}}}
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER TABLE ONLY app.t ALTER COLUMN id DROP IDENTITY IF EXISTS","dialect":"postgresql","connection_id":"test-pg"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"verdict":"reject"`) || !strings.Contains(body, `"identity_partition_target_inapplicable"`) || strings.Contains(body, "IdentityChangeBlocked") || len(client.objectCalls) != 1 {
+		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
+	}
+}
+
 func TestHTTPPartitionDropNotNull(t *testing.T) {
 	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
 	h, err := NewHandler("", "test-build", WithRegistry(reg))

@@ -85,7 +85,11 @@ func (p *Provider) resolveColumnTraversal(ctx context.Context, req spec.ObjectLo
                      and ck.convalidated and ck.conkey OPERATOR(pg_catalog.=) array[a.attnum]
                      and pg_catalog.pg_get_expr(ck.conbin, ck.conrelid, true) collate pg_catalog."C"
                          OPERATOR(pg_catalog.=) pg_catalog.format('%I IS NOT NULL', a.attname)
-               ) else false end
+               ) else false end,
+               ($5::pg_catalog.text OPERATOR(pg_catalog.=) any(array['add_identity','drop_identity','set_generated']::pg_catalog.text[])
+                and not c.relisshared
+                and ((c.relkind OPERATOR(pg_catalog.=) 'r' and c.relispartition)
+                  or (c.relkind OPERATOR(pg_catalog.=) 'p' and not c.relispartition and $6::pg_catalog.bool)))
         from pg_catalog.pg_namespace n
         join pg_catalog.pg_class c on c.relnamespace OPERATOR(pg_catalog.=) n.oid
         left join pg_catalog.pg_attribute a on a.attrelid OPERATOR(pg_catalog.=) c.oid
@@ -98,12 +102,13 @@ func (p *Provider) resolveColumnTraversal(ctx context.Context, req spec.ObjectLo
         where n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text
           and c.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text
           and ($4::pg_catalog.bool or a.attnum OPERATOR(pg_catalog.>) 0
-               or ($5::pg_catalog.text OPERATOR(pg_catalog.=) 'rename_column' and $6::pg_catalog.bool))
+               or ($5::pg_catalog.text OPERATOR(pg_catalog.=) 'rename_column' and $6::pg_catalog.bool)
+               or $5::pg_catalog.text OPERATOR(pg_catalog.=) any(array['add_identity','drop_identity','set_generated']::pg_catalog.text[]))
           and c.relkind OPERATOR(pg_catalog.=) any(array['r','p']::pg_catalog."char"[])
           and c.relpersistence OPERATOR(pg_catalog.=) 'p'
           and c.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
     `, req.Schema, table, req.Name, req.Qualifiers["action"] == "add_column", req.Qualifiers["action"], req.Qualifiers["only"] == "true", facts.RenameDestination).Scan(
-		&facts.Inherited, &facts.DirectPartitionKey, &facts.AttachedChildren, &facts.Partition, &facts.ColumnExists, &facts.System, &facts.StoredGenerated, &facts.ParentNotNull, &facts.NullableDescendant, &facts.RenameDestinationKind, &descendantConflict, &facts.ValidatedNotNullCheck)
+		&facts.Inherited, &facts.DirectPartitionKey, &facts.AttachedChildren, &facts.Partition, &facts.ColumnExists, &facts.System, &facts.StoredGenerated, &facts.ParentNotNull, &facts.NullableDescendant, &facts.RenameDestinationKind, &descendantConflict, &facts.ValidatedNotNullCheck, &facts.IdentityChangeBlocked)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}

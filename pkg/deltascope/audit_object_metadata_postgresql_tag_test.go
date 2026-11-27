@@ -526,6 +526,25 @@ func TestAuditSetNotNullValidatedCheckThroughSDK(t *testing.T) {
 	}
 }
 
+func TestAuditPartitionIdentityThroughSDK(t *testing.T) {
+	provider := &fakeMetadataProviderWithObjects{
+		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
+			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
+				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGColumnTraversal: &spec.PGColumnTraversal{Schema: "app", Table: "t", Column: "id", IdentityChangeBlocked: true}},
+	}
+	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t ALTER COLUMN id RESTART WITH 5`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
+	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Qualifiers["action"] != "set_generated" {
+		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.column.generation.transition.valid" && f.Metadata["reason_code"] == "identity_partition_target_inapplicable" {
+			return
+		}
+	}
+	t.Fatalf("missing identity partition rejection: %+v", result.Statements[0].Findings)
+}
+
 func TestAuditPartitionDropNotNullThroughSDK(t *testing.T) {
 	provider := &fakeMetadataProviderWithObjects{
 		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},

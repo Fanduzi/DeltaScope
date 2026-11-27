@@ -1367,6 +1367,10 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 `ddl.pg.alter.tablespace.target.valid` 默认级别为 blocker。适用于已观测 PostgreSQL 17、限定名精确且目录新鲜的普通持久非类型表，排除共享及 mapped 关系。已证目标缺失或为 `pg_global` 时报告拒绝。证据缺失或过期时报告 `unproven_table_tablespace`。零值 `reltablespace` 对应实际数据库默认空间。既有提示在已证明同空间时说明文件不会被复制，其余情况以条件措辞描述文件移动。
 
+### PostgreSQL 分区 identity 目标检查
+
+对目录已确认、显式限定 schema 的持久普通叶分区，或用 `ONLY` 明确指定的持久分区根，现有规则会拒绝单动作的 `ADD/DROP IDENTITY`、`SET GENERATED`、已识别的序列选项和 `RESTART`。`DROP IDENTITY IF EXISTS` 不会绕过目标限制。此检查不验证递归根操作或序列运行状态。
+
 ### PostgreSQL 分区表目标检查
 
 对目录已确认、显式限定 schema 的 PostgreSQL 17 持久分区表，现有规则在单动作语句中也会拒绝不存在或仅供索引使用的访问方法、不存在的表空间或 `pg_global`，以及不存在的具名所有者或 `PUBLIC`。目标有效时仍保留证据缺口。本检查不覆盖普通叶分区、权限、物理迁移或对子分区的影响。

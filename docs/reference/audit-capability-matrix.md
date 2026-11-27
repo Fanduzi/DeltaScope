@@ -108,7 +108,10 @@ Broader F09 storage/options/RID/rename/owner/state dimensions remain open.
 | `ddl.pg.alter.identity.cycle.warn` | Explicit ADD IDENTITY / SET CYCLE reuse warning | Not applicable | Required |
 
 Approved defaults, no params. Exact fresh ordinary persistent non-inheritance/
-non-partition PG17 facts and dependency-bound stable sequence parameters only.
+non-partition PG17 facts and dependency-bound stable sequence parameters for ordinary checks.
+The transition blocker also covers direct identity changes on a confirmed
+qualified persistent leaf partition and `ONLY` on a persistent partition root.
+It does not verify recursive root changes or runtime sequence state.
 Unknown/unmodeled/ambiguous/stale/incorrectly bound facts retain unverified/review
 `unproven_column_generation_target` / `unproven_identity_sequence_options` gaps.
 Nullable SET NOT NULL and narrowed bounds needing unread current values remain

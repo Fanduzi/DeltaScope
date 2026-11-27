@@ -97,6 +97,10 @@ func pgColumnTransitionTarget(s spec.Statement, index int) (*spec.PGColumnState,
 	if index == 0 {
 		if facts := spec.BoundPGColumnTraversal(s); facts != nil {
 			switch s.DDL.Alter[0].Action {
+			case "add_identity", "drop_identity", "set_generated":
+				if facts.IdentityChangeBlocked {
+					return nil, "identity_partition_target_inapplicable", ""
+				}
 			case "drop_expression":
 				if s.DDL.PGTableOnly && facts.AttachedChildren {
 					return nil, "drop_expression_requires_child_traversal", ""
@@ -273,6 +277,9 @@ func (r pgColumnGenerationRule) Evaluate(ctx context.Context, s spec.Statement) 
 		message := "PostgreSQL column generation transition has a proven invalid target or precondition"
 		suggestion := "verify the exact column identity, generation kind, integer type, NOT NULL and DEFAULT premises; target checks do not certify data, expressions or permissions"
 		switch reason {
+		case "identity_partition_target_inapplicable":
+			message = "PostgreSQL cannot change identity directly on a partition or with ONLY on its root"
+			suggestion = "Review the partition root and its descendants before issuing an identity change without ONLY"
 		case "drop_expression_requires_child_traversal":
 			message = "PostgreSQL requires DROP EXPRESSION to include the child tables"
 		case "drop_not_null_requires_partition_traversal":

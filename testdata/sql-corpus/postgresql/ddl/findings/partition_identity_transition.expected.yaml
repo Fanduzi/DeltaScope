@@ -1,0 +1,23 @@
+name: partition_identity_transition
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    t: {exists: true, pg_relation: {name: t, kind: p}, pg_columns: {ordinary: false, columns: []}}
+    leaf: {exists: true, pg_relation: {name: leaf, kind: r}, pg_columns: {ordinary: false, columns: []}}
+    leaf_options: {exists: true, pg_relation: {name: leaf_options, kind: r}, pg_columns: {ordinary: false, columns: []}}
+    leaf_restart: {exists: true, pg_relation: {name: leaf_restart, kind: r}, pg_columns: {ordinary: false, columns: []}}
+  pg_column_traversals:
+    - {schema: app, table: t, column: id, identity_change_blocked: true}
+    - {schema: app, table: leaf, column: id, identity_change_blocked: true}
+    - {schema: app, table: leaf_options, column: id, identity_change_blocked: true}
+    - {schema: app, table: leaf_restart, column: id, identity_change_blocked: true}
+expect:
+  parse_ok: true
+  statements: {count: 4}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.column.generation.transition.valid]
+    exclude: [ddl.pg.alter.identity.sequence_options.valid, ddl.pg.alter.identity.restart.warn]
