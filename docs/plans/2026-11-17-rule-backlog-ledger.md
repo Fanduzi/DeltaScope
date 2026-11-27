@@ -2124,6 +2124,36 @@ Receipts: `/private/tmp/ds-r2-opclass.CUubqR/f09-set-not-null-7206bfbe/`.
 implementation SHA. This entry records that verification, not a fresh Golden
 run for the documentation commit. F09 remains open.
 
+## F09 partitioned-source foreign keys with NOT VALID
+
+`milestone/pg-alter-default-assignment` fast-forwarded `main` from
+`88d62c516e7f49c44988ec90d064b566a919e103` to
+`8ffce3259bc88a246b845e90f83744c0b5d5036a` and pushed that range to `origin/main`.
+For the `ADD FOREIGN KEY` subaction at the PostgreSQL 17 anchor, the existing
+rule reports `partitioned_foreign_key_not_valid` only for a fresh qualified
+partitioned source in a single action with `NOT VALID`. PostgreSQL 17.7
+returns `42809`. Ordinary leaf partitions and initially validated foreign
+keys retain their previous audit behavior. General partitioned-source checks
+remain unverified. Four evidence links were added without changing inventory
+classifications or denominators. See the [decision](../decisions/2026-11-20-postgresql-foreign-key-targets.md#partitioned-source-with-not-valid).
+
+Default and PostgreSQL-tagged build, test and lint, vet, tidy, formatting,
+diff, inventory, corpus, coverage catalog and decision gates passed.
+`make ddl-golden TASK=T37 ARTIFACT_DIR="$receipt/targeted"` passed 685 cases
+and 20,704 assertions. `make ddl-golden TASK=all ARTIFACT_DIR="$receipt/full"`
+passed 50 tasks, 5,136 cases and 121,786 assertions without failures or skips.
+`python3 scripts/ddl_golden.py validate --artifact "$receipt/full/all/artifact.json"`
+validated the aggregate. Read-only review confirmed the SHA and CLI hash
+across all artifacts. Merged-tree gates passed before push; the protected
+checkout was unchanged and the isolated VM stopped after fixture cleanup.
+Receipts: `/private/tmp/ds-r2-opclass.CUubqR/f09-partitioned-fk-8ffce325/`.
+
+[Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/45949488520),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/45949488571), and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/140341891656) passed at the
+implementation SHA. This entry records that verification, not a new Golden
+run for the documentation commit. F09 remains open.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
