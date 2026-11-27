@@ -28,13 +28,15 @@ func (p *Provider) resolveTableTablespace(ctx context.Context, req spec.ObjectLo
 		left join pg_catalog.pg_tablespace dst on dst.spcname OPERATOR(pg_catalog.=) $3::pg_catalog.text
 		where n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text
 		  and c.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text
-		  and c.relkind OPERATOR(pg_catalog.=) 'r' and c.relpersistence OPERATOR(pg_catalog.=) 'p'
-		  and not c.relisshared and not c.relispartition
-		  and c.relfilenode OPERATOR(pg_catalog.<>) 0::pg_catalog.oid
+		  and c.relkind OPERATOR(pg_catalog.=) coalesce(nullif($4::pg_catalog.text, ''), 'r')::pg_catalog."char"
+		  and c.relpersistence OPERATOR(pg_catalog.=) 'p' and not c.relisshared
 		  and c.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
-		  and not exists (select 1 from pg_catalog.pg_inherits h
-		                  where h.inhrelid OPERATOR(pg_catalog.=) c.oid or h.inhparent OPERATOR(pg_catalog.=) c.oid)
-	`, req.Schema, table, req.Name)
+		  and (c.relkind OPERATOR(pg_catalog.=) 'p'
+		       or (c.relkind OPERATOR(pg_catalog.=) 'r' and not c.relispartition
+		           and c.relfilenode OPERATOR(pg_catalog.<>) 0::pg_catalog.oid
+		           and not exists (select 1 from pg_catalog.pg_inherits h
+		                           where h.inhrelid OPERATOR(pg_catalog.=) c.oid or h.inhparent OPERATOR(pg_catalog.=) c.oid)))
+	`, req.Schema, table, req.Name, req.Qualifiers["relation_kind"])
 	facts := &spec.PGTableTablespace{Schema: req.Schema, Table: table, Name: req.Name}
 	var same sql.NullBool
 	if err := row.Scan(&facts.Exists, &facts.Global, &same); errors.Is(err, sql.ErrNoRows) {

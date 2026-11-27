@@ -23,11 +23,14 @@ func (r pgTableTablespaceRule) AppliesTo(s spec.Statement) bool {
 
 func boundPGTableTablespace(s spec.Statement) *spec.PGTableTablespace {
 	name := spec.PGTableTablespaceTarget(s)
-	if name == "" || !spec.PGOrdinaryTableBound(s) || !spec.PG17Observed(s.Metadata.Instance) {
+	if name == "" || !(spec.PGOrdinaryTableBound(s) || spec.PGPartitionedTableBound(s)) || !spec.PG17Observed(s.Metadata.Instance) {
 		return nil
 	}
 	facts, table := s.Metadata.PGTableTablespace, s.DDL.Table
 	if facts == nil || facts.Schema != table.Schema || facts.Table != table.Name || facts.Name != name {
+		return nil
+	}
+	if spec.PGPartitionedTableBound(s) && facts.Exists && !facts.Global {
 		return nil
 	}
 	return facts

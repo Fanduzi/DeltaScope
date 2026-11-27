@@ -129,9 +129,18 @@ func PGOrdinaryTableBound(s Statement) bool {
 	return catalog != nil && catalog.Ordinary && !catalog.Typed
 }
 
-// PGExactTableBound checks the identity and freshness of the live relation.
-// Callers must establish the table shape their rule requires.
+// PGExactTableBound checks the identity and freshness of a plain relation.
 func PGExactTableBound(s Statement) bool {
+	return pgExactTableKindBound(s, "r")
+}
+
+// PGPartitionedTableBound checks the identity and freshness of a partitioned table.
+// The destination lookup must still check persistence and table scope.
+func PGPartitionedTableBound(s Statement) bool {
+	return pgExactTableKindBound(s, "p")
+}
+
+func pgExactTableKindBound(s Statement, kind string) bool {
 	if s.DDL == nil || s.DDL.Table == nil || s.DDL.PGTableCatalogQualified || s.Metadata == nil || s.Metadata.TargetTable == nil {
 		return false
 	}
@@ -139,5 +148,5 @@ func PGExactTableBound(s Statement) bool {
 	return table.Name != "" && table.Schema != "" && table.Schema != "pg_temp" &&
 		s.Metadata.Schema == table.Schema && snapshot.Schema == table.Schema && snapshot.Exists &&
 		snapshot.Table != nil && snapshot.Table.Name == table.Name &&
-		snapshot.PGRelation.Name == table.Name && snapshot.PGRelation.Kind == "r"
+		snapshot.PGRelation.Name == table.Name && snapshot.PGRelation.Kind == kind
 }

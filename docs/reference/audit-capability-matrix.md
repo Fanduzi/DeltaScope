@@ -210,6 +210,13 @@ uses the table's effective current location and the database's actual default.
 The check leaves privilege, lock and capacity evidence to independent work.
 Bulk tablespace movement remains a separate scope.
 
+### PostgreSQL partitioned-table destination refusals
+
+On a fresh, schema-qualified persistent PostgreSQL 17 partitioned table, the
+existing destination rules recognize six single-action refusals: missing or
+index access method, missing or `pg_global` tablespace, and missing named
+owner or `PUBLIC`. Other partitioned-table outcomes remain unverified.
+
 ### PostgreSQL heap table storage option declarations
 
 The default `ddl.pg.alter.reloptions.valid` blocker checks bounded SET/RESET

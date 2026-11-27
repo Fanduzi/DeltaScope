@@ -21,6 +21,9 @@ func TestPGTableOwnerTargetAssessment(t *testing.T) {
 		{name: "observed same owner", kind: "current_role", present: true, same: true},
 		{name: "missing literal", kind: "named", reason: "owner_role_absent"},
 		{name: "public", kind: "public", reason: "owner_public_inapplicable"},
+		{name: "partitioned public", kind: "public", reason: "owner_public_inapplicable", change: func(s *spec.Statement) { s.Metadata.TargetTable.PGRelation.Kind = "p" }},
+		{name: "partitioned missing role", kind: "named", reason: "owner_role_absent", change: func(s *spec.Statement) { s.Metadata.TargetTable.PGRelation.Kind = "p" }},
+		{name: "partitioned known owner keeps gap", kind: "named", present: true, same: true, gap: "target_table.pg_owner", change: func(s *spec.Statement) { s.Metadata.TargetTable.PGRelation.Kind = "p" }},
 		{name: "unobserved session", kind: "session_user", gap: "target_table.pg_owner"},
 		{name: "offline", kind: "named", gap: "instance.version", change: func(s *spec.Statement) { s.Metadata = nil }},
 		{name: "stale relation", kind: "named", gap: "target_table.pg_owner", change: func(s *spec.Statement) { s.Metadata.TargetTable.PGRelation = spec.PGRelationState{} }},
@@ -60,7 +63,8 @@ func TestPGTableOwnerTargetAssessment(t *testing.T) {
 			}
 			s.DDL.Alter[0].Name = target.Name // Old normalized inputs must not leak a role either.
 			advice, err := mustNewOwnerAdvisoryRule(t, policy.RulePolicy{}).Evaluate(context.Background(), s)
-			if err != nil || len(advice) != 1 || advice[0].Level != rule.LevelNotice || strings.Contains(advice[0].Message, "observed owner") != tc.same {
+			wantSameAdvice := tc.same && tc.gap == ""
+			if err != nil || len(advice) != 1 || advice[0].Level != rule.LevelNotice || strings.Contains(advice[0].Message, "observed owner") != wantSameAdvice {
 				t.Fatalf("advice=%+v err=%v", advice, err)
 			}
 			b, err := json.Marshal(append(findings, advice...))

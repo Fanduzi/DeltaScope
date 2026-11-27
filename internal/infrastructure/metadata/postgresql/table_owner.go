@@ -41,13 +41,15 @@ func (p *Provider) resolveTableOwner(ctx context.Context, req spec.ObjectLookupR
 		  end
 		where n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text
 		  and c.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text
-		  and c.relkind OPERATOR(pg_catalog.=) 'r' and c.relpersistence OPERATOR(pg_catalog.=) 'p'
-		  and not c.relisshared and not c.relispartition
-		  and c.relfilenode OPERATOR(pg_catalog.<>) 0::pg_catalog.oid
+		  and c.relkind OPERATOR(pg_catalog.=) coalesce(nullif($5::pg_catalog.text, ''), 'r')::pg_catalog."char"
+		  and c.relpersistence OPERATOR(pg_catalog.=) 'p' and not c.relisshared
 		  and c.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
-		  and not exists (select 1 from pg_catalog.pg_inherits h
-		                  where h.inhrelid OPERATOR(pg_catalog.=) c.oid or h.inhparent OPERATOR(pg_catalog.=) c.oid)
-	`, req.Schema, table, target.Name, target.Kind)
+		  and ((c.relkind OPERATOR(pg_catalog.=) 'p' and $4::pg_catalog.text OPERATOR(pg_catalog.=) any(array['named','public']::pg_catalog.text[]))
+		       or (c.relkind OPERATOR(pg_catalog.=) 'r' and not c.relispartition
+		           and c.relfilenode OPERATOR(pg_catalog.<>) 0::pg_catalog.oid
+		           and not exists (select 1 from pg_catalog.pg_inherits h
+		                           where h.inhrelid OPERATOR(pg_catalog.=) c.oid or h.inhparent OPERATOR(pg_catalog.=) c.oid)))
+	`, req.Schema, table, target.Name, target.Kind, req.Qualifiers["relation_kind"])
 	facts := &spec.PGTableOwnerState{Schema: req.Schema, Table: table, Target: target}
 	if err := row.Scan(&facts.Exists, &facts.Same); errors.Is(err, sql.ErrNoRows) {
 		return nil, nil

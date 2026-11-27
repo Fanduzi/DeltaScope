@@ -19,6 +19,17 @@ func TestPGTableTablespaceAssessment(t *testing.T) {
 		{name: "move", change: func(_ *spec.Statement, f *spec.PGTableTablespace) { f.Same = false }},
 		{name: "missing", reason: "tablespace_absent", change: func(_ *spec.Statement, f *spec.PGTableTablespace) { f.Exists = false }},
 		{name: "global", reason: "tablespace_global_inapplicable", change: func(_ *spec.Statement, f *spec.PGTableTablespace) { f.Global = true }},
+		{name: "partitioned global", reason: "tablespace_global_inapplicable", change: func(s *spec.Statement, f *spec.PGTableTablespace) {
+			s.Metadata.TargetTable.PGRelation.Kind = "p"
+			f.Global = true
+		}},
+		{name: "partitioned missing tablespace", reason: "tablespace_absent", change: func(s *spec.Statement, f *spec.PGTableTablespace) {
+			s.Metadata.TargetTable.PGRelation.Kind = "p"
+			f.Exists = false
+		}},
+		{name: "partitioned known tablespace keeps gap", fact: "target_table.pg_tablespace", change: func(s *spec.Statement, _ *spec.PGTableTablespace) {
+			s.Metadata.TargetTable.PGRelation.Kind = "p"
+		}},
 		{name: "unbound", fact: "target_table.pg_tablespace", change: func(_ *spec.Statement, f *spec.PGTableTablespace) { f.Name = "mixed space" }},
 		{name: "unknown comparison", fact: "target_table.pg_tablespace", change: func(_ *spec.Statement, f *spec.PGTableTablespace) { f.SameKnown = false }},
 		{name: "stale", fact: "target_table.pg_tablespace", change: func(s *spec.Statement, _ *spec.PGTableTablespace) {

@@ -327,13 +327,20 @@ func (tableOwnerAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, re
 }
 
 func TestMCPTableOwner(t *testing.T) {
+	for _, kind := range []string{"r", "p"} {
+		t.Run(kind, func(t *testing.T) { testMCPTableOwner(t, kind) })
+	}
+}
+
+func testMCPTableOwner(t *testing.T, kind string) {
+	t.Helper()
 	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = session.Close() })
 	client := tableOwnerAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
-		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: kind}, PGColumns: &spec.PGColumnCatalog{Ordinary: kind == "r"}}}}
 	previous := prepareMetadataAudit
 	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
 		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil

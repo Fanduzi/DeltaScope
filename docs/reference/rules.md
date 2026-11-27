@@ -1493,6 +1493,10 @@ non-typed table with nonshared, nonmapped storage. A missing destination or
 database default for zero `reltablespace`. The existing notice identifies
 proven same-space selection and describes file moves conditionally.
 
+### PostgreSQL partitioned-table destination refusals
+
+For a single action on an observed, schema-qualified persistent PostgreSQL 17 partitioned table, the existing destination blockers also reject a missing or index-only access method, a missing tablespace or `pg_global`, and a missing named owner or `PUBLIC`. A valid destination still leaves an evidence gap. These checks do not cover leaf partitions, permissions, storage movement or effects on child partitions.
+
 ### PostgreSQL heap table storage options
 
 `ddl.pg.alter.reloptions.valid` defaults to blocker. It checks SET and RESET

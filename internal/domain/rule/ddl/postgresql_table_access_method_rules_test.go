@@ -16,6 +16,13 @@ func TestPGTableAccessMethodAssessment(t *testing.T) {
 		change             func(*spec.Statement, *spec.PGTableAccessMethod)
 	}{
 		{name: "same"},
+		{name: "partitioned index method", reason: "access_method_wrong_kind", change: func(s *spec.Statement, f *spec.PGTableAccessMethod) {
+			s.Metadata.TargetTable.PGRelation.Kind = "p"
+			f.Kind = "i"
+		}},
+		{name: "partitioned valid method keeps gap", fact: "target_table.pg_access_method", change: func(s *spec.Statement, _ *spec.PGTableAccessMethod) {
+			s.Metadata.TargetTable.PGRelation.Kind = "p"
+		}},
 		{name: "move", change: func(_ *spec.Statement, f *spec.PGTableAccessMethod) { f.Same = false }},
 		{name: "missing", reason: "access_method_absent", change: func(_ *spec.Statement, f *spec.PGTableAccessMethod) { f.Kind = "" }},
 		{name: "index kind", reason: "access_method_wrong_kind", change: func(_ *spec.Statement, f *spec.PGTableAccessMethod) { f.Kind = "i" }},

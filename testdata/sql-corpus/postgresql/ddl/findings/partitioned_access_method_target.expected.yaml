@@ -1,0 +1,18 @@
+name: partitioned_access_method_target
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    t:
+      exists: true
+      pg_relation: {name: t, kind: p}
+  pg_table_access_methods:
+    - {schema: app, table: t, name: btree, kind: i}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.access_method.target.valid, ddl.pg.alter.set_access_method.warn]

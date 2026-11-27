@@ -9,13 +9,13 @@ import (
 func enrichPGTableOwners(ctx context.Context, request *MetadataRequest, statements []spec.Statement) error {
 	for _, s := range statements {
 		target := spec.PGTableOwnerSelection(s)
-		if target.Kind == "" || !spec.PGOrdinaryTableBound(s) || !spec.PG17Observed(s.Metadata.Instance) {
+		if target.Kind == "" || !(spec.PGOrdinaryTableBound(s) || spec.PGPartitionedTableBound(s) && (target.Kind == "named" || target.Kind == "public")) || !spec.PG17Observed(s.Metadata.Instance) {
 			continue
 		}
 		table := s.DDL.Table
 		lookup := spec.ObjectLookupRequest{
 			Schema: table.Schema, Name: target.Name, Type: "table_owner",
-			Qualifiers: map[string]string{"table": table.Name, "kind": target.Kind},
+			Qualifiers: map[string]string{"table": table.Name, "kind": target.Kind, "relation_kind": s.Metadata.TargetTable.PGRelation.Kind},
 		}
 		object, err := resolveObjectSnapshot(ctx, request, spec.DialectPostgreSQL, &lookup)
 		if err != nil {

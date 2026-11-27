@@ -20,13 +20,13 @@ comparisons for the member and scope binding.
 | column_state_test.go | Pins quoted/duplicate/empty/unknown/scope facts, separate column/sequence types, int64 values, serial/domain controls, SQL privacy and query/scan/iteration/close error arms |
 | instance_namespace_test.go | Pins actual pg_catalog version/settings and CASE/membership/row operators rather than search_path namesakes; unknown capability stays unknown |
 | column_format_test.go | Pins observed type/system directories and empty-user preservation, exact quoted names, enum-derived lz4 known/false/unknown, system-qualified attribute/type comparisons and non-last-wins/error arms without privileged pg_config |
-| table_owner.go | Observes exact PG17 table owner targets using role identity and sameness with no permission or membership reads |
+| table_owner.go | Observes exact PG17 table owner targets, including named roles and PUBLIC for persistent partitioned tables, without permission or membership reads |
 | bulk_tablespace.go | Reads both exact named spaces and ordered role existence together using `pg_catalog.pg_tablespace` and `pg_catalog.pg_roles` |
 | column_type.go | Reads the qualified PostgreSQL 17 type and associated array, pseudo-type, exact collation and scalar assignment facts using system catalogs, including eligible ONLY parents |
 | table_namespace.go | Observes PostgreSQL 17 table rename and schema destinations, including exact array, index and owned-sequence conflicts during schema moves |
 | table_persistence.go | Reads observed PG17 persistence, direct publication and directional foreign-key preconditions for ordinary tables without reading dependency names |
-| table_access_method.go | Reads the named or effective-default PG17 access method and compares it to the bound ordinary table’s actual method without invoking handlers |
-| table_tablespace.go | Reads one exact PostgreSQL destination and compares it with the bound ordinary table’s current or database-default space. Excludes shared and mapped relations, with no location paths or privilege reads |
+| table_access_method.go | Reads PG17 access-method destinations without invoking handlers, including named methods for persistent partitioned tables |
+| table_tablespace.go | Reads PostgreSQL tablespace destinations for ordinary and persistent partitioned tables, with no location paths or privilege reads |
 | foreign_key_equality.go | Checks the selected key and bounded equality or implicit conversion facts for scalar, domain, enum and array types for ordered PostgreSQL 17 foreign-key columns |
 | foreign_key_keys.go | Reads live valid plain unique keys for one exact ordinary PG17 referenced table, including primary/immediate flags and ordered key slots |
 | constraint_using_index.go | Observes one exact PostgreSQL index for PRIMARY KEY or UNIQUE attachment, including internal constraint ownership, key sort, collation, options and operator-class defaults selected by exact or binary-compatible type |

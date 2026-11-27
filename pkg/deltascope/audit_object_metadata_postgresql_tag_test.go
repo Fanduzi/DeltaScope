@@ -113,10 +113,17 @@ func TestAuditReplicaIdentityAttachmentThroughSDK(t *testing.T) {
 }
 
 func TestAuditTableTablespaceThroughSDK(t *testing.T) {
+	for _, kind := range []string{"r", "p"} {
+		t.Run(kind, func(t *testing.T) { testAuditTableTablespaceThroughSDK(t, kind) })
+	}
+}
+
+func testAuditTableTablespaceThroughSDK(t *testing.T, kind string) {
+	t.Helper()
 	provider := &fakeMetadataProviderWithObjects{
 		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
 			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
-				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
+				PGRelation: PGRelationState{Name: "t", Kind: kind}, PGColumns: &PGColumnCatalog{Ordinary: kind == "r"}}},
 		objectSnapshot: &spec.ObjectSnapshot{PGTableTablespace: &spec.PGTableTablespace{Schema: "app", Table: "t", Name: "Mixed Space"}},
 	}
 	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t SET TABLESPACE "Mixed Space"`, Dialect: DialectPostgreSQL, MetadataProvider: provider})

@@ -106,7 +106,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | mysql_server_alter_rules_test.go | Verifies the T26-SERVER-ALTER-EXECUTION-01 rule contract directly: adjudication-driven gap sets (proven and refusal owe none, barrier owes exactly `server.batch_effects`, unproven owes the derived set — never a sibling premise), arm-keyed outcomes and refusal escalation to blocker, the A3/A4-only `connection_members` advisory carrying no outcome/marker/gap, marker provenance (own consumable premise and consumed conditional ordered state mark; barrier and unconditional-absent refusal never do), the narrow `AppliesTo` boundary, and findings/gap facts staying free of the authored name, OPTIONS content, account, and grant text (issue #105 T26-SERVER-ALTER-EXECUTION-01) |
 | postgresql_object_lifecycle_rules.go | Implements PostgreSQL-only object lifecycle rules: create-schema notice, drop-schema advisory/cascade, create-sequence cycle, alter-sequence restart/cycle, drop-sequence advisory/cascade, drop-materialized-view advisory/cascade |
 | postgresql_bulk_tablespace_rules.go | Checks named PG17 bulk endpoints and ordered owner filters and reports observed same-space selections |
-| postgresql_table_owner_rules.go | Checks PG17 ordinary-table OWNER TO targets without exposing role names or inspecting permissions |
+| postgresql_table_owner_rules.go | Checks PG17 ordinary-table OWNER TO targets and bounded partitioned-table refusals without exposing role names or inspecting permissions |
 | postgresql_table_namespace_rules.go | Checks exact PostgreSQL 17 RENAME and SET SCHEMA destinations, including collision checks for arrays, indexes and owned sequences during schema moves |
 | postgresql_foreign_key_target_rules.go | Checks exact relation and column identities, referenced key eligibility, arity, bounded scalar equality and ON DELETE SET membership for ADD FOREIGN KEY; rejects NOT VALID for a fresh qualified PostgreSQL 17 partitioned source |
 | postgresql_constraint_using_index_rules.go | Checks exact existing index prerequisites for PostgreSQL 17 PRIMARY KEY and UNIQUE attachment, including the observed default operator class for each key column |
@@ -114,8 +114,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_column_type_destination_rules.go | Checks PostgreSQL 17 type identity, bounded built-in modifiers, qualified collations and scalar assignment cast prerequisites |
 | postgresql_column_type_source_rules.go | Checks exact PG17 source-column preconditions for TYPE and TYPE USING |
 | postgresql_table_persistence_rules.go | Checks PG17 ordinary-table persistence transitions and corrects same-persistence advice |
-| postgresql_table_access_method_rules.go | Checks one PG17 ordinary-table access method destination and supplies same-method evidence for the existing warning |
-| postgresql_table_tablespace_rules.go | Checks one PG17 tablespace destination and supplies same-space evidence for the existing advisory |
+| postgresql_table_access_method_rules.go | Checks PG17 access method destinations, with same-method evidence for ordinary tables and refusal-only checks for partitioned tables |
+| postgresql_table_tablespace_rules.go | Checks PG17 tablespace destinations, with same-space evidence for ordinary tables and refusal-only checks for partitioned tables |
 | postgresql_table_reloptions_rules.go | Checks bounded PostgreSQL 17 heap table SET/RESET declarations using fresh exact catalog and private AST facts |
 | postgresql_replica_identity_rules.go | Checks exact PG17 USING INDEX attachment eligibility with bounded reason codes and missing-fact gaps |
 | postgresql_materialized_view_refresh_rules.go | Implements PostgreSQL-only materialized view refresh rules: non-concurrent refresh warning, WITH NO DATA notice |

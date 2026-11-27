@@ -98,7 +98,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | service_multi_target_denylist_postgresql_tag_test.go | Verifies PostgreSQL multi-target DROP keeps distinct dotted qualified identities as separate denylist findings |
 | service_unsupported_verdict_floor_postgresql_tag_test.go | Verifies the application unsupported-statement review floor for PostgreSQL `SELECT 1`, mixed audited siblings, unchanged `review`/`reject`, and metadata-aware inheritance |
 | corpus_coverage_test.go | Verifies every non-deferred shipped rule has corpus coverage for its supported dialect targets, including MySQL/TiDB-only metadata rules |
-| postgresql_table_owner_metadata.go | Binds exact private PostgreSQL 17 owner-target observations after target freshness checks |
+| postgresql_table_owner_metadata.go | Binds private PostgreSQL 17 owner-target observations after target freshness checks, including named roles and PUBLIC for partitioned tables |
 | postgresql_bulk_tablespace_metadata.go | Binds the exact PG17 bulk request to endpoint and ordered role observations before the batch freshness cutoff |
 | postgresql_refresh_materialized_view_metadata.go | Binds private refresh prerequisites to a fresh, exactly qualified PostgreSQL 17 materialized-view target. |
 | postgresql_column_type_metadata.go | Binds one exact PG17 TYPE destination after proving the fresh D14 source-column premise |
@@ -142,8 +142,8 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | postgresql_drop_view_metadata.go | Binds exact DROP VIEW targets and dependency observations for single and ordered targets, and binds ALTER VIEW or ALTER MATERIALIZED VIEW option facts. |
 | postgresql_destructive_table_metadata.go | Binds ordered PostgreSQL 17 DROP/TRUNCATE target identities and private RESTRICT dependency observations. |
 | postgresql_table_persistence_metadata.go | Binds private PG17 persistence transition evidence after exact target freshness checks |
-| postgresql_table_access_method_metadata.go | Binds private PostgreSQL 17 access-method kind and same-method facts after the target freshness check |
-| postgresql_table_tablespace_metadata.go | Binds private PostgreSQL 17 single-table destination and same-space facts after the target freshness check |
+| postgresql_table_access_method_metadata.go | Binds private PostgreSQL 17 access-method facts after target freshness checks, including named destinations for partitioned tables |
+| postgresql_table_tablespace_metadata.go | Binds private PostgreSQL 17 tablespace facts after target freshness checks for ordinary and partitioned tables |
 | postgresql_column_traversal_metadata.go | Binds private PostgreSQL column traversal facts, including the exact destination of a recursive column rename |
 | postgresql_drop_column_dependency_metadata.go | Binds private column dependency evidence for fresh PostgreSQL DROP COLUMN RESTRICT and eligible TYPE changes, with action-specific catalog classes |
 | postgresql_drop_constraint_reference_metadata.go | Binds private direct foreign-key dependency evidence for a fresh ordinary-table DROP CONSTRAINT RESTRICT |

@@ -196,6 +196,13 @@ func TestHTTPTableTablespace(t *testing.T) {
 }
 
 func TestHTTPTableAccessMethod(t *testing.T) {
+	for _, kind := range []string{"r", "p"} {
+		t.Run(kind, func(t *testing.T) { testHTTPTableAccessMethod(t, kind) })
+	}
+}
+
+func testHTTPTableAccessMethod(t *testing.T, kind string) {
+	t.Helper()
 	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
 	h, err := NewHandler("", "test-build", WithRegistry(reg))
 	if err != nil {
@@ -203,7 +210,7 @@ func TestHTTPTableAccessMethod(t *testing.T) {
 	}
 	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
 		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
-			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
+			PGRelation: spec.PGRelationState{Name: "t", Kind: kind}, PGColumns: &spec.PGColumnCatalog{Ordinary: kind == "r"}},
 		objectSnapshot: &spec.ObjectSnapshot{PGTableAccessMethod: &spec.PGTableAccessMethod{Schema: "app", Table: "t", Name: "missing"}}}
 	previous := prepareHTTPMetadataAudit
 	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
