@@ -340,7 +340,7 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	case "ddl.pg.refresh_materialized_view.target.valid":
 		return "Checks the exact PostgreSQL 17 materialized view, population, option compatibility and usable unique index for a concurrent refresh."
 	case "ddl.pg.alter.set_schema.target.valid":
-		return "Checks PostgreSQL 17 destination schema and collisions for an ordinary table and its companions. On qualified persistent partition roots, blocks a missing schema or collisions of the root, its row type, indexes or owned sequences."
+		return "Checks PostgreSQL 17 destination schema and collisions for an ordinary table and its companions. On qualified persistent partition roots, blocks a missing schema or collisions of the root, its row or array type, indexes or owned sequences."
 	case "ddl.pg.alter.add_foreign_key.targets.valid":
 		return "Checks PostgreSQL 17 ADD FOREIGN KEY relation and column identities, referenced key eligibility, column counts, bounded equality for scalar, domain, enum and array types and ON DELETE SET column lists on fresh ordinary tables, including NOT VALID declarations. Rejects single-action ADD FOREIGN KEY NOT VALID on a confirmed qualified partitioned source."
 	case "ddl.pg.alter.constraint_using_index.valid":

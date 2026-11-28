@@ -571,26 +571,30 @@ func TestMCPDropColumnDependency(t *testing.T) {
 	}
 }
 
-type tableNamespaceCompanionAuditClient struct{ *mcpMetadataAuditTestClient }
+type tableNamespaceCompanionAuditClient struct {
+	*mcpMetadataAuditTestClient
+	arrayConflict bool
+}
 
-func (tableNamespaceCompanionAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
-	return &spec.ObjectSnapshot{PGTableNamespace: &spec.PGTableNamespace{Schema: req.Schema, Table: req.Qualifiers["table"], Action: "set_schema", Destination: req.Name, SourceKind: req.Qualifiers["kind"], SourceKindKnown: req.Qualifiers["kind"] != "", SchemaExists: true, RowTypeConflictKnown: true, ArrayTypeConflictKnown: true, OwnedSequenceConflict: true}}, nil
+func (c tableNamespaceCompanionAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	return &spec.ObjectSnapshot{PGTableNamespace: &spec.PGTableNamespace{Schema: req.Schema, Table: req.Qualifiers["table"], Action: "set_schema", Destination: req.Name, SourceKind: req.Qualifiers["kind"], SourceKindKnown: req.Qualifiers["kind"] != "", SchemaExists: true, RowTypeConflictKnown: true, ArrayTypeConflictKnown: true, OwnedSequenceConflict: true, ArrayTypeConflict: c.arrayConflict}}, nil
 }
 
 func TestMCPTableNamespaceCompanion(t *testing.T) {
 	for _, kind := range []string{"r", "p"} {
-		t.Run(kind, func(t *testing.T) { testMCPTableNamespaceCompanion(t, kind) })
+		t.Run(kind, func(t *testing.T) { testMCPTableNamespaceCompanion(t, kind, false) })
 	}
+	t.Run("partition array", func(t *testing.T) { testMCPTableNamespaceCompanion(t, "p", true) })
 }
 
-func testMCPTableNamespaceCompanion(t *testing.T, kind string) {
+func testMCPTableNamespaceCompanion(t *testing.T, kind string, arrayConflict bool) {
 	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = session.Close() })
 	client := tableNamespaceCompanionAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
-		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: kind}, PGColumns: &spec.PGColumnCatalog{Ordinary: kind == "r"}}}}
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: kind}, PGColumns: &spec.PGColumnCatalog{Ordinary: kind == "r"}}}, arrayConflict}
 	previous := prepareMetadataAudit
 	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
 		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
@@ -604,7 +608,11 @@ func testMCPTableNamespaceCompanion(t *testing.T, kind string) {
 		t.Fatalf("result=%+v err=%v", result, err)
 	}
 	body, err := json.Marshal(result.StructuredContent)
-	if err != nil || !strings.Contains(string(body), `"destination_owned_sequence_conflict"`) || !strings.Contains(string(body), `"ddl.pg.alter.set_schema.target.valid"`) || strings.Contains(string(body), "PGTableNamespace") {
+	reason := "destination_owned_sequence_conflict"
+	if arrayConflict {
+		reason = "destination_array_type_conflict"
+	}
+	if err != nil || !strings.Contains(string(body), `"`+reason+`"`) || !strings.Contains(string(body), `"ddl.pg.alter.set_schema.target.valid"`) || strings.Contains(string(body), "PGTableNamespace") || strings.Contains(string(body), "ArrayTypeConflict") {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }

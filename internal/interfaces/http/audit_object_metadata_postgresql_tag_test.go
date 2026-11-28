@@ -537,6 +537,16 @@ func TestHTTPTableNamespaceCompanion(t *testing.T) {
 }
 
 func TestHTTPPartitionRootSetSchema(t *testing.T) {
+	for _, arrayConflict := range []bool{false, true} {
+		reason := "destination_index_conflict"
+		if arrayConflict {
+			reason = "destination_array_type_conflict"
+		}
+		t.Run(reason, func(t *testing.T) { testHTTPPartitionRootSetSchema(t, reason, arrayConflict) })
+	}
+}
+
+func testHTTPPartitionRootSetSchema(t *testing.T, reason string, arrayConflict bool) {
 	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
 	h, err := NewHandler("", "test-build", WithRegistry(reg))
 	if err != nil {
@@ -544,7 +554,7 @@ func TestHTTPPartitionRootSetSchema(t *testing.T) {
 	}
 	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
 		snapshot:       &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "p"}},
-		objectSnapshot: &spec.ObjectSnapshot{PGTableNamespace: &spec.PGTableNamespace{Schema: "app", Table: "t", Action: "set_schema", Destination: "dst", SourceKind: "p", SourceKindKnown: true, SchemaExists: true, RowTypeConflictKnown: true, ArrayTypeConflictKnown: true, IndexConflict: true}}}
+		objectSnapshot: &spec.ObjectSnapshot{PGTableNamespace: &spec.PGTableNamespace{Schema: "app", Table: "t", Action: "set_schema", Destination: "dst", SourceKind: "p", SourceKindKnown: true, SchemaExists: true, RowTypeConflictKnown: true, ArrayTypeConflictKnown: true, ArrayTypeConflict: arrayConflict, IndexConflict: true}}}
 	previous := prepareHTTPMetadataAudit
 	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
 		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
@@ -556,7 +566,7 @@ func TestHTTPPartitionRootSetSchema(t *testing.T) {
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 	body := rec.Body.String()
-	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter.set_schema.target.valid"`) || !strings.Contains(body, `"destination_index_conflict"`) || strings.Contains(body, "SourceKind") || len(client.objectCalls) != 1 || client.objectCalls[0].Qualifiers["kind"] != "p" {
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter.set_schema.target.valid"`) || !strings.Contains(body, `"`+reason+`"`) || strings.Contains(body, "SourceKind") || strings.Contains(body, "ArrayTypeConflict") || len(client.objectCalls) != 1 || client.objectCalls[0].Qualifiers["kind"] != "p" {
 		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
 	}
 }

@@ -63,9 +63,21 @@ func TestPGTableNamespaceDestination(t *testing.T) {
 			s.DDL.Alter[0].Options["new_schema"] = "app"
 			f.Destination, f.SameSchema, f.RelationConflict, f.RowTypeConflict = "app", true, true, true
 		}},
-		{name: "partition schema array conflict stays out of scope", action: "set_schema", gap: destinationFact, change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+		{name: "partition schema array conflict", action: "set_schema", reason: "destination_array_type_conflict", change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+			partition(s, f)
+			f.ArrayTypeConflict = true
+		}},
+		{name: "partition schema array conflict precedes index", action: "set_schema", reason: "destination_array_type_conflict", change: func(s *spec.Statement, f *spec.PGTableNamespace) {
 			partition(s, f)
 			f.ArrayTypeConflict, f.IndexConflict = true, true
+		}},
+		{name: "partition schema row type conflict precedes array", action: "set_schema", reason: "destination_row_type_conflict", change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+			partition(s, f)
+			f.RowTypeConflict, f.ArrayTypeConflict = true, true
+		}},
+		{name: "partition schema array unknown retains gap", action: "set_schema", gap: destinationFact, change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+			partition(s, f)
+			f.ArrayTypeConflict, f.IndexConflict, f.ArrayTypeConflictKnown = true, true, false
 		}},
 		{name: "partition schema move with unknown source proof", action: "set_schema", gap: destinationFact, change: func(s *spec.Statement, f *spec.PGTableNamespace) {
 			partition(s, f)

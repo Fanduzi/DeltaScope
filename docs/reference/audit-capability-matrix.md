@@ -177,9 +177,9 @@ The existing ALTER target blocker uses the observed PostgreSQL 17 catalog for ex
 The rename rule also checks relation and row-type name collisions on a fresh,
 schema-qualified persistent PostgreSQL 17 partition root in a single action.
 The `SET SCHEMA` blocker also checks missing destination schemas and root
-relation, row-type, index and column-owned sequence name collisions in that
-scope. Successful requests, partition-root array conflicts and leaf or
-subpartition moves remain unverified.
+relation, row-type, associated array-type, index and column-owned sequence
+name collisions in that scope. Successful requests and leaf or subpartition
+moves remain unverified.
 
 The PG17 default rename- and schema-target blockers use exact, fresh ordinary
 persistent non-typed table bindings. They check direct relation and row-type

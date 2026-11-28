@@ -1457,8 +1457,8 @@ For a single `RENAME TO` on a confirmed schema-qualified persistent PostgreSQL
 17 partition root, the existing rename blocker also detects relation and row-type
 name collisions. Free names and displaceable array names still leave an evidence
 gap. On the same root scope, the `SET SCHEMA` blocker checks a missing schema
-and collisions of the root relation, its row type, root indexes and sequences
-owned by root columns. Successful moves, array-type conflicts, special
+and collisions of the root relation, its row type and associated array type,
+root indexes and sequences owned by root columns. Successful moves, special
 namespaces and leaf or subpartition moves remain unverified.
 
 ### PostgreSQL ALTER COLUMN TYPE source checks

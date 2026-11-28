@@ -135,8 +135,9 @@ collision is present or unknown, do not claim a later index or sequence refusal.
 Special temporary and TOAST namespaces are not assessed in this scope.
 
 A free destination or the current schema still has an evidence gap and the
-same advisory as before. Array-type refusals, leaf/subpartition moves,
-permissions, lock outcomes and successful relocation are not verified here.
+same advisory as before. This initial slice did not include array-type refusals;
+the extension below covers them. Leaf/subpartition moves, permissions, locks
+and successful relocation remain unverified.
 No names of conflicting objects or private catalog flags are added to output.
 
 The PostgreSQL 17.7 [T37 controls](../../testdata/ddl-golden/T37.json)
@@ -144,6 +145,21 @@ The PostgreSQL 17.7 [T37 controls](../../testdata/ddl-golden/T37.json)
 successes to the PostgreSQL 17 `SET SCHEMA` cell without reclassifying it.
 The catalog oracle checks that native relocation changes the root and its
 companions' namespace, not the leaf's, and that audit never executes the move.
+
+## Partition-root associated array collision
+
+Extend the partition-root blocker to the exact associated array-type collision
+(`42710`), reusing `destination_array_type_conflict`. PostgreSQL moves the
+array identified by the row type's `pg_type.typarray`, not an array name
+constructed from the table name. A relation or row-type collision still takes
+precedence, and a proven array collision precedes index and sequence checks.
+An unknown array observation still cannot prove a later companion refusal.
+
+Four PostgreSQL 17.7 T37 controls (`pg-partition-root-set-schema-array*`)
+cover the collision, precedence over an index collision, a case-distinct name
+and a displaced array name. The last two succeed natively but remain
+unverified in the audit. No lookup, output shape or inventory classification
+changes. This adds evidence only to the PG17 `SET SCHEMA` cell.
 
 ## Sources
 

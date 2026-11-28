@@ -1,0 +1,16 @@
+name: partition_root_set_schema_array
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    p: {exists: true, pg_relation: {name: p, kind: p}}
+  pg_table_namespaces:
+    - {schema: app, table: p, action: set_schema, destination: dst, source_kind: p, source_kind_known: true, schema_exists: true, row_type_conflict_known: true, array_type_conflict_known: true, array_type_conflict: true}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.set_schema.target.valid, ddl.pg.alter.set_schema.advisory]

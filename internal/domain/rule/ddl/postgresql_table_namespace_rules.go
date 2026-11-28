@@ -41,10 +41,10 @@ func boundPGTableNamespace(s spec.Statement) *spec.PGTableNamespace {
 		if !facts.SourceKindKnown || facts.SourceKind != "p" {
 			return nil
 		}
-		// Keep successful requests and unapproved companion checks unverified.
+		// Only catalog-backed refusals close the partition-root evidence gap.
 		reason, _ := assessPGNamespaceDestination(facts)
 		switch reason {
-		case "destination_schema_absent", "destination_relation_conflict", "destination_row_type_conflict", "destination_index_conflict", "destination_owned_sequence_conflict":
+		case "destination_schema_absent", "destination_relation_conflict", "destination_row_type_conflict", "destination_array_type_conflict", "destination_index_conflict", "destination_owned_sequence_conflict":
 		default:
 			return nil
 		}

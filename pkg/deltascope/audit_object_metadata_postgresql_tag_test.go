@@ -375,17 +375,24 @@ func TestAuditTableNamespaceCompanionThroughSDK(t *testing.T) {
 }
 
 func TestAuditPartitionRootSetSchemaThroughSDK(t *testing.T) {
+	for _, reason := range []string{"destination_schema_absent", "destination_array_type_conflict"} {
+		t.Run(reason, func(t *testing.T) { testAuditPartitionRootSetSchema(t, reason) })
+	}
+}
+
+func testAuditPartitionRootSetSchema(t *testing.T, reason string) {
 	provider := &fakeMetadataProviderWithObjects{
 		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
 			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"}, PGRelation: PGRelationState{Name: "t", Kind: "p"}}},
-		objectSnapshot: &spec.ObjectSnapshot{PGTableNamespace: &spec.PGTableNamespace{Schema: "app", Table: "t", Action: "set_schema", Destination: "Destination", SourceKind: "p", SourceKindKnown: true}},
+		objectSnapshot: &spec.ObjectSnapshot{PGTableNamespace: &spec.PGTableNamespace{Schema: "app", Table: "t", Action: "set_schema", Destination: "Destination", SourceKind: "p", SourceKindKnown: true,
+			SchemaExists: reason != "destination_schema_absent", RowTypeConflictKnown: true, ArrayTypeConflictKnown: true, ArrayTypeConflict: true}},
 	}
 	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t SET SCHEMA "Destination"`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
 	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Qualifiers["kind"] != "p" || provider.objectCalls[0].Name != "Destination" {
 		t.Fatalf("result=%+v calls=%+v err=%v", result, provider.objectCalls, err)
 	}
 	for _, f := range result.Statements[0].Findings {
-		if f.RuleID == "ddl.pg.alter.set_schema.target.valid" && f.Metadata["reason_code"] == "destination_schema_absent" {
+		if f.RuleID == "ddl.pg.alter.set_schema.target.valid" && f.Metadata["reason_code"] == reason {
 			return
 		}
 	}

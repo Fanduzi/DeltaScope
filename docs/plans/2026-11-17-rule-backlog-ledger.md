@@ -2360,6 +2360,14 @@ Receipts: `/private/tmp/ds-r2-opclass.CUubqR/f09-partition-set-schema-b139eeea/`
 `b139eeea`. Golden results belong to that implementation SHA, not this
 ledger-only entry. F09 remains open.
 
+## F09 partition-root associated array collision
+
+The [decision](../decisions/2026-11-18-postgresql-table-namespace-destination.md#partition-root-associated-array-collision)
+records the PostgreSQL 17.7 associated array collision (`42710`) and its
+precedence over an index collision. Four T37 cases and a corpus fixture
+attach to the exact PG17 `SET SCHEMA` cell. Successful moves and unavailable
+observations remain unverified; inventory classifications are unchanged.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
