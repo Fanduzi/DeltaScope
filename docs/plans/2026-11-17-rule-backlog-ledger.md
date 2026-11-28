@@ -2273,6 +2273,36 @@ and the isolated fixtures were removed. Receipts:
 `bc5938e6`. The Golden results belong to that implementation SHA, not to
 this ledger-only entry. F09 remains open.
 
+## F09 partition-root replica identity index refusals
+
+`milestone/pg-alter-default-assignment` fast-forwarded and pushed
+`9af692e25f2b58651aa43a4e08c6cf76b440da28..af10028232d2018d3e53f8556a50679a842ab13a`.
+The [decision](../decisions/2026-11-18-postgresql-replica-identity-index.md#partition-root-index-refusals)
+bounds the existing blocker to one `REPLICA IDENTITY USING INDEX` on a fresh,
+schema-qualified persistent PostgreSQL 17 partition root. The four refusals
+are a missing index (`42704`), a non-index relation, an index on another table,
+and a nonunique index (all `42809`). Successful native assignment retains an
+audit gap. Ordinary tables, leaf partitions and mode warnings are unchanged.
+Five T37 cases and one corpus fixture add six selectors to the exact PostgreSQL
+17 cell without changing its classification or denominator.
+
+Default and PostgreSQL-tagged build, test and lint, vet, tidy, formatting,
+diff, inventory, corpus, coverage catalog and decision gates passed on the
+candidate and merged checkout. `make ddl-golden TASK=T37 ARTIFACT_DIR="$receipt/targeted"`
+passed 722 cases and 21,972 assertions. `make ddl-golden TASK=all ARTIFACT_DIR="$receipt/full"`
+passed 50 tasks, 5,173 cases and 123,054 assertions without failures or skips.
+`python3 scripts/ddl_golden.py validate --artifact "$receipt/full/all/artifact.json"`
+passed. Read-only review verified the SHA, CLI hash, scope and private facts.
+The isolated fixtures were removed, the dedicated checkout was clean and the
+protected checkout was unchanged. Receipts:
+`/private/tmp/ds-r2-opclass.CUubqR/f09-partition-replica-identity-af100282/`.
+
+[Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/46106213078),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/46106213056), and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/140859513354) passed at
+`af100282`. These Golden results belong to the implementation SHA, not to
+this ledger-only entry. F09 remains open.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
