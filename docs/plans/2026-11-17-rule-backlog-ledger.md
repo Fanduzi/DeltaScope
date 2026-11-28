@@ -2368,6 +2368,25 @@ precedence over an index collision. Four T37 cases and a corpus fixture
 attach to the exact PG17 `SET SCHEMA` cell. Successful moves and unavailable
 observations remain unverified; inventory classifications are unchanged.
 
+`milestone/pg-alter-default-assignment` fast-forwarded and pushed
+`cd1a9558c864eec2ba995e8a3a2332475af9e181..d4f3da670b862dfaa2e2a4b5f9d0b199609805e2`
+(17 files). Default and PostgreSQL-tagged build, test and lint, vet, tidy,
+formatting, diff, inventory, corpus, coverage catalog and decision gates
+passed on the candidate and merged tree. `make ddl-golden TASK=T37 ARTIFACT_DIR="$receipt/targeted"`
+passed 740 cases and 22,727 assertions. `make ddl-golden TASK=all ARTIFACT_DIR="$receipt/full"`
+passed 50 tasks, 5,191 cases and 123,809 assertions without failures or skips.
+Both artifacts passed `python3 scripts/ddl_golden.py validate --artifact`.
+Read-only review verified the tested SHA, CLI hash, four new controls, exact
+inventory binding, unchanged earlier cases and resource cleanup. The dedicated
+checkout was clean, the protected checkout unchanged and the isolated VM stopped.
+Receipts: `/private/tmp/ds-r2-opclass.CUubqR/f09-partition-array-d4f3da67/`.
+
+[Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/46151043751),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/46151044832), and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/140997598389) passed at
+`d4f3da67`. Golden results belong to the implementation SHA, not this
+ledger-only entry. F09 remains open.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
