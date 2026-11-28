@@ -23,6 +23,7 @@ func (pgConstraintTargetMCPClient) ResolveObject(_ context.Context, _ spec.Diale
 func TestAuditSQLPGConstraintTarget(t *testing.T) {
 	previous := prepareMetadataAudit
 	t.Cleanup(func() { prepareMetadataAudit = previous })
+	const partitionSQL = `ALTER TABLE ONLY app.t ADD CHECK (TRUE) NOT VALID`
 	for _, tc := range []struct {
 		sql, id, verdict string
 		members          []spec.PGConstraintState
@@ -31,6 +32,7 @@ func TestAuditSQLPGConstraintTarget(t *testing.T) {
 		{`ALTER TABLE app.t ADD CHECK (id > (SELECT 0)) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD CHECK (" Exact Missing " IS NULL) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD CHECK (other.t.id IS NULL) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
+		{partitionSQL, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD CHECK ('invalid') NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD CHECK (2147483648) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD UNIQUE (id, id)`, "ddl.pg.alter.constraint_columns.valid", "reject", nil},
@@ -47,10 +49,11 @@ func TestAuditSQLPGConstraintTarget(t *testing.T) {
 		{"ALTER TABLE app.t VALIDATE CONSTRAINT c", "", "review", nil},
 	} {
 		kind := "r"
-		if len(tc.members) == 1 && tc.members[0].PartitionCheckHasChildrenKnown {
+		partitionCheck := tc.sql == partitionSQL
+		if partitionCheck || len(tc.members) == 1 && tc.members[0].PartitionCheckHasChildrenKnown {
 			kind = "p"
 		}
-		client := &mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL, snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: tc.members, PGRelation: spec.PGRelationState{Name: "t", Kind: kind}, PGColumns: &spec.PGColumnCatalog{Ordinary: true, Columns: []spec.PGColumnState{{Name: "id"}}}}}
+		client := &mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL, snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGConstraints: tc.members, PGRelation: spec.PGRelationState{Name: "t", Kind: kind, PersistentPartitionRoot: partitionCheck, AttachedPartition: partitionCheck}, PGColumns: &spec.PGColumnCatalog{Ordinary: true, Columns: []spec.PGColumnState{{Name: "id"}}}}}
 		prepareMetadataAudit = func(context.Context, auditmeta.Request) (*auditmeta.PreparedAudit, error) {
 			return &auditmeta.PreparedAudit{Client: pgConstraintTargetMCPClient{client}, Dialect: spec.DialectPostgreSQL, Schema: "app", DialectSource: "request", SchemaSource: "request"}, nil
 		}

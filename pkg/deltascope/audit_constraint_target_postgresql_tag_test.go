@@ -11,6 +11,22 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
+func TestAuditPGPartitionCheck(t *testing.T) {
+	p := &fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"}, snapshot: &TableSnapshot{
+		Schema: "app", Exists: true, Table: &Table{Name: "t"}, PGRelation: PGRelationState{Name: "t", Kind: "p", PersistentPartitionRoot: true},
+	}}
+	r, err := Audit(context.Background(), Request{SQL: "ALTER TABLE app.t ADD CHECK (TRUE) NO INHERIT NOT VALID", Dialect: DialectPostgreSQL, Schema: "app", MetadataProvider: p})
+	if err != nil || r.Verdict != VerdictReject {
+		t.Fatalf("result=%+v err=%v", r, err)
+	}
+	for _, f := range r.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.add_check.name.available" && f.Metadata["reason_code"] == "check_no_inherit_partition_root" {
+			return
+		}
+	}
+	t.Fatal("missing partition CHECK blocker")
+}
+
 func TestAuditPGConstraintTargetContract(t *testing.T) {
 	for _, tc := range []struct {
 		sql, id, verdict string

@@ -9,6 +9,13 @@ import (
 )
 
 func TestPGAddCheckName(t *testing.T) {
+	root := func(s *spec.Statement) {
+		s.DDL.Alter[0].Name = ""
+		s.DDL.Alter[0].PGCheckTrue = true
+		s.DDL.PGTableOnly = true
+		s.Metadata.TargetTable.PGRelation = spec.PGRelationState{Name: "t", Kind: "p", PersistentPartitionRoot: true, AttachedPartition: true}
+		s.Metadata.TargetTable.PGColumns = nil
+	}
 	for _, tc := range []struct {
 		name, gap, reason, literal string
 		entries                    []spec.PGConstraintState
@@ -20,6 +27,19 @@ func TestPGAddCheckName(t *testing.T) {
 		nullTest                   []string
 		columns                    []spec.PGColumnState
 	}{
+		{name: "only with partitions", occupied: true, reason: "check_requires_partition_traversal", change: root},
+		{name: "no inherit on childless root", occupied: true, reason: "check_no_inherit_partition_root", change: func(s *spec.Statement) {
+			root(s)
+			s.Metadata.TargetTable.PGRelation.AttachedPartition = false
+			s.DDL.Alter[0].PGCheckNoInherit = true
+		}},
+		{name: "only on childless root", unmatched: true, change: func(s *spec.Statement) {
+			root(s)
+			s.Metadata.TargetTable.PGRelation.AttachedPartition = false
+		}},
+		{name: "offline unnamed stays unchanged", unmatched: true, change: func(s *spec.Statement) { root(s); s.Metadata = nil }},
+		{name: "named check not broadened", gap: "target_table.pg_constraint_scope", change: func(s *spec.Statement) { root(s); s.DDL.Alter[0].Name = "named" }},
+		{name: "nonliteral predicate not broadened", unmatched: true, change: func(s *spec.Statement) { root(s); s.DDL.Alter[0].PGCheckTrue = false }},
 		{name: "exact check", entries: []spec.PGConstraintState{{Name: " Exact Check ", Type: "c"}}, occupied: true},
 		{name: "different kind", entries: []spec.PGConstraintState{{Name: " Exact Check ", Type: "p"}}, occupied: true},
 		{name: "exact spaces and case", entries: []spec.PGConstraintState{{Name: "Exact Check", Type: "c"}, {Name: " exact check ", Type: "c"}}},

@@ -18,7 +18,7 @@ func (r pgAddCheckNameRule) ID() string { return ruleIDPGAlterAddCheckNameAvaila
 
 func (r pgAddCheckNameRule) AppliesTo(s spec.Statement) bool {
 	return pgAddCheck(s) && (s.DDL.Alter[0].Name != "" || s.DDL.Alter[0].PGCheckHasSubquery ||
-		s.DDL.Alter[0].PGCheckLiteral != "" || len(s.DDL.Alter[0].PGCheckNullTest) != 0)
+		s.DDL.Alter[0].PGCheckLiteral != "" || len(s.DDL.Alter[0].PGCheckNullTest) != 0 || pgPartitionAddCheckRefusal(s) != "")
 }
 
 func pgNamedAddCheck(s spec.Statement) bool {
@@ -34,12 +34,35 @@ func pgAddCheck(s spec.Statement) bool {
 	return a.Action == "add_constraint" && a.Options["constraint_type"] == "check"
 }
 
+// pgPartitionAddCheckRefusal only applies to unnamed TRUE predicates, so
+// expression analysis and authored-name collisions cannot precede this check.
+func pgPartitionAddCheckRefusal(s spec.Statement) string {
+	a := s.DDL.Alter[0]
+	if a.Name != "" || !a.PGCheckTrue || !pgConstraintTargetVersionKnown(s) || !spec.PGPartitionedTableBound(s) {
+		return ""
+	}
+	relation := s.Metadata.TargetTable.PGRelation
+	if !relation.PersistentPartitionRoot {
+		return ""
+	}
+	if a.PGCheckNoInherit {
+		return "check_no_inherit_partition_root"
+	}
+	if s.DDL.PGTableOnly && relation.AttachedPartition {
+		return "check_requires_partition_traversal"
+	}
+	return ""
+}
+
 func assessPGAddCheckName(s spec.Statement) (reason, missing string) {
 	if !pgConstraintTargetVersionKnown(s) {
 		return "", "instance.version"
 	}
 	if exists, known := pgAlterRelation(s); s.DDL.PGTableIfExists && known && !exists {
 		return "", ""
+	}
+	if reason := pgPartitionAddCheckRefusal(s); reason != "" {
+		return reason, ""
 	}
 	if !spec.PGOrdinaryTableBound(s) {
 		return "", "target_table.pg_constraint_scope"
@@ -133,6 +156,10 @@ func (r pgAddCheckNameRule) Evaluate(ctx context.Context, s spec.Statement) ([]r
 	}
 	message := "The PostgreSQL table already has a constraint with the requested CHECK name"
 	switch reason {
+	case "check_no_inherit_partition_root":
+		message = "PostgreSQL does not allow NO INHERIT on a partitioned table CHECK constraint"
+	case "check_requires_partition_traversal":
+		message = "PostgreSQL requires adding this CHECK constraint to the partitions too"
 	case "check_predicate_subquery_inapplicable":
 		message = "PostgreSQL CHECK predicates cannot contain a subquery"
 	case "check_predicate_invalid_boolean":

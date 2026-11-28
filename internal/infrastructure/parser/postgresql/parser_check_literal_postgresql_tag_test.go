@@ -8,6 +8,34 @@ import (
 	"testing"
 )
 
+func TestPGCheckPartitionSyntax(t *testing.T) {
+	for _, tc := range []struct {
+		predicate, suffix string
+		truth, noInherit  bool
+	}{
+		{"TRUE", " NO INHERIT NOT VALID", true, true},
+		{"((TRUE))", "", true, false},
+		{"FALSE", " NO INHERIT", false, true},
+		{"'true'", " NO INHERIT", false, true},
+		{"TRUE::boolean", "", false, false},
+	} {
+		t.Run(tc.predicate, func(t *testing.T) {
+			s := extractPostgreSQLStatement(t, "ALTER TABLE ONLY app.t ADD CHECK ("+tc.predicate+")"+tc.suffix)
+			if s.DDL == nil || !s.DDL.PGTableOnly || len(s.DDL.Alter) != 1 {
+				t.Fatalf("unexpected ALTER: %#v", s.DDL)
+			}
+			a := s.DDL.Alter[0]
+			if a.Name != "" || a.PGCheckTrue != tc.truth || a.PGCheckNoInherit != tc.noInherit {
+				t.Fatalf("unexpected CHECK facts: %#v", a)
+			}
+			body, err := json.Marshal(a)
+			if err != nil || strings.Contains(string(body), "PGCheckTrue") || strings.Contains(string(body), "PGCheckNoInherit") {
+				t.Fatalf("private CHECK facts in output: %s (%v)", body, err)
+			}
+		})
+	}
+}
+
 func TestPGCheckLiteralClassification(t *testing.T) {
 	for _, tc := range []struct{ predicate, class string }{
 		{"42", "integer"},

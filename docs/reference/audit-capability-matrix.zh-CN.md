@@ -195,6 +195,10 @@ TiDB 使用同一审计批次内先前语句派生的状态。表存在性（`ex
 
 对目录已确认、显式限定 schema 的持久分区根，单动作 `REPLICA IDENTITY USING INDEX` 可检查索引缺失、目标类型错误、索引属于另一张表及索引非唯一。其他结果仍未验证。
 
+### PostgreSQL 17 分区根 CHECK
+
+对显式限定 schema、目录已确认的持久分区根，单动作无名 `ADD CHECK (TRUE)` 不允许 `NO INHERIT`，有附着子分区时也不允许 `ONLY`；加上 `NOT VALID` 仍会被拒绝。本检查不验证行数据或一般谓词。
+
 ### CHECK 约束生命周期（#91）
 
 MySQL/TiDB 的 CHECK 生命周期由共享 arm 判定治理：MySQL 8.0.16+ 存储并执行

@@ -1163,6 +1163,8 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			expr := constraint.GetRawExpr()
 			alter.PGCheckHasSubquery = pgExpressionHasReference(expr, false)
 			alter.PGCheckLiteral = pgCheckLiteral(expr)
+			alter.PGCheckTrue = expr.GetAConst().GetBoolval().GetBoolval()
+			alter.PGCheckNoInherit = constraint.GetIsNoInherit()
 			fields := expr.GetNullTest().GetArg().GetColumnRef().GetFields()
 			if len(fields) >= 1 && len(fields) <= 4 {
 				wholeRow := len(fields) > 1 && fields[len(fields)-1].GetAStar() != nil

@@ -733,9 +733,11 @@ type corpusTableSnapshot struct {
 }
 
 type corpusPGRelation struct {
-	Name string `yaml:"name"`
-	Kind string `yaml:"kind,omitempty"`
-	Heap bool   `yaml:"heap,omitempty"`
+	Name                    string `yaml:"name"`
+	Kind                    string `yaml:"kind,omitempty"`
+	Heap                    bool   `yaml:"heap,omitempty"`
+	PersistentPartitionRoot bool   `yaml:"persistent_partition_root,omitempty"`
+	AttachedPartition       bool   `yaml:"attached_partition,omitempty"`
 }
 
 type corpusTable struct {

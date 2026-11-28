@@ -134,8 +134,8 @@ func TestLoadInstanceFactsMapsPostgreSQLSettings(t *testing.T) {
 func TestLoadTableSnapshotUsesCatalogsAndPlannerStats(t *testing.T) {
 	db, queryLog := openTestDB(t, map[string]testQueryResult{
 		"obj_description(c.oid, 'pg_class')": {
-			columns: []string{"relkind", "table_comment", "reltuples", "heap"},
-			rows:    [][]driver.Value{{"r", "application users", float64(321), true}},
+			columns: []string{"relkind", "table_comment", "reltuples", "heap", "persistent_root", "attached_partition"},
+			rows:    [][]driver.Value{{"r", "application users", float64(321), true, false, false}},
 		},
 		"from pg_catalog.pg_attribute": {
 			columns: []string{"column_name", "data_type", "character_maximum_length", "character_set_name", "collation_name", "is_nullable", "column_default", "is_identity", "column_comment"},

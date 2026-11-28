@@ -1215,7 +1215,7 @@ func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusT
 			out.PGConstraints = append(out.PGConstraints, state)
 		}
 	}
-	out.PGRelation = spec.PGRelationState{Name: snapshot.PGRelation.Name, Kind: snapshot.PGRelation.Kind, Heap: snapshot.PGRelation.Heap}
+	out.PGRelation = spec.PGRelationState(snapshot.PGRelation)
 	if cat := snapshot.PGColumns; cat != nil && cat.Ordinary != nil {
 		out.PGColumns = &spec.PGColumnCatalog{Ordinary: *cat.Ordinary}
 		for namespace, members := range [][]corpusPGColumnState{cat.Columns, cat.SystemColumns} {

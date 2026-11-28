@@ -1,0 +1,15 @@
+name: partition_check_true
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    root: {exists: true, pg_relation: {name: root, kind: p, persistent_partition_root: true}}
+    other_root: {exists: true, pg_relation: {name: other_root, kind: p, persistent_partition_root: true, attached_partition: true}}
+expect:
+  parse_ok: true
+  statements: {count: 2}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.add_check.name.available]

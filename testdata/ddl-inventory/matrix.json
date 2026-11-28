@@ -11110,6 +11110,11 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.add-check.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-partition-check-no-inherit",
+                "file:testdata/ddl-golden/T37.json#pg-partition-check-only",
+                "file:testdata/ddl-golden/T37.json#pg-partition-check-childless",
+                "file:testdata/ddl-golden/T37.json#pg-partition-check-leaf",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/partition_check_true.expected.yaml#ddl.pg.alter.add_check.name.available",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json#pg-add-check-name-duplicate",
                 "file:testdata/ddl-golden/T37.json#pg-add-check-name-other-kind",
@@ -11192,6 +11197,10 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.constraints.add-check-not-valid.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-partition-check-no-inherit-not-valid",
+                "file:testdata/ddl-golden/T37.json#pg-partition-check-only-not-valid",
+                "file:testdata/ddl-golden/T37.json#pg-partition-check-recursive",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/partition_check_true.expected.yaml#ddl.pg.alter.add_check.name.available",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json",
                 "file:testdata/ddl-golden/T37.json#add-check-name-offline",

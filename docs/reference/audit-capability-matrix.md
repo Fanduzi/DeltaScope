@@ -123,6 +123,10 @@ change JSON envelopes; finding payloads omit expressions and numeric options.
 Maintainer notes: [decision](../decisions/2026-11-18-postgresql-column-generation-transitions.md).
 Other F09 dimensions remain open; this table is not whole-row support proof.
 
+### PostgreSQL partition-root CHECK additions
+
+For a single unnamed `ADD CHECK (TRUE)` on a confirmed schema-qualified persistent PostgreSQL 17 partition root, the existing rule rejects `NO INHERIT` or `ONLY` with an attached partition, including `NOT VALID`. It does not validate row data or general predicates.
+
 ### PostgreSQL constraint targets
 
 | Rule ID | PostgreSQL 17 with observed catalog/version | MySQL / TiDB | Metadata |

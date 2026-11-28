@@ -1054,6 +1054,8 @@ type Alter struct {
 	PGIncludeColumns []string `json:"-"`
 	// PGCheckHasSubquery records a raw subquery in an ALTER TABLE CHECK predicate.
 	PGCheckHasSubquery      bool     `json:"-"`
+	PGCheckTrue             bool     `json:"-"`
+	PGCheckNoInherit        bool     `json:"-"`
 	PGCheckLiteral          string   `json:"-"`
 	PGCheckNullTest         []string `json:"-"`
 	PGCheckNullTestWholeRow bool     `json:"-"`

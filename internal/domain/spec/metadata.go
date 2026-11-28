@@ -425,7 +425,8 @@ type PGRelationState struct {
 	Name string
 	Kind string
 	// Heap is true only for an observed built-in heap access method.
-	Heap bool
+	Heap                                       bool
+	PersistentPartitionRoot, AttachedPartition bool `json:"-"`
 }
 
 // TableSnapshot is the current metadata-backed shape of a target table.

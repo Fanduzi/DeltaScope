@@ -97,6 +97,12 @@ events put the removal of eleven `binlog-h1run21` containers more than two
 hours after Golden finished. The five other baseline container identities
 matched. The event record is `/tmp/ds-pg-d19-external-container-events.json`.
 
+## Unnamed TRUE checks on partition roots
+
+For one unnamed `ADD CHECK (TRUE)` on a fresh, schema-qualified persistent PostgreSQL 17 partition root, the existing blocker rejects `NO INHERIT`, even without children, and `ONLY` when a direct partition is attached. `NOT VALID` does not bypass either precondition. PostgreSQL 17.7 returns `42P16` for both. Named constraints and other predicates are outside the extension: their analysis or a name collision can fail before the traversal check.
+
+The parser and provider retain only private Boolean facts. The rule does not evaluate expressions, scan rows, or predict child changes. The `pg-partition-check-*` [T37 controls](../../testdata/ddl-golden/T37.json) compare the refusals with native success on a childless root, a leaf and a recursive root addition; the [corpus](../../testdata/sql-corpus/postgresql/ddl/findings/partition_check_true.expected.yaml) binds both affected subactions. Inventory classifications and denominators are unchanged.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

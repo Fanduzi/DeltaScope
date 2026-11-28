@@ -158,11 +158,11 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGRefreshTarget` and `PGRefreshState` bind exact PostgreSQL materialized-view identity and private refresh catalog facts.
 - `PGReplicaIdentityIndex` carries private exact table/index attachment facts, including confirmed partition-root scope. `PG17Observed` checks the actual PostgreSQL 17 server banner. `PGOrdinaryTableBound` verifies fresh, exact schema-qualified ordinary persistent non-typed scope.
 - `PGTableReloption` preserves ordered SET/RESET members, argument presence and bounded value facts. `Alter.PGTableReloptions` is excluded from JSON.
-- `PGRelationState` carries the exact name and catalog kind within the snapshot schema, including the observed built-in heap marker.
+- `PGRelationState` carries the exact name and catalog kind within the snapshot schema, including the observed built-in heap marker and private persistent partition-root and attached-partition facts.
   A zero name means unobserved and an empty kind with a known name means absent.
   `TableSnapshot.PGRelation`, `DDL.PGTableIfExists`, `DDL.PGTableCatalogQualified`
   and `Alter.PGAddColumnIfNotExists` are internal evidence excluded from JSON.
-- `Alter.PGCheckHasSubquery` records a private AST fact for PostgreSQL ADD CHECK predicates.
+- `Alter.PGCheckHasSubquery`, `PGCheckTrue` and `PGCheckNoInherit` record private AST facts for PostgreSQL ADD CHECK.
 - `PGColumnTransition` (private SET DEFAULT reference, bounded parameter presence and direct literal type facts), `PGColumnCatalog`, `PGColumnState` (including private built-in Boolean identity), `PGIdentitySequenceState`
   The private catalog carries an observed `Typed` marker for D8 ADD/RENAME scope.
   Internal authored/cached evidence; `PGColumnCatalog.FindColumn` proves exact-name

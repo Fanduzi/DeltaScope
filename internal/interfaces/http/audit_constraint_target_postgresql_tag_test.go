@@ -16,7 +16,8 @@ import (
 )
 
 type pgConstraintTargetHTTPProvider struct {
-	members []deltascope.PGConstraintState
+	members        []deltascope.PGConstraintState
+	partitionCheck bool
 }
 
 func (p pgConstraintTargetHTTPProvider) LoadInstanceFacts(context.Context, deltascope.Dialect, string) (*deltascope.InstanceFacts, error) {
@@ -24,10 +25,10 @@ func (p pgConstraintTargetHTTPProvider) LoadInstanceFacts(context.Context, delta
 }
 func (p pgConstraintTargetHTTPProvider) LoadTableSnapshot(_ context.Context, _ deltascope.Dialect, schema, table string) (*deltascope.TableSnapshot, error) {
 	kind := "r"
-	if len(p.members) == 1 && p.members[0].PartitionCheckHasChildrenKnown {
+	if p.partitionCheck || len(p.members) == 1 && p.members[0].PartitionCheckHasChildrenKnown {
 		kind = "p"
 	}
-	return &deltascope.TableSnapshot{Schema: schema, Exists: true, Table: &deltascope.Table{Name: table}, PGConstraints: p.members, PGRelation: deltascope.PGRelationState{Name: table, Kind: kind}, PGColumns: &deltascope.PGColumnCatalog{Ordinary: true, Columns: []deltascope.PGColumnState{{Name: "id"}}}}, nil
+	return &deltascope.TableSnapshot{Schema: schema, Exists: true, Table: &deltascope.Table{Name: table}, PGConstraints: p.members, PGRelation: deltascope.PGRelationState{Name: table, Kind: kind, PersistentPartitionRoot: p.partitionCheck, AttachedPartition: p.partitionCheck}, PGColumns: &deltascope.PGColumnCatalog{Ordinary: true, Columns: []deltascope.PGColumnState{{Name: "id"}}}}, nil
 }
 
 func (pgConstraintTargetHTTPProvider) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
@@ -38,6 +39,7 @@ func (pgConstraintTargetHTTPProvider) ResolveObject(_ context.Context, _ spec.Di
 }
 
 func TestHandlerPGConstraintTarget(t *testing.T) {
+	const partitionSQL = `ALTER TABLE ONLY app.t ADD CHECK (TRUE) NOT VALID`
 	for _, tc := range []struct {
 		sql, id, verdict string
 		members          []deltascope.PGConstraintState
@@ -46,6 +48,7 @@ func TestHandlerPGConstraintTarget(t *testing.T) {
 		{`ALTER TABLE app.t ADD CHECK (id > (SELECT 0)) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD CHECK (" Exact Missing " IS NULL) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD CHECK (other.t.id IS NULL) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
+		{partitionSQL, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD CHECK ('invalid') NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD CHECK (2147483648) NOT VALID`, "ddl.pg.alter.add_check.name.available", "reject", nil},
 		{`ALTER TABLE app.t ADD UNIQUE (id, id)`, "ddl.pg.alter.constraint_columns.valid", "reject", nil},
@@ -61,7 +64,7 @@ func TestHandlerPGConstraintTarget(t *testing.T) {
 		{"ALTER TABLE app.t DROP CONSTRAINT IF EXISTS c", "", "pass", []deltascope.PGConstraintState{}},
 		{"ALTER TABLE app.t VALIDATE CONSTRAINT c", "", "review", nil},
 	} {
-		provider := pgConstraintTargetHTTPProvider{members: tc.members}
+		provider := pgConstraintTargetHTTPProvider{members: tc.members, partitionCheck: tc.sql == partitionSQL}
 		h, err := NewHandler("", "test", WithAuditFunc(func(ctx context.Context, r deltascope.Request) (deltascope.Result, error) {
 			r.MetadataProvider = provider
 			return deltascope.Audit(ctx, r)

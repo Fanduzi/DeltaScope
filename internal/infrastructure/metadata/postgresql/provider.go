@@ -149,7 +149,13 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, _ spec.Dialect, schema
 	tableRow := p.db.QueryRowContext(ctx, `
 		select c.relkind,
 		       pg_catalog.obj_description(c.oid, 'pg_class') as table_comment,
-		       c.reltuples, c.relam OPERATOR(pg_catalog.=) 2::pg_catalog.oid
+		       c.reltuples, c.relam OPERATOR(pg_catalog.=) 2::pg_catalog.oid,
+		       c.relkind OPERATOR(pg_catalog.=) 'p' and c.relpersistence OPERATOR(pg_catalog.=) 'p'
+		         and not c.relispartition and not c.relisshared,
+		       case when c.relkind OPERATOR(pg_catalog.=) 'p' then exists (
+		         select 1 from pg_catalog.pg_inherits h
+		         where h.inhparent OPERATOR(pg_catalog.=) c.oid and not h.inhdetachpending
+		       ) else false end
 		from pg_catalog.pg_class c
 		join pg_catalog.pg_namespace n on n.oid OPERATOR(pg_catalog.=) c.relnamespace
 		where n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text
@@ -160,13 +166,14 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, _ spec.Dialect, schema
 	var comment sql.NullString
 	var reltuples sql.NullFloat64
 	var heap bool // PostgreSQL HEAP_TABLE_AM_OID
-	err := tableRow.Scan(&relkind, &comment, &reltuples, &heap)
+	var persistentRoot, attached bool
+	err := tableRow.Scan(&relkind, &comment, &reltuples, &heap, &persistentRoot, &attached)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, fmt.Errorf("query table snapshot: %w", err)
 	}
 	// pg_temp is an alias for the session's actual temporary namespace.
 	if schema != "" && schema != "pg_temp" && table != "" {
-		snapshot.PGRelation = spec.PGRelationState{Name: table, Kind: relkind, Heap: heap}
+		snapshot.PGRelation = spec.PGRelationState{Name: table, Kind: relkind, Heap: heap, PersistentPartitionRoot: persistentRoot, AttachedPartition: attached}
 	}
 	if err == sql.ErrNoRows || tableTypeFromRelkind(relkind) == "UNKNOWN" {
 		return snapshot, nil
