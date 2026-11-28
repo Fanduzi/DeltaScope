@@ -679,17 +679,18 @@ type corpusPGTableTablespace struct {
 }
 
 type corpusPGReplicaIndex struct {
-	Schema     string `yaml:"schema"`
-	Table      string `yaml:"table"`
-	Name       string `yaml:"name"`
-	Kind       string `yaml:"kind"`
-	OnTable    bool   `yaml:"on_table"`
-	Unique     bool   `yaml:"unique"`
-	Immediate  bool   `yaml:"immediate"`
-	Expression bool   `yaml:"expression"`
-	Partial    bool   `yaml:"partial"`
-	CanUnique  *bool  `yaml:"can_unique,omitempty"`
-	KeyValid   *bool  `yaml:"key_valid,omitempty"`
+	PartitionRoot bool   `yaml:"partition_root,omitempty"`
+	Schema        string `yaml:"schema"`
+	Table         string `yaml:"table"`
+	Name          string `yaml:"name"`
+	Kind          string `yaml:"kind"`
+	OnTable       bool   `yaml:"on_table"`
+	Unique        bool   `yaml:"unique"`
+	Immediate     bool   `yaml:"immediate"`
+	Expression    bool   `yaml:"expression"`
+	Partial       bool   `yaml:"partial"`
+	CanUnique     *bool  `yaml:"can_unique,omitempty"`
+	KeyValid      *bool  `yaml:"key_valid,omitempty"`
 }
 
 type corpusTableSnapshot struct {

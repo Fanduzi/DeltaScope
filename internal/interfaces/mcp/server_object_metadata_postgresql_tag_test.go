@@ -111,7 +111,7 @@ func TestMCPAuditProjectUnavailableObjectMetadata(t *testing.T) {
 type replicaIdentityAuditClient struct{ *mcpMetadataAuditTestClient }
 
 func (replicaIdentityAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
-	return &spec.ObjectSnapshot{PGReplicaIdentity: &spec.PGReplicaIdentityIndex{Schema: req.Schema, Table: req.Qualifiers["table"], Name: req.Name, Kind: "i", IndexKnown: true}}, nil
+	return &spec.ObjectSnapshot{PGReplicaIdentity: &spec.PGReplicaIdentityIndex{Schema: req.Schema, Table: req.Qualifiers["table"], Name: req.Name, Kind: "i", IndexKnown: true, PartitionRoot: req.Qualifiers["kind"] == "p"}}, nil
 }
 
 func TestMCPReplicaIdentityAttachment(t *testing.T) {
@@ -121,7 +121,7 @@ func TestMCPReplicaIdentityAttachment(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = session.Close() })
 	client := replicaIdentityAuditClient{&mcpMetadataAuditTestClient{version: "PostgreSQL 17.7", snapshot: &spec.TableSnapshot{
-		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}}}}
+		Schema: "app", Exists: true, Table: &spec.Table{Name: "t"}, PGRelation: spec.PGRelationState{Name: "t", Kind: "p"}}}}
 	previous := prepareMetadataAudit
 	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
 		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil

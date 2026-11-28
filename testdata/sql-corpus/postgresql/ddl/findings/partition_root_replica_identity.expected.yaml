@@ -1,0 +1,16 @@
+name: partition_root_replica_identity
+dialect: postgresql
+category: ddl
+metadata:
+  schema: app
+  instance: {version: PostgreSQL 17.7}
+  tables:
+    root: {exists: true, pg_relation: {name: root, kind: p}}
+  pg_replica_indexes:
+    - {schema: app, table: root, name: nonunique, kind: I, on_table: true, unique: false, partition_root: true}
+expect:
+  parse_ok: true
+  statements: {count: 1}
+  unsupported: {count: 0}
+  findings:
+    include: [ddl.pg.alter.replica_identity_using_index.valid, ddl.pg.alter.replica_identity_using_index.notice]

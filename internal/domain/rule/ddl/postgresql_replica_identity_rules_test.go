@@ -9,11 +9,33 @@ import (
 )
 
 func TestPGReplicaIdentityIndexAssessment(t *testing.T) {
+	const indexFact = "target_table.pg_replica_identity_index"
+	root := func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) {
+		s.Metadata.TargetTable.PGRelation.Kind = "p"
+		s.Metadata.TargetTable.PGColumns = nil
+		f.Kind, f.PartitionRoot = "I", true
+	}
 	for _, tc := range []struct {
 		name, reason, gap string
 		change            func(*spec.Statement, *spec.PGReplicaIdentityIndex)
 	}{
 		{name: "eligible"},
+		{name: "partition missing index", reason: "index_absent", change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) { root(s, f); f.Kind = "" }},
+		{name: "partition wrong kind", reason: "relation_not_index", change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) { root(s, f); f.Kind = "r" }},
+		{name: "partition wrong owner precedes uniqueness", reason: "index_not_on_table", change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) {
+			root(s, f)
+			f.OnTable, f.Unique = false, false
+		}},
+		{name: "partition nonunique", reason: "index_not_unique", change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) { root(s, f); f.Unique = false }},
+		{name: "partition eligible retains gap", gap: indexFact, change: root},
+		{name: "partition other index restrictions retain gap", gap: indexFact, change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) {
+			root(s, f)
+			f.Immediate, f.CanUnique = false, false
+		}},
+		{name: "partition scope not confirmed", gap: indexFact, change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) {
+			root(s, f)
+			f.PartitionRoot, f.Unique = false, false
+		}},
 		{name: "index missing", reason: "index_absent", change: func(_ *spec.Statement, f *spec.PGReplicaIdentityIndex) { f.Kind = "" }},
 		{name: "other relation", reason: "relation_not_index", change: func(_ *spec.Statement, f *spec.PGReplicaIdentityIndex) { f.Kind = "v" }},
 		{name: "other table", reason: "index_not_on_table", change: func(_ *spec.Statement, f *spec.PGReplicaIdentityIndex) { f.OnTable = false }},

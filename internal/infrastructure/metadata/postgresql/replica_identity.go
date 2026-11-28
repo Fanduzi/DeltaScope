@@ -13,6 +13,7 @@ func (p *Provider) resolveReplicaIdentityIndex(ctx context.Context, req spec.Obj
 	if req.Schema == "" || req.Schema == "pg_temp" || table == "" || req.Name == "" {
 		return nil, nil
 	}
+	partitionRoot := req.Qualifiers["kind"] == "p"
 	// The LEFT JOIN preserves a missing index within a proven target namespace.
 	// A missing or out-of-scope table yields no observation at all. Only the
 	// built-in btree (BTREE_AM_OID) vouches for can_unique: other methods may
@@ -41,13 +42,14 @@ func (p *Provider) resolveReplicaIdentityIndex(ctx context.Context, req spec.Obj
 		left join pg_catalog.pg_index i on i.indexrelid OPERATOR(pg_catalog.=) idx.oid
 		where n.nspname OPERATOR(pg_catalog.=) $1::pg_catalog.text
 		  and tbl.relname OPERATOR(pg_catalog.=) $2::pg_catalog.text
-		  and tbl.relkind OPERATOR(pg_catalog.=) 'r'
 		  and tbl.relpersistence OPERATOR(pg_catalog.=) 'p' and not tbl.relispartition
 		  and tbl.reloftype OPERATOR(pg_catalog.=) 0::pg_catalog.oid
-		  and not exists (select 1 from pg_catalog.pg_inherits h
-		                  where h.inhrelid OPERATOR(pg_catalog.=) tbl.oid
-		                     or h.inhparent OPERATOR(pg_catalog.=) tbl.oid)
-	`, req.Schema, table, req.Name)
+		  and (($4::pg_catalog.bool and tbl.relkind OPERATOR(pg_catalog.=) 'p' and not tbl.relisshared)
+		    or (not $4::pg_catalog.bool and tbl.relkind OPERATOR(pg_catalog.=) 'r'
+		        and not exists (select 1 from pg_catalog.pg_inherits h
+		                        where h.inhrelid OPERATOR(pg_catalog.=) tbl.oid
+		                           or h.inhparent OPERATOR(pg_catalog.=) tbl.oid)))
+	`, req.Schema, table, req.Name, partitionRoot)
 	if err != nil {
 		return nil, fmt.Errorf("query replica identity index: %w", err)
 	}
@@ -55,7 +57,7 @@ func (p *Provider) resolveReplicaIdentityIndex(ctx context.Context, req spec.Obj
 	if !rows.Next() {
 		return nil, rows.Err()
 	}
-	facts := &spec.PGReplicaIdentityIndex{Schema: req.Schema, Table: table, Name: req.Name}
+	facts := &spec.PGReplicaIdentityIndex{Schema: req.Schema, Table: table, Name: req.Name, PartitionRoot: partitionRoot}
 	var uniqueSupport, keys sql.NullBool
 	if err := rows.Scan(&facts.Kind, &facts.IndexKnown, &facts.OnTable, &uniqueSupport, &facts.Unique, &facts.Immediate, &facts.Expression, &facts.Partial, &keys); err != nil {
 		return nil, fmt.Errorf("scan replica identity index: %w", err)

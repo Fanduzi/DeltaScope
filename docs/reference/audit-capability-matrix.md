@@ -248,6 +248,10 @@ Unknown facts retain a gap. The existing notice describes the request, and
 DEFAULT, FULL and NOTHING keep their existing behavior. Successful catalog
 assignment does not establish replication usability.
 
+On a confirmed schema-qualified persistent PostgreSQL 17 partition root, the
+same blocker checks missing, wrong-kind, wrong-owner and nonunique indexes
+for a single `USING INDEX` action. Other outcomes remain unverified.
+
 ### PostgreSQL ALTER column identity and existence guards
 
 On observed PostgreSQL 17, the existing ADD COLUMN duplicate and RENAME COLUMN

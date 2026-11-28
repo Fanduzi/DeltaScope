@@ -191,6 +191,10 @@ TiDB 使用同一审计批次内先前语句派生的状态。表存在性（`ex
 
 对目录已确认、显式限定 schema 的持久分区根，单动作 `SET UNLOGGED` 可检查直接 publication 成员关系及来自另一持久表的入向外键。其余分区表持久性结果仍未验证。
 
+### PostgreSQL 17 分区根复制标识
+
+对目录已确认、显式限定 schema 的持久分区根，单动作 `REPLICA IDENTITY USING INDEX` 可检查索引缺失、目标类型错误、索引属于另一张表及索引非唯一。其他结果仍未验证。
+
 ### CHECK 约束生命周期（#91）
 
 MySQL/TiDB 的 CHECK 生命周期由共享 arm 判定治理：MySQL 8.0.16+ 存储并执行

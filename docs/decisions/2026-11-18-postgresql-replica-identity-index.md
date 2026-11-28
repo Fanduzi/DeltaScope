@@ -112,6 +112,22 @@ Final artifact: `/tmp/ddl-golden-pg-replica-index-final-cb2e7c36/all/artifact.js
 Coverage is limited to index attachment. Replication usability and other F09
 dimensions remain open.
 
+## Partition-root index refusals
+
+For a single `REPLICA IDENTITY USING INDEX` on a fresh, schema-qualified
+persistent PostgreSQL 17 partition root, reuse the existing blocker for a
+missing index (`42704`), a non-index relation, an index on another table, or
+a nonunique index (all `42809`). The provider rechecks root status and
+persistence in the same query and keeps that observation private.
+
+The [T37 controls](../../testdata/ddl-golden/T37.json) `pg-replica-index-root-*`
+compare all four refusals with a successful native assignment that still
+leaves an audit gap. They verify that the audit does not change index flags,
+relation identities or witness rows. Leaf partitions, other index properties
+on roots, and downstream replication usability remain outside this slice.
+Ordinary-table rules and mode warnings are unchanged. Evidence is bound only
+to the PostgreSQL 17 `REPLICA IDENTITY` cell; its classification is unchanged.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

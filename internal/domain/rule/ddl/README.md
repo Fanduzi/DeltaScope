@@ -117,7 +117,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_table_access_method_rules.go | Checks PG17 access method destinations, with same-method evidence for ordinary tables and refusal-only checks for partitioned tables |
 | postgresql_table_tablespace_rules.go | Checks PG17 tablespace destinations, with same-space evidence for ordinary tables and refusal-only checks for partitioned tables |
 | postgresql_table_reloptions_rules.go | Checks bounded PostgreSQL 17 heap table SET/RESET declarations using fresh exact catalog and private AST facts |
-| postgresql_replica_identity_rules.go | Checks exact PG17 USING INDEX attachment eligibility with bounded reason codes and missing-fact gaps |
+| postgresql_replica_identity_rules.go | Checks exact PG17 ordinary-table USING INDEX eligibility and four partition-root refusals with bounded reason codes and evidence gaps |
 | postgresql_materialized_view_refresh_rules.go | Implements PostgreSQL-only materialized view refresh rules: non-concurrent refresh warning, WITH NO DATA notice |
 | postgresql_alter_table_rules.go | Implements PostgreSQL-only alter table gap rules: drop-column advisory, validate-constraint advisory, add-column nullable notice, set-schema advisory, owner advisory, enable-trigger notice, disable-trigger warn, attach-partition advisory, detach-partition warn |
 | postgresql_operator_change_rules.go | Checks PostgreSQL 17 operator owner, schema and estimator changes using exact catalog signatures. |

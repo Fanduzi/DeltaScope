@@ -36,12 +36,13 @@ func assessPGReplicaIdentityIndex(s spec.Statement) (reason, fact string) {
 		return "", ""
 	}
 	name := spec.PGReplicaIdentityIndexTarget(s)
-	if name == "" || !spec.PGOrdinaryTableBound(s) {
+	partitionRoot := spec.PGPartitionedTableBound(s)
+	if name == "" || !spec.PGOrdinaryTableBound(s) && !partitionRoot {
 		return "", "target_table.pg_replica_identity_index"
 	}
 	facts := s.Metadata.PGReplicaIdentity
 	table := s.DDL.Table
-	if facts == nil || facts.Schema != table.Schema || facts.Table != table.Name || facts.Name != name {
+	if facts == nil || facts.Schema != table.Schema || facts.Table != table.Name || facts.Name != name || facts.PartitionRoot != partitionRoot {
 		return "", "target_table.pg_replica_identity_index"
 	}
 	switch {
@@ -53,8 +54,10 @@ func assessPGReplicaIdentityIndex(s spec.Statement) (reason, fact string) {
 		return "", "target_table.pg_replica_identity_index"
 	case !facts.OnTable:
 		return "index_not_on_table", ""
-	case !facts.Unique || facts.CanUniqueKnown && !facts.CanUnique:
+	case !facts.Unique || !partitionRoot && facts.CanUniqueKnown && !facts.CanUnique:
 		return "index_not_unique", ""
+	case partitionRoot:
+		return "", "target_table.pg_replica_identity_index"
 	case !facts.Immediate:
 		return "index_not_immediate", ""
 	case facts.Expression:

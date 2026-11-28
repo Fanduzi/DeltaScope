@@ -7,6 +7,7 @@ type PGReplicaIdentityIndex struct {
 	Schema, Table, Name                    string
 	Kind                                   string
 	IndexKnown, OnTable                    bool
+	PartitionRoot                          bool `json:"-"`
 	CanUnique, CanUniqueKnown              bool
 	Unique, Immediate, Expression, Partial bool
 	// KeyAttributesValid is false for a system or nullable key attribute.

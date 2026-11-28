@@ -1053,7 +1053,7 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 			}
 			facts := &spec.PGReplicaIdentityIndex{Schema: seed.Schema, Table: seed.Table, Name: seed.Name, Kind: seed.Kind,
 				IndexKnown: seed.Kind == "i" || seed.Kind == "I", OnTable: seed.OnTable, Unique: seed.Unique,
-				Immediate: seed.Immediate, Expression: seed.Expression, Partial: seed.Partial}
+				Immediate: seed.Immediate, Expression: seed.Expression, Partial: seed.Partial, PartitionRoot: seed.PartitionRoot}
 			if seed.CanUnique != nil {
 				facts.CanUnique, facts.CanUniqueKnown = *seed.CanUnique, true
 			}

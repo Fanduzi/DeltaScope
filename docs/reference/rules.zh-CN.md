@@ -1387,6 +1387,8 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 `ddl.pg.alter.replica_identity_using_index.valid` 默认级别为 blocker。对已观测的 PG17，检查精确限定名绑定、目录新鲜的普通持久非类型表。索引缺失、对象类型或归属不符、非唯一、延迟约束、表达式、谓词或键列不适用时报告原生前提问题。可空的 INCLUDE 列不参与键列检查。绑定、范围或目录事实不足时报告 `unproven_replica_identity_index`。既有 notice 描述请求。PG 可以选中无效索引，选中状态不能证明逻辑复制可用。
 
+对目录已确认、显式限定 schema 的持久分区根，单动作 `REPLICA IDENTITY USING INDEX` 也会拒绝索引缺失、目标不是索引、索引属于另一张表或索引非唯一。其他索引属性和成功设置仍未验证；本次不扩大到叶分区。
+
 ### PostgreSQL ALTER TABLE GENERATED 后续边界包（v0.31.0）
 
 `v0.31.0` 将额外的 PostgreSQL generated/identity `ALTER TABLE` 形态映射到显式 unsupported feature 标签，收口了 `v0.30.0` 留下的相邻间隙。这些结果**不是**规则 finding，**没有新增规则 ID**。它们是提取器层契约，返回带特性标签和原因字符串的 `UnsupportedDetail` 条目。

@@ -11953,6 +11953,12 @@
               "audit_status": "audited",
               "evidence": [
                 "file:testdata/ddl-inventory/evidence/postgresql.alter-table.options.replica-identity.probes.txt",
+                "file:testdata/ddl-golden/T37.json#pg-replica-index-root-missing",
+                "file:testdata/ddl-golden/T37.json#pg-replica-index-root-wrong-kind",
+                "file:testdata/ddl-golden/T37.json#pg-replica-index-root-wrong-owner",
+                "file:testdata/ddl-golden/T37.json#pg-replica-index-root-nonunique",
+                "file:testdata/ddl-golden/T37.json#pg-replica-index-root-eligible",
+                "file:testdata/sql-corpus/postgresql/ddl/findings/partition_root_replica_identity.expected.yaml#ddl.pg.alter.replica_identity_using_index.valid",
                 "file:internal/application/audit/catalogdata/ddl-coverage-catalog.json",
                 "file:testdata/ddl-golden/T37.json#pg-replica-index-eligible",
                 "file:testdata/ddl-golden/T37.json#pg-replica-index-binding",

@@ -156,7 +156,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `PGDestructiveTable` preserves ordered DROP and TRUNCATE targets and private modifiers. `PGDestructiveReferences` binds dependency and ONLY membership observations to those exact targets.
 - `PGViewOptions` preserves each authored CREATE VIEW and ALTER VIEW option name, namespace and bounded value facts in AST order.
 - `PGRefreshTarget` and `PGRefreshState` bind exact PostgreSQL materialized-view identity and private refresh catalog facts.
-- `PGReplicaIdentityIndex` carries private exact table/index attachment facts and nullable observations. `PG17Observed` checks the actual PostgreSQL 17 server banner. `PGOrdinaryTableBound` verifies fresh, exact schema-qualified ordinary persistent non-typed scope.
+- `PGReplicaIdentityIndex` carries private exact table/index attachment facts, including confirmed partition-root scope. `PG17Observed` checks the actual PostgreSQL 17 server banner. `PGOrdinaryTableBound` verifies fresh, exact schema-qualified ordinary persistent non-typed scope.
 - `PGTableReloption` preserves ordered SET/RESET members, argument presence and bounded value facts. `Alter.PGTableReloptions` is excluded from JSON.
 - `PGRelationState` carries the exact name and catalog kind within the snapshot schema, including the observed built-in heap marker.
   A zero name means unobserved and an empty kind with a known name means absent.

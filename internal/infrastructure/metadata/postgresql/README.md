@@ -30,7 +30,7 @@ comparisons for the member and scope binding.
 | foreign_key_equality.go | Checks the selected key and bounded equality or implicit conversion facts for scalar, domain, enum and array types for ordered PostgreSQL 17 foreign-key columns |
 | foreign_key_keys.go | Reads live valid plain unique keys for one exact ordinary PG17 referenced table, including primary/immediate flags and ordered key slots |
 | constraint_using_index.go | Observes one exact PostgreSQL index for PRIMARY KEY or UNIQUE attachment, including internal constraint ownership, key sort, collation, options and operator-class defaults selected by exact or binary-compatible type |
-| replica_identity.go | Resolves one real PostgreSQL replica-identity index candidate in its owning table schema, with uniqueness, predicate/expression presence and actual key nullability |
+| replica_identity.go | Resolves PostgreSQL replica-identity index facts in the table namespace and confirms ordinary-table or persistent partition-root scope |
 | relation_state_test.go | Verifies exact relation reads, absent and non-table kinds, unbound scopes, error propagation and JSON privacy |
 | column_traversal.go | Reads inherited attributes, direct partition keys, partition membership, attached children, recursive rename conflicts and exact column presence, generation and partition nullability facts; returns private booleans for the bounded validated CHECK proof and PostgreSQL 17 partition identity refusals |
 | drop_column_dependency.go | Observes direct view, generated-column and foreign-key dependencies on the exact ordinary-table column |

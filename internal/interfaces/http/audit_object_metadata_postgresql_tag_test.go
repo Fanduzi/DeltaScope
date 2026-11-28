@@ -126,8 +126,8 @@ func TestHTTPReplicaIdentityAttachment(t *testing.T) {
 	}
 	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
 		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
-			PGRelation: spec.PGRelationState{Name: "t", Kind: "r"}, PGColumns: &spec.PGColumnCatalog{Ordinary: true}},
-		objectSnapshot: &spec.ObjectSnapshot{PGReplicaIdentity: &spec.PGReplicaIdentityIndex{Schema: "app", Table: "t", Name: "missing"}}}
+			PGRelation: spec.PGRelationState{Name: "t", Kind: "p"}},
+		objectSnapshot: &spec.ObjectSnapshot{PGReplicaIdentity: &spec.PGReplicaIdentityIndex{Schema: "app", Table: "t", Name: "missing", PartitionRoot: true}}}
 	previous := prepareHTTPMetadataAudit
 	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
 		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
@@ -139,7 +139,7 @@ func TestHTTPReplicaIdentityAttachment(t *testing.T) {
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 	body := rec.Body.String()
-	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter.replica_identity_using_index.valid"`) || !strings.Contains(body, `"index_absent"`) || strings.Contains(body, "PGReplicaIdentity") || len(client.objectCalls) != 1 {
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter.replica_identity_using_index.valid"`) || !strings.Contains(body, `"index_absent"`) || strings.Contains(body, "PGReplicaIdentity") || strings.Contains(body, "PartitionRoot") || len(client.objectCalls) != 1 || client.objectCalls[0].Qualifiers["kind"] != "p" {
 		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
 	}
 }
