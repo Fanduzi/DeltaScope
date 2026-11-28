@@ -29,17 +29,25 @@ func (r pgTableNamespaceRule) AppliesTo(s spec.Statement) bool {
 
 func boundPGTableNamespace(s spec.Statement) *spec.PGTableNamespace {
 	action, destination := spec.PGTableNamespaceTarget(s)
-	partitionRename := action == "rename_table" && spec.PGPartitionedTableBound(s)
-	if destination == "" || !spec.PGOrdinaryTableBound(s) && !partitionRename || !spec.PG17Observed(s.Metadata.Instance) {
+	partitionRoot := destination != "" && spec.PGPartitionedTableBound(s)
+	if destination == "" || !spec.PGOrdinaryTableBound(s) && !partitionRoot || !spec.PG17Observed(s.Metadata.Instance) {
 		return nil
 	}
 	facts, table := s.Metadata.PGTableNamespace, s.DDL.Table
 	if facts == nil || facts.Schema != table.Schema || facts.Table != table.Name || facts.Action != action || facts.Destination != destination {
 		return nil
 	}
-	conflict := facts.RelationConflict || facts.RowTypeConflictKnown && facts.RowTypeConflict
-	if partitionRename && (!facts.SourceKindKnown || facts.SourceKind != "p" || !conflict) {
-		return nil
+	if partitionRoot {
+		if !facts.SourceKindKnown || facts.SourceKind != "p" {
+			return nil
+		}
+		// Keep successful requests and unapproved companion checks unverified.
+		reason, _ := assessPGNamespaceDestination(facts)
+		switch reason {
+		case "destination_schema_absent", "destination_relation_conflict", "destination_row_type_conflict", "destination_index_conflict", "destination_owned_sequence_conflict":
+		default:
+			return nil
+		}
 	}
 	return facts
 }

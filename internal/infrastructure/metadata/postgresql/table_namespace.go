@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
@@ -27,7 +28,11 @@ func (p *Provider) resolveTableNamespace(ctx context.Context, req spec.ObjectLoo
 	}
 	facts := &spec.PGTableNamespace{Schema: req.Schema, Table: table, Action: action, Destination: req.Name}
 	kind := "r"
-	if req.Type == "table_namespace" && rename && req.Qualifiers["kind"] == "p" {
+	if req.Type == "table_namespace" && req.Qualifiers["kind"] == "p" {
+		// PostgreSQL checks special namespaces before attempting the move.
+		if !rename && (pgSpecialMoveNamespace(req.Schema) || pgSpecialMoveNamespace(req.Name)) {
+			return nil, nil
+		}
 		kind = "p"
 	}
 	if req.Type == "view_namespace" {
@@ -118,4 +123,8 @@ func (p *Provider) resolveTableNamespace(ctx context.Context, req spec.ObjectLoo
 	facts.RowTypeConflict, facts.RowTypeConflictKnown = conflict.Bool, conflict.Valid
 	facts.ArrayTypeConflict, facts.ArrayTypeConflictKnown = arrayConflict.Bool, arrayConflict.Valid
 	return &spec.ObjectSnapshot{PGTableNamespace: facts}, nil
+}
+
+func pgSpecialMoveNamespace(name string) bool {
+	return name == "pg_toast" || strings.HasPrefix(name, "pg_temp_") || strings.HasPrefix(name, "pg_toast_temp_")
 }

@@ -37,9 +37,39 @@ func TestPGTableNamespaceDestination(t *testing.T) {
 			partition(s, f)
 			f.RelationConflict, f.SourceKind = true, "r"
 		}},
-		{name: "partition schema move unchanged", action: "set_schema", gap: destinationFact, change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+		{name: "partition schema missing", action: "set_schema", reason: "destination_schema_absent", change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+			partition(s, f)
+			f.SchemaExists = false
+		}},
+		{name: "partition schema relation conflict", action: "set_schema", reason: "destination_relation_conflict", change: func(s *spec.Statement, f *spec.PGTableNamespace) {
 			partition(s, f)
 			f.RelationConflict = true
+		}},
+		{name: "partition schema row type conflict", action: "set_schema", reason: "destination_row_type_conflict", change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+			partition(s, f)
+			f.RowTypeConflict = true
+		}},
+		{name: "partition schema index conflict", action: "set_schema", reason: "destination_index_conflict", change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+			partition(s, f)
+			f.IndexConflict = true
+		}},
+		{name: "partition schema owned sequence conflict", action: "set_schema", reason: "destination_owned_sequence_conflict", change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+			partition(s, f)
+			f.OwnedSequenceConflict = true
+		}},
+		{name: "partition schema move unverified", action: "set_schema", gap: destinationFact, change: partition},
+		{name: "partition same schema retains gap and advisory", action: "set_schema", gap: destinationFact, change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+			partition(s, f)
+			s.DDL.Alter[0].Options["new_schema"] = "app"
+			f.Destination, f.SameSchema, f.RelationConflict, f.RowTypeConflict = "app", true, true, true
+		}},
+		{name: "partition schema array conflict stays out of scope", action: "set_schema", gap: destinationFact, change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+			partition(s, f)
+			f.ArrayTypeConflict, f.IndexConflict = true, true
+		}},
+		{name: "partition schema move with unknown source proof", action: "set_schema", gap: destinationFact, change: func(s *spec.Statement, f *spec.PGTableNamespace) {
+			partition(s, f)
+			f.SourceKindKnown, f.SchemaExists = false, false
 		}},
 		{name: "rename relation conflict including self", reason: "destination_relation_conflict", change: func(_ *spec.Statement, f *spec.PGTableNamespace) { f.RelationConflict = true }},
 		{name: "rename type conflict", reason: "destination_row_type_conflict", change: func(_ *spec.Statement, f *spec.PGTableNamespace) { f.RowTypeConflict = true }},

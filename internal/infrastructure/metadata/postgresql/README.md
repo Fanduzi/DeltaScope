@@ -23,7 +23,7 @@ comparisons for the member and scope binding.
 | table_owner.go | Observes exact PG17 table owner targets, including named roles and PUBLIC for persistent partitioned tables, without permission or membership reads |
 | bulk_tablespace.go | Reads both exact named spaces and ordered role existence together using `pg_catalog.pg_tablespace` and `pg_catalog.pg_roles` |
 | column_type.go | Reads the qualified PostgreSQL 17 type and associated array, pseudo-type, exact collation and scalar assignment facts using system catalogs, including eligible ONLY parents |
-| table_namespace.go | Observes PostgreSQL 17 table destinations, including exact partition-root rename collisions and ordinary schema-move array, index and owned-sequence conflicts |
+| table_namespace.go | Observes PostgreSQL 17 table destinations, including exact partition-root bindings and schema-move array, index and owned-sequence observations |
 | table_persistence.go | Reads PG17 persistence and dependency facts for ordinary tables and persistent partition-root SET UNLOGGED, without reading dependency names |
 | table_access_method.go | Reads PG17 access-method destinations without invoking handlers, including named methods for persistent partitioned tables |
 | table_tablespace.go | Reads PostgreSQL tablespace destinations for ordinary and persistent partitioned tables, with no location paths or privilege reads |

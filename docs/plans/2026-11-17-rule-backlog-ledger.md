@@ -2332,6 +2332,14 @@ unchanged and the isolated VM stopped. Receipts:
 `4f76852d`. Golden results belong to that implementation SHA, not to this
 ledger-only entry. F09 remains open.
 
+## F09 partition-root SET SCHEMA boundary
+
+The [decision](../decisions/2026-11-18-postgresql-table-namespace-destination.md#partition-root-set-schema-refusals)
+records five PostgreSQL 17.7 catalog-backed refusals on persistent partition
+roots. Seven T37 cases and one corpus fixture attach to the PostgreSQL 17
+`SET SCHEMA` cell only. Successful moves and out-of-scope collisions remain
+unverified; inventory classifications and denominators are unchanged.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

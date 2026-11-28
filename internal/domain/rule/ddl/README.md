@@ -107,7 +107,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_object_lifecycle_rules.go | Implements PostgreSQL-only object lifecycle rules: create-schema notice, drop-schema advisory/cascade, create-sequence cycle, alter-sequence restart/cycle, drop-sequence advisory/cascade, drop-materialized-view advisory/cascade |
 | postgresql_bulk_tablespace_rules.go | Checks named PG17 bulk endpoints and ordered owner filters and reports observed same-space selections |
 | postgresql_table_owner_rules.go | Checks PG17 ordinary-table OWNER TO targets and bounded partitioned-table refusals without exposing role names or inspecting permissions |
-| postgresql_table_namespace_rules.go | Checks exact PostgreSQL 17 RENAME and SET SCHEMA destinations, including partition-root rename collisions and ordinary schema-move companion conflicts |
+| postgresql_table_namespace_rules.go | Checks exact PostgreSQL 17 RENAME and SET SCHEMA destinations, including partition-root rename collisions and bounded schema-move refusals |
 | postgresql_foreign_key_target_rules.go | Checks exact relation and column identities, referenced key eligibility, arity, bounded scalar equality and ON DELETE SET membership for ADD FOREIGN KEY; rejects NOT VALID for a fresh qualified PostgreSQL 17 partitioned source |
 | postgresql_constraint_using_index_rules.go | Checks exact existing index prerequisites for PostgreSQL 17 PRIMARY KEY and UNIQUE attachment, including the observed default operator class for each key column |
 | postgresql_add_check_name_rules.go | Checks PostgreSQL 17 ADD CHECK names and bounded predicates on ordinary tables, plus unnamed TRUE CHECK refusals on persistent partition roots. |

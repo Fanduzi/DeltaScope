@@ -21,6 +21,7 @@ func TestResolveTableNamespace(t *testing.T) {
 	}{
 		{name: "outside table scope", action: "rename_table"},
 		{name: "partition root collision", action: "rename_table", kind: "p", row: []driver.Value{true, true, true, false}, want: spec.PGTableNamespace{SourceKindKnown: true, SourceKind: "p", SchemaExists: true, SameSchema: true, RelationConflict: true, RowTypeConflictKnown: true}},
+		{name: "partition root schema conflict", action: "set_schema", kind: "p", row: []driver.Value{true, false, false, false, true, true, false}, want: spec.PGTableNamespace{SourceKindKnown: true, SourceKind: "p", SchemaExists: true, RowTypeConflictKnown: true, IndexConflict: true, OwnedSequenceConflict: true, ArrayTypeConflictKnown: true}},
 		{name: "occupied relation", action: "rename_table", row: []driver.Value{true, true, true, false}, want: spec.PGTableNamespace{SchemaExists: true, SameSchema: true, RelationConflict: true, RowTypeConflictKnown: true}},
 		{name: "occupied type", action: "rename_table", row: []driver.Value{true, true, false, true}, want: spec.PGTableNamespace{SchemaExists: true, SameSchema: true, RowTypeConflict: true, RowTypeConflictKnown: true}},
 		{name: "relocatable array", action: "rename_table", row: []driver.Value{true, true, false, false}, want: spec.PGTableNamespace{SchemaExists: true, SameSchema: true, RowTypeConflictKnown: true}},
@@ -104,9 +105,11 @@ func TestResolveViewNamespaceChecksSourceBeforeDestination(t *testing.T) {
 func TestResolveTableNamespaceWithholdsTemporaryAlias(t *testing.T) {
 	db, log := openTestDB(t, nil)
 	defer db.Close()
-	req := spec.ObjectLookupRequest{Schema: "app", Name: "pg_temp", Type: "table_namespace", Qualifiers: map[string]string{"table": "t", "action": "set_schema"}}
-	got, err := NewProvider(db).ResolveObject(context.Background(), spec.DialectPostgreSQL, req)
-	if got != nil || err != nil || len(log.Queries()) != 0 {
-		t.Fatalf("observation=%+v err=%v queries=%v", got, err, log.Queries())
+	for _, name := range []string{"pg_temp", "pg_temp_3", "pg_toast_temp_3", "pg_toast"} {
+		req := spec.ObjectLookupRequest{Schema: "app", Name: name, Type: "table_namespace", Qualifiers: map[string]string{"table": "t", "action": "set_schema", "kind": "p"}}
+		got, err := NewProvider(db).ResolveObject(context.Background(), spec.DialectPostgreSQL, req)
+		if got != nil || err != nil || len(log.Queries()) != 0 {
+			t.Fatalf("destination=%q observation=%+v err=%v queries=%v", name, got, err, log.Queries())
+		}
 	}
 }

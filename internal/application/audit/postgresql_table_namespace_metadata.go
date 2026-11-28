@@ -9,8 +9,8 @@ import (
 func enrichPGTableNamespaces(ctx context.Context, request *MetadataRequest, statements []spec.Statement) error {
 	for _, s := range statements {
 		action, name := spec.PGTableNamespaceTarget(s)
-		partitionRename := action == "rename_table" && spec.PGPartitionedTableBound(s)
-		if name == "" || !spec.PGOrdinaryTableBound(s) && !partitionRename || !spec.PG17Observed(s.Metadata.Instance) {
+		partitionRoot := name != "" && spec.PGPartitionedTableBound(s)
+		if name == "" || !spec.PGOrdinaryTableBound(s) && !partitionRoot || !spec.PG17Observed(s.Metadata.Instance) {
 			continue
 		}
 		table := s.DDL.Table
@@ -18,7 +18,7 @@ func enrichPGTableNamespaces(ctx context.Context, request *MetadataRequest, stat
 			Schema: table.Schema, Name: name, Type: "table_namespace",
 			Qualifiers: map[string]string{"table": table.Name, "action": action},
 		}
-		if partitionRename {
+		if partitionRoot {
 			lookup.Qualifiers["kind"] = "p"
 		}
 		object, err := resolveObjectSnapshot(ctx, request, spec.DialectPostgreSQL, &lookup)

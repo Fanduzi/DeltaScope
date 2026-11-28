@@ -1,0 +1,1 @@
+ALTER TABLE app.p SET SCHEMA dst;

@@ -1351,7 +1351,7 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 `ddl.pg.alter.rename_table.target.valid` 和 `ddl.pg.alter.set_schema.target.valid` 默认级别为 blocker，适用于已观测 PostgreSQL 17 上精确限定名、目录新鲜的普通持久非类型表。RENAME 检查目标关系名与行类型名，识别已观测到可让位的自动生成数组类型。既有改名禁止规则独立生效。SET SCHEMA 检查目标 schema，以及主表、行类型、关联数组类型、附属索引和列自有序列的精确名称。既有 notice 会识别同 schema 请求。缺少适用的目录事实时报告 `unproven_table_namespace_destination`。权限和锁另需证据。
 
-对目录已确认、显式限定 schema 的 PostgreSQL 17 持久分区根，现有 `RENAME TO` 规则也会拒绝单动作的关系名或行类型名冲突。空闲名称及可让位的数组名仍保留证据缺口；不扩大到叶分区或分区表的 `SET SCHEMA`。
+对目录已确认、显式限定 schema 的 PostgreSQL 17 持久分区根，现有 `RENAME TO` 规则也会拒绝单动作的关系名或行类型名冲突。空闲名称及可让位的数组名仍保留证据缺口。对同一范围的分区根，`SET SCHEMA` 规则拒绝目标 schema 缺失，以及根关系、行类型、根索引或根列拥有的序列重名。成功迁移、数组类型冲突、特殊 schema 和叶分区或子分区迁移仍不验证。
 
 ### PostgreSQL ALTER COLUMN TYPE 源列检查
 
