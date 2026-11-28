@@ -2387,6 +2387,14 @@ Receipts: `/private/tmp/ds-r2-opclass.CUubqR/f09-partition-array-d4f3da67/`.
 `d4f3da67`. Golden results belong to the implementation SHA, not this
 ledger-only entry. F09 remains open.
 
+## F09 partition-root replica identity index shape
+
+The [decision](../decisions/2026-11-18-postgresql-replica-identity-index.md#partition-root-index-shape-refusals)
+records the PostgreSQL 17.7 refusals for non-immediate, expression and partial
+indexes, and nullable keys. Six T37 cases and one corpus fixture bind to the
+PG17 `REPLICA IDENTITY` cell. Nullable INCLUDE alone is not a refusal, and
+successful attachment remains unverified. Inventory classifications are unchanged.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/

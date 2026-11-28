@@ -28,9 +28,33 @@ func TestPGReplicaIdentityIndexAssessment(t *testing.T) {
 		}},
 		{name: "partition nonunique", reason: "index_not_unique", change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) { root(s, f); f.Unique = false }},
 		{name: "partition eligible retains gap", gap: indexFact, change: root},
-		{name: "partition other index restrictions retain gap", gap: indexFact, change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) {
+		{name: "partition unsupported method retains gap", gap: indexFact, change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) {
 			root(s, f)
 			f.Immediate, f.CanUnique = false, false
+		}},
+		{name: "partition unknown method retains gap", gap: indexFact, change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) {
+			root(s, f)
+			f.CanUniqueKnown, f.Immediate = false, false
+		}},
+		{name: "partition deferred precedes expression", reason: "index_not_immediate", change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) {
+			root(s, f)
+			f.Immediate, f.Expression = false, true
+		}},
+		{name: "partition expression precedes predicate", reason: "index_expression", change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) {
+			root(s, f)
+			f.Expression, f.Partial = true, true
+		}},
+		{name: "partition predicate precedes keys", reason: "index_partial", change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) {
+			root(s, f)
+			f.Partial, f.KeyAttributesValid = true, false
+		}},
+		{name: "partition nullable key", reason: "index_key_inapplicable", change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) {
+			root(s, f)
+			f.KeyAttributesValid = false
+		}},
+		{name: "partition unknown key retains gap", gap: indexFact, change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) {
+			root(s, f)
+			f.KeyAttributesKnown, f.KeyAttributesValid = false, false
 		}},
 		{name: "partition scope not confirmed", gap: indexFact, change: func(s *spec.Statement, f *spec.PGReplicaIdentityIndex) {
 			root(s, f)

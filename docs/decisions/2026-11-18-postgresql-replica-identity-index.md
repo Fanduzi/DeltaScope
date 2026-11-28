@@ -128,6 +128,21 @@ on roots, and downstream replication usability remain outside this slice.
 Ordinary-table rules and mode warnings are unchanged. Evidence is bound only
 to the PostgreSQL 17 `REPLICA IDENTITY` cell; its classification is unchanged.
 
+## Partition-root index shape refusals
+
+Reuse the same blocker on the same root scope when the catalog also confirms
+that the access method supports uniqueness. After ownership and uniqueness,
+check immediacy, expressions, predicates and key columns in native order.
+PostgreSQL 17.7 rejects deferrable, expression and partial indexes (`0A000`),
+and nullable keys even with `NULLS NOT DISTINCT` (`42809`). Nullable INCLUDE
+columns do not trigger that check.
+
+Six T37 controls cover those four refusals, expression-before-predicate
+precedence, and a successful native attachment with nullable INCLUDE. The
+latter retains the audit gap. Unknown facts, leaf tables, successful assignment
+and downstream replication usability remain outside the check. No new lookup,
+serialized fields or inventory classification changes.
+
 ## Sources
 
 - [PostgreSQL 17 ALTER TABLE](https://www.postgresql.org/docs/17/sql-altertable.html)

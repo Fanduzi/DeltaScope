@@ -94,11 +94,17 @@ func TestAuditProjectsConfirmedObjectMetadataThroughSDK(t *testing.T) {
 }
 
 func TestAuditReplicaIdentityAttachmentThroughSDK(t *testing.T) {
+	for _, kind := range []string{"r", "p"} {
+		t.Run(kind, func(t *testing.T) { testAuditReplicaIdentityAttachment(t, kind) })
+	}
+}
+
+func testAuditReplicaIdentityAttachment(t *testing.T, kind string) {
 	provider := &fakeMetadataProviderWithObjects{
 		fakeMetadataProvider: fakeMetadataProvider{instance: &InstanceFacts{Version: "PostgreSQL 17.7"},
 			snapshot: &TableSnapshot{Schema: "app", Exists: true, Table: &Table{Name: "t"},
-				PGRelation: PGRelationState{Name: "t", Kind: "r"}, PGColumns: &PGColumnCatalog{Ordinary: true}}},
-		objectSnapshot: &spec.ObjectSnapshot{PGReplicaIdentity: &spec.PGReplicaIdentityIndex{Schema: "app", Table: "t", Name: "Index Name", Kind: "i", IndexKnown: true, OnTable: true, Unique: true, Immediate: true, Partial: true}},
+				PGRelation: PGRelationState{Name: "t", Kind: kind}, PGColumns: &PGColumnCatalog{Ordinary: kind == "r"}}},
+		objectSnapshot: &spec.ObjectSnapshot{PGReplicaIdentity: &spec.PGReplicaIdentityIndex{Schema: "app", Table: "t", Name: "Index Name", Kind: "i", IndexKnown: true, OnTable: true, Unique: true, Immediate: true, Partial: true, PartitionRoot: kind == "p", CanUnique: true, CanUniqueKnown: true}},
 	}
 	result, err := Audit(context.Background(), Request{SQL: `ALTER TABLE app.t REPLICA IDENTITY USING INDEX "Index Name"`, Dialect: DialectPostgreSQL, MetadataProvider: provider})
 	if err != nil || result.Verdict != VerdictReject || len(provider.objectCalls) != 1 || provider.objectCalls[0].Name != "Index Name" {

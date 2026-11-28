@@ -111,10 +111,19 @@ func TestMCPAuditProjectUnavailableObjectMetadata(t *testing.T) {
 type replicaIdentityAuditClient struct{ *mcpMetadataAuditTestClient }
 
 func (replicaIdentityAuditClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
-	return &spec.ObjectSnapshot{PGReplicaIdentity: &spec.PGReplicaIdentityIndex{Schema: req.Schema, Table: req.Qualifiers["table"], Name: req.Name, Kind: "i", IndexKnown: true, PartitionRoot: req.Qualifiers["kind"] == "p"}}, nil
+	f := &spec.PGReplicaIdentityIndex{Schema: req.Schema, Table: req.Qualifiers["table"], Name: req.Name, Kind: "i", IndexKnown: true, PartitionRoot: req.Qualifiers["kind"] == "p"}
+	if req.Name == "deferred_ix" {
+		f.Kind, f.OnTable, f.Unique, f.CanUnique, f.CanUniqueKnown = "I", true, true, true, true
+	}
+	return &spec.ObjectSnapshot{PGReplicaIdentity: f}, nil
 }
 
 func TestMCPReplicaIdentityAttachment(t *testing.T) {
+	t.Run("wrong owner", func(t *testing.T) { testMCPReplicaIdentityAttachment(t, "other_ix", "index_not_on_table") })
+	t.Run("deferred", func(t *testing.T) { testMCPReplicaIdentityAttachment(t, "deferred_ix", "index_not_immediate") })
+}
+
+func testMCPReplicaIdentityAttachment(t *testing.T, index, reason string) {
 	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test"}))
 	if err != nil {
 		t.Fatal(err)
@@ -128,14 +137,14 @@ func TestMCPReplicaIdentityAttachment(t *testing.T) {
 	}
 	t.Cleanup(func() { prepareMetadataAudit = previous })
 	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "audit_sql", Arguments: map[string]any{
-		"sql": "ALTER TABLE app.t REPLICA IDENTITY USING INDEX other_ix", "dialect": "postgresql",
+		"sql": "ALTER TABLE app.t REPLICA IDENTITY USING INDEX " + index, "dialect": "postgresql",
 		"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "app"},
 	}})
 	if err != nil || result.IsError {
 		t.Fatalf("result=%+v err=%v", result, err)
 	}
 	body, err := json.Marshal(result.StructuredContent)
-	if err != nil || !strings.Contains(string(body), `"index_not_on_table"`) || !strings.Contains(string(body), `"ddl.pg.alter.replica_identity_using_index.valid"`) || strings.Contains(string(body), "PGReplicaIdentity") {
+	if err != nil || !strings.Contains(string(body), `"`+reason+`"`) || !strings.Contains(string(body), `"ddl.pg.alter.replica_identity_using_index.valid"`) || strings.Contains(string(body), "PGReplicaIdentity") {
 		t.Fatalf("unexpected response: %s %v", body, err)
 	}
 }

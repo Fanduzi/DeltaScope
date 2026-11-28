@@ -257,7 +257,9 @@ assignment does not establish replication usability.
 
 On a confirmed schema-qualified persistent PostgreSQL 17 partition root, the
 same blocker checks missing, wrong-kind, wrong-owner and nonunique indexes
-for a single `USING INDEX` action. Other outcomes remain unverified.
+for a single `USING INDEX` action. With observed uniqueness capability, it also
+checks immediacy, expressions, predicates and applicable key columns. Successful
+assignment and unobserved facts retain a gap.
 
 ### PostgreSQL ALTER column identity and existence guards
 

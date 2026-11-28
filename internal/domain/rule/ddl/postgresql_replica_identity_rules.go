@@ -56,7 +56,7 @@ func assessPGReplicaIdentityIndex(s spec.Statement) (reason, fact string) {
 		return "index_not_on_table", ""
 	case !facts.Unique || !partitionRoot && facts.CanUniqueKnown && !facts.CanUnique:
 		return "index_not_unique", ""
-	case partitionRoot:
+	case partitionRoot && (!facts.CanUniqueKnown || !facts.CanUnique):
 		return "", "target_table.pg_replica_identity_index"
 	case !facts.Immediate:
 		return "index_not_immediate", ""
@@ -66,7 +66,7 @@ func assessPGReplicaIdentityIndex(s spec.Statement) (reason, fact string) {
 		return "index_partial", ""
 	case facts.KeyAttributesKnown && !facts.KeyAttributesValid:
 		return "index_key_inapplicable", ""
-	case !facts.CanUniqueKnown || !facts.KeyAttributesKnown:
+	case partitionRoot || !facts.CanUniqueKnown || !facts.KeyAttributesKnown:
 		return "", "target_table.pg_replica_identity_index"
 	default:
 		return "", ""

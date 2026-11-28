@@ -119,6 +119,11 @@ func TestHTTPAuditProjectsAmbiguousObjectMetadata(t *testing.T) {
 }
 
 func TestHTTPReplicaIdentityAttachment(t *testing.T) {
+	t.Run("missing", func(t *testing.T) { testHTTPReplicaIdentityAttachment(t, "index_absent", false) })
+	t.Run("expression", func(t *testing.T) { testHTTPReplicaIdentityAttachment(t, "index_expression", true) })
+}
+
+func testHTTPReplicaIdentityAttachment(t *testing.T, reason string, present bool) {
 	reg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) { c.Dialect, c.Database = "postgresql", "app" })
 	h, err := NewHandler("", "test-build", WithRegistry(reg))
 	if err != nil {
@@ -127,19 +132,24 @@ func TestHTTPReplicaIdentityAttachment(t *testing.T) {
 	client := &metadataAuditTestClient{version: "PostgreSQL 17.7", detectDialect: spec.DialectPostgreSQL,
 		snapshot: &spec.TableSnapshot{Schema: "app", Exists: true, Table: &spec.Table{Name: "t"},
 			PGRelation: spec.PGRelationState{Name: "t", Kind: "p"}},
-		objectSnapshot: &spec.ObjectSnapshot{PGReplicaIdentity: &spec.PGReplicaIdentityIndex{Schema: "app", Table: "t", Name: "missing", PartitionRoot: true}}}
+		objectSnapshot: &spec.ObjectSnapshot{PGReplicaIdentity: &spec.PGReplicaIdentityIndex{Schema: "app", Table: "t", Name: "candidate", PartitionRoot: true}}}
+	if present {
+		f := client.objectSnapshot.PGReplicaIdentity
+		f.Kind, f.IndexKnown, f.OnTable, f.Unique, f.Immediate = "I", true, true, true, true
+		f.CanUnique, f.CanUniqueKnown, f.Expression = true, true, true
+	}
 	previous := prepareHTTPMetadataAudit
 	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
 		return &auditmeta.PreparedAudit{Client: client, Dialect: spec.DialectPostgreSQL, Schema: "app"}, nil
 	}
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
-	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER TABLE app.t REPLICA IDENTITY USING INDEX missing","dialect":"postgresql","connection_id":"test-pg"}`))
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", strings.NewReader(`{"sql":"ALTER TABLE app.t REPLICA IDENTITY USING INDEX candidate","dialect":"postgresql","connection_id":"test-pg"}`))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-API-Key", "test-key-value")
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 	body := rec.Body.String()
-	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter.replica_identity_using_index.valid"`) || !strings.Contains(body, `"index_absent"`) || strings.Contains(body, "PGReplicaIdentity") || strings.Contains(body, "PartitionRoot") || len(client.objectCalls) != 1 || client.objectCalls[0].Qualifiers["kind"] != "p" {
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"ddl.pg.alter.replica_identity_using_index.valid"`) || !strings.Contains(body, `"`+reason+`"`) || strings.Contains(body, "PGReplicaIdentity") || strings.Contains(body, "PartitionRoot") || len(client.objectCalls) != 1 || client.objectCalls[0].Qualifiers["kind"] != "p" {
 		t.Fatalf("code=%d response=%s calls=%+v", rec.Code, body, client.objectCalls)
 	}
 }

@@ -1,0 +1,1 @@
+ALTER TABLE app.root REPLICA IDENTITY USING INDEX partial_ix;

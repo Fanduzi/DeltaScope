@@ -1538,7 +1538,12 @@ binding, scope or catalog facts yield `unproven_replica_identity_index`.
 The existing notice describes the requested selection. PostgreSQL can assign
 an invalid index, so assignment alone cannot establish replication usability.
 
-For a single `REPLICA IDENTITY USING INDEX` on a confirmed schema-qualified persistent partition root, the blocker also rejects a missing index, a non-index relation, an index owned by another table, or a nonunique index. Other partition-root index properties and successful assignment remain unverified. This does not extend leaf-partition coverage.
+For a single `REPLICA IDENTITY USING INDEX` on a confirmed schema-qualified
+persistent partition root, the blocker also rejects a missing index, a non-index
+relation, an index owned by another table, or a nonunique index. When the catalog
+confirms uniqueness capability, it also rejects non-immediate, expression and
+partial indexes, and indexes with inapplicable key columns. Nullable INCLUDE
+columns are not keys. Successful assignment and leaf partitions remain unverified.
 
 ### PostgreSQL ALTER TABLE GENERATED Follow-up Pack (v0.31.0)
 

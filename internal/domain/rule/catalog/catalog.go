@@ -362,7 +362,7 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 	case "ddl.pg.alter.reloptions.valid":
 		return "Checks bounded SET and RESET declarations for a fresh exact PostgreSQL 17 ordinary heap table. Known duplicate or invalid values block; unknown scope or options remain gaps."
 	case "ddl.pg.alter.replica_identity_using_index.valid":
-		return "Checks exact PostgreSQL 17 ordinary-table replica-identity index attachment and refuses missing, wrong-kind, wrong-owner and nonunique indexes on qualified persistent partition roots. Unknown evidence remains a gap."
+		return "Checks exact PostgreSQL 17 ordinary-table replica-identity index attachment. On qualified persistent partition roots, rejects missing, wrong-kind, wrong-owner and nonunique indexes and checks the shape of catalog-confirmed unique-capable indexes. Other partition-root outcomes remain unverified."
 	case "ddl.table.exists.alter.require":
 		return "Checks ALTER TABLE target existence. On PostgreSQL 17, IF EXISTS guards observed qualified absence. SET WITHOUT OIDS also checks the exact relation kind. Unknown applicable facts remain evidence gaps."
 	case "ddl.alter.add_column.exists.forbid":
