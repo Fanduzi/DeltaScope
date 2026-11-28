@@ -1178,7 +1178,7 @@ These five F09 rows have 40 authored labels and 40 normalized records at `d8ccee
 | ALL IN TABLESPACE SET TABLESPACE | D17 exact endpoint, ordered-role and pg_global premise, same-space context | `OWNED BY` member resolution, lock availability under NOWAIT, space and physical movement are separate. |
 | SET ACCESS METHOD | D12 ordinary exact method identity/support and selected same method | The same partitioned destination decision covers missing or index access methods. Moving physical storage, extension method behavior, other relation kinds and dependencies need separate evidence. |
 | SET LOGGED/UNLOGGED | D13 ordinary persistence, direct publication and FK preconditions. The [partition-root extension](../decisions/2026-11-18-postgresql-table-persistence.md#partition-root-set-unlogged-refusals) covers direct publication and inbound FK refusals for qualified persistent partition roots. | Other partitioned results, dependency closure, WAL/durability and execution outcomes need separate evidence. |
-| REPLICA IDENTITY | D9 exact attached index candidate for USING INDEX and independent mode warnings. The [partition-root extension](../decisions/2026-11-18-postgresql-replica-identity-index.md#partition-root-index-refusals) covers missing, wrong-kind, wrong-owner and nonunique indexes. | Other root outcomes, leaf partitions and downstream replication usability need separate evidence. PostgreSQL can assign an invalid index; assignment does not establish usability. |
+| REPLICA IDENTITY | D9 exact attached index candidate for USING INDEX and independent mode warnings. The [partition-root extension](../decisions/2026-11-18-postgresql-replica-identity-index.md#partition-root-index-refusals) covers missing, wrong-kind, wrong-owner and nonunique indexes. The [shape extension](#f09-partition-root-replica-identity-index-shape) checks non-immediate, expression, partial and nullable-key refusals with confirmed uniqueness capability. | Successful root assignment, unknown access methods, leaf partitions and downstream replication usability need separate evidence. PostgreSQL can assign an invalid index; assignment does not establish usability. |
 | SET WITHOUT OIDS dead form | PG17 compatibility no-op proved on ordinary/partitioned tables; guards and wrong kinds verified independently | D29 at `36ef07e4` adds exact target-kind and guarded absence evidence (delivered). Removed WITH OIDS remains a parser error. |
 
 ### postgresql.alter-table.rename-owner
@@ -2394,6 +2394,26 @@ records the PostgreSQL 17.7 refusals for non-immediate, expression and partial
 indexes, and nullable keys. Six T37 cases and one corpus fixture bind to the
 PG17 `REPLICA IDENTITY` cell. Nullable INCLUDE alone is not a refusal, and
 successful attachment remains unverified. Inventory classifications are unchanged.
+
+`milestone/pg-alter-default-assignment` fast-forwarded and pushed
+`40a984e969f615c81de6f89367624db16ff19719..3cdcc879d338e2f38ce12ce6fc473a50aa064828`
+(17 files). Default and PostgreSQL-tagged build, test and lint, vet, module
+tidy, formatting, diff, inventory, corpus, coverage catalog and decision gates
+passed on the candidate and merged tree. `make ddl-golden TASK=T37 ARTIFACT_DIR="$receipt/targeted"`
+passed 746 cases and 22,981 assertions. `make ddl-golden TASK=all ARTIFACT_DIR="$receipt/full"`
+passed 50 tasks, 5,197 cases and 124,063 assertions without failures or skips.
+Both artifacts passed `python3 scripts/ddl_golden.py validate --artifact`.
+Read-only review verified the exact SHA, CLI hash, all assertions, six new
+controls, unchanged prior T37 definitions, precise inventory binding and resource
+cleanup. The dedicated checkout was clean, the protected checkout unchanged,
+and the isolated VM stopped.
+Receipts: `/private/tmp/ds-r2-opclass.CUubqR/f09-partition-replica-shape-3cdcc879/`.
+
+[Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/46161237850),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/46161237868), and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/141028876487) passed at
+`3cdcc879`. Golden results belong to the implementation SHA, not this
+ledger-only entry. F09 remains open.
 
 ## Evidence required for each dimension review
 
