@@ -2303,6 +2303,35 @@ protected checkout was unchanged. Receipts:
 `af100282`. These Golden results belong to the implementation SHA, not to
 this ledger-only entry. F09 remains open.
 
+## F09 partition-root CHECK refusals
+
+`milestone/pg-alter-default-assignment` fast-forwarded and pushed
+`0fae93965d791f838687521e4db7e7ac0657810d..4f76852dd2b34c4a9968d61d594cbaf6a5c47f61`.
+The [decision](../decisions/2026-11-19-postgresql-check-constraint-name.md#unnamed-true-checks-on-partition-roots)
+covers two PostgreSQL 17.7 refusals (`42P16`) for a single unnamed
+`ADD CHECK (TRUE)` on a fresh, schema-qualified persistent partition root:
+`NO INHERIT`, or `ONLY` with an attached child. `NOT VALID` does not bypass
+either check. Seven T37 controls and one corpus fixture supply nine selectors
+across the exact `ADD CHECK` and `ADD CHECK NOT VALID` PostgreSQL 17 cells.
+Existing cases, classifications and denominators are unchanged.
+
+Default and PostgreSQL-tagged build, test and lint, vet, tidy, formatting,
+diff, inventory, corpus, coverage catalog and decision gates passed on the
+candidate and merged tree. `make ddl-golden TASK=T37 ARTIFACT_DIR="$receipt/targeted"`
+passed 729 cases and 22,232 assertions. `make ddl-golden TASK=all ARTIFACT_DIR="$receipt/full"`
+passed 50 tasks, 5,180 cases and 123,314 assertions without failures or skips.
+`python3 scripts/ddl_golden.py validate --artifact "$receipt/full/all/artifact.json"`
+passed. Read-only review verified the exact SHA and CLI hash, private facts,
+scope and cleanup. The dedicated checkout was clean, the protected checkout
+unchanged and the isolated VM stopped. Receipts:
+`/private/tmp/ds-r2-opclass.CUubqR/f09-partition-check-4f76852d/`.
+
+[Go, PostgreSQL and lint](https://github.com/Fanduzi/DeltaScope/actions/runs/46117923822),
+[TLS E2E](https://github.com/Fanduzi/DeltaScope/actions/runs/46117923917), and
+[Pages](https://github.com/Fanduzi/DeltaScope/runs/140895871075) passed at
+`4f76852d`. Golden results belong to that implementation SHA, not to this
+ledger-only entry. F09 remains open.
+
 ## Evidence required for each dimension review
 
 Record the exact row and authored/normalized subaction names, dialect/version/
